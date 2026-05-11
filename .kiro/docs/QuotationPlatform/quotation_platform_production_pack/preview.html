@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyChair Operational Equipment Proposal</title>
+  <meta name="description" content="MyChair Operational Equipment Proposal template aligned with the MyChair landing page visual system." />
+  <meta name="theme-color" content="#0D5EA6" />
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --bg:#F7FAFC;
+      --bg2:#EEF4F8;
+      --text:#0B1B28;
+      --muted:#5E7385;
+      --blue:#0D5EA6;
+      --blue-dark:#0B4E89;
+      --cyan:#57B8E8;
+      --line:rgba(13,94,166,.10);
+      --shadow:0 22px 56px rgba(13,94,166,.10);
+    }
+    @page { size: A4; margin: 16mm; }
+    html { scroll-behavior:smooth; }
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(13,94,166,.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(87,184,232,.06), transparent 24%),
+        linear-gradient(180deg,#FBFDFF 0%, var(--bg2) 48%, var(--bg) 100%);
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    h1,h2,h3,h4{
+      font-family:Manrope,Inter,sans-serif;
+      letter-spacing:-.03em;
+    }
+    .page-wrap{
+      position:relative;
+      max-width:1120px;
+      margin:0 auto;
+      padding:24px;
+    }
+    .page-wrap::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(to right, rgba(13,94,166,.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(13,94,166,.03) 1px, transparent 1px);
+      background-size:40px 40px;
+      mask-image:radial-gradient(circle at center, rgba(0,0,0,.62), transparent 76%);
+      -webkit-mask-image:radial-gradient(circle at center, rgba(0,0,0,.62), transparent 76%);
+      z-index:0;
+    }
+    .sheet{
+      position:relative;
+      z-index:1;
+      background:linear-gradient(180deg, rgba(255,255,255,.985) 0%, rgba(245,249,253,.975) 100%);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      border-radius:32px;
+      overflow:hidden;
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      padding:36px 36px 28px;
+      background:
+        radial-gradient(circle at top left, rgba(87,184,232,.12), transparent 28%),
+        linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(255,255,255,.02) 100%);
+      border-bottom:1px solid rgba(13,94,166,.08);
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      right:-90px;
+      top:-120px;
+      width:280px;
+      height:280px;
+      border-radius:999px;
+      background:rgba(13,94,166,.10);
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      border:1px solid rgba(13,94,166,.10);
+      background:rgba(255,255,255,.88);
+      color:var(--blue-dark);
+      border-radius:999px;
+      padding:10px 14px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      box-shadow:0 10px 22px rgba(13,94,166,.06);
+    }
+    .dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      background:var(--cyan);
+      box-shadow:0 0 0 8px rgba(87,184,232,.10);
+    }
+    .brand-lockup{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .brand-chip{
+      width:48px;
+      height:48px;
+      border-radius:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid rgba(13,94,166,.12);
+      background:#fff;
+      color:var(--blue-dark);
+      font-weight:800;
+      box-shadow:0 10px 22px rgba(13,94,166,.08);
+    }
+    .section-card{
+      background:linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(244,249,253,.98) 100%);
+      border:1px solid rgba(13,94,166,.08);
+      border-radius:26px;
+      box-shadow:0 14px 30px rgba(13,94,166,.06);
+    }
+    .label{
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--blue-dark);
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:18px;
+    }
+    thead th{
+      background:#F4FAFE;
+      color:#395367;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      border-bottom:1px solid rgba(13,94,166,.08);
+    }
+    th, td{
+      padding:14px 14px;
+      text-align:left;
+      vertical-align:top;
+      border-right:1px solid rgba(13,94,166,.06);
+    }
+    th:last-child, td:last-child{ border-right:0; }
+    tbody tr{ background:rgba(255,255,255,.82); }
+    tbody tr + tr td{ border-top:1px solid rgba(13,94,166,.06); }
+    .money{ white-space:nowrap; font-weight:700; color:#162A3D; }
+    .total-box{
+      background:linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(13,94,166,.04) 100%);
+      border:1px solid rgba(13,94,166,.10);
+      border-radius:20px;
+    }
+    .sig-line{
+      height:1px;
+      background:linear-gradient(90deg, rgba(13,94,166,.0), rgba(13,94,166,.24), rgba(13,94,166,.0));
+      margin-top:56px;
+    }
+    .note-list li{ margin-top:8px; }
+    @media print{
+      body{ background:#fff; }
+      .page-wrap{ max-width:none; padding:0; }
+      .sheet{ box-shadow:none; border-radius:0; border:0; }
+    }
+    @media (max-width:860px){
+      .hero{ padding:28px 22px 22px; }
+      .stack-mobile{ grid-template-columns:1fr !important; }
+      .section-pad{ padding:22px !important; }
+      .table-wrap{ overflow:auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <article class="sheet">
+      <header class="hero">
+        <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+          <div class="max-w-3xl">
+            <div class="eyebrow">
+              <span class="dot"></span>
+              Operational Equipment Proposal
+            </div>
+
+            <div class="mt-6 brand-lockup">
+              <div class="brand-chip">MC</div>
+              <div>
+                <div class="text-2xl font-extrabold tracking-tight text-slate-950">MyChair Operational Suite</div>
+                <div class="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Prepared by 3 Inventors</div>
+              </div>
+            </div>
+
+            <h1 class="mt-8 max-w-4xl text-4xl font-bold leading-tight text-slate-950 sm:text-5xl">
+              Printer and setup proposal for Moto Pista
+            </h1>
+
+            <p class="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
+              This proposal covers the operational printing equipment and setup options aligned with the MyChair environment for receipt, kitchen, and production-related workflow support.
+            </p>
+          </div>
+
+          <div class="section-card w-full max-w-sm p-6">
+            <div class="grid gap-5">
+              <div>
+                <div class="label">Reference</div>
+                <div class="mt-2 text-lg font-bold text-slate-950">110426_01</div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <div class="label">Date</div>
+                  <div class="mt-2 text-base font-semibold text-slate-950">11/04/2026</div>
+                </div>
+                <div>
+                  <div class="label">Valid until</div>
+                  <div class="mt-2 text-base font-semibold text-slate-950">30/04/2026</div>
+                </div>
+              </div>
+              <div>
+                <div class="label">Prepared for</div>
+                <div class="mt-2 text-base font-semibold text-slate-950">Mrs. Karina</div>
+                <div class="mt-1 text-sm text-slate-600">Moto Pista</div>
+                <div class="text-sm text-slate-600">info@motoyard.cy</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="p-6 lg:p-8">
+        <section class="grid gap-6 stack-mobile lg:grid-cols-[1.1fr_0.9fr]">
+          <div class="section-card section-pad p-7">
+            <div class="label">Operational context</div>
+            <h2 class="mt-4 text-3xl font-bold text-slate-950">Why this equipment configuration</h2>
+            <p class="mt-4 text-base leading-8 text-slate-600">
+              The selected printers are intended to support the practical operational flow of the MyChair suite, including receipt output, kitchen order handling, and production-related printing requirements.
+            </p>
+            <ul class="note-list mt-5 list-disc pl-5 text-slate-700">
+              <li>Receipt and bill printing at transaction level</li>
+              <li>Kitchen and execution printing where operational speed matters</li>
+              <li>Stable device setup aligned with daily operational usage</li>
+              <li>Optional installation approach depending on deployment preference</li>
+            </ul>
+          </div>
+
+          <div class="section-card section-pad p-7">
+            <div class="label">Prepared by</div>
+            <div class="mt-4 text-2xl font-bold text-slate-950">3 Inventors Limited</div>
+            <div class="mt-4 space-y-2 text-sm leading-7 text-slate-600">
+              <div>18 Michael Karaoli, 2108, Aglantzia</div>
+              <div>700 75 700 / 99360865</div>
+              <div>www.3inventors.com</div>
+              <div>johnp@3inventors.com</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card mt-6 section-pad p-7">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div class="label">Equipment quotation</div>
+              <h2 class="mt-4 text-3xl font-bold text-slate-950">Operational device configuration</h2>
+            </div>
+            <div class="text-sm font-semibold text-slate-500">Prices do not include VAT</div>
+          </div>
+
+          <div class="table-wrap mt-6">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:72px;">No.</th>
+                  <th>Description</th>
+                  <th style="width:110px;">Qty</th>
+                  <th style="width:140px;">Unit Price</th>
+                  <th style="width:150px;">Final Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="font-semibold">1</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">Thermal Printer: XPrinter XP-T80Q Receipt/Bill Printer</div>
+                    <div class="mt-2 text-sm text-slate-600">2-year warranty</div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€155.00</td>
+                  <td class="money">€155.00</td>
+                </tr>
+                <tr>
+                  <td class="font-semibold">2</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">XPrinter C260M Kitchen Printer</div>
+                    <div class="mt-2 text-sm leading-7 text-slate-600">
+                      2-year warranty<br />
+                      Print Size: 80mm<br />
+                      Print Speed: 230MM/S<br />
+                      Print Technology: Direct Thermal<br />
+                      Connectivity: LAN / USB<br />
+                      Others: Auto-cut with Light and Sound Alarm
+                    </div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€195.00</td>
+                  <td class="money">€195.00</td>
+                </tr>
+                <tr>
+                  <td class="font-semibold">3</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">XPrinter C260M Kitchen Printer</div>
+                    <div class="mt-2 text-sm leading-7 text-slate-600">
+                      2-year warranty<br />
+                      Print Size: 80mm<br />
+                      Print Speed: 230MM/S<br />
+                      Print Technology: Direct Thermal<br />
+                      Connectivity: LAN / USB / WiFi<br />
+                      Others: Auto-cut with Light and Sound Alarm
+                    </div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€218.00</td>
+                  <td class="money">€218.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <div class="total-box w-full max-w-sm p-5">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Equipment subtotal</span>
+                <span class="text-2xl font-extrabold tracking-tight text-slate-950">€568.00</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card mt-6 section-pad p-7">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div class="label">Deployment options</div>
+              <h2 class="mt-4 text-3xl font-bold text-slate-950">Installation and setup</h2>
+            </div>
+            <div class="text-sm font-semibold text-slate-500">Prices do not include VAT</div>
+          </div>
+
+          <div class="table-wrap mt-6">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:72px;">No.</th>
+                  <th>Description</th>
+                  <th style="width:110px;">Qty</th>
+                  <th style="width:140px;">Unit Price</th>
+                  <th style="width:150px;">Final Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="font-semibold">1</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">Remote Setup</div>
+                    <div class="mt-2 text-sm text-slate-600">Suitable where the environment is already prepared for guided remote deployment.</div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€30.00</td>
+                  <td class="money">€30.00</td>
+                </tr>
+                <tr>
+                  <td class="font-semibold">2</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">Dedicated Setup</div>
+                    <div class="mt-2 text-sm text-slate-600">Suitable where on-site attention or more direct operational setup support is preferred.</div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€110.00</td>
+                  <td class="money">€110.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="grid gap-6 stack-mobile mt-6 lg:grid-cols-[1fr_1fr]">
+          <div class="section-card section-pad p-7">
+            <div class="label">Commercial notes</div>
+            <h3 class="mt-4 text-2xl font-bold text-slate-950">Proposal notes</h3>
+            <ul class="note-list mt-4 list-disc pl-5 text-slate-700">
+              <li>This proposal is prepared specifically for the operational device request described above.</li>
+              <li>Availability of hardware may depend on supplier stock at the time of order confirmation.</li>
+              <li>Any additional accessories, cabling, network preparation, or environment-specific changes are outside this quotation unless explicitly added.</li>
+              <li>Final deployment planning should be confirmed before installation.</li>
+            </ul>
+          </div>
+
+          <div class="section-card section-pad p-7">
+            <div class="label">Acceptance</div>
+            <h3 class="mt-4 text-2xl font-bold text-slate-950">Approval and signature</h3>
+
+            <div class="grid gap-10 pt-6 sm:grid-cols-2">
+              <div>
+                <div class="text-sm font-semibold text-slate-600">To accept this proposal, sign here and return:</div>
+                <div class="sig-line"></div>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-slate-600">Prepared on behalf of 3 Inventors Limited:</div>
+                <div class="sig-line"></div>
+                <div class="mt-4 text-base font-semibold text-slate-950">Giannis Papamichael</div>
+                <div class="text-sm text-slate-600">Director</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

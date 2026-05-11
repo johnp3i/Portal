@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cafe Route 66 — Operational Platform Proposal</title>
+  <link rel="icon" type="image/png" href="https://www.3inventors.com/img/favicon/favicon-96x96.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --bg: #F7FAFC;
+      --bg2: #EEF4F8;
+      --text: #0B1B28;
+      --muted: #5E7385;
+      --blue: #0D5EA6;
+      --blue-dark: #0B4E89;
+      --cyan: #57B8E8;
+      --line: rgba(13,94,166,.10);
+      --shadow: 0 22px 56px rgba(13,94,166,.10);
+      --green: #129867;
+    }
+
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(13,94,166,.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(87,184,232,.06), transparent 24%),
+        linear-gradient(180deg,#FBFDFF 0%, var(--bg2) 48%, var(--bg) 100%);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,h2,h3,h4 {
+      font-family: Manrope, sans-serif;
+      letter-spacing: -.03em;
+    }
+
+    .page-wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .sheet {
+      background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(245,249,253,.98) 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 32px;
+      overflow: hidden;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 42px;
+      background:
+        radial-gradient(circle at top left, rgba(87,184,232,.12), transparent 28%),
+        linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(255,255,255,.02) 100%);
+      border-bottom: 1px solid rgba(13,94,166,.08);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -100px;
+      top: -120px;
+      width: 320px;
+      height: 320px;
+      border-radius: 999px;
+      background: rgba(13,94,166,.08);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(13,94,166,.10);
+      background: rgba(255,255,255,.88);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 22px rgba(13,94,166,.06);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--cyan);
+      box-shadow: 0 0 0 8px rgba(87,184,232,.10);
+    }
+
+    .section-card {
+      background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(244,249,253,.98) 100%);
+      border: 1px solid rgba(13,94,166,.08);
+      border-radius: 26px;
+      box-shadow: 0 14px 30px rgba(13,94,166,.06);
+    }
+
+    .label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--blue-dark);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border-radius: 18px;
+    }
+
+    thead th {
+      background: #F4FAFE;
+      color: #395367;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(13,94,166,.08);
+    }
+
+    th, td {
+      padding: 16px 14px;
+      text-align: left;
+      border-right: 1px solid rgba(13,94,166,.06);
+    }
+
+    th:last-child, td:last-child {
+      border-right: 0;
+    }
+
+    tbody tr {
+      background: rgba(255,255,255,.86);
+    }
+
+    tbody tr + tr td {
+      border-top: 1px solid rgba(13,94,166,.06);
+    }
+
+    .money {
+      font-weight: 800;
+      color: #162A3D;
+      white-space: nowrap;
+    }
+
+    .total-box {
+      background: linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(13,94,166,.04) 100%);
+      border: 1px solid rgba(13,94,166,.10);
+      border-radius: 22px;
+    }
+
+    .brand-logo {
+      max-height: 68px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .mini-logo {
+      max-height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .signal-card {
+      border-left: 4px solid var(--blue);
+    }
+
+    .footer-line {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(13,94,166,0), rgba(13,94,166,.24), rgba(13,94,166,0));
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .sheet {
+        border: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <article class="sheet">
+
+      <header class="hero">
+        <div class="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
+
+          <div class="max-w-4xl relative z-10">
+
+            <div class="eyebrow">
+              <span class="dot"></span>
+              Operational Software Proposal
+            </div>
+
+            <div class="mt-8 flex flex-wrap items-center gap-8">
+              <img src="https://www.mychairpos.com/img/myChair/myChair_color.png" alt="MyChair" class="brand-logo" />
+              <img src="https://www.workforcepi.com/img/workforcePi/logos/workforcepi_blue.png" alt="WorkforcePi" class="brand-logo" />
+            </div>
+
+            <h1 class="mt-10 text-5xl font-bold leading-tight text-slate-950">
+              Operational Platform Proposal for<br />
+              Cafe Route 66 — Stasikratous
+            </h1>
+
+            <p class="mt-6 max-w-3xl text-lg leading-8 text-slate-600">
+              This proposal outlines the operational software environment designed to support structured daily execution, operational visibility, workforce awareness, and production workflow management.
+            </p>
+          </div>
+
+          <div class="section-card w-full max-w-sm p-7 relative z-10">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="label">Prepared By</div>
+                <div class="mt-2 text-xl font-bold text-slate-950">John Papamichael</div>
+                <div class="text-sm text-slate-600">3 Inventors Limited</div>
+              </div>
+
+              <img src="https://www.mychairpos.com/img/3inventors/logo_blue_web_toolbar_oi.png" alt="3 Inventors" class="mini-logo" />
+            </div>
+
+            <div class="mt-6 grid gap-5">
+              <div>
+                <div class="label">Reference</div>
+                <div class="mt-2 text-lg font-bold text-slate-950">070526_01</div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-6">
+                <div>
+                  <div class="label">Date</div>
+                  <div class="mt-2 text-lg font-bold text-slate-950">07/05/2026</div>
+                </div>
+
+                <div>
+                  <div class="label">Valid Until</div>
+                  <div class="mt-2 text-lg font-bold text-slate-950">31/05/2026</div>
+                </div>
+              </div>
+              <div>
+                <div class="label">Commercial Model</div>
+                <div class="mt-2 text-base font-semibold text-slate-950">Annual Subscription Billing</div>
+              </div>
+
+              <div>
+                <div class="label">VAT</div>
+                <div class="mt-2 text-base font-semibold text-slate-950">Not Included</div>
+              </div>
+
+              <div>
+                <div class="label">Prepared For</div>
+                <div class="mt-2 text-base font-semibold text-slate-950">Cafe Route 66 — Stasikratous</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </header>
+
+      <main class="p-6 lg:p-8">
+
+        <section class="grid gap-6 lg:grid-cols-2">
+
+          <div class="section-card p-8">
+            <div class="label">Operational Positioning</div>
+            <h2 class="mt-4 text-3xl font-bold text-slate-950">
+              Structured operational execution
+            </h2>
+
+            <p class="mt-5 leading-8 text-slate-600">
+              The proposed operational environment combines transactional operations, operational awareness, production workflow support, and workforce intelligence into one structured operational ecosystem.
+            </p>
+
+            <p class="mt-5 leading-8 text-slate-600">
+              The objective is not only software deployment, but long-term operational visibility, operational reliability, and intelligence readiness.
+            </p>
+          </div>
+
+          <div class="section-card p-8 signal-card">
+            <div class="label">Included Platforms</div>
+
+            <div class="mt-5 space-y-5">
+
+              <div>
+                <div class="font-bold text-slate-950">MyChair Operational Platform</div>
+                <div class="mt-1 text-slate-600">Core operational execution and business structure</div>
+              </div>
+
+              <div>
+                <div class="font-bold text-slate-950">Operational Awareness</div>
+                <div class="mt-1 text-slate-600">Operational visibility and business awareness layer</div>
+              </div>
+
+              <div>
+                <div class="font-bold text-slate-950">Production Labeling System</div>
+                <div class="mt-1 text-slate-600">Production and operational labeling workflow</div>
+              </div>
+
+              <div>
+                <div class="font-bold text-slate-950">WorkforcePi Workforce Intelligence</div>
+                <div class="mt-1 text-slate-600">Workforce visibility and operational workforce intelligence</div>
+              </div>
+
+            </div>
+          </div>
+
+        </section>
+
+        <section class="section-card mt-6 p-8">
+
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div class="label">Commercial Proposal</div>
+              <h2 class="mt-4 text-3xl font-bold text-slate-950">
+                Operational subscription environment
+              </h2>
+            </div>
+
+            <div class="text-sm font-semibold text-slate-500">
+              Prices do not include VAT
+            </div>
+          </div>
+
+          <div class="mt-8 overflow-auto">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:72px;">No.</th>
+                  <th>Description</th>
+                  <th style="width:180px;">Monthly Price</th>
+                  <th style="width:180px;">Daily Cost</th>
+                  <th style="width:180px;">Annual Price</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <td class="font-semibold">1</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">MyChair Core Operations</div>
+                    <div class="mt-2 text-sm text-slate-600">
+                      OPS platform excluded from this configuration.<br />
+                      Adjusted operational subscription pricing applied.
+                    </div>
+                  </td>
+                  <td class="money">€79.00</td>
+                  <td class="money">€2.63/day</td>
+                  <td class="money">€948.00</td>
+                </tr>
+
+                <tr>
+                  <td class="font-semibold">2</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">Operational Awareness</div>
+                    <div class="mt-2 text-sm text-slate-600">
+                      Operational visibility and awareness subscription.
+                    </div>
+                  </td>
+                  <td class="money">€22.00</td>
+                  <td class="money">€0.73/day</td>
+                  <td class="money">€264.00</td>
+                </tr>
+
+                <tr>
+                  <td class="font-semibold">3</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">Production Labeling System</div>
+                    <div class="mt-2 text-sm text-slate-600">
+                      Single-printer production labeling environment.
+                    </div>
+                  </td>
+                  <td class="money">€49.00</td>
+                  <td class="money">€1.63/day</td>
+                  <td class="money">€588.00</td>
+                </tr>
+
+                <tr>
+                  <td class="font-semibold">4</td>
+                  <td>
+                    <div class="font-semibold text-slate-950">WorkforcePi Enhanced</div>
+                    <div class="mt-2 text-sm text-slate-600">
+                      1 enhanced user + 1 branch operational coverage.
+                    </div>
+                  </td>
+                  <td class="money">€12.50</td>
+                  <td class="money">€0.41/day</td>
+                  <td class="money">€150.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-8 flex justify-end">
+            <div class="total-box w-full max-w-md p-6">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                <span class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Total Monthly Subscription
+                </span>
+                <span class="text-lg font-extrabold text-slate-950">€162.50</span>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between border-b border-slate-200 pb-4">
+                <span class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Total Daily Operational Cost
+                </span>
+                <span class="text-lg font-extrabold text-slate-950">€5.40/day</span>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between">
+                <span class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Total Annual Subscription
+                </span>
+                <span class="text-lg font-extrabold text-slate-950">€1,950.00</span>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <section class="grid gap-6 mt-6 lg:grid-cols-2">
+
+          <div class="section-card p-8">
+            <div class="label">Support & Platform Continuity</div>
+
+            <h3 class="mt-4 text-2xl font-bold text-slate-950">
+              Long-term operational support
+            </h3>
+
+            <p class="mt-5 leading-8 text-slate-600">
+              The subscription environment includes continuous operational support and platform maintenance in order to ensure long-term operational reliability and continuity.
+            </p>
+
+            <div class="mt-6 grid gap-3 pl-4 text-sm text-slate-700">
+              <div>• Ongoing operational support assistance</div>
+              <div>• Continuous platform updates</div>
+              <div>• Access to the latest platform improvements</div>
+              <div>• Structured long-term platform evolution</div>
+              <div>• Operational continuity and reliability focus</div>
+            </div>
+
+            <p class="mt-6 leading-8 text-slate-600">
+              The subscription model is intentionally designed around reliability, operational partnership, and continuous platform evolution — not static software delivery.
+            </p>
+          </div>
+
+          <div class="section-card p-8">
+            <div class="label">Commercial Notes</div>
+
+            <h3 class="mt-4 text-2xl font-bold text-slate-950">
+              Proposal notes
+            </h3>
+
+            <ul class="mt-5 space-y-4 text-slate-700 leading-7">
+              <li>• Subscription billing is annual.</li>
+              <li>• Prices do not include VAT.</li>
+              <li>• Hardware and installation are excluded from this proposal.</li>
+              <li>• Additional branches and users can be added later.</li>
+              <li>• Additional labeling printers may require additional licensing.</li>
+            </ul>
+          </div>
+
+          <div class="section-card p-8">
+            <div class="label">Hardware Recommendation</div>
+
+            <h3 class="mt-4 text-2xl font-bold text-slate-950">
+              Separate hardware proposal
+            </h3>
+
+            <p class="mt-5 leading-8 text-slate-600">
+              A separate hardware proposal is recommended in order to maintain cleaner operational subscription structuring and deployment flexibility.
+            </p>
+
+            <div class="mt-6 grid gap-3 pl-4 text-sm text-slate-700">
+              <div>• POS terminals</div>
+              <div>• Receipt printers</div>
+              <div>• Kitchen printers</div>
+              <div>• Labeling printers</div>
+              <div>• Tablets and accessories</div>
+              <div>• Installation and setup services</div>
+            </div>
+          </div>
+
+        </section>
+
+        <section class="mt-8 section-card p-8">
+
+          <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+
+            <div>
+              <div class="label">Strategic Direction</div>
+
+              <h3 class="mt-4 text-3xl font-bold text-slate-950">
+                Operational platform first. Intelligence readiness next.
+              </h3>
+
+              <p class="mt-5 max-w-4xl leading-8 text-slate-600">
+                The proposed environment is intentionally designed around operational structure, visibility, and long-term intelligence readiness rather than disconnected feature-based software deployment.
+              </p>
+            </div>
+
+            <div>
+              <img src="https://www.mychairpos.com/img/3inventors/logo_blue_web_toolbar_oi.png" alt="3 Inventors" class="brand-logo" />
+            </div>
+
+          </div>
+
+          <div class="footer-line mt-10"></div>
+
+          <div class="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="text-lg font-bold text-slate-950">John Papamichael</div>
+              <div class="text-sm text-slate-600">3 Inventors Limited</div>
+            </div>
+
+            <div class="text-sm text-slate-500">
+              Knowledge • Professionalism • Innovation
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+
+    </article>
+  </div>
+</body>
+</html>

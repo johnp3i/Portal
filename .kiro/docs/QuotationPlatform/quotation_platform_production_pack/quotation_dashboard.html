@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quotation Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item active" href="quotation_dashboard.html">Dashboard</a>
+<a class="nav-item" href="quotation_list.html">Quotations</a>
+<a class="nav-item" href="create_quotation.html">Create Quotation</a>
+<a class="nav-item" href="quotation_detail.html">Quotation Detail</a>
+<a class="nav-item" href="convert_quotation_to_invoice.html">Convert to Invoice</a>
+<a class="nav-item" href="invoice_list.html">Invoices</a>
+      <div class="nav-title" style="margin-top:22px;">Commercial Focus</div>
+      <div class="surface card-pad">
+        <div class="label">Accepted This Month</div>
+        <div class="metric">11</div>
+        <div class="muted" style="margin-top:8px;font-size:14px;">€8,920 converted value</div>
+      </div>
+    </aside>
+    <main class="content">
+      
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Sales Workspace</div>
+    <h1 style="margin-top:14px;font-size:42px;">Quotation Dashboard</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;max-width:900px;">Track draft quotations, sent proposals, accepted deals, and invoice conversion in one controlled operational workspace.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a class="btn btn-secondary" href="quotation_list.html">View Quotations</a>
+    <a class="btn btn-primary" href="create_quotation.html">New Quotation</a>
+  </div>
+</div>
+
+<div class="grid-4">
+  <section class="surface card-pad"><div class="label">Draft Quotations</div><div class="metric">14</div><div class="muted">4 need follow-up today</div></section>
+  <section class="surface card-pad"><div class="label">Sent This Month</div><div class="metric">42</div><div class="muted">€18,460 pipeline value</div></section>
+  <section class="surface card-pad"><div class="label">Accepted</div><div class="metric">11</div><div class="muted">26.2% acceptance rate</div></section>
+  <section class="surface card-pad"><div class="label">Ready for Invoice</div><div class="metric">6</div><div class="muted">2 pending approval</div></section>
+</div>
+
+<div class="grid-2" style="margin-top:20px;">
+  <section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:14px;">
+      <div><div class="label">Recent Quotations</div><h2 style="margin-top:8px;font-size:30px;">Work that needs attention</h2></div>
+      <a class="btn btn-secondary" href="quotation_list.html">View All</a>
+    </div>
+    <div style="margin-top:18px;">
+      <table>
+        <thead><tr><th>Reference</th><th>Customer</th><th>Status</th><th>Total</th><th>Updated</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Q-2026-041</strong></td><td>Moto Pista</td><td><span class="pill pill-gold">Draft</span></td><td>€315.00</td><td>2h ago</td></tr>
+          <tr><td><strong>Q-2026-039</strong></td><td>Route 66</td><td><span class="pill pill-blue">Sent</span></td><td>€1,240.00</td><td>Yesterday</td></tr>
+          <tr><td><strong>Q-2026-037</strong></td><td>Urban Slice</td><td><span class="pill pill-green">Accepted</span></td><td>€2,820.00</td><td>2 days ago</td></tr>
+          <tr><td><strong>Q-2026-034</strong></td><td>Fresh Bowl</td><td><span class="pill pill-red">Expired</span></td><td>€580.00</td><td>5 days ago</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="glass card-pad">
+    <div class="label">Workflow</div>
+    <h2 style="margin-top:8px;font-size:30px;">Quotation to invoice flow</h2>
+    <div style="margin-top:18px;">
+      <div class="step"><div class="step-num">01</div><div><strong>Quotation accepted</strong><div class="muted">Status becomes Accepted after customer confirmation.</div></div></div>
+      <div class="step"><div class="step-num">02</div><div><strong>Billing data reviewed</strong><div class="muted">Validate billing entity, tax mode, and payment terms.</div></div></div>
+      <div class="step"><div class="step-num">03</div><div><strong>Invoice draft created</strong><div class="muted">Line items are carried forward automatically with quotation linkage.</div></div></div>
+      <div class="step"><div class="step-num">04</div><div><strong>Issue and send</strong><div class="muted">Finalize invoice and distribute PDF to the customer.</div></div></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:12px;flex-wrap:wrap;">
+      <a class="btn btn-green" href="convert_quotation_to_invoice.html">Open Conversion Screen</a>
+      <a class="btn btn-secondary" href="invoice_list.html">Review Invoices</a>
+    </div>
+  </section>
+</div>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Quotation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item" href="quotation_dashboard.html">Dashboard</a>
+<a class="nav-item" href="quotation_list.html">Quotations</a>
+<a class="nav-item active" href="create_quotation.html">Create Quotation</a>
+<a class="nav-item" href="quotation_detail.html">Quotation Detail</a>
+<a class="nav-item" href="convert_quotation_to_invoice.html">Convert to Invoice</a>
+<a class="nav-item" href="invoice_list.html">Invoices</a>
+      <div class="nav-title" style="margin-top:22px;">Commercial Focus</div>
+      <div class="surface card-pad">
+        <div class="label">Accepted This Month</div>
+        <div class="metric">11</div>
+        <div class="muted" style="margin-top:8px;font-size:14px;">€8,920 converted value</div>
+      </div>
+    </aside>
+    <main class="content">
+      
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Create Quotation</div>
+    <h1 style="margin-top:14px;font-size:42px;">Build a new quotation</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Create a structured proposal with customer details, line items, onboarding, and controlled totals.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a class="btn btn-secondary" href="quotation_list.html">Save Draft</a>
+    <a class="btn btn-primary" href="quotation_detail.html">Preview</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <section class="glass card-pad">
+    <div class="label">Commercial Details</div>
+    <h2 style="margin-top:8px;font-size:30px;">Quotation header</h2>
+    <div class="form-grid" style="margin-top:18px;">
+      <div class="field"><label>Reference</label><input value="Q-2026-041" /></div>
+      <div class="field"><label>Valid Until</label><input value="2026-04-30" /></div>
+      <div class="field"><label>Customer Name</label><input value="Moto Pista" /></div>
+      <div class="field"><label>Customer Email</label><input value="karina@example.com" /></div>
+      <div class="field" style="grid-column:1 / -1;"><label>Proposal Intro</label><textarea>This proposal presents selectable device and activation options aligned with the MyChair operational environment.</textarea></div>
+    </div>
+  </section>
+
+  <section class="glass card-pad">
+    <div class="label">Line Items</div>
+    <h2 style="margin-top:8px;font-size:30px;">Equipment and onboarding</h2>
+    <div style="margin-top:18px;display:grid;gap:14px;">
+      <div class="line-item">
+        <div class="field"><label>Description</label><input value="Kitchen Printer LAN" /></div>
+        <div class="field"><label>Qty</label><input value="1" /></div>
+        <div class="field"><label>Unit Price</label><input value="195.00" /></div>
+        <a class="btn btn-secondary" href="#">Remove</a>
+      </div>
+      <div class="line-item">
+        <div class="field"><label>Description</label><input value="On-Site Activation" /></div>
+        <div class="field"><label>Qty</label><input value="1" /></div>
+        <div class="field"><label>Unit Price</label><input value="120.00" /></div>
+        <a class="btn btn-secondary" href="#">Remove</a>
+      </div>
+      <a class="btn btn-secondary" href="#" style="justify-self:start;">Add Line Item</a>
+    </div>
+
+    <div class="surface card-pad totals" style="margin-top:18px;">
+      <div class="row"><span class="muted">Subtotal</span><strong>€315.00</strong></div>
+      <div class="row"><span class="muted">VAT</span><strong>Excluded</strong></div>
+      <div class="row"><span>Grand Total</span><span class="big-total">€315.00</span></div>
+    </div>
+  </section>
+</div>
+
+    </main>
+  </div>
+</body>
+</html>

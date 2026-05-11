@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Convert to Invoice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item" href="quotation_dashboard.html">Dashboard</a>
+<a class="nav-item" href="quotation_list.html">Quotations</a>
+<a class="nav-item" href="create_quotation.html">Create Quotation</a>
+<a class="nav-item" href="quotation_detail.html">Quotation Detail</a>
+<a class="nav-item active" href="convert_quotation_to_invoice.html">Convert to Invoice</a>
+<a class="nav-item" href="invoice_list.html">Invoices</a>
+      <div class="nav-title" style="margin-top:22px;">Commercial Focus</div>
+      <div class="surface card-pad">
+        <div class="label">Accepted This Month</div>
+        <div class="metric">11</div>
+        <div class="muted" style="margin-top:8px;font-size:14px;">€8,920 converted value</div>
+      </div>
+    </aside>
+    <main class="content">
+      
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Invoice Conversion</div>
+    <h1 style="margin-top:14px;font-size:42px;">Convert quotation to invoice</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Carry accepted quotation lines into an invoice draft while preserving commercial traceability.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a class="btn btn-secondary" href="quotation_detail.html">Back to Quotation</a>
+    <a class="btn btn-green" href="invoice_list.html">Create Invoice Draft</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <section class="glass card-pad">
+    <div class="label">Source Quotation</div>
+    <h2 style="margin-top:8px;font-size:30px;">Q-2026-037 · Urban Slice</h2>
+    <div style="margin-top:14px;"><span class="pill pill-green">Accepted</span></div>
+
+    <div style="margin-top:18px;">
+      <table>
+        <thead><tr><th>Line</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>MyChair Production Add-On</td><td>€59.00</td></tr>
+          <tr><td>On-Site Activation</td><td>€120.00</td></tr>
+          <tr><td>Kitchen Printer + WiFi</td><td>€218.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="glass card-pad">
+    <div class="label">Invoice Draft</div>
+    <h2 style="margin-top:8px;font-size:30px;">Billing review</h2>
+    <div class="form-grid" style="margin-top:18px;">
+      <div class="field"><label>Invoice Number</label><input value="INV-2026-014" /></div>
+      <div class="field"><label>Invoice Date</label><input value="2026-04-13" /></div>
+      <div class="field"><label>Bill To</label><input value="Urban Slice Ltd" /></div>
+      <div class="field"><label>VAT Mode</label><select><option>Excluded</option><option>Included</option></select></div>
+      <div class="field" style="grid-column:1 / -1;"><label>Notes</label><textarea>Converted automatically from accepted quotation Q-2026-037.</textarea></div>
+    </div>
+
+    <div class="surface card-pad totals" style="margin-top:18px;">
+      <div class="row"><span class="muted">Invoice Subtotal</span><strong>€397.00</strong></div>
+      <div class="row"><span class="muted">VAT</span><strong>€0.00</strong></div>
+      <div class="row"><span>Invoice Total</span><span class="big-total">€397.00</span></div>
+    </div>
+  </section>
+</div>
+
+    </main>
+  </div>
+</body>
+</html>
