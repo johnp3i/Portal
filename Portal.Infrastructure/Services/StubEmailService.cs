@@ -1,0 +1,35 @@
+using Microsoft.Extensions.Logging;
+
+namespace Portal.Infrastructure.Services;
+
+/// <summary>
+/// Stub implementation of IEmailService that logs invitation links instead of sending real emails.
+/// Replace with a real implementation (e.g., SendGrid, SMTP) when ready.
+/// </summary>
+public class StubEmailService : IEmailService
+{
+    private readonly ILogger<StubEmailService> _logger;
+
+    public StubEmailService(ILogger<StubEmailService> logger)
+    {
+        _logger = logger;
+    }
+
+    public Task SendInvitationEmailAsync(string toEmail, string invitationLink, string businessName)
+    {
+        _logger.LogInformation(
+            "Invitation email stub: To={ToEmail}, Business={BusinessName}, Link={InvitationLink}",
+            toEmail, businessName, invitationLink);
+
+        return Task.CompletedTask;
+    }
+
+    public Task SendProposalEmailAsync(string toEmail, string shareToken, string quotationReference, string businessName, DateTimeOffset expiresAtUtc)
+    {
+        _logger.LogInformation(
+            "Proposal email stub: To={ToEmail}, Reference={Reference}, Business={BusinessName}, Token={Token}, Expires={Expires}",
+            toEmail, quotationReference, businessName, shareToken, expiresAtUtc);
+
+        return Task.CompletedTask;
+    }
+}

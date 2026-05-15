@@ -1,0 +1,47 @@
+@model Portal.Web.Models.QuotationCreateViewModel
+@{
+    ViewData["Title"] = "Create Quotation";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Create Quotation</div>
+        <h1 style="margin-top:14px;font-size:42px;">Build a new quotation</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Create a structured proposal with customer details and controlled totals.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form method="post" asp-action="Create" asp-controller="Quotation" asp-antiforgery="true">
+        <div class="form-grid">
+            <div class="field">
+                <label asp-for="CustomerId">Customer *</label>
+                <select asp-for="CustomerId">
+                    <option value="">-- Select Customer --</option>
+                    @foreach (var customer in Model.Customers)
+                    {
+                        <option value="@customer.Id">@customer.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="CustomerId" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="ValidUntil">Valid Until</label>
+                <input asp-for="ValidUntil" type="date" />
+                <span asp-validation-for="ValidUntil" class="field-validation-error"></span>
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+                <label asp-for="Notes">Notes</label>
+                <textarea asp-for="Notes" placeholder="Optional notes for this quotation"></textarea>
+                <span asp-validation-for="Notes" class="field-validation-error"></span>
+            </div>
+        </div>
+
+        <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">
+            <button type="submit" class="btn btn-primary">Create Quotation</button>
+            <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
+        </div>
+    </form>
+</section>

@@ -1,0 +1,208 @@
+@model Portal.Infrastructure.Entities.BusinessProfile
+@{
+    ViewData["Title"] = "My Business";
+    var activeTab = ViewBag.ActiveTab as string ?? "profile";
+    var logos = ViewBag.Logos as List<Portal.Infrastructure.Entities.BusinessLogo> ?? new List<Portal.Infrastructure.Entities.BusinessLogo>();
+    var businessName = ViewBag.BusinessName as string ?? "Business";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Business Settings</div>
+        <h1 style="margin-top:14px;font-size:42px;">@businessName</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Manage your business profile and branding assets.</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-error">@TempData["Error"]</div>
+}
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;border-bottom:2px solid rgba(13,94,166,.08);margin-bottom:24px;">
+    <a href="@Url.Action("Index", "MyBusiness", new { tab = "profile" })"
+       style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "profile" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "profile" ? "#0D5EA6" : "#5E7385");">
+        Profile
+    </a>
+    <a href="@Url.Action("Index", "MyBusiness", new { tab = "logos" })"
+       style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "logos" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "logos" ? "#0D5EA6" : "#5E7385");">
+        Logos (@logos.Count/20)
+    </a>
+</div>
+
+@if (activeTab == "profile")
+{
+    <!-- PROFILE TAB -->
+    <section class="glass card-pad">
+        <div class="label">Business Profile</div>
+        <h2 style="margin-top:8px;font-size:24px;">Company information</h2>
+
+        <form method="post" asp-action="SaveProfile" asp-controller="MyBusiness" style="margin-top:18px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="BusinessId" />
+
+            <div class="form-grid">
+                <div class="field">
+                    <label asp-for="CompanyRegistrationNumber">Company Registration *</label>
+                    <input asp-for="CompanyRegistrationNumber" placeholder="e.g. HE123456" />
+                </div>
+                <div class="field">
+                    <label asp-for="VatRegistrationNumber">VAT Registration *</label>
+                    <input asp-for="VatRegistrationNumber" placeholder="e.g. CY12345678X" />
+                </div>
+                <div class="field">
+                    <label asp-for="VatRegistrationDate">VAT Registration Date *</label>
+                    <input asp-for="VatRegistrationDate" type="date" />
+                </div>
+                <div class="field">
+                    <label asp-for="VatPeriodLengthInMonths">VAT Period (months) *</label>
+                    <select asp-for="VatPeriodLengthInMonths">
+                        <option value="1">1 month</option>
+                        <option value="2">2 months</option>
+                        <option value="3">3 months (quarterly)</option>
+                        <option value="4">4 months</option>
+                        <option value="6">6 months</option>
+                        <option value="12">12 months (annual)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-grid" style="margin-top:18px;">
+                <div class="field" style="grid-column:1 / -1;">
+                    <label asp-for="AddressLine1">Address Line 1 *</label>
+                    <input asp-for="AddressLine1" placeholder="Street address" />
+                </div>
+                <div class="field" style="grid-column:1 / -1;">
+                    <label asp-for="AddressLine2">Address Line 2</label>
+                    <input asp-for="AddressLine2" placeholder="Apartment, suite, etc." />
+                </div>
+                <div class="field">
+                    <label asp-for="City">City *</label>
+                    <input asp-for="City" />
+                </div>
+                <div class="field">
+                    <label asp-for="PostalCode">Postal Code *</label>
+                    <input asp-for="PostalCode" />
+                </div>
+                <div class="field">
+                    <label asp-for="Country">Country *</label>
+                    <input asp-for="Country" />
+                </div>
+            </div>
+
+            <div class="form-grid" style="margin-top:18px;">
+                <div class="field">
+                    <label asp-for="TelephoneNumber">Telephone</label>
+                    <input asp-for="TelephoneNumber" placeholder="+357 ..." />
+                </div>
+                <div class="field">
+                    <label asp-for="MobileNumber">Mobile</label>
+                    <input asp-for="MobileNumber" placeholder="+357 ..." />
+                </div>
+                <div class="field">
+                    <label asp-for="Email">Email *</label>
+                    <input asp-for="Email" type="email" />
+                </div>
+                <div class="field">
+                    <label asp-for="Website">Website</label>
+                    <input asp-for="Website" type="url" placeholder="https://www.example.com" />
+                </div>
+                <div class="field">
+                    <label asp-for="CurrencySymbol">Currency Symbol *</label>
+                    <select asp-for="CurrencySymbol">
+                        <option value="€">€ Euro</option>
+                        <option value="$">$ Dollar</option>
+                        <option value="£">£ Pound</option>
+                        <option value="CHF">CHF Franc</option>
+                        <option value="¥">¥ Yen</option>
+                        <option value="kr">kr Krone</option>
+                        <option value="zł">zł Zloty</option>
+                        <option value="₹">₹ Rupee</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top:24px;">
+                <button type="submit" class="btn btn-primary">Save Profile</button>
+            </div>
+        </form>
+    </section>
+}
+else
+{
+    <!-- LOGOS TAB -->
+    <div class="grid-2">
+        <section class="glass card-pad">
+            <div class="label">Upload Logo</div>
+            <h2 style="margin-top:8px;font-size:24px;">Add a new logo</h2>
+
+            <form method="post" asp-action="UploadLogo" asp-controller="MyBusiness" enctype="multipart/form-data" style="margin-top:18px;">
+                @Html.AntiForgeryToken()
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="displayName">Display Name *</label>
+                        <input type="text" id="displayName" name="displayName" placeholder="Logo name" required />
+                    </div>
+                    <div class="field">
+                        <label for="file">Logo File *</label>
+                        <input type="file" id="file" name="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" required />
+                        <small class="muted">PNG, JPG, SVG, or WebP. Max 2MB.</small>
+                    </div>
+                </div>
+                <div style="margin-top:18px;">
+                    <button type="submit" class="btn btn-primary">Upload Logo</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="glass card-pad">
+            <div class="label">Your Logos</div>
+            <h2 style="margin-top:8px;font-size:24px;">Uploaded logos</h2>
+
+            <div style="margin-top:18px;display:grid;gap:14px;">
+                @if (logos.Any())
+                {
+                    @foreach (var logo in logos)
+                    {
+                        <div style="display:flex;align-items:center;gap:16px;padding:12px;border:1px solid @(logo.IsPrimary ? "rgba(13,94,166,.24)" : "rgba(13,94,166,.08)");border-radius:12px;@(logo.IsPrimary ? "background:rgba(13,94,166,.03);" : "")">
+                            <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:48px;max-width:80px;object-fit:contain;" />
+                            <div style="flex:1;">
+                                <div style="font-weight:700;font-size:14px;">
+                                    @logo.DisplayName
+                                    @if (logo.IsPrimary)
+                                    {
+                                        <span style="display:inline-block;margin-left:8px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:#0D5EA6;color:#fff;border-radius:4px;">Primary</span>
+                                    }
+                                </div>
+                                <div class="muted" style="font-size:12px;">@logo.ContentType · @((logo.FileSizeBytes / 1024.0).ToString("N0")) KB</div>
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                                @if (!logo.IsPrimary)
+                                {
+                                    <form method="post" asp-action="SetPrimaryLogo" asp-controller="MyBusiness" asp-route-id="@logo.Id" style="margin:0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;">Set Primary</button>
+                                    </form>
+                                }
+                                <form method="post" asp-action="DeleteLogo" asp-controller="MyBusiness" asp-route-id="@logo.Id" style="margin:0;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="muted" style="font-size:14px;">No logos uploaded yet.</p>
+                }
+            </div>
+        </section>
+    </div>
+}

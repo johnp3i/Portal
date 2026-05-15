@@ -1,0 +1,133 @@
+@model List<Portal.Infrastructure.Models.InvoiceListDto>
+@{
+    ViewData["Title"] = "Invoices";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Invoices</div>
+        <h1 style="margin-top:14px;font-size:42px;">Invoice List</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Filter, review, and manage invoices with full financial traceability.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-primary" asp-action="Create" asp-controller="Invoice">Create Invoice</a>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger" style="margin-bottom:18px;">
+        @TempData["Error"]
+    </div>
+}
+
+<section class="glass card-pad">
+    <form method="get" asp-action="Index" asp-controller="Invoice">
+        <div class="form-grid">
+            <div class="field">
+                <label>Status</label>
+                <select name="status">
+                    <option value="">All Statuses</option>
+                    @foreach (var s in (IEnumerable<Portal.Infrastructure.Entities.InvoiceStatusType>)ViewBag.Statuses)
+                    {
+                        <option value="@s.Id" selected="@(ViewBag.StatusFilter != null && (int)ViewBag.StatusFilter == s.Id ? "selected" : null)">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label>Financial Status</label>
+                <select name="financialStatus">
+                    <option value="">All Financial Statuses</option>
+                    @foreach (var fs in (IEnumerable<Portal.Infrastructure.Entities.InvoiceFinancialStatusType>)ViewBag.FinancialStatuses)
+                    {
+                        <option value="@fs.Id" selected="@(ViewBag.FinancialStatusFilter != null && (int)ViewBag.FinancialStatusFilter == fs.Id ? "selected" : null)">@fs.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label>Customer</label>
+                <select name="customer">
+                    <option value="">All Customers</option>
+                    @foreach (var c in (IEnumerable<Portal.Infrastructure.Entities.Customer>)ViewBag.Customers)
+                    {
+                        <option value="@c.Id" selected="@(ViewBag.CustomerFilter != null && (int)ViewBag.CustomerFilter == c.Id ? "selected" : null)">@c.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div style="margin-top:16px;">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </form>
+
+    <div style="margin-top:18px;">
+        @if (Model != null && Model.Count > 0)
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Invoice Date</th>
+                        <th>Due Date</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Financial Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><strong>@item.InvoiceNumber</strong></td>
+                            <td>@item.CustomerName</td>
+                            <td>@item.InvoiceDate.ToString("yyyy-MM-dd")</td>
+                            <td>@item.DueDate.ToString("yyyy-MM-dd")</td>
+                            <td>@item.TotalAmount.ToString("N2")</td>
+                            <td>
+                                @{
+                                    var statusPillClass = item.InvoiceStatusTypeId switch
+                                    {
+                                        1 => "pill-gold",
+                                        2 => "pill-green",
+                                        3 => "pill-red",
+                                        _ => "pill-gold"
+                                    };
+                                }
+                                <span class="pill @statusPillClass">@item.StatusName</span>
+                            </td>
+                            <td>
+                                @{
+                                    var financialPillClass = item.InvoiceFinancialStatusTypeId switch
+                                    {
+                                        1 => "pill-gold",
+                                        2 => "pill-blue",
+                                        3 => "pill-green",
+                                        4 => "pill-red",
+                                        5 => "pill-red",
+                                        _ => "pill-gold"
+                                    };
+                                }
+                                <span class="pill @financialPillClass">@item.FinancialStatusName</span>
+                            </td>
+                            <td>
+                                <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Detail</a>
+                                @if (item.InvoiceStatusTypeId == 1)
+                                {
+                                    <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;margin-left:12px;">Edit</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>No invoices found. Create your first invoice or convert a quotation to get started.</p>
+            </div>
+        }
+    </div>
+</section>

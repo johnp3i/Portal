@@ -1,0 +1,353 @@
+@model Portal.Infrastructure.Entities.Invoice
+@{
+    ViewData["Title"] = "Edit Invoice";
+    var customers = ViewBag.Customers as IEnumerable<Portal.Infrastructure.Entities.Customer> ?? Enumerable.Empty<Portal.Infrastructure.Entities.Customer>();
+    var lines = ViewBag.Lines as List<Portal.Infrastructure.Entities.InvoiceLine> ?? new List<Portal.Infrastructure.Entities.InvoiceLine>();
+    var sections = ViewBag.Sections as List<Portal.Infrastructure.Entities.InvoiceSection> ?? new List<Portal.Infrastructure.Entities.InvoiceSection>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Edit Invoice</div>
+        <h1 style="margin-top:14px;font-size:42px;">@Model.InvoiceNumber</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Update invoice details, manage line items and sections.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" style="margin-bottom:18px;">
+            @TempData["Error"]
+        </div>
+    }
+
+    <form method="post" asp-action="Edit" asp-controller="Invoice" asp-route-id="@Model.Id" asp-antiforgery="true">
+        <div class="form-grid">
+            <div class="field">
+                <label for="customerId">Customer *</label>
+                <select name="customerId" id="customerId" required>
+                    <option value="">-- Select Customer --</option>
+                    @foreach (var customer in customers)
+                    {
+                        <option value="@customer.Id" selected="@(customer.Id == Model.CustomerId ? "selected" : null)">@customer.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label for="invoiceDate">Invoice Date *</label>
+                <input type="date" name="invoiceDate" id="invoiceDate" required value="@Model.InvoiceDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="field">
+                <label for="dueDate">Due Date *</label>
+                <input type="date" name="dueDate" id="dueDate" required value="@Model.DueDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+                <label for="notes">Notes</label>
+                <textarea name="notes" id="notes" placeholder="Optional notes for this invoice">@Model.Notes</textarea>
+            </div>
+            <div class="field">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" name="isGrandTotalShown" value="true" @(Model.IsGrandTotalShown ? "checked" : "") style="width:auto;" />
+                    Show Grand Total
+                </label>
+            </div>
+        </div>
+
+        <div style="margin-top:24px;">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</section>
+
+<!-- Editable Line Items -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <div class="label">Line Items</div>
+            <h2 style="margin-top:8px;font-size:24px;">Invoice lines</h2>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="showAddLineForm()">+ Add Line</button>
+    </div>
+
+    <!-- Add Line Form (hidden by default) -->
+    <div id="addLineForm" style="display:none;margin-top:18px;" class="surface card-pad">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">New Line Item</h3>
+        <div class="form-grid">
+            <div class="field" style="grid-column:1 / -1;">
+                <label>Description *</label>
+                <input type="text" id="newLine_description" placeholder="Line item description" />
+            </div>
+            <div class="field">
+                <label>Quantity *</label>
+                <input type="number" id="newLine_quantity" step="0.01" min="0.01" value="1" />
+            </div>
+            <div class="field">
+                <label>Unit Price *</label>
+                <input type="number" id="newLine_unitPrice" step="0.01" min="0" value="0" />
+            </div>
+            <div class="field">
+                <label>VAT Rate (%)</label>
+                <input type="number" id="newLine_vatRate" step="0.01" min="0" max="100" value="0" />
+            </div>
+            <div class="field">
+                <label>Discount</label>
+                <input type="number" id="newLine_discount" step="0.01" min="0" value="0" />
+            </div>
+            <div class="field">
+                <label>Discount Type</label>
+                <select id="newLine_discountType">
+                    <option value="Percentage">Percentage</option>
+                    <option value="Fixed">Fixed</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Cost Price</label>
+                <input type="number" id="newLine_costPrice" step="0.01" min="0" placeholder="Optional" />
+            </div>
+            <div class="field">
+                <label>Subtitle</label>
+                <input type="text" id="newLine_subtitle" placeholder="Optional subtitle" />
+            </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:12px;">
+            <button type="button" class="btn btn-primary" onclick="addLine()">Add</button>
+            <button type="button" class="btn btn-secondary" onclick="hideAddLineForm()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Existing Lines -->
+    <div id="linesContainer" style="margin-top:18px;">
+        @if (lines.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>VAT %</th>
+                        <th>Discount</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in lines.OrderBy(l => l.SortOrder))
+                    {
+                        <tr id="line-row-@line.Id">
+                            <td>
+                                <strong>@line.Description</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                {
+                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">@line.Subtitle</div>
+                                }
+                            </td>
+                            <td>@line.Quantity.ToString("N2")</td>
+                            <td>@line.UnitPrice.ToString("N2")</td>
+                            <td>@line.VatRate.ToString("N2")%</td>
+                            <td>
+                                @if (line.Discount > 0)
+                                {
+                                    @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2"))
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td><strong>@line.LineTotal.ToString("N2")</strong></td>
+                            <td style="white-space:nowrap;">
+                                <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="showEditLineForm(@line.Id)">Edit</button>
+                                <button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="removeLine(@line.Id)">Remove</button>
+                            </td>
+                        </tr>
+                        <tr id="edit-row-@line.Id" style="display:none;">
+                            <td colspan="7">
+                                <div class="surface card-pad" style="margin:8px 0;">
+                                    <div class="form-grid">
+                                        <div class="field" style="grid-column:1 / -1;">
+                                            <label>Description *</label>
+                                            <input type="text" id="editLine_description_@line.Id" value="@line.Description" />
+                                        </div>
+                                        <div class="field">
+                                            <label>Quantity *</label>
+                                            <input type="number" id="editLine_quantity_@line.Id" step="0.01" min="0.01" value="@line.Quantity" />
+                                        </div>
+                                        <div class="field">
+                                            <label>Unit Price *</label>
+                                            <input type="number" id="editLine_unitPrice_@line.Id" step="0.01" min="0" value="@line.UnitPrice" />
+                                        </div>
+                                        <div class="field">
+                                            <label>VAT Rate (%)</label>
+                                            <input type="number" id="editLine_vatRate_@line.Id" step="0.01" min="0" max="100" value="@line.VatRate" />
+                                        </div>
+                                        <div class="field">
+                                            <label>Discount</label>
+                                            <input type="number" id="editLine_discount_@line.Id" step="0.01" min="0" value="@line.Discount" />
+                                        </div>
+                                        <div class="field">
+                                            <label>Discount Type</label>
+                                            <select id="editLine_discountType_@line.Id">
+                                                @if (line.DiscountType == "Percentage")
+                                                {
+                                                    <option value="Percentage" selected>Percentage</option>
+                                                    <option value="Fixed">Fixed</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="Percentage">Percentage</option>
+                                                    <option value="Fixed" selected>Fixed</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <label>Cost Price</label>
+                                            <input type="number" id="editLine_costPrice_@line.Id" step="0.01" min="0" value="@(line.CostPrice?.ToString() ?? "")" placeholder="Optional" />
+                                        </div>
+                                        <div class="field">
+                                            <label>Subtitle</label>
+                                            <input type="text" id="editLine_subtitle_@line.Id" value="@(line.Subtitle ?? "")" placeholder="Optional subtitle" />
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:12px;display:flex;gap:12px;">
+                                        <button type="button" class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="updateLine(@line.Id)">Save</button>
+                                        <button type="button" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="hideEditLineForm(@line.Id)">Cancel</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="muted">No line items yet. Add your first line above.</p>
+        }
+    </div>
+
+    <div class="surface card-pad totals" style="margin-top:18px;">
+        <div class="row"><span class="muted">Subtotal</span><strong id="totals-subtotal">@Model.Subtotal.ToString("N2")</strong></div>
+        <div class="row"><span class="muted">Tax</span><strong id="totals-tax">@Model.TaxAmount.ToString("N2")</strong></div>
+        <div class="row"><span>Total</span><span class="big-total" id="totals-total">@Model.TotalAmount.ToString("N2")</span></div>
+    </div>
+</section>
+
+<!-- Back to Detail (bottom right) -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>
+</div>
+
+@section Scripts {
+    <script>
+        var invoiceId = @Model.Id;
+        var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        function showAddLineForm() {
+            document.getElementById('addLineForm').style.display = 'block';
+        }
+
+        function hideAddLineForm() {
+            document.getElementById('addLineForm').style.display = 'none';
+        }
+
+        function showEditLineForm(lineId) {
+            document.getElementById('edit-row-' + lineId).style.display = 'table-row';
+            document.getElementById('line-row-' + lineId).style.display = 'none';
+        }
+
+        function hideEditLineForm(lineId) {
+            document.getElementById('edit-row-' + lineId).style.display = 'none';
+            document.getElementById('line-row-' + lineId).style.display = 'table-row';
+        }
+
+        function addLine() {
+            var data = 'invoiceId=' + invoiceId
+                + '&description=' + encodeURIComponent(document.getElementById('newLine_description').value)
+                + '&quantity=' + document.getElementById('newLine_quantity').value
+                + '&unitPrice=' + document.getElementById('newLine_unitPrice').value
+                + '&vatRate=' + document.getElementById('newLine_vatRate').value
+                + '&discount=' + document.getElementById('newLine_discount').value
+                + '&discountType=' + document.getElementById('newLine_discountType').value
+                + '&costPrice=' + (document.getElementById('newLine_costPrice').value || '')
+                + '&subtitle=' + encodeURIComponent(document.getElementById('newLine_subtitle').value || '');
+
+            fetch('/Invoice/AddLine', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': antiForgeryToken
+                },
+                body: data
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Failed to add line.');
+                }
+            })
+            .catch(function() { alert('An error occurred.'); });
+        }
+
+        function updateLine(lineId) {
+            var data = 'lineId=' + lineId
+                + '&description=' + encodeURIComponent(document.getElementById('editLine_description_' + lineId).value)
+                + '&quantity=' + document.getElementById('editLine_quantity_' + lineId).value
+                + '&unitPrice=' + document.getElementById('editLine_unitPrice_' + lineId).value
+                + '&vatRate=' + document.getElementById('editLine_vatRate_' + lineId).value
+                + '&discount=' + document.getElementById('editLine_discount_' + lineId).value
+                + '&discountType=' + document.getElementById('editLine_discountType_' + lineId).value
+                + '&costPrice=' + (document.getElementById('editLine_costPrice_' + lineId).value || '')
+                + '&subtitle=' + encodeURIComponent(document.getElementById('editLine_subtitle_' + lineId).value || '');
+
+            fetch('/Invoice/UpdateLine', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': antiForgeryToken
+                },
+                body: data
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Failed to update line.');
+                }
+            })
+            .catch(function() { alert('An error occurred.'); });
+        }
+
+        function removeLine(lineId) {
+            if (!confirm('Remove this line item?')) return;
+
+            fetch('/Invoice/RemoveLine', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': antiForgeryToken
+                },
+                body: 'lineId=' + lineId
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Failed to remove line.');
+                }
+            })
+            .catch(function() { alert('An error occurred.'); });
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

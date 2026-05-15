@@ -1,0 +1,330 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Login";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background: #F7FAFC;
+        }
+
+        .canvas-panel {
+            position: relative;
+            flex: 1;
+            background: #0B1B28;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .canvas-panel canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .canvas-brand {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .canvas-brand img {
+            width: 100px;
+            height: auto;
+            margin-bottom: 24px;
+        }
+
+        .canvas-brand .tagline {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.5);
+        }
+
+        .form-panel {
+            width: 480px;
+            min-width: 480px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px;
+            background: #fff;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .login-card h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 28px;
+            color: #0B1B28;
+            letter-spacing: -.03em;
+        }
+
+        .login-card .subtitle {
+            margin-top: 8px;
+            font-size: 15px;
+            color: #5E7385;
+            line-height: 1.6;
+            margin-bottom: 36px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            color: #334155;
+            margin-bottom: 6px;
+            letter-spacing: .02em;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            color: #0B1B28;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: #FAFCFE;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0D5EA6;
+            box-shadow: 0 0 0 4px rgba(13, 94, 166, 0.08);
+            background: #fff;
+        }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: #0D5EA6;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 12px;
+        }
+
+        .btn-login:hover {
+            background: #0B4E89;
+        }
+
+        .btn-login:active {
+            transform: scale(0.98);
+        }
+
+        .footer-text {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            letter-spacing: .04em;
+        }
+
+        .validation-summary {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #C24A4A;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .validation-summary ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        @@media (max-width: 960px) {
+            .canvas-panel { display: none; }
+            .form-panel {
+                width: 100%;
+                min-width: unset;
+                min-height: 100vh;
+                background:
+                    radial-gradient(circle at top left, rgba(13,94,166,.04), transparent 40%),
+                    #F7FAFC;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Left: Particle Canvas -->
+    <div class="canvas-panel">
+        <canvas id="particles"></canvas>
+        <div class="canvas-brand">
+            <img src="/images/favicon.png" alt="3 Inventors" />
+            <div class="tagline">Knowledge · Professionalism · Innovation</div>
+        </div>
+    </div>
+
+    <!-- Right: Login Form -->
+    <div class="form-panel">
+        <div class="login-card">
+            <h1>Welcome back</h1>
+            <p class="subtitle">Sign in to access your operations portal</p>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="validation-summary" role="alert">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <p>@error.ErrorMessage</p>
+                    }
+                </div>
+            }
+
+            <form method="post" asp-action="Login" asp-controller="Account">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@@company.com" />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password" />
+                </div>
+
+                <button type="submit" class="btn-login">Sign In</button>
+            </form>
+
+            <div class="footer-text">
+                3 Inventors Limited · Operational Intelligence
+            </div>
+        </div>
+    </div>
+
+    <!-- Particle Animation -->
+    <script>
+    (function() {
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const particles = [];
+        const PARTICLE_COUNT = 60;
+        const CONNECTION_DISTANCE = 140;
+        const SPEED = 0.3;
+
+        const colors = [
+            'rgba(13, 94, 166, 0.6)',
+            'rgba(87, 184, 232, 0.5)',
+            'rgba(255, 255, 255, 0.3)'
+        ];
+
+        function resize() {
+            width = canvas.width = canvas.offsetWidth;
+            height = canvas.height = canvas.offsetHeight;
+        }
+
+        function createParticle() {
+            return {
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * SPEED,
+                vy: (Math.random() - 0.5) * SPEED,
+                radius: Math.random() * 2 + 1,
+                color: colors[Math.floor(Math.random() * colors.length)]
+            };
+        }
+
+        function init() {
+            resize();
+            particles.length = 0;
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push(createParticle());
+            }
+        }
+
+        function update() {
+            for (const p of particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < CONNECTION_DISTANCE) {
+                        const opacity = 1 - (dist / CONNECTION_DISTANCE);
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(13, 94, 166, ${opacity * 0.15})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            for (const p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            }
+        }
+
+        function animate() {
+            update();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        init();
+        animate();
+    })();
+    </script>
+
+</body>
+</html>

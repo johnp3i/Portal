@@ -1,0 +1,121 @@
+@model Portal.Web.Models.QuotationListViewModel
+@{
+    ViewData["Title"] = "Quotations";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Quotations</div>
+        <h1 style="margin-top:14px;font-size:42px;">Quotation List</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Filter, review, and manage quotations with full commercial traceability.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-primary" asp-action="Create" asp-controller="Quotation">Create Quotation</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <form method="get" asp-action="Index" asp-controller="Quotation">
+        <div class="form-grid">
+            <div class="field">
+                <label>Status</label>
+                <select name="statusFilter">
+                    <option value="">All Statuses</option>
+                    @foreach (var status in Model.Statuses)
+                    {
+                        <option value="@status.Id" selected="@(Model.StatusFilter == status.Id ? "selected" : null)">@status.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label>Customer</label>
+                <select name="customerFilter">
+                    <option value="">All Customers</option>
+                    @foreach (var customer in Model.Customers)
+                    {
+                        <option value="@customer.Id" selected="@(Model.CustomerFilter == customer.Id ? "selected" : null)">@customer.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label>From</label>
+                <input type="date" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="field">
+                <label>To</label>
+                <input type="date" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+            </div>
+        </div>
+        <div style="margin-top:16px;">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </form>
+
+    <div style="margin-top:18px;">
+        @if (Model.Quotations != null && Model.Quotations.Count > 0)
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Valid Until</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var quotation in Model.Quotations)
+                    {
+                        <tr>
+                            <td><strong>@quotation.Reference</strong></td>
+                            <td>@quotation.CustomerName</td>
+                            <td>
+                                @{
+                                    var pillClass = quotation.QuotationStatusTypeId switch
+                                    {
+                                        1 => "pill-gold",
+                                        2 => "pill-blue",
+                                        3 => "pill-green",
+                                        4 => "pill-blue",
+                                        5 => "pill-red",
+                                        _ => "pill-gold"
+                                    };
+                                }
+                                <span class="pill @pillClass">@quotation.StatusName</span>
+                            </td>
+                            <td>
+                                @if (quotation.ValidUntil.HasValue)
+                                {
+                                    if (quotation.IsExpired)
+                                    {
+                                        <span class="expired-date">@quotation.ValidUntil.Value.ToString("yyyy-MM-dd")</span>
+                                    }
+                                    else
+                                    {
+                                        @quotation.ValidUntil.Value.ToString("yyyy-MM-dd")
+                                    }
+                                }
+                            </td>
+                            <td>@quotation.TotalAmount.ToString("N2")</td>
+                            <td>
+                                <div style="display:flex;gap:12px;align-items:center;">
+                                    <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Detail</a>
+                                    <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                                    <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" style="color:var(--blue);font-weight:700;font-size:13px;">Preview</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>No quotations found. Create your first quotation to get started.</p>
+            </div>
+        }
+    </div>
+</section>

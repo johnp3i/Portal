@@ -1,0 +1,483 @@
+@model Portal.Web.Models.QuotationEditViewModel
+@{
+    ViewData["Title"] = "Edit Quotation";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Edit Quotation</div>
+        <h1 style="margin-top:14px;font-size:42px;">@Model.Reference</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Update quotation details and manage line items.</p>
+    </div>
+</div>
+
+@if (TempData["LineError"] != null)
+{
+    <div class="line-error">@TempData["LineError"]</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+<!-- Quotation Details -->
+<section class="glass card-pad">
+    <div class="label">Quotation Details</div>
+    <h2 style="margin-top:8px;font-size:24px;">Header information</h2>
+    <form id="quotationForm" method="post" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Id" asp-antiforgery="true" style="margin-top:18px;">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Reference" />
+        <div class="form-grid">
+            <div class="field">
+                <label asp-for="CustomerId">Customer *</label>
+                <select asp-for="CustomerId">
+                    <option value="">-- Select Customer --</option>
+                    @foreach (var customer in Model.Customers)
+                    {
+                        <option value="@customer.Id">@customer.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="CustomerId" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="ValidUntil">Valid Until</label>
+                <input asp-for="ValidUntil" type="date" />
+                <span asp-validation-for="ValidUntil" class="field-validation-error"></span>
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+                <label asp-for="Notes">Notes</label>
+                <textarea asp-for="Notes" placeholder="Optional notes"></textarea>
+                <span asp-validation-for="Notes" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="QuotationContactId">Prepared By</label>
+                <select asp-for="QuotationContactId">
+                    <option value="">-- Select Contact --</option>
+                    @foreach (var contact in Model.Contacts)
+                    {
+                        <option value="@contact.Id">@contact.Name @(!string.IsNullOrWhiteSpace(contact.Email) ? $"({contact.Email})" : "")</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input asp-for="IsGrandTotalShown" type="checkbox" style="margin:0;flex-shrink:0;" />
+                    <span>Show grand total card on proposal</span>
+                </label>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Add New Contact -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Add New Contact</div>
+    <p class="muted" style="margin-top:4px;font-size:13px;">Add a new person to the "Prepared By" directory for future use.</p>
+    <form method="post" asp-action="CreateContact" asp-controller="Quotation" asp-route-quotationId="@Model.Id" style="margin-top:14px;">
+        @Html.AntiForgeryToken()
+        <div class="line-item">
+            <div class="field">
+                <label>Name *</label>
+                <input type="text" name="contactName" placeholder="Full name" required />
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="contactEmail" placeholder="email@@company.com" />
+            </div>
+            <div class="field">
+                <label>Phone</label>
+                <input type="text" name="contactPhone" placeholder="+357 ..." />
+            </div>
+            <button type="submit" class="btn btn-secondary" style="align-self:end;padding:10px 14px;font-size:12px;">Add Contact</button>
+        </div>
+    </form>
+</section>
+
+<!-- Section Cards -->
+<div style="margin-top:24px;">
+    @await Html.PartialAsync("_SectionCards", Model)
+</div>
+
+<!-- Totals -->
+<div class="glass card-pad" style="margin-top:24px;">
+    <div class="surface card-pad totals">
+        <div class="row"><span class="muted">Subtotal</span><strong>@Model.Subtotal.ToString("N2")</strong></div>
+        <div class="row"><span class="muted">Tax</span><strong>@Model.TaxAmount.ToString("N2")</strong></div>
+        <div class="row"><span>Grand Total</span><span class="big-total">@Model.TotalAmount.ToString("N2")</span></div>
+    </div>
+</div>
+
+<!-- Bottom Actions -->
+<div style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;">
+    <button type="submit" form="quotationForm" class="btn btn-primary">Save Quotation</button>
+    <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
+</div>
+
+@section Scripts {
+<link rel="stylesheet" href="~/css/quotation-line-save.css" />
+<style>
+.section-card .line-card:nth-child(even) {
+    background: rgba(13,94,166,.1);
+}
+.catalog-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    max-height: 240px;
+    overflow-y: auto;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(13,94,166,.12);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(13,94,166,.10);
+    margin-top: 4px;
+    display: none;
+}
+.catalog-autocomplete.active { display: block; }
+.catalog-autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(13,94,166,.06);
+    transition: background .15s;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.catalog-autocomplete-item:last-child { border-bottom: none; }
+.catalog-autocomplete-item:hover,
+.catalog-autocomplete-item.selected {
+    background: rgba(13,94,166,.06);
+}
+.catalog-autocomplete-item .catalog-desc {
+    font-weight: 600;
+    color: #1a2b3c;
+}
+.catalog-autocomplete-item .catalog-meta {
+    font-size: 11px;
+    color: var(--muted2, #6b7c8d);
+    margin-top: 2px;
+}
+.field { position: relative; }
+</style>
+<script>
+const quotationId = @Model.Id;
+function showAddSectionModal() {
+    document.getElementById('addSectionModal').style.display = 'flex';
+    document.getElementById('newSectionName').value = '';
+    document.getElementById('newSectionDescription').value = '';
+    document.getElementById('newSectionColumnConfig').value = 'OneTime';
+    document.getElementById('newSectionType').value = 'LineItems';
+    document.getElementById('newSectionIsEmphasized').checked = false;
+    document.getElementById('newSectionAccentColor').value = '';
+    document.getElementById('newSectionLabel').value = '';
+    toggleColumnConfigVisibility('newSectionType', 'newSectionColumnConfig');
+    document.getElementById('newSectionName').focus();
+}
+function hideAddSectionModal() { document.getElementById('addSectionModal').style.display = 'none'; }
+async function addSection() {
+    const name = document.getElementById('newSectionName').value.trim();
+    const desc = document.getElementById('newSectionDescription').value.trim();
+    const columnConfiguration = document.getElementById('newSectionColumnConfig').value;
+    const sectionType = document.getElementById('newSectionType').value;
+    const isEmphasized = document.getElementById('newSectionIsEmphasized').checked;
+    const accentColor = document.getElementById('newSectionAccentColor').value.trim() || null;
+    const label = document.getElementById('newSectionLabel').value.trim() || null;
+    const isTotalsTableShown = document.getElementById('newSectionIsTotalsTableShown').checked;
+    if (!name) { alert('Section name is required.'); return; }
+    try {
+        const r = await fetch('/api/sections/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quotationId,name,description:desc||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown}) });
+        const d = await r.json();
+        if (d.success) location.reload(); else alert(d.message||'Failed to add section.');
+    } catch(e) { alert('Error adding section.'); }
+}
+async function removeSection(sectionId) {
+    const result = await Swal.fire({
+        title: 'Remove Section?',
+        text: 'All line items will be moved to the General section.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#C24A4A',
+        cancelButtonColor: '#6b7c8d',
+        confirmButtonText: 'Yes, remove it',
+        cancelButtonText: 'Cancel'
+    });
+    if (!result.isConfirmed) return;
+    try {
+        const r = await fetch('/api/sections/remove', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId,quotationId}) });
+        const d = await r.json();
+        if (d.success) location.reload(); else alert(d.message||'Failed to remove section.');
+    } catch(e) { alert('Error removing section.'); }
+}
+async function reorderSection(sectionId, direction) {
+    const cards = document.querySelectorAll('.section-card[data-section-id]:not([data-section-id=""])');
+    const ids = Array.from(cards).map(c => parseInt(c.dataset.sectionId));
+    const i = ids.indexOf(sectionId); if (i===-1) return;
+    const t = direction==='up' ? i-1 : i+1;
+    if (t<0||t>=ids.length) return;
+    [ids[i],ids[t]]=[ids[t],ids[i]];
+    try {
+        const r = await fetch('/api/sections/reorder', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quotationId,orderedSectionIds:ids}) });
+        const d = await r.json();
+        if (d.success) location.reload(); else alert(d.message||'Failed to reorder.');
+    } catch(e) { alert('Error reordering sections.'); }
+}
+async function moveLineToSection(lineId, targetSectionId) {
+    try {
+        const r = await fetch('/api/sections/move-line', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lineId,targetSectionId:targetSectionId||null}) });
+        const d = await r.json();
+        if (d.success) location.reload(); else alert(d.message||'Failed to move line.');
+    } catch(e) { alert('Error moving line.'); }
+}
+async function reorderLine(lineId, direction, sectionId) {
+    const selector = sectionId ? `.line-card[data-section-id="${sectionId}"]` : '.line-card[data-section-id=""]';
+    const cards = document.querySelectorAll(selector);
+    const ids = Array.from(cards).map(c => parseInt(c.dataset.lineId));
+    const i = ids.indexOf(lineId);
+    if (i === -1) return;
+    const t = direction === 'up' ? i - 1 : i + 1;
+    if (t < 0 || t >= ids.length) return;
+    [ids[i], ids[t]] = [ids[t], ids[i]];
+    try {
+        const r = await fetch('/api/sections/reorder-lines', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({orderedLineIds:ids}) });
+        const d = await r.json();
+        if (d.success) location.reload(); else alert(d.message||'Failed to reorder lines.');
+    } catch(e) { alert('Error reordering lines.'); }
+}
+function showEditSectionModal(id, name, desc, notes, columnConfig, sectionType, isEmphasized, accentColor, label, isTotalsTableShown) {
+    document.getElementById('editSectionId').value = id;
+    document.getElementById('editSectionName').value = name;
+    document.getElementById('editSectionDescription').value = desc;
+    document.getElementById('editSectionNotes').value = notes;
+    document.getElementById('editSectionColumnConfig').value = columnConfig || 'OneTime';
+    document.getElementById('editSectionType').value = sectionType || 'LineItems';
+    document.getElementById('editSectionIsEmphasized').checked = isEmphasized === true || isEmphasized === 'True';
+    document.getElementById('editSectionAccentColor').value = accentColor || '';
+    document.getElementById('editSectionLabel').value = label || '';
+    document.getElementById('editSectionIsTotalsTableShown').checked = isTotalsTableShown === true;
+    toggleColumnConfigVisibility('editSectionType', 'editSectionColumnConfig');
+    document.getElementById('editSectionModal').style.display = 'flex';
+    document.getElementById('editSectionName').focus();
+}
+function showEditSectionModalFromData(btn) {
+    var id = btn.dataset.sectionId;
+    var name = btn.dataset.name;
+    var desc = btn.dataset.description;
+    var notes = btn.dataset.notes;
+    var columnConfig = btn.dataset.columnConfig;
+    var sectionType = btn.dataset.sectionType;
+    var isEmphasized = btn.dataset.isEmphasized === 'true';
+    var accentColor = btn.dataset.accentColor;
+    var label = btn.dataset.label;
+    var isTotalsTableShown = btn.dataset.isTotalsTableShown === 'true';
+    showEditSectionModal(parseInt(id), name, desc, notes, columnConfig, sectionType, isEmphasized, accentColor, label, isTotalsTableShown);
+}
+function hideEditSectionModal() { document.getElementById('editSectionModal').style.display = 'none'; }
+async function updateSection() {
+    const id = parseInt(document.getElementById('editSectionId').value);
+    const name = document.getElementById('editSectionName').value.trim();
+    const desc = document.getElementById('editSectionDescription').value.trim();
+    const notes = document.getElementById('editSectionNotes').value.trim();
+    const columnConfiguration = document.getElementById('editSectionColumnConfig').value;
+    const sectionType = document.getElementById('editSectionType').value;
+    const isEmphasized = document.getElementById('editSectionIsEmphasized').checked;
+    const accentColor = document.getElementById('editSectionAccentColor').value.trim() || null;
+    const label = document.getElementById('editSectionLabel').value.trim() || null;
+    const isTotalsTableShown = document.getElementById('editSectionIsTotalsTableShown').checked;
+    if (!name) { alert('Section name is required.'); return; }
+    try {
+        const r = await fetch('/api/sections/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId:id,name,description:desc||null,notes:notes||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown}) });
+        const d = await r.json();
+        if (d.success) location.reload(); else alert(d.message||'Failed to update section.');
+    } catch(e) { alert('Error updating section.'); }
+}
+document.getElementById('addSectionModal').addEventListener('click', function(e){ if(e.target===this) hideAddSectionModal(); });
+document.getElementById('editSectionModal').addEventListener('click', function(e){ if(e.target===this) hideEditSectionModal(); });
+
+// Toggle Column Type visibility based on Section Type selection
+function toggleColumnConfigVisibility(sectionTypeId, columnConfigId) {
+    const sectionType = document.getElementById(sectionTypeId).value;
+    const columnConfigEl = document.getElementById(columnConfigId);
+    const wrapper = columnConfigEl.closest('.field');
+    if (sectionType === 'Narrative') {
+        wrapper.style.opacity = '0.4';
+        wrapper.style.pointerEvents = 'none';
+        columnConfigEl.disabled = true;
+    } else {
+        wrapper.style.opacity = '1';
+        wrapper.style.pointerEvents = 'auto';
+        columnConfigEl.disabled = false;
+    }
+}
+document.getElementById('newSectionType').addEventListener('change', function() { toggleColumnConfigVisibility('newSectionType', 'newSectionColumnConfig'); });
+document.getElementById('editSectionType').addEventListener('change', function() { toggleColumnConfigVisibility('editSectionType', 'editSectionColumnConfig'); });
+
+// Save Narrative section content inline
+async function saveNarrativeSection(sectionId) {
+    const descEl = document.getElementById('narrativeDesc_' + sectionId);
+    const desc = descEl.innerHTML.trim();
+    const notes = document.getElementById('narrativeNotes_' + sectionId).value.trim();
+    const card = document.querySelector(`.section-card[data-section-id="${sectionId}"]`);
+    const name = card.querySelector('h3').textContent.trim();
+    try {
+        const r = await fetch('/api/sections/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId, name, description:desc||null, notes:notes||null}) });
+        const d = await r.json();
+        if (d.success) { location.reload(); } else { alert(d.message||'Failed to save section.'); }
+    } catch(e) { alert('Error saving section.'); }
+}
+
+// Rich text editor command
+function rteCmd(command) {
+    document.execCommand(command, false, null);
+}
+
+
+// --- Catalog Autocomplete ---
+(function() {
+    var debounceTimer = null;
+    var activeDropdown = null;
+    var activeTextarea = null;
+    var selectedIndex = -1;
+
+    function createDropdown(textarea) {
+        var existing = textarea.parentElement.querySelector('.catalog-autocomplete');
+        if (existing) return existing;
+        var dropdown = document.createElement('div');
+        dropdown.className = 'catalog-autocomplete';
+        textarea.parentElement.appendChild(dropdown);
+        return dropdown;
+    }
+
+    function hideDropdown(dropdown) {
+        if (dropdown) {
+            dropdown.classList.remove('active');
+            dropdown.innerHTML = '';
+        }
+        selectedIndex = -1;
+        activeDropdown = null;
+        activeTextarea = null;
+    }
+
+    function fillFormFields(form, entry) {
+        var fields = { 'UnitPrice': entry.unitPrice, 'VatRate': entry.vatRate, 'ReferenceUrl': entry.referenceUrl || '', 'Discount': entry.discount };
+        Object.keys(fields).forEach(function(name) {
+            var el = form.querySelector('[name="' + name + '"]');
+            if (el) el.value = fields[name];
+        });
+        var discountTypeEl = form.querySelector('[name="DiscountType"]');
+        if (discountTypeEl && entry.discountType) {
+            discountTypeEl.value = entry.discountType;
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function renderDropdown(dropdown, results, textarea) {
+        dropdown.innerHTML = '';
+        if (results.length === 0) {
+            hideDropdown(dropdown);
+            return;
+        }
+        results.forEach(function(entry, index) {
+            var item = document.createElement('div');
+            item.className = 'catalog-autocomplete-item';
+            item.dataset.index = index;
+            var discount = entry.discount > 0
+                ? ' | Discount: ' + entry.discount + (entry.discountType === 'Percentage' ? '%' : ' Fixed')
+                : '';
+            item.innerHTML = '<div class="catalog-desc">' + escapeHtml(entry.description) + '</div>'
+                + '<div class="catalog-meta">Price: ' + entry.unitPrice.toFixed(2) + ' | VAT: ' + entry.vatRate + '%' + discount + '</div>';
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                var form = textarea.closest('form');
+                textarea.value = entry.description;
+                fillFormFields(form, entry);
+                hideDropdown(dropdown);
+            });
+            dropdown.appendChild(item);
+        });
+        dropdown.classList.add('active');
+        activeDropdown = dropdown;
+        activeTextarea = textarea;
+        selectedIndex = -1;
+    }
+
+    async function fetchCatalog(query, textarea) {
+        if (query.length < 2) {
+            var dropdown = textarea.parentElement.querySelector('.catalog-autocomplete');
+            if (dropdown) hideDropdown(dropdown);
+            return;
+        }
+        try {
+            var response = await fetch('/api/catalog/search?q=' + encodeURIComponent(query));
+            if (!response.ok) return;
+            var results = await response.json();
+            var dropdown = createDropdown(textarea);
+            renderDropdown(dropdown, results, textarea);
+        } catch (e) {
+            // Silently fail — autocomplete is supplementary
+        }
+    }
+
+    function isLineItemForm(textarea) {
+        var form = textarea.closest('form');
+        if (!form) return false;
+        var action = form.getAttribute('action') || '';
+        return action.includes('AddLine') || action.includes('UpdateLine');
+    }
+
+    // Debounced input handler
+    document.addEventListener('input', function(e) {
+        if (e.target.tagName === 'TEXTAREA' && e.target.name === 'Description' && isLineItemForm(e.target)) {
+            clearTimeout(debounceTimer);
+            var textarea = e.target;
+            var query = textarea.value.trim();
+            debounceTimer = setTimeout(function() {
+                fetchCatalog(query, textarea);
+            }, 300);
+        }
+    });
+
+    // Hide dropdown on blur (with delay for mousedown to fire first)
+    document.addEventListener('focusout', function(e) {
+        if (e.target.tagName === 'TEXTAREA' && e.target.name === 'Description') {
+            var target = e.target;
+            setTimeout(function() {
+                var dropdown = target.parentElement.querySelector('.catalog-autocomplete');
+                if (dropdown) hideDropdown(dropdown);
+            }, 200);
+        }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (!activeDropdown || !activeDropdown.classList.contains('active')) return;
+        if (e.target.tagName !== 'TEXTAREA' || e.target.name !== 'Description') return;
+
+        var items = activeDropdown.querySelectorAll('.catalog-autocomplete-item');
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            items.forEach(function(it, i) { it.classList.toggle('selected', i === selectedIndex); });
+            items[selectedIndex].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, 0);
+            items.forEach(function(it, i) { it.classList.toggle('selected', i === selectedIndex); });
+            items[selectedIndex].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            e.preventDefault();
+            items[selectedIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        } else if (e.key === 'Escape') {
+            hideDropdown(activeDropdown);
+        }
+    });
+})();
+</script>
+<script src="~/js/quotation-line-save.js"></script>
+}

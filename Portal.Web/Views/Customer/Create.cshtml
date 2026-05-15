@@ -1,0 +1,76 @@
+@model Portal.Web.Models.CustomerFormViewModel
+@{
+    ViewData["Title"] = "Create Customer";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Create Customer</div>
+        <h1 style="margin-top:14px;font-size:42px;">Add a new customer</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Fill in the details below to register a new customer.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form method="post" asp-action="Create" asp-controller="Customer" asp-antiforgery="true">
+        <div class="form-grid">
+            <div class="field">
+                <label asp-for="Name">Name *</label>
+                <input asp-for="Name" placeholder="Customer name" />
+                <span asp-validation-for="Name" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="ContactPerson">Contact Person</label>
+                <input asp-for="ContactPerson" placeholder="Contact person" />
+                <span asp-validation-for="ContactPerson" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Email">Email</label>
+                <input asp-for="Email" type="email" placeholder="Email address" />
+                <span asp-validation-for="Email" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="TelephoneNumber">Telephone</label>
+                <input asp-for="TelephoneNumber" type="tel" placeholder="Telephone number" />
+                <span asp-validation-for="TelephoneNumber" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="MobileNumber">Mobile</label>
+                <input asp-for="MobileNumber" type="tel" placeholder="Mobile number" />
+                <span asp-validation-for="MobileNumber" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="AddressLine1">Address Line 1</label>
+                <input asp-for="AddressLine1" placeholder="Address line 1" />
+                <span asp-validation-for="AddressLine1" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="AddressLine2">Address Line 2</label>
+                <input asp-for="AddressLine2" placeholder="Address line 2" />
+                <span asp-validation-for="AddressLine2" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="City">City</label>
+                <input asp-for="City" placeholder="City" />
+                <span asp-validation-for="City" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="PostalCode">Postal Code</label>
+                <input asp-for="PostalCode" placeholder="Postal code" />
+                <span asp-validation-for="PostalCode" class="field-validation-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Country">Country</label>
+                <input asp-for="Country" placeholder="Country" />
+                <span asp-validation-for="Country" class="field-validation-error"></span>
+            </div>
+        </div>
+
+        <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">
+            <button type="submit" class="btn btn-primary">Create Customer</button>
+            <a asp-action="Index" asp-controller="Customer" class="btn btn-outline">&larr; Back to Customers</a>
+        </div>
+    </form>
+</section>

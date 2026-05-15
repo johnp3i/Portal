@@ -1,0 +1,94 @@
+@model Portal.Web.Models.CustomerListViewModel
+@{
+    ViewData["Title"] = "Customers";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Customers</div>
+        <h1 style="margin-top:14px;font-size:42px;">Customer Registry</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Search, create, and manage your customer base.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-primary" asp-action="Create" asp-controller="Customer">New Customer</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <form method="get" asp-action="Index" asp-controller="Customer">
+        <div class="form-grid">
+            <div class="field">
+                <label>Search</label>
+                <input type="text" name="searchTerm" value="@Model.SearchTerm" placeholder="Search by name..." />
+            </div>
+            <div class="field">
+                <label>Status</label>
+                <select name="isActive">
+                    <option value="">All</option>
+                    <option value="true" selected="@(Model.IsActiveFilter == true ? "selected" : null)">Active</option>
+                    <option value="false" selected="@(Model.IsActiveFilter == false ? "selected" : null)">Inactive</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top:16px;">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    <div style="margin-top:18px;">
+        @if (Model.Customers != null && Model.Customers.Count > 0)
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Telephone</th>
+                        <th>City</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var customer in Model.Customers)
+                    {
+                        <tr>
+                            <td><strong>@customer.Name</strong></td>
+                            <td>@customer.Email</td>
+                            <td>@customer.TelephoneNumber</td>
+                            <td>@customer.City</td>
+                            <td>
+                                @if (customer.IsActive)
+                                {
+                                    <span class="pill pill-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-red">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:12px;align-items:center;">
+                                    <a asp-action="Edit" asp-controller="Customer" asp-route-id="@customer.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                                    @if (customer.IsActive)
+                                    {
+                                        <form method="post" asp-action="Deactivate" asp-controller="Customer" asp-route-id="@customer.Id" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" onclick="return confirm('Are you sure you want to deactivate this customer?')">Deactivate</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>No customers found. Create your first customer to get started.</p>
+            </div>
+        }
+    </div>
+</section>

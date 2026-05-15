@@ -1,0 +1,228 @@
+@model Portal.Infrastructure.Entities.BusinessProfile
+@{
+    Layout = null;
+    ViewData["Title"] = "Business Profile";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Business Profile - Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7FAFC;
+            min-height: 100vh;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 640px;
+        }
+        .card h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: #0D5EA6;
+            margin-bottom: 8px;
+        }
+        .card p.subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+        .section-title {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0D5EA6;
+            margin-top: 28px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #EEF4F8;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
+            background-color: #fff;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0D5EA6;
+            box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: #0D5EA6;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 24px;
+        }
+        .btn-primary:hover {
+            background-color: #0a4d8a;
+        }
+        .validation-summary {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #C24A4A;
+            font-size: 0.875rem;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 16px;
+            color: #0D5EA6;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Business Profile</h1>
+        <p class="subtitle">Configure profile for @ViewBag.BusinessName</p>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="validation-summary" role="alert">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p>@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <form method="post" asp-action="Profile" asp-controller="Business">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
+            <input type="hidden" name="BusinessId" value="@Model.BusinessId" />
+
+            <h2 class="section-title">Registration Details</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="CompanyRegistrationNumber">Company Registration Number</label>
+                    <input type="text" id="CompanyRegistrationNumber" name="CompanyRegistrationNumber" value="@Model.CompanyRegistrationNumber" placeholder="e.g. 2020/123456/07" />
+                </div>
+                <div class="form-group">
+                    <label for="VatRegistrationNumber">VAT Registration Number</label>
+                    <input type="text" id="VatRegistrationNumber" name="VatRegistrationNumber" value="@Model.VatRegistrationNumber" placeholder="e.g. 4123456789" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="VatRegistrationDate">VAT Registration Date</label>
+                    <input type="date" id="VatRegistrationDate" name="VatRegistrationDate" value="@(Model.VatRegistrationDate != default ? Model.VatRegistrationDate.ToString("yyyy-MM-dd") : "")" />
+                </div>
+                <div class="form-group">
+                    <label for="VatPeriodLengthInMonths">VAT Period Length</label>
+                    <select id="VatPeriodLengthInMonths" name="VatPeriodLengthInMonths">
+                        <option value="1" selected="@(Model.VatPeriodLengthInMonths == 1)">1 Month</option>
+                        <option value="2" selected="@(Model.VatPeriodLengthInMonths == 2)">2 Months</option>
+                        <option value="3" selected="@(Model.VatPeriodLengthInMonths == 3)">3 Months</option>
+                        <option value="4" selected="@(Model.VatPeriodLengthInMonths == 4)">4 Months</option>
+                        <option value="6" selected="@(Model.VatPeriodLengthInMonths == 6)">6 Months</option>
+                        <option value="12" selected="@(Model.VatPeriodLengthInMonths == 12)">12 Months</option>
+                    </select>
+                </div>
+            </div>
+
+            <h2 class="section-title">Address</h2>
+
+            <div class="form-group">
+                <label for="AddressLine1">Address Line 1</label>
+                <input type="text" id="AddressLine1" name="AddressLine1" value="@Model.AddressLine1" placeholder="Street address" />
+            </div>
+
+            <div class="form-group">
+                <label for="AddressLine2">Address Line 2</label>
+                <input type="text" id="AddressLine2" name="AddressLine2" value="@Model.AddressLine2" placeholder="Suite, unit, building (optional)" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="City">City</label>
+                    <input type="text" id="City" name="City" value="@Model.City" placeholder="City" />
+                </div>
+                <div class="form-group">
+                    <label for="PostalCode">Postal Code</label>
+                    <input type="text" id="PostalCode" name="PostalCode" value="@Model.PostalCode" placeholder="Postal code" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="Country">Country</label>
+                <input type="text" id="Country" name="Country" value="@Model.Country" placeholder="Country" />
+            </div>
+
+            <h2 class="section-title">Contact Information</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="TelephoneNumber">Telephone Number</label>
+                    <input type="tel" id="TelephoneNumber" name="TelephoneNumber" value="@Model.TelephoneNumber" placeholder="+27 11 123 4567" />
+                </div>
+                <div class="form-group">
+                    <label for="MobileNumber">Mobile Number</label>
+                    <input type="tel" id="MobileNumber" name="MobileNumber" value="@Model.MobileNumber" placeholder="+27 82 123 4567" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="Email">Email</label>
+                <input type="email" id="Email" name="Email" value="@Model.Email" placeholder="accounts@company.com" />
+            </div>
+
+            <button type="submit" class="btn-primary">Save Profile</button>
+        </form>
+
+        <a asp-action="Index" asp-controller="Business" class="back-link">&larr; Back to Businesses</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+## ASP.NET Core / .NET
+bin/
+obj/
+publish/
+out/
+
+## User secrets
+secrets.json
+
+## NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+launchSettings.json
+
+## Rider
+.idea/
+
+## VS Code
+.vscode/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## Environment / Secrets
+*.env
+appsettings.Development.json
+appsettings.Local.json
+
+## EF Core Migrations (keep tracked, but ignore designer temp files)
+*.Designer.cs.bak
+
+## Kiro specs (keep tracked)
+# .kiro/
+
+## Misc
+*.log
+*.tmp
+*.swp
+*.bak
+*.cache

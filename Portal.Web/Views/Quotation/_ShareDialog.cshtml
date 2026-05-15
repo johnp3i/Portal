@@ -1,0 +1,83 @@
+@{
+    var logos = ViewBag.Logos as List<Portal.Infrastructure.Entities.BusinessLogo> ?? new List<Portal.Infrastructure.Entities.BusinessLogo>();
+    var quotationId = (int)ViewBag.QuotationId;
+    var defaultExpiration = (DateTimeOffset)ViewBag.DefaultExpiration;
+}
+
+<div class="modal fade" id="shareProposalModal" tabindex="-1" aria-labelledby="shareProposalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form asp-action="Share" asp-route-id="@quotationId" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shareProposalModalLabel">Share Proposal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Expiration Date -->
+                    <div class="mb-3">
+                        <label for="ExpiresAtUtc" class="form-label">Expiration Date</label>
+                        <input type="datetime-local" class="form-control" id="ExpiresAtUtc" name="ExpiresAtUtc"
+                               value="@defaultExpiration.ToString("yyyy-MM-ddTHH:mm")" required />
+                        <small class="text-muted">Must be at least 1 day in the future.</small>
+                    </div>
+
+                    <!-- Hero Logos -->
+                    @if (logos.Any())
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Hero Logos (displayed side by side)</label>
+                            <div class="row g-2">
+                                @foreach (var logo in logos)
+                                {
+                                    <div class="col-auto">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="HeroLogoIds" value="@logo.Id" id="hero_@logo.Id" />
+                                            <label class="form-check-label" for="hero_@logo.Id">
+                                                <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:40px;max-width:80px;object-fit:contain;" />
+                                                <span class="ms-1 small">@logo.DisplayName</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Meta Logo -->
+                        <div class="mb-3">
+                            <label class="form-label">Metadata Card Logo (small, next to business name)</label>
+                            <div class="row g-2">
+                                <div class="col-auto">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="MetaLogoId" value="" id="meta_none" checked />
+                                        <label class="form-check-label" for="meta_none">None</label>
+                                    </div>
+                                </div>
+                                @foreach (var logo in logos)
+                                {
+                                    <div class="col-auto">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="MetaLogoId" value="@logo.Id" id="meta_@logo.Id" />
+                                            <label class="form-check-label" for="meta_@logo.Id">
+                                                <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:30px;max-width:60px;object-fit:contain;" />
+                                                <span class="ms-1 small">@logo.DisplayName</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No logos uploaded. <a href="/Logo">Manage logo library</a></p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Share Proposal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

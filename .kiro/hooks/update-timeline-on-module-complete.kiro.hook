@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Update Timeline on Module Complete",
+  "description": "When a spec task execution completes, check if all tasks in that module are done. If so, update the Portal_Development_Timeline.md file to mark the module's tasks as completed with today's date.",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A spec task just completed. Read the tasks.md file for the current spec and check if ALL tasks are now marked as completed. If they are, this means the entire module is done. Open .kiro/docs/Portal_Development_Timeline.md and find the corresponding module tasks. Update every task row in that module: change [ ] to [x] in the Done column and add today's date (YYYY-MM-DD format) in the Completed column. Also add a new row to the Completed milestones table at the top of the file with the module name and today's date. If not all tasks are complete yet, do nothing."
+  }
+}

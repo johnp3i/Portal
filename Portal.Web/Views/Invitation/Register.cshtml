@@ -1,0 +1,149 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Register";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7FAFC;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 480px;
+        }
+        .card h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: #0D5EA6;
+            margin-bottom: 8px;
+        }
+        .card p.subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #0D5EA6;
+            box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.1);
+        }
+        .form-group input[readonly] {
+            background-color: #EEF4F8;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: #0D5EA6;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 8px;
+        }
+        .btn-primary:hover {
+            background-color: #0a4d8a;
+        }
+        .validation-summary {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #C24A4A;
+            font-size: 0.875rem;
+        }
+        .password-hint {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Create Your Account</h1>
+        <p class="subtitle">Complete your registration to access the portal</p>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="validation-summary" role="alert">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p>@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <form method="post" asp-action="Register" asp-controller="Invitation">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="token" value="@ViewBag.Token" />
+
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" id="email" value="@ViewBag.Email" readonly aria-label="Email address (read-only)" />
+            </div>
+
+            <div class="form-group">
+                <label for="firstName">First name</label>
+                <input type="text" id="firstName" name="firstName" required autocomplete="given-name" placeholder="Enter your first name" />
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last name</label>
+                <input type="text" id="lastName" name="lastName" required autocomplete="family-name" placeholder="Enter your last name" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="new-password" placeholder="Create a password" />
+                <p class="password-hint">Minimum 8 characters, including uppercase, digit, and special character</p>
+            </div>
+
+            <button type="submit" class="btn-primary">Create Account</button>
+        </form>
+    </div>
+</body>
+</html>

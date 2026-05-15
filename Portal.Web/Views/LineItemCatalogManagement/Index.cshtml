@@ -1,0 +1,66 @@
+@model List<Portal.Infrastructure.Entities.LineItemCatalog>
+@{
+    ViewData["Title"] = "Line Item Catalog";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Catalog</div>
+        <h1 style="margin-top:14px;font-size:42px;">Line Item Catalog</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">View and manage your reusable line item templates.</p>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom:18px;">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Unit Price</th>
+                    <th>VAT %</th>
+                    <th>Discount</th>
+                    <th>Type</th>
+                    <th>Last Updated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in Model)
+                {
+                    <tr>
+                        <td><strong>@entry.Description</strong></td>
+                        <td>@entry.UnitPrice.ToString("N2")</td>
+                        <td>@entry.VatRate.ToString("N2")%</td>
+                        <td>@entry.Discount.ToString("N2")</td>
+                        <td>@entry.DiscountType</td>
+                        <td>@entry.UpdatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>
+                            <div style="display:flex;gap:12px;align-items:center;">
+                                <a asp-action="Edit" asp-controller="LineItemCatalogManagement" asp-route-id="@entry.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                                <form method="post" asp-action="Delete" asp-controller="LineItemCatalogManagement" asp-route-id="@entry.Id" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" onclick="return confirm('Are you sure you want to delete this catalog entry?')">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No catalog entries found. Entries are automatically added when quotations are sent or accepted.</p>
+        </div>
+    }
+</section>

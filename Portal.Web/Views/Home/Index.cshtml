@@ -1,0 +1,95 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    var draftCount = (int)ViewBag.DraftCount;
+    var sentCount = (int)ViewBag.SentThisMonthCount;
+    var sentValue = (decimal)ViewBag.SentThisMonthValue;
+    var acceptedCount = (int)ViewBag.AcceptedCount;
+    var acceptanceRate = (decimal)ViewBag.AcceptanceRate;
+    var customerCount = (int)ViewBag.ActiveCustomerCount;
+    var recentQuotations = ViewBag.RecentQuotations as List<Portal.Infrastructure.Models.QuotationListDto>;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Workspace</div>
+        <h1 style="margin-top:14px;font-size:42px;">Dashboard</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Track quotations, customers, and operational activity in one workspace.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-secondary" asp-controller="Quotation" asp-action="Index">View Quotations</a>
+        <a class="btn btn-primary" asp-controller="Quotation" asp-action="Create">New Quotation</a>
+    </div>
+</div>
+
+<div class="grid-4">
+    <section class="surface card-pad">
+        <div class="label">Draft Quotations</div>
+        <div class="metric">@draftCount</div>
+        <div class="muted">Awaiting review</div>
+    </section>
+    <section class="surface card-pad">
+        <div class="label">Sent</div>
+        <div class="metric">@sentCount</div>
+        <div class="muted">@sentValue.ToString("N2") pipeline value</div>
+    </section>
+    <section class="surface card-pad">
+        <div class="label">Accepted</div>
+        <div class="metric">@acceptedCount</div>
+        <div class="muted">@acceptanceRate% acceptance rate</div>
+    </section>
+    <section class="surface card-pad">
+        <div class="label">Active Customers</div>
+        <div class="metric">@customerCount</div>
+        <div class="muted">In registry</div>
+    </section>
+</div>
+
+@if (recentQuotations != null && recentQuotations.Any())
+{
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="label">Recent Quotations</div>
+        <h2 style="margin-top:8px;font-size:24px;">Latest activity</h2>
+
+        <div style="margin-top:18px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var q in recentQuotations)
+                    {
+                        <tr>
+                            <td><strong>@q.Reference</strong></td>
+                            <td>@q.CustomerName</td>
+                            <td>
+                                @{
+                                    var pillClass = q.QuotationStatusTypeId switch
+                                    {
+                                        1 => "pill-gold",
+                                        2 => "pill-blue",
+                                        3 => "pill-green",
+                                        4 => "pill-blue",
+                                        5 => "pill-red",
+                                        _ => "pill-gold"
+                                    };
+                                }
+                                <span class="pill @pillClass">@q.StatusName</span>
+                            </td>
+                            <td>@q.TotalAmount.ToString("N2")</td>
+                            <td style="display:flex;gap:12px;">
+                                <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@q.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                                <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@q.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Preview</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

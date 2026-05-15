@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proposal — REF-120526_01</title>
+  <style>
+    :root {
+      --bg: #F7FAFC;
+      --bg2: #EEF4F8;
+      --text: #0B1B28;
+      --muted: #5E7385;
+      --blue: #0D5EA6;
+      --blue-dark: #0B4E89;
+      --cyan: #57B8E8;
+      --green: #129867;
+      --line: rgba(13,94,166,.10);
+      --shadow: 0 22px 56px rgba(13,94,166,.10);
+    }
+
+    @page { size: A4; margin: 14mm; }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(13,94,166,.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(87,184,232,.06), transparent 24%),
+        linear-gradient(180deg, #FBFDFF 0%, var(--bg2) 48%, var(--bg) 100%);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      line-height: 1.6;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: Manrope, Inter, sans-serif;
+      letter-spacing: -.03em;
+      margin: 0;
+    }
+
+    .page-wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .sheet {
+      background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(245,249,253,.98) 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 32px;
+      overflow: hidden;
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 42px;
+      background:
+        radial-gradient(circle at top left, rgba(87,184,232,.12), transparent 28%),
+        linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(255,255,255,.02) 100%);
+      border-bottom: 1px solid rgba(13,94,166,.08);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -100px;
+      top: -120px;
+      width: 320px;
+      height: 320px;
+      border-radius: 999px;
+      background: rgba(13,94,166,.08);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 40px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(13,94,166,.10);
+      background: rgba(255,255,255,.88);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 22px rgba(13,94,166,.06);
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--cyan);
+      box-shadow: 0 0 0 8px rgba(87,184,232,.10);
+    }
+
+    .hero h1 {
+      margin-top: 28px;
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.15;
+      color: #0B1B28;
+    }
+    .hero .subtitle {
+      margin-top: 18px;
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 600px;
+    }
+
+    /* Meta card */
+    .meta-card {
+      background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(244,249,253,.98) 100%);
+      border: 1px solid rgba(13,94,166,.08);
+      border-radius: 26px;
+      box-shadow: 0 14px 30px rgba(13,94,166,.06);
+      padding: 28px;
+    }
+    .meta-card .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--blue-dark);
+    }
+    .meta-card .value {
+      margin-top: 6px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0B1B28;
+    }
+    .meta-card .value-sm {
+      margin-top: 4px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+    .meta-row {
+      margin-top: 18px;
+    }
+
+    /* Main content */
+    .main {
+      padding: 32px 42px 42px;
+    }
+
+    /* Section cards */
+    .section-card {
+      background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(244,249,253,.98) 100%);
+      border: 1px solid rgba(13,94,166,.08);
+      border-radius: 26px;
+      box-shadow: 0 14px 30px rgba(13,94,166,.06);
+      padding: 32px;
+      margin-top: 24px;
+    }
+    .section-card:first-child { margin-top: 0; }
+
+    .label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--blue-dark);
+    }
+
+    .section-title {
+      margin-top: 12px;
+      font-size: 28px;
+      font-weight: 800;
+      color: #0B1B28;
+    }
+
+    .section-desc {
+      margin-top: 14px;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    /* Grid layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; margin-top: 24px; }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    thead th {
+      background: #F4FAFE;
+      color: #395367;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(13,94,166,.08);
+      padding: 14px 16px;
+      text-align: left;
+    }
+    td {
+      padding: 16px;
+      text-align: left;
+      border-right: 1px solid rgba(13,94,166,.06);
+      vertical-align: top;
+    }
+    td:last-child { border-right: 0; }
+    tbody tr { background: rgba(255,255,255,.86); }
+    tbody tr + tr td { border-top: 1px solid rgba(13,94,166,.06); }
+    .money { font-weight: 800; color: #162A3D; white-space: nowrap; }
+    .line-title { font-weight: 700; color: #0B1B28; }
+    .line-desc { margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* Total box */
+    .total-box {
+      background: linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(13,94,166,.04) 100%);
+      border: 1px solid rgba(13,94,166,.10);
+      border-radius: 22px;
+      padding: 24px;
+      margin-top: 24px;
+      max-width: 420px;
+      margin-left: auto;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+    }
+    .total-row + .total-row { border-top: 1px solid rgba(13,94,166,.10); }
+    .total-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .total-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0B1B28;
+    }
+
+    /* Notes list */
+    .notes-list {
+      margin: 16px 0 0 0;
+      padding-left: 20px;
+      list-style: disc;
+    }
+    .notes-list li {
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #3D4F5F;
+    }
+
+    /* Footer / signature */
+    .footer-line {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(13,94,166,0), rgba(13,94,166,.24), rgba(13,94,166,0));
+      margin: 32px 0;
+    }
+    .sig-line {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(13,94,166,0), rgba(13,94,166,.24), rgba(13,94,166,0));
+      margin-top: 56px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer-name { font-size: 17px; font-weight: 700; color: #0B1B28; }
+    .footer-role { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .footer-motto { font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+
+    /* Download button (hidden in print) */
+    .download-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-download:hover { background: var(--blue-dark); }
+
+    /* Print styles */
+    @media print {
+      body { background: #fff; }
+      .page-wrap { max-width: none; padding: 0; }
+      .sheet { box-shadow: none; border-radius: 0; border: 0; }
+      .download-bar { display: none !important; }
+      .hero { padding: 28px; }
+      .main { padding: 20px 28px 28px; }
+    }
+
+    @media (max-width: 860px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .hero { padding: 28px; }
+      .main { padding: 20px; }
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Download bar (visible to customer, hidden in print) -->
+  <div class="download-bar">
+    <button class="btn-download" onclick="window.print()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Download PDF
+    </button>
+  </div>
+
+  <div class="page-wrap">
+    <article class="sheet">
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- HERO SECTION -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <header class="hero">
+        <div class="hero-grid">
+          <div>
+            <div class="eyebrow">
+              <span class="dot"></span>
+              Operational Equipment Proposal
+            </div>
+
+            <h1>Printer and setup proposal for<br/>Cafe Route 66</h1>
+
+            <p class="subtitle">
+              This proposal covers the operational printing equipment and setup options aligned with the MyChair environment for receipt, kitchen, and production-related workflow support.
+            </p>
+          </div>
+
+          <div class="meta-card">
+            <div>
+              <div class="label">Reference</div>
+              <div class="value">120526_01</div>
+            </div>
+            <div class="meta-grid">
+              <div>
+                <div class="label">Date</div>
+                <div class="value">12/05/2026</div>
+              </div>
+              <div>
+                <div class="label">Valid Until</div>
+                <div class="value">15/05/2026</div>
+              </div>
+            </div>
+            <div class="meta-row">
+              <div class="label">Prepared For</div>
+              <div class="value">Mrs. Karina</div>
+              <div class="value-sm">Cafe Route 66</div>
+              <div class="value-sm">info@caferoute66.cy</div>
+            </div>
+            <div class="meta-row">
+              <div class="label">VAT</div>
+              <div class="value" style="font-size:14px;">Not Included</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- MAIN CONTENT -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <div class="main">
+
+        <!-- Context + Prepared By -->
+        <div class="grid-2">
+          <div class="section-card">
+            <div class="label">Operational Context</div>
+            <h2 class="section-title">Why this equipment configuration</h2>
+            <p class="section-desc">
+              The selected printers are intended to support the practical operational flow of the MyChair suite, including receipt output, kitchen order handling, and production-related printing requirements.
+            </p>
+            <ul class="notes-list">
+              <li>Receipt and bill printing at transaction level</li>
+              <li>Kitchen and execution printing where operational speed matters</li>
+              <li>Stable device setup aligned with daily operational usage</li>
+              <li>Optional installation approach depending on deployment preference</li>
+            </ul>
+          </div>
+
+          <div class="section-card">
+            <div class="label">Prepared By</div>
+            <div style="margin-top:14px;font-size:22px;font-weight:800;color:#0B1B28;">3 Inventors Limited</div>
+            <div style="margin-top:14px;font-size:14px;line-height:2;color:var(--muted);">
+              18 Michael Karaoli, 2108, Aglantzia<br/>
+              700 75 700 / 99360865<br/>
+              www.3inventors.com<br/>
+              johnp@3inventors.com
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- SECTION 1: Equipment (Qty / Unit Price / Final Price) -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="section-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div class="label">Equipment Quotation</div>
+              <h2 class="section-title">Operational device configuration</h2>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--muted);">Prices do not include VAT</div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:60px;">No.</th>
+                  <th>Description</th>
+                  <th style="width:80px;">Qty</th>
+                  <th style="width:130px;">Unit Price</th>
+                  <th style="width:130px;">Final Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight:700;">1</td>
+                  <td>
+                    <div class="line-title">Thermal Printer: XPrinter XP-T80Q Receipt/Bill Printer</div>
+                    <div class="line-desc">2-year warranty</div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€155.00</td>
+                  <td class="money">€155.00</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:700;">2</td>
+                  <td>
+                    <div class="line-title">XPrinter C260M Kitchen Printer</div>
+                    <div class="line-desc">
+                      2-year warranty<br/>
+                      Print Size: 80mm · Speed: 230MM/S<br/>
+                      Connectivity: LAN / USB<br/>
+                      Auto-cut with Light and Sound Alarm
+                    </div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€195.00</td>
+                  <td class="money">€195.00</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:700;">3</td>
+                  <td>
+                    <div class="line-title">XPrinter C260M Kitchen Printer (WiFi)</div>
+                    <div class="line-desc">
+                      2-year warranty<br/>
+                      Print Size: 80mm · Speed: 230MM/S<br/>
+                      Connectivity: LAN / USB / WiFi<br/>
+                      Auto-cut with Light and Sound Alarm
+                    </div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€218.00</td>
+                  <td class="money">€218.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="total-box">
+            <div class="total-row">
+              <span class="total-label">Equipment Subtotal</span>
+              <span class="total-value">€568.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- SECTION 2: Setup / Installation (One-time pricing) -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="section-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div class="label">Deployment Options</div>
+              <h2 class="section-title">Installation and setup</h2>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--muted);">Prices do not include VAT</div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:60px;">No.</th>
+                  <th>Description</th>
+                  <th style="width:80px;">Qty</th>
+                  <th style="width:130px;">Unit Price</th>
+                  <th style="width:130px;">Final Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight:700;">1</td>
+                  <td>
+                    <div class="line-title">Remote Setup</div>
+                    <div class="line-desc">Suitable where the environment is already prepared for guided remote deployment.</div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€30.00</td>
+                  <td class="money">€30.00</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:700;">2</td>
+                  <td>
+                    <div class="line-title">Dedicated Setup</div>
+                    <div class="line-desc">Suitable where on-site attention or more direct operational setup support is preferred.</div>
+                  </td>
+                  <td>1</td>
+                  <td class="money">€110.00</td>
+                  <td class="money">€110.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- NOTES + ACCEPTANCE -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="grid-2">
+          <div class="section-card">
+            <div class="label">Commercial Notes</div>
+            <h3 class="section-title" style="font-size:22px;">Proposal notes</h3>
+            <ul class="notes-list">
+              <li>This proposal is prepared specifically for the operational device request described above.</li>
+              <li>Availability of hardware may depend on supplier stock at the time of order confirmation.</li>
+              <li>Any additional accessories, cabling, network preparation, or environment-specific changes are outside this quotation unless explicitly added.</li>
+              <li>Final deployment planning should be confirmed before installation.</li>
+            </ul>
+          </div>
+
+          <div class="section-card">
+            <div class="label">Acceptance</div>
+            <h3 class="section-title" style="font-size:22px;">Approval and signature</h3>
+
+            <div style="margin-top:24px;">
+              <div style="font-size:13px;font-weight:600;color:var(--muted);">To accept this proposal, sign here and return:</div>
+              <div class="sig-line"></div>
+            </div>
+            <div style="margin-top:32px;">
+              <div style="font-size:13px;font-weight:600;color:var(--muted);">Prepared on behalf of 3 Inventors Limited:</div>
+              <div class="sig-line"></div>
+              <div style="margin-top:14px;font-size:15px;font-weight:700;color:#0B1B28;">John Papamichael</div>
+              <div style="font-size:13px;color:var(--muted);">Director</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- FOOTER -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="footer-line"></div>
+        <div class="footer-row">
+          <div>
+            <div class="footer-name">John Papamichael</div>
+            <div class="footer-role">3 Inventors Limited</div>
+          </div>
+          <div class="footer-motto">Knowledge · Professionalism · Innovation</div>
+        </div>
+
+      </div>
+    </article>
+  </div>
+
+</body>
+</html>

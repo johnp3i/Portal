@@ -1,0 +1,248 @@
+@model Portal.Web.Models.QuotationDetailViewModel
+@{
+    ViewData["Title"] = "Quotation Detail";
+    var logos = ViewBag.Logos as List<Portal.Infrastructure.Entities.BusinessLogo> ?? new List<Portal.Infrastructure.Entities.BusinessLogo>();
+    var quotationId = (int)ViewBag.QuotationId;
+    var defaultExpiration = (DateTimeOffset)ViewBag.DefaultExpiration;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Quotation Detail</div>
+        <h1 style="margin-top:14px;font-size:42px;">@Model.Quotation.Reference · @Model.CustomerName</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review status, pricing structure, and conversion readiness.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        @if (Model.Quotation.QuotationStatusTypeId == 1)
+        {
+            <a class="btn btn-secondary" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id">Edit</a>
+        }
+
+        @if (Model.AvailableTransitions.Contains(3))
+        {
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="3" />
+                <button type="submit" class="btn btn-green">Mark Accepted</button>
+            </form>
+        }
+
+        @if (Model.AvailableTransitions.Contains(5))
+        {
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="5" />
+                <button type="submit" class="btn btn-secondary">Archive</button>
+            </form>
+        }
+
+        <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview Proposal</a>
+
+        @if (Model.AvailableTransitions.Contains(2))
+        {
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="2" />
+                <button type="submit" class="btn btn-primary">Send Quotation</button>
+            </form>
+        }
+        @if (Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
+        {
+            <form method="post" asp-action="ConvertToInvoice" asp-controller="Quotation" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="quotationId" value="@Model.Quotation.Id" />
+                <button type="submit" class="btn btn-green">Convert to Invoice</button>
+            </form>
+        }
+    </div>
+</div>
+
+<!-- Quotation Overview (full width) -->
+<section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;flex-wrap:wrap;">
+        <div>
+            <div class="label">Status</div>
+            <div style="margin-top:10px;">
+                @{
+                    var pillClass = Model.Quotation.QuotationStatusTypeId switch
+                    {
+                        1 => "pill-gold",
+                        2 => "pill-blue",
+                        3 => "pill-green",
+                        4 => "pill-blue",
+                        5 => "pill-red",
+                        _ => "pill-gold"
+                    };
+                }
+                <span class="pill @pillClass">@Model.StatusName</span>
+                @if (Model.IsExpired)
+                {
+                    <span class="pill pill-gold" style="margin-left:8px;">Expired</span>
+                }
+            </div>
+        </div>
+        <div style="display:flex;gap:32px;flex-wrap:wrap;">
+            <div>
+                <div class="label">Customer</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.CustomerName</div>
+            </div>
+            <div>
+                <div class="label">Reference</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.Quotation.Reference</div>
+            </div>
+            @if (Model.Quotation.ValidUntil.HasValue)
+            {
+                <div>
+                    <div class="label">Valid Until</div>
+                    <div style="margin-top:6px;font-size:15px;font-weight:700;">
+                        @Model.Quotation.ValidUntil.Value.ToString("yyyy-MM-dd")
+                        @if (Model.IsExpired)
+                        {
+                            <span style="color:var(--gold);font-size:11px;font-weight:800;margin-left:6px;">EXPIRED</span>
+                        }
+                    </div>
+                </div>
+            }
+            <div>
+                <div class="label">Created</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.Quotation.CreatedAtUtc.ToString("yyyy-MM-dd")</div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Quotation.Notes))
+    {
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(13,94,166,.08);">
+            <div class="label">Notes</div>
+            <div style="margin-top:6px;font-size:14px;color:var(--muted);line-height:1.7;white-space:pre-wrap;">@Model.Quotation.Notes</div>
+        </div>
+    }
+</section>
+
+<!-- Line Items (full width) -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Line Items</div>
+    <h2 style="margin-top:8px;font-size:24px;">Pricing breakdown</h2>
+
+    <div style="margin-top:18px;">
+        @if (Model.Lines != null && Model.Lines.Count > 0)
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>VAT %</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in Model.Lines)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@line.Description</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
+                                {
+                                    <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">↗ ref</a>
+                                }
+                            </td>
+                            <td>@line.Quantity.ToString("N2")</td>
+                            <td>@line.UnitPrice.ToString("N2")</td>
+                            <td>@line.VatRate.ToString("N2")%</td>
+                            <td><strong>@line.LineTotal.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="muted" style="font-size:14px;">No line items on this quotation.</p>
+        }
+    </div>
+
+    <div class="surface card-pad totals" style="margin-top:18px;">
+        <div class="row"><span class="muted">Subtotal</span><strong>@Model.Quotation.Subtotal.ToString("N2")</strong></div>
+        <div class="row"><span class="muted">Tax</span><strong>@Model.Quotation.TaxAmount.ToString("N2")</strong></div>
+        <div class="row"><span>Grand Total</span><span class="big-total">@Model.Quotation.TotalAmount.ToString("N2")</span></div>
+    </div>
+</section>
+
+<!-- Share Proposal (full width) -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Proposal Sharing</div>
+    <h2 style="margin-top:8px;font-size:24px;">Share with customer</h2>
+    <p class="muted" style="margin-top:8px;font-size:14px;">Generate a branded proposal and send a secure link to your customer.</p>
+
+    <form method="post" asp-action="Share" asp-controller="Quotation" asp-route-id="@quotationId" style="margin-top:24px;">
+        @Html.AntiForgeryToken()
+
+        <div class="form-grid">
+            <div class="field">
+                <label for="ExpiresAtUtc">Link Expiration</label>
+                <input type="datetime-local" id="ExpiresAtUtc" name="ExpiresAtUtc"
+                       value="@defaultExpiration.ToString("yyyy-MM-ddTHH:mm")" required />
+                <small class="muted">Must be at least 1 day in the future.</small>
+            </div>
+        </div>
+
+        @if (logos.Any())
+        {
+            <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);">
+                <div class="label" style="margin-bottom:12px;">Hero Logos</div>
+                <p class="muted" style="font-size:13px;margin-bottom:12px;">Select logos to display prominently at the top of the proposal.</p>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                    @foreach (var logo in logos)
+                    {
+                        <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;transition:border-color .2s;">
+                            <input type="checkbox" name="HeroLogoIds" value="@logo.Id" style="width:16px;height:16px;" />
+                            <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:36px;max-width:72px;object-fit:contain;" />
+                            <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
+                            @if (logo.IsPrimary)
+                            {
+                                <span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0D5EA6;">Primary</span>
+                            }
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);">
+                <div class="label" style="margin-bottom:12px;">Metadata Logo</div>
+                <p class="muted" style="font-size:13px;margin-bottom:12px;">Small logo displayed next to the business name in the proposal header.</p>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                    <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
+                        <input type="radio" name="MetaLogoId" value="" checked style="width:16px;height:16px;" />
+                        <span style="font-size:13px;font-weight:600;color:#5E7385;">None</span>
+                    </label>
+                    @foreach (var logo in logos)
+                    {
+                        <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
+                            <input type="radio" name="MetaLogoId" value="@logo.Id" style="width:16px;height:16px;" />
+                            <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:28px;max-width:56px;object-fit:contain;" />
+                            <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
+                        </label>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="margin-top:18px;padding:16px;background:rgba(13,94,166,.03);border-radius:12px;border:1px solid rgba(13,94,166,.08);">
+                <p class="muted" style="font-size:14px;margin:0;">No logos uploaded yet. <a href="@Url.Action("Index", "MyBusiness", new { tab = "logos" })" style="color:var(--blue);font-weight:700;">Upload logos</a> in My Business to include them in proposals.</p>
+            </div>
+        }
+
+        <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);display:flex;gap:12px;">
+            <button type="submit" class="btn btn-primary">Share Proposal</button>
+            <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview First</a>
+        </div>
+    </form>
+</section>
+
+<!-- Back link -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
+</div>

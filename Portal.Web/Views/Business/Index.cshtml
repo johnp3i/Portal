@@ -1,0 +1,205 @@
+@model List<Portal.Infrastructure.Entities.Business>
+@{
+    Layout = null;
+    ViewData["Title"] = "Businesses";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Businesses - Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7FAFC;
+            min-height: 100vh;
+            padding: 40px;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .page-header h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: #0D5EA6;
+        }
+        .btn-primary {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #0D5EA6;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #0a4d8a;
+        }
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            padding: 32px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead th {
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        tbody td {
+            padding: 16px;
+            font-size: 0.9rem;
+            color: #334155;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-active {
+            background-color: #f0fdf4;
+            color: #129867;
+        }
+        .badge-inactive {
+            background-color: #fef2f2;
+            color: #C24A4A;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .actions a {
+            color: #0D5EA6;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .actions a:hover {
+            text-decoration: underline;
+        }
+        .actions form {
+            display: inline;
+        }
+        .btn-danger-sm {
+            background: none;
+            border: none;
+            color: #C24A4A;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            padding: 0;
+        }
+        .btn-danger-sm:hover {
+            text-decoration: underline;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 48px 16px;
+            color: #64748b;
+        }
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>Businesses</h1>
+            <a href="@Url.Action("Create", "Business")" class="btn-primary">+ New Business</a>
+        </div>
+
+        <div class="card">
+            @if (Model != null && Model.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var business in Model)
+                        {
+                            <tr>
+                                <td><strong>@business.Name</strong></td>
+                                <td>
+                                    @if (business.IsActive)
+                                    {
+                                        <span class="badge badge-active">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-inactive">Inactive</span>
+                                    }
+                                </td>
+                                <td>@business.CreatedAtUtc.ToString("dd MMM yyyy")</td>
+                                <td>
+                                    <div class="actions">
+                                        <a asp-action="Edit" asp-route-id="@business.Id">Edit</a>
+                                        <a asp-action="Profile" asp-route-businessId="@business.Id">Profile</a>
+                                        @if (business.IsActive)
+                                        {
+                                            <form method="post" asp-action="Deactivate" asp-route-id="@business.Id">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn-danger-sm" onclick="return confirm('Are you sure you want to deactivate this business?')">Deactivate</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p>No businesses found. Create your first business to get started.</p>
+                </div>
+            }
+        </div>
+    </div>
+</body>
+</html>

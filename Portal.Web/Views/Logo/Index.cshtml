@@ -1,0 +1,77 @@
+@model List<Portal.Infrastructure.Entities.BusinessLogo>
+@{
+    ViewData["Title"] = "Logo Library";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Logo Library</div>
+        <h1 style="margin-top:14px;font-size:42px;">Business Logos</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Upload and manage logos for use in proposals. (@Model.Count/20)</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-error">@TempData["Error"]</div>
+}
+
+<div class="grid-2">
+    <!-- Left: Upload Form -->
+    <section class="glass card-pad">
+        <div class="label">Upload Logo</div>
+        <h2 style="margin-top:8px;font-size:24px;">Add a new logo</h2>
+
+        <form method="post" asp-action="Upload" asp-controller="Logo" enctype="multipart/form-data" style="margin-top:18px;">
+            @Html.AntiForgeryToken()
+            <div class="form-grid">
+                <div class="field">
+                    <label for="displayName">Display Name *</label>
+                    <input type="text" id="displayName" name="displayName" placeholder="Logo name" required />
+                </div>
+                <div class="field">
+                    <label for="file">Logo File *</label>
+                    <input type="file" id="file" name="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" required />
+                    <small class="muted">PNG, JPG, SVG, or WebP. Max 2MB.</small>
+                </div>
+            </div>
+            <div style="margin-top:18px;">
+                <button type="submit" class="btn btn-primary">Upload Logo</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Right: Logo List -->
+    <section class="glass card-pad">
+        <div class="label">Your Logos</div>
+        <h2 style="margin-top:8px;font-size:24px;">Uploaded logos</h2>
+
+        <div style="margin-top:18px;display:grid;gap:14px;">
+            @if (Model.Any())
+            {
+                @foreach (var logo in Model)
+                {
+                    <div style="display:flex;align-items:center;gap:16px;padding:12px;border:1px solid rgba(13,94,166,.08);border-radius:12px;">
+                        <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:48px;max-width:80px;object-fit:contain;" />
+                        <div style="flex:1;">
+                            <div style="font-weight:700;font-size:14px;">@logo.DisplayName</div>
+                            <div class="muted" style="font-size:12px;">@logo.ContentType · @((logo.FileSizeBytes / 1024.0).ToString("N0")) KB</div>
+                        </div>
+                        <form method="post" asp-action="Delete" asp-controller="Logo" asp-route-id="@logo.Id" style="margin:0;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);">Delete</button>
+                        </form>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="muted" style="font-size:14px;">No logos uploaded yet.</p>
+            }
+        </div>
+    </section>
+</div>

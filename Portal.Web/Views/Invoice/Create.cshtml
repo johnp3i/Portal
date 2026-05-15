@@ -1,0 +1,203 @@
+@{
+    ViewData["Title"] = "Create Invoice";
+    var customers = ViewBag.Customers as IEnumerable<Portal.Infrastructure.Entities.Customer> ?? Enumerable.Empty<Portal.Infrastructure.Entities.Customer>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Create Invoice</div>
+        <h1 style="margin-top:14px;font-size:42px;">Create a new invoice</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Build a standalone invoice with line items, sections, and controlled totals.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" style="margin-bottom:18px;">
+            @TempData["Error"]
+        </div>
+    }
+
+    <form method="post" asp-action="Create" asp-controller="Invoice" asp-antiforgery="true" id="invoiceForm">
+        <!-- Invoice Header -->
+        <div class="form-grid">
+            <div class="field">
+                <label for="customerId">Customer *</label>
+                <select name="customerId" id="customerId" required>
+                    <option value="">-- Select Customer --</option>
+                    @foreach (var customer in customers)
+                    {
+                        <option value="@customer.Id">@customer.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label for="invoiceDate">Invoice Date *</label>
+                <input type="date" name="invoiceDate" id="invoiceDate" required />
+            </div>
+            <div class="field">
+                <label for="dueDate">Due Date *</label>
+                <input type="date" name="dueDate" id="dueDate" required />
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+                <label for="notes">Notes</label>
+                <textarea name="notes" id="notes" placeholder="Optional notes for this invoice"></textarea>
+            </div>
+            <div class="field">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" name="isGrandTotalShown" value="true" checked style="width:auto;" />
+                    Show Grand Total
+                </label>
+            </div>
+        </div>
+
+        <!-- Line Items Section -->
+        <div style="margin-top:32px;border-top:1px solid rgba(13,94,166,.08);padding-top:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="label">Line Items</div>
+                    <h2 style="margin-top:8px;font-size:24px;">Invoice lines</h2>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addLineItem()">+ Add Line</button>
+            </div>
+
+            <div id="lineItemsContainer" style="margin-top:18px;">
+                <!-- Line items will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Sections (Optional) -->
+        <div style="margin-top:32px;border-top:1px solid rgba(13,94,166,.08);padding-top:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="label">Sections (Optional)</div>
+                    <h2 style="margin-top:8px;font-size:24px;">Group line items</h2>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="addSection()">+ Add Section</button>
+            </div>
+
+            <div id="sectionsContainer" style="margin-top:18px;">
+                <!-- Sections will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="margin-top:32px;display:flex;align-items:center;justify-content:space-between;">
+            <button type="submit" class="btn btn-primary">Create Invoice</button>
+            <a asp-action="Index" asp-controller="Invoice" class="btn btn-outline">&larr; Back to Invoices</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        var lineIndex = 0;
+        var sectionIndex = 0;
+
+        function addLineItem() {
+            var container = document.getElementById('lineItemsContainer');
+            var idx = lineIndex;
+            var html = '<div class="surface card-pad" style="margin-bottom:16px;position:relative;" id="line-' + idx + '">'
+                + '<button type="button" class="btn btn-danger" style="position:absolute;top:12px;right:12px;padding:4px 10px;font-size:12px;" onclick="removeLineItem(' + idx + ')">Remove</button>'
+                + '<div class="form-grid">'
+                + '<div class="field" style="grid-column:1 / -1;">'
+                + '<label>Description *</label>'
+                + '<input type="text" name="lines[' + idx + '].Description" required placeholder="Line item description" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Quantity *</label>'
+                + '<input type="number" name="lines[' + idx + '].Quantity" step="0.01" min="0.01" required value="1" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Unit Price *</label>'
+                + '<input type="number" name="lines[' + idx + '].UnitPrice" step="0.01" min="0" required value="0" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>VAT Rate (%)</label>'
+                + '<input type="number" name="lines[' + idx + '].VatRate" step="0.01" min="0" max="100" value="0" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Discount</label>'
+                + '<input type="number" name="lines[' + idx + '].Discount" step="0.01" min="0" value="0" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Discount Type</label>'
+                + '<select name="lines[' + idx + '].DiscountType">'
+                + '<option value="Percentage">Percentage</option>'
+                + '<option value="Fixed">Fixed</option>'
+                + '</select>'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Cost Price</label>'
+                + '<input type="number" name="lines[' + idx + '].CostPrice" step="0.01" min="0" placeholder="Optional" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Reference URL</label>'
+                + '<input type="url" name="lines[' + idx + '].ReferenceUrl" placeholder="Optional URL" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Subtitle</label>'
+                + '<input type="text" name="lines[' + idx + '].Subtitle" placeholder="Optional subtitle" />'
+                + '</div>'
+                + '</div>'
+                + '</div>';
+
+            container.insertAdjacentHTML('beforeend', html);
+            lineIndex++;
+        }
+
+        function removeLineItem(idx) {
+            var el = document.getElementById('line-' + idx);
+            if (el) el.remove();
+        }
+
+        function addSection() {
+            var container = document.getElementById('sectionsContainer');
+            var idx = sectionIndex;
+            var html = '<div class="surface card-pad" style="margin-bottom:16px;position:relative;" id="section-' + idx + '">'
+                + '<button type="button" class="btn btn-danger" style="position:absolute;top:12px;right:12px;padding:4px 10px;font-size:12px;" onclick="removeSection(' + idx + ')">Remove</button>'
+                + '<div class="form-grid">'
+                + '<div class="field">'
+                + '<label>Section Name *</label>'
+                + '<input type="text" name="sections[' + idx + '].Name" required placeholder="Section name" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Column Configuration</label>'
+                + '<select name="sections[' + idx + '].ColumnConfiguration">'
+                + '<option value="OneTime">OneTime</option>'
+                + '<option value="Monthly">Monthly</option>'
+                + '<option value="Yearly">Yearly</option>'
+                + '</select>'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Section Type</label>'
+                + '<select name="sections[' + idx + '].SectionType">'
+                + '<option value="LineItems">LineItems</option>'
+                + '<option value="Narrative">Narrative</option>'
+                + '</select>'
+                + '</div>'
+                + '<div class="field" style="grid-column:1 / -1;">'
+                + '<label>Description</label>'
+                + '<textarea name="sections[' + idx + '].Description" placeholder="Optional section description"></textarea>'
+                + '</div>'
+                + '</div>'
+                + '</div>';
+
+            container.insertAdjacentHTML('beforeend', html);
+            sectionIndex++;
+        }
+
+        function removeSection(idx) {
+            var el = document.getElementById('section-' + idx);
+            if (el) el.remove();
+        }
+
+        // Add one line item by default
+        document.addEventListener('DOMContentLoaded', function() {
+            addLineItem();
+        });
+    </script>
+}

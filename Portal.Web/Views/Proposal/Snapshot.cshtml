@@ -1,0 +1,887 @@
+@model Portal.Infrastructure.Models.ProposalRenderModel
+@{
+    Layout = null;
+    var cs = Model.CurrencySymbol;
+    Func<decimal, string> fmt = (v) => $"{cs}{v:N2}";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Proposal — @Model.Reference</title>
+    <style>
+        @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
+
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --blue-dark: #0B4E89;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --line: rgba(13,94,166,.10);
+            --shadow: 0 22px 56px rgba(13,94,166,.10);
+        }
+
+        @@page { size: A4; margin: 14mm; }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(13,94,166,.08), transparent 28%),
+                radial-gradient(circle at top right, rgba(87,184,232,.06), transparent 24%),
+                linear-gradient(180deg, #FBFDFF 0%, var(--bg2) 48%, var(--bg) 100%);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: Manrope, Inter, sans-serif;
+            letter-spacing: -.03em;
+            margin: 0;
+        }
+
+        .page-wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .sheet {
+            background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(245,249,253,.98) 100%);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            border-radius: 32px;
+            overflow: hidden;
+        }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: 42px;
+            background:
+                radial-gradient(circle at top left, rgba(87,184,232,.12), transparent 28%),
+                linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(255,255,255,.02) 100%);
+            border-bottom: 1px solid rgba(13,94,166,.08);
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            right: -100px;
+            top: -120px;
+            width: 320px;
+            height: 320px;
+            border-radius: 999px;
+            background: rgba(13,94,166,.08);
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 40px;
+            align-items: start;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-logos {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .hero-logos img {
+            max-height: 68px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(13,94,166,.10);
+            background: rgba(255,255,255,.88);
+            color: var(--blue-dark);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            box-shadow: 0 10px 22px rgba(13,94,166,.06);
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--cyan);
+            box-shadow: 0 0 0 8px rgba(87,184,232,.10);
+        }
+
+        .hero h1 {
+            margin-top: 28px;
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1.15;
+            color: #0B1B28;
+        }
+        .hero .subtitle {
+            margin-top: 18px;
+            font-size: 17px;
+            line-height: 1.7;
+            color: var(--muted);
+            max-width: 600px;
+        }
+
+        /* Meta card */
+        .meta-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(244,249,253,.98) 100%);
+            border: 1px solid rgba(13,94,166,.08);
+            border-radius: 26px;
+            box-shadow: 0 14px 30px rgba(13,94,166,.06);
+            padding: 28px;
+        }
+        .meta-card .label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--blue-dark);
+        }
+        .meta-card .value {
+            margin-top: 6px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0B1B28;
+        }
+        .meta-card .value-sm {
+            margin-top: 4px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-top: 18px;
+        }
+        .meta-row {
+            margin-top: 18px;
+        }
+        .meta-logo {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(13,94,166,.08);
+        }
+        .meta-logo img {
+            max-height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* Main content */
+        .main {
+            padding: 32px 42px 42px;
+        }
+
+        /* Section cards */
+        .section-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(244,249,253,.98) 100%);
+            border: 1px solid rgba(13,94,166,.08);
+            border-radius: 26px;
+            box-shadow: 0 14px 30px rgba(13,94,166,.06);
+            padding: 32px;
+            margin-top: 24px;
+        }
+        .section-card:first-child { margin-top: 0; }
+
+        .label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--blue-dark);
+        }
+
+        .section-title {
+            margin-top: 12px;
+            font-size: 28px;
+            font-weight: 800;
+            color: #0B1B28;
+        }
+
+        .section-desc {
+            margin-top: 14px;
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--muted);
+        }
+
+        /* Grid layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        /* Tables */
+        .table-wrap { overflow-x: auto; margin-top: 24px; }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 18px;
+            overflow: hidden;
+        }
+        thead th {
+            background: #F4FAFE;
+            color: #395367;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(13,94,166,.08);
+            padding: 14px 16px;
+            text-align: left;
+        }
+        td {
+            padding: 16px;
+            text-align: left;
+            border-right: 1px solid rgba(13,94,166,.06);
+            vertical-align: top;
+        }
+        td:last-child { border-right: 0; }
+        tbody tr { background: rgba(255,255,255,.86); }
+        tbody tr + tr td { border-top: 1px solid rgba(13,94,166,.06); }
+        .money { font-weight: 800; color: #162A3D; white-space: nowrap; }
+        .line-title { font-weight: 700; color: #0B1B28; }
+        .line-title a { color: var(--blue); text-decoration: none; font-weight: 700; }
+        .line-title a:hover { text-decoration: underline; }
+        .line-desc { margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+        .line-subtitle { margin-top: 4px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+        /* Narrative section */
+        .narrative-body { margin-top: 18px; font-size: 15px; line-height: 1.8; color: var(--muted); }
+
+        /* Total box */
+        .total-box {
+            background: linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(13,94,166,.04) 100%);
+            border: 1px solid rgba(13,94,166,.10);
+            border-radius: 22px;
+            padding: 24px;
+            margin-top: 24px;
+            max-width: 420px;
+            margin-left: auto;
+        }
+        .section-total-box {
+            background: linear-gradient(180deg, rgba(13,94,166,.08) 0%, rgba(13,94,166,.04) 100%);
+            border: 1px solid rgba(13,94,166,.10);
+            border-radius: 22px;
+            padding: 24px;
+            margin-top: 24px;
+            max-width: 420px;
+            margin-left: auto;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+        }
+        .total-row + .total-row { border-top: 1px solid rgba(13,94,166,.10); }
+        .total-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .total-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0B1B28;
+        }
+
+        /* Notes list */
+        .notes-list {
+            margin: 16px 0 0 0;
+            padding-left: 20px;
+            list-style: disc;
+        }
+        .notes-list li {
+            margin-top: 8px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #3D4F5F;
+        }
+
+        /* Footer / signature */
+        .footer-line {
+            height: 1px;
+            background: linear-gradient(90deg, rgba(13,94,166,0), rgba(13,94,166,.24), rgba(13,94,166,0));
+            margin: 32px 0;
+        }
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-name { font-size: 17px; font-weight: 700; color: #0B1B28; }
+        .footer-role { font-size: 13px; color: var(--muted); margin-top: 2px; }
+        .footer-motto { font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+
+        /* Download button (hidden in print) */
+        .download-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255,255,255,.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--line);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-download:hover { background: var(--blue-dark); }
+
+        /* Print styles */
+        @@media print {
+            body { background: #fff; }
+            .page-wrap { max-width: none; padding: 0; }
+            .sheet { box-shadow: none; border-radius: 0; border: 0; }
+            .download-bar { display: none !important; }
+            .hero { padding: 28px; }
+            .main { padding: 20px 28px 28px; }
+        }
+
+        @@media (max-width: 860px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .hero { padding: 28px; }
+            .main { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Download bar (visible to customer, hidden in print) -->
+    <div class="download-bar">
+        <button class="btn-download" onclick="window.print()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+            Download PDF
+        </button>
+    </div>
+
+    <div class="page-wrap">
+        <article class="sheet">
+
+            <!-- HERO SECTION -->
+            <header class="hero">
+                <div class="hero-grid">
+                    <div>
+                        @if (Model.HeroLogos.Any())
+                        {
+                            <div class="hero-logos">
+                                @foreach (var logo in Model.HeroLogos)
+                                {
+                                    <img src="@logo.PublicUrl" alt="@logo.DisplayName" />
+                                }
+                            </div>
+                        }
+
+                        <div class="eyebrow">
+                            <span class="dot"></span>
+                            Proposal
+                        </div>
+
+                        <h1>Proposal for @Model.CustomerName</h1>
+
+                        <p class="subtitle">
+                            Prepared by @Model.BusinessName for @Model.CustomerName.
+                            @if (Model.ValidUntil.HasValue)
+                            {
+                                <text>Valid until @Model.ValidUntil.Value.ToString("dd/MM/yyyy").</text>
+                            }
+                        </p>
+                    </div>
+
+                    <div class="meta-card">
+                        <div>
+                            <div class="label">Reference</div>
+                            <div class="value">@Model.Reference</div>
+                        </div>
+                        <div class="meta-grid">
+                            <div>
+                                <div class="label">Date</div>
+                                <div class="value">@DateTime.UtcNow.ToString("dd/MM/yyyy")</div>
+                            </div>
+                            @if (Model.ValidUntil.HasValue)
+                            {
+                                <div>
+                                    <div class="label">Valid Until</div>
+                                    <div class="value">@Model.ValidUntil.Value.ToString("dd/MM/yyyy")</div>
+                                </div>
+                            }
+                        </div>
+                        <div class="meta-row">
+                            <div class="label">Prepared For</div>
+                            <div class="value">@(Model.CustomerContactPerson ?? Model.CustomerName)</div>
+                            <div class="value-sm">@Model.CustomerName</div>
+                            @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+                            {
+                                <div class="value-sm">@Model.CustomerEmail</div>
+                            }
+                        </div>
+                        @if (Model.MetaLogo != null)
+                        {
+                            <div class="meta-logo">
+                                <img src="@Model.MetaLogo.PublicUrl" alt="@Model.MetaLogo.DisplayName" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT -->
+            <div class="main">
+
+                <!-- Business Profile + Customer Details -->
+                <div class="grid-2">
+                    <div class="section-card">
+                        <div class="label">Prepared By</div>
+                        <div style="margin-top:14px;font-size:22px;font-weight:800;color:#0B1B28;">@Model.BusinessName</div>
+                        <div style="margin-top:14px;font-size:14px;line-height:2;color:var(--muted);">
+                            @if (!string.IsNullOrWhiteSpace(Model.PreparedByName))
+                            {
+                                <text>Contact: @Model.PreparedByName</text><br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.PreparedByPhone))
+                            {
+                                @Model.PreparedByPhone<br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.PreparedByEmail))
+                            {
+                                @Model.PreparedByEmail<br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.BusinessAddress))
+                            {
+                                @Model.BusinessAddress<br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.BusinessPhone) && string.IsNullOrWhiteSpace(Model.PreparedByPhone))
+                            {
+                                @Model.BusinessPhone
+                                @if (!string.IsNullOrWhiteSpace(Model.BusinessMobile))
+                                {
+                                    <text> / @Model.BusinessMobile</text>
+                                }
+                                <br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.CompanyRegistrationNumber))
+                            {
+                                <text>Reg: @Model.CompanyRegistrationNumber</text><br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.VatRegistrationNumber))
+                            {
+                                <text>VAT: @Model.VatRegistrationNumber</text>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="label">Customer Details</div>
+                        <div style="margin-top:14px;font-size:22px;font-weight:800;color:#0B1B28;">@Model.CustomerName</div>
+                        <div style="margin-top:14px;font-size:14px;line-height:2;color:var(--muted);">
+                            @if (!string.IsNullOrWhiteSpace(Model.CustomerContactPerson))
+                            {
+                                <text>Contact: @Model.CustomerContactPerson</text><br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.CustomerAddress))
+                            {
+                                @Model.CustomerAddress<br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+                            {
+                                @Model.CustomerEmail
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTIONS -->
+                @{
+                    var orderedSections = Model.Sections.OrderBy(s => s.SortOrder).ToList();
+                    var isDefaultOnly = orderedSections.Count == 1 && orderedSections[0].Name == "Items"
+                        && string.IsNullOrWhiteSpace(orderedSections[0].Description)
+                        && string.IsNullOrWhiteSpace(orderedSections[0].Notes);
+                    var lineItemSections = orderedSections.Where(s => s.SectionType != "Narrative").ToList();
+                    var narrativeSections = orderedSections.Where(s => s.SectionType == "Narrative").ToList();
+                }
+                @foreach (var section in lineItemSections)
+                {
+                    var accentStyle = section.IsEmphasized
+                        ? $"border-left: 4px solid {(string.IsNullOrWhiteSpace(section.AccentColor) ? "#0D5EA6" : section.AccentColor)};"
+                        : "";
+
+                    <div class="section-card" style="@accentStyle">
+                            @if (!isDefaultOnly)
+                            {
+                                <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
+                                    <div>
+                                        <div class="label">@(string.IsNullOrWhiteSpace(section.Label) ? (section.ColumnConfiguration == "Subscription" ? "Subscription" : "Quotation") : section.Label)</div>
+                                        <h2 class="section-title">@(section.Name)</h2>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(section.Description))
+                                {
+                                    <p class="section-desc">@(section.Description)</p>
+                                }
+                            }
+
+                            <div class="table-wrap">
+                                @{ var sectionHasDiscount = section.Lines.Any(l => l.Discount > 0); }
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width:60px;">No.</th>
+                                            <th>Description</th>
+                                            @if (section.ColumnConfiguration == "Subscription")
+                                            {
+                                                <th style="width:130px;">Monthly Price</th>
+                                                <th style="width:130px;">Daily Cost</th>
+                                                <th style="width:130px;">Annual Price</th>
+                                            }
+                                            else
+                                            {
+                                                <th style="width:80px;">Qty</th>
+                                                <th style="width:130px;">Unit Price</th>
+                                                @if (sectionHasDiscount)
+                                                {
+                                                    <th style="width:120px;">Discount</th>
+                                                }
+                                                <th style="width:130px;">Final Price</th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{ var lineNumber = 0; }
+                                        @foreach (var line in section.Lines.OrderBy(l => l.SortOrder))
+                                        {
+                                            lineNumber++;
+                                            <tr>
+                                                <td style="font-weight:700;">@lineNumber</td>
+                                                <td>
+                                                    <div class="line-title">
+                                                        @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
+                                                        {
+                                                            <a href="@line.ReferenceUrl" target="_blank" rel="noopener noreferrer">@line.Description</a>
+                                                        }
+                                                        else
+                                                        {
+                                                            @line.Description
+                                                        }
+                                                    </div>
+                                                    @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                                    {
+                                                        <div class="line-subtitle">@line.Subtitle</div>
+                                                    }
+                                                </td>
+                                                @if (section.ColumnConfiguration == "Subscription")
+                                                {
+                                                    <td class="money">@fmt(line.UnitPrice)</td>
+                                                    <td class="money">@(fmt(Math.Round(line.UnitPrice / 30, 2)))/day</td>
+                                                    <td class="money">@fmt(line.UnitPrice * 12)</td>
+                                                }
+                                                else
+                                                {
+                                                    <td>@line.Quantity</td>
+                                                    <td class="money">@fmt(line.UnitPrice)</td>
+                                                    @if (sectionHasDiscount)
+                                                    {
+                                                        <td class="money" style="color:#129867;">
+                                                            @if (line.Discount > 0)
+                                                            {
+                                                                @if (line.DiscountType == "Fixed")
+                                                                {
+                                                                    @:-@fmt(line.Discount)
+                                                                }
+                                                                else
+                                                                {
+                                                                    @:@line.Discount.ToString("G")%
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                @:—
+                                                            }
+                                                        </td>
+                                                    }
+                                                    <td class="money">@fmt(line.LineTotal)</td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(section.Notes))
+                            {
+                                <div style="margin-top:20px;">
+                                    <div class="label">Notes</div>
+                                    <ul class="notes-list">
+                                        @foreach (var note in section.Notes.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                                        {
+                                            <li>@note.Trim()</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+
+                            @if (section.ColumnConfiguration == "Subscription")
+                            {
+                                var sectionMonthlyTotal = section.Lines.Sum(l => l.LineTotal);
+                                var sectionDailyCost = Math.Round(sectionMonthlyTotal / 30, 2);
+                                var sectionAnnualTotal = sectionMonthlyTotal * 12;
+
+                                <div class="section-total-box">
+                                    <div class="total-row">
+                                        <span class="total-label">Total Monthly</span>
+                                        <span class="total-value">@fmt(sectionMonthlyTotal)</span>
+                                    </div>
+                                    <div class="total-row">
+                                        <span class="total-label">Total Daily Cost</span>
+                                        <span class="total-value">@(fmt(sectionDailyCost))/day</span>
+                                    </div>
+                                    <div class="total-row">
+                                        <span class="total-label">Total Annual</span>
+                                        <span class="total-value">@fmt(sectionAnnualTotal)</span>
+                                    </div>
+                                </div>
+                            }
+                            else if (section.IsTotalsTableShown)
+                            {
+                                var secSubtotal = section.Lines.Sum(l => l.Quantity * l.UnitPrice);
+                                var secDiscount = section.Lines
+                                    .Where(l => l.Discount > 0)
+                                    .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
+                                var secNetSubtotal = secSubtotal - secDiscount;
+                                var secVat = section.Lines.Sum(l => l.LineTotal * (l.VatRate / 100));
+                                var secTotal = section.Lines.Sum(l => l.LineTotal) + secVat;
+
+                                <div class="section-total-box">
+                                    <div class="total-row">
+                                        <span class="total-label">Subtotal</span>
+                                        <span class="total-value">@fmt(secSubtotal)</span>
+                                    </div>
+                                    @if (secDiscount > 0)
+                                    {
+                                        <div class="total-row">
+                                            <span class="total-label" style="color:#129867;">Discount</span>
+                                            <span class="total-value" style="color:#129867;">-@fmt(secDiscount)</span>
+                                        </div>
+                                    }
+                                    @if (secVat > 0)
+                                    {
+                                        <div class="total-row">
+                                            <span class="total-label">VAT</span>
+                                            <span class="total-value">@fmt(secVat)</span>
+                                        </div>
+                                    }
+                                    <div class="total-row">
+                                        <span class="total-label">Total</span>
+                                        <span class="total-value">@fmt(secTotal)</span>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                var sectionSubtotal = section.Lines.Sum(l => l.LineTotal);
+
+                                <div class="section-total-box">
+                                    <div class="total-row">
+                                        <span class="total-label">Section Subtotal</span>
+                                        <span class="total-value">@fmt(sectionSubtotal)</span>
+                                    </div>
+                                </div>
+                            }
+                    </div>
+                }
+
+                <!-- TOTAL BOX -->
+                @if (Model.IsGrandTotalShown)
+                {
+                    var totalDiscount = Model.Sections.SelectMany(s => s.Lines)
+                        .Where(l => l.Discount > 0)
+                        .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
+
+                    <!-- Per-section breakdown table (full width) -->
+                    <div class="section-card" style="margin-top:24px;">
+                        <div class="label">Summary</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Section</th>
+                                        <th style="width:130px;">Subtotal</th>
+                                        <th style="width:120px;">Discount</th>
+                                        <th style="width:120px;">VAT</th>
+                                        <th style="width:130px;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var sec in lineItemSections.Where(s => s.Lines.Any()))
+                                    {
+                                        var secGross = sec.Lines.Sum(l => l.Quantity * l.UnitPrice);
+                                        var secDisc = sec.Lines
+                                            .Where(l => l.Discount > 0)
+                                            .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
+                                        var secNet = sec.Lines.Sum(l => l.LineTotal);
+                                        var secVat = sec.Lines.Sum(l => l.LineTotal * (l.VatRate / 100));
+                                        var secTotal = secNet + secVat;
+
+                                        <tr>
+                                            <td class="line-title">@sec.Name</td>
+                                            <td class="money">@fmt(secGross)</td>
+                                            <td class="money" style="color:#129867;">@(secDisc > 0 ? $"-{fmt(secDisc)}" : "—")</td>
+                                            <td class="money">@fmt(secVat)</td>
+                                            <td class="money">@fmt(secTotal)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Grand totals card (right-aligned, compact) -->
+                    <div class="total-box">
+                        <div class="total-row">
+                            <span class="total-label">Subtotal</span>
+                            <span class="total-value">@fmt(Model.Subtotal)</span>
+                        </div>
+                        @if (totalDiscount > 0)
+                        {
+                            <div class="total-row">
+                                <span class="total-label" style="color:#129867;">Discount</span>
+                                <span class="total-value" style="color:#129867;">-@fmt(totalDiscount)</span>
+                            </div>
+                        }
+                        @if (Model.TaxAmount > 0)
+                        {
+                            <div class="total-row">
+                                <span class="total-label">VAT</span>
+                                <span class="total-value">@fmt(Model.TaxAmount)</span>
+                            </div>
+                        }
+                        <div class="total-row">
+                            <span class="total-label">Total</span>
+                            <span class="total-value">@fmt(Model.TotalAmount)</span>
+                        </div>
+                    </div>
+                }
+
+                <!-- NARRATIVE SECTIONS -->
+                @foreach (var section in narrativeSections)
+                {
+                    var accentStyle = section.IsEmphasized
+                        ? $"border-left: 4px solid {(string.IsNullOrWhiteSpace(section.AccentColor) ? "#0D5EA6" : section.AccentColor)};"
+                        : "";
+
+                    <div class="section-card" style="@accentStyle">
+                        @if (!isDefaultOnly)
+                        {
+                            <div class="label">@(string.IsNullOrWhiteSpace(section.Label) ? "Content" : section.Label)</div>
+                            <h2 class="section-title">@(section.Name)</h2>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(section.Description))
+                        {
+                            <div class="narrative-body">
+                            @if (section.Description.Contains("<"))
+                            {
+                                @Html.Raw(section.Description)
+                            }
+                            else
+                            {
+                                var descLines = section.Description.Split('\n', StringSplitOptions.None);
+                                @foreach (var dLine in descLines)
+                                {
+                                    var trimmed = dLine.Trim();
+                                    if (string.IsNullOrWhiteSpace(trimmed))
+                                    {
+                                        <br />
+                                    }
+                                    else if (trimmed.StartsWith("•") || trimmed.StartsWith("-") || trimmed.StartsWith("*"))
+                                    {
+                                        var bulletText = trimmed.TrimStart('•', '-', '*').Trim();
+                                        <div style="display:flex;gap:8px;align-items:baseline;margin-top:4px;padding-left:24px;">
+                                            <span style="color:var(--blue);font-weight:700;">•</span>
+                                            <span>@bulletText</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p style="margin:8px 0;">@trimmed</p>
+                                    }
+                                }
+                            }
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- NOTES -->
+                @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                {
+                    <div class="section-card">
+                        <div class="label">Notes</div>
+                        <h3 class="section-title" style="font-size:22px;">Proposal Notes</h3>
+                        <ul class="notes-list">
+                            @foreach (var note in Model.Notes.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <li>@note.Trim()</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- FOOTER -->
+                <div class="footer-line"></div>
+                <div class="footer-row">
+                    <div>
+                        <div class="footer-name">@(Model.PreparedByName ?? Model.BusinessName)</div>
+                        <div class="footer-role">@Model.BusinessName</div>
+                    </div>
+                    <div class="footer-motto">Knowledge • Professionalism • Innovation</div>
+                </div>
+
+            </div>
+        </article>
+    </div>
+
+</body>
+</html>

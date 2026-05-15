@@ -1,0 +1,386 @@
+@model Portal.Infrastructure.Entities.Invoice
+@{
+    ViewData["Title"] = "Invoice Detail";
+    var lines = ViewBag.Lines as List<Portal.Infrastructure.Entities.InvoiceLine> ?? new List<Portal.Infrastructure.Entities.InvoiceLine>();
+    var invoiceSections = ViewBag.Sections as List<Portal.Infrastructure.Entities.InvoiceSection> ?? new List<Portal.Infrastructure.Entities.InvoiceSection>();
+    var statusName = (string)ViewBag.StatusName;
+    var financialStatusName = (string)ViewBag.FinancialStatusName;
+    var customerName = (string)ViewBag.CustomerName;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Invoice Detail</div>
+        <h1 style="margin-top:14px;font-size:42px;">@Model.InvoiceNumber · @customerName</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review invoice details, line items, and manage lifecycle status.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        @if (Model.InvoiceStatusTypeId == 1)
+        {
+            <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-primary">Edit Invoice</a>
+            <button type="button" class="btn btn-green" onclick="transitionStatus(@Model.Id, 2)">Issue Invoice</button>
+            <button type="button" class="btn btn-secondary" onclick="transitionStatus(@Model.Id, 3)">Cancel Invoice</button>
+        }
+        <a asp-action="Preview" asp-controller="Invoice" asp-route-id="@Model.Id" target="_blank" class="btn btn-secondary">Preview</a>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger" style="margin-bottom:18px;">
+        @TempData["Error"]
+    </div>
+}
+
+<!-- Invoice Overview -->
+<div class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;flex-wrap:wrap;">
+        <div>
+            <div class="label">Status</div>
+            <div style="margin-top:10px;">
+                @{
+                    var statusPillClass = Model.InvoiceStatusTypeId switch
+                    {
+                        1 => "pill-gold",
+                        2 => "pill-green",
+                        3 => "pill-red",
+                        _ => "pill-gold"
+                    };
+                    var financialPillClass = Model.InvoiceFinancialStatusTypeId switch
+                    {
+                        1 => "pill-gold",
+                        2 => "pill-blue",
+                        3 => "pill-green",
+                        4 => "pill-red",
+                        5 => "pill-red",
+                        _ => "pill-gold"
+                    };
+                }
+                <span class="pill @statusPillClass">@statusName</span>
+                <span class="pill @financialPillClass" style="margin-left:8px;">@financialStatusName</span>
+            </div>
+        </div>
+        <div style="display:flex;gap:32px;flex-wrap:wrap;">
+            <div>
+                <div class="label">Customer</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@customerName</div>
+            </div>
+            <div>
+                <div class="label">Invoice Number</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.InvoiceNumber</div>
+            </div>
+            <div>
+                <div class="label">Invoice Date</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.InvoiceDate.ToString("yyyy-MM-dd")</div>
+            </div>
+            <div>
+                <div class="label">Due Date</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.DueDate.ToString("yyyy-MM-dd")</div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    {
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(13,94,166,.08);">
+            <div class="label">Notes</div>
+            <div style="margin-top:6px;font-size:14px;color:var(--muted);line-height:1.7;white-space:pre-wrap;">@Model.Notes</div>
+        </div>
+    }
+
+    @if (Model.QuotationId != null)
+    {
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(13,94,166,.08);">
+            <div class="label">Source Quotation</div>
+            <div style="margin-top:6px;">
+                <a href="/Quotation/Detail/@Model.QuotationId" style="color:var(--blue);font-weight:700;font-size:14px;">View Source Quotation</a>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Line Items grouped by Section -->
+<div class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Line Items</div>
+    <h2 style="margin-top:8px;font-size:24px;">Pricing breakdown</h2>
+
+    <div style="margin-top:18px;">
+        @if (lines.Count > 0)
+        {
+            var orderedSections = invoiceSections.OrderBy(s => s.SortOrder).ToList();
+            var sectionedLineGroups = lines.Where(l => l.InvoiceSectionId != null).GroupBy(l => l.InvoiceSectionId).ToDictionary(g => g.Key!.Value, g => g.OrderBy(l => l.SortOrder).ToList());
+            var unsectionedLines = lines.Where(l => l.InvoiceSectionId == null).OrderBy(l => l.SortOrder).ToList();
+
+            <!-- Unsectioned lines (General group) -->
+            @if (unsectionedLines.Any())
+            {
+                <div style="margin-bottom:24px;">
+                    <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">General</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th style="text-align:right;">Qty</th>
+                                <th style="text-align:right;">Unit Price</th>
+                                <th style="text-align:right;">VAT %</th>
+                                <th style="text-align:right;">Discount</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in unsectionedLines)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@line.Description</strong>
+                                        @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                        {
+                                            <div style="font-size:12px;color:var(--muted);margin-top:2px;">@line.Subtitle</div>
+                                        }
+                                    </td>
+                                    <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
+                                    <td style="text-align:right;">@line.UnitPrice.ToString("N2")</td>
+                                    <td style="text-align:right;">@line.VatRate.ToString("N2")%</td>
+                                    <td style="text-align:right;">
+                                        @if (line.Discount > 0)
+                                        {
+                                            @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2"))
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">—</span>
+                                        }
+                                    </td>
+                                    <td style="text-align:right;"><strong>@line.LineTotal.ToString("N2")</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <!-- Sectioned lines -->
+            @foreach (var invSec in orderedSections)
+            {
+                var sectionLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
+
+                if (invSec.SectionType == "Narrative")
+                {
+                    <!-- Narrative section — card style like quotation proposal -->
+                    <div class="surface card-pad" style="margin-bottom:24px;border-left:4px solid @(invSec.AccentColor ?? "var(--blue)");border-radius:18px;">
+                        @if (!string.IsNullOrWhiteSpace(invSec.Label))
+                        {
+                            <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">@invSec.Label</div>
+                        }
+                        <h3 style="font-size:20px;font-weight:800;margin-bottom:12px;">@invSec.Name</h3>
+                        @if (!string.IsNullOrWhiteSpace(invSec.Description))
+                        {
+                            <div style="font-size:14px;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Description)</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(invSec.Notes))
+                        {
+                            <div style="margin-top:16px;font-size:14px;font-weight:700;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Notes)</div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <!-- LineItems section -->
+                    var sectionStyle = invSec.IsEmphasized ? "border-left:4px solid " + (invSec.AccentColor ?? "var(--blue)") + ";padding-left:16px;" : "";
+
+                    <div style="margin-bottom:24px;@sectionStyle">
+                        <h3 style="font-size:16px;font-weight:700;margin-bottom:4px;">
+                            @invSec.Name
+                            @if (!string.IsNullOrWhiteSpace(invSec.Label))
+                            {
+                                <span style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-left:8px;">@invSec.Label</span>
+                            }
+                        </h3>
+                        @if (!string.IsNullOrWhiteSpace(invSec.Description))
+                        {
+                            <div class="muted" style="font-size:13px;margin-bottom:12px;">@Html.Raw(invSec.Description)</div>
+                        }
+
+                        @if (sectionLines.Any())
+                        {
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th style="text-align:right;">Qty</th>
+                                        <th style="text-align:right;">Unit Price</th>
+                                        <th style="text-align:right;">VAT %</th>
+                                        <th style="text-align:right;">Discount</th>
+                                        <th style="text-align:right;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var line in sectionLines)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@line.Description</strong>
+                                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                                {
+                                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">@line.Subtitle</div>
+                                                }
+                                            </td>
+                                            <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
+                                            <td style="text-align:right;">@line.UnitPrice.ToString("N2")</td>
+                                            <td style="text-align:right;">@line.VatRate.ToString("N2")%</td>
+                                            <td style="text-align:right;">
+                                                @if (line.Discount > 0)
+                                                {
+                                                    @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2"))
+                                                }
+                                                else
+                                                {
+                                                    <span class="muted">—</span>
+                                                }
+                                            </td>
+                                            <td style="text-align:right;"><strong>@line.LineTotal.ToString("N2")</strong></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p class="muted" style="font-size:13px;">No line items in this section.</p>
+                        }
+
+                        @if (invSec.IsTotalsTableShown && sectionLines.Any())
+                        {
+                            var secSubtotal = sectionLines.Sum(l => l.LineTotal);
+                            var secDiscount = sectionLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
+                            var secVat = sectionLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                            var secTotal = secSubtotal + secVat;
+
+                            <div class="surface card-pad totals" style="margin-top:12px;">
+                                <div class="row"><span class="muted">Section Subtotal</span><strong>@secSubtotal.ToString("N2")</strong></div>
+                                <div class="row"><span class="muted">Section Discount</span><strong>@secDiscount.ToString("N2")</strong></div>
+                                <div class="row"><span class="muted">Section VAT</span><strong>@secVat.ToString("N2")</strong></div>
+                                <div class="row"><span class="muted">Section Total</span><strong>@secTotal.ToString("N2")</strong></div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        }
+        else
+        {
+            <p class="muted" style="font-size:14px;">No line items on this invoice.</p>
+        }
+    </div>
+
+    <!-- Totals -->
+    <div class="surface card-pad totals" style="margin-top:18px;">
+        <div class="row"><span class="muted">Subtotal</span><strong>@Model.Subtotal.ToString("N2")</strong></div>
+        <div class="row"><span class="muted">Tax</span><strong>@Model.TaxAmount.ToString("N2")</strong></div>
+        <div class="row"><span>Grand Total</span><span class="big-total">@Model.TotalAmount.ToString("N2")</span></div>
+    </div>
+</div>
+
+<!-- Grand Total Summary Card (when IsGrandTotalShown is enabled) -->
+@if (Model.IsGrandTotalShown && invoiceSections.Any())
+{
+    <div class="glass card-pad" style="margin-top:24px;">
+        <div class="label">Grand Total Summary</div>
+        <h2 style="margin-top:8px;font-size:24px;">Per-section breakdown</h2>
+
+        <div style="margin-top:18px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Subtotal</th>
+                        <th>Discount</th>
+                        <th>VAT</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var grandSectionedLines = lines.Where(l => l.InvoiceSectionId != null).GroupBy(l => l.InvoiceSectionId).ToDictionary(g => g.Key!.Value, g => g.OrderBy(l => l.SortOrder).ToList());
+                        var grandUnsectionedLines = lines.Where(l => l.InvoiceSectionId == null).ToList();
+                    }
+
+                    @if (grandUnsectionedLines.Any())
+                    {
+                        var genSubtotal = grandUnsectionedLines.Sum(l => l.LineTotal);
+                        var genDiscount = grandUnsectionedLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
+                        var genVat = grandUnsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                        var genTotal = genSubtotal + genVat;
+
+                        <tr>
+                            <td><strong>General</strong></td>
+                            <td>@genSubtotal.ToString("N2")</td>
+                            <td>@genDiscount.ToString("N2")</td>
+                            <td>@genVat.ToString("N2")</td>
+                            <td><strong>@genTotal.ToString("N2")</strong></td>
+                        </tr>
+                    }
+
+                    @foreach (var invSec in invoiceSections.OrderBy(s => s.SortOrder))
+                    {
+                        var secLines = grandSectionedLines.ContainsKey(invSec.Id) ? grandSectionedLines[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
+                        var secSubtotal = secLines.Sum(l => l.LineTotal);
+                        var secDiscount = secLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
+                        var secVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                        var secTotal = secSubtotal + secVat;
+
+                        <tr>
+                            <td><strong>@invSec.Name</strong></td>
+                            <td>@secSubtotal.ToString("N2")</td>
+                            <td>@secDiscount.ToString("N2")</td>
+                            <td>@secVat.ToString("N2")</td>
+                            <td><strong>@secTotal.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="surface card-pad totals" style="margin-top:18px;text-align:right;">
+            <div class="row" style="justify-content:flex-end;"><span class="muted" style="margin-right:16px;">Subtotal</span><strong>@Model.Subtotal.ToString("N2")</strong></div>
+            <div class="row" style="justify-content:flex-end;"><span class="muted" style="margin-right:16px;">Tax</span><strong>@Model.TaxAmount.ToString("N2")</strong></div>
+            <div class="row" style="justify-content:flex-end;"><span style="margin-right:16px;">Grand Total</span><span class="big-total">@Model.TotalAmount.ToString("N2")</span></div>
+        </div>
+    </div>
+}
+
+<!-- Back link -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a asp-action="Index" asp-controller="Invoice" class="btn btn-outline">&larr; Back to Invoices</a>
+</div>
+
+@section Scripts {
+    <script>
+        function transitionStatus(invoiceId, newStatusId) {
+            var statusLabels = { 2: 'Issue', 3: 'Cancel' };
+            var label = statusLabels[newStatusId] || 'transition';
+            if (!confirm('Are you sure you want to ' + label.toLowerCase() + ' this invoice?')) return;
+
+            fetch('/Invoice/TransitionStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: 'invoiceId=' + invoiceId + '&newStatusId=' + newStatusId
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'An error occurred.');
+                }
+            })
+            .catch(function() {
+                alert('An error occurred while updating the status.');
+            });
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}
