@@ -1,0 +1,380 @@
+@model PurchaseListViewModel
+@{
+    ViewData["Title"] = "Purchases";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 style="margin-top:14px;font-size:42px;">Purchases</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Track and manage your business expenses.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a asp-action="Create" class="btn btn-primary">Create Purchase</a>
+        <a asp-action="BulkEntry" class="btn btn-secondary">Bulk Entry</a>
+        <a asp-action="CsvImport" class="btn btn-secondary">CSV Import</a>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" asp-action="Index" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+        <div class="field" style="flex:1;min-width:200px;">
+            <label for="searchTerm">Search</label>
+            <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" placeholder="Description, invoice #, or supplier..." />
+        </div>
+        <div class="field" style="flex:1;min-width:180px;">
+            <label for="supplierId">Supplier</label>
+            <select id="supplierId" name="supplierId">
+                <option value="">All Suppliers</option>
+                @foreach (var supplier in Model.Suppliers)
+                {
+                    <option value="@supplier.Id" selected="@(Model.SupplierId == supplier.Id)">@supplier.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="flex:1;min-width:180px;">
+            <label for="expenseCategoryId">Expense Category</label>
+            <select id="expenseCategoryId" name="expenseCategoryId">
+                <option value="">All Categories</option>
+                @foreach (var category in Model.ExpenseCategories)
+                {
+                    <option value="@category.Id" selected="@(Model.ExpenseCategoryId == category.Id)">@category.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+            <label for="purchaseOriginTypeId">Origin Type</label>
+            <select id="purchaseOriginTypeId" name="purchaseOriginTypeId">
+                <option value="">All Origins</option>
+                @foreach (var originType in Model.OriginTypes)
+                {
+                    <option value="@originType.Id" selected="@(Model.PurchaseOriginTypeId == originType.Id)">
+                        @(originType.Id == 2 ? "EU Reverse Charge" : originType.Id == 3 ? "Non-EU" : originType.Name)
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+            <label for="dateFrom">Date From</label>
+            <input type="date" id="dateFrom" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+            <label for="dateTo">Date To</label>
+            <input type="date" id="dateTo" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div style="display:flex;gap:10px;padding-bottom:2px;">
+            <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+            <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+        </div>
+    </form>
+</section>
+
+<!-- Purchase Table -->
+<section class="glass card-pad">
+    @if (Model.Purchases != null && Model.Purchases.Count > 0)
+    {
+        <table id="purchaseTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Supplier</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th style="text-align:right;">Excl. VAT</th>
+                    <th style="text-align:right;">VAT</th>
+                    <th style="text-align:right;">Total</th>
+                    <th>Origin</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="purchaseTableBody">
+                @foreach (var purchase in Model.Purchases)
+                {
+                    <tr>
+                        <td>@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
+                        <td><strong>@purchase.Supplier?.Name</strong></td>
+                        <td>@purchase.ExpenseCategory?.Name</td>
+                        <td>@purchase.Description</td>
+                        <td style="text-align:right;font-weight:600;">@purchase.AmountExcludingVat.ToString("N2")</td>
+                        <td style="text-align:right;">@purchase.VatAmount.ToString("N2")</td>
+                        <td style="text-align:right;font-weight:700;">@purchase.TotalAmount.ToString("N2")</td>
+                        <td>
+                            @if (purchase.PurchaseOriginTypeId == 2)
+                            {
+                                <span class="pill pill-blue">EU RC</span>
+                            }
+                            else if (purchase.PurchaseOriginTypeId == 3)
+                            {
+                                <span class="pill pill-gold">Non-EU</span>
+                            }
+                        </td>
+                        <td>
+                            @if (purchase.IsCancelled)
+                            {
+                                <span class="pill pill-red">Cancelled</span>
+                            }
+                            @if (purchase.VatSubmissionPeriod != null
+                                && (purchase.InvoiceDate < purchase.VatSubmissionPeriod.PeriodStartDate
+                                    || purchase.InvoiceDate > purchase.VatSubmissionPeriod.PeriodEndDate))
+                            {
+                                <span class="pill pill-red" title="This purchase was reported in a different VAT period than its invoice date">@purchase.VatSubmissionPeriod.PeriodLabel</span>
+                            }
+                        </td>
+                        <td style="display:flex;gap:8px;align-items:center;">
+                            <a asp-action="Edit" asp-route-id="@purchase.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                            @if (!purchase.IsCancelled)
+                            {
+                                <button type="button" class="btn-cancel-purchase" data-id="@purchase.Id" style="background:none;border:none;color:#C24A4A;font-weight:700;font-size:13px;cursor:pointer;padding:0;">Cancel</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div id="paginationContainer" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+            <div id="paginationControls" style="display:flex;gap:4px;align-items:center;"></div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No purchases found. Create your first purchase or adjust your filters.</p>
+        </div>
+    }
+</section>
+
+<style>
+    .pill-red {
+        background: #C24A4A;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pagination-btn {
+        padding: 8px 14px;
+        border: 1px solid #d0d9e2;
+        border-radius: 8px;
+        background: #fff;
+        color: #0D5EA6;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .pagination-btn:hover:not(:disabled) {
+        background: #EEF4F8;
+        border-color: #0D5EA6;
+    }
+    .pagination-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+    .pagination-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+</style>
+
+@section Scripts {
+<script>
+(function() {
+    // =========================================================================
+    // Client-side Pagination
+    // =========================================================================
+    var table = document.getElementById('purchaseTable');
+    if (!table) return;
+
+    var tbody = document.getElementById('purchaseTableBody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    var pageSize = 20;
+    var currentPage = 1;
+    var totalRows = rows.length;
+    var totalPages = Math.ceil(totalRows / pageSize);
+
+    function renderPage(page) {
+        currentPage = page;
+        var start = (page - 1) * pageSize;
+        var end = start + pageSize;
+
+        rows.forEach(function(row, index) {
+            row.style.display = (index >= start && index < end) ? '' : 'none';
+        });
+
+        renderPaginationInfo(start, end);
+        renderPaginationControls();
+    }
+
+    function renderPaginationInfo(start, end) {
+        var info = document.getElementById('paginationInfo');
+        if (!info) return;
+        var showing = Math.min(end, totalRows);
+        info.textContent = 'Showing ' + (start + 1) + '-' + showing + ' of ' + totalRows + ' purchases';
+    }
+
+    function renderPaginationControls() {
+        var container = document.getElementById('paginationControls');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        // Previous button
+        var prevBtn = document.createElement('button');
+        prevBtn.className = 'pagination-btn';
+        prevBtn.textContent = 'Previous';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', function() { renderPage(currentPage - 1); });
+        container.appendChild(prevBtn);
+
+        // Page number buttons
+        var startPage = Math.max(1, currentPage - 2);
+        var endPage = Math.min(totalPages, currentPage + 2);
+
+        if (startPage > 1) {
+            container.appendChild(createPageBtn(1));
+            if (startPage > 2) {
+                var ellipsis = document.createElement('span');
+                ellipsis.textContent = '...';
+                ellipsis.style.padding = '0 6px';
+                ellipsis.style.color = '#5a6a7a';
+                container.appendChild(ellipsis);
+            }
+        }
+
+        for (var i = startPage; i <= endPage; i++) {
+            container.appendChild(createPageBtn(i));
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                var ellipsis2 = document.createElement('span');
+                ellipsis2.textContent = '...';
+                ellipsis2.style.padding = '0 6px';
+                ellipsis2.style.color = '#5a6a7a';
+                container.appendChild(ellipsis2);
+            }
+            container.appendChild(createPageBtn(totalPages));
+        }
+
+        // Next button
+        var nextBtn = document.createElement('button');
+        nextBtn.className = 'pagination-btn';
+        nextBtn.textContent = 'Next';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', function() { renderPage(currentPage + 1); });
+        container.appendChild(nextBtn);
+    }
+
+    function createPageBtn(page) {
+        var btn = document.createElement('button');
+        btn.className = 'pagination-btn' + (page === currentPage ? ' active' : '');
+        btn.textContent = page;
+        btn.addEventListener('click', function() { renderPage(page); });
+        return btn;
+    }
+
+    // Initialize pagination
+    renderPage(1);
+
+    // =========================================================================
+    // Cancel Purchase — Two-step SweetAlert2 confirmation
+    // =========================================================================
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-cancel-purchase');
+        if (!btn) return;
+
+        var purchaseId = btn.getAttribute('data-id');
+
+        // Step 1: Initial confirmation
+        Swal.fire({
+            title: 'Are you sure you want to cancel this purchase?',
+            text: 'This will mark the purchase as cancelled.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#C24A4A',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, proceed',
+            cancelButtonText: 'No, keep it'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+
+            // Step 2: Type CANCEL to confirm
+            Swal.fire({
+                title: 'This action cannot be undone.',
+                text: 'Type CANCEL to confirm.',
+                icon: 'warning',
+                input: 'text',
+                inputPlaceholder: 'Type CANCEL here',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Confirm Cancellation',
+                cancelButtonText: 'Go back',
+                inputValidator: function(value) {
+                    if (value !== 'CANCEL') {
+                        return 'You must type CANCEL to proceed.';
+                    }
+                }
+            }).then(function(result2) {
+                if (!result2.isConfirmed) return;
+
+                // Execute cancellation
+                BlockUI.show('Cancelling purchase...');
+
+                fetch('/Purchase/Cancel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: 'id=' + encodeURIComponent(purchaseId)
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    BlockUI.hide();
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Cancelled',
+                            text: data.message,
+                            icon: 'success',
+                            confirmButtonColor: '#0D5EA6'
+                        }).then(function() {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.message,
+                            icon: 'error',
+                            confirmButtonColor: '#0D5EA6'
+                        });
+                    }
+                })
+                .catch(function() {
+                    BlockUI.hide();
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An unexpected error occurred.',
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                });
+            });
+        });
+    });
+})();
+</script>
+}

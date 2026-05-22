@@ -1,0 +1,222 @@
+@model List<Portal.Infrastructure.Entities.Supplier>
+@{
+    ViewData["Title"] = "Suppliers";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 style="margin-top:14px;font-size:42px;">Suppliers</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Manage your supplier registry.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" onclick="openCreateModal()">Create Supplier</button>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var supplier in Model)
+                {
+                    <tr id="supplier-row-@supplier.Id">
+                        <td><strong>@supplier.Name</strong></td>
+                        <td>
+                            @if (supplier.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-red">Inactive</span>
+                            }
+                        </td>
+                        <td>@supplier.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>
+                            <div style="display:flex;gap:12px;align-items:center;">
+                                <button type="button" style="background:none;border:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;" onclick="openEditModal(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Edit</button>
+                                @if (supplier.IsActive)
+                                {
+                                    <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" onclick="confirmDeactivate(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Deactivate</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No suppliers found. Create your first supplier to get started.</p>
+        </div>
+    }
+</section>
+
+<!-- Supplier Modal -->
+<div id="supplierModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(13,94,166,.18);">
+        <h2 style="font-size:22px;margin-bottom:6px;" id="modalTitle">Create Supplier</h2>
+        <p class="muted" style="font-size:14px;margin-bottom:24px;" id="modalSubtitle">Add a new supplier to your registry.</p>
+        <form id="supplierForm" onsubmit="return false;">
+            <input type="hidden" id="supplierId" name="Id" value="0" />
+            <div class="field">
+                <label for="supplierName">Supplier Name</label>
+                <input type="text" id="supplierName" name="Name" placeholder="Enter supplier name..." required maxlength="200" />
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modalSubmitBtn" onclick="submitSupplier()">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Create Supplier';
+            document.getElementById('modalSubtitle').textContent = 'Add a new supplier to your registry.';
+            document.getElementById('modalSubmitBtn').textContent = 'Create';
+            document.getElementById('supplierId').value = '0';
+            document.getElementById('supplierName').value = '';
+            showModal();
+        }
+
+        function openEditModal(id, name) {
+            document.getElementById('modalTitle').textContent = 'Edit Supplier';
+            document.getElementById('modalSubtitle').textContent = 'Update the supplier name.';
+            document.getElementById('modalSubmitBtn').textContent = 'Save Changes';
+            document.getElementById('supplierId').value = id;
+            document.getElementById('supplierName').value = name;
+            showModal();
+        }
+
+        function showModal() {
+            var modal = document.getElementById('supplierModal');
+            modal.style.display = 'flex';
+            document.getElementById('supplierName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('supplierModal').style.display = 'none';
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('supplierModal').addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        async function submitSupplier() {
+            var id = document.getElementById('supplierId').value;
+            var name = document.getElementById('supplierName').value.trim();
+
+            if (!name) {
+                Swal.fire({ title: 'Validation', text: 'Supplier name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var isEdit = id !== '0';
+            var url = isEdit ? '/Supplier/Edit' : '/Supplier/Create';
+            var formData = new FormData();
+            formData.append('Name', name);
+            if (isEdit) formData.append('Id', id);
+
+            BlockUI.show(isEdit ? 'Updating supplier...' : 'Creating supplier...');
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    closeModal();
+                    await Swal.fire({
+                        title: isEdit ? 'Updated!' : 'Created!',
+                        text: data.message || (isEdit ? 'Supplier updated successfully.' : 'Supplier created successfully.'),
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function confirmDeactivate(id, name) {
+            var result = await Swal.fire({
+                title: 'Deactivate Supplier',
+                text: 'Are you sure you want to deactivate "' + name + '"? This supplier will no longer appear in dropdowns.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, deactivate'
+            });
+
+            if (!result.isConfirmed) return;
+
+            var formData = new FormData();
+            formData.append('id', id);
+
+            BlockUI.show('Deactivating supplier...');
+            try {
+                var response = await fetch('/Supplier/Deactivate', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Deactivated!',
+                        text: data.message || 'Supplier has been deactivated.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

@@ -1,0 +1,509 @@
+@model Portal.Web.Models.VatSubmissionDetailViewModel
+@{
+    ViewData["Title"] = "VAT Submission Detail";
+
+    var netLabel = Model.NetVatPayable > 0 ? "Tax Owed" :
+                   Model.NetVatPayable < 0 ? "Refund Due" : "No Payment Due";
+
+    var netColor = Model.NetVatPayable > 0 ? "#C24A4A" :
+                   Model.NetVatPayable < 0 ? "#129867" : "#5E7385";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> VAT Submission</div>
+        <h1 style="margin-top:14px;font-size:42px;">@Model.PeriodLabel</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">
+            @Model.PeriodStartDate.ToString("dd MMM yyyy") &ndash; @Model.PeriodEndDate.ToString("dd MMM yyyy")
+        </p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        @if (Model.IsSubmitted)
+        {
+            <span class="pill pill-green">Submitted</span>
+        }
+        else
+        {
+            <span class="pill pill-gold">Pending</span>
+        }
+    </div>
+</div>
+
+<!-- VAT Breakdown -->
+<section class="glass card-pad">
+    <div class="label">VAT Breakdown</div>
+    <h2 style="margin-top:8px;font-size:24px;">Period Summary</h2>
+
+    <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+        <!-- Output VAT -->
+        <div class="card-pad" style="border-radius:20px;background:#EEF4F8;border:0;">
+            <div class="label">Output VAT (Sales)</div>
+            <div style="margin-top:10px;font-size:28px;font-weight:800;color:#0D5EA6;font-family:'Manrope',sans-serif;">
+                @Model.CurrencySymbol@Model.TotalOutputVat.ToString("N2")
+            </div>
+        </div>
+
+        <!-- Input VAT -->
+        <div class="card-pad" style="border-radius:20px;background:#EEF4F8;border:0;">
+            <div class="label">Input VAT (Purchases)</div>
+            <div style="margin-top:10px;font-size:28px;font-weight:800;color:#0D5EA6;font-family:'Manrope',sans-serif;">
+                @Model.CurrencySymbol@Model.TotalInputVat.ToString("N2")
+            </div>
+        </div>
+
+        <!-- Net VAT Payable -->
+        <div class="card-pad" style="border-radius:20px;background:#EEF4F8;border:0;">
+            <div class="label">@netLabel</div>
+            <div style="margin-top:10px;font-size:28px;font-weight:800;color:@netColor;font-family:'Manrope',sans-serif;">
+                @Model.CurrencySymbol@Math.Abs(Model.NetVatPayable).ToString("N2")
+            </div>
+        </div>
+
+        <!-- Totals summary — spans columns 2 and 3 -->
+        <div class="card-pad totals" style="grid-column:2/4;background:#EEF4F8;border-radius:16px;border:0;margin-left:0;max-width:none;">
+            <div class="row"><span class="muted">Output VAT</span><strong>@Model.CurrencySymbol@Model.TotalOutputVat.ToString("N2")</strong></div>
+            <div class="row"><span class="muted">Input VAT</span><strong>- @Model.CurrencySymbol@Model.TotalInputVat.ToString("N2")</strong></div>
+            <div class="row"><span>@netLabel</span><span class="big-total" style="color:@netColor;">@Model.CurrencySymbol@Math.Abs(Model.NetVatPayable).ToString("N2")</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- Sales Invoices (Output VAT Breakdown) -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="margin-bottom:16px;">
+        <div class="label">Output VAT</div>
+        <h2 style="margin-top:8px;font-size:24px;">Sales Invoices &nbsp;<span id="invoiceCount" style="font-size:14px;font-weight:500;color:#5E7385;font-family:'Inter',sans-serif;"></span></h2>
+        <p class="muted" style="font-size:13px;margin-top:4px;">Issued invoices contributing to Output VAT for this period.</p>
+    </div>
+    <!-- Output VAT total card — matches purchases strip format -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:18px;">
+        <div style="background:rgba(13,94,166,.12);border-radius:14px;padding:14px 20px;min-width:160px;">
+            <div class="label" style="color:#0D5EA6;">Total Output VAT</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#0D5EA6;margin-top:6px;">@Model.CurrencySymbol@Model.TotalOutputVat.ToString("N2")</div>
+            <div id="invoiceTotalCount" style="font-size:12px;color:#5E7385;margin-top:3px;"></div>
+        </div>
+    </div>
+    <div style="margin-bottom:16px;">
+        <input type="text" id="invoiceSearch" placeholder="Search by invoice number or customer..."
+               style="width:100%;max-width:380px;padding:8px 14px;border-radius:10px;border:1.5px solid rgba(13,94,166,.20);font-size:13px;font-family:'Inter',sans-serif;outline:none;" />
+    </div>
+    <div id="invoiceBreakdownContainer">
+        <div style="text-align:center;padding:32px;color:#5E7385;font-size:14px;">Loading...</div>
+    </div>
+</section>
+
+<!-- Purchases (Input VAT Breakdown) -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+            <div class="label">Input VAT</div>
+            <h2 style="margin-top:8px;font-size:24px;">Purchases &nbsp;<span id="purchaseCount" style="font-size:14px;font-weight:500;color:#5E7385;font-family:'Inter',sans-serif;"></span></h2>
+            <p class="muted" style="font-size:13px;margin-top:4px;">Purchases contributing to Input VAT for this period.</p>
+        </div>
+    </div>
+    <!-- Origin type KPI strip — populated by JS after first AJAX load -->
+    <div id="purchaseOriginSummary" style="display:flex;justify-content:space-between;align-items:stretch;flex-wrap:wrap;gap:14px;margin-bottom:18px;"></div>
+    <div style="margin-bottom:16px;">
+        <input type="text" id="purchaseSearch" placeholder="Search by reference, description or supplier..."
+               style="width:100%;max-width:380px;padding:8px 14px;border-radius:10px;border:1.5px solid rgba(13,94,166,.20);font-size:13px;font-family:'Inter',sans-serif;outline:none;" />
+    </div>
+    <div id="purchaseBreakdownContainer">
+        <div style="text-align:center;padding:32px;color:#5E7385;font-size:14px;">Loading...</div>
+    </div>
+</section>
+
+<!-- Submission Status -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Filing Status</div>
+    @if (Model.IsSubmitted)
+    {
+        <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+            <span class="pill pill-green">Submitted</span>
+            <span style="font-size:14px;color:#5E7385;">
+                Filed on @Model.SubmittedAtUtc?.ToString("dd MMM yyyy 'at' HH:mm") UTC
+            </span>
+        </div>
+    }
+    else
+    {
+        <div style="margin-top:12px;">
+            <p class="muted" style="font-size:14px;margin-bottom:16px;">This submission has not yet been marked as filed with the tax authority.</p>
+            <button type="button" class="btn btn-primary" onclick="markAsSubmitted()">Mark as Submitted</button>
+        </div>
+    }
+</section>
+
+<!-- Back link -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a href="/Vat/Index" class="btn btn-outline">&larr; Back to Periods</a>
+</div>
+
+<!-- Discrepancy Warning -->
+@if (Model.HasDiscrepancy)
+{
+    <section class="glass card-pad" style="margin-top:24px;border:1px solid rgba(194,138,46,0.3);background:rgba(194,138,46,0.04);">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span style="font-size:22px;">⚠️</span>
+            <div>
+                <div style="font-weight:700;font-size:15px;color:#C8912E;margin-bottom:6px;">Audit Discrepancy Detected</div>
+                <p class="muted" style="font-size:13px;margin:0;line-height:1.6;">
+                    The Input VAT computed by invoice dates (@Model.CurrencySymbol@Model.InputVatByDate.ToString("N2"))
+                    differs from the actual reported figure (@Model.CurrencySymbol@Model.TotalInputVat.ToString("N2")).
+                </p>
+                @if (Model.LatePurchasesIncluded > 0)
+                {
+                    <p style="font-size:13px;margin:6px 0 0;color:#5E7385;">
+                        <strong>@Model.LatePurchasesIncluded</strong> late purchase@(Model.LatePurchasesIncluded > 1 ? "s" : "") from previous periods included in this submission.
+                    </p>
+                }
+                @if (Model.PurchasesReportedLater > 0)
+                {
+                    <p style="font-size:13px;margin:6px 0 0;color:#5E7385;">
+                        <strong>@Model.PurchasesReportedLater</strong> purchase@(Model.PurchasesReportedLater > 1 ? "s" : "") from this period reported in a later submission.
+                    </p>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <script>
+        var submissionId = @Model.SubmissionId;
+        var periodId = @Model.PeriodId;
+        var invoicePage = 1;
+        var purchasePage = 1;
+        var invoiceSearch = '';
+        var purchaseSearch = '';
+        var invoiceSearchTimer = null;
+        var purchaseSearchTimer = null;
+
+        // ── Invoice Breakdown ──────────────────────────────────────────────────
+
+        async function loadInvoiceBreakdown() {
+            var container = document.getElementById('invoiceBreakdownContainer');
+            try {
+                var url = '/Vat/GetInvoiceBreakdown?periodId=' + periodId
+                    + '&page=' + invoicePage
+                    + '&search=' + encodeURIComponent(invoiceSearch);
+                var response = await fetch(url);
+                var data = await response.json();
+                if (!data.success) {
+                    container.innerHTML = '<p class="muted" style="padding:16px;font-size:14px;">Failed to load invoices.</p>';
+                    return;
+                }
+                renderInvoiceTable(data, container);
+            } catch (e) {
+                container.innerHTML = '<p class="muted" style="padding:16px;font-size:14px;">Error loading invoices.</p>';
+            }
+        }
+
+        function renderInvoiceTable(data, container) {
+            // Update count in header (always reflects total, not just current page)
+            var countEl = document.getElementById('invoiceCount');
+            if (countEl) countEl.textContent = '· ' + data.totalCount + ' invoice' + (data.totalCount !== 1 ? 's' : '');
+            var totalCountEl = document.getElementById('invoiceTotalCount');
+            if (totalCountEl) totalCountEl.textContent = data.totalCount + ' invoice' + (data.totalCount !== 1 ? 's' : '');
+            if (data.items.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:32px;color:#5E7385;font-size:14px;">'
+                    + (invoiceSearch ? 'No invoices match your search.' : 'No invoices in this period.')
+                    + '</div>';
+                return;
+            }
+
+            var html = '<table><thead><tr>'
+                + '<th>Invoice</th>'
+                + '<th>Customer</th>'
+                + '<th>Invoice Date</th>'
+                + '<th>Assignment</th>'
+                + '<th>Subtotal</th>'
+                + '<th>VAT Amount</th>'
+                + '</tr></thead><tbody>';
+
+            data.items.forEach(function (inv) {
+                var badge = inv.isExplicitAssignment
+                    ? '<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(13,94,166,.10);color:#0D5EA6;">Explicit</span>'
+                    : '<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(94,115,133,.10);color:#5E7385;">Date Range</span>';
+                html += '<tr>'
+                    + '<td><a href="/Invoice/Detail/' + inv.id + '" style="color:#0D5EA6;font-weight:600;text-decoration:none;">' + escapeHtml(inv.invoiceNumber) + '</a></td>'
+                    + '<td>' + escapeHtml(inv.customerName) + '</td>'
+                    + '<td>' + inv.invoiceDate + '</td>'
+                    + '<td>' + badge + '</td>'
+                    + '<td>' + formatCurrency(inv.subtotal) + '</td>'
+                    + '<td>' + formatCurrency(inv.taxAmount) + '</td>'
+                    + '</tr>';
+            });
+
+            html += '</tbody></table>';
+
+            var from = (data.page - 1) * data.pageSize + 1;
+            var to = Math.min(data.page * data.pageSize, data.totalCount);
+            html += renderPagingRow(from, to, data.totalCount, data.totalPages, data.page, 'invoice',
+                'Total Output VAT: <strong>' + formatCurrency(@Model.TotalOutputVat) + '</strong>');
+
+            container.innerHTML = html;
+        }
+
+        // ── Purchase Breakdown ─────────────────────────────────────────────────
+
+        async function loadPurchaseBreakdown() {
+            var container = document.getElementById('purchaseBreakdownContainer');
+            try {
+                var url = '/Vat/GetPurchaseBreakdown?periodId=' + periodId
+                    + '&page=' + purchasePage
+                    + '&search=' + encodeURIComponent(purchaseSearch);
+                var response = await fetch(url);
+                var data = await response.json();
+                if (!data.success) {
+                    container.innerHTML = '<p class="muted" style="padding:16px;font-size:14px;">Failed to load purchases.</p>';
+                    return;
+                }
+                renderPurchaseTable(data, container);
+            } catch (e) {
+                container.innerHTML = '<p class="muted" style="padding:16px;font-size:14px;">Error loading purchases.</p>';
+            }
+        }
+
+        function renderPurchaseTable(data, container) {
+            // Update count in header (always reflects total, not just current page)
+            var countEl = document.getElementById('purchaseCount');
+            if (countEl) countEl.textContent = '· ' + data.totalCount + ' purchase' + (data.totalCount !== 1 ? 's' : '');
+
+            // Render origin type KPI strip (only on first load / unfiltered)
+            renderOriginSummary(data.originSummary);
+            if (data.items.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:32px;color:#5E7385;font-size:14px;">'
+                    + (purchaseSearch ? 'No purchases match your search.' : 'No purchases in this period.')
+                    + '</div>';
+                return;
+            }
+
+            var html = '<table><thead><tr>'
+                + '<th>Reference</th>'
+                + '<th>Supplier</th>'
+                + '<th>Purchase Date</th>'
+                + '<th>Category</th>'
+                + '<th>Assignment</th>'
+                + '<th>VAT Amount</th>'
+                + '</tr></thead><tbody>';
+
+            data.items.forEach(function (p) {
+                var badge = p.isExplicitAssignment
+                    ? '<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(13,94,166,.10);color:#0D5EA6;">Explicit</span>'
+                    : '<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(94,115,133,.10);color:#5E7385;">Date Range</span>';
+                var originBadge = p.purchaseOriginTypeId === 2
+                    ? ' <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(200,145,46,.12);color:#C8912E;">EU RC</span>'
+                    : (p.purchaseOriginTypeId === 3
+                        ? ' <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(94,115,133,.10);color:#5E7385;">Non-EU</span>'
+                        : '');
+                var ref = p.invoiceNumber ? escapeHtml(p.invoiceNumber) : '&mdash;';
+                var desc = p.description
+                    ? '<div style="font-size:11px;color:#5E7385;margin-top:2px;">' + escapeHtml(p.description) + '</div>'
+                    : '';
+                html += '<tr>'
+                    + '<td><span style="font-weight:600;">' + ref + '</span>' + desc + '</td>'
+                    + '<td>' + escapeHtml(p.supplierName) + '</td>'
+                    + '<td>' + p.invoiceDate + '</td>'
+                    + '<td>' + escapeHtml(p.categoryName) + '</td>'
+                    + '<td>' + badge + originBadge + '</td>'
+                    + '<td>' + formatCurrency(p.vatAmount) + '</td>'
+                    + '</tr>';
+            });
+
+            html += '</tbody></table>';
+
+            var from = (data.page - 1) * data.pageSize + 1;
+            var to = Math.min(data.page * data.pageSize, data.totalCount);
+            html += renderPagingRow(from, to, data.totalCount, data.totalPages, data.page, 'purchase',
+                'Total Input VAT: <strong>' + formatCurrency(@Model.TotalInputVat) + '</strong>');
+
+            container.innerHTML = html;
+        }
+
+        // ── Shared helpers ─────────────────────────────────────────────────────
+
+        function renderOriginSummary(summary) {
+            var strip = document.getElementById('purchaseOriginSummary');
+            if (!strip || !summary || summary.length === 0) return;
+
+            var labels = { 1: 'Domestic', 2: 'EU Reverse Charge', 3: 'Non-EU' };
+            var colors = { 1: '#0D5EA6', 2: '#C8912E', 3: '#5E7385' };
+            var bgColors = { 1: 'rgba(13,94,166,.07)', 2: 'rgba(200,145,46,.10)', 3: 'rgba(94,115,133,.08)' };
+
+            var totalVat = 0;
+            var totalCount = 0;
+            var html = '<div style="display:flex;gap:14px;flex-wrap:wrap;">';
+
+            summary.forEach(function(s) {
+                var label = labels[s.originTypeId] || 'Other';
+                var color = colors[s.originTypeId] || '#5E7385';
+                var bg = bgColors[s.originTypeId] || 'rgba(94,115,133,.08)';
+                totalVat += s.totalVat;
+                totalCount += s.count;
+                html += '<div style="background:' + bg + ';border-radius:14px;padding:14px 20px;min-width:160px;">'
+                    + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:' + color + ';">' + label + '</div>'
+                    + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:800;color:' + color + ';margin-top:6px;">' + formatCurrency(s.totalVat) + '</div>'
+                    + '<div style="font-size:12px;color:#5E7385;margin-top:3px;">' + s.count + ' purchase' + (s.count !== 1 ? 's' : '') + '</div>'
+                    + '</div>';
+            });
+
+            html += '</div>';
+
+            // Total card — pushed to the right
+            html += '<div style="background:rgba(13,94,166,.12);border-radius:14px;padding:14px 20px;min-width:160px;margin-left:auto;">'
+                + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0D5EA6;">Total Input VAT</div>'
+                + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:800;color:#0D5EA6;margin-top:6px;">' + formatCurrency(totalVat) + '</div>'
+                + '<div style="font-size:12px;color:#5E7385;margin-top:3px;">' + totalCount + ' purchase' + (totalCount !== 1 ? 's' : '') + '</div>'
+                + '</div>';
+
+            strip.innerHTML = html;
+        }
+
+        function renderPagingRow(from, to, total, totalPages, currentPage, type, totalLabel) {
+            var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(13,94,166,.10);flex-wrap:wrap;gap:10px;">';
+            html += '<div style="font-size:13px;color:#5E7385;">Showing ' + from + '&ndash;' + to + ' of ' + total + ' &nbsp;&middot;&nbsp; ' + totalLabel + '</div>';
+            html += '<div style="display:flex;gap:6px;align-items:center;">';
+
+            // Prev button
+            var prevStyle = currentPage <= 1
+                ? 'padding:5px 12px;border-radius:8px;border:1.5px solid #e0e0e0;background:#f5f5f5;color:#b0bec5;font-size:13px;font-weight:700;cursor:default;font-family:\'Inter\',sans-serif;'
+                : 'padding:5px 12px;border-radius:8px;border:1.5px solid rgba(13,94,166,.20);background:#fff;color:#0D5EA6;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;';
+            var prevDisabled = currentPage <= 1 ? 'disabled' : '';
+            html += '<button ' + prevDisabled + ' onclick="changePage(\'' + type + '\',' + (currentPage - 1) + ')" style="' + prevStyle + '">&larr; Prev</button>';
+
+            // Page number buttons (up to 5 around current)
+            var start = Math.max(1, currentPage - 2);
+            var end = Math.min(totalPages, currentPage + 2);
+
+            if (start > 1) {
+                html += '<button onclick="changePage(\'' + type + '\',1)" style="padding:5px 12px;border-radius:8px;border:1.5px solid rgba(13,94,166,.20);background:#fff;color:#0D5EA6;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;">1</button>';
+                html += '<span style="font-size:13px;color:#5E7385;">&hellip;</span>';
+            }
+
+            for (var i = start; i <= end; i++) {
+                var activeStyle = i === currentPage
+                    ? 'padding:5px 12px;border-radius:8px;border:1.5px solid #0D5EA6;background:#0D5EA6;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;'
+                    : 'padding:5px 12px;border-radius:8px;border:1.5px solid rgba(13,94,166,.20);background:#fff;color:#0D5EA6;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;';
+                html += '<button onclick="changePage(\'' + type + '\',' + i + ')" style="' + activeStyle + '">' + i + '</button>';
+            }
+
+            if (end < totalPages) {
+                html += '<span style="font-size:13px;color:#5E7385;">&hellip;</span>';
+                html += '<button onclick="changePage(\'' + type + '\',' + totalPages + ')" style="padding:5px 12px;border-radius:8px;border:1.5px solid rgba(13,94,166,.20);background:#fff;color:#0D5EA6;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;">' + totalPages + '</button>';
+            }
+
+            // Next button
+            var nextStyle = currentPage >= totalPages
+                ? 'padding:5px 12px;border-radius:8px;border:1.5px solid #e0e0e0;background:#f5f5f5;color:#b0bec5;font-size:13px;font-weight:700;cursor:default;font-family:\'Inter\',sans-serif;'
+                : 'padding:5px 12px;border-radius:8px;border:1.5px solid rgba(13,94,166,.20);background:#fff;color:#0D5EA6;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;';
+            var nextDisabled = currentPage >= totalPages ? 'disabled' : '';
+            html += '<button ' + nextDisabled + ' onclick="changePage(\'' + type + '\',' + (currentPage + 1) + ')" style="' + nextStyle + '">Next &rarr;</button>';
+
+            html += '</div></div>';
+            return html;
+        }
+
+        function changePage(type, page) {
+            if (type === 'invoice') {
+                invoicePage = page;
+                loadInvoiceBreakdown();
+            } else {
+                purchasePage = page;
+                loadPurchaseBreakdown();
+            }
+        }
+
+        function formatCurrency(amount) {
+            return '@Model.CurrencySymbol' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // ── Search with 400 ms debounce ────────────────────────────────────────
+
+        document.getElementById('invoiceSearch').addEventListener('input', function () {
+            clearTimeout(invoiceSearchTimer);
+            invoiceSearchTimer = setTimeout(function () {
+                invoiceSearch = document.getElementById('invoiceSearch').value;
+                invoicePage = 1;
+                loadInvoiceBreakdown();
+            }, 400);
+        });
+
+        document.getElementById('purchaseSearch').addEventListener('input', function () {
+            clearTimeout(purchaseSearchTimer);
+            purchaseSearchTimer = setTimeout(function () {
+                purchaseSearch = document.getElementById('purchaseSearch').value;
+                purchasePage = 1;
+                loadPurchaseBreakdown();
+            }, 400);
+        });
+
+        // ── markAsSubmitted (unchanged) ────────────────────────────────────────
+
+        async function markAsSubmitted() {
+            const confirmed = await Swal.fire({
+                title: 'Confirm Submission',
+                text: 'Are you sure you want to mark this VAT submission as filed?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                confirmButtonText: 'Yes, mark as submitted'
+            });
+
+            if (!confirmed.isConfirmed) return;
+
+            BlockUI.show('Processing...');
+            try {
+                var response = await fetch('/Vat/MarkAsSubmitted', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'submissionId=' + submissionId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Done!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
+        }
+
+        // ── Initial load ───────────────────────────────────────────────────────
+        loadInvoiceBreakdown();
+        loadPurchaseBreakdown();
+    </script>
+}

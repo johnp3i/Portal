@@ -21,6 +21,10 @@ public class InvoiceController : Controller
     private readonly ILogoService _logoService;
     private readonly IBusinessService _businessService;
     private readonly BusinessPaymentDetailRepository _paymentDetailRepository;
+    private readonly IInvoiceSharingService _sharingService;
+    private readonly IDocumentDuplicationService _duplicationService;
+    private readonly IDocumentSoftDeleteService _softDeleteService;
+    private readonly VatSubmissionPeriodRepository _vatPeriodRepository;
 
     public InvoiceController(
         IInvoiceService invoiceService,
@@ -29,7 +33,11 @@ public class InvoiceController : Controller
         ICustomerService customerService,
         ILogoService logoService,
         IBusinessService businessService,
-        BusinessPaymentDetailRepository paymentDetailRepository)
+        BusinessPaymentDetailRepository paymentDetailRepository,
+        IInvoiceSharingService sharingService,
+        IDocumentDuplicationService duplicationService,
+        IDocumentSoftDeleteService softDeleteService,
+        VatSubmissionPeriodRepository vatPeriodRepository)
     {
         _invoiceService = invoiceService;
         _sectionService = sectionService;
@@ -38,18 +46,26 @@ public class InvoiceController : Controller
         _logoService = logoService;
         _businessService = businessService;
         _paymentDetailRepository = paymentDetailRepository;
+        _sharingService = sharingService;
+        _duplicationService = duplicationService;
+        _softDeleteService = softDeleteService;
+        _vatPeriodRepository = vatPeriodRepository;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(int? status, int? financialStatus, int? customer)
+    public async Task<IActionResult> Index(int? status, int? financialStatus, int? customer, string? search, int page = 1)
     {
-        var invoices = await _invoiceService.GetInvoicesAsync(status, financialStatus, customer);
+        var pagedResult = await _invoiceService.GetInvoicesPagedAsync(status, financialStatus, customer, search, page);
         var customers = await _customerService.GetCustomersAsync(null, true);
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
 
+        ViewBag.PagedResult = pagedResult;
+        ViewBag.SearchTerm = search;
         ViewBag.StatusFilter = status;
         ViewBag.FinancialStatusFilter = financialStatus;
         ViewBag.CustomerFilter = customer;
         ViewBag.Customers = customers;
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
         ViewBag.Statuses = new List<InvoiceStatusType>
         {
             new() { Id = 1, Name = "Draft" },
@@ -65,7 +81,7 @@ public class InvoiceController : Controller
             new() { Id = 5, Name = "WrittenOff" }
         };
 
-        return View(invoices);
+        return View(pagedResult.Items);
     }
 
     [HttpGet]
@@ -93,8 +109,21 @@ public class InvoiceController : Controller
         ViewBag.Lines = lines;
         ViewBag.Sections = sections;
         ViewBag.CustomerName = customer?.Name ?? "Unknown";
+        ViewBag.CustomerEmail = customer?.Email ?? "";
         ViewBag.StatusName = statusNames.GetValueOrDefault(invoice.InvoiceStatusTypeId, "Unknown");
         ViewBag.FinancialStatusName = financialStatusNames.GetValueOrDefault(invoice.InvoiceFinancialStatusTypeId, "Unknown");
+
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
+
+        // Load VAT period label separately (navigation property is not eager-loaded by raw SQL query)
+        if (invoice.VatSubmissionPeriodId.HasValue)
+        {
+            var vatPeriod = await _vatPeriodRepository.GetByIdAndBusinessIdAsync(
+                invoice.VatSubmissionPeriodId.Value, _tenantService.CurrentBusinessId);
+            if (vatPeriod != null)
+                invoice.VatSubmissionPeriod = vatPeriod;
+        }
 
         return View(invoice);
     }
@@ -134,7 +163,7 @@ public class InvoiceController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Preview(int id)
+    public async Task<IActionResult> Preview(int id, bool print = false)
     {
         var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
         if (invoice == null) return NotFound();
@@ -156,6 +185,7 @@ public class InvoiceController : Controller
         ViewBag.BusinessName = business?.Name ?? "";
         ViewBag.Profile = profile;
         ViewBag.PaymentDetails = paymentDetails;
+        ViewBag.AutoPrint = print;
 
         return View(invoice);
     }
@@ -184,12 +214,12 @@ public class InvoiceController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, int customerId, DateOnly invoiceDate, DateOnly dueDate,
-        string? notes, bool isGrandTotalShown)
+    public async Task<IActionResult> Edit(int id, string invoiceNumber, int customerId, DateOnly invoiceDate, DateOnly dueDate,
+        string? notes, bool isGrandTotalShown, bool isQuotationReferenceShown)
     {
         try
         {
-            await _invoiceService.UpdateInvoiceAsync(id, customerId, invoiceDate, dueDate, notes, isGrandTotalShown);
+            await _invoiceService.UpdateInvoiceAsync(id, customerId, invoiceDate, dueDate, notes, isGrandTotalShown, isQuotationReferenceShown, invoiceNumber);
             return RedirectToAction(nameof(Detail), new { id });
         }
         catch (ArgumentException ex)
@@ -229,6 +259,22 @@ public class InvoiceController : Controller
         {
             TempData["Error"] = ex.Message;
             return Redirect($"/Quotation/Detail/{quotationId}");
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Duplicate(int id)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var duplicate = await _duplicationService.DuplicateInvoiceAsync(id, userId);
+            return Json(new { success = true, redirectUrl = Url.Action("Detail", new { id = duplicate.Id }) });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
         }
     }
 
@@ -372,5 +418,91 @@ public class InvoiceController : Controller
     {
         await _sectionService.ReorderLinesAsync(orderedLineIds);
         return Json(new { success = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Share(int invoiceId, DateTimeOffset? expiresAtUtc, bool sendEmail = false, string? recipientEmail = null)
+    {
+        try
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? User.Identity?.Name ?? string.Empty;
+
+            var expiration = expiresAtUtc ?? DateTimeOffset.UtcNow.AddDays(7);
+
+            var share = await _sharingService.ShareAsync(invoiceId, expiration, sendEmail, userId, recipientEmail);
+            var shareUrl = $"/invoice-view/{share.ShareToken}";
+
+            return Json(new { success = true, shareUrl, token = share.ShareToken, expiresAt = share.ExpiresAtUtc });
+        }
+        catch (ArgumentException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetActiveShare(int invoiceId)
+    {
+        var share = await _sharingService.GetActiveShareByInvoiceIdAsync(invoiceId);
+        if (share == null)
+            return Json(new { hasActiveShare = false });
+
+        return Json(new {
+            hasActiveShare = true,
+            shareUrl = $"/invoice-view/{share.ShareToken}",
+            expiresAt = share.ExpiresAtUtc,
+            customerEmail = share.CustomerEmail
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.Invoice, AccessLevels.Full)]
+    public async Task<IActionResult> SoftDelete(int id)
+    {
+        try
+        {
+            var result = await _softDeleteService.SoftDeleteInvoiceAsync(id);
+
+            if (result.Success)
+                return Json(new { success = true, message = "Invoice deleted successfully." });
+
+            return Json(new { success = false, message = result.Message });
+        }
+        catch (Exception)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred while deleting the invoice." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.Invoice, AccessLevels.Full)]
+    public async Task<IActionResult> ReassignVatPeriod(int invoiceId, int targetPeriodId)
+    {
+        var result = await _invoiceService.ReassignVatPeriodAsync(invoiceId, targetPeriodId);
+        return Json(new { success = result.Success, message = result.Message });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetReassignmentImpact(int invoiceId, int targetPeriodId)
+    {
+        var result = await _invoiceService.GetReassignmentImpactAsync(invoiceId, targetPeriodId);
+        if (!result.Success)
+            return Json(new { success = false, message = result.Message });
+        return Json(new { success = true, data = result.Data });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetUnsubmittedPeriods(int invoiceId)
+    {
+        var periods = await _invoiceService.GetUnsubmittedPeriodsAsync(invoiceId);
+        return Json(periods);
     }
 }

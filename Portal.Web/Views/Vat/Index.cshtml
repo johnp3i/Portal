@@ -1,0 +1,214 @@
+@model Portal.Web.Models.VatPeriodsListViewModel
+@{
+    ViewData["Title"] = "VAT Periods";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> VAT</div>
+        <h1 style="margin-top:14px;font-size:42px;">VAT Periods</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review your VAT submission periods and track filing status.</p>
+    </div>
+</div>
+
+@if (Model.Periods != null && Model.Periods.Count > 0)
+{
+    <!-- Filters -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:180px;">
+                <label for="statusFilter">Status</label>
+                <select id="statusFilter" onchange="applyFilters()">
+                    <option value="">All Statuses</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Not Started">Not Started</option>
+                </select>
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="button" class="btn btn-secondary" style="padding:14px 20px;" onclick="clearFilters()">Clear</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Periods Table -->
+    <section class="glass card-pad">
+        <table id="vatPeriodsTable">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="vatPeriodsTableBody">
+                @foreach (var period in Model.Periods)
+                {
+                    <tr data-status="@period.Status">
+                        <td><strong>@period.PeriodLabel</strong></td>
+                        <td>@period.PeriodStartDate.ToString("dd MMM yyyy")</td>
+                        <td>@period.PeriodEndDate.ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (period.Status == "Submitted")
+                            {
+                                <span class="pill pill-green">Submitted</span>
+                                @if (period.SubmittedAtUtc.HasValue)
+                                {
+                                    <span class="vat-submitted-date">@period.SubmittedAtUtc.Value.ToString("dd MMM yyyy")</span>
+                                }
+                            }
+                            else if (period.Status == "Pending")
+                            {
+                                <span class="pill pill-gold">Pending</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-grey">Not Started</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="Detail" asp-route-periodId="@period.PeriodId" style="color:var(--blue);font-weight:700;font-size:13px;">View Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div id="paginationContainer" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+            <div id="paginationControls" style="display:flex;gap:4px;align-items:center;"></div>
+        </div>
+    </section>
+}
+else
+{
+    <section class="glass card-pad">
+        <div class="empty-state">
+            <p>No VAT periods found.</p>
+            @if (Model.NeedsFirstPeriod)
+            {
+                <p style="margin-top:12px;">To get started, define your first VAT period. The government assigns your VAT cycle — enter the start and end months of your first filing period.</p>
+                <a asp-action="CreateFirstPeriod" class="btn btn-primary" style="margin-top:16px;">Create First Period</a>
+            }
+        </div>
+    </section>
+}
+
+<style>
+    .pill-grey {
+        background: rgba(94, 115, 133, 0.08);
+        color: #5E7385;
+        border: 1px solid rgba(94, 115, 133, 0.16);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    .vat-submitted-date {
+        margin-left: 10px;
+        font-size: 13px;
+        color: #5E7385;
+        font-weight: 500;
+    }
+    .page-btn {
+        padding: 6px 12px;
+        border: 1px solid rgba(13,94,166,0.15);
+        border-radius: 8px;
+        background: white;
+        color: var(--blue);
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .page-btn.active {
+        background: var(--blue);
+        color: white;
+        border-color: var(--blue);
+    }
+    .page-btn:hover:not(.active) {
+        background: rgba(13,94,166,0.06);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        var pageSize = 10;
+        var currentPage = 1;
+
+        function getVisibleRows() {
+            var statusFilter = document.getElementById('statusFilter').value;
+            var rows = document.querySelectorAll('#vatPeriodsTableBody tr');
+            var visible = [];
+
+            rows.forEach(function (row) {
+                var status = row.getAttribute('data-status');
+                var show = true;
+
+                if (statusFilter && status !== statusFilter) show = false;
+
+                row.style.display = show ? '' : 'none';
+                if (show) visible.push(row);
+            });
+
+            return visible;
+        }
+
+        function applyFilters() {
+            currentPage = 1;
+            renderPage();
+        }
+
+        function clearFilters() {
+            document.getElementById('statusFilter').value = '';
+            currentPage = 1;
+            renderPage();
+        }
+
+        function renderPage() {
+            var visible = getVisibleRows();
+            var totalPages = Math.ceil(visible.length / pageSize);
+
+            // Hide all visible rows first, then show only current page
+            visible.forEach(function (row, i) {
+                var start = (currentPage - 1) * pageSize;
+                var end = start + pageSize;
+                row.style.display = (i >= start && i < end) ? '' : 'none';
+            });
+
+            // Update info
+            var start = (currentPage - 1) * pageSize + 1;
+            var end = Math.min(currentPage * pageSize, visible.length);
+            document.getElementById('paginationInfo').textContent =
+                visible.length > 0 ? 'Showing ' + start + '-' + end + ' of ' + visible.length + ' periods' : 'No periods match the filter';
+
+            // Render controls
+            var controls = document.getElementById('paginationControls');
+            controls.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            for (var p = 1; p <= totalPages; p++) {
+                var btn = document.createElement('button');
+                btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                btn.textContent = p;
+                btn.setAttribute('data-page', p);
+                btn.onclick = function () {
+                    currentPage = parseInt(this.getAttribute('data-page'));
+                    renderPage();
+                };
+                controls.appendChild(btn);
+            }
+        }
+
+        // Initial render
+        renderPage();
+    </script>
+}

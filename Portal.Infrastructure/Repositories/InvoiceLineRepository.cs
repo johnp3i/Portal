@@ -52,7 +52,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
         }
     }
 
-    public async Task<int> InsertAsync(InvoiceLine entity)
+    public virtual async Task<int> InsertAsync(InvoiceLine entity)
     {
         try
         {

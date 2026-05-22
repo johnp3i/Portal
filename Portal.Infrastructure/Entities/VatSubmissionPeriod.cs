@@ -22,4 +22,6 @@ public class VatSubmissionPeriod
     public Business Business { get; set; } = null!;
 
     public ICollection<VatSubmission> VatSubmissions { get; set; } = new List<VatSubmission>();
+
+    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 }

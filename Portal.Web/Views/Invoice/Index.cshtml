@@ -1,4 +1,5 @@
 @model List<Portal.Infrastructure.Models.InvoiceListDto>
+@using Portal.Infrastructure.Models
 @{
     ViewData["Title"] = "Invoices";
 }
@@ -24,6 +25,10 @@
 <section class="glass card-pad">
     <form method="get" asp-action="Index" asp-controller="Invoice">
         <div class="form-grid">
+            <div class="field">
+                <label>Search</label>
+                <input type="text" name="search" placeholder="Search by invoice number or customer..." value="@ViewBag.SearchTerm" />
+            </div>
             <div class="field">
                 <label>Status</label>
                 <select name="status">
@@ -84,7 +89,7 @@
                             <td>@item.CustomerName</td>
                             <td>@item.InvoiceDate.ToString("yyyy-MM-dd")</td>
                             <td>@item.DueDate.ToString("yyyy-MM-dd")</td>
-                            <td>@item.TotalAmount.ToString("N2")</td>
+                            <td>@(ViewBag.CurrencySymbol)@item.TotalAmount.ToString("N2")</td>
                             <td>
                                 @{
                                     var statusPillClass = item.InvoiceStatusTypeId switch
@@ -111,11 +116,16 @@
                                 }
                                 <span class="pill @financialPillClass">@item.FinancialStatusName</span>
                             </td>
-                            <td>
+                            <td style="white-space:nowrap;">
                                 <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Detail</a>
                                 @if (item.InvoiceStatusTypeId == 1)
                                 {
                                     <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;margin-left:12px;">Edit</a>
+                                }
+                                <a asp-action="Preview" asp-controller="Invoice" asp-route-id="@item.Id" target="_blank" style="color:var(--blue);font-weight:700;font-size:13px;margin-left:12px;">Preview</a>
+                                @if (item.InvoiceStatusTypeId == 1)
+                                {
+                                    <a href="javascript:void(0)" onclick="deleteInvoice(@item.Id)" style="color:var(--danger);font-weight:700;font-size:13px;margin-left:12px;">Delete</a>
                                 }
                             </td>
                         </tr>
@@ -130,4 +140,76 @@
             </div>
         }
     </div>
+
+    @{
+        var pagedResult = (PagedResult<Portal.Infrastructure.Models.InvoiceListDto>)ViewBag.PagedResult;
+    }
+    @await Html.PartialAsync("_PagingControl", null, new ViewDataDictionary(ViewData) {
+        { "CurrentPage", pagedResult.CurrentPage },
+        { "TotalPages", pagedResult.TotalPages },
+        { "TotalCount", pagedResult.TotalCount },
+        { "PageSize", pagedResult.PageSize },
+        { "HasPreviousPage", pagedResult.HasPreviousPage },
+        { "HasNextPage", pagedResult.HasNextPage }
+    })
 </section>
+
+@section Scripts {
+    <script>
+        async function deleteInvoice(invoiceId) {
+            const firstResult = await Swal.fire({
+                title: 'Are you sure?',
+                text: 'This invoice will be deleted.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it'
+            });
+
+            if (!firstResult.isConfirmed) return;
+
+            const secondResult = await Swal.fire({
+                title: 'Final Warning',
+                text: 'This action cannot be easily undone. Are you sure you want to proceed?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete permanently'
+            });
+
+            if (!secondResult.isConfirmed) return;
+
+            BlockUI.show('Deleting...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Invoice/SoftDelete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'id=' + invoiceId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The invoice has been deleted.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

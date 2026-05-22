@@ -30,7 +30,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
         }
     }
 
-    public async Task<Customer?> GetByIdAndBusinessIdAsync(int id, int businessId)
+    public virtual async Task<Customer?> GetByIdAndBusinessIdAsync(int id, int businessId)
     {
         try
         {

@@ -1,0 +1,414 @@
+@model Portal.Infrastructure.Models.InvoiceSnapshotModel
+@{
+    Layout = null;
+    var invoice = Model.Invoice;
+    var lines = Model.Lines;
+    var invoiceSections = Model.Sections;
+    var customerName = Model.CustomerName;
+    var logoUrl = Model.LogoUrl;
+    var businessName = Model.BusinessName;
+    var profile = Model.Profile;
+    var paymentDetails = Model.PaymentDetails;
+    var currencySymbol = profile?.CurrencySymbol ?? "€";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice @invoice.InvoiceNumber</title>
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --border: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: var(--bg); font-size: 14px; line-height: 1.6; padding: 40px 20px; }
+        .page { max-width: 860px; margin: 0 auto; background: #fff; border-radius: 24px; box-shadow: 0 8px 40px rgba(13,94,166,.08); padding: 56px 48px; }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+        h2 { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; }
+        h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+        .logo-section { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 24px; margin-bottom: 28px; border-bottom: 1px solid var(--border); }
+        .logo-section img { max-height: 60px; max-width: 200px; }
+        .business-info { text-align: right; font-size: 13px; line-height: 1.6; color: var(--text); }
+        .business-info .name { font-weight: 700; font-size: 14px; }
+        .business-info .vat { color: var(--muted); font-size: 12px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid var(--blue); }
+        .header-left h1 { color: var(--blue); }
+        .header-right { text-align: right; }
+        .header-right .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+        .header-right .value { font-size: 14px; font-weight: 600; margin-top: 2px; }
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+        .meta-item .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+        .meta-item .value { font-size: 14px; font-weight: 600; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+        th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+        th.right { text-align: right; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        td.right { text-align: right; }
+        .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+        .section-header { margin-top: 28px; margin-bottom: 8px; padding-bottom: 4px; }
+        .section-label { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--blue); margin-left: 8px; }
+        .section-desc { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+        .narrative-card { margin: 28px 0; padding: 24px 28px; border-left: 4px solid var(--blue); background: var(--bg); border-radius: 12px; }
+        .narrative-card ul, .narrative-card ol { margin: 12px 0; padding-left: 24px; }
+        .narrative-card li { margin-bottom: 4px; line-height: 1.7; }
+        .narrative-card p { margin-bottom: 8px; }
+        .totals-card { margin-left: auto; max-width: 320px; margin-top: 16px; padding: 16px 20px; background: var(--bg); border-radius: 12px; }
+        .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--border); }
+        .totals-row:first-child { border-top: none; padding-top: 0; }
+        .totals-row .label { color: var(--muted); font-size: 13px; }
+        .totals-row .value { font-weight: 700; font-size: 14px; }
+        .grand-total .value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+        .notes { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .notes .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+        .notes p { font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border); }
+        .signature-block .sig-label { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 40px; }
+        .signature-block .sig-line { border-bottom: 1px solid var(--muted); width: 200px; }
+        .payment-section { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+        .payment-section .section-title { font-size: 13px; font-weight: 700; color: var(--muted); text-decoration: underline; margin-bottom: 12px; }
+        .payment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; }
+        .payment-item { font-size: 13px; line-height: 1.6; color: var(--text); }
+        .payment-item .bank-name { font-weight: 600; }
+        .payment-item .iban { font-family: monospace; font-size: 12px; }
+        .payment-item .payee { font-style: italic; color: var(--muted); }
+        @@media print { body { background: #fff; padding: 0; } .page { box-shadow: none; border-radius: 0; padding: 24px; } }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="logo-section">
+        <div>
+            @if (!string.IsNullOrWhiteSpace(logoUrl))
+            {
+                <img src="@logoUrl" alt="@businessName" />
+            }
+        </div>
+        <div class="business-info">
+            <div class="name">@businessName</div>
+            @if (profile != null)
+            {
+                <div>@profile.AddressLine1</div>
+                @if (!string.IsNullOrWhiteSpace(profile.AddressLine2))
+                {
+                    <div>@profile.AddressLine2</div>
+                }
+                <div>@profile.City, @profile.PostalCode</div>
+                <div class="vat">VAT/TIC: @profile.VatRegistrationNumber</div>
+                @if (!string.IsNullOrWhiteSpace(profile.TelephoneNumber) || !string.IsNullOrWhiteSpace(profile.MobileNumber))
+                {
+                    <div>@(profile.TelephoneNumber ?? profile.MobileNumber)</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(profile.Website))
+                {
+                    <div><a href="@profile.Website" style="color:var(--blue);text-decoration:none;">@profile.Website</a></div>
+                }
+                <div>@profile.Email</div>
+            }
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="header-left">
+            <h1>INVOICE</h1>
+            <div style="margin-top:8px;font-size:16px;font-weight:700;">@invoice.InvoiceNumber</div>
+        </div>
+        <div class="header-right">
+            <div class="label">Bill To</div>
+            <div class="value">@customerName</div>
+        </div>
+    </div>
+
+    <div class="meta-grid">
+        <div class="meta-item">
+            <div class="label">Invoice Date</div>
+            <div class="value">@invoice.InvoiceDate.ToString("dd MMM yyyy")</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Due Date</div>
+            <div class="value">@invoice.DueDate.ToString("dd MMM yyyy")</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Status</div>
+            <div class="value">@(invoice.InvoiceStatusTypeId == 1 ? "Draft" : invoice.InvoiceStatusTypeId == 2 ? "Issued" : "Cancelled")</div>
+        </div>
+        @if (invoice.QuotationId.HasValue && invoice.IsQuotationReferenceShown)
+        {
+            <div class="meta-item">
+                <div class="label">Quotation Ref</div>
+                <div class="value">QUO-@(invoice.BusinessId)-@(invoice.QuotationId.Value.ToString("D5"))</div>
+            </div>
+        }
+        else
+        {
+            <div class="meta-item">
+                <div class="label">Currency</div>
+                <div class="value">@invoice.CurrencyCode</div>
+            </div>
+        }
+    </div>
+
+    @{
+        var orderedSections = invoiceSections.OrderBy(s => s.SortOrder).ToList();
+        var sectionedLineGroups = lines.Where(l => l.InvoiceSectionId != null).GroupBy(l => l.InvoiceSectionId).ToDictionary(g => g.Key!.Value, g => g.OrderBy(l => l.SortOrder).ToList());
+        var unsectionedLines = lines.Where(l => l.InvoiceSectionId == null).OrderBy(l => l.SortOrder).ToList();
+    }
+
+    @if (unsectionedLines.Any())
+    {
+        <h2>General</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th class="right">Qty</th>
+                    <th class="right">Unit Price</th>
+                    <th class="right">VAT %</th>
+                    <th class="right">Discount</th>
+                    <th class="right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var line in unsectionedLines)
+                {
+                    <tr>
+                        <td>
+                            <strong>@line.Description</strong>
+                            @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                            {
+                                <div class="subtitle">@line.Subtitle</div>
+                            }
+                        </td>
+                        <td class="right">@line.Quantity.ToString("N2")</td>
+                        <td class="right">@currencySymbol@line.UnitPrice.ToString("N2")</td>
+                        <td class="right">@line.VatRate.ToString("N2")%</td>
+                        <td class="right">
+                            @if (line.Discount > 0)
+                            { @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : $"{currencySymbol}{line.Discount:N2}") }
+                            else
+                            { <span style="color:var(--muted);">—</span> }
+                        </td>
+                        <td class="right"><strong>@currencySymbol@line.LineTotal.ToString("N2")</strong></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        var genSubtotal = unsectionedLines.Sum(l => l.LineTotal);
+        var genVat = unsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
+        var genTotal = genSubtotal + genVat;
+
+        <div class="totals-card">
+            <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@currencySymbol@genSubtotal.ToString("N2")</span></div>
+            <div class="totals-row"><span class="label">Section VAT</span><span class="value">@currencySymbol@genVat.ToString("N2")</span></div>
+            <div class="totals-row"><span class="label">Section Total</span><span class="value">@currencySymbol@genTotal.ToString("N2")</span></div>
+        </div>
+    }
+
+    @{
+        var lineItemSections = orderedSections.Where(s => s.SectionType != "Narrative").ToList();
+        var narrativeSections = orderedSections.Where(s => s.SectionType == "Narrative").ToList();
+    }
+
+    @foreach (var invSec in lineItemSections)
+    {
+        var secLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
+        var emphasisStyle = invSec.IsEmphasized ? $"border-left:4px solid {invSec.AccentColor ?? "var(--blue)"};padding-left:16px;" : "";
+
+        <div class="section-header" style="@emphasisStyle">
+            <h3>
+                @invSec.Name
+                @if (!string.IsNullOrWhiteSpace(invSec.Label))
+                {
+                    <span class="section-label">@invSec.Label</span>
+                }
+            </h3>
+            @if (!string.IsNullOrWhiteSpace(invSec.Description))
+            {
+                <div class="section-desc">@Html.Raw(invSec.Description)</div>
+            }
+        </div>
+
+        if (secLines.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Unit Price</th>
+                        <th class="right">VAT %</th>
+                        <th class="right">Discount</th>
+                        <th class="right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in secLines)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@line.Description</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                {
+                                    <div class="subtitle">@line.Subtitle</div>
+                                }
+                            </td>
+                            <td class="right">@line.Quantity.ToString("N2")</td>
+                            <td class="right">@currencySymbol@line.UnitPrice.ToString("N2")</td>
+                            <td class="right">@line.VatRate.ToString("N2")%</td>
+                            <td class="right">
+                                @if (line.Discount > 0)
+                                { @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : $"{currencySymbol}{line.Discount:N2}") }
+                                else
+                                { <span style="color:var(--muted);">—</span> }
+                            </td>
+                            <td class="right"><strong>@currencySymbol@line.LineTotal.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            if (invSec.IsTotalsTableShown)
+            {
+                var secSubtotal = secLines.Sum(l => l.LineTotal);
+                var secVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                var secTotal = secSubtotal + secVat;
+
+                <div class="totals-card">
+                    <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@currencySymbol@secSubtotal.ToString("N2")</span></div>
+                    <div class="totals-row"><span class="label">Section VAT</span><span class="value">@currencySymbol@secVat.ToString("N2")</span></div>
+                    <div class="totals-row"><span class="label">Section Total</span><span class="value">@currencySymbol@secTotal.ToString("N2")</span></div>
+                </div>
+            }
+        }
+        else
+        {
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">No line items in this section.</p>
+        }
+    }
+
+    <!-- Summary Table (per-section breakdown) -->
+    @{
+        var hasMultipleGroups = (unsectionedLines.Any() ? 1 : 0) + lineItemSections.Count(s => sectionedLineGroups.ContainsKey(s.Id) && sectionedLineGroups[s.Id].Any()) > 1;
+    }
+    @if (hasMultipleGroups)
+    {
+        <h2 style="margin-top:32px;">Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Section</th>
+                    <th class="right">Subtotal</th>
+                    <th class="right">Discount</th>
+                    <th class="right">VAT</th>
+                    <th class="right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (unsectionedLines.Any())
+                {
+                    var gSub = unsectionedLines.Sum(l => l.LineTotal);
+                    var gDisc = unsectionedLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
+                    var gVat = unsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                    var gTot = gSub + gVat;
+                    <tr>
+                        <td><strong>General</strong></td>
+                        <td class="right">@currencySymbol@gSub.ToString("N2")</td>
+                        <td class="right">@(gDisc > 0 ? $"-{currencySymbol}{gDisc:N2}" : "—")</td>
+                        <td class="right">@currencySymbol@gVat.ToString("N2")</td>
+                        <td class="right"><strong>@currencySymbol@gTot.ToString("N2")</strong></td>
+                    </tr>
+                }
+                @foreach (var invSec in lineItemSections)
+                {
+                    var secLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
+                    if (secLines.Any())
+                    {
+                        var sSub = secLines.Sum(l => l.LineTotal);
+                        var sDisc = secLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
+                        var sVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                        var sTot = sSub + sVat;
+                        <tr>
+                            <td><strong>@invSec.Name</strong></td>
+                            <td class="right">@currencySymbol@sSub.ToString("N2")</td>
+                            <td class="right">@(sDisc > 0 ? $"-{currencySymbol}{sDisc:N2}" : "—")</td>
+                            <td class="right">@currencySymbol@sVat.ToString("N2")</td>
+                            <td class="right"><strong>@currencySymbol@sTot.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+
+    <!-- Grand Totals -->
+    <div class="totals-card" style="margin-top:32px;">
+        <div class="totals-row"><span class="label">Subtotal</span><span class="value">@currencySymbol@invoice.Subtotal.ToString("N2")</span></div>
+        <div class="totals-row"><span class="label">Tax</span><span class="value">@currencySymbol@invoice.TaxAmount.ToString("N2")</span></div>
+        <div class="totals-row grand-total"><span class="label">Total</span><span class="value">@currencySymbol@invoice.TotalAmount.ToString("N2")</span></div>
+    </div>
+
+    <!-- Narrative Sections (after totals) -->
+    @foreach (var invSec in narrativeSections)
+    {
+        <div class="narrative-card" @(!string.IsNullOrWhiteSpace(invSec.AccentColor) ? $"style=\"border-left-color:{invSec.AccentColor};\"" : "")>
+            @if (!string.IsNullOrWhiteSpace(invSec.Label))
+            {
+                <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">@invSec.Label</div>
+            }
+            <h3 style="font-size:18px;font-weight:800;margin-bottom:12px;">@invSec.Name</h3>
+            @if (!string.IsNullOrWhiteSpace(invSec.Description))
+            {
+                <div style="font-size:14px;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Description)</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(invSec.Notes))
+            {
+                <div style="margin-top:16px;font-size:14px;font-weight:700;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Notes)</div>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(invoice.Notes))
+    {
+        <div class="notes">
+            <div class="label">Notes</div>
+            <p>@invoice.Notes</p>
+        </div>
+    }
+
+    <!-- Signature Lines -->
+    <div class="signature-section">
+        <div class="signature-block">
+            <div class="sig-label">Issued by</div>
+            <div class="sig-line"></div>
+        </div>
+        <div class="signature-block">
+            <div class="sig-label">Received by</div>
+            <div class="sig-line"></div>
+        </div>
+    </div>
+
+    <!-- Payment Details -->
+    @if (paymentDetails.Any())
+    {
+        <div class="payment-section">
+            <div class="section-title">Payment Details:</div>
+            <div class="payment-grid">
+                @foreach (var pd in paymentDetails)
+                {
+                    <div class="payment-item">
+                        <div class="bank-name">@pd.BankName</div>
+                        <div class="iban">IBAN: @pd.Iban</div>
+                        <div class="payee">Cheque issued to: @pd.PayeeName</div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+</body>
+</html>

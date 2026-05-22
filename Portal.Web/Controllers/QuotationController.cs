@@ -22,6 +22,9 @@ public class QuotationController : Controller
     private readonly QuotationContactRepository _contactRepository;
     private readonly IProposalSectionService _sectionService;
     private readonly IInvoiceService _invoiceService;
+    private readonly IBusinessService _businessService;
+    private readonly IDocumentDuplicationService _duplicationService;
+    private readonly IDocumentSoftDeleteService _softDeleteService;
 
     public QuotationController(
         IQuotationService quotationService,
@@ -31,7 +34,10 @@ public class QuotationController : Controller
         ICurrentTenantService tenantService,
         QuotationContactRepository contactRepository,
         IProposalSectionService sectionService,
-        IInvoiceService invoiceService)
+        IInvoiceService invoiceService,
+        IBusinessService businessService,
+        IDocumentDuplicationService duplicationService,
+        IDocumentSoftDeleteService softDeleteService)
     {
         _quotationService = quotationService;
         _customerService = customerService;
@@ -41,21 +47,27 @@ public class QuotationController : Controller
         _contactRepository = contactRepository;
         _sectionService = sectionService;
         _invoiceService = invoiceService;
+        _businessService = businessService;
+        _duplicationService = duplicationService;
+        _softDeleteService = softDeleteService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(int? status, int? customer, DateTime? dateFrom, DateTime? dateTo)
+    public async Task<IActionResult> Index(int? status, int? customer, DateTime? dateFrom, DateTime? dateTo, string? search, int page = 1)
     {
-        var quotations = await _quotationService.GetQuotationsAsync(status, customer, dateFrom, dateTo);
+        var pagedQuotations = await _quotationService.GetQuotationsPagedAsync(status, customer, dateFrom, dateTo, search, page);
         var customers = await _customerService.GetCustomersAsync(null, true);
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
 
         var viewModel = new QuotationListViewModel
         {
-            Quotations = quotations,
+            PagedQuotations = pagedQuotations,
+            Quotations = pagedQuotations.Items,
             StatusFilter = status,
             CustomerFilter = customer,
             DateFrom = dateFrom,
             DateTo = dateTo,
+            SearchTerm = search,
             Customers = customers,
             Statuses = new List<QuotationStatusType>
             {
@@ -66,6 +78,8 @@ public class QuotationController : Controller
                 new() { Id = 5, Name = "Archived" }
             }
         };
+
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
         return View(viewModel);
     }
@@ -111,7 +125,7 @@ public class QuotationController : Controller
         var quotation = await _quotationService.GetQuotationByIdAsync(id);
         if (quotation == null) return NotFound();
 
-        if (quotation.QuotationStatusTypeId != 1)
+        if (quotation.QuotationStatusTypeId != 1 && quotation.QuotationStatusTypeId != 2)
         {
             return RedirectToAction(nameof(Detail), new { id });
         }
@@ -165,7 +179,7 @@ public class QuotationController : Controller
 
         try
         {
-            await _quotationService.UpdateQuotationAsync(id, model.CustomerId, model.ValidUntil, model.Notes, model.QuotationContactId, model.IsGrandTotalShown);
+            await _quotationService.UpdateQuotationAsync(id, model.CustomerId, model.ValidUntil, model.Notes, model.QuotationContactId, model.IsGrandTotalShown, model.Reference);
             return RedirectToAction(nameof(Detail), new { id });
         }
         catch (ArgumentException ex)
@@ -222,6 +236,10 @@ public class QuotationController : Controller
         ViewBag.Logos = logos;
         ViewBag.QuotationId = id;
         ViewBag.DefaultExpiration = DateTimeOffset.UtcNow.AddDays(3);
+        ViewBag.CustomerEmail = customer?.Email ?? "";
+
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
         var viewModel = new QuotationDetailViewModel
         {
@@ -439,26 +457,24 @@ public class QuotationController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Invalid share configuration.";
-            return RedirectToAction(nameof(Detail), new { id });
+            return Json(new { success = false, message = "Invalid share configuration." });
         }
 
         try
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            await _proposalService.ShareAsync(id, model.ExpiresAtUtc, model.HeroLogoIds, model.MetaLogoId, userId);
-            TempData["Success"] = "Proposal shared successfully.";
+            var share = await _proposalService.ShareAsync(id, model.ExpiresAtUtc, model.HeroLogoIds, model.MetaLogoId, userId, model.RecipientEmail, model.SendEmail);
+            var shareUrl = $"/proposal/{share.ShareToken}";
+            return Json(new { success = true, shareUrl, token = share.ShareToken, expiresAt = share.ExpiresAtUtc });
         }
         catch (ArgumentException ex)
         {
-            TempData["Error"] = ex.Message;
+            return Json(new { success = false, message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            TempData["Error"] = ex.Message;
+            return Json(new { success = false, message = ex.Message });
         }
-
-        return RedirectToAction(nameof(Detail), new { id });
     }
 
     [HttpPost]
@@ -474,6 +490,43 @@ public class QuotationController : Controller
 
         var url = $"{Request.Scheme}://{Request.Host}/proposal/{share.ShareToken}";
         return Json(new { success = true, url });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.Quotation, AccessLevels.Full)]
+    public async Task<IActionResult> Duplicate(int id)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var duplicate = await _duplicationService.DuplicateQuotationAsync(id, userId);
+            return Json(new { success = true, redirectUrl = Url.Action("Details", new { id = duplicate.Id }) });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.Quotation, AccessLevels.Full)]
+    public async Task<IActionResult> SoftDelete(int id)
+    {
+        try
+        {
+            var result = await _softDeleteService.SoftDeleteQuotationAsync(id);
+
+            if (result.Success)
+                return Json(new { success = true, message = "Quotation deleted successfully." });
+
+            return Json(new { success = false, message = result.Message });
+        }
+        catch (Exception)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred while deleting the quotation." });
+        }
     }
 
     private bool IsAjaxRequest()

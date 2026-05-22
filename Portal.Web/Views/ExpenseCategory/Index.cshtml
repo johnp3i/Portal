@@ -1,0 +1,221 @@
+@model List<Portal.Infrastructure.Entities.ExpenseCategory>
+@{
+    ViewData["Title"] = "Expense Categories";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 style="margin-top:14px;font-size:42px;">Expense Categories</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Manage your expense classification categories.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" onclick="openCreateModal()">Create Category</button>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in Model)
+                {
+                    <tr>
+                        <td><strong>@category.Name</strong></td>
+                        <td>
+                            @if (category.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-red">Inactive</span>
+                            }
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:12px;align-items:center;">
+                                <button type="button" style="background:none;border:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;" data-id="@category.Id" data-name="@category.Name" onclick="openEditModal(this.dataset.id, this.dataset.name)">Edit</button>
+                                @if (category.IsActive)
+                                {
+                                    <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" data-id="@category.Id" data-name="@category.Name" onclick="confirmDeactivate(this.dataset.id, this.dataset.name)">Deactivate</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No expense categories found. Create your first category to get started.</p>
+        </div>
+    }
+</section>
+
+<!-- Hidden antiforgery token for AJAX requests -->
+<form id="antiforgery-form" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<!-- Create/Edit Modal -->
+<div id="categoryModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+        <h2 id="modalTitle" style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#0B1B28;margin:0 0 24px 0;">Create Category</h2>
+        <div class="field" style="margin-bottom:24px;">
+            <label for="categoryName" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Name</label>
+            <input type="text" id="categoryName" placeholder="Enter category name" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#0D5EA6'" onblur="this.style.borderColor='rgba(13,94,166,.15)'" />
+        </div>
+        <input type="hidden" id="categoryId" value="" />
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveCategory()">Save</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]').value;
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Create Category';
+            document.getElementById('categoryName').value = '';
+            document.getElementById('categoryId').value = '';
+            var modal = document.getElementById('categoryModal');
+            modal.style.display = 'flex';
+            document.getElementById('categoryName').focus();
+        }
+
+        function openEditModal(id, name) {
+            document.getElementById('modalTitle').textContent = 'Edit Category';
+            document.getElementById('categoryName').value = name;
+            document.getElementById('categoryId').value = id;
+            var modal = document.getElementById('categoryModal');
+            modal.style.display = 'flex';
+            document.getElementById('categoryName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('categoryModal').style.display = 'none';
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('categoryModal').addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
+
+        async function saveCategory() {
+            var name = document.getElementById('categoryName').value.trim();
+            if (!name) {
+                Swal.fire({ title: 'Validation', text: 'Category name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var id = document.getElementById('categoryId').value;
+            var isEdit = id !== '';
+            var url = isEdit ? '/ExpenseCategory/Edit' : '/ExpenseCategory/Create';
+
+            var formData = new FormData();
+            formData.append('Name', name);
+            if (isEdit) {
+                formData.append('Id', id);
+            }
+
+            BlockUI.show(isEdit ? 'Updating category...' : 'Creating category...');
+            closeModal();
+
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Success',
+                        text: data.message || (isEdit ? 'Category updated successfully.' : 'Category created successfully.'),
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function confirmDeactivate(id, name) {
+            var result = await Swal.fire({
+                title: 'Deactivate Category',
+                text: 'Are you sure you want to deactivate "' + name + '"? It will no longer appear in dropdown selections.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, deactivate'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Deactivating...');
+
+            try {
+                var formData = new FormData();
+                formData.append('id', id);
+
+                var response = await fetch('/ExpenseCategory/Deactivate', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Deactivated',
+                        text: data.message || 'Category has been deactivated.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        // Handle Enter key in modal
+        document.getElementById('categoryName').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveCategory();
+            }
+        });
+    </script>
+}

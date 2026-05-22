@@ -21,7 +21,7 @@ public class ProposalShareRepository : GenericStoredProcedureRepository<Proposal
                 FROM [quotation].[ProposalShare]
                 WHERE [ShareToken] = @ShareToken";
 
-            return await ExecuteSingleRecordStoredProcedure(query, new SqlParameter("@ShareToken", token));
+            return await ExecuteSingleRecordStoredProcedureUnfiltered(query, new SqlParameter("@ShareToken", token));
         }
         catch (Exception)
         {
@@ -95,6 +95,24 @@ public class ProposalShareRepository : GenericStoredProcedureRepository<Proposal
         }
     }
 
+    public async Task<List<ProposalShare>> GetByBusinessIdAsync(int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [QuotationId], [BusinessId], [ShareToken], [SnapshotHtml],
+                       [CustomerEmail], [ExpiresAtUtc], [CreatedAtUtc], [CreatedByUserId], [IsActive]
+                FROM [quotation].[ProposalShare]
+                WHERE [BusinessId] = @BusinessId";
+
+            return await ExecuteStoredProcedure(query, new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
     public async Task DeactivateByQuotationIdAsync(int quotationId)
     {
         try
@@ -105,6 +123,46 @@ public class ProposalShareRepository : GenericStoredProcedureRepository<Proposal
                 WHERE [QuotationId] = @QuotationId AND [IsActive] = 1";
 
             await _context.Database.ExecuteSqlRawAsync(query, new SqlParameter("@QuotationId", quotationId));
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task DeactivateByIdAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [quotation].[ProposalShare]
+                SET [IsActive] = 0
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId)
+            );
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task ReactivateByIdAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [quotation].[ProposalShare]
+                SET [IsActive] = 1
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId)
+            );
         }
         catch (Exception)
         {

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bulk Purchase Entry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .grid-table { width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
+    .grid-table thead th {
+      background:#F4FAFE; color:#395367; font-size:11px; font-weight:800;
+      letter-spacing:.08em; text-transform:uppercase; border-bottom:1px solid rgba(13,94,166,.08);
+      padding:10px 8px; text-align:left; position:sticky; top:0; z-index:10;
+    }
+    .grid-table tbody td {
+      padding:4px 4px; border-bottom:1px solid rgba(13,94,166,.05); vertical-align:middle;
+    }
+    .grid-table tbody tr:hover { background:rgba(13,94,166,.02); }
+    .grid-table tbody tr.has-error { background:rgba(194,74,74,.04); }
+    .grid-table input, .grid-table select {
+      width:100%; padding:9px 10px; border-radius:10px; border:1px solid rgba(13,94,166,.10);
+      background:#fff; font:inherit; font-size:13px; color:var(--text); transition:border-color .15s;
+    }
+    .grid-table input:focus, .grid-table select:focus {
+      outline:none; border-color:var(--blue); box-shadow:0 0 0 2px rgba(13,94,166,.08);
+    }
+    .grid-table input.error, .grid-table select.error {
+      border-color:var(--red); background:rgba(194,74,74,.03);
+    }
+    .grid-table input[type="number"] { width:100px; text-align:right; }
+    .grid-table input[type="date"] { width:130px; }
+    .grid-table .total-cell {
+      font-weight:700; color:var(--blue); background:var(--bg2);
+      border-radius:8px; padding:9px 10px; text-align:right; min-width:90px;
+    }
+    .rc-toggle {
+      width:36px; height:20px; border-radius:999px; background:rgba(13,94,166,.12);
+      cursor:pointer; position:relative; transition:background .2s; flex-shrink:0;
+    }
+    .rc-toggle.active { background:var(--blue); }
+    .rc-toggle::after {
+      content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+      border-radius:999px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.12); transition:transform .2s;
+    }
+    .rc-toggle.active::after { transform:translateX(16px); }
+    .row-actions { display:flex; gap:6px; align-items:center; }
+    .row-actions button {
+      width:28px; height:28px; border-radius:8px; border:none; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:14px; transition:background .15s;
+    }
+    .btn-remove { background:rgba(194,74,74,.08); color:var(--red); }
+    .btn-remove:hover { background:rgba(194,74,74,.16); }
+    .btn-duplicate { background:rgba(13,94,166,.06); color:var(--blue); }
+    .btn-duplicate:hover { background:rgba(13,94,166,.12); }
+    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+    .toolbar-left { display:flex; gap:10px; align-items:center; }
+    .toolbar-right { display:flex; gap:10px; align-items:center; }
+    .row-counter { font-size:13px; font-weight:700; color:var(--muted); }
+    .keyboard-hint { font-size:11px; color:var(--muted2); background:rgba(13,94,166,.04); padding:6px 12px; border-radius:8px; }
+    .batch-summary {
+      display:flex; gap:24px; align-items:center; padding:16px 20px; margin-top:16px;
+      background:rgba(13,94,166,.03); border:1px solid rgba(13,94,166,.08); border-radius:16px;
+    }
+    .batch-summary .stat { text-align:center; }
+    .batch-summary .stat-value { font-size:1.3rem; font-weight:800; color:var(--blue); letter-spacing:-.03em; }
+    .batch-summary .stat-label { font-size:11px; font-weight:700; color:var(--muted2); text-transform:uppercase; letter-spacing:.08em; margin-top:2px; }
+    .scroll-container { overflow-x:auto; border-radius:18px; border:1px solid rgba(13,94,166,.06); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item" href="quotation_dashboard.html">Dashboard</a>
+      <a class="nav-item" href="quotation_list.html">Quotations</a>
+      <a class="nav-item" href="invoice_list.html">Invoices</a>
+      <a class="nav-item active" href="purchase_list.html">Purchases</a>
+      <a class="nav-item" href="supplier_list.html">Suppliers</a>
+      <a class="nav-item" href="expense_category_list.html">Expense Categories</a>
+    </aside>
+    <main class="content">
+
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Purchases</div>
+    <h1 style="margin-top:14px;font-size:42px;">Bulk Entry</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Spreadsheet-style entry for recording multiple purchases quickly.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a class="btn btn-secondary" href="purchase_list.html">Back to List</a>
+    <a class="btn btn-secondary" href="purchase_create.html">Single Entry</a>
+  </div>
+</div>
+
+<section class="glass card-pad">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="btn btn-primary" onclick="addRow()" style="padding:10px 14px;font-size:13px;">+ Add Row</button>
+      <button class="btn btn-secondary" onclick="addRows(5)" style="padding:10px 14px;font-size:13px;">+ Add 5 Rows</button>
+      <span class="row-counter" id="rowCounter">6 rows</span>
+    </div>
+    <div class="toolbar-right">
+      <span class="keyboard-hint">Tab = next cell &nbsp;|&nbsp; Enter = save row &nbsp;|&nbsp; Ctrl+D = duplicate</span>
+    </div>
+  </div>
+
+  <!-- Editable Grid -->
+  <div class="scroll-container">
+    <table class="grid-table" id="bulkGrid">
+      <thead>
+        <tr>
+          <th style="width:40px;">#</th>
+          <th>Date</th>
+          <th>Invoice #</th>
+          <th>Supplier</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Excl. VAT</th>
+          <th>VAT</th>
+          <th style="width:50px;">RC</th>
+          <th>Country</th>
+          <th>Total</th>
+          <th style="width:70px;"></th>
+        </tr>
+      </thead>
+      <tbody id="gridBody">
+        <!-- Row 1 - filled example -->
+        <tr>
+          <td style="color:var(--muted);font-weight:700;text-align:center;">1</td>
+          <td><input type="date" value="2026-04-28" /></td>
+          <td><input type="text" value="SUP-2026-041" /></td>
+          <td>
+            <select>
+              <option value="2" selected>TechParts GmbH</option>
+              <option value="1">Office Depot EU</option>
+              <option value="3">CloudHost Services</option>
+              <option value="4">Print & Paper Co</option>
+            </select>
+          </td>
+          <td>
+            <select>
+              <option value="2" selected>IT Equipment</option>
+              <option value="1">Office Supplies</option>
+              <option value="3">Cloud Services</option>
+              <option value="4">Marketing</option>
+              <option value="5">Travel</option>
+            </select>
+          </td>
+          <td><input type="text" value="Replacement SSD drives (x3)" /></td>
+          <td><input type="number" value="420.00" step="0.01" /></td>
+          <td><input type="number" value="0.00" step="0.01" disabled style="background:var(--bg2);" /></td>
+          <td style="text-align:center;"><div class="rc-toggle active" onclick="toggleRowRC(this)"></div></td>
+          <td><input type="text" value="Germany" /></td>
+          <td><div class="total-cell">€420.00</div></td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-duplicate" title="Duplicate row" onclick="duplicateRow(this)">⧉</button>
+              <button class="btn-remove" title="Remove row" onclick="removeRow(this)">✕</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 2 -->
+        <tr>
+          <td style="color:var(--muted);font-weight:700;text-align:center;">2</td>
+          <td><input type="date" value="2026-04-25" /></td>
+          <td><input type="text" value="INV-88421" /></td>
+          <td>
+            <select>
+              <option value="3" selected>CloudHost Services</option>
+              <option value="1">Office Depot EU</option>
+              <option value="2">TechParts GmbH</option>
+              <option value="4">Print & Paper Co</option>
+            </select>
+          </td>
+          <td>
+            <select>
+              <option value="3" selected>Cloud Services</option>
+              <option value="1">Office Supplies</option>
+              <option value="2">IT Equipment</option>
+              <option value="4">Marketing</option>
+              <option value="5">Travel</option>
+            </select>
+          </td>
+          <td><input type="text" value="Monthly hosting April 2026" /></td>
+          <td><input type="number" value="189.00" step="0.01" /></td>
+          <td><input type="number" value="39.69" step="0.01" /></td>
+          <td style="text-align:center;"><div class="rc-toggle" onclick="toggleRowRC(this)"></div></td>
+          <td><input type="text" value="" placeholder="—" /></td>
+          <td><div class="total-cell">€228.69</div></td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-duplicate" title="Duplicate row" onclick="duplicateRow(this)">⧉</button>
+              <button class="btn-remove" title="Remove row" onclick="removeRow(this)">✕</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 3 -->
+        <tr>
+          <td style="color:var(--muted);font-weight:700;text-align:center;">3</td>
+          <td><input type="date" value="2026-04-22" /></td>
+          <td><input type="text" value="OD-2026-1187" /></td>
+          <td>
+            <select>
+              <option value="1" selected>Office Depot EU</option>
+              <option value="2">TechParts GmbH</option>
+              <option value="3">CloudHost Services</option>
+              <option value="4">Print & Paper Co</option>
+            </select>
+          </td>
+          <td>
+            <select>
+              <option value="1" selected>Office Supplies</option>
+              <option value="2">IT Equipment</option>
+              <option value="3">Cloud Services</option>
+              <option value="4">Marketing</option>
+              <option value="5">Travel</option>
+            </select>
+          </td>
+          <td><input type="text" value="Printer paper, toner cartridges" /></td>
+          <td><input type="number" value="145.00" step="0.01" /></td>
+          <td><input type="number" value="0.00" step="0.01" disabled style="background:var(--bg2);" /></td>
+          <td style="text-align:center;"><div class="rc-toggle active" onclick="toggleRowRC(this)"></div></td>
+          <td><input type="text" value="Netherlands" /></td>
+          <td><div class="total-cell">€145.00</div></td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-duplicate" title="Duplicate row" onclick="duplicateRow(this)">⧉</button>
+              <button class="btn-remove" title="Remove row" onclick="removeRow(this)">✕</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 4 - with validation error example -->
+        <tr class="has-error">
+          <td style="color:var(--muted);font-weight:700;text-align:center;">4</td>
+          <td><input type="date" value="2026-04-18" /></td>
+          <td><input type="text" value="PP-4421" /></td>
+          <td>
+            <select>
+              <option value="4" selected>Print & Paper Co</option>
+              <option value="1">Office Depot EU</option>
+              <option value="2">TechParts GmbH</option>
+              <option value="3">CloudHost Services</option>
+            </select>
+          </td>
+          <td>
+            <select>
+              <option value="4" selected>Marketing</option>
+              <option value="1">Office Supplies</option>
+              <option value="2">IT Equipment</option>
+              <option value="3">Cloud Services</option>
+              <option value="5">Travel</option>
+            </select>
+          </td>
+          <td><input type="text" value="" class="error" placeholder="Description required" /></td>
+          <td><input type="number" value="85.00" step="0.01" /></td>
+          <td><input type="number" value="17.85" step="0.01" /></td>
+          <td style="text-align:center;"><div class="rc-toggle" onclick="toggleRowRC(this)"></div></td>
+          <td><input type="text" value="" placeholder="—" /></td>
+          <td><div class="total-cell">€102.85</div></td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-duplicate" title="Duplicate row" onclick="duplicateRow(this)">⧉</button>
+              <button class="btn-remove" title="Remove row" onclick="removeRow(this)">✕</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 5 - empty row ready for input -->
+        <tr>
+          <td style="color:var(--muted);font-weight:700;text-align:center;">5</td>
+          <td><input type="date" value="" /></td>
+          <td><input type="text" value="" placeholder="INV-..." /></td>
+          <td>
+            <select>
+              <option value="">Select...</option>
+              <option value="1">Office Depot EU</option>
+              <option value="2">TechParts GmbH</option>
+              <option value="3">CloudHost Services</option>
+              <option value="4">Print & Paper Co</option>
+            </select>
+          </td>
+          <td>
+            <select>
+              <option value="">Select...</option>
+              <option value="1">Office Supplies</option>
+              <option value="2">IT Equipment</option>
+              <option value="3">Cloud Services</option>
+              <option value="4">Marketing</option>
+              <option value="5">Travel</option>
+            </select>
+          </td>
+          <td><input type="text" value="" placeholder="What was purchased?" /></td>
+          <td><input type="number" value="" step="0.01" placeholder="0.00" /></td>
+          <td><input type="number" value="" step="0.01" placeholder="0.00" /></td>
+          <td style="text-align:center;"><div class="rc-toggle" onclick="toggleRowRC(this)"></div></td>
+          <td><input type="text" value="" placeholder="—" /></td>
+          <td><div class="total-cell">—</div></td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-duplicate" title="Duplicate row" onclick="duplicateRow(this)">⧉</button>
+              <button class="btn-remove" title="Remove row" onclick="removeRow(this)">✕</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 6 - empty -->
+        <tr>
+          <td style="color:var(--muted);font-weight:700;text-align:center;">6</td>
+          <td><input type="date" value="" /></td>
+          <td><input type="text" value="" placeholder="INV-..." /></td>
+          <td>
+            <select>
+              <option value="">Select...</option>
+              <option value="1">Office Depot EU</option>
+              <option value="2">TechParts GmbH</option>
+              <option value="3">CloudHost Services</option>
+              <option value="4">Print & Paper Co</option>
+            </select>
+          </td>
+          <td>
+            <select>
+              <option value="">Select...</option>
+              <option value="1">Office Supplies</option>
+              <option value="2">IT Equipment</option>
+              <option value="3">Cloud Services</option>
+              <option value="4">Marketing</option>
+              <option value="5">Travel</option>
+            </select>
+          </td>
+          <td><input type="text" value="" placeholder="What was purchased?" /></td>
+          <td><input type="number" value="" step="0.01" placeholder="0.00" /></td>
+          <td><input type="number" value="" step="0.01" placeholder="0.00" /></td>
+          <td style="text-align:center;"><div class="rc-toggle" onclick="toggleRowRC(this)"></div></td>
+          <td><input type="text" value="" placeholder="—" /></td>
+          <td><div class="total-cell">—</div></td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-duplicate" title="Duplicate row" onclick="duplicateRow(this)">⧉</button>
+              <button class="btn-remove" title="Remove row" onclick="removeRow(this)">✕</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Batch Summary -->
+  <div class="batch-summary">
+    <div class="stat">
+      <div class="stat-value">4</div>
+      <div class="stat-label">Filled Rows</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">1</div>
+      <div class="stat-label">Errors</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">€896.54</div>
+      <div class="stat-label">Batch Total</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">3</div>
+      <div class="stat-label">EU RC</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:10px;">
+      <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+      <button class="btn btn-primary" onclick="saveAll()">Save All (4 rows)</button>
+    </div>
+  </div>
+</section>
+
+    </main>
+  </div>
+
+  <script>
+    let rowCount = 6;
+
+    function toggleRowRC(el) {
+      el.classList.toggle('active');
+      const row = el.closest('tr');
+      const vatInput = row.querySelectorAll('input[type="number"]')[1];
+      if (el.classList.contains('active')) {
+        vatInput.value = '0.00';
+        vatInput.disabled = true;
+        vatInput.style.background = 'var(--bg2)';
+      } else {
+        vatInput.disabled = false;
+        vatInput.style.background = '#fff';
+      }
+    }
+
+    function removeRow(btn) {
+      const row = btn.closest('tr');
+      row.remove();
+      renumberRows();
+    }
+
+    function duplicateRow(btn) {
+      const row = btn.closest('tr');
+      const clone = row.cloneNode(true);
+      row.parentNode.insertBefore(clone, row.nextSibling);
+      renumberRows();
+    }
+
+    function addRow() {
+      rowCount++;
+      const tbody = document.getElementById('gridBody');
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td style="color:var(--muted);font-weight:700;text-align:center;">${rowCount}</td>
+        <td><input type="date" value="" /></td>
+        <td><input type="text" value="" placeholder="INV-..." /></td>
+        <td><select><option value="">Select...</option><option value="1">Office Depot EU</option><option value="2">TechParts GmbH</option><option value="3">CloudHost Services</option><option value="4">Print & Paper Co</option></select></td>
+        <td><select><option value="">Select...</option><option value="1">Office Supplies</option><option value="2">IT Equipment</option><option value="3">Cloud Services</option><option value="4">Marketing</option><option value="5">Travel</option></select></td>
+        <td><input type="text" value="" placeholder="What was purchased?" /></td>
+        <td><input type="number" value="" step="0.01" placeholder="0.00" /></td>
+        <td><input type="number" value="" step="0.01" placeholder="0.00" /></td>
+        <td style="text-align:center;"><div class="rc-toggle" onclick="toggleRowRC(this)"></div></td>
+        <td><input type="text" value="" placeholder="—" /></td>
+        <td><div class="total-cell">—</div></td>
+        <td><div class="row-actions"><button class="btn-duplicate" title="Duplicate row" onclick="duplicateRow(this)">⧉</button><button class="btn-remove" title="Remove row" onclick="removeRow(this)">✕</button></div></td>
+      `;
+      tbody.appendChild(newRow);
+      // Focus the date field of the new row
+      newRow.querySelector('input[type="date"]').focus();
+      updateCounter();
+    }
+
+    function addRows(count) {
+      for (let i = 0; i < count; i++) addRow();
+    }
+
+    function renumberRows() {
+      const rows = document.querySelectorAll('#gridBody tr');
+      rows.forEach((row, idx) => {
+        row.querySelector('td').textContent = idx + 1;
+      });
+      rowCount = rows.length;
+      updateCounter();
+    }
+
+    function updateCounter() {
+      document.getElementById('rowCounter').textContent = rowCount + ' rows';
+    }
+
+    function saveAll() {
+      // Mock save action
+      alert('Saving 4 valid rows... (mock)\n\nIn production: BlockUI.show() → POST /Purchase/BulkCreate → BlockUI.hide() → Swal.fire success');
+    }
+
+    function clearAll() {
+      if (confirm('Clear all rows? This cannot be undone.')) {
+        document.getElementById('gridBody').innerHTML = '';
+        rowCount = 0;
+        addRows(5);
+      }
+    }
+  </script>
+</body>
+</html>

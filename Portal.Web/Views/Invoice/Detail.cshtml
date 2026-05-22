@@ -1,271 +1,175 @@
 @model Portal.Infrastructure.Entities.Invoice
 @{
     ViewData["Title"] = "Invoice Detail";
+    var invoice = Model;
     var lines = ViewBag.Lines as List<Portal.Infrastructure.Entities.InvoiceLine> ?? new List<Portal.Infrastructure.Entities.InvoiceLine>();
-    var invoiceSections = ViewBag.Sections as List<Portal.Infrastructure.Entities.InvoiceSection> ?? new List<Portal.Infrastructure.Entities.InvoiceSection>();
-    var statusName = (string)ViewBag.StatusName;
-    var financialStatusName = (string)ViewBag.FinancialStatusName;
-    var customerName = (string)ViewBag.CustomerName;
+    var sections = ViewBag.Sections as List<Portal.Infrastructure.Entities.InvoiceSection> ?? new List<Portal.Infrastructure.Entities.InvoiceSection>();
+    var vatPeriodLabel = invoice.VatSubmissionPeriod?.PeriodLabel;
 }
+
+@Html.AntiForgeryToken()
 
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Invoice Detail</div>
-        <h1 style="margin-top:14px;font-size:42px;">@Model.InvoiceNumber · @customerName</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review invoice details, line items, and manage lifecycle status.</p>
+        <h1 style="margin-top:14px;font-size:42px;">@invoice.InvoiceNumber &middot; @ViewBag.CustomerName</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review status, financial details, and manage this invoice.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        @if (Model.InvoiceStatusTypeId == 1)
+        @if (invoice.InvoiceStatusTypeId == 1)
         {
-            <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-primary">Edit Invoice</a>
-            <button type="button" class="btn btn-green" onclick="transitionStatus(@Model.Id, 2)">Issue Invoice</button>
-            <button type="button" class="btn btn-secondary" onclick="transitionStatus(@Model.Id, 3)">Cancel Invoice</button>
+            <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
         }
-        <a asp-action="Preview" asp-controller="Invoice" asp-route-id="@Model.Id" target="_blank" class="btn btn-secondary">Preview</a>
+        <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
+        <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
+        @if (invoice.InvoiceStatusTypeId == 1)
+        {
+            <button type="button" class="btn btn-danger" onclick="deleteInvoice(@invoice.Id)">Delete</button>
+        }
     </div>
 </div>
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger" style="margin-bottom:18px;">
-        @TempData["Error"]
-    </div>
-}
-
 <!-- Invoice Overview -->
-<div class="glass card-pad">
+<section class="glass card-pad">
     <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;flex-wrap:wrap;">
         <div>
             <div class="label">Status</div>
             <div style="margin-top:10px;">
                 @{
-                    var statusPillClass = Model.InvoiceStatusTypeId switch
+                    var statusPillClass = invoice.InvoiceStatusTypeId switch
                     {
                         1 => "pill-gold",
                         2 => "pill-green",
                         3 => "pill-red",
                         _ => "pill-gold"
                     };
-                    var financialPillClass = Model.InvoiceFinancialStatusTypeId switch
-                    {
-                        1 => "pill-gold",
-                        2 => "pill-blue",
-                        3 => "pill-green",
-                        4 => "pill-red",
-                        5 => "pill-red",
-                        _ => "pill-gold"
-                    };
                 }
-                <span class="pill @statusPillClass">@statusName</span>
-                <span class="pill @financialPillClass" style="margin-left:8px;">@financialStatusName</span>
+                <span class="pill @statusPillClass">@ViewBag.StatusName</span>
             </div>
         </div>
         <div style="display:flex;gap:32px;flex-wrap:wrap;">
             <div>
                 <div class="label">Customer</div>
-                <div style="margin-top:6px;font-size:15px;font-weight:700;">@customerName</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@ViewBag.CustomerName</div>
             </div>
             <div>
                 <div class="label">Invoice Number</div>
-                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.InvoiceNumber</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@invoice.InvoiceNumber</div>
             </div>
             <div>
                 <div class="label">Invoice Date</div>
-                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.InvoiceDate.ToString("yyyy-MM-dd")</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@invoice.InvoiceDate.ToString("yyyy-MM-dd")</div>
             </div>
             <div>
                 <div class="label">Due Date</div>
-                <div style="margin-top:6px;font-size:15px;font-weight:700;">@Model.DueDate.ToString("yyyy-MM-dd")</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@invoice.DueDate.ToString("yyyy-MM-dd")</div>
+            </div>
+            <div>
+                <div class="label">Financial Status</div>
+                <div style="margin-top:6px;">
+                    @{
+                        var financialPillClass = invoice.InvoiceFinancialStatusTypeId switch
+                        {
+                            1 => "pill-gold",
+                            2 => "pill-blue",
+                            3 => "pill-green",
+                            4 => "pill-red",
+                            5 => "pill-red",
+                            _ => "pill-gold"
+                        };
+                    }
+                    <span class="pill @financialPillClass">@ViewBag.FinancialStatusName</span>
+                </div>
+            </div>
+            <div>
+                <div class="label">VAT Period</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">
+                    @if (!string.IsNullOrWhiteSpace(vatPeriodLabel))
+                    {
+                        @vatPeriodLabel
+                    }
+                    else
+                    {
+                        <span style="color:var(--muted);font-weight:400;">Unassigned</span>
+                    }
+                </div>
             </div>
         </div>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    @if (!string.IsNullOrWhiteSpace(invoice.Notes))
     {
         <div style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(13,94,166,.08);">
             <div class="label">Notes</div>
-            <div style="margin-top:6px;font-size:14px;color:var(--muted);line-height:1.7;white-space:pre-wrap;">@Model.Notes</div>
+            <div style="margin-top:6px;font-size:14px;color:var(--muted);line-height:1.7;white-space:pre-wrap;">@invoice.Notes</div>
         </div>
     }
+</section>
 
-    @if (Model.QuotationId != null)
-    {
-        <div style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(13,94,166,.08);">
-            <div class="label">Source Quotation</div>
-            <div style="margin-top:6px;">
-                <a href="/Quotation/Detail/@Model.QuotationId" style="color:var(--blue);font-weight:700;font-size:14px;">View Source Quotation</a>
-            </div>
+<!-- VAT Period Reassignment -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">VAT Period</div>
+    <h2 style="margin-top:8px;font-size:24px;">Reassign VAT Period</h2>
+    <p class="muted" style="margin-top:6px;font-size:14px;line-height:1.6;">
+        Move this invoice to a different unsubmitted VAT period. This affects the Output VAT totals for both the source and target periods.
+    </p>
+
+    <div style="margin-top:18px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:220px;">
+            <label style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Target Period</label>
+            <select id="vatPeriodSelect" style="margin-top:6px;width:100%;">
+                <option value="">Loading periods...</option>
+            </select>
         </div>
-    }
-</div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-danger" id="btnReassignVatPeriod" onclick="initiateReassignment()" disabled>
+                Reassign Period
+            </button>
+        </div>
+    </div>
+</section>
 
-<!-- Line Items grouped by Section -->
-<div class="glass card-pad" style="margin-top:24px;">
+<!-- Line Items -->
+<section class="glass card-pad" style="margin-top:24px;">
     <div class="label">Line Items</div>
     <h2 style="margin-top:8px;font-size:24px;">Pricing breakdown</h2>
 
     <div style="margin-top:18px;">
         @if (lines.Count > 0)
         {
-            var orderedSections = invoiceSections.OrderBy(s => s.SortOrder).ToList();
-            var sectionedLineGroups = lines.Where(l => l.InvoiceSectionId != null).GroupBy(l => l.InvoiceSectionId).ToDictionary(g => g.Key!.Value, g => g.OrderBy(l => l.SortOrder).ToList());
-            var unsectionedLines = lines.Where(l => l.InvoiceSectionId == null).OrderBy(l => l.SortOrder).ToList();
-
-            <!-- Unsectioned lines (General group) -->
-            @if (unsectionedLines.Any())
-            {
-                <div style="margin-bottom:24px;">
-                    <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">General</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th style="text-align:right;">Qty</th>
-                                <th style="text-align:right;">Unit Price</th>
-                                <th style="text-align:right;">VAT %</th>
-                                <th style="text-align:right;">Discount</th>
-                                <th style="text-align:right;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var line in unsectionedLines)
-                            {
-                                <tr>
-                                    <td>
-                                        <strong>@line.Description</strong>
-                                        @if (!string.IsNullOrWhiteSpace(line.Subtitle))
-                                        {
-                                            <div style="font-size:12px;color:var(--muted);margin-top:2px;">@line.Subtitle</div>
-                                        }
-                                    </td>
-                                    <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
-                                    <td style="text-align:right;">@line.UnitPrice.ToString("N2")</td>
-                                    <td style="text-align:right;">@line.VatRate.ToString("N2")%</td>
-                                    <td style="text-align:right;">
-                                        @if (line.Discount > 0)
-                                        {
-                                            @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2"))
-                                        }
-                                        else
-                                        {
-                                            <span class="muted">—</span>
-                                        }
-                                    </td>
-                                    <td style="text-align:right;"><strong>@line.LineTotal.ToString("N2")</strong></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-            <!-- Sectioned lines -->
-            @foreach (var invSec in orderedSections)
-            {
-                var sectionLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
-
-                if (invSec.SectionType == "Narrative")
-                {
-                    <!-- Narrative section — card style like quotation proposal -->
-                    <div class="surface card-pad" style="margin-bottom:24px;border-left:4px solid @(invSec.AccentColor ?? "var(--blue)");border-radius:18px;">
-                        @if (!string.IsNullOrWhiteSpace(invSec.Label))
-                        {
-                            <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">@invSec.Label</div>
-                        }
-                        <h3 style="font-size:20px;font-weight:800;margin-bottom:12px;">@invSec.Name</h3>
-                        @if (!string.IsNullOrWhiteSpace(invSec.Description))
-                        {
-                            <div style="font-size:14px;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Description)</div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(invSec.Notes))
-                        {
-                            <div style="margin-top:16px;font-size:14px;font-weight:700;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Notes)</div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <!-- LineItems section -->
-                    var sectionStyle = invSec.IsEmphasized ? "border-left:4px solid " + (invSec.AccentColor ?? "var(--blue)") + ";padding-left:16px;" : "";
-
-                    <div style="margin-bottom:24px;@sectionStyle">
-                        <h3 style="font-size:16px;font-weight:700;margin-bottom:4px;">
-                            @invSec.Name
-                            @if (!string.IsNullOrWhiteSpace(invSec.Label))
-                            {
-                                <span style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-left:8px;">@invSec.Label</span>
-                            }
-                        </h3>
-                        @if (!string.IsNullOrWhiteSpace(invSec.Description))
-                        {
-                            <div class="muted" style="font-size:13px;margin-bottom:12px;">@Html.Raw(invSec.Description)</div>
-                        }
-
-                        @if (sectionLines.Any())
-                        {
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Description</th>
-                                        <th style="text-align:right;">Qty</th>
-                                        <th style="text-align:right;">Unit Price</th>
-                                        <th style="text-align:right;">VAT %</th>
-                                        <th style="text-align:right;">Discount</th>
-                                        <th style="text-align:right;">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var line in sectionLines)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <strong>@line.Description</strong>
-                                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
-                                                {
-                                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">@line.Subtitle</div>
-                                                }
-                                            </td>
-                                            <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
-                                            <td style="text-align:right;">@line.UnitPrice.ToString("N2")</td>
-                                            <td style="text-align:right;">@line.VatRate.ToString("N2")%</td>
-                                            <td style="text-align:right;">
-                                                @if (line.Discount > 0)
-                                                {
-                                                    @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2"))
-                                                }
-                                                else
-                                                {
-                                                    <span class="muted">—</span>
-                                                }
-                                            </td>
-                                            <td style="text-align:right;"><strong>@line.LineTotal.ToString("N2")</strong></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        }
-                        else
-                        {
-                            <p class="muted" style="font-size:13px;">No line items in this section.</p>
-                        }
-
-                        @if (invSec.IsTotalsTableShown && sectionLines.Any())
-                        {
-                            var secSubtotal = sectionLines.Sum(l => l.LineTotal);
-                            var secDiscount = sectionLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
-                            var secVat = sectionLines.Sum(l => l.LineTotal * l.VatRate / 100);
-                            var secTotal = secSubtotal + secVat;
-
-                            <div class="surface card-pad totals" style="margin-top:12px;">
-                                <div class="row"><span class="muted">Section Subtotal</span><strong>@secSubtotal.ToString("N2")</strong></div>
-                                <div class="row"><span class="muted">Section Discount</span><strong>@secDiscount.ToString("N2")</strong></div>
-                                <div class="row"><span class="muted">Section VAT</span><strong>@secVat.ToString("N2")</strong></div>
-                                <div class="row"><span class="muted">Section Total</span><strong>@secTotal.ToString("N2")</strong></div>
-                            </div>
-                        }
-                    </div>
-                }
-            }
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>VAT %</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in lines)
+                    {
+                        var discountedPrice = line.DiscountType == "Percentage"
+                            ? line.UnitPrice * (1 - line.Discount / 100)
+                            : line.UnitPrice - line.Discount;
+                        var lineTotal = line.Quantity * discountedPrice;
+                        <tr>
+                            <td>
+                                <strong>@line.Description</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
+                                {
+                                    <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&nearr; ref</a>
+                                }
+                            </td>
+                            <td>@line.Quantity.ToString("N2")</td>
+                            <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
+                            <td>@line.VatRate.ToString("N2")%</td>
+                            <td><strong>@(ViewBag.CurrencySymbol)@lineTotal.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         }
         else
         {
@@ -273,81 +177,12 @@
         }
     </div>
 
-    <!-- Totals -->
     <div class="surface card-pad totals" style="margin-top:18px;">
-        <div class="row"><span class="muted">Subtotal</span><strong>@Model.Subtotal.ToString("N2")</strong></div>
-        <div class="row"><span class="muted">Tax</span><strong>@Model.TaxAmount.ToString("N2")</strong></div>
-        <div class="row"><span>Grand Total</span><span class="big-total">@Model.TotalAmount.ToString("N2")</span></div>
+        <div class="row"><span class="muted">Subtotal</span><strong>@(ViewBag.CurrencySymbol)@invoice.Subtotal.ToString("N2")</strong></div>
+        <div class="row"><span class="muted">Tax</span><strong>@(ViewBag.CurrencySymbol)@invoice.TaxAmount.ToString("N2")</strong></div>
+        <div class="row"><span>Grand Total</span><span class="big-total">@(ViewBag.CurrencySymbol)@invoice.TotalAmount.ToString("N2")</span></div>
     </div>
-</div>
-
-<!-- Grand Total Summary Card (when IsGrandTotalShown is enabled) -->
-@if (Model.IsGrandTotalShown && invoiceSections.Any())
-{
-    <div class="glass card-pad" style="margin-top:24px;">
-        <div class="label">Grand Total Summary</div>
-        <h2 style="margin-top:8px;font-size:24px;">Per-section breakdown</h2>
-
-        <div style="margin-top:18px;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Section</th>
-                        <th>Subtotal</th>
-                        <th>Discount</th>
-                        <th>VAT</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{
-                        var grandSectionedLines = lines.Where(l => l.InvoiceSectionId != null).GroupBy(l => l.InvoiceSectionId).ToDictionary(g => g.Key!.Value, g => g.OrderBy(l => l.SortOrder).ToList());
-                        var grandUnsectionedLines = lines.Where(l => l.InvoiceSectionId == null).ToList();
-                    }
-
-                    @if (grandUnsectionedLines.Any())
-                    {
-                        var genSubtotal = grandUnsectionedLines.Sum(l => l.LineTotal);
-                        var genDiscount = grandUnsectionedLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
-                        var genVat = grandUnsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
-                        var genTotal = genSubtotal + genVat;
-
-                        <tr>
-                            <td><strong>General</strong></td>
-                            <td>@genSubtotal.ToString("N2")</td>
-                            <td>@genDiscount.ToString("N2")</td>
-                            <td>@genVat.ToString("N2")</td>
-                            <td><strong>@genTotal.ToString("N2")</strong></td>
-                        </tr>
-                    }
-
-                    @foreach (var invSec in invoiceSections.OrderBy(s => s.SortOrder))
-                    {
-                        var secLines = grandSectionedLines.ContainsKey(invSec.Id) ? grandSectionedLines[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
-                        var secSubtotal = secLines.Sum(l => l.LineTotal);
-                        var secDiscount = secLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
-                        var secVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
-                        var secTotal = secSubtotal + secVat;
-
-                        <tr>
-                            <td><strong>@invSec.Name</strong></td>
-                            <td>@secSubtotal.ToString("N2")</td>
-                            <td>@secDiscount.ToString("N2")</td>
-                            <td>@secVat.ToString("N2")</td>
-                            <td><strong>@secTotal.ToString("N2")</strong></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-
-        <div class="surface card-pad totals" style="margin-top:18px;text-align:right;">
-            <div class="row" style="justify-content:flex-end;"><span class="muted" style="margin-right:16px;">Subtotal</span><strong>@Model.Subtotal.ToString("N2")</strong></div>
-            <div class="row" style="justify-content:flex-end;"><span class="muted" style="margin-right:16px;">Tax</span><strong>@Model.TaxAmount.ToString("N2")</strong></div>
-            <div class="row" style="justify-content:flex-end;"><span style="margin-right:16px;">Grand Total</span><span class="big-total">@Model.TotalAmount.ToString("N2")</span></div>
-        </div>
-    </div>
-}
+</section>
 
 <!-- Back link -->
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
@@ -356,31 +191,220 @@
 
 @section Scripts {
     <script>
-        function transitionStatus(invoiceId, newStatusId) {
-            var statusLabels = { 2: 'Issue', 3: 'Cancel' };
-            var label = statusLabels[newStatusId] || 'transition';
-            if (!confirm('Are you sure you want to ' + label.toLowerCase() + ' this invoice?')) return;
+        var invoiceId = @invoice.Id;
 
-            fetch('/Invoice/TransitionStatus', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                },
-                body: 'invoiceId=' + invoiceId + '&newStatusId=' + newStatusId
-            })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.message || 'An error occurred.');
+        // Load unsubmitted periods on page load
+        (async function loadPeriods() {
+            try {
+                var response = await fetch('/Invoice/GetUnsubmittedPeriods?invoiceId=' + invoiceId);
+                var periods = await response.json();
+                var select = document.getElementById('vatPeriodSelect');
+                var btn = document.getElementById('btnReassignVatPeriod');
+
+                if (!periods || periods.length === 0) {
+                    select.innerHTML = '<option value="">No unsubmitted periods available</option>';
+                    btn.disabled = true;
+                    return;
                 }
-            })
-            .catch(function() {
-                alert('An error occurred while updating the status.');
+
+                select.innerHTML = '<option value="">Select a period...</option>';
+                periods.forEach(function(p) {
+                    var opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.periodLabel;
+                    select.appendChild(opt);
+                });
+
+                select.addEventListener('change', function() {
+                    btn.disabled = !select.value;
+                });
+            } catch (e) {
+                var select = document.getElementById('vatPeriodSelect');
+                select.innerHTML = '<option value="">Failed to load periods</option>';
+            }
+        })();
+
+        async function initiateReassignment() {
+            var select = document.getElementById('vatPeriodSelect');
+            var targetPeriodId = select.value;
+            if (!targetPeriodId) return;
+
+            // Fetch impact data before showing confirmation
+            var impactResponse;
+            try {
+                impactResponse = await fetch('/Invoice/GetReassignmentImpact?invoiceId=' + invoiceId + '&targetPeriodId=' + targetPeriodId);
+            } catch (e) {
+                Swal.fire({ title: 'Error', text: 'Failed to load reassignment impact data.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var impactData = await impactResponse.json();
+            if (!impactData.success) {
+                Swal.fire({ title: 'Error', text: impactData.message || 'Failed to load impact data.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var d = impactData.data;
+            var sym = d.currencySymbol || '€';
+
+            var confirmed = await Swal.fire({
+                title: 'Reassign VAT Period',
+                html:
+                    '<div style="text-align:left;font-size:14px;line-height:1.8;">' +
+                    '<div style="margin-bottom:10px;"><strong>Invoice:</strong> ' + d.invoiceNumber + '</div>' +
+                    '<div style="margin-bottom:10px;"><strong>From period:</strong> ' + d.sourcePeriodLabel + '</div>' +
+                    '<div style="margin-bottom:10px;"><strong>To period:</strong> ' + d.targetPeriodLabel + '</div>' +
+                    '<div style="margin-bottom:10px;"><strong>Tax amount moved:</strong> ' + sym + parseFloat(d.taxAmount).toFixed(2) + '</div>' +
+                    '<hr style="margin:12px 0;border-color:rgba(0,0,0,.08);"/>' +
+                    '<div style="margin-bottom:6px;font-weight:600;color:#5E7385;font-size:13px;text-transform:uppercase;letter-spacing:.04em;">Projected Output VAT</div>' +
+                    '<div style="margin-bottom:6px;"><strong>' + d.sourcePeriodLabel + ':</strong> ' + sym + parseFloat(d.sourcePeriodProjectedOutputVat).toFixed(2) + '</div>' +
+                    '<div><strong>' + d.targetPeriodLabel + ':</strong> ' + sym + parseFloat(d.targetPeriodProjectedOutputVat).toFixed(2) + '</div>' +
+                    '</div>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Confirm Reassignment',
+                cancelButtonText: 'Cancel'
             });
+
+            if (!confirmed.isConfirmed) return;
+
+            BlockUI.show('Reassigning VAT period...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Invoice/ReassignVatPeriod', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'invoiceId=' + invoiceId + '&targetPeriodId=' + targetPeriodId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Done!',
+                        text: 'VAT period reassigned successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function duplicateInvoice(invoiceId) {
+            var result = await Swal.fire({
+                title: 'Duplicate Invoice',
+                text: 'Are you sure you want to duplicate this invoice?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                confirmButtonText: 'Yes, duplicate it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Duplicating...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Invoice/Duplicate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'id=' + invoiceId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    window.location = data.redirectUrl;
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function deleteInvoice(invoiceId) {
+            // Step 1: First confirmation
+            const firstResult = await Swal.fire({
+                title: 'Are you sure?',
+                text: 'This invoice will be deleted.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it'
+            });
+
+            if (!firstResult.isConfirmed) return;
+
+            // Step 2: Second confirmation
+            const secondResult = await Swal.fire({
+                title: 'Final Warning',
+                text: 'This action cannot be easily undone. Are you sure you want to proceed?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete permanently'
+            });
+
+            if (!secondResult.isConfirmed) return;
+
+            // Step 3: Execute deletion
+            BlockUI.show('Deleting...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Invoice/SoftDelete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'id=' + invoiceId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The invoice has been deleted.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.href = '/Invoice';
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
         }
     </script>
-    @Html.AntiForgeryToken()
 }

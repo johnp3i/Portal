@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VAT Submission Detail — Mock</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F7FAFC;
+    color: #1a2533;
+    padding: 32px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #5E7385;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #0D5EA6;
+    display: inline-block;
+  }
+  h1 { font-family: 'Manrope', sans-serif; font-size: 38px; font-weight: 800; margin-top: 12px; }
+  .muted { color: #5E7385; }
+
+  /* ── Pills ── */
+  .pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .pill-green  { background: rgba(18,152,103,.12); color: #129867; }
+  .pill-gold   { background: rgba(200,145,46,.12);  color: #C8912E; }
+  .pill-blue   { background: rgba(13,94,166,.10);   color: #0D5EA6; }
+  .pill-red    { background: rgba(194,74,74,.10);   color: #C24A4A; }
+
+  /* ── Cards ── */
+  .glass {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 2px 16px rgba(13,94,166,.06);
+  }
+  .card-pad { padding: 28px 32px; }
+  .surface {
+    background: #EEF4F8;
+    border-radius: 16px;
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #5E7385;
+  }
+
+  /* ── Summary grid ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+  }
+  .summary-card {
+    background: #EEF4F8;
+    border-radius: 18px;
+    padding: 20px 24px;
+  }
+  .summary-card .amount {
+    font-family: 'Manrope', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    margin-top: 8px;
+    color: #0D5EA6;
+  }
+  .summary-card .amount.danger { color: #C24A4A; }
+  .summary-card .amount.success { color: #129867; }
+
+  /* ── Totals row ── */
+  .totals { margin-top: 20px; }
+  .totals .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(13,94,166,.07);
+    font-size: 14px;
+  }
+  .totals .row:last-child { border-bottom: none; }
+  .big-total {
+    font-family: 'Manrope', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #C24A4A;
+  }
+
+  /* ── Section spacing ── */
+  .section-gap { margin-top: 24px; }
+
+  /* ── Breakdown tables ── */
+  h2 { font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 800; margin-top: 8px; }
+  h3 { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; margin-top: 0; }
+
+  .breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .breakdown-total {
+    font-family: 'Manrope', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0D5EA6;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #5E7385;
+    padding: 0 12px 10px;
+    border-bottom: 1px solid rgba(13,94,166,.10);
+  }
+  thead th:last-child { text-align: right; }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: rgba(13,94,166,.03); }
+  tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(13,94,166,.06);
+    vertical-align: middle;
+  }
+  tbody td:last-child { text-align: right; font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .doc-link {
+    color: #0D5EA6;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .doc-link:hover { text-decoration: underline; }
+
+  .subtable-label {
+    font-size: 11px;
+    color: #5E7385;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* ── Divider between invoice/purchase sub-sections ── */
+  .sub-section { margin-top: 24px; }
+  .sub-section:first-child { margin-top: 0; }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 32px 0;
+    color: #5E7385;
+    font-size: 14px;
+  }
+
+  /* ── Filing status ── */
+  .filing-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  /* ── Paging ── */
+  .paging-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(13,94,166,.10);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .paging-info { font-size: 13px; color: #5E7385; }
+  .paging-controls { display: flex; gap: 6px; align-items: center; }
+  .page-btn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(13,94,166,.20);
+    background: #fff;
+    color: #0D5EA6;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .page-btn:disabled { color: #b0bec5; border-color: #e0e0e0; cursor: default; background: #f5f5f5; }
+  .page-btn.active { background: #0D5EA6; color: #fff; border-color: #0D5EA6; }
+
+  /* ── Back link ── */
+  .btn-outline {
+    display: inline-block;
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: 1.5px solid #0D5EA6;
+    color: #0D5EA6;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    background: transparent;
+  }
+  .btn-primary {
+    display: inline-block;
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: none;
+    background: #0D5EA6;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .footer-row {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* ── Explicit / date-range badge ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .badge-explicit { background: rgba(13,94,166,.10); color: #0D5EA6; }
+  .badge-daterange { background: rgba(94,115,133,.10); color: #5E7385; }
+</style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> VAT Submission</div>
+    <h1>Jul – Sep 2025</h1>
+    <p class="muted" style="margin-top:8px;font-size:16px;">01 Jul 2025 – 30 Sep 2025</p>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span class="pill pill-gold">Pending</span>
+  </div>
+</div>
+
+<!-- ── Period Summary ── -->
+<section class="glass card-pad">
+  <div class="label">VAT Breakdown</div>
+  <h2>Period Summary</h2>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">Output VAT (Sales)</div>
+      <div class="amount">€4,218.50</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Input VAT (Purchases)</div>
+      <div class="amount">€1,104.30</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Tax Owed</div>
+      <div class="amount danger">€3,114.20</div>
+    </div>
+  </div>
+
+  <div class="surface card-pad totals">
+    <div class="row"><span class="muted">Output VAT</span><strong>€4,218.50</strong></div>
+    <div class="row"><span class="muted">Input VAT</span><strong>- €1,104.30</strong></div>
+    <div class="row"><span>Tax Owed</span><span class="big-total">€3,114.20</span></div>
+  </div>
+</section>
+
+<!-- ── Output VAT Breakdown (Invoices / Sales) ── -->
+<section class="glass card-pad section-gap">
+  <div class="breakdown-header">
+    <div>
+      <div class="label">Output VAT</div>
+      <h2>Sales Invoices</h2>
+      <p class="muted" style="font-size:13px;margin-top:4px;">Issued invoices contributing to Output VAT for this period.</p>
+    </div>
+    <div class="breakdown-total">€4,218.50</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Invoice</th>
+        <th>Customer</th>
+        <th>Invoice Date</th>
+        <th>Assignment</th>
+        <th>Subtotal</th>
+        <th>VAT Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="doc-link" href="#">INV-1-00058</a></td>
+        <td>Motoyard Ltd</td>
+        <td>2025-07-04</td>
+        <td><span class="badge badge-explicit">Explicit</span></td>
+        <td>€8,200.00</td>
+        <td>€1,558.00</td>
+      </tr>
+      <tr>
+        <td><a class="doc-link" href="#">INV-1-00059</a></td>
+        <td>TechFlow Solutions</td>
+        <td>2025-07-18</td>
+        <td><span class="badge badge-daterange">Date Range</span></td>
+        <td>€3,400.00</td>
+        <td>€646.00</td>
+      </tr>
+      <tr>
+        <td><a class="doc-link" href="#">INV-1-00061</a></td>
+        <td>Greenfield Retail</td>
+        <td>2025-08-02</td>
+        <td><span class="badge badge-daterange">Date Range</span></td>
+        <td>€5,340.00</td>
+        <td>€1,014.60</td>
+      </tr>
+      <tr>
+        <td><a class="doc-link" href="#">INV-1-00063</a></td>
+        <td>Motoyard Ltd</td>
+        <td>2025-09-16</td>
+        <td><span class="badge badge-explicit">Explicit</span></td>
+        <td>€1,700.00</td>
+        <td>€323.00</td>
+      </tr>
+      <tr>
+        <td><a class="doc-link" href="#">INV-1-00064</a></td>
+        <td>Apex Dynamics</td>
+        <td>2025-09-22</td>
+        <td><span class="badge badge-daterange">Date Range</span></td>
+        <td>€3,564.00</td>
+        <td>€676.90</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Paging controls -->
+  <div class="paging-row">
+    <div class="paging-info">Showing 1–5 of 47 invoices &nbsp;·&nbsp; Total Output VAT: <strong>€4,218.50</strong></div>
+    <div class="paging-controls">
+      <button class="page-btn" disabled>&larr; Prev</button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <span style="font-size:13px;color:#5E7385;">…</span>
+      <button class="page-btn">10</button>
+      <button class="page-btn">Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Input VAT Breakdown (Purchases) ── -->
+<section class="glass card-pad section-gap">
+  <div class="breakdown-header">
+    <div>
+      <div class="label">Input VAT</div>
+      <h2>Purchases</h2>
+      <p class="muted" style="font-size:13px;margin-top:4px;">Purchases contributing to Input VAT for this period.</p>
+    </div>
+    <div class="breakdown-total">€1,104.30</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Reference</th>
+        <th>Supplier</th>
+        <th>Purchase Date</th>
+        <th>Category</th>
+        <th>Assignment</th>
+        <th>VAT Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <span style="font-weight:600;">PUR-00041</span>
+          <div class="subtable-label">Office supplies</div>
+        </td>
+        <td>Staples Ireland</td>
+        <td>2025-07-09</td>
+        <td>Office &amp; Admin</td>
+        <td><span class="badge badge-daterange">Date Range</span></td>
+        <td>€89.30</td>
+      </tr>
+      <tr>
+        <td>
+          <span style="font-weight:600;">PUR-00042</span>
+          <div class="subtable-label">Server hosting Q3</div>
+        </td>
+        <td>AWS Ireland</td>
+        <td>2025-07-01</td>
+        <td>Software &amp; Cloud</td>
+        <td><span class="badge badge-explicit">Explicit</span></td>
+        <td>€312.00</td>
+      </tr>
+      <tr>
+        <td>
+          <span style="font-weight:600;">PUR-00045</span>
+          <div class="subtable-label">Laptop replacement</div>
+        </td>
+        <td>Dell Technologies</td>
+        <td>2025-08-14</td>
+        <td>Equipment</td>
+        <td><span class="badge badge-daterange">Date Range</span></td>
+        <td>€460.00</td>
+      </tr>
+      <tr>
+        <td>
+          <span style="font-weight:600;">PUR-00047</span>
+          <div class="subtable-label">Accountancy fees</div>
+        </td>
+        <td>Grant Thornton</td>
+        <td>2025-09-05</td>
+        <td>Professional Services</td>
+        <td><span class="badge badge-daterange">Date Range</span></td>
+        <td>€243.00</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Paging controls -->
+  <div class="paging-row">
+    <div class="paging-info">Showing 1–4 of 31 purchases &nbsp;·&nbsp; Total Input VAT: <strong>€1,104.30</strong></div>
+    <div class="paging-controls">
+      <button class="page-btn" disabled>&larr; Prev</button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <span style="font-size:13px;color:#5E7385;">…</span>
+      <button class="page-btn">7</button>
+      <button class="page-btn">Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Filing Status ── -->
+<section class="glass card-pad section-gap">
+  <div class="label">Filing Status</div>
+  <div style="margin-top:12px;">
+    <p class="muted" style="font-size:14px;margin-bottom:16px;">This submission has not yet been marked as filed with the tax authority.</p>
+    <button class="btn-primary">Mark as Submitted</button>
+  </div>
+</section>
+
+<!-- ── Back link ── -->
+<div class="footer-row">
+  <a href="#" class="btn-outline">&larr; Back to Periods</a>
+</div>
+
+</body>
+</html>

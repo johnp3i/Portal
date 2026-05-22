@@ -14,6 +14,8 @@ public class ExpenseCategory
 
     public bool IsActive { get; set; }
 
+    public DateTime CreatedAtUtc { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 

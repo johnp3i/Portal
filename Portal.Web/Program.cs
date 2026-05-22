@@ -77,6 +77,8 @@ builder.Services.AddScoped<InvoiceSectionRepository>(sp =>
     new InvoiceSectionRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<BusinessPaymentDetailRepository>(sp =>
     new BusinessPaymentDetailRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<SupplierRepository>(sp =>
+    new SupplierRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ICurrentTenantService, CurrentTenantService>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
@@ -92,6 +94,26 @@ builder.Services.AddScoped<ILineItemCatalogService, LineItemCatalogService>();
 builder.Services.AddScoped<IProposalSectionService, ProposalSectionService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IInvoiceSectionService, InvoiceSectionService>();
+builder.Services.AddScoped<InvoiceShareRepository>(sp =>
+    new InvoiceShareRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IInvoiceRenderer, InvoiceRenderer>();
+builder.Services.AddScoped<IInvoiceSharingService, InvoiceSharingService>();
+builder.Services.AddScoped<IDocumentDuplicationService, DocumentDuplicationService>();
+builder.Services.AddScoped<IDocumentSoftDeleteService, DocumentSoftDeleteService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<ExpenseCategoryRepository>(sp =>
+    new ExpenseCategoryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PurchaseRepository>(sp =>
+    new PurchaseRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+builder.Services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
+builder.Services.AddScoped<ICsvImportService, CsvImportService>();
+builder.Services.AddScoped<VatSubmissionPeriodRepository>(sp =>
+    new VatSubmissionPeriodRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<VatSubmissionRepository>(sp =>
+    new VatSubmissionRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IVatPeriodGenerationService, VatPeriodGenerationService>();
+builder.Services.AddScoped<IVatSubmissionService, VatSubmissionService>();
 
 // --- MVC ---
 builder.Services.AddControllersWithViews();

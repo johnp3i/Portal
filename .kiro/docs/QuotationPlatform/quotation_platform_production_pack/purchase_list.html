@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purchase List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item" href="quotation_dashboard.html">Dashboard</a>
+      <a class="nav-item" href="quotation_list.html">Quotations</a>
+      <a class="nav-item" href="invoice_list.html">Invoices</a>
+      <a class="nav-item active" href="purchase_list.html">Purchases</a>
+      <a class="nav-item" href="supplier_list.html">Suppliers</a>
+      <a class="nav-item" href="expense_category_list.html">Expense Categories</a>
+      <div class="nav-title" style="margin-top:22px;">Expense Summary</div>
+      <div class="surface card-pad">
+        <div class="label">This Month</div>
+        <div class="metric">€4,280</div>
+        <div class="muted" style="margin-top:8px;font-size:14px;">23 purchases recorded</div>
+      </div>
+    </aside>
+    <main class="content">
+
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Purchases</div>
+    <h1 style="margin-top:14px;font-size:42px;">Purchase & Expense Tracker</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Record, filter, and review business expenses with full VAT tracking.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a class="btn btn-primary" href="purchase_create.html">New Purchase</a>
+  </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:20px;">
+  <form method="get">
+    <div class="form-grid">
+      <div class="field">
+        <label>Supplier</label>
+        <select name="supplierId">
+          <option value="">All Suppliers</option>
+          <option value="1">Office Depot EU</option>
+          <option value="2">TechParts GmbH</option>
+          <option value="3">CloudHost Services</option>
+          <option value="4">Print & Paper Co</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Expense Category</label>
+        <select name="expenseCategoryId">
+          <option value="">All Categories</option>
+          <option value="1">Office Supplies</option>
+          <option value="2">IT Equipment</option>
+          <option value="3">Cloud Services</option>
+          <option value="4">Marketing</option>
+          <option value="5">Travel</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>From Date</label>
+        <input type="date" name="dateFrom" value="2026-04-01" />
+      </div>
+      <div class="field">
+        <label>To Date</label>
+        <input type="date" name="dateTo" value="2026-04-30" />
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="purchase_list.html" class="btn btn-secondary" style="margin-left:10px;">Clear</a>
+    </div>
+  </form>
+</section>
+
+<!-- Purchase Table -->
+<section class="glass card-pad">
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Invoice #</th>
+        <th>Supplier</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Excl. VAT</th>
+        <th>VAT</th>
+        <th>Total</th>
+        <th>RC</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>2026-04-28</td>
+        <td><strong>SUP-2026-041</strong></td>
+        <td>TechParts GmbH</td>
+        <td>IT Equipment</td>
+        <td>Replacement SSD drives (x3)</td>
+        <td>€420.00</td>
+        <td>€0.00</td>
+        <td>€420.00</td>
+        <td><span class="pill pill-blue" style="font-size:10px;padding:5px 8px;">EU RC</span></td>
+        <td><a href="purchase_create.html" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a></td>
+      </tr>
+      <tr>
+        <td>2026-04-25</td>
+        <td><strong>INV-88421</strong></td>
+        <td>CloudHost Services</td>
+        <td>Cloud Services</td>
+        <td>Monthly hosting April 2026</td>
+        <td>€189.00</td>
+        <td>€39.69</td>
+        <td>€228.69</td>
+        <td></td>
+        <td><a href="purchase_create.html" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a></td>
+      </tr>
+      <tr>
+        <td>2026-04-22</td>
+        <td><strong>OD-2026-1187</strong></td>
+        <td>Office Depot EU</td>
+        <td>Office Supplies</td>
+        <td>Printer paper, toner cartridges</td>
+        <td>€145.00</td>
+        <td>€0.00</td>
+        <td>€145.00</td>
+        <td><span class="pill pill-blue" style="font-size:10px;padding:5px 8px;">EU RC</span></td>
+        <td><a href="purchase_create.html" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a></td>
+      </tr>
+      <tr>
+        <td>2026-04-18</td>
+        <td><strong>PP-4421</strong></td>
+        <td>Print & Paper Co</td>
+        <td>Marketing</td>
+        <td>Business cards (500 units)</td>
+        <td>€85.00</td>
+        <td>€17.85</td>
+        <td>€102.85</td>
+        <td></td>
+        <td><a href="purchase_create.html" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a></td>
+      </tr>
+      <tr>
+        <td>2026-04-12</td>
+        <td><strong>TP-DE-9921</strong></td>
+        <td>TechParts GmbH</td>
+        <td>IT Equipment</td>
+        <td>USB-C docking stations (x2)</td>
+        <td>€310.00</td>
+        <td>€0.00</td>
+        <td>€310.00</td>
+        <td><span class="pill pill-blue" style="font-size:10px;padding:5px 8px;">EU RC</span></td>
+        <td><a href="purchase_create.html" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a></td>
+      </tr>
+      <tr>
+        <td>2026-04-05</td>
+        <td><strong>CH-APR-2026</strong></td>
+        <td>CloudHost Services</td>
+        <td>Cloud Services</td>
+        <td>SSL certificate renewal (2yr)</td>
+        <td>€78.00</td>
+        <td>€16.38</td>
+        <td>€94.38</td>
+        <td></td>
+        <td><a href="purchase_create.html" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Totals Summary -->
+  <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+    <div class="totals">
+      <div class="row"><span class="muted">Total Excl. VAT</span><strong>€1,227.00</strong></div>
+      <div class="row"><span class="muted">Total VAT</span><strong>€73.92</strong></div>
+      <div class="row"><span class="muted">Grand Total</span><span class="big-total" style="font-size:1.4rem;">€1,300.92</span></div>
+    </div>
+  </div>
+</section>
+
+    </main>
+  </div>
+</body>
+</html>

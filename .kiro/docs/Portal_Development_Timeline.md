@@ -1,7 +1,7 @@
 # Portal Development Timeline
 
 ## Status: Phase 1 — Core Platform
-Last Updated: 2026-05-11
+Last Updated: 2026-05-20
 
 ---
 
@@ -14,6 +14,9 @@ Last Updated: 2026-05-11
 | ✅ | Customer Registry — Repository, service, controller, views, validation, search/filter | 2026-05-11 |
 | ✅ | Quotation Platform — Repositories, service, controller, views, lifecycle state machine, pricing, audit logging | 2026-05-11 |
 | ✅ | Invoicing — Quotation-to-invoice conversion, standalone creation, sections, lifecycle, audit logging, views | 2026-05-14 |
+| ✅ | Document Soft Delete — IsDeleted/DeletedAtUtc columns, soft-delete service, two-step confirmation UI, listing filters | 2026-05-18 |
+| ✅ | Purchase & Expense Tracking — Suppliers, categories, purchases with Origin Type (Domestic/EU RC/Non-EU), bulk entry with autocomplete+inline create, CSV import, bidirectional amount calculation, property-based tests | 2026-05-20 |
+| ✅ | VAT Submissions — Period generation from registration config, output/input/net VAT computation, submission tracking, mark-as-submitted workflow, audit logging | 2025-07-17 |
 
 ---
 
@@ -120,21 +123,26 @@ Last Updated: 2026-05-11
 
 ### Module 5: Purchase & Expense Tracking
 
-**Goal:** Record business expenses with VAT tracking, categorised by supplier and expense type.
+**Goal:** Record business expenses with VAT tracking, categorised by supplier and expense type, with Purchase Origin Type classification (Domestic, EU Reverse Charge, Non-EU).
 
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
-| [ ] | 5.1 | Create SupplierRepository and ExpenseCategoryRepository | Module 0 | |
-| [ ] | 5.2 | Create PurchaseRepository | 5.1 | |
-| [ ] | 5.3 | Create ISupplierService and IExpenseCategoryService | 5.1 | |
-| [ ] | 5.4 | Create IPurchaseService (CRUD, VAT calculation support) | 5.2 | |
-| [ ] | 5.5 | Implement EU Reverse Charge handling (IsEuReverseCharge = 1, VatAmount = 0) | 5.4 | |
-| [ ] | 5.6 | Create PurchaseController, SupplierController, ExpenseCategoryController | 5.3, 5.4 | |
-| [ ] | 5.7 | Build Supplier management UI (list, create, edit, deactivate) | 5.6 | |
-| [ ] | 5.8 | Build ExpenseCategory management UI | 5.6 | |
-| [ ] | 5.9 | Build Purchase list UI (filterable by supplier, category, date range) | 5.6 | |
-| [ ] | 5.10 | Build Purchase create/edit form (with EU reverse charge toggle) | 5.6 | |
-| [ ] | 5.11 | Add audit logging for purchase entries | 5.4 | |
+| [x] | 5.1 | Create SupplierRepository and ExpenseCategoryRepository | Module 0 | 2026-05-20 |
+| [x] | 5.2 | Create PurchaseRepository | 5.1 | 2026-05-20 |
+| [x] | 5.3 | Create ISupplierService and IExpenseCategoryService | 5.1 | 2026-05-20 |
+| [x] | 5.4 | Create IPurchaseService (CRUD, VAT calculation, bulk operations) | 5.2 | 2026-05-20 |
+| [x] | 5.5 | Implement Purchase Origin Type handling (Domestic/EU RC/Non-EU with PurchaseOriginType lookup table) | 5.4 | 2026-05-20 |
+| [x] | 5.6 | Create PurchaseController, SupplierController, ExpenseCategoryController | 5.3, 5.4 | 2026-05-20 |
+| [x] | 5.7 | Build Supplier management UI (list, create, edit, deactivate) | 5.6 | 2026-05-20 |
+| [x] | 5.8 | Build ExpenseCategory management UI | 5.6 | 2026-05-20 |
+| [x] | 5.9 | Build Purchase list UI (filterable by supplier, category, origin type, date range) | 5.6 | 2026-05-20 |
+| [x] | 5.10 | Build Purchase create/edit form (with origin type selector, bidirectional amount calculation) | 5.6 | 2026-05-20 |
+| [x] | 5.11 | Build Bulk Entry view (spreadsheet grid with autocomplete + inline create for suppliers/categories) | 5.6 | 2026-05-20 |
+| [x] | 5.12 | Build CSV Import view (upload, preview, confirm) | 5.6 | 2026-05-20 |
+| [x] | 5.13 | Create CsvImportService (parsing, name matching, validation) | 5.4 | 2026-05-20 |
+| [x] | 5.14 | Add audit logging for purchase entries | 5.4 | 2026-05-20 |
+| [x] | 5.15 | DI registration and module access wiring | 5.6 | 2026-05-20 |
+| [x] | 5.16 | Property-based tests (11 properties: VAT logic, validation, tenant isolation, filtering, batch atomicity, CSV round-trip, case-insensitive matching) | 5.4 | 2026-05-20 |
 
 ---
 
@@ -144,17 +152,17 @@ Last Updated: 2026-05-11
 
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
-| [ ] | 6.1 | Create VatSubmissionPeriodRepository and VatSubmissionRepository | Module 0 | |
-| [ ] | 6.2 | Create IVatPeriodGenerationService (derive periods from VatRegistrationDate + VatPeriodLengthInMonths) | 6.1 | |
-| [ ] | 6.3 | Implement period generation algorithm (contiguous, non-overlapping, correct duration) | 6.2 | |
-| [ ] | 6.4 | Create IVatSubmissionService (create submission, compute totals from invoices + purchases in period) | 6.1, Module 3, Module 5 | |
-| [ ] | 6.5 | Compute TotalOutputVat (from issued invoices in period) | 6.4 | |
-| [ ] | 6.6 | Compute TotalInputVat (from purchases in period, excluding EU reverse charge) | 6.4 | |
-| [ ] | 6.7 | Compute NetVatPayable (Output - Input) | 6.4 | |
-| [ ] | 6.8 | Create VatController (periods list, submission detail, mark as submitted) | 6.4 | |
-| [ ] | 6.9 | Build VAT periods list UI (showing period ranges, submission status) | 6.8 | |
-| [ ] | 6.10 | Build VAT submission detail screen (output/input/net breakdown) | 6.8 | |
-| [ ] | 6.11 | Add audit logging for VAT submissions | 6.4 | |
+| [x] | 6.1 | Create VatSubmissionPeriodRepository and VatSubmissionRepository | Module 0 | 2025-07-17 |
+| [x] | 6.2 | Create IVatPeriodGenerationService (derive periods from VatRegistrationDate + VatPeriodLengthInMonths) | 6.1 | 2025-07-17 |
+| [x] | 6.3 | Implement period generation algorithm (contiguous, non-overlapping, correct duration) | 6.2 | 2025-07-17 |
+| [x] | 6.4 | Create IVatSubmissionService (create submission, compute totals from invoices + purchases in period) | 6.1, Module 3, Module 5 | 2025-07-17 |
+| [x] | 6.5 | Compute TotalOutputVat (from issued invoices in period) | 6.4 | 2025-07-17 |
+| [x] | 6.6 | Compute TotalInputVat (from purchases in period, excluding EU reverse charge) | 6.4 | 2025-07-17 |
+| [x] | 6.7 | Compute NetVatPayable (Output - Input) | 6.4 | 2025-07-17 |
+| [x] | 6.8 | Create VatController (periods list, submission detail, mark as submitted) | 6.4 | 2025-07-17 |
+| [x] | 6.9 | Build VAT periods list UI (showing period ranges, submission status) | 6.8 | 2025-07-17 |
+| [x] | 6.10 | Build VAT submission detail screen (output/input/net breakdown) | 6.8 | 2025-07-17 |
+| [x] | 6.11 | Add audit logging for VAT submissions | 6.4 | 2025-07-17 |
 
 ---
 
@@ -197,6 +205,7 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [ ] | Customer Statements | Periodic account summaries | Module 4 | |
 | [ ] | Bank Feed Integration | Automated payment matching | Module 4 | |
 | [ ] | Reminder Workflow | Automated overdue notifications | Module 4 | |
+| [ ] | Mobile Responsive Layout | Hamburger menu, collapsible sidebar, mobile-friendly topbar with action buttons, proper "My Account" placement on mobile | Module 0 | |
 
 ---
 

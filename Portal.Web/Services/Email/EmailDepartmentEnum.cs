@@ -17,6 +17,8 @@ namespace Portal.Web.Services.Email
         NoReply,
         WorkforcePiEmail,
         Sales,
-        Support
+        Support,
+        Invoices,
+        Proposals
     }
 }

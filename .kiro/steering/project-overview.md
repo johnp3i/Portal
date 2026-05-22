@@ -104,6 +104,48 @@ All UI follows the MyChair Design System:
 - **Typography**: Headings = Manrope (bold, tight), Body = Inter
 - **Layout**: Sidebar + Topbar + Content grid, cards with 20-30px border radius, soft shadows
 - **Tone**: Operational, calm, structured — no startup flashiness
+- **Alerts & Confirmations**: All confirmation dialogs and user-facing alert messages must use SweetAlert2 (`Swal.fire`). Never use native `alert()`, `confirm()`, or `prompt()`. Use `confirmButtonColor: '#C24A4A'` for destructive actions and `confirmButtonColor: '#0D5EA6'` for informational ones.
+- **BlockUI**: All AJAX calls must use `BlockUI.show()` before the request and `BlockUI.hide()` after completion (in both success and error paths). This prevents user interaction during processing. The utility is loaded globally from `/js/block-ui.js`.
+
+### AJAX Call Pattern
+
+All AJAX interactions must follow this standard flow:
+
+1. **BlockUI.show('message')** — Block the UI before the request
+2. **fetch()** — Make the AJAX call
+3. **BlockUI.hide()** — Unblock the UI after response (success or error)
+4. **Swal.fire()** — Show SweetAlert2 with the result
+
+```javascript
+// Standard AJAX pattern
+async function doAction() {
+    BlockUI.show('Processing...');
+    try {
+        var response = await fetch('/Controller/Action', {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+            body: formData
+        });
+        var data = await response.json();
+        BlockUI.hide();
+
+        if (data.success) {
+            Swal.fire({ title: 'Done!', text: 'Operation completed.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+        } else {
+            Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    } catch (e) {
+        BlockUI.hide();
+        Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    }
+}
+```
+
+Key rules:
+- Never leave BlockUI visible after an error — always call `BlockUI.hide()` in both success and catch paths
+- Use vanilla `fetch` API — no jQuery
+- Controllers return `Json(new { success, message })` for AJAX endpoints
+- Include antiforgery token in POST requests
 
 ## Reference Documentation
 

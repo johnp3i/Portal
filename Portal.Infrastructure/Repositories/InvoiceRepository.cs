@@ -35,6 +35,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 INNER JOIN [invoice].[InvoiceStatusType] ON [invoice].[Invoice].[InvoiceStatusTypeId] = [invoice].[InvoiceStatusType].[Id]
                 INNER JOIN [invoice].[InvoiceFinancialStatusType] ON [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = [invoice].[InvoiceFinancialStatusType].[Id]
                 WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
+                  AND [invoice].[Invoice].[IsDeleted] = 0
                 ORDER BY [invoice].[Invoice].[InvoiceDate] DESC";
 
             var results = new List<InvoiceListDto>();
@@ -82,7 +83,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
         }
     }
 
-    public async Task<Invoice?> GetByIdAndBusinessIdAsync(int id, int businessId)
+    public virtual async Task<Invoice?> GetByIdAndBusinessIdAsync(int id, int businessId)
     {
         try
         {
@@ -94,7 +95,10 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[Subtotal], [invoice].[Invoice].[TaxAmount],
                        [invoice].[Invoice].[TotalAmount], [invoice].[Invoice].[CurrencyCode],
                        [invoice].[Invoice].[Notes], [invoice].[Invoice].[IsGrandTotalShown],
-                       [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc]
+                       [invoice].[Invoice].[IsQuotationReferenceShown],
+                       [invoice].[Invoice].[VatSubmissionPeriodId],
+                       [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
+                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[Id] = @Id AND [invoice].[Invoice].[BusinessId] = @BusinessId";
 
@@ -108,7 +112,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
         }
     }
 
-    public async Task<int> InsertAsync(Invoice entity)
+    public virtual async Task<int> InsertAsync(Invoice entity)
     {
         try
         {
@@ -117,13 +121,15 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                     ([BusinessId], [CustomerId], [QuotationId], [InvoiceStatusTypeId],
                      [InvoiceFinancialStatusTypeId], [InvoiceNumber], [InvoiceDate], [DueDate],
                      [Subtotal], [TaxAmount], [TotalAmount], [CurrencyCode], [Notes],
-                     [IsGrandTotalShown], [CreatedAtUtc], [UpdatedAtUtc])
+                     [IsGrandTotalShown], [IsQuotationReferenceShown], [VatSubmissionPeriodId],
+                     [CreatedAtUtc], [UpdatedAtUtc])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@BusinessId, @CustomerId, @QuotationId, @InvoiceStatusTypeId,
                      @InvoiceFinancialStatusTypeId, @InvoiceNumber, @InvoiceDate, @DueDate,
                      @Subtotal, @TaxAmount, @TotalAmount, @CurrencyCode, @Notes,
-                     @IsGrandTotalShown, @CreatedAtUtc, @UpdatedAtUtc)";
+                     @IsGrandTotalShown, @IsQuotationReferenceShown, @VatSubmissionPeriodId,
+                     @CreatedAtUtc, @UpdatedAtUtc)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -153,6 +159,8 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 command.Parameters.Add(new SqlParameter("@CurrencyCode", entity.CurrencyCode));
                 command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@IsGrandTotalShown", entity.IsGrandTotalShown));
+                command.Parameters.Add(new SqlParameter("@IsQuotationReferenceShown", entity.IsQuotationReferenceShown));
+                command.Parameters.Add(new SqlParameter("@VatSubmissionPeriodId", (object?)entity.VatSubmissionPeriodId ?? DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
                 command.Parameters.Add(new SqlParameter("@UpdatedAtUtc", entity.UpdatedAtUtc));
 
@@ -171,7 +179,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
         }
     }
 
-    public async Task UpdateAsync(Invoice entity)
+    public virtual async Task UpdateAsync(Invoice entity)
     {
         try
         {
@@ -188,6 +196,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                     [TotalAmount] = @TotalAmount,
                     [Notes] = @Notes,
                     [IsGrandTotalShown] = @IsGrandTotalShown,
+                    [IsQuotationReferenceShown] = @IsQuotationReferenceShown,
                     [UpdatedAtUtc] = @UpdatedAtUtc
                 WHERE [Id] = @Id";
 
@@ -203,6 +212,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 new SqlParameter("@TotalAmount", entity.TotalAmount),
                 new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value),
                 new SqlParameter("@IsGrandTotalShown", entity.IsGrandTotalShown),
+                new SqlParameter("@IsQuotationReferenceShown", entity.IsQuotationReferenceShown),
                 new SqlParameter("@UpdatedAtUtc", entity.UpdatedAtUtc)
             );
         }
@@ -212,7 +222,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
         }
     }
 
-    public async Task<int> GetNextSequentialNumberAsync(int businessId)
+    public virtual async Task<int> GetNextSequentialNumberAsync(int businessId)
     {
         try
         {
@@ -245,12 +255,157 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[Subtotal], [invoice].[Invoice].[TaxAmount],
                        [invoice].[Invoice].[TotalAmount], [invoice].[Invoice].[CurrencyCode],
                        [invoice].[Invoice].[Notes], [invoice].[Invoice].[IsGrandTotalShown],
-                       [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc]
+                       [invoice].[Invoice].[IsQuotationReferenceShown],
+                       [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
+                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[QuotationId] = @QuotationId";
 
             return await ExecuteSingleRecordStoredProcedure(query,
                 new SqlParameter("@QuotationId", quotationId));
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task UpdateVatPeriodAsync(int invoiceId, int? vatSubmissionPeriodId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [invoice].[Invoice]
+                SET [VatSubmissionPeriodId] = @VatSubmissionPeriodId,
+                    [UpdatedAtUtc] = @UpdatedAtUtc
+                WHERE [Id] = @InvoiceId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@InvoiceId", invoiceId),
+                new SqlParameter("@VatSubmissionPeriodId", vatSubmissionPeriodId.HasValue ? vatSubmissionPeriodId.Value : (object)DBNull.Value),
+                new SqlParameter("@UpdatedAtUtc", DateTime.UtcNow)
+            );
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task SoftDeleteAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [invoice].[Invoice]
+                SET [invoice].[Invoice].[IsDeleted] = 1,
+                    [invoice].[Invoice].[DeletedAtUtc] = GETUTCDATE(),
+                    [invoice].[Invoice].[UpdatedAtUtc] = GETUTCDATE()
+                WHERE [invoice].[Invoice].[Id] = @Id
+                  AND [invoice].[Invoice].[BusinessId] = @BusinessId
+                  AND [invoice].[Invoice].[IsDeleted] = 0";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<(List<InvoiceListDto> Items, int TotalCount)> GetPagedByBusinessIdAsync(
+        int businessId,
+        int? statusFilter,
+        int? financialStatusFilter,
+        int? customerFilter,
+        string? searchTerm,
+        int offset,
+        int pageSize)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [invoice].[Invoice].[Id],
+                       [invoice].[Invoice].[InvoiceNumber],
+                       [invoice].[Invoice].[CustomerId],
+                       [customer].[Customer].[Name] AS [CustomerName],
+                       [invoice].[Invoice].[InvoiceDate],
+                       [invoice].[Invoice].[DueDate],
+                       [invoice].[Invoice].[TotalAmount],
+                       [invoice].[InvoiceStatusType].[Name] AS [StatusName],
+                       [invoice].[InvoiceFinancialStatusType].[Name] AS [FinancialStatusName],
+                       [invoice].[Invoice].[InvoiceStatusTypeId],
+                       [invoice].[Invoice].[InvoiceFinancialStatusTypeId],
+                       COUNT(*) OVER() AS [TotalCount]
+                FROM [invoice].[Invoice]
+                INNER JOIN [customer].[Customer] ON [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
+                INNER JOIN [invoice].[InvoiceStatusType] ON [invoice].[Invoice].[InvoiceStatusTypeId] = [invoice].[InvoiceStatusType].[Id]
+                INNER JOIN [invoice].[InvoiceFinancialStatusType] ON [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = [invoice].[InvoiceFinancialStatusType].[Id]
+                WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
+                  AND [invoice].[Invoice].[IsDeleted] = 0
+                  AND (@StatusFilter IS NULL OR [invoice].[Invoice].[InvoiceStatusTypeId] = @StatusFilter)
+                  AND (@FinancialStatusFilter IS NULL OR [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = @FinancialStatusFilter)
+                  AND (@CustomerFilter IS NULL OR [invoice].[Invoice].[CustomerId] = @CustomerFilter)
+                  AND (@SearchTerm IS NULL OR (
+                      [invoice].[Invoice].[InvoiceNumber] LIKE '%' + @SearchTerm + '%'
+                      OR [customer].[Customer].[Name] LIKE '%' + @SearchTerm + '%'
+                  ))
+                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            var results = new List<InvoiceListDto>();
+            int totalCount = 0;
+            var connection = _context.Database.GetDbConnection();
+
+            // Escape SQL wildcards in search term
+            string? escapedSearchTerm = searchTerm != null
+                ? searchTerm.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")
+                : null;
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@StatusFilter", statusFilter ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@FinancialStatusFilter", financialStatusFilter ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CustomerFilter", customerFilter ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@SearchTerm", (object?)escapedSearchTerm ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Offset", offset));
+                command.Parameters.Add(new SqlParameter("@PageSize", pageSize));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
+                    results.Add(new InvoiceListDto
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        InvoiceNumber = reader.GetString(reader.GetOrdinal("InvoiceNumber")),
+                        CustomerId = reader.GetInt32(reader.GetOrdinal("CustomerId")),
+                        CustomerName = reader.GetString(reader.GetOrdinal("CustomerName")),
+                        InvoiceDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("InvoiceDate"))),
+                        DueDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("DueDate"))),
+                        TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                        StatusName = reader.GetString(reader.GetOrdinal("StatusName")),
+                        FinancialStatusName = reader.GetString(reader.GetOrdinal("FinancialStatusName")),
+                        InvoiceStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceStatusTypeId")),
+                        InvoiceFinancialStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceFinancialStatusTypeId"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    await connection.CloseAsync();
+            }
+
+            return (results, totalCount);
         }
         catch (Exception)
         {

@@ -12,7 +12,7 @@ public class AuditLogRepository : GenericStoredProcedureRepository<AuditLog>
 {
     public AuditLogRepository(DbContext context) : base(context) { }
 
-    public async Task InsertAsync(AuditLog entity)
+    public virtual async Task InsertAsync(AuditLog entity)
     {
         try
         {

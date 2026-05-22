@@ -30,7 +30,7 @@
     <section class="surface card-pad">
         <div class="label">Sent</div>
         <div class="metric">@sentCount</div>
-        <div class="muted">@sentValue.ToString("N2") pipeline value</div>
+        <div class="muted">@(ViewBag.CurrencySymbol)@sentValue.ToString("N2") pipeline value</div>
     </section>
     <section class="surface card-pad">
         <div class="label">Accepted</div>
@@ -81,7 +81,7 @@
                                 }
                                 <span class="pill @pillClass">@q.StatusName</span>
                             </td>
-                            <td>@q.TotalAmount.ToString("N2")</td>
+                            <td>@(ViewBag.CurrencySymbol)@q.TotalAmount.ToString("N2")</td>
                             <td style="display:flex;gap:12px;">
                                 <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@q.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
                                 <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@q.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Preview</a>

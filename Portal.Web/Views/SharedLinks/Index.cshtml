@@ -1,0 +1,143 @@
+@model List<Portal.Infrastructure.Models.SharedLinkViewModel>
+@{
+    ViewData["Title"] = "Shared Links";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Shared Links</div>
+        <h1 style="margin-top:14px;font-size:42px;">Shared Links</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Manage all shared document links for quotations and invoices.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Document Type</th>
+                    <th>Reference</th>
+                    <th>Customer Email</th>
+                    <th>Created</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var link in Model)
+                {
+                    <tr>
+                        <td>@link.DocumentType</td>
+                        <td><strong>@link.DocumentReference</strong></td>
+                        <td>@link.CustomerEmail</td>
+                        <td>@link.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@link.ExpiresAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            @{
+                                var statusColor = link.Status switch
+                                {
+                                    "Active" => "#129867",
+                                    "Expired" => "#C8912E",
+                                    "Cancelled" => "#C24A4A",
+                                    _ => "#6B7F8E"
+                                };
+                            }
+                            <span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:#fff;background-color:@statusColor;">
+                                @link.Status
+                            </span>
+                        </td>
+                        <td>
+                            @{
+                                var previewUrl = link.DocumentType == "Quotation"
+                                    ? $"/proposal/{link.ShareToken}"
+                                    : $"/invoice-view/{link.ShareToken}";
+                            }
+                            <a href="@previewUrl" target="_blank" class="btn btn-secondary btn-sm" style="margin-right:6px;">Preview</a>
+                            @if (link.Status == "Active")
+                            {
+                                if (link.DocumentType == "Quotation")
+                                {
+                                    <form method="post" asp-action="CancelProposal" asp-controller="SharedLinks" asp-route-id="@link.Id" style="display:inline;" id="cancel-form-@link.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmCancel('@link.DocumentReference', 'cancel-form-@link.Id')">Cancel</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-action="CancelInvoice" asp-controller="SharedLinks" asp-route-id="@link.Id" style="display:inline;" id="cancel-form-@link.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmCancel('@link.DocumentReference', 'cancel-form-@link.Id')">Cancel</button>
+                                    </form>
+                                }
+                            }
+                            else if (link.Status == "Cancelled")
+                            {
+                                if (link.DocumentType == "Quotation")
+                                {
+                                    <form method="post" asp-action="ReactivateProposal" asp-controller="SharedLinks" asp-route-id="@link.Id" style="display:inline;" id="reactivate-form-@link.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-green btn-sm" onclick="confirmReactivate('@link.DocumentReference', 'reactivate-form-@link.Id')">Reactivate</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-action="ReactivateInvoice" asp-controller="SharedLinks" asp-route-id="@link.Id" style="display:inline;" id="reactivate-form-@link.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-green btn-sm" onclick="confirmReactivate('@link.DocumentReference', 'reactivate-form-@link.Id')">Reactivate</button>
+                                    </form>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No shared links found. Share a quotation or invoice to see links here.</p>
+        </div>
+    }
+</section>
+
+@section Scripts {
+    <script>
+        function confirmCancel(reference, formId) {
+            Swal.fire({
+                title: 'Cancel this shared link?',
+                text: 'The link for ' + reference + ' will be deactivated immediately. Recipients will no longer be able to view the document.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6B7F8E',
+                confirmButtonText: 'Yes, cancel it',
+                cancelButtonText: 'Keep it'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    document.getElementById(formId).submit();
+                }
+            });
+        }
+
+        function confirmReactivate(reference, formId) {
+            Swal.fire({
+                title: 'Reactivate this shared link?',
+                text: 'The link for ' + reference + ' will be made active again. Recipients will be able to view the document if it has not expired.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#129867',
+                cancelButtonColor: '#6B7F8E',
+                confirmButtonText: 'Yes, reactivate it',
+                cancelButtonText: 'Never mind'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    document.getElementById(formId).submit();
+                }
+            });
+        }
+    </script>
+}

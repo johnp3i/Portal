@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create / Edit Purchase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .toggle-container { display:flex; align-items:center; gap:12px; margin-top:8px; }
+    .toggle { position:relative; width:48px; height:26px; border-radius:999px; background:rgba(13,94,166,.12); cursor:pointer; transition:background .2s; }
+    .toggle.active { background:var(--blue); }
+    .toggle::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:999px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.12); transition:transform .2s; }
+    .toggle.active::after { transform:translateX(22px); }
+    .toggle-label { font-size:14px; font-weight:700; color:var(--muted); }
+    .computed-field { background:var(--bg2); border:1px dashed rgba(13,94,166,.18); }
+    .required-star { color:var(--red); font-weight:800; }
+    .field-hint { font-size:11px; color:var(--muted2); margin-top:4px; }
+    .country-field { transition:opacity .3s; }
+    .country-field.hidden { opacity:.4; pointer-events:none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item" href="quotation_dashboard.html">Dashboard</a>
+      <a class="nav-item" href="quotation_list.html">Quotations</a>
+      <a class="nav-item" href="invoice_list.html">Invoices</a>
+      <a class="nav-item active" href="purchase_list.html">Purchases</a>
+      <a class="nav-item" href="supplier_list.html">Suppliers</a>
+      <a class="nav-item" href="expense_category_list.html">Expense Categories</a>
+    </aside>
+    <main class="content">
+
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Purchases</div>
+    <h1 style="margin-top:14px;font-size:42px;">Record Purchase</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Enter expense details with VAT tracking and EU Reverse Charge support.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a class="btn btn-secondary" href="purchase_list.html">Back to List</a>
+  </div>
+</div>
+
+<section class="glass card-pad">
+  <form method="post">
+    <!-- Row 1: Supplier & Category -->
+    <div class="form-grid">
+      <div class="field">
+        <label>Supplier <span class="required-star">*</span></label>
+        <select name="supplierId" required>
+          <option value="">Select supplier...</option>
+          <option value="1">Office Depot EU</option>
+          <option value="2" selected>TechParts GmbH</option>
+          <option value="3">CloudHost Services</option>
+          <option value="4">Print & Paper Co</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Expense Category <span class="required-star">*</span></label>
+        <select name="expenseCategoryId" required>
+          <option value="">Select category...</option>
+          <option value="1">Office Supplies</option>
+          <option value="2" selected>IT Equipment</option>
+          <option value="3">Cloud Services</option>
+          <option value="4">Marketing</option>
+          <option value="5">Travel</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 2: Invoice Number & Date -->
+    <div class="form-grid" style="margin-top:16px;">
+      <div class="field">
+        <label>Invoice Number</label>
+        <input type="text" name="invoiceNumber" value="TP-DE-9921" placeholder="Supplier invoice reference" />
+      </div>
+      <div class="field">
+        <label>Invoice Date <span class="required-star">*</span></label>
+        <input type="date" name="invoiceDate" value="2026-04-12" required />
+      </div>
+    </div>
+
+    <!-- Row 3: Description -->
+    <div style="margin-top:16px;">
+      <div class="field">
+        <label>Description <span class="required-star">*</span></label>
+        <input type="text" name="description" value="USB-C docking stations (x2)" placeholder="Brief description of the purchase" required />
+      </div>
+    </div>
+
+    <!-- Row 4: Amounts -->
+    <div class="form-grid" style="margin-top:16px;">
+      <div class="field">
+        <label>Amount Excl. VAT <span class="required-star">*</span></label>
+        <input type="number" name="amountExcludingVat" value="310.00" step="0.01" min="0.01" required />
+      </div>
+      <div class="field">
+        <label>VAT Amount</label>
+        <input type="number" name="vatAmount" value="0.00" step="0.01" min="0" disabled style="background:var(--bg2);" />
+        <div class="field-hint">Disabled when EU Reverse Charge is active</div>
+      </div>
+    </div>
+
+    <!-- Row 5: EU Reverse Charge Toggle -->
+    <div style="margin-top:20px;padding:18px;border-radius:18px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);">
+      <div class="toggle-container">
+        <div class="toggle active" id="rcToggle" onclick="toggleRC()"></div>
+        <span class="toggle-label">EU Reverse Charge</span>
+        <span class="pill pill-blue" style="font-size:10px;padding:5px 8px;margin-left:8px;">Active</span>
+      </div>
+      <div class="field-hint" style="margin-top:8px;">When active, VAT is set to zero and the Country field becomes required.</div>
+    </div>
+
+    <!-- Row 6: Country (shown when RC active) -->
+    <div class="form-grid" style="margin-top:16px;">
+      <div class="field country-field">
+        <label>Country <span class="required-star">*</span></label>
+        <input type="text" name="country" value="Germany" placeholder="EU member state of supplier" required />
+        <div class="field-hint">Required for EU Reverse Charge transactions</div>
+      </div>
+      <div class="field">
+        <label>Total Amount</label>
+        <input type="text" name="totalAmount" value="€310.00" readonly class="computed-field" />
+        <div class="field-hint">Computed: Amount Excl. VAT + VAT Amount</div>
+      </div>
+    </div>
+
+    <!-- Row 7: Notes -->
+    <div style="margin-top:16px;">
+      <div class="field">
+        <label>Notes</label>
+        <textarea name="notes" placeholder="Optional notes about this purchase...">Ordered via EU B2B portal. Delivery confirmed 2026-04-14.</textarea>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="margin-top:24px;display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary">Save Purchase</button>
+      <a href="purchase_list.html" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</section>
+
+    </main>
+  </div>
+
+  <script>
+    function toggleRC() {
+      const toggle = document.getElementById('rcToggle');
+      toggle.classList.toggle('active');
+      const isActive = toggle.classList.contains('active');
+      const vatInput = document.querySelector('input[name="vatAmount"]');
+      const countryField = document.querySelector('.country-field');
+      const pill = toggle.parentElement.querySelector('.pill');
+
+      if (isActive) {
+        vatInput.value = '0.00';
+        vatInput.disabled = true;
+        vatInput.style.background = 'var(--bg2)';
+        countryField.classList.remove('hidden');
+        pill.textContent = 'Active';
+        pill.style.display = '';
+      } else {
+        vatInput.disabled = false;
+        vatInput.style.background = '#fff';
+        countryField.classList.add('hidden');
+        pill.textContent = 'Inactive';
+        pill.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

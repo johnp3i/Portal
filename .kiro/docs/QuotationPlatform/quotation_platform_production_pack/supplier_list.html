@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supplier Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .modal-overlay { position:fixed; inset:0; background:rgba(11,27,40,.5); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .modal { background:#fff; border-radius:24px; padding:32px; width:100%; max-width:480px; box-shadow:0 30px 80px rgba(13,94,166,.20); }
+    .modal h2 { font-size:24px; margin-bottom:20px; }
+    .modal .field { margin-bottom:16px; }
+    .modal-actions { display:flex; gap:12px; margin-top:24px; }
+    .status-active { color:var(--green); font-weight:700; }
+    .status-inactive { color:var(--muted); font-weight:700; text-decoration:line-through; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item" href="quotation_dashboard.html">Dashboard</a>
+      <a class="nav-item" href="quotation_list.html">Quotations</a>
+      <a class="nav-item" href="invoice_list.html">Invoices</a>
+      <a class="nav-item" href="purchase_list.html">Purchases</a>
+      <a class="nav-item active" href="supplier_list.html">Suppliers</a>
+      <a class="nav-item" href="expense_category_list.html">Expense Categories</a>
+    </aside>
+    <main class="content">
+
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Suppliers</div>
+    <h1 style="margin-top:14px;font-size:42px;">Supplier Registry</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Manage your supplier list for purchase tracking and expense categorisation.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="showCreateModal()">Add Supplier</button>
+  </div>
+</div>
+
+<section class="glass card-pad">
+  <table>
+    <thead>
+      <tr>
+        <th>Supplier Name</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Office Depot EU</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>2026-01-15</td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('Office Depot EU')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('Office Depot EU')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>TechParts GmbH</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>2026-01-20</td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('TechParts GmbH')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('TechParts GmbH')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>CloudHost Services</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>2026-02-03</td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('CloudHost Services')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('CloudHost Services')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Print & Paper Co</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>2026-02-10</td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('Print & Paper Co')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('Print & Paper Co')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--muted);">Legacy Supplies Ltd</strong></td>
+        <td><span class="pill pill-red" style="font-size:10px;padding:5px 10px;">Inactive</span></td>
+        <td>2025-11-08</td>
+        <td>
+          <span style="color:var(--muted);font-size:13px;">—</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Create/Edit Modal (shown as example) -->
+<div class="modal-overlay" id="createModal" style="display:none;">
+  <div class="modal">
+    <h2 id="modalTitle">Add Supplier</h2>
+    <div class="field">
+      <label>Supplier Name <span style="color:var(--red);font-weight:800;">*</span></label>
+      <input type="text" id="supplierNameInput" placeholder="Enter supplier name..." />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="hideModal()">Save</button>
+      <button class="btn btn-secondary" onclick="hideModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+
+  <script>
+    function showCreateModal() {
+      document.getElementById('modalTitle').textContent = 'Add Supplier';
+      document.getElementById('supplierNameInput').value = '';
+      document.getElementById('createModal').style.display = 'flex';
+    }
+    function showEditModal(name) {
+      document.getElementById('modalTitle').textContent = 'Edit Supplier';
+      document.getElementById('supplierNameInput').value = name;
+      document.getElementById('createModal').style.display = 'flex';
+    }
+    function hideModal() {
+      document.getElementById('createModal').style.display = 'none';
+    }
+    function confirmDeactivate(name) {
+      // In production this would be Swal.fire with danger styling
+      if (confirm('Are you sure you want to deactivate "' + name + '"? This supplier will no longer appear in new purchase forms.')) {
+        alert('Supplier deactivated (mock)');
+      }
+    }
+  </script>
+</body>
+</html>

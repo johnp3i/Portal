@@ -1,0 +1,254 @@
+@{
+    ViewData["Title"] = "CSV Import";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 style="margin-top:14px;font-size:42px;">CSV Import</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Upload a CSV file to bulk-import purchase records.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/Purchase" class="btn btn-secondary">Back to Purchases</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div id="uploadSection">
+        <div style="margin-bottom:16px;">
+            <label style="font-weight:600;font-size:14px;display:block;margin-bottom:8px;">Select CSV File</label>
+            <p class="muted" style="font-size:13px;margin-bottom:12px;">
+                Expected columns: InvoiceDate, InvoiceNumber, SupplierName, ExpenseCategoryName, Description, AmountExcludingVat, VatAmount, PurchaseOriginType, Country, Notes
+            </p>
+            <input type="file" id="csvFileInput" accept=".csv" style="font-family:inherit;font-size:14px;" />
+        </div>
+        <button type="button" class="btn btn-primary" onclick="uploadCsv()">Upload &amp; Preview</button>
+    </div>
+
+    <div id="previewSection" style="display:none;margin-top:32px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h2 style="font-size:20px;margin:0;">Import Preview</h2>
+                <p class="muted" style="font-size:13px;margin-top:4px;" id="previewSummary"></p>
+            </div>
+            <div style="display:flex;gap:12px;">
+                <button type="button" class="btn btn-secondary" onclick="resetImport()">Upload Different File</button>
+                <button type="button" class="btn btn-primary" id="confirmImportBtn" onclick="confirmImport()">Confirm Import</button>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table id="previewTable">
+                <thead>
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th style="width:50px;">Status</th>
+                        <th>Date</th>
+                        <th>Invoice #</th>
+                        <th>Supplier</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th style="text-align:right;">Excl. VAT</th>
+                        <th style="text-align:right;">VAT</th>
+                        <th>Origin</th>
+                        <th>Country</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody id="previewTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        var parsedRows = [];
+
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        async function uploadCsv() {
+            var fileInput = document.getElementById('csvFileInput');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                Swal.fire({ title: 'No File', text: 'Please select a CSV file to upload.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var file = fileInput.files[0];
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                Swal.fire({ title: 'Invalid File', text: 'Please select a valid CSV file.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('file', file);
+
+            BlockUI.show('Parsing CSV file...');
+            try {
+                var response = await fetch('/Purchase/CsvImport', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    parsedRows = data.rows;
+                    renderPreview();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to parse CSV file.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred while uploading the file.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function renderPreview() {
+            var tbody = document.getElementById('previewTableBody');
+            tbody.innerHTML = '';
+
+            var validCount = 0;
+            var invalidCount = 0;
+
+            for (var i = 0; i < parsedRows.length; i++) {
+                var row = parsedRows[i];
+                if (row.isValid) {
+                    validCount++;
+                } else {
+                    invalidCount++;
+                }
+
+                var tr = document.createElement('tr');
+                if (!row.isValid) {
+                    tr.style.background = 'rgba(194,74,74,.06)';
+                }
+
+                tr.innerHTML =
+                    '<td>' + row.rowNumber + '</td>' +
+                    '<td style="text-align:center;">' + (row.isValid
+                        ? '<span style="color:#129867;font-weight:700;font-size:16px;" title="Valid">&#10003;</span>'
+                        : '<span style="color:#C24A4A;font-weight:700;font-size:16px;" title="Invalid">&#10007;</span>') + '</td>' +
+                    '<td>' + formatDate(row.invoiceDate) + '</td>' +
+                    '<td>' + escapeHtml(row.invoiceNumber || '') + '</td>' +
+                    '<td>' + escapeHtml(row.supplierName || '') + '</td>' +
+                    '<td>' + escapeHtml(row.expenseCategoryName || '') + '</td>' +
+                    '<td>' + escapeHtml(row.description || '') + '</td>' +
+                    '<td style="text-align:right;">' + formatCurrency(row.amountExcludingVat) + '</td>' +
+                    '<td style="text-align:right;">' + formatCurrency(row.vatAmount) + '</td>' +
+                    '<td>' + escapeHtml(row.purchaseOriginType || '') + '</td>' +
+                    '<td>' + escapeHtml(row.country || '') + '</td>' +
+                    '<td style="color:#C24A4A;font-size:12px;">' + escapeHtml(row.errorMessage || '') + '</td>';
+
+                tbody.appendChild(tr);
+            }
+
+            var summary = validCount + ' valid row(s), ' + invalidCount + ' invalid row(s) out of ' + parsedRows.length + ' total.';
+            document.getElementById('previewSummary').textContent = summary;
+
+            if (validCount === 0) {
+                document.getElementById('confirmImportBtn').disabled = true;
+                document.getElementById('confirmImportBtn').style.opacity = '0.5';
+                document.getElementById('confirmImportBtn').style.cursor = 'not-allowed';
+            } else {
+                document.getElementById('confirmImportBtn').disabled = false;
+                document.getElementById('confirmImportBtn').style.opacity = '1';
+                document.getElementById('confirmImportBtn').style.cursor = 'pointer';
+            }
+
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('previewSection').style.display = 'block';
+        }
+
+        async function confirmImport() {
+            var validRows = parsedRows.filter(function (r) { return r.isValid; });
+
+            if (validRows.length === 0) {
+                Swal.fire({ title: 'No Valid Rows', text: 'There are no valid rows to import.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var result = await Swal.fire({
+                title: 'Confirm Import',
+                text: 'Import ' + validRows.length + ' valid purchase(s)? Invalid rows will be skipped.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, import'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Importing purchases...');
+            try {
+                var response = await fetch('/Purchase/CsvConfirm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify(validRows)
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Import Complete!',
+                        text: (data.count || validRows.length) + ' purchase(s) imported successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.href = '/Purchase';
+                } else {
+                    Swal.fire({ title: 'Import Failed', text: data.message || 'An error occurred during import.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred during import.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function resetImport() {
+            parsedRows = [];
+            document.getElementById('csvFileInput').value = '';
+            document.getElementById('previewTableBody').innerHTML = '';
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('uploadSection').style.display = 'block';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            try {
+                var d = new Date(dateStr);
+                if (isNaN(d.getTime())) return escapeHtml(dateStr);
+                var day = String(d.getDate()).padStart(2, '0');
+                var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                return day + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+            } catch (e) {
+                return escapeHtml(dateStr);
+            }
+        }
+
+        function formatCurrency(value) {
+            if (value === null || value === undefined) return '0.00';
+            return Number(value).toFixed(2);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            return div.innerHTML;
+        }
+    </script>
+}

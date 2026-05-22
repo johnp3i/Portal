@@ -14,11 +14,13 @@ public class Purchase
 
     public int ExpenseCategoryId { get; set; }
 
+    public int PurchaseOriginTypeId { get; set; }
+
     public string? InvoiceNumber { get; set; }
 
     public DateOnly InvoiceDate { get; set; }
 
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     public decimal AmountExcludingVat { get; set; }
 
@@ -26,11 +28,15 @@ public class Purchase
 
     public decimal TotalAmount { get; set; }
 
-    public bool IsEuReverseCharge { get; set; }
-
     public string? Country { get; set; }
 
     public string? Notes { get; set; }
+
+    public bool IsCancelled { get; set; }
+
+    public DateTime? CancelledAtUtc { get; set; }
+
+    public int? VatSubmissionPeriodId { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
 
@@ -42,4 +48,8 @@ public class Purchase
     public Supplier Supplier { get; set; } = null!;
 
     public ExpenseCategory ExpenseCategory { get; set; } = null!;
+
+    public PurchaseOriginType PurchaseOriginType { get; set; } = null!;
+
+    public VatSubmissionPeriod? VatSubmissionPeriod { get; set; }
 }

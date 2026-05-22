@@ -32,4 +32,13 @@ public class StubEmailService : IEmailService
 
         return Task.CompletedTask;
     }
+
+    public Task SendInvoiceEmailAsync(string toEmail, string shareToken, string invoiceNumber, string businessName, decimal totalAmount, DateOnly dueDate, DateTimeOffset expiresAtUtc)
+    {
+        _logger.LogInformation(
+            "Invoice email stub: To={ToEmail}, Invoice={InvoiceNumber}, Business={BusinessName}, Token={Token}, Amount={Amount}, DueDate={DueDate}, Expires={Expires}",
+            toEmail, invoiceNumber, businessName, shareToken, totalAmount, dueDate, expiresAtUtc);
+
+        return Task.CompletedTask;
+    }
 }

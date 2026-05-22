@@ -18,6 +18,10 @@
     <form method="get" asp-action="Index" asp-controller="Quotation">
         <div class="form-grid">
             <div class="field">
+                <label>Search</label>
+                <input type="text" name="search" value="@Model.SearchTerm" placeholder="Search by reference or customer..." />
+            </div>
+            <div class="field">
                 <label>Status</label>
                 <select name="statusFilter">
                     <option value="">All Statuses</option>
@@ -52,7 +56,7 @@
     </form>
 
     <div style="margin-top:18px;">
-        @if (Model.Quotations != null && Model.Quotations.Count > 0)
+        @if (Model.PagedQuotations.Items != null && Model.PagedQuotations.Items.Count > 0)
         {
             <table>
                 <thead>
@@ -66,7 +70,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var quotation in Model.Quotations)
+                    @foreach (var quotation in Model.PagedQuotations.Items)
                     {
                         <tr>
                             <td><strong>@quotation.Reference</strong></td>
@@ -98,12 +102,16 @@
                                     }
                                 }
                             </td>
-                            <td>@quotation.TotalAmount.ToString("N2")</td>
+                            <td>@(ViewBag.CurrencySymbol)@quotation.TotalAmount.ToString("N2")</td>
                             <td>
                                 <div style="display:flex;gap:12px;align-items:center;">
                                     <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Detail</a>
                                     <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
                                     <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" style="color:var(--blue);font-weight:700;font-size:13px;">Preview</a>
+                                    @if (quotation.QuotationStatusTypeId == 1)
+                                    {
+                                        <a href="javascript:void(0)" onclick="deleteQuotation(@quotation.Id, '@Html.Raw(quotation.Reference)')" style="color:var(--danger);font-weight:700;font-size:13px;">Delete</a>
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -118,4 +126,73 @@
             </div>
         }
     </div>
+
+    @await Html.PartialAsync("_PagingControl", null, new ViewDataDictionary(ViewData) {
+        { "CurrentPage", Model.PagedQuotations.CurrentPage },
+        { "TotalPages", Model.PagedQuotations.TotalPages },
+        { "TotalCount", Model.PagedQuotations.TotalCount },
+        { "PageSize", Model.PagedQuotations.PageSize },
+        { "HasPreviousPage", Model.PagedQuotations.HasPreviousPage },
+        { "HasNextPage", Model.PagedQuotations.HasNextPage }
+    })
 </section>
+
+@section Scripts {
+    <script>
+        async function deleteQuotation(quotationId, reference) {
+            const firstResult = await Swal.fire({
+                title: 'Are you sure?',
+                text: `Quotation ${reference} will be deleted.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it'
+            });
+
+            if (!firstResult.isConfirmed) return;
+
+            const secondResult = await Swal.fire({
+                title: 'Final Warning',
+                text: 'This action cannot be easily undone. Are you sure you want to proceed?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete permanently'
+            });
+
+            if (!secondResult.isConfirmed) return;
+
+            BlockUI.show('Deleting...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Quotation/SoftDelete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'id=' + quotationId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The quotation has been deleted.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

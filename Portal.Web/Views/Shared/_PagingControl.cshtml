@@ -1,0 +1,227 @@
+@*
+    Shared Paging Control Partial View
+    
+    Expected ViewData keys:
+      - CurrentPage (int)
+      - TotalPages (int)
+      - TotalCount (int)
+      - PageSize (int)
+      - HasPreviousPage (bool)
+      - HasNextPage (bool)
+*@
+
+@{
+    var currentPage = (int)(ViewData["CurrentPage"] ?? 1);
+    var totalPages = (int)(ViewData["TotalPages"] ?? 0);
+    var totalCount = (int)(ViewData["TotalCount"] ?? 0);
+    var pageSize = (int)(ViewData["PageSize"] ?? 15);
+    var hasPreviousPage = (bool)(ViewData["HasPreviousPage"] ?? false);
+    var hasNextPage = (bool)(ViewData["HasNextPage"] ?? false);
+
+    // Calculate "Showing X–Y of Z"
+    var showingFrom = totalCount == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    var showingTo = Math.Min(currentPage * pageSize, totalCount);
+
+    // Build base URL preserving all current query parameters except "page"
+    var queryParams = Context.Request.Query
+        .Where(q => !string.Equals(q.Key, "page", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    string BuildPageUrl(int page)
+    {
+        var parameters = new List<string>();
+        foreach (var param in queryParams)
+        {
+            foreach (var value in param.Value)
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    parameters.Add($"{Uri.EscapeDataString(param.Key)}={Uri.EscapeDataString(value)}");
+                }
+            }
+        }
+        parameters.Add($"page={page}");
+        return "?" + string.Join("&", parameters);
+    }
+
+    // Calculate page window (current ± 2, with ellipsis for gaps)
+    var windowSize = 2;
+    var startPage = Math.Max(1, currentPage - windowSize);
+    var endPage = Math.Min(totalPages, currentPage + windowSize);
+}
+
+@if (totalCount > 0)
+{
+    <div class="paging-control">
+        <div class="paging-info">
+            Showing @showingFrom–@showingTo of @totalCount records
+        </div>
+        <div class="paging-nav">
+            @if (hasPreviousPage)
+            {
+                <a href="@BuildPageUrl(currentPage - 1)" class="paging-btn">Previous</a>
+            }
+            else
+            {
+                <span class="paging-btn paging-btn-disabled">Previous</span>
+            }
+
+            @if (startPage > 1)
+            {
+                <a href="@BuildPageUrl(1)" class="paging-number">1</a>
+                @if (startPage > 2)
+                {
+                    <span class="paging-ellipsis">…</span>
+                }
+            }
+
+            @for (var i = startPage; i <= endPage; i++)
+            {
+                if (i == currentPage)
+                {
+                    <span class="paging-number paging-number-active">@i</span>
+                }
+                else
+                {
+                    <a href="@BuildPageUrl(i)" class="paging-number">@i</a>
+                }
+            }
+
+            @if (endPage < totalPages)
+            {
+                @if (endPage < totalPages - 1)
+                {
+                    <span class="paging-ellipsis">…</span>
+                }
+                <a href="@BuildPageUrl(totalPages)" class="paging-number">@totalPages</a>
+            }
+
+            @if (hasNextPage)
+            {
+                <a href="@BuildPageUrl(currentPage + 1)" class="paging-btn">Next</a>
+            }
+            else
+            {
+                <span class="paging-btn paging-btn-disabled">Next</span>
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .paging-control {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 24px;
+        padding: 16px 0;
+    }
+
+    .paging-info {
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--muted);
+    }
+
+    .paging-nav {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .paging-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        transition: opacity 0.15s, background 0.15s;
+        background: linear-gradient(180deg, #1A6BB8 0%, #0D5EA6 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 8px 18px rgba(13, 94, 166, 0.18);
+    }
+
+    .paging-btn:hover {
+        opacity: 0.88;
+    }
+
+    .paging-btn-disabled {
+        background: #E2E8F0;
+        color: #A0AEC0;
+        cursor: not-allowed;
+        box-shadow: none;
+        opacity: 0.7;
+    }
+
+    .paging-btn-disabled:hover {
+        opacity: 0.7;
+    }
+
+    .paging-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--muted);
+        background: transparent;
+        border: 1px solid rgba(13, 94, 166, 0.10);
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .paging-number:hover {
+        background: rgba(13, 94, 166, 0.06);
+        color: var(--blue);
+        border-color: rgba(13, 94, 166, 0.20);
+    }
+
+    .paging-number-active {
+        background: linear-gradient(180deg, #1A6BB8 0%, #0D5EA6 100%);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 6px 14px rgba(13, 94, 166, 0.20);
+    }
+
+    .paging-number-active:hover {
+        background: linear-gradient(180deg, #1A6BB8 0%, #0D5EA6 100%);
+        color: #fff;
+        opacity: 1;
+    }
+
+    .paging-ellipsis {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        font-size: 16px;
+        color: var(--muted);
+        font-weight: 700;
+    }
+
+    @@media (max-width: 600px) {
+        .paging-control {
+            flex-direction: column;
+            align-items: stretch;
+            text-align: center;
+        }
+
+        .paging-nav {
+            justify-content: center;
+        }
+    }
+</style>

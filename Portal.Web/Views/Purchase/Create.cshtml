@@ -1,0 +1,291 @@
+@model Portal.Web.Models.PurchaseFormViewModel
+@{
+    ViewData["Title"] = "Create Purchase";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Create Purchase</div>
+        <h1 style="margin-top:14px;font-size:42px;">Record a new purchase</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Fill in the details below to record a new business expense.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form method="post" asp-action="Create" asp-controller="Purchase" asp-antiforgery="true" id="purchaseForm">
+        <div class="form-grid">
+            <!-- Supplier -->
+            <div class="field">
+                <label asp-for="SupplierId">Supplier *</label>
+                <select asp-for="SupplierId">
+                    <option value="">-- Select Supplier --</option>
+                    @foreach (var supplier in Model.Suppliers)
+                    {
+                        <option value="@supplier.Id">@supplier.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="SupplierId" class="field-validation-error"></span>
+            </div>
+
+            <!-- Expense Category -->
+            <div class="field">
+                <label asp-for="ExpenseCategoryId">Expense Category *</label>
+                <select asp-for="ExpenseCategoryId">
+                    <option value="">-- Select Category --</option>
+                    @foreach (var category in Model.ExpenseCategories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="ExpenseCategoryId" class="field-validation-error"></span>
+            </div>
+
+            <!-- Invoice Number -->
+            <div class="field">
+                <label asp-for="InvoiceNumber">Invoice Number</label>
+                <input asp-for="InvoiceNumber" placeholder="e.g. INV-001" />
+                <span asp-validation-for="InvoiceNumber" class="field-validation-error"></span>
+            </div>
+
+            <!-- Invoice Date -->
+            <div class="field">
+                <label asp-for="InvoiceDate">Invoice Date *</label>
+                <input asp-for="InvoiceDate" type="date" />
+                <span asp-validation-for="InvoiceDate" class="field-validation-error"></span>
+            </div>
+
+            <!-- Description -->
+            <div class="field" style="grid-column:1 / -1;">
+                <label asp-for="Description">Description</label>
+                <textarea asp-for="Description" placeholder="Describe the purchase (optional)"></textarea>
+                <span asp-validation-for="Description" class="field-validation-error"></span>
+            </div>
+
+            <!-- Purchase Origin Type -->
+            <div class="field" style="grid-column:1 / -1;">
+                <label>Purchase Origin Type *</label>
+                <div class="radio-group" style="display:flex;gap:24px;margin-top:6px;">
+                    @foreach (var originType in Model.OriginTypes)
+                    {
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
+                            <input type="radio" asp-for="PurchaseOriginTypeId" value="@originType.Id"
+                                   checked="@(Model.PurchaseOriginTypeId == originType.Id ? "checked" : null)"
+                                   onchange="onOriginTypeChanged()" />
+                            @switch (originType.Id)
+                            {
+                                case 1:
+                                    <span>Domestic</span>
+                                    break;
+                                case 2:
+                                    <span>EU Reverse Charge</span>
+                                    break;
+                                case 3:
+                                    <span>Non-EU</span>
+                                    break;
+                                default:
+                                    <span>@originType.Name</span>
+                                    break;
+                            }
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="PurchaseOriginTypeId" class="field-validation-error"></span>
+            </div>
+
+            <!-- Amount Excluding VAT -->
+            <div class="field">
+                <label asp-for="AmountExcludingVat">Amount Excl. VAT *</label>
+                <input asp-for="AmountExcludingVat" type="number" step="0.01" min="0.01" placeholder="0.00" id="amountInput" oninput="onAmountEdit()" />
+                <span asp-validation-for="AmountExcludingVat" class="field-validation-error"></span>
+            </div>
+
+            <!-- VAT Amount -->
+            <div class="field" id="vatAmountField">
+                <label asp-for="VatAmount">VAT Amount</label>
+                <input type="number" step="0.01" min="0" placeholder="0.00" id="vatAmountInput" value="@Model.VatAmount" oninput="onVatEdit()" />
+                <input type="hidden" asp-for="VatAmount" id="vatAmountHidden" />
+                <span asp-validation-for="VatAmount" class="field-validation-error"></span>
+            </div>
+
+            <!-- Total Amount (editable, bidirectional) -->
+            <div class="field">
+                <label>Total Amount</label>
+                <input type="number" step="0.01" min="0" id="totalAmountInput" placeholder="0.00" style="font-weight:600;" oninput="onTotalEdit()" value="0.00" />
+            </div>
+
+            <!-- Country -->
+            <div class="field" id="countryField" style="display:none;">
+                <label asp-for="Country" id="countryLabel">Country</label>
+                <input asp-for="Country" placeholder="e.g. Germany, France" />
+                <span asp-validation-for="Country" class="field-validation-error"></span>
+            </div>
+
+            <!-- Notes -->
+            <div class="field" style="grid-column:1 / -1;">
+                <label asp-for="Notes">Notes</label>
+                <textarea asp-for="Notes" placeholder="Optional notes"></textarea>
+                <span asp-validation-for="Notes" class="field-validation-error"></span>
+            </div>
+        </div>
+
+        <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">
+            <button type="submit" class="btn btn-primary">Create Purchase</button>
+            <a asp-action="Index" asp-controller="Purchase" class="btn btn-outline">&larr; Back to Purchases</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        var lastEditedField = 'amount'; // tracks which field was last edited
+
+        function getSelectedOriginTypeId() {
+            var selected = document.querySelector('input[name="PurchaseOriginTypeId"]:checked');
+            return selected ? parseInt(selected.value) : 1;
+        }
+
+        function onOriginTypeChanged() {
+            var originTypeId = getSelectedOriginTypeId();
+            var vatInput = document.getElementById('vatAmountInput');
+            var vatHidden = document.getElementById('vatAmountHidden');
+            var countryField = document.getElementById('countryField');
+            var countryLabel = document.getElementById('countryLabel');
+
+            if (originTypeId === 2) {
+                vatInput.value = '0';
+                vatInput.disabled = true;
+                vatInput.style.background = '#EEF4F8';
+                vatHidden.value = '0';
+                countryField.style.display = '';
+                countryLabel.textContent = 'Country *';
+            } else if (originTypeId === 3) {
+                vatInput.disabled = false;
+                vatInput.style.background = '';
+                countryField.style.display = '';
+                countryLabel.textContent = 'Country *';
+            } else {
+                vatInput.disabled = false;
+                vatInput.style.background = '';
+                countryField.style.display = 'none';
+                countryLabel.textContent = 'Country';
+            }
+
+            recalc();
+        }
+
+        function onAmountEdit() {
+            lastEditedField = 'amount';
+            recalc();
+        }
+
+        function onVatEdit() {
+            lastEditedField = 'vat';
+            recalc();
+        }
+
+        function onTotalEdit() {
+            lastEditedField = 'total';
+            recalc();
+        }
+
+        function recalc() {
+            var amtInput = document.getElementById('amountInput');
+            var vatInput = document.getElementById('vatAmountInput');
+            var vatHidden = document.getElementById('vatAmountHidden');
+            var totalInput = document.getElementById('totalAmountInput');
+            var originTypeId = getSelectedOriginTypeId();
+
+            var amt = parseFloat(amtInput.value) || 0;
+            var vat = parseFloat(vatInput.value) || 0;
+            var total = parseFloat(totalInput.value) || 0;
+
+            if (originTypeId === 2) {
+                // EU RC: VAT always 0, Total = Amount
+                vat = 0;
+                vatInput.value = '0';
+                vatHidden.value = '0';
+                total = amt;
+                totalInput.value = total.toFixed(2);
+                clearAllStyles();
+                return;
+            }
+
+            if (lastEditedField === 'total') {
+                // Back-calculate Amount = Total - VAT
+                amt = total - vat;
+                amtInput.value = amt.toFixed(2);
+                markComputed(amtInput);
+                clearComputed(vatInput);
+                clearComputed(totalInput);
+            } else if (lastEditedField === 'vat') {
+                // If Total was previously manually set, back-calculate Amount
+                if (document.getElementById('totalManuallySet') && document.getElementById('totalManuallySet').value === '1') {
+                    amt = total - vat;
+                    amtInput.value = amt.toFixed(2);
+                    markComputed(amtInput);
+                    clearComputed(vatInput);
+                    clearComputed(totalInput);
+                } else {
+                    // Normal: Amount + VAT = Total
+                    total = amt + vat;
+                    totalInput.value = total.toFixed(2);
+                    markComputed(totalInput);
+                    clearComputed(amtInput);
+                    clearComputed(vatInput);
+                }
+            } else {
+                // Amount edited: Total = Amount + VAT
+                total = amt + vat;
+                totalInput.value = total.toFixed(2);
+                markComputed(totalInput);
+                clearComputed(amtInput);
+                clearComputed(vatInput);
+            }
+
+            // Sync hidden VAT field
+            vatHidden.value = vat;
+
+            // Track if total was manually set
+            if (lastEditedField === 'total') {
+                getOrCreateFlag().value = '1';
+            } else if (lastEditedField === 'amount') {
+                getOrCreateFlag().value = '0';
+            }
+        }
+
+        function getOrCreateFlag() {
+            var flag = document.getElementById('totalManuallySet');
+            if (!flag) {
+                flag = document.createElement('input');
+                flag.type = 'hidden';
+                flag.id = 'totalManuallySet';
+                flag.value = '0';
+                document.getElementById('purchaseForm').appendChild(flag);
+            }
+            return flag;
+        }
+
+        function markComputed(input) {
+            input.style.fontStyle = 'italic';
+            input.style.opacity = '0.75';
+        }
+
+        function clearComputed(input) {
+            input.style.fontStyle = '';
+            input.style.opacity = '';
+        }
+
+        function clearAllStyles() {
+            clearComputed(document.getElementById('amountInput'));
+            clearComputed(document.getElementById('vatAmountInput'));
+            clearComputed(document.getElementById('totalAmountInput'));
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            onOriginTypeChanged();
+        });
+    </script>
+}

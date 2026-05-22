@@ -27,13 +27,13 @@ public class ProposalController : Controller
         if (share == null)
             return NotFound();
 
-        // Set cache-control to prevent intermediary cachingOk
+        // Set cache-control to prevent intermediary caching
         Response.Headers["Cache-Control"] = "no-store";
 
-        // Check if expired
-        if (share.ExpiresAtUtc <= DateTimeOffset.UtcNow)
+        // Check if cancelled or expired
+        if (!share.IsActive || share.ExpiresAtUtc <= DateTimeOffset.UtcNow)
         {
-            return View("Expired");
+            return View("~/Views/Shared/Unavailable.cshtml");
         }
 
         // Return the stored HTML snapshot directly

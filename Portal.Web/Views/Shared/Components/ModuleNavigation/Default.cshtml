@@ -23,3 +23,14 @@
         <a class="nav-item @(isActive ? "active" : "")" asp-controller="@module.Value.Controller" asp-action="@module.Value.Action">@module.Value.Label</a>
     }
 }
+
+@{
+    var hasQuotationAccess = Model.TryGetValue("quotation", out var qAccess) && qAccess != "none";
+    var hasInvoiceAccess = Model.TryGetValue("invoice", out var iAccess) && iAccess != "none";
+}
+
+@if (hasQuotationAccess || hasInvoiceAccess)
+{
+    var isSharedLinksActive = currentController.Equals("SharedLinks", StringComparison.OrdinalIgnoreCase);
+    <a class="nav-item @(isSharedLinksActive ? "active" : "")" href="/shared-links">Shared Links</a>
+}

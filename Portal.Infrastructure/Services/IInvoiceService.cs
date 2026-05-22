@@ -20,6 +20,13 @@ public interface IInvoiceService
     // Queries
     Task<List<InvoiceListDto>> GetInvoicesAsync(int? statusFilter = null,
         int? financialStatusFilter = null, int? customerFilter = null);
+    Task<PagedResult<InvoiceListDto>> GetInvoicesPagedAsync(
+        int? statusFilter = null,
+        int? financialStatusFilter = null,
+        int? customerFilter = null,
+        string? searchTerm = null,
+        int page = 1,
+        int pageSize = 15);
     Task<Invoice?> GetInvoiceByIdAsync(int id);
     Task<List<InvoiceLine>> GetInvoiceLinesAsync(int invoiceId);
 
@@ -28,7 +35,11 @@ public interface IInvoiceService
 
     // Invoice editing
     Task UpdateInvoiceAsync(int invoiceId, int customerId, DateOnly invoiceDate, DateOnly dueDate,
-        string? notes, bool isGrandTotalShown);
+        string? notes, bool isGrandTotalShown, bool isQuotationReferenceShown, string? invoiceNumber = null);
+
+    // VAT period reassignment
+    Task<ServiceResult> ReassignVatPeriodAsync(int invoiceId, int targetPeriodId);
+    Task<List<VatPeriodOptionDto>> GetUnsubmittedPeriodsAsync(int invoiceId);
 
     // Line management
     Task<InvoiceLine> AddLineAsync(int invoiceId, string description, decimal quantity,
@@ -38,4 +49,7 @@ public interface IInvoiceService
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
         decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId);
     Task RemoveLineAsync(int lineId);
+
+    // VAT Period Reassignment
+    Task<ServiceResult<ReassignmentImpactDto>> GetReassignmentImpactAsync(int invoiceId, int targetPeriodId);
 }

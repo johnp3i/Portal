@@ -1,0 +1,909 @@
+@{
+    ViewData["Title"] = "Bulk Purchase Entry";
+    var suppliers = (List<Portal.Infrastructure.Entities.Supplier>)ViewBag.Suppliers;
+    var categories = (List<Portal.Infrastructure.Entities.ExpenseCategory>)ViewBag.ExpenseCategories;
+    var originTypes = (List<Portal.Infrastructure.Entities.PurchaseOriginType>)ViewBag.OriginTypes;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 style="margin-top:14px;font-size:42px;">Bulk Entry</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Add multiple purchases at once using the spreadsheet grid below.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/Purchase" class="btn btn-outline">Back to Purchases</a>
+        <button type="button" class="btn btn-primary" onclick="saveAll()">Save All</button>
+    </div>
+</div>
+
+<!-- Batch Summary -->
+<section class="glass card-pad" style="margin-bottom:20px;">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+        <div>
+            <span class="label">Filled Rows</span>
+            <div id="summaryFilledCount" style="font-size:1.4rem;font-weight:800;color:var(--blue);margin-top:4px;">0</div>
+        </div>
+        <div>
+            <span class="label">Errors</span>
+            <div id="summaryErrorCount" style="font-size:1.4rem;font-weight:800;color:var(--red);margin-top:4px;">0</div>
+        </div>
+        <div>
+            <span class="label">Batch Total</span>
+            <div id="summaryBatchTotal" style="font-size:1.4rem;font-weight:800;color:var(--green);margin-top:4px;">0.00</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:16px;flex-wrap:wrap;">
+            <div>
+                <span class="label">Domestic</span>
+                <div id="summaryDomestic" style="font-size:1rem;font-weight:700;margin-top:4px;">0</div>
+            </div>
+            <div>
+                <span class="label">EU RC</span>
+                <div id="summaryEuRc" style="font-size:1rem;font-weight:700;color:var(--blue);margin-top:4px;">0</div>
+            </div>
+            <div>
+                <span class="label">Non-EU</span>
+                <div id="summaryNonEu" style="font-size:1rem;font-weight:700;color:var(--gold);margin-top:4px;">0</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Grid -->
+<section class="glass card-pad" style="overflow-x:auto;">
+    <div style="display:flex;gap:12px;margin-bottom:16px;">
+        <button type="button" class="btn btn-primary" onclick="addRows(1)">Add Row</button>
+        <button type="button" class="btn btn-secondary" onclick="addRows(5)">Add 5 Rows</button>
+    </div>
+
+    <table id="bulkGrid">
+        <thead>
+            <tr>
+                <th style="min-width:120px;">Date</th>
+                <th style="min-width:120px;">Invoice #</th>
+                <th style="min-width:200px;">Supplier</th>
+                <th style="min-width:200px;">Category</th>
+                <th style="min-width:180px;">Description</th>
+                <th style="min-width:120px;">Amt Excl. VAT</th>
+                <th style="min-width:110px;">VAT Amount</th>
+                <th style="min-width:100px;">Total</th>
+                <th style="min-width:140px;">Origin Type</th>
+                <th style="min-width:120px;">Country</th>
+                <th style="min-width:120px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="bulkGridBody">
+        </tbody>
+    </table>
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<style>
+    #bulkGrid input,
+    #bulkGrid select {
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(13,94,166,.12);
+        background: #fff;
+        font: inherit;
+        font-size: 13px;
+        color: var(--text);
+        width: 100%;
+    }
+    #bulkGrid input:focus,
+    #bulkGrid select:focus {
+        outline: none;
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(13,94,166,.08);
+    }
+    #bulkGrid select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235E7385' d='M6 8.5L1.5 4h9L6 8.5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 10px;
+        padding-right: 26px;
+    }
+    #bulkGrid .cell-error input,
+    #bulkGrid .cell-error select {
+        border-color: var(--red);
+        background: rgba(194,74,74,.04);
+    }
+    #bulkGrid .row-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    #bulkGrid .row-actions button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: inherit;
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+    #bulkGrid .row-actions .btn-dup {
+        color: var(--blue);
+    }
+    #bulkGrid .row-actions .btn-dup:hover {
+        background: rgba(13,94,166,.06);
+    }
+    #bulkGrid .row-actions .btn-rem {
+        color: var(--red);
+    }
+    #bulkGrid .row-actions .btn-rem:hover {
+        background: rgba(194,74,74,.06);
+    }
+    #bulkGrid td {
+        padding: 8px 6px;
+    }
+
+    /* Autocomplete styles */
+    .autocomplete-wrapper {
+        position: relative;
+    }
+    .autocomplete-wrapper input {
+        padding-right: 28px;
+    }
+    .autocomplete-wrapper .ac-status {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 14px;
+        pointer-events: none;
+        line-height: 1;
+    }
+    .autocomplete-wrapper .ac-status.resolved {
+        color: #129867;
+    }
+    .autocomplete-wrapper .ac-status.unresolved {
+        color: #C8912E;
+    }
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: #fff;
+        border: 1px solid rgba(13,94,166,.15);
+        border-radius: 10px;
+        margin-top: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(11,27,40,.10);
+        display: none;
+    }
+    .autocomplete-dropdown.open {
+        display: block;
+    }
+    .autocomplete-dropdown .ac-item {
+        padding: 8px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        color: var(--text);
+    }
+    .autocomplete-dropdown .ac-item.highlighted {
+        background: rgba(13,94,166,.06);
+    }
+    .autocomplete-dropdown .ac-item:hover {
+        background: rgba(13,94,166,.06);
+    }
+    .autocomplete-dropdown .ac-item.ac-create {
+        font-style: italic;
+        color: var(--blue);
+        border-top: 1px solid rgba(13,94,166,.08);
+    }
+    .autocomplete-dropdown .ac-item.ac-create::before {
+        content: "+ ";
+        font-weight: 700;
+    }
+    .autocomplete-dropdown .ac-empty {
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #5E7385;
+        font-style: italic;
+    }
+</style>
+<script>
+    var suppliers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(suppliers.Select(s => new { s.Id, s.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+    var categories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categories.Select(c => new { c.Id, c.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+    var originTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(originTypes.Select(o => new { o.Id, o.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
+    var rowCounter = 0;
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    // ─── Autocomplete Engine ───────────────────────────────────────────────
+    function initAutocomplete(input, hiddenInput, statusEl, getItems, createEndpoint, itemsArrayRef) {
+        var dropdown = document.createElement('div');
+        dropdown.className = 'autocomplete-dropdown';
+        input.parentNode.appendChild(dropdown);
+
+        var highlightedIndex = -1;
+        var currentItems = [];
+        var blurTimeout = null;
+
+        function getFilteredItems(query) {
+            var items = getItems();
+            if (!query) return items.slice();
+            var lower = query.toLowerCase();
+            return items.filter(function(item) {
+                return item.name.toLowerCase().indexOf(lower) !== -1;
+            });
+        }
+
+        function hasExactMatch(query) {
+            if (!query) return false;
+            var lower = query.toLowerCase();
+            return getItems().some(function(item) {
+                return item.name.toLowerCase() === lower;
+            });
+        }
+
+        function renderDropdown(query) {
+            var filtered = getFilteredItems(query);
+            var showCreate = query && query.trim() !== '' && !hasExactMatch(query);
+            currentItems = [];
+            highlightedIndex = -1;
+            dropdown.innerHTML = '';
+
+            if (filtered.length === 0 && !showCreate) {
+                dropdown.innerHTML = '<div class="ac-empty">No matches found</div>';
+                dropdown.classList.add('open');
+                return;
+            }
+
+            filtered.forEach(function(item) {
+                var div = document.createElement('div');
+                div.className = 'ac-item';
+                div.textContent = item.name;
+                div.setAttribute('data-id', item.id);
+                div.setAttribute('data-name', item.name);
+                currentItems.push({ el: div, id: item.id, name: item.name, isCreate: false });
+                dropdown.appendChild(div);
+            });
+
+            if (showCreate) {
+                var createDiv = document.createElement('div');
+                createDiv.className = 'ac-item ac-create';
+                createDiv.textContent = 'Create "' + query.trim() + '"';
+                createDiv.setAttribute('data-create-name', query.trim());
+                currentItems.push({ el: createDiv, id: null, name: query.trim(), isCreate: true });
+                dropdown.appendChild(createDiv);
+            }
+
+            dropdown.classList.add('open');
+        }
+
+        function selectItem(id, name) {
+            input.value = name;
+            hiddenInput.value = id;
+            dropdown.classList.remove('open');
+            updateStatus(true);
+            var tr = input.closest('tr');
+            if (tr) {
+                computeRowTotal(tr);
+                updateSummary();
+            }
+        }
+
+        function updateStatus(resolved) {
+            if (resolved) {
+                statusEl.textContent = '✓';
+                statusEl.className = 'ac-status resolved';
+            } else if (input.value.trim() !== '') {
+                statusEl.textContent = '⚠';
+                statusEl.className = 'ac-status unresolved';
+                hiddenInput.value = '';
+            } else {
+                statusEl.textContent = '';
+                statusEl.className = 'ac-status';
+                hiddenInput.value = '';
+            }
+        }
+
+        async function createItem(name) {
+            var formData = new FormData();
+            formData.append('Name', name);
+
+            try {
+                var response = await fetch(createEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+
+                if (data.success && data.id) {
+                    // Add to in-memory array (session memory)
+                    itemsArrayRef.push({ id: data.id, name: name });
+                    selectItem(data.id, name);
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'Failed to create record.',
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            } catch (e) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred while creating the record.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
+        }
+
+        function highlightItem(index) {
+            currentItems.forEach(function(item, i) {
+                if (i === index) {
+                    item.el.classList.add('highlighted');
+                } else {
+                    item.el.classList.remove('highlighted');
+                }
+            });
+            highlightedIndex = index;
+            // Scroll into view
+            if (index >= 0 && currentItems[index]) {
+                currentItems[index].el.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        // Event: input typing
+        input.addEventListener('input', function() {
+            renderDropdown(input.value);
+            // Check if current text matches an existing item exactly
+            var val = input.value.trim().toLowerCase();
+            var match = getItems().find(function(item) {
+                return item.name.toLowerCase() === val;
+            });
+            if (match) {
+                hiddenInput.value = match.id;
+                updateStatus(true);
+            } else {
+                updateStatus(false);
+            }
+        });
+
+        // Event: focus shows dropdown
+        input.addEventListener('focus', function() {
+            renderDropdown(input.value);
+        });
+
+        // Event: blur closes dropdown (with delay for click)
+        input.addEventListener('blur', function() {
+            blurTimeout = setTimeout(function() {
+                dropdown.classList.remove('open');
+            }, 180);
+        });
+
+        // Event: click on dropdown item
+        dropdown.addEventListener('mousedown', function(e) {
+            e.preventDefault(); // Prevent blur
+            if (blurTimeout) clearTimeout(blurTimeout);
+
+            var target = e.target.closest('.ac-item');
+            if (!target) return;
+
+            if (target.classList.contains('ac-create')) {
+                var createName = target.getAttribute('data-create-name');
+                createItem(createName);
+            } else {
+                var id = parseInt(target.getAttribute('data-id'));
+                var name = target.getAttribute('data-name');
+                selectItem(id, name);
+            }
+        });
+
+        // Event: keyboard navigation
+        input.addEventListener('keydown', function(e) {
+            if (!dropdown.classList.contains('open') || currentItems.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                var next = highlightedIndex + 1;
+                if (next >= currentItems.length) next = 0;
+                highlightItem(next);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                var prev = highlightedIndex - 1;
+                if (prev < 0) prev = currentItems.length - 1;
+                highlightItem(prev);
+            } else if (e.key === 'Enter') {
+                if (highlightedIndex >= 0 && highlightedIndex < currentItems.length) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var selected = currentItems[highlightedIndex];
+                    if (selected.isCreate) {
+                        createItem(selected.name);
+                    } else {
+                        selectItem(selected.id, selected.name);
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        // Set initial state if prefilled
+        if (hiddenInput.value && input.value) {
+            updateStatus(true);
+        } else if (input.value.trim() !== '') {
+            // Check if text matches an existing item
+            var val = input.value.trim().toLowerCase();
+            var match = getItems().find(function(item) {
+                return item.name.toLowerCase() === val;
+            });
+            if (match) {
+                hiddenInput.value = match.id;
+                updateStatus(true);
+            } else {
+                updateStatus(false);
+            }
+        }
+    }
+
+    // ─── Row Management ────────────────────────────────────────────────────
+    function createRow(prefill) {
+        rowCounter++;
+        var rowId = rowCounter;
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-row-id', rowId);
+
+        var today = new Date().toISOString().split('T')[0];
+        var dateVal = prefill ? prefill.invoiceDate : today;
+        var invoiceNumVal = prefill ? (prefill.invoiceNumber || '') : '';
+        var supplierName = prefill ? (prefill.supplierName || '') : '';
+        var supplierId = prefill ? (prefill.supplierId || '') : '';
+        var categoryName = prefill ? (prefill.categoryName || '') : '';
+        var categoryId = prefill ? (prefill.expenseCategoryId || '') : '';
+        var descVal = prefill ? (prefill.description || '') : '';
+        var amtVal = prefill ? prefill.amountExcludingVat : '';
+        var vatVal = prefill ? prefill.vatAmount : '';
+        var originVal = prefill ? prefill.purchaseOriginTypeId : 1;
+        var countryVal = prefill ? (prefill.country || '') : '';
+
+        var originOptions = '';
+        for (var i = 0; i < originTypes.length; i++) {
+            var sel = originTypes[i].id == originVal ? ' selected' : '';
+            var label = originTypes[i].name === 'EuReverseCharge' ? 'EU RC' : (originTypes[i].name === 'NonEu' ? 'Non-EU' : originTypes[i].name);
+            originOptions += '<option value="' + originTypes[i].id + '"' + sel + '>' + label + '</option>';
+        }
+
+        var isEuRc = parseInt(originVal) === 2;
+        var vatDisabled = isEuRc ? ' disabled' : '';
+        var vatDisplay = isEuRc ? '0' : vatVal;
+
+        tr.innerHTML =
+            '<td><input type="date" class="cell-date" value="' + dateVal + '" data-field="InvoiceDate" /></td>' +
+            '<td><input type="text" class="cell-invoice" value="' + escapeHtml(invoiceNumVal) + '" placeholder="INV-001" maxlength="100" data-field="InvoiceNumber" /></td>' +
+            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-supplier-text" value="' + escapeHtml(supplierName) + '" placeholder="Type supplier..." autocomplete="off" /><input type="hidden" class="cell-supplier" value="' + supplierId + '" data-field="SupplierId" /><span class="ac-status"></span></div></td>' +
+            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-category-text" value="' + escapeHtml(categoryName) + '" placeholder="Type category..." autocomplete="off" /><input type="hidden" class="cell-category" value="' + categoryId + '" data-field="ExpenseCategoryId" /><span class="ac-status"></span></div></td>' +
+            '<td><input type="text" class="cell-desc" value="' + escapeHtml(descVal) + '" placeholder="Description..." maxlength="500" data-field="Description" /></td>' +
+            '<td><input type="number" class="cell-amount" value="' + amtVal + '" step="0.01" min="0.01" placeholder="0.00" data-field="AmountExcludingVat" oninput="onAmountEdit(this)" /></td>' +
+            '<td><input type="number" class="cell-vat" value="' + vatDisplay + '" step="0.01" min="0" placeholder="0.00" data-field="VatAmount"' + vatDisabled + ' oninput="onVatEdit(this)" /></td>' +
+            '<td><input type="number" class="cell-total" value="' + (amtVal && vatDisplay ? (parseFloat(amtVal || 0) + parseFloat(vatDisplay || 0)).toFixed(2) : '0.00') + '" step="0.01" min="0" placeholder="0.00" data-field="TotalAmount" oninput="onTotalEdit(this)" style="font-weight:700;color:var(--blue);" /></td>' +
+            '<td><select class="cell-origin" data-field="PurchaseOriginTypeId" onchange="onOriginChange(this)">' + originOptions + '</select></td>' +
+            '<td><input type="text" class="cell-country" value="' + escapeHtml(countryVal) + '" placeholder="Country" maxlength="100" data-field="Country" /></td>' +
+            '<td><div class="row-actions"><button type="button" class="btn-dup" title="Duplicate Row (Ctrl+D)" onclick="duplicateRow(this)">Dup</button><button type="button" class="btn-rem" title="Remove Row" onclick="removeRow(this)">Del</button></div></td>';
+
+        document.getElementById('bulkGridBody').appendChild(tr);
+
+        // Initialize autocomplete for supplier
+        var supplierInput = tr.querySelector('.cell-supplier-text');
+        var supplierHidden = tr.querySelector('.cell-supplier');
+        var supplierStatus = tr.querySelector('.cell-supplier-text').parentNode.querySelector('.ac-status');
+        initAutocomplete(supplierInput, supplierHidden, supplierStatus,
+            function() { return suppliers; },
+            '/Supplier/Create',
+            suppliers
+        );
+
+        // Initialize autocomplete for category
+        var categoryInput = tr.querySelector('.cell-category-text');
+        var categoryHidden = tr.querySelector('.cell-category');
+        var categoryStatus = tr.querySelector('.cell-category-text').parentNode.querySelector('.ac-status');
+        initAutocomplete(categoryInput, categoryHidden, categoryStatus,
+            function() { return categories; },
+            '/ExpenseCategory/Create',
+            categories
+        );
+
+        computeRowTotal(tr);
+        updateSummary();
+        return tr;
+    }
+
+    function addRows(count) {
+        var lastTr = null;
+        for (var i = 0; i < count; i++) {
+            lastTr = createRow(null);
+        }
+        if (lastTr) {
+            var firstInput = lastTr.querySelector('input');
+            if (firstInput) firstInput.focus();
+        }
+    }
+
+    function duplicateRow(btn) {
+        var tr = btn.closest('tr');
+        var data = getRowData(tr);
+        var newTr = createRow(data);
+        tr.parentNode.insertBefore(newTr, tr.nextSibling);
+        updateSummary();
+    }
+
+    function removeRow(btn) {
+        var tr = btn.closest('tr');
+        tr.remove();
+        updateSummary();
+    }
+
+    function onOriginChange(select) {
+        var tr = select.closest('tr');
+        var vatInput = tr.querySelector('.cell-vat');
+        var originId = parseInt(select.value);
+
+        if (originId === 2) {
+            vatInput.value = '0';
+            vatInput.disabled = true;
+        } else {
+            vatInput.disabled = false;
+        }
+        computeRowTotal(tr);
+        updateSummary();
+    }
+
+    // ─── Bidirectional Amount Calculation ──────────────────────────────────
+    // Invariant: AmtExclVat + VatAmount = Total
+    // Whichever field the user edits, the third is derived.
+    // lastEditedField tracks per-row: 'amount', 'vat', or 'total'
+
+    function onAmountEdit(input) {
+        var tr = input.closest('tr');
+        tr.setAttribute('data-last-edit', 'amount');
+        recalcRow(tr);
+        updateSummary();
+    }
+
+    function onVatEdit(input) {
+        var tr = input.closest('tr');
+        tr.setAttribute('data-last-edit', 'vat');
+        recalcRow(tr);
+        updateSummary();
+    }
+
+    function onTotalEdit(input) {
+        var tr = input.closest('tr');
+        tr.setAttribute('data-last-edit', 'total');
+        recalcRow(tr);
+        updateSummary();
+    }
+
+    function recalcRow(tr) {
+        var amtInput = tr.querySelector('.cell-amount');
+        var vatInput = tr.querySelector('.cell-vat');
+        var totalInput = tr.querySelector('.cell-total');
+        var originId = parseInt(tr.querySelector('.cell-origin').value) || 1;
+        var lastEdit = tr.getAttribute('data-last-edit') || 'amount';
+
+        var amt = parseFloat(amtInput.value) || 0;
+        var vat = parseFloat(vatInput.value) || 0;
+        var total = parseFloat(totalInput.value) || 0;
+
+        if (originId === 2) {
+            // EU RC: VAT is always 0, Total = Amount
+            vat = 0;
+            vatInput.value = '0';
+            totalInput.value = amt.toFixed(2);
+            resetComputedStyles(tr, 'vat');
+            return;
+        }
+
+        if (lastEdit === 'total') {
+            // User typed Total → back-calculate Amount = Total - VAT
+            amt = total - vat;
+            amtInput.value = amt.toFixed(2);
+            markComputed(amtInput);
+            clearComputed(vatInput);
+            clearComputed(totalInput);
+        } else if (lastEdit === 'vat') {
+            // User typed VAT → check if Total was manually set
+            var prevLastEdit = tr.getAttribute('data-prev-edit') || '';
+            if (prevLastEdit === 'total') {
+                // Total was set before VAT → back-calculate Amount
+                amt = total - vat;
+                amtInput.value = amt.toFixed(2);
+                markComputed(amtInput);
+                clearComputed(vatInput);
+                clearComputed(totalInput);
+            } else {
+                // Normal: Amount + VAT → Total
+                total = amt + vat;
+                totalInput.value = total.toFixed(2);
+                markComputed(totalInput);
+                clearComputed(amtInput);
+                clearComputed(vatInput);
+            }
+        } else {
+            // User typed Amount (or default) → Total = Amount + VAT
+            total = amt + vat;
+            totalInput.value = total.toFixed(2);
+            markComputed(totalInput);
+            clearComputed(amtInput);
+            clearComputed(vatInput);
+        }
+
+        // Track previous edit for two-step back-calculation
+        tr.setAttribute('data-prev-edit', lastEdit);
+    }
+
+    function computeRowTotal(tr) {
+        recalcRow(tr);
+    }
+
+    function markComputed(input) {
+        input.style.fontStyle = 'italic';
+        input.style.opacity = '0.75';
+    }
+
+    function clearComputed(input) {
+        input.style.fontStyle = '';
+        input.style.opacity = '';
+    }
+
+    function resetComputedStyles(tr, except) {
+        var amtInput = tr.querySelector('.cell-amount');
+        var vatInput = tr.querySelector('.cell-vat');
+        var totalInput = tr.querySelector('.cell-total');
+        clearComputed(amtInput);
+        clearComputed(vatInput);
+        clearComputed(totalInput);
+    }
+
+    function getRowData(tr) {
+        var supplierHidden = tr.querySelector('.cell-supplier');
+        var supplierText = tr.querySelector('.cell-supplier-text');
+        var categoryHidden = tr.querySelector('.cell-category');
+        var categoryText = tr.querySelector('.cell-category-text');
+
+        return {
+            invoiceDate: tr.querySelector('.cell-date').value,
+            invoiceNumber: tr.querySelector('.cell-invoice').value,
+            supplierId: supplierHidden.value,
+            supplierName: supplierText.value,
+            expenseCategoryId: categoryHidden.value,
+            categoryName: categoryText.value,
+            description: tr.querySelector('.cell-desc').value,
+            amountExcludingVat: tr.querySelector('.cell-amount').value,
+            vatAmount: tr.querySelector('.cell-vat').value,
+            purchaseOriginTypeId: tr.querySelector('.cell-origin').value,
+            country: tr.querySelector('.cell-country').value
+        };
+    }
+
+    function isRowFilled(tr) {
+        var desc = tr.querySelector('.cell-desc').value.trim();
+        var amt = tr.querySelector('.cell-amount').value;
+        var supplierText = tr.querySelector('.cell-supplier-text').value.trim();
+        var categoryText = tr.querySelector('.cell-category-text').value.trim();
+        return desc !== '' || amt !== '' || supplierText !== '' || categoryText !== '';
+    }
+
+    function updateSummary() {
+        var rows = document.querySelectorAll('#bulkGridBody tr');
+        var filledCount = 0;
+        var batchTotal = 0;
+        var domestic = 0, euRc = 0, nonEu = 0;
+
+        rows.forEach(function(tr) {
+            computeRowTotal(tr);
+            if (isRowFilled(tr)) {
+                filledCount++;
+                var total = parseFloat(tr.querySelector('.cell-total').value) || 0;
+                batchTotal += total;
+                var originId = parseInt(tr.querySelector('.cell-origin').value) || 1;
+                if (originId === 1) domestic++;
+                else if (originId === 2) euRc++;
+                else if (originId === 3) nonEu++;
+            }
+        });
+
+        document.getElementById('summaryFilledCount').textContent = filledCount;
+        document.getElementById('summaryBatchTotal').textContent = batchTotal.toFixed(2);
+        document.getElementById('summaryDomestic').textContent = domestic;
+        document.getElementById('summaryEuRc').textContent = euRc;
+        document.getElementById('summaryNonEu').textContent = nonEu;
+    }
+
+    function clearErrors() {
+        document.querySelectorAll('#bulkGrid .cell-error').forEach(function(td) {
+            td.classList.remove('cell-error');
+        });
+        document.getElementById('summaryErrorCount').textContent = '0';
+    }
+
+    function highlightErrors(errors) {
+        clearErrors();
+        var fieldMap = {
+            'InvoiceDate': '.cell-date',
+            'InvoiceNumber': '.cell-invoice',
+            'SupplierId': '.cell-supplier-text',
+            'ExpenseCategoryId': '.cell-category-text',
+            'Description': '.cell-desc',
+            'AmountExcludingVat': '.cell-amount',
+            'VatAmount': '.cell-vat',
+            'PurchaseOriginTypeId': '.cell-origin',
+            'Country': '.cell-country'
+        };
+
+        var rows = document.querySelectorAll('#bulkGridBody tr');
+        var errorCount = 0;
+
+        errors.forEach(function(err) {
+            var rowIndex = err.row - 1;
+            if (rowIndex >= 0 && rowIndex < rows.length) {
+                var selector = fieldMap[err.field];
+                if (selector) {
+                    var cell = rows[rowIndex].querySelector(selector);
+                    if (cell) {
+                        cell.closest('td').classList.add('cell-error');
+                        errorCount++;
+                    }
+                }
+            }
+        });
+
+        document.getElementById('summaryErrorCount').textContent = errorCount;
+    }
+
+    function collectFilledRows() {
+        var rows = document.querySelectorAll('#bulkGridBody tr');
+        var data = [];
+
+        rows.forEach(function(tr) {
+            if (isRowFilled(tr)) {
+                var originId = parseInt(tr.querySelector('.cell-origin').value) || 1;
+                var vatVal = originId === 2 ? 0 : (parseFloat(tr.querySelector('.cell-vat').value) || 0);
+
+                data.push({
+                    invoiceDate: tr.querySelector('.cell-date').value,
+                    invoiceNumber: tr.querySelector('.cell-invoice').value || null,
+                    supplierId: parseInt(tr.querySelector('.cell-supplier').value) || 0,
+                    expenseCategoryId: parseInt(tr.querySelector('.cell-category').value) || 0,
+                    description: tr.querySelector('.cell-desc').value,
+                    amountExcludingVat: parseFloat(tr.querySelector('.cell-amount').value) || 0,
+                    vatAmount: vatVal,
+                    purchaseOriginTypeId: originId,
+                    country: tr.querySelector('.cell-country').value || null
+                });
+            }
+        });
+
+        return data;
+    }
+
+    async function saveAll() {
+        clearErrors();
+        var rows = collectFilledRows();
+
+        if (rows.length === 0) {
+            Swal.fire({ title: 'No Data', text: 'Please fill in at least one row before saving.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving purchases...');
+        try {
+            var response = await fetch('/Purchase/BulkCreate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify(rows)
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({
+                    title: 'Saved!',
+                    text: data.message || 'All purchases saved successfully.',
+                    icon: 'success',
+                    confirmButtonColor: '#0D5EA6'
+                });
+                window.location.href = '/Purchase';
+            } else {
+                if (data.errors && data.errors.length > 0) {
+                    highlightErrors(data.errors);
+                    Swal.fire({
+                        title: 'Validation Errors',
+                        text: data.message || 'Some rows have errors. Please fix them and try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    // ─── Keyboard Navigation ───────────────────────────────────────────────
+    document.addEventListener('keydown', function(e) {
+        // Enter saves batch (only if no autocomplete dropdown is handling it)
+        if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+            var active = document.activeElement;
+            if (active && active.closest('#bulkGrid')) {
+                // Don't trigger save if an autocomplete dropdown is open with a highlighted item
+                var wrapper = active.closest('.autocomplete-wrapper');
+                if (wrapper) {
+                    var dropdown = wrapper.querySelector('.autocomplete-dropdown');
+                    if (dropdown && dropdown.classList.contains('open')) {
+                        var highlighted = dropdown.querySelector('.ac-item.highlighted');
+                        if (highlighted) return; // Let autocomplete handle it
+                    }
+                }
+                e.preventDefault();
+                saveAll();
+            }
+        }
+
+        // Ctrl+D duplicates current row
+        if (e.key === 'd' && e.ctrlKey && !e.shiftKey && !e.altKey) {
+            var active = document.activeElement;
+            if (active && active.closest('#bulkGridBody')) {
+                e.preventDefault();
+                var tr = active.closest('tr');
+                if (tr) {
+                    var data = getRowData(tr);
+                    var newTr = createRow(data);
+                    tr.parentNode.insertBefore(newTr, tr.nextSibling);
+                    updateSummary();
+                }
+            }
+        }
+    });
+
+    // Listen for input changes to update summary
+    document.getElementById('bulkGridBody').addEventListener('input', function(e) {
+        var tr = e.target.closest('tr');
+        if (tr) {
+            computeRowTotal(tr);
+            updateSummary();
+        }
+    });
+
+    document.getElementById('bulkGridBody').addEventListener('change', function(e) {
+        var tr = e.target.closest('tr');
+        if (tr) {
+            computeRowTotal(tr);
+            updateSummary();
+        }
+    });
+
+    // Initialize with 3 empty rows
+    addRows(3);
+</script>
+}

@@ -20,4 +20,10 @@ public class GenericStoredProcedureRepository<T> where T : class
 
     protected async Task<T?> ExecuteSingleRecordStoredProcedure(string sqlQuery, params object[] parameters)
         => (await _context.Set<T>().FromSqlRaw(sqlQuery, parameters).ToListAsync()).FirstOrDefault();
+
+    protected async Task<List<T>> ExecuteStoredProcedureUnfiltered(string sqlQuery, params object[] parameters)
+        => await _context.Set<T>().FromSqlRaw(sqlQuery, parameters).IgnoreQueryFilters().ToListAsync();
+
+    protected async Task<T?> ExecuteSingleRecordStoredProcedureUnfiltered(string sqlQuery, params object[] parameters)
+        => (await _context.Set<T>().FromSqlRaw(sqlQuery, parameters).IgnoreQueryFilters().ToListAsync()).FirstOrDefault();
 }

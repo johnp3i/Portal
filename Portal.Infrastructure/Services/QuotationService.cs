@@ -23,6 +23,7 @@ public class QuotationService : IQuotationService
         { 1, new List<int> { 2, 5 } },  // Draft → Sent, Archived
         { 2, new List<int> { 3, 5 } },  // Sent → Accepted, Archived
         { 3, new List<int> { 4, 5 } },  // Accepted → Converted, Archived
+        { 5, new List<int> { 1 } },     // Archived → Draft (unarchive)
     };
 
     private static readonly Dictionary<int, string> StatusNames = new()
@@ -96,6 +97,39 @@ public class QuotationService : IQuotationService
         return results;
     }
 
+    public async Task<PagedResult<QuotationListDto>> GetQuotationsPagedAsync(
+        int? statusFilter = null,
+        int? customerFilter = null,
+        DateTime? dateFrom = null,
+        DateTime? dateTo = null,
+        string? searchTerm = null,
+        int page = 1,
+        int pageSize = 15)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 15;
+
+        int offset = (page - 1) * pageSize;
+
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var (items, totalCount) = await _quotationRepository.GetPagedByBusinessIdAsync(
+            businessId, statusFilter, customerFilter, dateFrom, dateTo, searchTerm, offset, pageSize);
+
+        // Set IsExpired on each item
+        foreach (var item in items)
+        {
+            item.IsExpired = IsExpiredInternal(item.ValidUntil);
+        }
+
+        return new PagedResult<QuotationListDto>
+        {
+            Items = items,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
+    }
+
     public async Task<Quotation?> GetQuotationByIdAsync(int id)
     {
         return await _quotationRepository.GetByIdAndBusinessIdAsync(id, _currentTenantService.CurrentBusinessId);
@@ -139,7 +173,7 @@ public class QuotationService : IQuotationService
         return quotation;
     }
 
-    public async Task UpdateQuotationAsync(int quotationId, int customerId, DateOnly? validUntil, string? notes, int? quotationContactId = null, bool? isGrandTotalShown = null)
+    public async Task UpdateQuotationAsync(int quotationId, int customerId, DateOnly? validUntil, string? notes, int? quotationContactId = null, bool? isGrandTotalShown = null, string? reference = null)
     {
         var quotation = await _quotationRepository.GetByIdAndBusinessIdAsync(quotationId, _currentTenantService.CurrentBusinessId);
         if (quotation == null)
@@ -165,6 +199,10 @@ public class QuotationService : IQuotationService
         if (isGrandTotalShown.HasValue)
         {
             quotation.IsGrandTotalShown = isGrandTotalShown.Value;
+        }
+        if (!string.IsNullOrWhiteSpace(reference))
+        {
+            quotation.Reference = reference;
         }
         quotation.UpdatedAtUtc = DateTime.UtcNow;
 

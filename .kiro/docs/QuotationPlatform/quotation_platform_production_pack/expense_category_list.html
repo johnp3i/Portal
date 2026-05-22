@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Category Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .modal-overlay { position:fixed; inset:0; background:rgba(11,27,40,.5); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .modal { background:#fff; border-radius:24px; padding:32px; width:100%; max-width:480px; box-shadow:0 30px 80px rgba(13,94,166,.20); }
+    .modal h2 { font-size:24px; margin-bottom:20px; }
+    .modal .field { margin-bottom:16px; }
+    .modal-actions { display:flex; gap:12px; margin-top:24px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-chip">MC</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;letter-spacing:-.02em;">MyChair</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#73889A;">Quotation Platform</div>
+        </div>
+      </div>
+      <div class="nav-title">Workspace</div>
+      <a class="nav-item" href="quotation_dashboard.html">Dashboard</a>
+      <a class="nav-item" href="quotation_list.html">Quotations</a>
+      <a class="nav-item" href="invoice_list.html">Invoices</a>
+      <a class="nav-item" href="purchase_list.html">Purchases</a>
+      <a class="nav-item" href="supplier_list.html">Suppliers</a>
+      <a class="nav-item active" href="expense_category_list.html">Expense Categories</a>
+    </aside>
+    <main class="content">
+
+<div class="topbar">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Expense Categories</div>
+    <h1 style="margin-top:14px;font-size:42px;">Expense Categories</h1>
+    <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Classify purchases by category for reporting and VAT submission grouping.</p>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="showCreateModal()">Add Category</button>
+  </div>
+</div>
+
+<section class="glass card-pad">
+  <table>
+    <thead>
+      <tr>
+        <th>Category Name</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Office Supplies</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('Office Supplies')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('Office Supplies')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>IT Equipment</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('IT Equipment')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('IT Equipment')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Cloud Services</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('Cloud Services')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('Cloud Services')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Marketing</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('Marketing')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('Marketing')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Travel</strong></td>
+        <td><span class="pill pill-green" style="font-size:10px;padding:5px 10px;">Active</span></td>
+        <td>
+          <a href="javascript:void(0)" onclick="showEditModal('Travel')" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+          <a href="javascript:void(0)" onclick="confirmDeactivate('Travel')" style="color:var(--red);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+        </td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--muted);">Miscellaneous</strong></td>
+        <td><span class="pill pill-red" style="font-size:10px;padding:5px 10px;">Inactive</span></td>
+        <td>
+          <span style="color:var(--muted);font-size:13px;">—</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Create/Edit Modal -->
+<div class="modal-overlay" id="createModal" style="display:none;">
+  <div class="modal">
+    <h2 id="modalTitle">Add Category</h2>
+    <div class="field">
+      <label>Category Name <span style="color:var(--red);font-weight:800;">*</span></label>
+      <input type="text" id="categoryNameInput" placeholder="Enter category name..." />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="hideModal()">Save</button>
+      <button class="btn btn-secondary" onclick="hideModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+
+  <script>
+    function showCreateModal() {
+      document.getElementById('modalTitle').textContent = 'Add Category';
+      document.getElementById('categoryNameInput').value = '';
+      document.getElementById('createModal').style.display = 'flex';
+    }
+    function showEditModal(name) {
+      document.getElementById('modalTitle').textContent = 'Edit Category';
+      document.getElementById('categoryNameInput').value = name;
+      document.getElementById('createModal').style.display = 'flex';
+    }
+    function hideModal() {
+      document.getElementById('createModal').style.display = 'none';
+    }
+    function confirmDeactivate(name) {
+      if (confirm('Are you sure you want to deactivate "' + name + '"? This category will no longer appear in new purchase forms.')) {
+        alert('Category deactivated (mock)');
+      }
+    }
+  </script>
+</body>
+</html>

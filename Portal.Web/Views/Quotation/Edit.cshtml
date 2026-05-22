@@ -24,8 +24,12 @@
     <h2 style="margin-top:8px;font-size:24px;">Header information</h2>
     <form id="quotationForm" method="post" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Id" asp-antiforgery="true" style="margin-top:18px;">
         <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="Reference" />
         <div class="form-grid">
+            <div class="field">
+                <label asp-for="Reference">Reference *</label>
+                <input asp-for="Reference" type="text" maxlength="100" required />
+                <span asp-validation-for="Reference" class="field-validation-error"></span>
+            </div>
             <div class="field">
                 <label asp-for="CustomerId">Customer *</label>
                 <select asp-for="CustomerId">
@@ -183,12 +187,12 @@ async function addSection() {
     const accentColor = document.getElementById('newSectionAccentColor').value.trim() || null;
     const label = document.getElementById('newSectionLabel').value.trim() || null;
     const isTotalsTableShown = document.getElementById('newSectionIsTotalsTableShown').checked;
-    if (!name) { alert('Section name is required.'); return; }
+    if (!name) { Swal.fire({ title: 'Validation', text: 'Section name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' }); return; }
     try {
         const r = await fetch('/api/sections/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quotationId,name,description:desc||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown}) });
         const d = await r.json();
-        if (d.success) location.reload(); else alert(d.message||'Failed to add section.');
-    } catch(e) { alert('Error adding section.'); }
+        if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to add section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    } catch(e) { Swal.fire({ title: 'Error', text: 'Error adding section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 async function removeSection(sectionId) {
     const result = await Swal.fire({
@@ -205,8 +209,8 @@ async function removeSection(sectionId) {
     try {
         const r = await fetch('/api/sections/remove', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId,quotationId}) });
         const d = await r.json();
-        if (d.success) location.reload(); else alert(d.message||'Failed to remove section.');
-    } catch(e) { alert('Error removing section.'); }
+        if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to remove section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    } catch(e) { Swal.fire({ title: 'Error', text: 'Error removing section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 async function reorderSection(sectionId, direction) {
     const cards = document.querySelectorAll('.section-card[data-section-id]:not([data-section-id=""])');
@@ -218,15 +222,15 @@ async function reorderSection(sectionId, direction) {
     try {
         const r = await fetch('/api/sections/reorder', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quotationId,orderedSectionIds:ids}) });
         const d = await r.json();
-        if (d.success) location.reload(); else alert(d.message||'Failed to reorder.');
-    } catch(e) { alert('Error reordering sections.'); }
+        if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to reorder.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    } catch(e) { Swal.fire({ title: 'Error', text: 'Error reordering sections.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 async function moveLineToSection(lineId, targetSectionId) {
     try {
         const r = await fetch('/api/sections/move-line', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lineId,targetSectionId:targetSectionId||null}) });
         const d = await r.json();
-        if (d.success) location.reload(); else alert(d.message||'Failed to move line.');
-    } catch(e) { alert('Error moving line.'); }
+        if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to move line.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    } catch(e) { Swal.fire({ title: 'Error', text: 'Error moving line.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 async function reorderLine(lineId, direction, sectionId) {
     const selector = sectionId ? `.line-card[data-section-id="${sectionId}"]` : '.line-card[data-section-id=""]';
@@ -240,8 +244,8 @@ async function reorderLine(lineId, direction, sectionId) {
     try {
         const r = await fetch('/api/sections/reorder-lines', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({orderedLineIds:ids}) });
         const d = await r.json();
-        if (d.success) location.reload(); else alert(d.message||'Failed to reorder lines.');
-    } catch(e) { alert('Error reordering lines.'); }
+        if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to reorder lines.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    } catch(e) { Swal.fire({ title: 'Error', text: 'Error reordering lines.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 function showEditSectionModal(id, name, desc, notes, columnConfig, sectionType, isEmphasized, accentColor, label, isTotalsTableShown) {
     document.getElementById('editSectionId').value = id;
@@ -283,12 +287,12 @@ async function updateSection() {
     const accentColor = document.getElementById('editSectionAccentColor').value.trim() || null;
     const label = document.getElementById('editSectionLabel').value.trim() || null;
     const isTotalsTableShown = document.getElementById('editSectionIsTotalsTableShown').checked;
-    if (!name) { alert('Section name is required.'); return; }
+    if (!name) { Swal.fire({ title: 'Validation', text: 'Section name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' }); return; }
     try {
         const r = await fetch('/api/sections/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId:id,name,description:desc||null,notes:notes||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown}) });
         const d = await r.json();
-        if (d.success) location.reload(); else alert(d.message||'Failed to update section.');
-    } catch(e) { alert('Error updating section.'); }
+        if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to update section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    } catch(e) { Swal.fire({ title: 'Error', text: 'Error updating section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 document.getElementById('addSectionModal').addEventListener('click', function(e){ if(e.target===this) hideAddSectionModal(); });
 document.getElementById('editSectionModal').addEventListener('click', function(e){ if(e.target===this) hideEditSectionModal(); });
@@ -321,8 +325,8 @@ async function saveNarrativeSection(sectionId) {
     try {
         const r = await fetch('/api/sections/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId, name, description:desc||null, notes:notes||null}) });
         const d = await r.json();
-        if (d.success) { location.reload(); } else { alert(d.message||'Failed to save section.'); }
-    } catch(e) { alert('Error saving section.'); }
+        if (d.success) { location.reload(); } else { Swal.fire({ title: 'Error', text: d.message||'Failed to save section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
+    } catch(e) { Swal.fire({ title: 'Error', text: 'Error saving section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 
 // Rich text editor command
@@ -418,7 +422,7 @@ function rteCmd(command) {
             var dropdown = createDropdown(textarea);
             renderDropdown(dropdown, results, textarea);
         } catch (e) {
-            // Silently fail — autocomplete is supplementary
+            // Silently fail â€” autocomplete is supplementary
         }
     }
 

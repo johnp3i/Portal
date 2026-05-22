@@ -9,11 +9,11 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Quotation Detail</div>
-        <h1 style="margin-top:14px;font-size:42px;">@Model.Quotation.Reference · @Model.CustomerName</h1>
+        <h1 style="margin-top:14px;font-size:42px;">@Model.Quotation.Reference &middot; @Model.CustomerName</h1>
         <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review status, pricing structure, and conversion readiness.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        @if (Model.Quotation.QuotationStatusTypeId == 1)
+        @if (Model.Quotation.QuotationStatusTypeId == 1 || Model.Quotation.QuotationStatusTypeId == 2)
         {
             <a class="btn btn-secondary" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id">Edit</a>
         }
@@ -36,6 +36,15 @@
             </form>
         }
 
+        @if (Model.AvailableTransitions.Contains(1))
+        {
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="1" />
+                <button type="submit" class="btn btn-primary">Unarchive</button>
+            </form>
+        }
+
         <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview Proposal</a>
 
         @if (Model.AvailableTransitions.Contains(2))
@@ -53,6 +62,11 @@
                 <input type="hidden" name="quotationId" value="@Model.Quotation.Id" />
                 <button type="submit" class="btn btn-green">Convert to Invoice</button>
             </form>
+        }
+        <button type="button" class="btn btn-secondary" onclick="duplicateQuotation(@Model.Quotation.Id)">Duplicate</button>
+        @if (Model.Quotation.QuotationStatusTypeId == 1)
+        {
+            <button type="button" class="btn btn-danger" onclick="deleteQuotation(@Model.Quotation.Id, '@Html.Raw(Model.Quotation.Reference)')">Delete</button>
         }
     </div>
 </div>
@@ -145,13 +159,13 @@
                                 <strong>@line.Description</strong>
                                 @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
                                 {
-                                    <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">↗ ref</a>
+                                    <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">â†— ref</a>
                                 }
                             </td>
                             <td>@line.Quantity.ToString("N2")</td>
-                            <td>@line.UnitPrice.ToString("N2")</td>
+                            <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
                             <td>@line.VatRate.ToString("N2")%</td>
-                            <td><strong>@line.LineTotal.ToString("N2")</strong></td>
+                            <td><strong>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")</strong></td>
                         </tr>
                     }
                 </tbody>
@@ -164,9 +178,9 @@
     </div>
 
     <div class="surface card-pad totals" style="margin-top:18px;">
-        <div class="row"><span class="muted">Subtotal</span><strong>@Model.Quotation.Subtotal.ToString("N2")</strong></div>
-        <div class="row"><span class="muted">Tax</span><strong>@Model.Quotation.TaxAmount.ToString("N2")</strong></div>
-        <div class="row"><span>Grand Total</span><span class="big-total">@Model.Quotation.TotalAmount.ToString("N2")</span></div>
+        <div class="row"><span class="muted">Subtotal</span><strong>@(ViewBag.CurrencySymbol)@Model.Quotation.Subtotal.ToString("N2")</strong></div>
+        <div class="row"><span class="muted">Tax</span><strong>@(ViewBag.CurrencySymbol)@Model.Quotation.TaxAmount.ToString("N2")</strong></div>
+        <div class="row"><span>Grand Total</span><span class="big-total">@(ViewBag.CurrencySymbol)@Model.Quotation.TotalAmount.ToString("N2")</span></div>
     </div>
 </section>
 
@@ -176,15 +190,27 @@
     <h2 style="margin-top:8px;font-size:24px;">Share with customer</h2>
     <p class="muted" style="margin-top:8px;font-size:14px;">Generate a branded proposal and send a secure link to your customer.</p>
 
-    <form method="post" asp-action="Share" asp-controller="Quotation" asp-route-id="@quotationId" style="margin-top:24px;">
+    <form id="shareProposalForm" method="post" asp-action="Share" asp-controller="Quotation" asp-route-id="@quotationId" style="margin-top:24px;">
         @Html.AntiForgeryToken()
 
         <div class="form-grid">
+            <div class="field">
+                <label for="RecipientEmail">Recipient Email</label>
+                <input type="email" id="RecipientEmail" name="RecipientEmail"
+                       value="@(ViewBag.CustomerEmail ?? "")" />
+                <small class="muted">Pre-filled with customer email. Change to send to an alternative address.</small>
+            </div>
             <div class="field">
                 <label for="ExpiresAtUtc">Link Expiration</label>
                 <input type="datetime-local" id="ExpiresAtUtc" name="ExpiresAtUtc"
                        value="@defaultExpiration.ToString("yyyy-MM-ddTHH:mm")" required />
                 <small class="muted">Must be at least 1 day in the future.</small>
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" name="SendEmail" value="true" checked style="width:16px;height:16px;" />
+                    <span style="font-size:14px;font-weight:500;color:#334155;">Send email notification to recipient</span>
+                </label>
             </div>
         </div>
 
@@ -236,7 +262,7 @@
         }
 
         <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);display:flex;gap:12px;">
-            <button type="submit" class="btn btn-primary">Share Proposal</button>
+            <button type="button" id="btnShareProposal" class="btn btn-primary">Share Proposal</button>
             <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview First</a>
         </div>
     </form>
@@ -246,3 +272,163 @@
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
     <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
 </div>
+
+@section Scripts {
+    <script>
+        async function duplicateQuotation(quotationId) {
+            var result = await Swal.fire({
+                title: 'Duplicate Quotation',
+                text: 'Are you sure you want to duplicate this quotation?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                confirmButtonText: 'Yes, duplicate it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Duplicating...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Quotation/Duplicate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'id=' + quotationId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    window.location = data.redirectUrl;
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function deleteQuotation(quotationId, reference) {
+            // Step 1: First confirmation
+            const firstResult = await Swal.fire({
+                title: 'Are you sure?',
+                text: `Quotation ${reference} will be deleted.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it'
+            });
+
+            if (!firstResult.isConfirmed) return;
+
+            // Step 2: Second confirmation
+            const secondResult = await Swal.fire({
+                title: 'Final Warning',
+                text: 'This action cannot be easily undone. Are you sure you want to proceed?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete permanently'
+            });
+
+            if (!secondResult.isConfirmed) return;
+
+            // Step 3: Execute deletion
+            BlockUI.show('Deleting...');
+            try {
+                var response = await fetch('/Quotation/SoftDelete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `id=${quotationId}`
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The quotation has been deleted.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.href = '/Quotation';
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
+        }
+
+        document.getElementById('btnShareProposal').addEventListener('click', async function() {
+            var btn = this;
+            btn.disabled = true;
+            BlockUI.show('Sharing proposal...');
+
+            var form = document.getElementById('shareProposalForm');
+            var formData = new FormData(form);
+
+            try {
+                var response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                var data = await response.json();
+
+                BlockUI.hide();
+
+                if (data.success) {
+                    var fullUrl = window.location.origin + data.shareUrl;
+                    await Swal.fire({
+                        title: 'Proposal Shared!',
+                        html: '<p style="margin-bottom:12px;">Your proposal has been shared successfully.</p>' +
+                              '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#F7FAFC;border-radius:8px;border:1px solid rgba(13,94,166,.12);">' +
+                              '<input type="text" value="' + fullUrl + '" readonly style="flex:1;border:none;background:transparent;font-size:13px;color:#334155;" id="swalShareUrl" />' +
+                              '<button type="button" onclick="navigator.clipboard.writeText(\'' + fullUrl + '\');this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Copy\',2000);" style="padding:6px 12px;background:#0D5EA6;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Copy</button>' +
+                              '</div>',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6',
+                        confirmButtonText: 'Done'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Sharing Failed',
+                        text: data.message || 'An error occurred while sharing the proposal.',
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred while sharing the proposal.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+}

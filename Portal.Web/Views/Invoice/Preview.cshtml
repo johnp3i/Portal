@@ -8,6 +8,8 @@
     var businessName = ViewBag.BusinessName as string ?? "";
     var profile = ViewBag.Profile as Portal.Infrastructure.Entities.BusinessProfile;
     var paymentDetails = ViewBag.PaymentDetails as List<Portal.Infrastructure.Entities.BusinessPaymentDetail> ?? new List<Portal.Infrastructure.Entities.BusinessPaymentDetail>();
+    var autoPrint = ViewBag.AutoPrint as bool? ?? false;
+    var currencySymbol = profile?.CurrencySymbol ?? "€";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -52,6 +54,9 @@
         .section-label { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--blue); margin-left: 8px; }
         .section-desc { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
         .narrative-card { margin: 28px 0; padding: 24px 28px; border-left: 4px solid var(--blue); background: var(--bg); border-radius: 12px; }
+        .narrative-card ul, .narrative-card ol { margin: 12px 0; padding-left: 24px; }
+        .narrative-card li { margin-bottom: 4px; line-height: 1.7; }
+        .narrative-card p { margin-bottom: 8px; }
         .totals-card { margin-left: auto; max-width: 320px; margin-top: 16px; padding: 16px 20px; background: var(--bg); border-radius: 12px; }
         .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--border); }
         .totals-row:first-child { border-top: none; padding-top: 0; }
@@ -71,11 +76,18 @@
         .payment-item .bank-name { font-weight: 600; }
         .payment-item .iban { font-family: monospace; font-size: 12px; }
         .payment-item .payee { font-style: italic; color: var(--muted); }
-        @@media print { body { background: #fff; padding: 0; } .page { box-shadow: none; border-radius: 0; padding: 24px; } }
+        @@media print { body { background: #fff; padding: 0; } .page { box-shadow: none; border-radius: 0; padding: 24px; } .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 <div class="page">
+    <!-- Download button (hidden on print) -->
+    <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+        <button onclick="window.print()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(180deg,#1A6BB8 0%, #0D5EA6 100%);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">
+            &#x2B73; Download PDF
+        </button>
+    </div>
+
     <div class="logo-section">
         <div>
             @if (!string.IsNullOrWhiteSpace(logoUrl))
@@ -131,10 +143,20 @@
             <div class="label">Status</div>
             <div class="value">@(Model.InvoiceStatusTypeId == 1 ? "Draft" : Model.InvoiceStatusTypeId == 2 ? "Issued" : "Cancelled")</div>
         </div>
-        <div class="meta-item">
-            <div class="label">Currency</div>
-            <div class="value">@Model.CurrencyCode</div>
-        </div>
+        @if (Model.QuotationId.HasValue && Model.IsQuotationReferenceShown)
+        {
+            <div class="meta-item">
+                <div class="label">Quotation Ref</div>
+                <div class="value">QUO-@(Model.BusinessId)-@(Model.QuotationId.Value.ToString("D5"))</div>
+            </div>
+        }
+        else
+        {
+            <div class="meta-item">
+                <div class="label">Currency</div>
+                <div class="value">@Model.CurrencyCode</div>
+            </div>
+        }
     </div>
 
     @{
@@ -169,127 +191,193 @@
                             }
                         </td>
                         <td class="right">@line.Quantity.ToString("N2")</td>
-                        <td class="right">@line.UnitPrice.ToString("N2")</td>
+                        <td class="right">@currencySymbol@line.UnitPrice.ToString("N2")</td>
                         <td class="right">@line.VatRate.ToString("N2")%</td>
                         <td class="right">
                             @if (line.Discount > 0)
-                            { @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2")) }
+                            { @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : $"{currencySymbol}{line.Discount:N2}") }
                             else
                             { <span style="color:var(--muted);">—</span> }
                         </td>
-                        <td class="right"><strong>@line.LineTotal.ToString("N2")</strong></td>
+                        <td class="right"><strong>@currencySymbol@line.LineTotal.ToString("N2")</strong></td>
                     </tr>
+                }
+            </tbody>
+        </table>
+
+        var genSubtotal = unsectionedLines.Sum(l => l.LineTotal);
+        var genVat = unsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
+        var genTotal = genSubtotal + genVat;
+
+        <div class="totals-card">
+            <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@currencySymbol@genSubtotal.ToString("N2")</span></div>
+            <div class="totals-row"><span class="label">Section VAT</span><span class="value">@currencySymbol@genVat.ToString("N2")</span></div>
+            <div class="totals-row"><span class="label">Section Total</span><span class="value">@currencySymbol@genTotal.ToString("N2")</span></div>
+        </div>
+    }
+
+    @{
+        var lineItemSections = orderedSections.Where(s => s.SectionType != "Narrative").ToList();
+        var narrativeSections = orderedSections.Where(s => s.SectionType == "Narrative").ToList();
+    }
+
+    @foreach (var invSec in lineItemSections)
+    {
+        var secLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
+        var emphasisStyle = invSec.IsEmphasized ? $"border-left:4px solid {invSec.AccentColor ?? "var(--blue)"};padding-left:16px;" : "";
+
+        <div class="section-header" style="@emphasisStyle">
+            <h3>
+                @invSec.Name
+                @if (!string.IsNullOrWhiteSpace(invSec.Label))
+                {
+                    <span class="section-label">@invSec.Label</span>
+                }
+            </h3>
+            @if (!string.IsNullOrWhiteSpace(invSec.Description))
+            {
+                <div class="section-desc">@Html.Raw(invSec.Description)</div>
+            }
+        </div>
+
+        if (secLines.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Unit Price</th>
+                        <th class="right">VAT %</th>
+                        <th class="right">Discount</th>
+                        <th class="right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in secLines)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@line.Description</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                {
+                                    <div class="subtitle">@line.Subtitle</div>
+                                }
+                            </td>
+                            <td class="right">@line.Quantity.ToString("N2")</td>
+                            <td class="right">@currencySymbol@line.UnitPrice.ToString("N2")</td>
+                            <td class="right">@line.VatRate.ToString("N2")%</td>
+                            <td class="right">
+                                @if (line.Discount > 0)
+                                { @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : $"{currencySymbol}{line.Discount:N2}") }
+                                else
+                                { <span style="color:var(--muted);">—</span> }
+                            </td>
+                            <td class="right"><strong>@currencySymbol@line.LineTotal.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            if (invSec.IsTotalsTableShown)
+            {
+                var secSubtotal = secLines.Sum(l => l.LineTotal);
+                var secVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                var secTotal = secSubtotal + secVat;
+
+                <div class="totals-card">
+                    <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@currencySymbol@secSubtotal.ToString("N2")</span></div>
+                    <div class="totals-row"><span class="label">Section VAT</span><span class="value">@currencySymbol@secVat.ToString("N2")</span></div>
+                    <div class="totals-row"><span class="label">Section Total</span><span class="value">@currencySymbol@secTotal.ToString("N2")</span></div>
+                </div>
+            }
+        }
+        else
+        {
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">No line items in this section.</p>
+        }
+    }
+
+    <!-- Summary Table (per-section breakdown) -->
+    @{
+        var hasMultipleGroups = (unsectionedLines.Any() ? 1 : 0) + lineItemSections.Count(s => sectionedLineGroups.ContainsKey(s.Id) && sectionedLineGroups[s.Id].Any()) > 1;
+    }
+    @if (hasMultipleGroups)
+    {
+        <h2 style="margin-top:32px;">Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Section</th>
+                    <th class="right">Subtotal</th>
+                    <th class="right">Discount</th>
+                    <th class="right">VAT</th>
+                    <th class="right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (unsectionedLines.Any())
+                {
+                    var gSub = unsectionedLines.Sum(l => l.LineTotal);
+                    var gDisc = unsectionedLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
+                    var gVat = unsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                    var gTot = gSub + gVat;
+                    <tr>
+                        <td><strong>General</strong></td>
+                        <td class="right">@currencySymbol@gSub.ToString("N2")</td>
+                        <td class="right">@(gDisc > 0 ? $"-{currencySymbol}{gDisc:N2}" : "—")</td>
+                        <td class="right">@currencySymbol@gVat.ToString("N2")</td>
+                        <td class="right"><strong>@currencySymbol@gTot.ToString("N2")</strong></td>
+                    </tr>
+                }
+                @foreach (var invSec in lineItemSections)
+                {
+                    var secLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
+                    if (secLines.Any())
+                    {
+                        var sSub = secLines.Sum(l => l.LineTotal);
+                        var sDisc = secLines.Where(l => l.Discount > 0).Sum(l => l.DiscountType == "Percentage" ? (l.Quantity * l.UnitPrice * l.Discount / 100) : l.Discount);
+                        var sVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                        var sTot = sSub + sVat;
+                        <tr>
+                            <td><strong>@invSec.Name</strong></td>
+                            <td class="right">@currencySymbol@sSub.ToString("N2")</td>
+                            <td class="right">@(sDisc > 0 ? $"-{currencySymbol}{sDisc:N2}" : "—")</td>
+                            <td class="right">@currencySymbol@sVat.ToString("N2")</td>
+                            <td class="right"><strong>@currencySymbol@sTot.ToString("N2")</strong></td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
     }
 
-    @foreach (var invSec in orderedSections)
-    {
-        var secLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
-
-        if (invSec.SectionType == "Narrative")
-        {
-            <!-- Narrative section — card style -->
-            <div style="margin:28px 0;padding:24px 28px;border-left:4px solid @(invSec.AccentColor ?? "var(--blue)");background:var(--bg);border-radius:12px;">
-                @if (!string.IsNullOrWhiteSpace(invSec.Label))
-                {
-                    <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">@invSec.Label</div>
-                }
-                <h3 style="font-size:18px;font-weight:800;margin-bottom:12px;">@invSec.Name</h3>
-                @if (!string.IsNullOrWhiteSpace(invSec.Description))
-                {
-                    <div style="font-size:14px;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Description)</div>
-                }
-                @if (!string.IsNullOrWhiteSpace(invSec.Notes))
-                {
-                    <div style="margin-top:16px;font-size:14px;font-weight:700;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Notes)</div>
-                }
-            </div>
-        }
-        else
-        {
-            var emphasisStyle = invSec.IsEmphasized ? $"border-left:4px solid {invSec.AccentColor ?? "var(--blue)"};padding-left:16px;" : "";
-
-            <div class="section-header" style="@emphasisStyle">
-                <h3>
-                    @invSec.Name
-                    @if (!string.IsNullOrWhiteSpace(invSec.Label))
-                    {
-                        <span class="section-label">@invSec.Label</span>
-                    }
-                </h3>
-                @if (!string.IsNullOrWhiteSpace(invSec.Description))
-                {
-                    <div class="section-desc">@Html.Raw(invSec.Description)</div>
-                }
-            </div>
-
-            if (secLines.Any())
-            {
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th class="right">Qty</th>
-                            <th class="right">Unit Price</th>
-                            <th class="right">VAT %</th>
-                            <th class="right">Discount</th>
-                            <th class="right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var line in secLines)
-                        {
-                            <tr>
-                                <td>
-                                    <strong>@line.Description</strong>
-                                    @if (!string.IsNullOrWhiteSpace(line.Subtitle))
-                                    {
-                                        <div class="subtitle">@line.Subtitle</div>
-                                    }
-                                </td>
-                                <td class="right">@line.Quantity.ToString("N2")</td>
-                                <td class="right">@line.UnitPrice.ToString("N2")</td>
-                                <td class="right">@line.VatRate.ToString("N2")%</td>
-                                <td class="right">
-                                    @if (line.Discount > 0)
-                                    { @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2")) }
-                                    else
-                                    { <span style="color:var(--muted);">—</span> }
-                                </td>
-                                <td class="right"><strong>@line.LineTotal.ToString("N2")</strong></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-
-                if (invSec.IsTotalsTableShown)
-                {
-                    var secSubtotal = secLines.Sum(l => l.LineTotal);
-                    var secVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
-                    var secTotal = secSubtotal + secVat;
-
-                    <div class="totals-card">
-                        <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@secSubtotal.ToString("N2")</span></div>
-                        <div class="totals-row"><span class="label">Section VAT</span><span class="value">@secVat.ToString("N2")</span></div>
-                        <div class="totals-row"><span class="label">Section Total</span><span class="value">@secTotal.ToString("N2")</span></div>
-                    </div>
-                }
-            }
-            else
-            {
-                <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">No line items in this section.</p>
-            }
-        }
-    }
-
     <!-- Grand Totals -->
     <div class="totals-card" style="margin-top:32px;">
-        <div class="totals-row"><span class="label">Subtotal</span><span class="value">@Model.Subtotal.ToString("N2")</span></div>
-        <div class="totals-row"><span class="label">Tax</span><span class="value">@Model.TaxAmount.ToString("N2")</span></div>
-        <div class="totals-row grand-total"><span class="label">Total</span><span class="value">@Model.TotalAmount.ToString("N2")</span></div>
+        <div class="totals-row"><span class="label">Subtotal</span><span class="value">@currencySymbol@Model.Subtotal.ToString("N2")</span></div>
+        <div class="totals-row"><span class="label">Tax</span><span class="value">@currencySymbol@Model.TaxAmount.ToString("N2")</span></div>
+        <div class="totals-row grand-total"><span class="label">Total</span><span class="value">@currencySymbol@Model.TotalAmount.ToString("N2")</span></div>
     </div>
+
+    <!-- Narrative Sections (after totals) -->
+    @foreach (var invSec in narrativeSections)
+    {
+        <div class="narrative-card" @(!string.IsNullOrWhiteSpace(invSec.AccentColor) ? $"style=\"border-left-color:{invSec.AccentColor};\"" : "")>
+            @if (!string.IsNullOrWhiteSpace(invSec.Label))
+            {
+                <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">@invSec.Label</div>
+            }
+            <h3 style="font-size:18px;font-weight:800;margin-bottom:12px;">@invSec.Name</h3>
+            @if (!string.IsNullOrWhiteSpace(invSec.Description))
+            {
+                <div style="font-size:14px;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Description)</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(invSec.Notes))
+            {
+                <div style="margin-top:16px;font-size:14px;font-weight:700;color:var(--text);line-height:1.7;">@Html.Raw(invSec.Notes)</div>
+            }
+        </div>
+    }
 
     @if (!string.IsNullOrWhiteSpace(Model.Notes))
     {
@@ -329,5 +417,9 @@
         </div>
     }
 </div>
+@if (autoPrint)
+{
+    <script>window.addEventListener('load', function() { window.print(); });</script>
+}
 </body>
 </html>

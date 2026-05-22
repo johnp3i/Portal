@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAT Report — Q1 2026 — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F7FAFC;
+            color: #1a2b3c;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --text-muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11, 27, 40, 0.06);
+        }
+
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        /* Header */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 36px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .report-header__left .eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+        }
+
+        .report-header__left h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .report-header__left .subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .report-header__right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn--primary {
+            background: var(--primary-blue);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(13, 94, 166, 0.25);
+        }
+
+        .btn--primary:hover { background: #0a4d8a; transform: translateY(-1px); }
+
+        .btn--secondary {
+            background: #fff;
+            color: var(--primary-blue);
+            border: 2px solid var(--border);
+        }
+
+        .btn--secondary:hover { border-color: var(--primary-blue); background: rgba(13,94,166,0.03); }
+
+        /* Period Banner */
+        .period-banner {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            padding: 24px 32px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .period-banner__label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .period-banner__dates {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .period-banner__status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(200, 145, 46, 0.1);
+            color: var(--warning);
+        }
+
+        .period-banner__status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warning);
+        }
+
+        /* KPI Summary Row */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        .kpi-card--output { background: linear-gradient(135deg, #0D5EA6, #1a6fba); }
+        .kpi-card--input { background: linear-gradient(135deg, #1a8a9e, #57B8E8); }
+        .kpi-card--net { background: linear-gradient(135deg, #0f7a56, #129867); }
+
+        .kpi-card__label { font-size: 12px; font-weight: 500; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-card__value { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+        .kpi-card__sub { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+
+        /* Section Card */
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            padding: 28px 32px;
+            margin-bottom: 24px;
+        }
+
+        .card__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .card__subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        /* Tables */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .report-table thead th {
+            font-family: 'Manrope', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .report-table thead th.right { text-align: right; }
+
+        .report-table tbody td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f0f4f8;
+            color: var(--text-primary);
+        }
+
+        .report-table tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+        .report-table tbody td.bold { font-weight: 700; }
+        .report-table tbody td.muted { color: var(--text-muted); font-size: 13px; }
+
+        .report-table tbody tr:last-child td { border-bottom: none; }
+        .report-table tbody tr:hover { background: #fafcfe; }
+
+        /* Totals Row */
+        .report-table tfoot td {
+            padding: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            border-top: 2px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .report-table tfoot td.right { text-align: right; }
+
+        /* Net Summary Box */
+        .net-summary {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .net-summary__label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .net-summary__label strong {
+            display: block;
+            font-family: 'Manrope', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--success);
+            margin-top: 4px;
+        }
+
+        .net-summary__note {
+            font-size: 13px;
+            color: var(--text-muted);
+            max-width: 300px;
+            text-align: right;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge--blue { background: rgba(13,94,166,0.1); color: var(--primary-blue); }
+        .badge--gold { background: rgba(200,145,46,0.1); color: var(--warning); }
+
+        /* Divider */
+        .section-divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 32px 0;
+        }
+
+        /* Print styles */
+        @media print {
+            body { background: #fff; }
+            .btn, .report-header__right { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #e2e8f0; }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-row { grid-template-columns: 1fr; }
+            .page-container { padding: 24px 16px; }
+            .report-header { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+
+    <!-- Report Header -->
+    <div class="report-header">
+        <div class="report-header__left">
+            <div class="eyebrow">VAT Report</div>
+            <h1>Q1 2026 VAT Return</h1>
+            <p class="subtitle">01 January 2026 — 31 March 2026</p>
+        </div>
+        <div class="report-header__right">
+            <button class="btn btn--secondary" onclick="window.print()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6V1h8v5M4 12H2.5A1.5 1.5 0 011 10.5v-3A1.5 1.5 0 012.5 6h11A1.5 1.5 0 0115 7.5v3a1.5 1.5 0 01-1.5 1.5H12M4 9h8v6H4V9z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Print
+            </button>
+            <a href="#" class="btn btn--secondary">← Back to Periods</a>
+        </div>
+    </div>
+
+    <!-- Period Banner -->
+    <div class="period-banner">
+        <div>
+            <div class="period-banner__label">01 Jan 2026 – 31 Mar 2026</div>
+            <div class="period-banner__dates">Quarter 1 · 90 days · Quarterly filing</div>
+        </div>
+        <div class="period-banner__status">
+            <span class="dot"></span>
+            Pending Submission
+        </div>
+    </div>
+
+    <!-- KPI Summary -->
+    <div class="kpi-row">
+        <div class="kpi-card kpi-card--output">
+            <div class="kpi-card__label">Output VAT (Sales)</div>
+            <div class="kpi-card__value">€4,250.00</div>
+            <div class="kpi-card__sub">From 12 issued invoices</div>
+        </div>
+        <div class="kpi-card kpi-card--input">
+            <div class="kpi-card__label">Input VAT (Purchases)</div>
+            <div class="kpi-card__value">€1,875.50</div>
+            <div class="kpi-card__sub">From 28 purchases (excl. EU RC)</div>
+        </div>
+        <div class="kpi-card kpi-card--net">
+            <div class="kpi-card__label">Net VAT Payable</div>
+            <div class="kpi-card__value">€2,374.50</div>
+            <div class="kpi-card__sub">Amount owed to tax authority</div>
+        </div>
+    </div>
+
+    <!-- OUTPUT VAT BREAKDOWN -->
+    <div class="card">
+        <div class="card__title">Output VAT — Sales Invoices</div>
+        <div class="card__subtitle">VAT charged on invoices issued during this period</div>
+
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th class="right">Net Amount</th>
+                    <th class="right">VAT Rate</th>
+                    <th class="right">VAT Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>05 Jan 2026</td>
+                    <td class="bold">INV-0041</td>
+                    <td>Acme Corporation</td>
+                    <td class="right">€2,500.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€600.00</td>
+                </tr>
+                <tr>
+                    <td>12 Jan 2026</td>
+                    <td class="bold">INV-0042</td>
+                    <td>TechStart Ltd</td>
+                    <td class="right">€1,800.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€432.00</td>
+                </tr>
+                <tr>
+                    <td>28 Jan 2026</td>
+                    <td class="bold">INV-0043</td>
+                    <td>Global Retail SA</td>
+                    <td class="right">€3,200.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€768.00</td>
+                </tr>
+                <tr>
+                    <td>03 Feb 2026</td>
+                    <td class="bold">INV-0044</td>
+                    <td>Sunrise Hotels</td>
+                    <td class="right">€950.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€228.00</td>
+                </tr>
+                <tr>
+                    <td>14 Feb 2026</td>
+                    <td class="bold">INV-0045</td>
+                    <td>Metro Services</td>
+                    <td class="right">€4,100.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€984.00</td>
+                </tr>
+                <tr>
+                    <td>22 Feb 2026</td>
+                    <td class="bold">INV-0046</td>
+                    <td>Olympus Consulting</td>
+                    <td class="right">€1,250.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€300.00</td>
+                </tr>
+                <tr>
+                    <td>05 Mar 2026</td>
+                    <td class="bold">INV-0047</td>
+                    <td>Aegean Logistics</td>
+                    <td class="right">€1,600.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€384.00</td>
+                </tr>
+                <tr>
+                    <td>18 Mar 2026</td>
+                    <td class="bold">INV-0048</td>
+                    <td>Hellas Digital</td>
+                    <td class="right">€2,300.00</td>
+                    <td class="right muted">24%</td>
+                    <td class="right bold">€554.00</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5">Total Output VAT</td>
+                    <td class="right">€4,250.00</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- INPUT VAT BREAKDOWN -->
+    <div class="card">
+        <div class="card__title">Input VAT — Business Purchases</div>
+        <div class="card__subtitle">VAT paid on purchases during this period (EU Reverse Charge excluded)</div>
+
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th>Supplier</th>
+                    <th>Category</th>
+                    <th>Origin</th>
+                    <th class="right">Net Amount</th>
+                    <th class="right">VAT Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>08 Jan 2026</td>
+                    <td>SUP-2201</td>
+                    <td class="bold">Sklavenitis</td>
+                    <td class="muted">Office Supplies</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€320.00</td>
+                    <td class="right bold">€76.80</td>
+                </tr>
+                <tr>
+                    <td>15 Jan 2026</td>
+                    <td>SUP-2202</td>
+                    <td class="bold">Vodafone Greece</td>
+                    <td class="muted">Telecommunications</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€180.00</td>
+                    <td class="right bold">€43.20</td>
+                </tr>
+                <tr>
+                    <td>22 Jan 2026</td>
+                    <td>SUP-2203</td>
+                    <td class="bold">AWS Ireland</td>
+                    <td class="muted">Cloud Services</td>
+                    <td><span class="badge badge--gold" style="font-size:10px;">EU RC</span></td>
+                    <td class="right">€850.00</td>
+                    <td class="right muted">€0.00</td>
+                </tr>
+                <tr>
+                    <td>02 Feb 2026</td>
+                    <td>SUP-2204</td>
+                    <td class="bold">Plaisio</td>
+                    <td class="muted">Equipment</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€1,450.00</td>
+                    <td class="right bold">€348.00</td>
+                </tr>
+                <tr>
+                    <td>10 Feb 2026</td>
+                    <td>SUP-2205</td>
+                    <td class="bold">Cosmote</td>
+                    <td class="muted">Telecommunications</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€95.00</td>
+                    <td class="right bold">€22.80</td>
+                </tr>
+                <tr>
+                    <td>18 Feb 2026</td>
+                    <td>SUP-2206</td>
+                    <td class="bold">Google Ireland</td>
+                    <td class="muted">Advertising</td>
+                    <td><span class="badge badge--gold" style="font-size:10px;">EU RC</span></td>
+                    <td class="right">€620.00</td>
+                    <td class="right muted">€0.00</td>
+                </tr>
+                <tr>
+                    <td>25 Feb 2026</td>
+                    <td>SUP-2207</td>
+                    <td class="bold">Public</td>
+                    <td class="muted">Office Supplies</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€280.00</td>
+                    <td class="right bold">€67.20</td>
+                </tr>
+                <tr>
+                    <td>04 Mar 2026</td>
+                    <td>SUP-2208</td>
+                    <td class="bold">DEI (Power)</td>
+                    <td class="muted">Utilities</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€540.00</td>
+                    <td class="right bold">€129.60</td>
+                </tr>
+                <tr>
+                    <td>12 Mar 2026</td>
+                    <td>SUP-2209</td>
+                    <td class="bold">Kotsovolos</td>
+                    <td class="muted">Equipment</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€2,400.00</td>
+                    <td class="right bold">€576.00</td>
+                </tr>
+                <tr>
+                    <td>20 Mar 2026</td>
+                    <td>SUP-2210</td>
+                    <td class="bold">EYDAP (Water)</td>
+                    <td class="muted">Utilities</td>
+                    <td><span class="badge badge--blue" style="font-size:10px;">Domestic</span></td>
+                    <td class="right">€110.00</td>
+                    <td class="right bold">€26.40</td>
+                </tr>
+                <tr>
+                    <td>28 Mar 2026</td>
+                    <td>SUP-2211</td>
+                    <td class="bold">Mailchimp (US)</td>
+                    <td class="muted">Marketing</td>
+                    <td><span class="badge badge--gold" style="font-size:10px;">Non-EU</span></td>
+                    <td class="right">€350.00</td>
+                    <td class="right bold">€0.00</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6">Total Input VAT (excl. EU RC &amp; Non-EU zero-rated)</td>
+                    <td class="right">€1,290.00</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div style="margin-top:16px;padding:12px 16px;background:rgba(200,145,46,0.06);border-radius:10px;font-size:13px;color:var(--warning);">
+            <strong>Note:</strong> 2 EU Reverse Charge purchases (€1,470.00 net) and 1 Non-EU purchase (€350.00 net) are shown for reference but excluded from Input VAT total per reverse charge rules.
+        </div>
+    </div>
+
+    <!-- EU REVERSE CHARGE SUMMARY -->
+    <div class="card">
+        <div class="card__title">EU Reverse Charge Summary</div>
+        <div class="card__subtitle">Cross-border EU B2B purchases where VAT is self-accounted</div>
+
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Country</th>
+                    <th class="right">Net Amount</th>
+                    <th class="right">VAT (Self-Accounted)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="bold">AWS Ireland</td>
+                    <td>Ireland</td>
+                    <td class="right">€850.00</td>
+                    <td class="right muted">€204.00 (24%)</td>
+                </tr>
+                <tr>
+                    <td class="bold">Google Ireland</td>
+                    <td>Ireland</td>
+                    <td class="right">€620.00</td>
+                    <td class="right muted">€148.80 (24%)</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2">Total EU RC (self-accounted, net zero effect)</td>
+                    <td class="right">€1,470.00</td>
+                    <td class="right">€352.80</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div style="margin-top:16px;padding:12px 16px;background:rgba(13,94,166,0.04);border-radius:10px;font-size:13px;color:var(--text-secondary);">
+            EU Reverse Charge: VAT is both output and input — net effect is zero. Shown here for reporting completeness.
+        </div>
+    </div>
+
+    <!-- NET VAT CALCULATION -->
+    <div class="card">
+        <div class="card__title">VAT Calculation Summary</div>
+        <div class="card__subtitle">Final computation for this period</div>
+
+        <table class="report-table" style="max-width:600px;">
+            <tbody>
+                <tr>
+                    <td>Box 1 — Output VAT on sales</td>
+                    <td class="right bold">€4,250.00</td>
+                </tr>
+                <tr>
+                    <td>Box 2 — VAT on EU RC acquisitions (self-accounted)</td>
+                    <td class="right">€352.80</td>
+                </tr>
+                <tr>
+                    <td>Box 3 — Total VAT due (Box 1 + Box 2)</td>
+                    <td class="right bold">€4,602.80</td>
+                </tr>
+                <tr style="border-top:2px solid var(--border);">
+                    <td>Box 4 — Input VAT on purchases</td>
+                    <td class="right bold">€1,290.00</td>
+                </tr>
+                <tr>
+                    <td>Box 4a — VAT on EU RC acquisitions (reclaimable)</td>
+                    <td class="right">€352.80</td>
+                </tr>
+                <tr>
+                    <td>Box 5 — Total VAT reclaimable (Box 4 + Box 4a)</td>
+                    <td class="right bold">€1,642.80</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background:rgba(18,152,103,0.04);">
+                    <td style="font-size:16px;">Net VAT Payable (Box 3 − Box 5)</td>
+                    <td class="right" style="font-size:20px;color:var(--success);font-family:'Manrope',sans-serif;font-weight:800;">€2,960.00</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="net-summary" style="margin-top:24px;">
+            <div class="net-summary__label">
+                You owe the tax authority
+                <strong>€2,960.00</strong>
+            </div>
+            <div class="net-summary__note">
+                This amount should be paid by the filing deadline for Q1 2026. Mark as submitted once filed.
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:16px;align-items:center;margin-top:8px;">
+        <button class="btn btn--primary">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.3 4.7L6.3 11.7L2.7 8.1L3.8 7L6.3 9.5L12.2 3.6L13.3 4.7Z" fill="currentColor"/></svg>
+            Mark as Submitted
+        </button>
+        <a href="#" class="btn btn--secondary">← Back to Periods</a>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -36,9 +36,17 @@ public class Invoice
 
     public bool IsGrandTotalShown { get; set; } = true;
 
+    public bool IsQuotationReferenceShown { get; set; } = true;
+
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime UpdatedAtUtc { get; set; }
+
+    public int? VatSubmissionPeriodId { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAtUtc { get; set; }
 
     // Navigation properties
     public Business Business { get; set; } = null!;
@@ -56,4 +64,6 @@ public class Invoice
     public ICollection<InvoiceSection> InvoiceSections { get; set; } = new List<InvoiceSection>();
 
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
+    public VatSubmissionPeriod? VatSubmissionPeriod { get; set; }
 }

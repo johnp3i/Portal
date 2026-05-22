@@ -33,7 +33,15 @@
        style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "logos" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "logos" ? "#0D5EA6" : "#5E7385");">
         Logos (@logos.Count/20)
     </a>
+    <a href="@Url.Action("Index", "MyBusiness", new { tab = "payment" })"
+       style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "payment" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "payment" ? "#0D5EA6" : "#5E7385");">
+        Payment Details
+    </a>
 </div>
+
+@{
+    var paymentDetails = ViewBag.PaymentDetails as List<Portal.Infrastructure.Entities.BusinessPaymentDetail> ?? new List<Portal.Infrastructure.Entities.BusinessPaymentDetail>();
+}
 
 @if (activeTab == "profile")
 {
@@ -134,7 +142,7 @@
         </form>
     </section>
 }
-else
+else if (activeTab == "logos")
 {
     <!-- LOGOS TAB -->
     <div class="grid-2">
@@ -201,6 +209,104 @@ else
                 else
                 {
                     <p class="muted" style="font-size:14px;">No logos uploaded yet.</p>
+                }
+            </div>
+        </section>
+    </div>
+}
+else if (activeTab == "payment")
+{
+    <!-- PAYMENT DETAILS TAB -->
+    <div class="grid-2">
+        <section class="glass card-pad">
+            <div class="label">Add Payment Detail</div>
+            <h2 style="margin-top:8px;font-size:24px;">New bank account</h2>
+
+            <form method="post" asp-action="AddPaymentDetail" asp-controller="MyBusiness" style="margin-top:18px;">
+                @Html.AntiForgeryToken()
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="label">Label *</label>
+                        <input type="text" id="label" name="label" placeholder="e.g. Hellenic Bank" required />
+                    </div>
+                    <div class="field">
+                        <label for="bankName">Bank Name *</label>
+                        <input type="text" id="bankName" name="bankName" placeholder="e.g. Hellenic Bank" required />
+                    </div>
+                    <div class="field" style="grid-column:1 / -1;">
+                        <label for="iban">IBAN *</label>
+                        <input type="text" id="iban" name="iban" placeholder="e.g. CY45 0050 0109 0001 0901 9832 7801" required />
+                    </div>
+                    <div class="field">
+                        <label for="payeeName">Payee Name *</label>
+                        <input type="text" id="payeeName" name="payeeName" placeholder="e.g. 3 Inventors Limited" required />
+                    </div>
+                </div>
+                <div style="margin-top:18px;">
+                    <button type="submit" class="btn btn-primary">Add Payment Detail</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="glass card-pad">
+            <div class="label">Your Payment Details</div>
+            <h2 style="margin-top:8px;font-size:24px;">Bank accounts</h2>
+
+            <div style="margin-top:18px;display:grid;gap:14px;">
+                @if (paymentDetails.Any())
+                {
+                    @foreach (var pd in paymentDetails)
+                    {
+                        <div style="padding:14px;border:1px solid rgba(13,94,166,.08);border-radius:12px;margin-bottom:14px;">
+                            <div id="pd-display-@pd.Id" style="display:flex;align-items:center;gap:16px;">
+                                <div style="flex:1;">
+                                    <div style="font-weight:700;font-size:14px;">@pd.Label</div>
+                                    <div class="muted" style="font-size:13px;">@pd.BankName</div>
+                                    <div style="font-size:12px;font-family:monospace;margin-top:4px;">@pd.Iban</div>
+                                    <div class="muted" style="font-size:12px;font-style:italic;margin-top:2px;">Payee: @pd.PayeeName</div>
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                    <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;" onclick="document.getElementById('pd-display-@pd.Id').style.display='none';document.getElementById('pd-edit-@pd.Id').style.display='block';">Edit</button>
+                                    <form method="post" asp-action="DeletePaymentDetail" asp-controller="MyBusiness" asp-route-id="@pd.Id" style="margin:0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div id="pd-edit-@pd.Id" style="display:none;">
+                                <form method="post" asp-action="UpdatePaymentDetail" asp-controller="MyBusiness">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@pd.Id" />
+                                    <div class="form-grid" style="margin-top:8px;">
+                                        <div class="field">
+                                            <label>Label *</label>
+                                            <input type="text" name="label" value="@pd.Label" required />
+                                        </div>
+                                        <div class="field">
+                                            <label>Bank Name *</label>
+                                            <input type="text" name="bankName" value="@pd.BankName" required />
+                                        </div>
+                                        <div class="field" style="grid-column:1 / -1;">
+                                            <label>IBAN *</label>
+                                            <input type="text" name="iban" value="@pd.Iban" required />
+                                        </div>
+                                        <div class="field">
+                                            <label>Payee Name *</label>
+                                            <input type="text" name="payeeName" value="@pd.PayeeName" required />
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:12px;display:flex;gap:12px;">
+                                        <button type="submit" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Save</button>
+                                        <button type="button" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="document.getElementById('pd-edit-@pd.Id').style.display='none';document.getElementById('pd-display-@pd.Id').style.display='flex';">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="muted" style="font-size:14px;">No payment details added yet. Add your bank accounts to display them on invoices.</p>
                 }
             </div>
         </section>

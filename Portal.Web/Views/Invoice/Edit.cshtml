@@ -30,6 +30,10 @@
     <form method="post" asp-action="Edit" asp-controller="Invoice" asp-route-id="@Model.Id" asp-antiforgery="true">
         <div class="form-grid">
             <div class="field">
+                <label for="invoiceNumber">Invoice Number *</label>
+                <input type="text" name="invoiceNumber" id="invoiceNumber" required value="@Model.InvoiceNumber" maxlength="50" />
+            </div>
+            <div class="field">
                 <label for="customerId">Customer *</label>
                 <select name="customerId" id="customerId" required>
                     <option value="">-- Select Customer --</option>
@@ -55,6 +59,12 @@
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                     <input type="checkbox" name="isGrandTotalShown" value="true" @(Model.IsGrandTotalShown ? "checked" : "") style="width:auto;" />
                     Show Grand Total
+                </label>
+            </div>
+            <div class="field">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" name="isQuotationReferenceShown" value="true" @(Model.IsQuotationReferenceShown ? "checked" : "") style="width:auto;" />
+                    Show Quotation Reference
                 </label>
             </div>
         </div>
@@ -239,6 +249,55 @@
     </div>
 </section>
 
+<!-- Sections Management -->
+@if (sections.Any())
+{
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div>
+            <div class="label">Sections</div>
+            <h2 style="margin-top:8px;font-size:24px;">Manage sections</h2>
+        </div>
+
+        @foreach (var sec in sections.OrderBy(s => s.SortOrder))
+        {
+            <div class="surface card-pad" style="margin-top:16px;position:relative;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong style="font-size:15px;">@sec.Name</strong>
+                        <span class="muted" style="margin-left:8px;font-size:12px;">(@sec.SectionType)</span>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="showEditSectionForm(@sec.Id)">Edit</button>
+                        <button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="removeSection(@sec.Id)">Remove</button>
+                    </div>
+                </div>
+
+                <!-- Edit Section Form (hidden) -->
+                <div id="edit-section-@sec.Id" style="display:none;margin-top:16px;">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>Name *</label>
+                            <input type="text" id="editSec_name_@sec.Id" value="@sec.Name" />
+                        </div>
+                        <div class="field" style="grid-column:1 / -1;">
+                            <label>Description</label>
+                            <div id="editSec_description_@sec.Id" contenteditable="true" class="richtext-editor">@Html.Raw(sec.Description ?? "")</div>
+                        </div>
+                        <div class="field" style="grid-column:1 / -1;">
+                            <label>Notes</label>
+                            <div id="editSec_notes_@sec.Id" contenteditable="true" class="richtext-editor">@Html.Raw(sec.Notes ?? "")</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;display:flex;gap:12px;">
+                        <button type="button" class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="updateSection(@sec.Id)">Save</button>
+                        <button type="button" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="hideEditSectionForm(@sec.Id)">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </section>
+}
+
 <!-- Back to Detail (bottom right) -->
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
     <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>
@@ -328,25 +387,108 @@
         }
 
         function removeLine(lineId) {
-            if (!confirm('Remove this line item?')) return;
+            Swal.fire({
+                title: 'Remove this line item?',
+                text: 'This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6B7F8E',
+                confirmButtonText: 'Yes, remove it',
+                cancelButtonText: 'Cancel'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
 
-            fetch('/Invoice/RemoveLine', {
+                BlockUI.show('Removing line...');
+                fetch('/Invoice/RemoveLine', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'lineId=' + lineId
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    BlockUI.hide();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message || 'Failed to remove line.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                })
+                .catch(function() { BlockUI.hide(); Swal.fire({ title: 'Error', text: 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' }); });
+            });
+        }
+
+        function showEditSectionForm(sectionId) {
+            document.getElementById('edit-section-' + sectionId).style.display = 'block';
+        }
+
+        function hideEditSectionForm(sectionId) {
+            document.getElementById('edit-section-' + sectionId).style.display = 'none';
+        }
+
+        function updateSection(sectionId) {
+            var data = 'sectionId=' + sectionId
+                + '&name=' + encodeURIComponent(document.getElementById('editSec_name_' + sectionId).value)
+                + '&description=' + encodeURIComponent(document.getElementById('editSec_description_' + sectionId).innerHTML || '')
+                + '&notes=' + encodeURIComponent(document.getElementById('editSec_notes_' + sectionId).innerHTML || '');
+
+            BlockUI.show('Updating section...');
+            fetch('/Invoice/UpdateSection', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'RequestVerificationToken': antiForgeryToken
                 },
-                body: 'lineId=' + lineId
+                body: data
             })
             .then(function(r) { return r.json(); })
             .then(function(result) {
+                BlockUI.hide();
                 if (result.success) {
                     window.location.reload();
                 } else {
-                    alert(result.message || 'Failed to remove line.');
+                    Swal.fire({ title: 'Error', text: result.message || 'Failed to update section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
                 }
             })
-            .catch(function() { alert('An error occurred.'); });
+            .catch(function() { BlockUI.hide(); Swal.fire({ title: 'Error', text: 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' }); });
+        }
+
+        function removeSection(sectionId) {
+            Swal.fire({
+                title: 'Remove this section?',
+                text: 'Lines will be moved to the General group.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6B7F8E',
+                confirmButtonText: 'Yes, remove it',
+                cancelButtonText: 'Cancel'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+
+                BlockUI.show('Removing section...');
+                fetch('/Invoice/RemoveSection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'sectionId=' + sectionId + '&invoiceId=' + invoiceId
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    BlockUI.hide();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message || 'Failed to remove section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                })
+                .catch(function() { BlockUI.hide(); Swal.fire({ title: 'Error', text: 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' }); });
+            });
         }
     </script>
     @Html.AntiForgeryToken()

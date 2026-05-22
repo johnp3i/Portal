@@ -30,6 +30,10 @@ public class Quotation
 
     public DateTime UpdatedAtUtc { get; set; }
 
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAtUtc { get; set; }
+
     public int? QuotationContactId { get; set; }
 
     public bool IsGrandTotalShown { get; set; } = true;

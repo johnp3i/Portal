@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -20,6 +21,8 @@ public class InvoiceService : IInvoiceService
     private readonly ProposalSectionRepository _proposalSectionRepository;
     private readonly CustomerRepository _customerRepository;
     private readonly AuditLogRepository _auditLogRepository;
+    private readonly VatSubmissionPeriodRepository _vatSubmissionPeriodRepository;
+    private readonly VatSubmissionRepository _vatSubmissionRepository;
     private readonly PortalDbContext _portalDbContext;
 
     private static readonly Dictionary<int, List<int>> ValidTransitionsMap = new()
@@ -45,6 +48,8 @@ public class InvoiceService : IInvoiceService
         ProposalSectionRepository proposalSectionRepository,
         CustomerRepository customerRepository,
         AuditLogRepository auditLogRepository,
+        VatSubmissionPeriodRepository vatSubmissionPeriodRepository,
+        VatSubmissionRepository vatSubmissionRepository,
         PortalDbContext portalDbContext)
     {
         _currentTenantService = currentTenantService;
@@ -56,6 +61,8 @@ public class InvoiceService : IInvoiceService
         _proposalSectionRepository = proposalSectionRepository;
         _customerRepository = customerRepository;
         _auditLogRepository = auditLogRepository;
+        _vatSubmissionPeriodRepository = vatSubmissionPeriodRepository;
+        _vatSubmissionRepository = vatSubmissionRepository;
         _portalDbContext = portalDbContext;
     }
 
@@ -104,6 +111,11 @@ public class InvoiceService : IInvoiceService
             var invoiceNumber = $"INV-{businessId}-{nextNumber:D5}";
 
             // 6. Insert invoice with Draft (1) and Unpaid (1)
+            var invoiceDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // Assign VAT submission period before insert
+            var vatSubmissionPeriodId = await AssignVatPeriodAsync(businessId, invoiceDate);
+
             var invoice = new Invoice
             {
                 BusinessId = businessId,
@@ -112,7 +124,7 @@ public class InvoiceService : IInvoiceService
                 InvoiceStatusTypeId = 1,           // Draft
                 InvoiceFinancialStatusTypeId = 1,  // Unpaid
                 InvoiceNumber = invoiceNumber,
-                InvoiceDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                InvoiceDate = invoiceDate,
                 DueDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)),
                 Subtotal = 0,
                 TaxAmount = 0,
@@ -120,6 +132,7 @@ public class InvoiceService : IInvoiceService
                 CurrencyCode = "EUR",
                 Notes = quotation.Notes,
                 IsGrandTotalShown = quotation.IsGrandTotalShown,
+                VatSubmissionPeriodId = vatSubmissionPeriodId,
                 CreatedAtUtc = DateTime.UtcNow,
                 UpdatedAtUtc = DateTime.UtcNow
             };
@@ -262,6 +275,9 @@ public class InvoiceService : IInvoiceService
         var nextNumber = await _invoiceRepository.GetNextSequentialNumberAsync(businessId);
         var invoiceNumber = $"INV-{businessId}-{nextNumber:D5}";
 
+        // Assign VAT submission period before insert
+        var vatSubmissionPeriodId = await AssignVatPeriodAsync(businessId, invoiceDate);
+
         // Create invoice entity
         var invoice = new Invoice
         {
@@ -279,6 +295,7 @@ public class InvoiceService : IInvoiceService
             CurrencyCode = "EUR",
             Notes = notes,
             IsGrandTotalShown = isGrandTotalShown,
+            VatSubmissionPeriodId = vatSubmissionPeriodId,
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow
         };
@@ -418,6 +435,36 @@ public class InvoiceService : IInvoiceService
         return invoices;
     }
 
+    public async Task<PagedResult<InvoiceListDto>> GetInvoicesPagedAsync(
+        int? statusFilter = null,
+        int? financialStatusFilter = null,
+        int? customerFilter = null,
+        string? searchTerm = null,
+        int page = 1,
+        int pageSize = 15)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        // Clamp page to minimum 1
+        if (page < 1) page = 1;
+
+        // Clamp pageSize to a sensible range
+        if (pageSize < 1) pageSize = 15;
+
+        int offset = (page - 1) * pageSize;
+
+        var (items, totalCount) = await _invoiceRepository.GetPagedByBusinessIdAsync(
+            businessId, statusFilter, financialStatusFilter, customerFilter, searchTerm, offset, pageSize);
+
+        return new PagedResult<InvoiceListDto>
+        {
+            Items = items,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
+    }
+
     public async Task<Invoice?> GetInvoiceByIdAsync(int id)
     {
         var businessId = _currentTenantService.CurrentBusinessId;
@@ -474,7 +521,7 @@ public class InvoiceService : IInvoiceService
     }
 
     public async Task UpdateInvoiceAsync(int invoiceId, int customerId, DateOnly invoiceDate, DateOnly dueDate,
-        string? notes, bool isGrandTotalShown)
+        string? notes, bool isGrandTotalShown, bool isQuotationReferenceShown, string? invoiceNumber = null)
     {
         var businessId = _currentTenantService.CurrentBusinessId;
 
@@ -504,6 +551,11 @@ public class InvoiceService : IInvoiceService
         invoice.DueDate = dueDate;
         invoice.Notes = notes;
         invoice.IsGrandTotalShown = isGrandTotalShown;
+        invoice.IsQuotationReferenceShown = isQuotationReferenceShown;
+        if (!string.IsNullOrWhiteSpace(invoiceNumber))
+        {
+            invoice.InvoiceNumber = invoiceNumber;
+        }
         invoice.UpdatedAtUtc = DateTime.UtcNow;
 
         await _invoiceRepository.UpdateAsync(invoice);
@@ -714,6 +766,156 @@ public class InvoiceService : IInvoiceService
             Timestamp = DateTime.UtcNow
         };
         await _auditLogRepository.InsertAsync(auditLog);
+    }
+
+    public async Task<ServiceResult> ReassignVatPeriodAsync(int invoiceId, int targetPeriodId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        // 1. Invoice exists and belongs to current business
+        var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
+        if (invoice == null)
+            return ServiceResult.Fail("Invoice not found.");
+
+        // 2. Invoice is not deleted
+        if (invoice.IsDeleted)
+            return ServiceResult.Fail("Cannot reassign a deleted invoice.");
+
+        // 3. Target period exists
+        var targetPeriod = await _vatSubmissionPeriodRepository.GetByIdAndBusinessIdAsync(targetPeriodId, businessId);
+        if (targetPeriod == null)
+            return ServiceResult.Fail("Target VAT period not found.");
+
+        // 4. Target period belongs to same business
+        if (targetPeriod.BusinessId != invoice.BusinessId)
+            return ServiceResult.Fail("Target period does not belong to this business.");
+
+        // 5. Target period is not already submitted
+        var submission = await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(targetPeriodId, businessId);
+        if (submission != null && submission.IsSubmitted)
+            return ServiceResult.Fail("Cannot reassign to a period that has already been submitted.");
+
+        // 6. Invoice is not already assigned to target period
+        if (invoice.VatSubmissionPeriodId == targetPeriodId)
+            return ServiceResult.Fail("Invoice is already assigned to this period.");
+
+        // 7. Execute update + audit log
+        var oldPeriodId = invoice.VatSubmissionPeriodId;
+        await _invoiceRepository.UpdateVatPeriodAsync(invoiceId, targetPeriodId);
+
+        var auditLog = new AuditLog
+        {
+            BusinessId = businessId,
+            UserId = null,
+            Action = "VatPeriodReassigned",
+            TableName = "Invoice",
+            RecordId = invoiceId.ToString(),
+            OldValues = oldPeriodId.HasValue ? $"VatSubmissionPeriodId={oldPeriodId.Value}" : "VatSubmissionPeriodId=NULL",
+            NewValues = $"VatSubmissionPeriodId={targetPeriodId}",
+            Timestamp = DateTime.UtcNow
+        };
+        await _auditLogRepository.InsertAsync(auditLog);
+
+        return ServiceResult.Ok();
+    }
+
+    /// <summary>
+    /// Determines the appropriate VAT submission period for an invoice based on its date.
+    /// Finds the natural period by date-range match, checks if it's submitted,
+    /// and cascades forward to the first unsubmitted period if necessary.
+    /// </summary>
+    private async Task<int?> AssignVatPeriodAsync(int businessId, DateOnly invoiceDate)
+    {
+        // 1. Find the natural period (date-range match for businessId)
+        var naturalPeriod = await _vatSubmissionPeriodRepository.GetByDateAndBusinessIdAsync(invoiceDate, businessId);
+
+        // 2. If no period found → return null
+        if (naturalPeriod == null)
+            return null;
+
+        // 3. Check if natural period has a submitted VatSubmission
+        var submission = await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(naturalPeriod.Id, businessId);
+
+        // 4. If not submitted (or no submission exists) → return natural period's Id
+        if (submission == null || !submission.IsSubmitted)
+            return naturalPeriod.Id;
+
+        // 5. If submitted → search forward for first unsubmitted period
+        var unsubmittedPeriods = await _vatSubmissionPeriodRepository.GetUnsubmittedPeriodsFromAsync(
+            businessId, naturalPeriod.PeriodEndDate.AddDays(1));
+
+        // 6. If no unsubmitted period found → return null
+        if (unsubmittedPeriods.Count == 0)
+            return null;
+
+        return unsubmittedPeriods[0].Id;
+    }
+
+    public async Task<ServiceResult<ReassignmentImpactDto>> GetReassignmentImpactAsync(int invoiceId, int targetPeriodId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        // 1. Get the invoice
+        var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
+        if (invoice == null)
+            return ServiceResult<ReassignmentImpactDto>.Fail("Invoice not found.");
+
+        // 2. Get the source period (invoice's current VatSubmissionPeriodId)
+        if (!invoice.VatSubmissionPeriodId.HasValue)
+            return ServiceResult<ReassignmentImpactDto>.Fail("Invoice is not assigned to a VAT period.");
+
+        var sourcePeriod = await _vatSubmissionPeriodRepository.GetByIdAndBusinessIdAsync(
+            invoice.VatSubmissionPeriodId.Value, businessId);
+        if (sourcePeriod == null)
+            return ServiceResult<ReassignmentImpactDto>.Fail("Source VAT period not found.");
+
+        // 3. Get the target period
+        var targetPeriod = await _vatSubmissionPeriodRepository.GetByIdAndBusinessIdAsync(targetPeriodId, businessId);
+        if (targetPeriod == null)
+            return ServiceResult<ReassignmentImpactDto>.Fail("Target VAT period not found.");
+
+        // 4. Get current Output VAT totals for both periods from VatSubmission records
+        var sourceSubmission = await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(
+            sourcePeriod.Id, businessId);
+        var targetSubmission = await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(
+            targetPeriod.Id, businessId);
+
+        var sourceCurrentOutputVat = sourceSubmission?.TotalOutputVat ?? 0m;
+        var targetCurrentOutputVat = targetSubmission?.TotalOutputVat ?? 0m;
+
+        // 5. Compute projected Output VAT
+        var sourceProjected = sourceCurrentOutputVat - invoice.TaxAmount;
+        var targetProjected = targetCurrentOutputVat + invoice.TaxAmount;
+
+        // 6. Get currency symbol from business profile
+        var profile = await _portalDbContext.BusinessProfiles
+            .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+        var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+        // 7. Return ReassignmentImpactDto
+        var impact = new ReassignmentImpactDto
+        {
+            InvoiceNumber = invoice.InvoiceNumber,
+            TaxAmount = invoice.TaxAmount,
+            SourcePeriodLabel = sourcePeriod.PeriodLabel ?? $"{sourcePeriod.PeriodStartDate:MMM yyyy}",
+            TargetPeriodLabel = targetPeriod.PeriodLabel ?? $"{targetPeriod.PeriodStartDate:MMM yyyy}",
+            SourcePeriodProjectedOutputVat = sourceProjected,
+            TargetPeriodProjectedOutputVat = targetProjected,
+            CurrencySymbol = currencySymbol
+        };
+
+        return ServiceResult<ReassignmentImpactDto>.Ok(impact);
+    }
+
+    public async Task<List<VatPeriodOptionDto>> GetUnsubmittedPeriodsAsync(int invoiceId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        var periods = await _vatSubmissionPeriodRepository.GetUnsubmittedPeriodsFromAsync(businessId, DateOnly.MinValue);
+
+        return periods
+            .Select(p => new VatPeriodOptionDto { Id = p.Id, PeriodLabel = p.PeriodLabel })
+            .ToList();
     }
 
     private async Task RecomputeAndUpdateTotalsAsync(int invoiceId)

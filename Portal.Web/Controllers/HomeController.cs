@@ -9,11 +9,15 @@ public class HomeController : Controller
 {
     private readonly IQuotationService _quotationService;
     private readonly ICustomerService _customerService;
+    private readonly IBusinessService _businessService;
+    private readonly ICurrentTenantService _tenantService;
 
-    public HomeController(IQuotationService quotationService, ICustomerService customerService)
+    public HomeController(IQuotationService quotationService, ICustomerService customerService, IBusinessService businessService, ICurrentTenantService tenantService)
     {
         _quotationService = quotationService;
         _customerService = customerService;
+        _businessService = businessService;
+        _tenantService = tenantService;
     }
 
     [HttpGet]
@@ -43,6 +47,9 @@ public class HomeController : Controller
 
         // Recent quotations for the table
         ViewBag.RecentQuotations = allQuotations.Take(5).ToList();
+
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
         return View();
     }

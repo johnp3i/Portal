@@ -21,6 +21,7 @@ public class PortalDbContext : DbContext
     // Portal schema
     public DbSet<Business> Businesses { get; set; } = null!;
     public DbSet<BusinessProfile> BusinessProfiles { get; set; } = null!;
+    public DbSet<BusinessPaymentDetail> BusinessPaymentDetails { get; set; } = null!;
 
     // Customer schema
     public DbSet<Customer> Customers { get; set; } = null!;
@@ -35,6 +36,7 @@ public class PortalDbContext : DbContext
     public DbSet<InvoiceFinancialStatusType> InvoiceFinancialStatusTypes { get; set; } = null!;
     public DbSet<Invoice> Invoices { get; set; } = null!;
     public DbSet<InvoiceLine> InvoiceLines { get; set; } = null!;
+    public DbSet<InvoiceShare> InvoiceShares { get; set; } = null!;
 
     // Revenue schema
     public DbSet<PaymentMethodType> PaymentMethodTypes { get; set; } = null!;
@@ -44,6 +46,7 @@ public class PortalDbContext : DbContext
     public DbSet<Supplier> Suppliers { get; set; } = null!;
     public DbSet<ExpenseCategory> ExpenseCategories { get; set; } = null!;
     public DbSet<Purchase> Purchases { get; set; } = null!;
+    public DbSet<PurchaseOriginType> PurchaseOriginTypes { get; set; } = null!;
 
     // VAT schema
     public DbSet<VatSubmissionPeriod> VatSubmissionPeriods { get; set; } = null!;
@@ -65,6 +68,7 @@ public class PortalDbContext : DbContext
 
         ConfigureBusiness(modelBuilder);
         ConfigureBusinessProfile(modelBuilder);
+        ConfigureBusinessPaymentDetail(modelBuilder);
         ConfigureCustomer(modelBuilder);
         ConfigureQuotationStatusType(modelBuilder);
         ConfigureQuotation(modelBuilder);
@@ -73,10 +77,12 @@ public class PortalDbContext : DbContext
         ConfigureInvoiceFinancialStatusType(modelBuilder);
         ConfigureInvoice(modelBuilder);
         ConfigureInvoiceLine(modelBuilder);
+        ConfigureInvoiceShare(modelBuilder);
         ConfigurePaymentMethodType(modelBuilder);
         ConfigurePayment(modelBuilder);
         ConfigureSupplier(modelBuilder);
         ConfigureExpenseCategory(modelBuilder);
+        ConfigurePurchaseOriginType(modelBuilder);
         ConfigurePurchase(modelBuilder);
         ConfigureVatSubmissionPeriod(modelBuilder);
         ConfigureVatSubmission(modelBuilder);
@@ -186,6 +192,37 @@ public class PortalDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(5)
                 .HasDefaultValue("€");
+        });
+    }
+
+    private static void ConfigureBusinessPaymentDetail(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BusinessPaymentDetail>(entity =>
+        {
+            entity.ToTable("BusinessPaymentDetail", "portal");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.Label)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.BankName)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Iban)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.PayeeName)
+                .IsRequired()
+                .HasMaxLength(200);
         });
     }
 
@@ -522,6 +559,59 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureInvoiceShare(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<InvoiceShare>(entity =>
+        {
+            entity.ToTable("InvoiceShare", "invoice");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Invoice)
+                .WithMany()
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.InvoiceId)
+                .HasDatabaseName("IX_InvoiceShare_InvoiceId");
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_InvoiceShare_BusinessId");
+
+            entity.HasIndex(e => e.ShareToken)
+                .IsUnique()
+                .HasDatabaseName("UX_InvoiceShare_ShareToken");
+
+            entity.Property(e => e.ShareToken)
+                .IsRequired()
+                .HasMaxLength(128);
+
+            entity.Property(e => e.SnapshotHtml)
+                .IsRequired();
+
+            entity.Property(e => e.CustomerEmail)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+            entity.Property(e => e.CreatedByUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+        });
+    }
+
     private static void ConfigurePaymentMethodType(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PaymentMethodType>(entity =>
@@ -649,6 +739,26 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigurePurchaseOriginType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PurchaseOriginType>(entity =>
+        {
+            entity.ToTable("PurchaseOriginType", "purchase");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasData(
+                new PurchaseOriginType { Id = 1, Name = "Domestic" },
+                new PurchaseOriginType { Id = 2, Name = "EuReverseCharge" },
+                new PurchaseOriginType { Id = 3, Name = "NonEu" }
+            );
+        });
+    }
+
     private static void ConfigurePurchase(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Purchase>(entity =>
@@ -672,6 +782,17 @@ public class PortalDbContext : DbContext
                 .HasForeignKey(e => e.ExpenseCategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
+            entity.HasOne(e => e.PurchaseOriginType)
+                .WithMany()
+                .HasForeignKey(e => e.PurchaseOriginTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.VatSubmissionPeriod)
+                .WithMany()
+                .HasForeignKey(e => e.VatSubmissionPeriodId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .IsRequired(false);
+
             entity.HasIndex(e => e.BusinessId)
                 .HasDatabaseName("IX_Purchase_BusinessId");
 
@@ -691,9 +812,9 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.TotalAmount)
                 .HasPrecision(18, 2);
 
-            entity.Property(e => e.IsEuReverseCharge)
+            entity.Property(e => e.PurchaseOriginTypeId)
                 .IsRequired()
-                .HasDefaultValue(false);
+                .HasDefaultValue(1);
 
             entity.Property(e => e.Country)
                 .HasMaxLength(100);
@@ -1088,6 +1209,9 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<ProposalShare>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<InvoiceShare>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<BusinessLogo>()

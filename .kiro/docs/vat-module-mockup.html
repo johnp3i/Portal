@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAT Submissions — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F7FAFC;
+            color: #1a2b3c;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== Design Tokens ===== */
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --text-muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11, 27, 40, 0.06);
+            --card-radius: 24px;
+            --pill-radius: 20px;
+        }
+
+        /* ===== Layout Container ===== */
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        /* ===== Topbar / Page Header ===== */
+        .page-header {
+            margin-bottom: 36px;
+        }
+
+        .page-header__eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+        }
+
+        .page-header__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .page-header__subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* ===== Card Container ===== */
+        .card {
+            background: #ffffff;
+            border-radius: var(--card-radius);
+            box-shadow: var(--card-shadow);
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        /* ===== Table ===== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table thead th {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .data-table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-base);
+        }
+
+        .data-table tbody td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ===== Status Badges ===== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: var(--pill-radius);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .badge--submitted {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--success);
+        }
+
+        .badge--pending {
+            background: rgba(200, 145, 46, 0.1);
+            color: var(--warning);
+        }
+
+        .badge--not-started {
+            background: rgba(138, 155, 172, 0.1);
+            color: var(--text-muted);
+        }
+
+        .badge__dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .badge--submitted .badge__dot { background: var(--success); }
+        .badge--pending .badge__dot { background: var(--warning); }
+        .badge--not-started .badge__dot { background: var(--text-muted); }
+
+        /* ===== Action Links ===== */
+        .action-link {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            transition: opacity 0.15s ease;
+        }
+
+        .action-link:hover {
+            opacity: 0.75;
+            text-decoration: underline;
+        }
+
+        /* ===== Divider ===== */
+        .section-divider {
+            border: none;
+            border-top: 2px dashed var(--border);
+            margin: 56px 0;
+        }
+
+        /* ===== KPI Cards ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            border-radius: 20px;
+            padding: 28px 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            opacity: 0.08;
+            transform: translate(30%, -30%);
+        }
+
+        .kpi-card--output {
+            background: linear-gradient(135deg, #0D5EA6 0%, #1a6fba 100%);
+            color: #ffffff;
+        }
+
+        .kpi-card--output::before { background: #ffffff; }
+
+        .kpi-card--input {
+            background: linear-gradient(135deg, #1a8a9e 0%, #57B8E8 100%);
+            color: #ffffff;
+        }
+
+        .kpi-card--input::before { background: #ffffff; }
+
+        .kpi-card--net {
+            background: linear-gradient(135deg, #0f7a56 0%, #129867 100%);
+            color: #ffffff;
+        }
+
+        .kpi-card--net::before { background: #ffffff; }
+
+        .kpi-card__label {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.85;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .kpi-card__value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .kpi-card__sublabel {
+            font-size: 12px;
+            opacity: 0.7;
+            font-weight: 400;
+        }
+
+        /* ===== Buttons ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn--primary {
+            background: var(--primary-blue);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(13, 94, 166, 0.25);
+        }
+
+        .btn--primary:hover {
+            background: #0a4d8a;
+            box-shadow: 0 6px 16px rgba(13, 94, 166, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn--secondary {
+            background: transparent;
+            color: var(--primary-blue);
+            border: 2px solid var(--border);
+        }
+
+        .btn--secondary:hover {
+            border-color: var(--primary-blue);
+            background: rgba(13, 94, 166, 0.04);
+        }
+
+        /* ===== Detail Header ===== */
+        .detail-header {
+            margin-bottom: 32px;
+        }
+
+        .detail-header__period {
+            font-family: 'Manrope', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+            margin-bottom: 4px;
+        }
+
+        .detail-header__dates {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* ===== Actions Bar ===== */
+        .actions-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 8px;
+        }
+
+        .back-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.15s ease;
+        }
+
+        .back-link:hover {
+            color: var(--primary-blue);
+        }
+
+        .back-link__arrow {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        /* ===== Submitted Date ===== */
+        .submitted-date {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-container {
+                padding: 24px 16px;
+            }
+
+            .card {
+                padding: 20px;
+                border-radius: 16px;
+            }
+
+            .data-table {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         SCREEN 0: VAT Setup / Configuration (First-time user)
+         ============================================================ -->
+    <div class="page-container">
+
+        <header class="page-header">
+            <div class="page-header__eyebrow">VAT</div>
+            <h1 class="page-header__title">VAT Periods</h1>
+            <p class="page-header__subtitle">Review and manage your VAT submission periods.</p>
+        </header>
+
+        <div class="card" style="text-align:center;padding:56px 32px;">
+            <div style="margin-bottom:24px;">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="32" cy="32" r="30" stroke="#0D5EA6" stroke-width="2" stroke-dasharray="6 4" fill="rgba(13,94,166,0.04)"/>
+                    <path d="M32 20v12l8 4" stroke="#0D5EA6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="32" cy="32" r="3" fill="#0D5EA6"/>
+                </svg>
+            </div>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#1a2b3c;margin-bottom:8px;">Configure Your VAT Registration</h2>
+            <p style="font-size:15px;color:#5a6b7c;max-width:480px;margin:0 auto 32px;">
+                To generate VAT periods automatically, we need your VAT registration date and reporting frequency. This only needs to be set once.
+            </p>
+
+            <div style="max-width:440px;margin:0 auto;text-align:left;">
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#5a6b7c;margin-bottom:6px;">VAT Registration Date *</label>
+                    <input type="date" value="2025-01-01" style="width:100%;padding:12px 16px;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;color:#1a2b3c;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0D5EA6'" onblur="this.style.borderColor='#e2e8f0'" />
+                    <p style="font-size:12px;color:#8a9bac;margin-top:4px;">The date your business became VAT registered.</p>
+                </div>
+
+                <div style="margin-bottom:28px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#5a6b7c;margin-bottom:6px;">VAT Period Length *</label>
+                    <select style="width:100%;padding:12px 16px;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;color:#1a2b3c;outline:none;appearance:none;-webkit-appearance:none;background:#fff url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27%3E%3Cpath fill=%27%235a6b7c%27 d=%27M6 8.5L1.5 4h9L6 8.5z%27/%3E%3C/svg%3E') no-repeat right 14px center;background-size:12px;padding-right:36px;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0D5EA6'" onblur="this.style.borderColor='#e2e8f0'">
+                        <option value="1">Monthly (1 month)</option>
+                        <option value="2">Bi-monthly (2 months)</option>
+                        <option value="3" selected>Quarterly (3 months)</option>
+                        <option value="4">4-monthly</option>
+                        <option value="6">Semi-annual (6 months)</option>
+                        <option value="12">Annual (12 months)</option>
+                    </select>
+                    <p style="font-size:12px;color:#8a9bac;margin-top:4px;">How often you submit VAT returns to the tax authority.</p>
+                </div>
+
+                <div style="text-align:center;">
+                    <button class="btn btn--primary" style="width:100%;justify-content:center;padding:14px 28px;">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13.3 4.7L6.3 11.7L2.7 8.1L3.8 7L6.3 9.5L12.2 3.6L13.3 4.7Z" fill="currentColor"/>
+                        </svg>
+                        Save &amp; Generate Periods
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <hr class="section-divider" style="max-width:1200px;margin:56px auto;">
+
+    <!-- ============================================================
+         SCREEN 1: VAT Periods List (after configuration)
+         ============================================================ -->
+    <div class="page-container" style="padding-top:0;">
+
+        <header class="page-header">
+            <div class="page-header__eyebrow">VAT</div>
+            <h1 class="page-header__title">VAT Periods</h1>
+            <p class="page-header__subtitle">Review and manage your VAT submission periods.</p>
+        </header>
+
+        <div class="card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Submitted Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>01 Apr 2026 – 30 Jun 2026</strong></td>
+                        <td>01 Apr 2026</td>
+                        <td>30 Jun 2026</td>
+                        <td>
+                            <span class="badge badge--not-started">
+                                <span class="badge__dot"></span>
+                                Not Started
+                            </span>
+                        </td>
+                        <td><span class="submitted-date">—</span></td>
+                        <td><a href="#" class="action-link">View</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>01 Jan 2026 – 31 Mar 2026</strong></td>
+                        <td>01 Jan 2026</td>
+                        <td>31 Mar 2026</td>
+                        <td>
+                            <span class="badge badge--pending">
+                                <span class="badge__dot"></span>
+                                Pending
+                            </span>
+                        </td>
+                        <td><span class="submitted-date">—</span></td>
+                        <td><a href="#" class="action-link">View</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>01 Oct 2025 – 31 Dec 2025</strong></td>
+                        <td>01 Oct 2025</td>
+                        <td>31 Dec 2025</td>
+                        <td>
+                            <span class="badge badge--submitted">
+                                <span class="badge__dot"></span>
+                                Submitted
+                            </span>
+                        </td>
+                        <td><span class="submitted-date">15 Jan 2026</span></td>
+                        <td><a href="#" class="action-link">View</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>01 Jul 2025 – 30 Sep 2025</strong></td>
+                        <td>01 Jul 2025</td>
+                        <td>30 Sep 2025</td>
+                        <td>
+                            <span class="badge badge--submitted">
+                                <span class="badge__dot"></span>
+                                Submitted
+                            </span>
+                        </td>
+                        <td><span class="submitted-date">12 Oct 2025</span></td>
+                        <td><a href="#" class="action-link">View</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>01 Apr 2025 – 30 Jun 2025</strong></td>
+                        <td>01 Apr 2025</td>
+                        <td>30 Jun 2025</td>
+                        <td>
+                            <span class="badge badge--submitted">
+                                <span class="badge__dot"></span>
+                                Submitted
+                            </span>
+                        </td>
+                        <td><span class="submitted-date">14 Jul 2025</span></td>
+                        <td><a href="#" class="action-link">View</a></td>
+                    </tr>
+                    <tr>
+                        <td><strong>01 Jan 2025 – 31 Mar 2025</strong></td>
+                        <td>01 Jan 2025</td>
+                        <td>31 Mar 2025</td>
+                        <td>
+                            <span class="badge badge--submitted">
+                                <span class="badge__dot"></span>
+                                Submitted
+                            </span>
+                        </td>
+                        <td><span class="submitted-date">10 Apr 2025</span></td>
+                        <td><a href="#" class="action-link">View</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ============================================================
+             SCREEN 2: VAT Submission Detail
+             ============================================================ -->
+        <hr class="section-divider">
+
+        <header class="page-header">
+            <div class="page-header__eyebrow">VAT Submission</div>
+            <h1 class="page-header__title">Period Detail</h1>
+            <p class="page-header__subtitle">VAT breakdown for the selected period.</p>
+        </header>
+
+        <div class="card">
+            <div class="detail-header">
+                <div class="detail-header__period">01 Jan 2026 – 31 Mar 2026</div>
+                <div class="detail-header__dates">Quarter 1, 2026 &nbsp;·&nbsp; 01 January 2026 to 31 March 2026</div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-card--output">
+                    <div class="kpi-card__label">Output VAT</div>
+                    <div class="kpi-card__value">£4,250.00</div>
+                    <div class="kpi-card__sublabel">VAT charged on sales</div>
+                </div>
+                <div class="kpi-card kpi-card--input">
+                    <div class="kpi-card__label">Input VAT</div>
+                    <div class="kpi-card__value">£1,875.50</div>
+                    <div class="kpi-card__sublabel">VAT paid on purchases</div>
+                </div>
+                <div class="kpi-card kpi-card--net">
+                    <div class="kpi-card__label">Net VAT Payable</div>
+                    <div class="kpi-card__value">£2,374.50</div>
+                    <div class="kpi-card__sublabel">Amount owed to HMRC</div>
+                </div>
+            </div>
+
+            <div class="actions-bar">
+                <button class="btn btn--primary">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.3 4.7L6.3 11.7L2.7 8.1L3.8 7L6.3 9.5L12.2 3.6L13.3 4.7Z" fill="currentColor"/>
+                    </svg>
+                    Mark as Submitted
+                </button>
+                <a href="#" class="back-link">
+                    <span class="back-link__arrow">←</span>
+                    Back to Periods
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

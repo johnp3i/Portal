@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Portal.Infrastructure.Entities;
 
 namespace Portal.Infrastructure.Repositories;
@@ -72,6 +73,58 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
                 new SqlParameter("@Label", entity.Label ?? (object)DBNull.Value),
                 new SqlParameter("@IsTotalsTableShown", entity.IsTotalsTableShown)
             );
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<int> InsertAndReturnIdAsync(ProposalSection entity)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [quotation].[ProposalSection]
+                    ([QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown])
+                OUTPUT INSERTED.Id
+                VALUES
+                    (@QuotationId, @Name, @SortOrder, @ColumnConfiguration, @Description, @Notes, @SectionType, @IsEmphasized, @AccentColor, @Label, @IsTotalsTableShown)";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != System.Data.ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@QuotationId", entity.QuotationId));
+                command.Parameters.Add(new SqlParameter("@Name", entity.Name));
+                command.Parameters.Add(new SqlParameter("@SortOrder", entity.SortOrder));
+                command.Parameters.Add(new SqlParameter("@ColumnConfiguration", entity.ColumnConfiguration));
+                command.Parameters.Add(new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@SectionType", entity.SectionType));
+                command.Parameters.Add(new SqlParameter("@IsEmphasized", entity.IsEmphasized));
+                command.Parameters.Add(new SqlParameter("@AccentColor", entity.AccentColor ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Label", entity.Label ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@IsTotalsTableShown", entity.IsTotalsTableShown));
+
+                var result = await command.ExecuteScalarAsync();
+                return (int)result!;
+            }
+            finally
+            {
+                if (connection.State == System.Data.ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception)
         {

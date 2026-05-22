@@ -10,6 +10,10 @@ public class ShareProposalViewModel
     [Required]
     public DateTimeOffset ExpiresAtUtc { get; set; }
 
+    public string? RecipientEmail { get; set; }
+
+    public bool SendEmail { get; set; }
+
     public List<int> HeroLogoIds { get; set; } = new();
 
     public int? MetaLogoId { get; set; }

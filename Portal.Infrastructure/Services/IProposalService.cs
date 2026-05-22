@@ -7,7 +7,7 @@ namespace Portal.Infrastructure.Services;
 /// </summary>
 public interface IProposalService
 {
-    Task<ProposalShare> ShareAsync(int quotationId, DateTimeOffset expiresAtUtc, List<int> heroLogoIds, int? metaLogoId, string userId);
+    Task<ProposalShare> ShareAsync(int quotationId, DateTimeOffset expiresAtUtc, List<int> heroLogoIds, int? metaLogoId, string userId, string? recipientEmail = null, bool sendEmail = true);
     Task<string> PreviewAsync(int quotationId, List<int> heroLogoIds, int? metaLogoId);
     Task<ProposalShare?> GetByTokenAsync(string token);
     Task<ProposalShare?> GetActiveShareByQuotationIdAsync(int quotationId);
