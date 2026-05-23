@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Supplier Dashboard v2 — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #F7FAFC; --bg2: #EEF4F8;
+    --blue: #0D5EA6; --cyan: #57B8E8;
+    --green: #129867; --red: #C24A4A; --gold: #C8912E;
+    --muted: #5E7385; --line: rgba(13,94,166,.10);
+    --shadow: 0 2px 16px rgba(13,94,166,.07);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: #1a2533; }
+
+  /* ── Layout ── */
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: #fff;
+    border-right: 1px solid var(--line);
+    padding: 20px 14px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .brand { padding: 4px 10px 18px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: var(--blue); }
+  .nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 14px 10px 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 12px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    text-decoration: none; transition: background .12s, color .12s;
+  }
+  .nav-item:hover { background: var(--bg2); color: #1a2533; }
+  .nav-item.active { background: var(--blue); color: #fff; }
+
+  /* ── Main ── */
+  .content { padding: 28px 32px; }
+
+  /* ── Topbar ── */
+  .topbar { margin-bottom: 24px; }
+  .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); display: inline-block; }
+  h1 { font-family: 'Manrope', sans-serif; font-size: 34px; font-weight: 800; margin-top: 10px; }
+  .muted { color: var(--muted); }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  .pill-green { background: rgba(18,152,103,.12); color: var(--green); }
+
+  /* ── Cards ── */
+  .glass { background: #fff; border-radius: 20px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+  .card-pad { padding: 20px 24px; }
+  .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+  /* ── KPI row ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .kpi-card { background: var(--bg2); border-radius: 16px; padding: 18px 20px; border: 0; }
+  .kpi-value { font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 800; color: var(--blue); margin-top: 6px; }
+  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* ── Filter bar ── */
+  .filter-bar { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
+  .filter-bar .field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+  .filter-bar select {
+    padding: 8px 32px 8px 12px; border-radius: 10px;
+    border: 1.5px solid rgba(13,94,166,.18); background: #fff;
+    font: 13px/1 'Inter', sans-serif; color: #1a2533;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%235E7385' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    min-width: 220px;
+  }
+  .btn-sm { padding: 8px 16px; border-radius: 10px; border: 1.5px solid rgba(13,94,166,.18); background: #fff; font: 600 13px 'Inter', sans-serif; color: var(--blue); cursor: pointer; }
+
+  /* ── Charts row — compact ── */
+  .charts-row { display: grid; grid-template-columns: 200px 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card { background: var(--bg2); border-radius: 16px; padding: 16px 18px; }
+  .chart-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 10px; }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); padding: 0 12px 10px;
+    border-bottom: 1px solid rgba(13,94,166,.10);
+  }
+  thead th:last-child, thead th:nth-child(4), thead th:nth-child(5) { text-align: right; }
+  tbody tr:hover { background: rgba(13,94,166,.025); }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid rgba(13,94,166,.06); vertical-align: middle; }
+  tbody td:last-child, tbody td:nth-child(4), tbody td:nth-child(5) { text-align: right; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ── Pagination ── */
+  .paging-row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(13,94,166,.08); }
+  .paging-info { font-size: 13px; color: var(--muted); }
+  .page-btn { padding: 5px 11px; border-radius: 8px; border: 1.5px solid rgba(13,94,166,.18); background: #fff; color: var(--blue); font: 700 12px 'Inter', sans-serif; cursor: pointer; }
+  .page-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* ── Back link ── */
+  .btn-outline { display: inline-block; padding: 8px 18px; border-radius: 10px; border: 1.5px solid var(--blue); color: var(--blue); font: 700 13px 'Inter', sans-serif; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">Portal</div>
+    <div class="nav-section">Workspace</div>
+    <a class="nav-item" href="#">Dashboard</a>
+    <a class="nav-item" href="#">My Business</a>
+    <a class="nav-item" href="#">Customers</a>
+    <a class="nav-item" href="#">Quotations</a>
+    <a class="nav-item" href="#">Invoices</a>
+    <a class="nav-item" href="#">Revenue</a>
+    <a class="nav-item active" href="#">Purchases</a>
+    <a class="nav-item" href="#">VAT</a>
+    <a class="nav-item" href="#">Audit</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="eyebrow"><span class="dot"></span> Supplier Dashboard</div>
+      <h1>EKO</h1>
+      <p class="muted" style="margin-top:6px;font-size:14px;">
+        Collaboration since 14 Feb 2024 &nbsp;&bull;&nbsp;
+        <span class="pill pill-green">Active</span>
+      </p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="label">Total Spend (Excl. VAT)</div>
+        <div class="kpi-value">€2,847.62</div>
+        <div class="kpi-sub">Across all periods</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Total Purchases</div>
+        <div class="kpi-value">68</div>
+        <div class="kpi-sub">Since Feb 2024</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Avg Monthly Spend</div>
+        <div class="kpi-value">€142.38</div>
+        <div class="kpi-sub">Over 20 months</div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="field">
+        <label>VAT Period</label>
+        <select>
+          <option>All Time</option>
+          <option>01 Mar 2024 – 31 May 2024</option>
+          <option>01 Jun 2024 – 31 Aug 2024</option>
+          <option>01 Sep 2024 – 30 Nov 2024</option>
+          <option>01 Dec 2024 – 28 Feb 2025</option>
+          <option selected>01 Mar 2025 – 31 May 2025</option>
+          <option>01 Jun 2025 – 31 Aug 2025</option>
+          <option>01 Sep 2025 – 30 Nov 2025</option>
+        </select>
+      </div>
+      <button class="btn-sm">Clear</button>
+    </div>
+
+    <!-- Charts row — compact 3-column -->
+    <div class="charts-row">
+      <!-- Donut — compact -->
+      <div class="chart-card">
+        <div class="chart-title">Spend Share</div>
+        <canvas id="donutChart" height="160"></canvas>
+      </div>
+      <!-- Monthly bar -->
+      <div class="chart-card">
+        <div class="chart-title">Monthly Spend</div>
+        <canvas id="monthlyChart" height="130"></canvas>
+      </div>
+      <!-- Period bar -->
+      <div class="chart-card">
+        <div class="chart-title">Spend per Period</div>
+        <canvas id="periodChart" height="130"></canvas>
+      </div>
+    </div>
+
+    <!-- Purchases Table -->
+    <section class="glass card-pad">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="label">Purchases — Mar–May 2025</div>
+        <span style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:var(--blue);">€485.07</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Excl. VAT</th>
+            <th>VAT</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>08 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€16.81</td><td>€3.19</td><td><strong>€20.00</strong></td></tr>
+          <tr><td>09 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€12.61</td><td>€2.40</td><td><strong>€15.01</strong></td></tr>
+          <tr><td>11 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€9.87</td><td>€1.88</td><td><strong>€11.75</strong></td></tr>
+          <tr><td>14 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€16.81</td><td>€3.19</td><td><strong>€20.00</strong></td></tr>
+          <tr><td>16 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€8.34</td><td>€1.58</td><td><strong>€9.92</strong></td></tr>
+          <tr><td>16 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€8.24</td><td>€1.56</td><td><strong>€9.80</strong></td></tr>
+          <tr><td>20 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€9.35</td><td>€1.78</td><td><strong>€11.13</strong></td></tr>
+          <tr><td>24 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€16.81</td><td>€3.19</td><td><strong>€20.00</strong></td></tr>
+          <tr><td>30 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€7.95</td><td>€1.51</td><td><strong>€9.46</strong></td></tr>
+          <tr><td>31 Mar 2025</td><td>Fuels</td><td>Fuels/Traveling</td><td>€12.61</td><td>€2.39</td><td><strong>€15.00</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="paging-row">
+        <div class="paging-info">Showing 1–10 of 28 purchases</div>
+        <div style="display:flex;gap:4px;">
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Back link -->
+    <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+      <a href="#" class="btn-outline">&larr; Back to Suppliers</a>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// Donut — compact, no legend (too cramped at this size)
+new Chart(document.getElementById('donutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['EKO', 'R.A.M. OIL', 'Database Mart', 'Lidl', 'MCIT', 'Others'],
+    datasets: [{
+      data: [485, 380, 310, 290, 250, 1820],
+      backgroundColor: ['#0D5EA6','#57B8E8','#129867','#C8912E','#7B61FF','#E0E7ED'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': €' + ctx.parsed } }
+    },
+    cutout: '65%'
+  }
+});
+
+// Monthly bar — compact
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Mar', 'Apr', 'May'],
+    datasets: [{
+      data: [162, 135, 188],
+      backgroundColor: '#0D5EA6',
+      borderRadius: 5
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { font: { size: 10 }, color: '#5E7385' }, grid: { color: 'rgba(13,94,166,.06)' } },
+      x: { ticks: { font: { size: 11 }, color: '#5E7385' }, grid: { display: false } }
+    }
+  }
+});
+
+// Period bar — compact, highlight selected
+new Chart(document.getElementById('periodChart'), {
+  type: 'bar',
+  data: {
+    labels: ['M24','J24','S24','D24','M25','J25','S25','D25'],
+    datasets: [{
+      data: [153, 0, 7, 0, 485, 620, 380, 210],
+      backgroundColor: ['#C8E6F7','#C8E6F7','#C8E6F7','#C8E6F7','#0D5EA6','#C8E6F7','#C8E6F7','#C8E6F7'],
+      borderRadius: 5
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { font: { size: 10 }, color: '#5E7385' }, grid: { color: 'rgba(13,94,166,.06)' } },
+      x: { ticks: { font: { size: 10 }, color: '#5E7385' }, grid: { display: false } }
+    }
+  }
+});
+</script>
+</body>
+</html>

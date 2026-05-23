@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
@@ -120,6 +121,76 @@ public class SupplierRepository : GenericStoredProcedureRepository<Supplier>
                 new SqlParameter("@Id", id),
                 new SqlParameter("@BusinessId", businessId)
             );
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<(List<Supplier> Items, int TotalCount)> GetPagedByBusinessIdAsync(
+        int businessId,
+        string? searchTerm,
+        int offset,
+        int pageSize)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [purchase].[Supplier].[Id],
+                       [purchase].[Supplier].[BusinessId],
+                       [purchase].[Supplier].[Name],
+                       [purchase].[Supplier].[IsActive],
+                       [purchase].[Supplier].[CreatedAtUtc],
+                       COUNT(*) OVER() AS [TotalCount]
+                FROM [purchase].[Supplier]
+                WHERE [purchase].[Supplier].[BusinessId] = @BusinessId
+                  AND (@SearchTerm IS NULL OR [purchase].[Supplier].[Name] LIKE '%' + @SearchTerm + '%')
+                ORDER BY [purchase].[Supplier].[Name] ASC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            var results = new List<Supplier>();
+            int totalCount = 0;
+            var connection = _context.Database.GetDbConnection();
+
+            // Escape SQL wildcards in search term
+            string? escapedSearchTerm = searchTerm != null
+                ? searchTerm.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")
+                : null;
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@SearchTerm", (object?)escapedSearchTerm ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Offset", offset));
+                command.Parameters.Add(new SqlParameter("@PageSize", pageSize));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
+                    results.Add(new Supplier
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        BusinessId = reader.GetInt32(reader.GetOrdinal("BusinessId")),
+                        Name = reader.GetString(reader.GetOrdinal("Name")),
+                        IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
+                        CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    await connection.CloseAsync();
+            }
+
+            return (results, totalCount);
         }
         catch (Exception)
         {

@@ -13,6 +13,11 @@
         { "vat", ("Vat", "Index", "VAT") },
         { "audit", ("Audit", "Index", "Audit") }
     };
+
+    var purchaseModuleLinks = new List<(string Controller, string Action, string Label)>
+    {
+        ("Supplier", "Index", "Suppliers")
+    };
 }
 
 @foreach (var module in moduleLinks)
@@ -21,6 +26,15 @@
     {
         var isActive = currentController.Equals(module.Value.Controller, StringComparison.OrdinalIgnoreCase);
         <a class="nav-item @(isActive ? "active" : "")" asp-controller="@module.Value.Controller" asp-action="@module.Value.Action">@module.Value.Label</a>
+    }
+}
+
+@if (Model.TryGetValue("purchase", out var purchaseAccess) && purchaseAccess != "none")
+{
+    foreach (var link in purchaseModuleLinks)
+    {
+        var isActive = currentController.Equals(link.Controller, StringComparison.OrdinalIgnoreCase);
+        <a class="nav-item @(isActive ? "active" : "")" asp-controller="@link.Controller" asp-action="@link.Action">@link.Label</a>
     }
 }
 

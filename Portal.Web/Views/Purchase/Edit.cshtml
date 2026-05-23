@@ -17,29 +17,27 @@
     <form method="post" asp-action="Edit" asp-controller="Purchase" asp-route-id="@Model.Id" asp-antiforgery="true" id="purchaseForm">
         <input type="hidden" asp-for="Id" />
         <div class="form-grid">
-            <!-- Supplier -->
+            <!-- Supplier (autocomplete with inline create) -->
             <div class="field">
                 <label asp-for="SupplierId">Supplier *</label>
-                <select asp-for="SupplierId">
-                    <option value="">-- Select Supplier --</option>
-                    @foreach (var supplier in Model.Suppliers)
-                    {
-                        <option value="@supplier.Id">@supplier.Name</option>
-                    }
-                </select>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="supplierText" placeholder="Type supplier..." autocomplete="off"
+                           value="@(Model.Suppliers.FirstOrDefault(s => s.Id == Model.SupplierId)?.Name)" />
+                    <input type="hidden" asp-for="SupplierId" id="supplierHidden" />
+                    <span class="ac-status" id="supplierStatus"></span>
+                </div>
                 <span asp-validation-for="SupplierId" class="field-validation-error"></span>
             </div>
 
-            <!-- Expense Category -->
+            <!-- Expense Category (autocomplete with inline create) -->
             <div class="field">
                 <label asp-for="ExpenseCategoryId">Expense Category *</label>
-                <select asp-for="ExpenseCategoryId">
-                    <option value="">-- Select Category --</option>
-                    @foreach (var category in Model.ExpenseCategories)
-                    {
-                        <option value="@category.Id">@category.Name</option>
-                    }
-                </select>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="categoryText" placeholder="Type category..." autocomplete="off"
+                           value="@(Model.ExpenseCategories.FirstOrDefault(c => c.Id == Model.ExpenseCategoryId)?.Name)" />
+                    <input type="hidden" asp-for="ExpenseCategoryId" id="categoryHidden" />
+                    <span class="ac-status" id="categoryStatus"></span>
+                </div>
                 <span asp-validation-for="ExpenseCategoryId" class="field-validation-error"></span>
             </div>
 
@@ -139,7 +137,296 @@
 </section>
 
 @section Scripts {
+    <style>
+        .autocomplete-wrapper {
+            position: relative;
+        }
+        .autocomplete-wrapper input[type="text"] {
+            width: 100%;
+            padding-right: 28px;
+        }
+        .autocomplete-wrapper .ac-status {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            pointer-events: none;
+            line-height: 1;
+        }
+        .autocomplete-wrapper .ac-status.resolved {
+            color: #129867;
+        }
+        .autocomplete-wrapper .ac-status.unresolved {
+            color: #C8912E;
+        }
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: #fff;
+            border: 1px solid rgba(13,94,166,.15);
+            border-radius: 10px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 8px 24px rgba(11,27,40,.10);
+            display: none;
+        }
+        .autocomplete-dropdown.open {
+            display: block;
+        }
+        .autocomplete-dropdown .ac-item {
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text);
+        }
+        .autocomplete-dropdown .ac-item.highlighted {
+            background: rgba(13,94,166,.06);
+        }
+        .autocomplete-dropdown .ac-item:hover {
+            background: rgba(13,94,166,.06);
+        }
+        .autocomplete-dropdown .ac-item.ac-create {
+            font-style: italic;
+            color: var(--blue);
+            border-top: 1px solid rgba(13,94,166,.08);
+        }
+        .autocomplete-dropdown .ac-item.ac-create::before {
+            content: "+ ";
+            font-weight: 700;
+        }
+        .autocomplete-dropdown .ac-empty {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #5E7385;
+            font-style: italic;
+        }
+    </style>
     <script>
+        // ─── Data arrays (from server) ─────────────────────────────────────────
+        var suppliers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Suppliers.Select(s => new { s.Id, s.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+        var categories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategories.Select(c => new { c.Id, c.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        // ─── Autocomplete Engine ───────────────────────────────────────────────
+        function initAutocomplete(input, hiddenInput, statusEl, getItems, createEndpoint, itemsArrayRef) {
+            var dropdown = document.createElement('div');
+            dropdown.className = 'autocomplete-dropdown';
+            input.parentNode.appendChild(dropdown);
+
+            var highlightedIndex = -1;
+            var currentItems = [];
+            var blurTimeout = null;
+
+            function getFilteredItems(query) {
+                var items = getItems();
+                if (!query) return items.slice();
+                var lower = query.toLowerCase();
+                return items.filter(function(item) {
+                    return item.name.toLowerCase().indexOf(lower) !== -1;
+                });
+            }
+
+            function hasExactMatch(query) {
+                if (!query) return false;
+                var lower = query.toLowerCase();
+                return getItems().some(function(item) {
+                    return item.name.toLowerCase() === lower;
+                });
+            }
+
+            function renderDropdown(query) {
+                var filtered = getFilteredItems(query);
+                var showCreate = query && query.trim() !== '' && !hasExactMatch(query);
+                currentItems = [];
+                highlightedIndex = -1;
+                dropdown.innerHTML = '';
+
+                if (filtered.length === 0 && !showCreate) {
+                    dropdown.innerHTML = '<div class="ac-empty">No matches found</div>';
+                    dropdown.classList.add('open');
+                    return;
+                }
+
+                filtered.forEach(function(item) {
+                    var div = document.createElement('div');
+                    div.className = 'ac-item';
+                    div.textContent = item.name;
+                    div.setAttribute('data-id', item.id);
+                    div.setAttribute('data-name', item.name);
+                    currentItems.push({ el: div, id: item.id, name: item.name, isCreate: false });
+                    dropdown.appendChild(div);
+                });
+
+                if (showCreate) {
+                    var createDiv = document.createElement('div');
+                    createDiv.className = 'ac-item ac-create';
+                    createDiv.textContent = 'Create "' + query.trim() + '"';
+                    createDiv.setAttribute('data-create-name', query.trim());
+                    currentItems.push({ el: createDiv, id: null, name: query.trim(), isCreate: true });
+                    dropdown.appendChild(createDiv);
+                }
+
+                dropdown.classList.add('open');
+            }
+
+            function selectItem(id, name) {
+                input.value = name;
+                hiddenInput.value = id;
+                dropdown.classList.remove('open');
+                updateStatus(true);
+            }
+
+            function updateStatus(resolved) {
+                if (resolved) {
+                    statusEl.textContent = '\u2713';
+                    statusEl.className = 'ac-status resolved';
+                } else if (input.value.trim() !== '') {
+                    statusEl.textContent = '\u26A0';
+                    statusEl.className = 'ac-status unresolved';
+                    hiddenInput.value = '';
+                } else {
+                    statusEl.textContent = '';
+                    statusEl.className = 'ac-status';
+                    hiddenInput.value = '';
+                }
+            }
+
+            async function createItem(name) {
+                BlockUI.show('Creating...');
+                var formData = new FormData();
+                formData.append('Name', name);
+
+                try {
+                    var response = await fetch(createEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        },
+                        body: formData
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success && data.id) {
+                        itemsArrayRef.push({ id: data.id, name: name });
+                        selectItem(data.id, name);
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.message || 'Failed to create record.',
+                            icon: 'error',
+                            confirmButtonColor: '#0D5EA6'
+                        });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An unexpected error occurred while creating the record.',
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            }
+
+            function highlightItem(index) {
+                currentItems.forEach(function(item, i) {
+                    if (i === index) {
+                        item.el.classList.add('highlighted');
+                    } else {
+                        item.el.classList.remove('highlighted');
+                    }
+                });
+                highlightedIndex = index;
+                if (index >= 0 && currentItems[index]) {
+                    currentItems[index].el.scrollIntoView({ block: 'nearest' });
+                }
+            }
+
+            input.addEventListener('input', function() {
+                renderDropdown(input.value);
+                var val = input.value.trim().toLowerCase();
+                var match = getItems().find(function(item) {
+                    return item.name.toLowerCase() === val;
+                });
+                if (match) {
+                    hiddenInput.value = match.id;
+                    updateStatus(true);
+                } else {
+                    updateStatus(false);
+                }
+            });
+
+            input.addEventListener('focus', function() {
+                renderDropdown(input.value);
+            });
+
+            input.addEventListener('blur', function() {
+                blurTimeout = setTimeout(function() {
+                    dropdown.classList.remove('open');
+                }, 180);
+            });
+
+            dropdown.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                if (blurTimeout) clearTimeout(blurTimeout);
+
+                var target = e.target.closest('.ac-item');
+                if (!target) return;
+
+                if (target.classList.contains('ac-create')) {
+                    var createName = target.getAttribute('data-create-name');
+                    createItem(createName);
+                } else {
+                    var id = parseInt(target.getAttribute('data-id'));
+                    var name = target.getAttribute('data-name');
+                    selectItem(id, name);
+                }
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (!dropdown.classList.contains('open') || currentItems.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    var next = highlightedIndex + 1;
+                    if (next >= currentItems.length) next = 0;
+                    highlightItem(next);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    var prev = highlightedIndex - 1;
+                    if (prev < 0) prev = currentItems.length - 1;
+                    highlightItem(prev);
+                } else if (e.key === 'Enter') {
+                    if (highlightedIndex >= 0 && highlightedIndex < currentItems.length) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var selected = currentItems[highlightedIndex];
+                        if (selected.isCreate) {
+                            createItem(selected.name);
+                        } else {
+                            selectItem(selected.id, selected.name);
+                        }
+                    }
+                } else if (e.key === 'Escape') {
+                    dropdown.classList.remove('open');
+                }
+            });
+
+            if (hiddenInput.value && input.value) {
+                updateStatus(true);
+            }
+        }
+
+        // ─── Bidirectional Amount Calculation ──────────────────────────────────
         var lastEditedField = 'amount';
 
         function getSelectedOriginTypeId() {
@@ -277,7 +564,28 @@
             clearComputed(document.getElementById('totalAmountInput'));
         }
 
+        // ─── Initialize on page load ──────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
+            // Init supplier autocomplete
+            initAutocomplete(
+                document.getElementById('supplierText'),
+                document.getElementById('supplierHidden'),
+                document.getElementById('supplierStatus'),
+                function() { return suppliers; },
+                '/Supplier/Create',
+                suppliers
+            );
+
+            // Init category autocomplete
+            initAutocomplete(
+                document.getElementById('categoryText'),
+                document.getElementById('categoryHidden'),
+                document.getElementById('categoryStatus'),
+                function() { return categories; },
+                '/ExpenseCategory/Create',
+                categories
+            );
+
             onOriginTypeChanged();
         });
     </script>

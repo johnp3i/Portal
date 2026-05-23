@@ -17,6 +17,7 @@ Last Updated: 2026-05-20
 | ✅ | Document Soft Delete — IsDeleted/DeletedAtUtc columns, soft-delete service, two-step confirmation UI, listing filters | 2026-05-18 |
 | ✅ | Purchase & Expense Tracking — Suppliers, categories, purchases with Origin Type (Domestic/EU RC/Non-EU), bulk entry with autocomplete+inline create, CSV import, bidirectional amount calculation, property-based tests | 2026-05-20 |
 | ✅ | VAT Submissions — Period generation from registration config, output/input/net VAT computation, submission tracking, mark-as-submitted workflow, audit logging | 2025-07-17 |
+| ✅ | Supplier Dashboard — Analytics page with KPIs, spend share donut chart, monthly/period bar charts, paginated purchases table, period filter, sidebar navigation | 2025-07-22 |
 
 ---
 
@@ -181,12 +182,32 @@ Last Updated: 2026-05-20
 
 ---
 
+### Module 8: Customer Statement of Account
+
+**Goal:** Generate a per-customer statement showing all invoices, payments, and running balance over a date range — available as an on-screen view and a downloadable PDF.
+
+| Done | # | Task | Dependencies | Completed |
+|------|---|------|-------------|-----------|
+| [ ] | 8.1 | Create ICustomerStatementService (query invoices + payments for a customer within date range) | Module 4 | |
+| [ ] | 8.2 | Build StatementLineDto model (date, description, debit, credit, running balance) | 8.1 | |
+| [ ] | 8.3 | Implement statement generation logic (opening balance, invoice debits, payment credits, closing balance) | 8.1, 8.2 | |
+| [ ] | 8.4 | Create CustomerStatementController (Index with customer/date filters, Generate action) | 8.3 | |
+| [ ] | 8.5 | Build Customer Statement UI — filter panel (customer dropdown, date from/to) | 8.4 | |
+| [ ] | 8.6 | Build Customer Statement UI — statement table (date, description, debit, credit, balance columns) | 8.4 | |
+| [ ] | 8.7 | Build statement header section (customer details, statement period, opening/closing balance summary) | 8.6 | |
+| [ ] | 8.8 | Implement PDF export (HTML-to-PDF using existing rendering pattern or DinkToPdf) | 8.6 | |
+| [ ] | 8.9 | Add "Download PDF" and "Email Statement" action buttons | 8.8 | |
+| [ ] | 8.10 | Add statement access from Customer detail and Revenue Control screens | 8.4 | |
+| [ ] | 8.11 | Add audit logging for statement generation events | 8.4 | |
+
+---
+
 ## Suggested Execution Order
 
 ```
 Module 0 (Foundation) → Module 1 (Customers) → Module 2 (Quotations) →
 Module 3 (Invoicing) → Module 4 (Revenue Control) → Module 5 (Purchases) →
-Module 6 (VAT) → Module 7 (Audit/Admin)
+Module 6 (VAT) → Module 7 (Audit/Admin) → Module 8 (Customer Statements)
 ```
 
 Modules 5 and 6 can run in parallel with Module 4 since they share no direct dependencies beyond the foundation.
@@ -202,7 +223,6 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [ ] | ERP Integration | Export to external accounting systems | Modules 3-6 complete | |
 | [ ] | COM Pipeline | Canonical Operational Model ingestion | All Phase 1 modules | |
 | [ ] | Credit Notes | Issue credit against invoices | Module 4 | |
-| [ ] | Customer Statements | Periodic account summaries | Module 4 | |
 | [ ] | Bank Feed Integration | Automated payment matching | Module 4 | |
 | [ ] | Reminder Workflow | Automated overdue notifications | Module 4 | |
 | [ ] | Mobile Responsive Layout | Hamburger menu, collapsible sidebar, mobile-friendly topbar with action buttons, proper "My Account" placement on mobile | Module 0 | |

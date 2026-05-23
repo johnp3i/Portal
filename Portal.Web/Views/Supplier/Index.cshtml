@@ -1,4 +1,4 @@
-@model List<Portal.Infrastructure.Entities.Supplier>
+@model Portal.Infrastructure.Models.PagedResult<Portal.Infrastructure.Entities.Supplier>
 @{
     ViewData["Title"] = "Suppliers";
 }
@@ -14,8 +14,26 @@
     </div>
 </div>
 
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" action="/Supplier">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:360px;">
+                <label for="search">Supplier Name</label>
+                <input type="text" id="search" name="search"
+                       value="@ViewData["SearchTerm"]"
+                       placeholder="Search by name..."
+                       maxlength="200" />
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="/Supplier" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
+</section>
+
 <section class="glass card-pad">
-    @if (Model != null && Model.Count > 0)
+    @if (Model.Items.Any())
     {
         <table>
             <thead>
@@ -27,7 +45,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var supplier in Model)
+                @foreach (var supplier in Model.Items)
                 {
                     <tr id="supplier-row-@supplier.Id">
                         <td><strong>@supplier.Name</strong></td>
@@ -47,6 +65,7 @@
                                 <button type="button" style="background:none;border:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;" onclick="openEditModal(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Edit</button>
                                 @if (supplier.IsActive)
                                 {
+                                    <a href="/Supplier/Dashboard/@supplier.Id" target="_blank" style="background:linear-gradient(135deg,#0D5EA6,#57B8E8);color:#fff;font-weight:700;font-size:12px;text-decoration:none;font-family:inherit;padding:6px 14px;border-radius:8px;display:inline-block;">Dashboard</a>
                                     <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" onclick="confirmDeactivate(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Deactivate</button>
                                 }
                             </div>
@@ -55,11 +74,12 @@
                 }
             </tbody>
         </table>
+        @await Html.PartialAsync("_PagingControl")
     }
     else
     {
         <div class="empty-state">
-            <p>No suppliers found. Create your first supplier to get started.</p>
+            <p>No suppliers found for the current search.</p>
         </div>
     }
 </section>

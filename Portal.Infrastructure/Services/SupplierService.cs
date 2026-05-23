@@ -28,6 +28,46 @@ public class SupplierService : ISupplierService
         return await _supplierRepository.GetAllByBusinessIdAsync(_currentTenantService.CurrentBusinessId);
     }
 
+    public async Task<PagedResult<Supplier>> GetSuppliersPagedAsync(string? searchTerm = null, int page = 1, int pageSize = 15)
+    {
+        // Clamp page to minimum 1
+        if (page < 1) page = 1;
+
+        // Clamp pageSize to range [1, 100], default 15
+        if (pageSize < 1 || pageSize > 100) pageSize = 15;
+
+        int offset = (page - 1) * pageSize;
+
+        var (items, totalCount) = await _supplierRepository.GetPagedByBusinessIdAsync(
+            _currentTenantService.CurrentBusinessId,
+            searchTerm,
+            offset,
+            pageSize);
+
+        var result = new PagedResult<Supplier>
+        {
+            Items = items,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
+
+        // If requested page exceeds total pages, clamp to page 1
+        if (page > result.TotalPages && result.TotalCount > 0)
+        {
+            var (clampedItems, _) = await _supplierRepository.GetPagedByBusinessIdAsync(
+                _currentTenantService.CurrentBusinessId,
+                searchTerm,
+                0,
+                pageSize);
+
+            result.Items = clampedItems;
+            result.CurrentPage = 1;
+        }
+
+        return result;
+    }
+
     public async Task<List<Supplier>> GetActiveSuppliersAsync()
     {
         var suppliers = await _supplierRepository.GetAllByBusinessIdAsync(_currentTenantService.CurrentBusinessId);

@@ -101,6 +101,7 @@ builder.Services.AddScoped<IInvoiceSharingService, InvoiceSharingService>();
 builder.Services.AddScoped<IDocumentDuplicationService, DocumentDuplicationService>();
 builder.Services.AddScoped<IDocumentSoftDeleteService, DocumentSoftDeleteService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<ISupplierDashboardService, SupplierDashboardService>();
 builder.Services.AddScoped<ExpenseCategoryRepository>(sp =>
     new ExpenseCategoryRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<PurchaseRepository>(sp =>
