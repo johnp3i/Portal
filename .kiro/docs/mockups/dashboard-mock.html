@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Mock — Portal</title>
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --border: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 32px 40px;
+            line-height: 1.5;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 42px; font-weight: 800; letter-spacing: -0.02em; }
+        h2 { font-family: 'Manrope', sans-serif; font-size: 20px; font-weight: 700; }
+        h3 { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; }
+        .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); }
+        .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); margin-right: 6px; }
+        .muted { color: var(--muted); font-size: 14px; }
+        .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+        .btn { padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; border: none; cursor: pointer; }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-secondary { background: #fff; color: var(--blue); border: 1px solid #d0d9e2; }
+        .btn-outline { background: transparent; color: var(--blue); border: 1px solid #d0d9e2; }
+
+        /* Cards */
+        .glass { background: #fff; border-radius: 20px; box-shadow: 0 2px 12px rgba(13,94,166,.04); border: 1px solid var(--border); }
+        .card-pad { padding: 24px; }
+        .surface { background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(13,94,166,.03); border: 1px solid var(--border); padding: 20px 24px; }
+
+        /* Grid */
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 24px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 24px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; margin-bottom: 24px; }
+
+        /* KPI */
+        .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+        .metric { font-family: 'Manrope', sans-serif; font-size: 32px; font-weight: 800; color: var(--blue); margin-bottom: 4px; }
+        .metric-sm { font-family: 'Manrope', sans-serif; font-size: 24px; font-weight: 800; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; }
+        th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        td.right, th.right { text-align: right; }
+
+        /* Pills */
+        .pill { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .pill-green { background: #E6F7F0; color: var(--success); }
+        .pill-gold { background: #FFF5E0; color: var(--warning); }
+        .pill-blue { background: #E3F0FF; color: var(--blue); }
+        .pill-red { background: #FDEAEA; color: var(--danger); }
+        .pill-cyan { background: #E8F8FD; color: #1A8AB5; }
+
+        /* Chart placeholder */
+        .chart-placeholder {
+            background: linear-gradient(135deg, var(--bg2) 0%, #fff 100%);
+            border-radius: 12px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 13px;
+            font-style: italic;
+            border: 1px dashed #d0d9e2;
+        }
+
+        /* Section spacing */
+        .section-title { margin-bottom: 16px; }
+        .section-gap { margin-top: 24px; }
+
+        /* Quick actions */
+        .quick-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+        .quick-action {
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 20px; border-radius: 12px;
+            background: #fff; border: 1px solid var(--border);
+            text-decoration: none; color: var(--text);
+            font-size: 14px; font-weight: 600;
+            transition: box-shadow 0.2s;
+        }
+        .quick-action:hover { box-shadow: 0 4px 16px rgba(13,94,166,.08); }
+        .quick-action .icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .icon-blue { background: #E3F0FF; color: var(--blue); }
+        .icon-green { background: #E6F7F0; color: var(--success); }
+        .icon-gold { background: #FFF5E0; color: var(--warning); }
+        .icon-red { background: #FDEAEA; color: var(--danger); }
+
+        /* Overdue row highlight */
+        tr.overdue td { background: #FFF8F8; }
+    </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Operations Workspace</div>
+        <h1 style="margin-top:14px;">Dashboard</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;">Track quotations, revenue, expenses, and operational activity in one workspace.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-secondary" href="#">View Quotations</a>
+        <a class="btn btn-primary" href="#">New Quotation</a>
+    </div>
+</div>
+
+<!-- ROW 1: PRIMARY KPIs -->
+<div class="grid-4">
+    <section class="surface">
+        <div class="label">Draft Quotations</div>
+        <div class="metric">3</div>
+        <div class="muted">Awaiting review</div>
+    </section>
+    <section class="surface">
+        <div class="label">Sent This Month</div>
+        <div class="metric">7</div>
+        <div class="muted">€24,850.00 pipeline value</div>
+    </section>
+    <section class="surface">
+        <div class="label">Accepted</div>
+        <div class="metric">4</div>
+        <div class="muted">57% acceptance rate</div>
+    </section>
+    <section class="surface">
+        <div class="label">Active Customers</div>
+        <div class="metric">21</div>
+        <div class="muted">In registry</div>
+    </section>
+</div>
+
+<!-- ROW 2: REVENUE KPIs -->
+<div class="grid-4">
+    <section class="surface" style="border-left: 4px solid var(--success);">
+        <div class="label">Revenue This Month</div>
+        <div class="metric-sm" style="color:var(--success);">€12,450.00</div>
+        <div class="muted">8 payments received</div>
+    </section>
+    <section class="surface" style="border-left: 4px solid var(--danger);">
+        <div class="label">Outstanding</div>
+        <div class="metric-sm" style="color:var(--danger);">€18,320.50</div>
+        <div class="muted">12 unpaid invoices</div>
+    </section>
+    <section class="surface" style="border-left: 4px solid var(--warning);">
+        <div class="label">Overdue</div>
+        <div class="metric-sm" style="color:var(--warning);">€4,780.00</div>
+        <div class="muted">3 invoices past due</div>
+    </section>
+    <section class="surface" style="border-left: 4px solid var(--blue);">
+        <div class="label">Expenses This Month</div>
+        <div class="metric-sm" style="color:var(--blue);">€6,230.00</div>
+        <div class="muted">14 purchases recorded</div>
+    </section>
+</div>
+
+<!-- ROW 3: CHARTS -->
+<div class="grid-2 section-gap">
+    <section class="glass card-pad">
+        <h3 class="section-title">Monthly Revenue vs Expenses</h3>
+        <div class="chart-placeholder">
+            📊 Bar chart — Revenue (green) vs Expenses (blue) per month, last 6 months
+        </div>
+    </section>
+    <section class="glass card-pad">
+        <h3 class="section-title">Invoice Status Breakdown</h3>
+        <div class="chart-placeholder">
+            🍩 Donut chart — Paid / Partial / Unpaid / Overdue distribution
+        </div>
+    </section>
+</div>
+
+<!-- ROW 4: RECENT INVOICES + OVERDUE -->
+<div class="grid-2 section-gap">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Invoices</h3>
+            <a href="#" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th class="right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>INV-1-00012</strong></td>
+                    <td>Orestis Craft Center</td>
+                    <td><span class="pill pill-green">Paid</span></td>
+                    <td class="right">€1,420.00</td>
+                </tr>
+                <tr>
+                    <td><strong>INV-1-00011</strong></td>
+                    <td>Limassol Marina Ltd</td>
+                    <td><span class="pill pill-gold">Partial</span></td>
+                    <td class="right">€3,850.00</td>
+                </tr>
+                <tr>
+                    <td><strong>INV-1-00010</strong></td>
+                    <td>Cyprus Tech Solutions</td>
+                    <td><span class="pill pill-blue">Unpaid</span></td>
+                    <td class="right">€2,100.00</td>
+                </tr>
+                <tr>
+                    <td><strong>INV-1-00009</strong></td>
+                    <td>Paphos Hospitality</td>
+                    <td><span class="pill pill-green">Paid</span></td>
+                    <td class="right">€890.00</td>
+                </tr>
+                <tr>
+                    <td><strong>INV-1-00008</strong></td>
+                    <td>Nicosia Consulting</td>
+                    <td><span class="pill pill-red">Overdue</span></td>
+                    <td class="right">€4,780.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Overdue Invoices</h3>
+            <a href="#" style="font-size:13px;font-weight:700;color:var(--danger);text-decoration:none;">View All →</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Due Date</th>
+                    <th class="right">Outstanding</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="overdue">
+                    <td><strong>INV-1-00008</strong></td>
+                    <td>Nicosia Consulting</td>
+                    <td style="color:var(--danger);font-weight:600;">12 May 2026</td>
+                    <td class="right" style="color:var(--danger);font-weight:700;">€4,780.00</td>
+                </tr>
+                <tr class="overdue">
+                    <td><strong>INV-1-00005</strong></td>
+                    <td>Larnaca Imports</td>
+                    <td style="color:var(--danger);font-weight:600;">28 Apr 2026</td>
+                    <td class="right" style="color:var(--danger);font-weight:700;">€1,250.00</td>
+                </tr>
+                <tr class="overdue">
+                    <td><strong>INV-1-00003</strong></td>
+                    <td>Famagusta Trading</td>
+                    <td style="color:var(--danger);font-weight:600;">15 Apr 2026</td>
+                    <td class="right" style="color:var(--danger);font-weight:700;">€2,340.00</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="margin-top:14px;padding:12px 16px;background:#FFF8F8;border-radius:10px;border:1px solid #FDEAEA;">
+            <p style="font-size:13px;color:var(--danger);font-weight:600;margin:0;">⚠️ 3 invoices are overdue totalling €8,370.00</p>
+        </div>
+    </section>
+</div>
+
+<!-- ROW 5: RECENT PAYMENTS + RECENT QUOTATIONS -->
+<div class="grid-2 section-gap">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Payments</h3>
+            <a href="#" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">Revenue →</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Method</th>
+                    <th class="right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>24 May 2026</td>
+                    <td>Orestis Craft Center</td>
+                    <td><span class="pill pill-cyan">Bank Transfer</span></td>
+                    <td class="right" style="color:var(--success);font-weight:700;">€1,420.00</td>
+                </tr>
+                <tr>
+                    <td>22 May 2026</td>
+                    <td>Paphos Hospitality</td>
+                    <td><span class="pill pill-cyan">Bank Transfer</span></td>
+                    <td class="right" style="color:var(--success);font-weight:700;">€890.00</td>
+                </tr>
+                <tr>
+                    <td>20 May 2026</td>
+                    <td>Limassol Marina Ltd</td>
+                    <td><span class="pill pill-gold">Cheque</span></td>
+                    <td class="right" style="color:var(--success);font-weight:700;">€2,000.00</td>
+                </tr>
+                <tr>
+                    <td>18 May 2026</td>
+                    <td>Cyprus Tech Solutions</td>
+                    <td><span class="pill pill-cyan">Bank Transfer</span></td>
+                    <td class="right" style="color:var(--success);font-weight:700;">€3,500.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Quotations</h3>
+            <a href="#" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th class="right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>QT-1-00015</strong></td>
+                    <td>Orestis Craft Center</td>
+                    <td><span class="pill pill-green">Accepted</span></td>
+                    <td class="right">€5,200.00</td>
+                </tr>
+                <tr>
+                    <td><strong>QT-1-00014</strong></td>
+                    <td>Limassol Marina Ltd</td>
+                    <td><span class="pill pill-blue">Sent</span></td>
+                    <td class="right">€8,400.00</td>
+                </tr>
+                <tr>
+                    <td><strong>QT-1-00013</strong></td>
+                    <td>Nicosia Consulting</td>
+                    <td><span class="pill pill-gold">Draft</span></td>
+                    <td class="right">€3,150.00</td>
+                </tr>
+                <tr>
+                    <td><strong>QT-1-00012</strong></td>
+                    <td>Paphos Hospitality</td>
+                    <td><span class="pill pill-blue">Sent</span></td>
+                    <td class="right">€2,900.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<!-- ROW 6: QUICK ACTIONS -->
+<section class="glass card-pad section-gap">
+    <h3 class="section-title">Quick Actions</h3>
+    <div class="quick-actions">
+        <a href="#" class="quick-action">
+            <div class="icon icon-blue">📝</div>
+            <span>New Quotation</span>
+        </a>
+        <a href="#" class="quick-action">
+            <div class="icon icon-green">💰</div>
+            <span>Record Payment</span>
+        </a>
+        <a href="#" class="quick-action">
+            <div class="icon icon-gold">📄</div>
+            <span>Create Invoice</span>
+        </a>
+        <a href="#" class="quick-action">
+            <div class="icon icon-blue">📊</div>
+            <span>Customer Statement</span>
+        </a>
+        <a href="#" class="quick-action">
+            <div class="icon icon-red">🧾</div>
+            <span>Record Purchase</span>
+        </a>
+        <a href="#" class="quick-action">
+            <div class="icon icon-green">👤</div>
+            <span>New Customer</span>
+        </a>
+    </div>
+</section>
+
+<!-- ROW 7: UPCOMING VAT + TOP CUSTOMERS -->
+<div class="grid-2 section-gap">
+    <section class="glass card-pad">
+        <h3 class="section-title">VAT Summary</h3>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;">
+            <div style="flex:1;min-width:140px;padding:14px;background:var(--bg2);border-radius:12px;">
+                <div class="label">Output VAT</div>
+                <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:var(--warning);">€3,420.00</div>
+                <div class="muted" style="font-size:12px;">Current period</div>
+            </div>
+            <div style="flex:1;min-width:140px;padding:14px;background:var(--bg2);border-radius:12px;">
+                <div class="label">Input VAT</div>
+                <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:var(--success);">€1,180.00</div>
+                <div class="muted" style="font-size:12px;">Current period</div>
+            </div>
+            <div style="flex:1;min-width:140px;padding:14px;background:var(--bg2);border-radius:12px;">
+                <div class="label">Net Payable</div>
+                <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:var(--danger);">€2,240.00</div>
+                <div class="muted" style="font-size:12px;">Due 10 Jul 2026</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="glass card-pad">
+        <h3 class="section-title">Top Customers by Revenue</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th class="right">Total Invoiced</th>
+                    <th class="right">Total Paid</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Orestis Craft Center</strong></td>
+                    <td class="right">€18,450.00</td>
+                    <td class="right" style="color:var(--success);">€16,200.00</td>
+                </tr>
+                <tr>
+                    <td><strong>Limassol Marina Ltd</strong></td>
+                    <td class="right">€12,800.00</td>
+                    <td class="right" style="color:var(--success);">€8,950.00</td>
+                </tr>
+                <tr>
+                    <td><strong>Cyprus Tech Solutions</strong></td>
+                    <td class="right">€9,600.00</td>
+                    <td class="right" style="color:var(--success);">€9,600.00</td>
+                </tr>
+                <tr>
+                    <td><strong>Paphos Hospitality</strong></td>
+                    <td class="right">€7,200.00</td>
+                    <td class="right" style="color:var(--success);">€5,890.00</td>
+                </tr>
+                <tr>
+                    <td><strong>Nicosia Consulting</strong></td>
+                    <td class="right">€6,100.00</td>
+                    <td class="right" style="color:var(--success);">€1,320.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</div>
+
+</body>
+</html>

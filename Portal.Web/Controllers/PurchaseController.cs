@@ -75,12 +75,17 @@ public class PurchaseController : Controller
         var categories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
         var originTypes = await _dbContext.PurchaseOriginTypes.ToListAsync();
 
+        var profile = await _dbContext.BusinessProfiles
+            .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+        var currencySymbol = profile?.CurrencySymbol ?? "€";
+
         var model = new PurchaseListViewModel
         {
             Purchases = purchases,
             Suppliers = suppliers,
             ExpenseCategories = categories,
             OriginTypes = originTypes,
+            CurrencySymbol = currencySymbol,
             SupplierId = supplierId,
             ExpenseCategoryId = expenseCategoryId,
             PurchaseOriginTypeId = purchaseOriginTypeId,

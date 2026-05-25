@@ -8,6 +8,7 @@ public class PurchaseListViewModel
     public List<Supplier> Suppliers { get; set; } = new();
     public List<ExpenseCategory> ExpenseCategories { get; set; } = new();
     public List<PurchaseOriginType> OriginTypes { get; set; } = new();
+    public string CurrencySymbol { get; set; } = "€";
 
     // Filter state
     public int? SupplierId { get; set; }

@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
+using System.Security.Claims;
 
 namespace Portal.Infrastructure.Services;
 
@@ -16,6 +18,8 @@ public class QuotationService : IQuotationService
     private readonly CustomerRepository _customerRepository;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly ILineItemCatalogService _lineItemCatalogService;
+    private readonly IProductService _productService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<QuotationService> _logger;
 
     private static readonly Dictionary<int, List<int>> ValidTransitionsMap = new()
@@ -42,6 +46,8 @@ public class QuotationService : IQuotationService
         CustomerRepository customerRepository,
         ICurrentTenantService currentTenantService,
         ILineItemCatalogService lineItemCatalogService,
+        IProductService productService,
+        IHttpContextAccessor httpContextAccessor,
         ILogger<QuotationService> logger)
     {
         _quotationRepository = quotationRepository;
@@ -50,6 +56,8 @@ public class QuotationService : IQuotationService
         _customerRepository = customerRepository;
         _currentTenantService = currentTenantService;
         _lineItemCatalogService = lineItemCatalogService;
+        _productService = productService;
+        _httpContextAccessor = httpContextAccessor;
         _logger = logger;
     }
 
@@ -274,7 +282,7 @@ public class QuotationService : IQuotationService
         }
     }
 
-    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null)
+    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null)
     {
         if (costPrice.HasValue && costPrice.Value < 0)
         {
@@ -313,10 +321,21 @@ public class QuotationService : IQuotationService
             LineTotal = lineTotal,
             SortOrder = nextSortOrder,
             ReferenceUrl = referenceUrl,
-            Subtitle = subtitle
+            Subtitle = subtitle,
+            ProductCode = productCode
         };
 
         await _quotationLineRepository.InsertAsync(line);
+
+        // Auto-populate product catalog after line item persistence
+        var addLineUserId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? string.Empty;
+        await _productService.AutoPopulateFromLineItemAsync(
+            productCode,
+            description,
+            unitPrice,
+            vatRate,
+            addLineUserId);
 
         await RecalculateQuotationTotalsAsync(quotation);
 

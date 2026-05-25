@@ -332,7 +332,7 @@ public class QuotationController : Controller
 
         try
         {
-            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice);
+            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, productCode: model.ProductCode);
         }
         catch (ArgumentException ex)
         {

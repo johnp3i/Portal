@@ -44,7 +44,8 @@ public interface IInvoiceService
     // Line management
     Task<InvoiceLine> AddLineAsync(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
-        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId);
+        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
+        string? productCode = null);
     Task UpdateLineAsync(int lineId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
         decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId);

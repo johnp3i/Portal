@@ -34,4 +34,7 @@ public class QuotationLineFormViewModel
 
     [MaxLength(1000)]
     public string? Subtitle { get; set; }
+
+    [MaxLength(50)]
+    public string? ProductCode { get; set; }
 }

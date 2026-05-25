@@ -82,6 +82,24 @@ public class PortalEmailService : IEmailService
         }
     }
 
+    public async Task SendStatementEmailAsync(string recipientEmail, string customerName, string businessName, byte[] pdfBytes, string filename)
+    {
+        try
+        {
+            var subject = $"Statement of Account from {businessName}";
+            var htmlBody = BuildStatementEmailHtml(customerName, businessName);
+
+            await _emailSender.SendEmailWithAttachmentAsync(recipientEmail, subject, htmlBody, EmailDepartmentEnum.Invoices, pdfBytes, filename, "application/pdf");
+
+            _logger.LogInformation("Statement email sent to {Email} for customer {CustomerName}", recipientEmail, customerName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send statement email to {Email}", recipientEmail);
+            throw;
+        }
+    }
+
     private static string BuildInvitationHtml(string invitationLink, string businessName)
     {
         return $@"<!DOCTYPE html>
@@ -288,6 +306,57 @@ public class PortalEmailService : IEmailService
                             </table>
                             <p style=""margin:24px 0 0 0;font-size:13px;color:#5E7385;line-height:1.6;"">
                                 This link will expire on {expirationFormatted}. After that date, you'll need to request a new link from {System.Net.WebUtility.HtmlEncode(businessName)}.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""background-color:#0B1B28;padding:28px 40px;text-align:center;"">
+                            <p style=""margin:0 0 8px 0;font-size:14px;font-weight:700;color:#FFFFFF;"">{System.Net.WebUtility.HtmlEncode(businessName)}</p>
+                            <p style=""margin:0;font-size:11px;color:#5E6D7A;letter-spacing:0.08em;"">Knowledge &middot; Professionalism &middot; Innovation</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private static string BuildStatementEmailHtml(string customerName, string businessName)
+    {
+        return $@"<!DOCTYPE html>
+<html lang=""en"">
+<head><meta charset=""UTF-8"" /><meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" /></head>
+<body style=""margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#F2F6FA;"">
+    <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color:#F2F6FA;"">
+        <tr>
+            <td align=""center"" style=""padding:40px 16px;"">
+                <table role=""presentation"" width=""600"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""max-width:600px;width:100%;background-color:#FFFFFF;border-radius:16px;overflow:hidden;"">
+                    <tr>
+                        <td style=""background-color:#F7FAFC;padding:32px 40px;text-align:center;border-bottom:1px solid #E2EBF3;"">
+                            <img src=""https://www.3inventors.com/img/logo_blue_web_toolbar_oi.png"" alt=""3 Inventors"" width=""220"" style=""display:block;margin:0 auto;max-width:220px;height:auto;"" />
+                        </td>
+                    </tr>
+                    <tr><td style=""height:4px;background-color:#0D5EA6;""></td></tr>
+                    <tr>
+                        <td style=""padding:40px;"">
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+                                <tr>
+                                    <td style=""background-color:#EBF5FF;border-radius:20px;padding:6px 16px;"">
+                                        <span style=""font-size:12px;font-weight:700;color:#0D5EA6;letter-spacing:0.06em;text-transform:uppercase;"">Statement</span>
+                                    </td>
+                                </tr>
+                            </table>
+                            <h1 style=""margin:24px 0 0 0;font-size:24px;font-weight:700;color:#0B1B28;line-height:1.3;"">Statement of Account</h1>
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;"">
+                                Dear {System.Net.WebUtility.HtmlEncode(customerName)},
+                            </p>
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;"">
+                                Please find attached your statement of account from <strong>{System.Net.WebUtility.HtmlEncode(businessName)}</strong>.
+                            </p>
+                            <p style=""margin:16px 0 0 0;font-size:13px;color:#5E7385;line-height:1.6;"">
+                                If you have any questions regarding this statement, please do not hesitate to contact us.
                             </p>
                         </td>
                     </tr>

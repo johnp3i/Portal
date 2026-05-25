@@ -102,6 +102,7 @@
             var idx = lineIndex;
             var html = '<div class="surface card-pad" style="margin-bottom:16px;position:relative;" id="line-' + idx + '">'
                 + '<button type="button" class="btn btn-danger" style="position:absolute;top:12px;right:12px;padding:4px 10px;font-size:12px;" onclick="removeLineItem(' + idx + ')">Remove</button>'
+                + '<input type="hidden" name="lines[' + idx + '].ProductCode" />'
                 + '<div class="form-grid">'
                 + '<div class="field" style="grid-column:1 / -1;">'
                 + '<label>Description *</label>'

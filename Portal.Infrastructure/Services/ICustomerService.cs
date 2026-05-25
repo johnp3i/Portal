@@ -1,4 +1,5 @@
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Models;
 
 namespace Portal.Infrastructure.Services;
 
@@ -8,6 +9,7 @@ namespace Portal.Infrastructure.Services;
 public interface ICustomerService
 {
     Task<List<Customer>> GetCustomersAsync(string? searchTerm, bool? isActive);
+    Task<PagedResult<Customer>> GetCustomersPagedAsync(string? searchTerm, bool? isActive, int page, int pageSize, int businessId);
     Task<Customer?> GetCustomerByIdAsync(int id);
     Task<Customer> CreateCustomerAsync(Customer customer);
     Task UpdateCustomerAsync(Customer customer);

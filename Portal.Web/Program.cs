@@ -116,6 +116,29 @@ builder.Services.AddScoped<VatSubmissionRepository>(sp =>
 builder.Services.AddScoped<IVatPeriodGenerationService, VatPeriodGenerationService>();
 builder.Services.AddScoped<IVatSubmissionService, VatSubmissionService>();
 
+// --- Revenue Control ---
+builder.Services.AddScoped<PaymentRepository>(sp =>
+    new PaymentRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IFinancialStatusEngine, FinancialStatusEngine>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IReceivablesQueryService, ReceivablesQueryService>();
+builder.Services.AddScoped<IVatIntegrationService, VatIntegrationService>();
+
+// --- Customer Statement ---
+builder.Services.AddScoped<StatementRepository>(sp =>
+    new StatementRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IStatementService, StatementService>();
+builder.Services.AddScoped<IStatementRenderer, StatementRenderer>();
+
+// --- Product Catalog ---
+builder.Services.AddScoped<ProductRepository>(sp =>
+    new ProductRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ProductPriceHistoryRepository>(sp =>
+    new ProductPriceHistoryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductAutocompleteService, ProductAutocompleteService>();
+
 // --- MVC ---
 builder.Services.AddControllersWithViews();
 

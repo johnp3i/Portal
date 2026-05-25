@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
 
 namespace Portal.Infrastructure.Services;
@@ -41,6 +42,11 @@ public class CustomerService : ICustomerService
         }
 
         return customers;
+    }
+
+    public async Task<PagedResult<Customer>> GetCustomersPagedAsync(string? searchTerm, bool? isActive, int page, int pageSize, int businessId)
+    {
+        return await _customerRepository.GetCustomersPagedAsync(searchTerm, isActive, page, pageSize, businessId);
     }
 
     public async Task<Customer?> GetCustomerByIdAsync(int id)

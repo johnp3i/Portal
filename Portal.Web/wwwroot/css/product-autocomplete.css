@@ -1,0 +1,121 @@
+/* ==========================================================================
+   Product Autocomplete Dropdown Styles
+   Follows MyChair Design System: rounded corners, soft shadows, proper fonts
+   ========================================================================== */
+
+.product-autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    max-height: 280px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(13, 94, 166, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(13, 94, 166, 0.10);
+    margin-top: 4px;
+    display: none;
+}
+
+.product-autocomplete-dropdown.active {
+    display: block;
+}
+
+.product-autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(13, 94, 166, 0.06);
+    transition: background 0.15s;
+    font-size: 13px;
+    line-height: 1.5;
+    font-family: 'Inter', sans-serif;
+}
+
+.product-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.product-autocomplete-item:hover,
+.product-autocomplete-item.selected {
+    background: rgba(13, 94, 166, 0.06);
+}
+
+.product-autocomplete-item .pac-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.product-autocomplete-item .pac-desc {
+    font-weight: 600;
+    color: #1a2b3c;
+}
+
+.product-autocomplete-item .pac-code {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0D5EA6;
+    background: rgba(13, 94, 166, 0.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.product-autocomplete-item .pac-meta {
+    font-size: 11px;
+    color: #6b7c8d;
+    margin-top: 2px;
+}
+
+.product-autocomplete-item .pac-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.product-autocomplete-item .pac-badge-product {
+    background: rgba(18, 152, 103, 0.12);
+    color: #129867;
+}
+
+.product-autocomplete-item .pac-badge-invoice {
+    background: rgba(13, 94, 166, 0.10);
+    color: #0D5EA6;
+}
+
+.product-autocomplete-item .pac-badge-quotation {
+    background: rgba(200, 145, 46, 0.12);
+    color: #C8912E;
+}
+
+/* Ensure .field has position relative for dropdown positioning */
+.field {
+    position: relative;
+}
+
+/* Scrollbar styling for the dropdown */
+.product-autocomplete-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.product-autocomplete-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.product-autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: rgba(13, 94, 166, 0.15);
+    border-radius: 3px;
+}
+
+.product-autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: rgba(13, 94, 166, 0.25);
+}

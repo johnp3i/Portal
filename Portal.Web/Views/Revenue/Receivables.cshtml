@@ -1,0 +1,164 @@
+@using Portal.Infrastructure.Models
+@using Portal.Infrastructure.Entities
+@model List<ReceivableDto>
+@{
+    ViewData["Title"] = "Receivables";
+
+    var pagedResult = (PagedResult<ReceivableDto>)ViewBag.PagedResult;
+    var searchTerm = (string?)ViewBag.SearchTerm;
+    var financialStatusFilter = (int?)ViewBag.FinancialStatusFilter;
+    var customerFilter = (int?)ViewBag.CustomerFilter;
+    var dueFrom = (string?)ViewBag.DueFrom;
+    var dueTo = (string?)ViewBag.DueTo;
+    var customers = (List<Customer>)ViewBag.Customers;
+    var paymentMethods = (List<PaymentMethodType>)ViewBag.PaymentMethods;
+    var currencySymbol = (string)ViewBag.CurrencySymbol;
+    var financialStatuses = (List<(int Id, string Name)>)ViewBag.FinancialStatuses;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Revenue</div>
+        <h1 style="margin-top:14px;font-size:42px;">Receivables</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Track outstanding invoices and manage payments.</p>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" asp-action="Receivables" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+        <div class="field" style="flex:1;min-width:200px;">
+            <label for="search">Search</label>
+            <input type="text" id="search" name="search" value="@searchTerm" placeholder="Invoice number or customer..." />
+        </div>
+        <div class="field" style="flex:1;min-width:180px;">
+            <label for="financialStatus">Financial Status</label>
+            <select id="financialStatus" name="financialStatus">
+                <option value="">All Statuses</option>
+                @foreach (var status in financialStatuses)
+                {
+                    <option value="@status.Id" selected="@(financialStatusFilter == status.Id)">@status.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="flex:1;min-width:180px;">
+            <label for="customer">Customer</label>
+            <select id="customer" name="customer">
+                <option value="">All Customers</option>
+                @foreach (var c in customers)
+                {
+                    <option value="@c.Id" selected="@(customerFilter == c.Id)">@c.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+            <label for="dueFrom">Due From</label>
+            <input type="date" id="dueFrom" name="dueFrom" value="@dueFrom" />
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+            <label for="dueTo">Due To</label>
+            <input type="date" id="dueTo" name="dueTo" value="@dueTo" />
+        </div>
+        <div style="display:flex;gap:10px;padding-bottom:2px;">
+            <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+            <a asp-action="Receivables" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+        </div>
+    </form>
+</section>
+
+<!-- Receivables Table -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Invoice Date</th>
+                    <th>Due Date</th>
+                    <th style="text-align:right;">Total</th>
+                    <th style="text-align:right;">Paid</th>
+                    <th style="text-align:right;">Outstanding</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><strong>@item.InvoiceNumber</strong></td>
+                        <td>@item.CustomerName</td>
+                        <td>@item.InvoiceDate.ToString("dd MMM yyyy")</td>
+                        <td>@item.DueDate.ToString("dd MMM yyyy")</td>
+                        <td style="text-align:right;font-weight:600;">@currencySymbol@item.TotalAmount.ToString("N2")</td>
+                        <td style="text-align:right;">@currencySymbol@item.TotalPaid.ToString("N2")</td>
+                        <td style="text-align:right;font-weight:700;">@currencySymbol@item.OutstandingBalance.ToString("N2")</td>
+                        <td>
+                            @{
+                                var pillClass = item.InvoiceFinancialStatusTypeId switch
+                                {
+                                    1 => "pill-blue",
+                                    2 => "pill-gold",
+                                    3 => "pill-green",
+                                    4 => "pill-red",
+                                    5 => "pill-grey",
+                                    _ => "pill-blue"
+                                };
+                            }
+                            <span class="pill @pillClass">@item.FinancialStatusName</span>
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <a asp-action="InvoiceDetail" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">View</a>
+                            @if (item.HasOutstandingBalance)
+                            {
+                                <a href="javascript:void(0)"
+                                   onclick="openPaymentModal(@item.Id, '@item.InvoiceNumber', '@item.CustomerName.Replace("'", "\\'")' , @item.OutstandingBalance)"
+                                   style="color:var(--blue);font-weight:700;font-size:13px;margin-left:12px;">Pay</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @await Html.PartialAsync("_PagingControl", null, new ViewDataDictionary(ViewData) {
+            { "CurrentPage", pagedResult.CurrentPage },
+            { "TotalPages", pagedResult.TotalPages },
+            { "TotalCount", pagedResult.TotalCount },
+            { "PageSize", pagedResult.PageSize },
+            { "HasPreviousPage", pagedResult.HasPreviousPage },
+            { "HasNextPage", pagedResult.HasNextPage }
+        })
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No receivables found. Adjust your filters or issue invoices to get started.</p>
+        </div>
+    }
+</section>
+
+@await Html.PartialAsync("_PaymentModal")
+
+<style>
+    .pill-grey {
+        background: rgba(94, 115, 133, 0.08);
+        color: #5E7385;
+        border: 1px solid rgba(94, 115, 133, 0.16);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+</style>
+
+@section Scripts {
+    <script src="~/js/revenue-payment.js"></script>
+}

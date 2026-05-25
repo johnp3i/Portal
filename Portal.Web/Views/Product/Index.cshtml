@@ -1,0 +1,467 @@
+@model List<Portal.Infrastructure.Entities.Product>
+@using Portal.Infrastructure.Models
+@using Portal.Infrastructure.Entities
+@{
+    ViewData["Title"] = "Products";
+
+    var pagedResult = (PagedResult<Product>)ViewBag.PagedResult;
+    var kpis = (ProductKpiDto)ViewBag.Kpis;
+    var topProducts = (List<ProductUsageDto>)ViewBag.TopProducts;
+    var suppliers = (List<Supplier>)ViewBag.Suppliers;
+    var searchTerm = (string?)ViewBag.SearchTerm;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> CATALOG</div>
+        <h1 style="margin-top:14px;font-size:42px;">Products</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Manage your product catalog, track pricing, and monitor usage across invoices and quotations.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" onclick="openCreateModal()">Create Product</button>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:18px;">
+        <div style="padding:18px;border-radius:14px;background:rgba(13,94,166,0.04);border:1px solid rgba(13,94,166,0.08);">
+            <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Total Products</div>
+            <div style="font-size:28px;font-weight:800;color:#1a2b3c;margin-top:6px;font-family:'Manrope',sans-serif;">@kpis.TotalProducts</div>
+        </div>
+        <div style="padding:18px;border-radius:14px;background:rgba(18,152,103,0.04);border:1px solid rgba(18,152,103,0.08);">
+            <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Active Products</div>
+            <div style="font-size:28px;font-weight:800;color:#129867;margin-top:6px;font-family:'Manrope',sans-serif;">@kpis.ActiveProducts</div>
+        </div>
+        <div style="padding:18px;border-radius:14px;background:rgba(87,184,232,0.04);border:1px solid rgba(87,184,232,0.08);">
+            <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Avg. Selling Price</div>
+            <div style="font-size:28px;font-weight:800;color:#1a2b3c;margin-top:6px;font-family:'Manrope',sans-serif;">@kpis.AverageSellingPrice.ToString("N2")</div>
+        </div>
+        <div style="padding:18px;border-radius:14px;background:rgba(200,145,46,0.04);border:1px solid rgba(200,145,46,0.08);">
+            <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Best Seller</div>
+            <div style="font-size:16px;font-weight:800;color:#1a2b3c;margin-top:6px;font-family:'Manrope',sans-serif;">@(kpis.BestSellerDescription ?? "—")</div>
+            @if (kpis.BestSellerUsageCount > 0)
+            {
+                <div style="font-size:12px;color:#5a6a7a;margin-top:4px;">@kpis.BestSellerUsageCount uses</div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Bar Chart: Top 10 Products by Usage -->
+@if (topProducts != null && topProducts.Count > 0)
+{
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;">Top 10 Products by Usage</h3>
+        <canvas id="topProductsChart" style="width:100%;max-height:300px;"></canvas>
+    </section>
+}
+
+<!-- Search / Filter -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" asp-action="Index" asp-controller="Product" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="flex:1;min-width:280px;">
+            <label>Search</label>
+            <input type="text" name="search" placeholder="Search by product code or description..." value="@searchTerm" maxlength="200" />
+        </div>
+        <div style="display:flex;gap:10px;padding-bottom:2px;">
+            <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+            <a asp-action="Index" asp-controller="Product" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+        </div>
+    </form>
+</section>
+
+<!-- Product Table -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Code</th>
+                    <th>Description</th>
+                    <th style="text-align:right;">Selling Price</th>
+                    <th style="text-align:right;">Cost Price</th>
+                    <th style="text-align:right;">VAT Rate</th>
+                    <th>Supplier</th>
+                    <th>Status</th>
+                    <th>Last Used</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var product in Model)
+                {
+                    <tr>
+                        <td><strong>@product.ProductCode</strong></td>
+                        <td>@product.Description</td>
+                        <td style="text-align:right;font-weight:600;">@product.DefaultSellingPrice.ToString("N2")</td>
+                        <td style="text-align:right;">@product.DefaultCostPrice.ToString("N2")</td>
+                        <td style="text-align:right;">@product.DefaultVatRate.ToString("N2")%</td>
+                        <td>@(product.Supplier?.Name ?? "—")</td>
+                        <td>
+                            @if (product.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-red">Inactive</span>
+                            }
+                        </td>
+                        <td>@(product.LastUsedDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                        <td style="white-space:nowrap;">
+                            <a href="javascript:void(0)" onclick="openEditModal(@product.Id)" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                            @if (product.IsActive)
+                            {
+                                <a href="javascript:void(0)" onclick="deactivateProduct(@product.Id, '@product.Description.Replace("'", "\\'")') " style="color:var(--danger);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No products found. Create your first product or adjust your search.</p>
+        </div>
+    }
+
+    @await Html.PartialAsync("_PagingControl", null, new ViewDataDictionary(ViewData) {
+        { "CurrentPage", pagedResult.CurrentPage },
+        { "TotalPages", pagedResult.TotalPages },
+        { "TotalCount", pagedResult.TotalCount },
+        { "PageSize", pagedResult.PageSize },
+        { "HasPreviousPage", pagedResult.HasPreviousPage },
+        { "HasNextPage", pagedResult.HasNextPage }
+    })
+</section>
+
+<!-- Create/Edit Product Modal -->
+<div id="productModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:580px;box-shadow:0 20px 60px rgba(13,94,166,0.18);max-height:90vh;overflow-y:auto;">
+        <h2 id="modalTitle" style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;">Create Product</h2>
+        <p id="modalSubtitle" class="muted" style="font-size:14px;margin-bottom:24px;">Add a new product to your catalog.</p>
+        <form id="productForm" onsubmit="return false;">
+            <input type="hidden" id="formProductId" value="0" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="field">
+                    <label for="formProductCode">Product Code <span style="color:#C24A4A;">*</span></label>
+                    <input type="text" id="formProductCode" placeholder="e.g. PROD-001" required maxlength="50" />
+                </div>
+                <div class="field">
+                    <label for="formVatRate">VAT Rate (%)</label>
+                    <input type="number" id="formVatRate" step="0.01" min="0" max="99.99" value="0.00" />
+                </div>
+                <div class="field" style="grid-column:1/-1;">
+                    <label for="formDescription">Description <span style="color:#C24A4A;">*</span></label>
+                    <input type="text" id="formDescription" placeholder="Product description..." required maxlength="500" />
+                </div>
+                <div class="field">
+                    <label for="formSellingPrice">Selling Price</label>
+                    <input type="number" id="formSellingPrice" step="0.01" min="0" value="0.00" />
+                </div>
+                <div class="field">
+                    <label for="formCostPrice">Cost Price</label>
+                    <input type="number" id="formCostPrice" step="0.01" min="0" value="0.00" />
+                </div>
+                <div class="field">
+                    <label for="formSupplier">Supplier</label>
+                    <select id="formSupplier">
+                        <option value="">— None —</option>
+                        @foreach (var supplier in suppliers)
+                        {
+                            <option value="@supplier.Id">@supplier.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:24px;">
+                    <input type="checkbox" id="formIsActive" checked style="width:18px;height:18px;cursor:pointer;" />
+                    <label for="formIsActive" style="margin:0;cursor:pointer;">Active</label>
+                </div>
+            </div>
+
+            <!-- Price History (visible on Edit only) -->
+            <div id="priceHistorySection" style="display:none;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:18px;">
+                <h4 style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;margin-bottom:12px;">Price History</h4>
+                <div id="priceHistoryContent">
+                    <p class="muted" style="font-size:13px;">No price changes have been recorded.</p>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modalSubmitBtn" onclick="saveProduct()">Create Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    (function () {
+        // =========================================================================
+        // Helpers
+        // =========================================================================
+        function getAntiForgeryToken() {
+            var el = document.querySelector('input[name="__RequestVerificationToken"]');
+            return el ? el.value : '';
+        }
+
+        // =========================================================================
+        // Chart.js — Top 10 Products by Usage
+        // =========================================================================
+        var chartCanvas = document.getElementById('topProductsChart');
+        if (chartCanvas) {
+            var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(topProducts.Select(p => p.Description).ToList()));
+            var dataValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(topProducts.Select(p => p.UsageCount).ToList()));
+
+            new Chart(chartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Usage Count',
+                        data: dataValues,
+                        backgroundColor: 'rgba(13, 94, 166, 0.7)',
+                        borderColor: '#0D5EA6',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { ticks: { maxRotation: 45, minRotation: 0, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // =========================================================================
+        // Modal Management
+        // =========================================================================
+        var modal = document.getElementById('productModal');
+
+        window.openCreateModal = function () {
+            document.getElementById('modalTitle').textContent = 'Create Product';
+            document.getElementById('modalSubtitle').textContent = 'Add a new product to your catalog.';
+            document.getElementById('modalSubmitBtn').textContent = 'Create Product';
+            document.getElementById('formProductId').value = '0';
+            document.getElementById('formProductCode').value = '';
+            document.getElementById('formDescription').value = '';
+            document.getElementById('formSellingPrice').value = '0.00';
+            document.getElementById('formCostPrice').value = '0.00';
+            document.getElementById('formVatRate').value = '0.00';
+            document.getElementById('formSupplier').value = '';
+            document.getElementById('formIsActive').checked = true;
+            document.getElementById('priceHistorySection').style.display = 'none';
+            modal.style.display = 'flex';
+        };
+
+        window.openEditModal = async function (productId) {
+            BlockUI.show('Loading product...');
+            try {
+                var response = await fetch('/Product/GetProduct?id=' + productId);
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (!data.success) {
+                    Swal.fire({ title: 'Error', text: data.message || 'Could not load product.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                var p = data.product;
+                document.getElementById('modalTitle').textContent = 'Edit Product';
+                document.getElementById('modalSubtitle').textContent = 'Update product details.';
+                document.getElementById('modalSubmitBtn').textContent = 'Save Changes';
+                document.getElementById('formProductId').value = p.id;
+                document.getElementById('formProductCode').value = p.productCode;
+                document.getElementById('formDescription').value = p.description;
+                document.getElementById('formSellingPrice').value = p.defaultSellingPrice;
+                document.getElementById('formCostPrice').value = p.defaultCostPrice;
+                document.getElementById('formVatRate').value = p.defaultVatRate;
+                document.getElementById('formSupplier').value = p.supplierId || '';
+                document.getElementById('formIsActive').checked = p.isActive;
+
+                document.getElementById('priceHistorySection').style.display = 'block';
+                loadPriceHistory(productId);
+
+                modal.style.display = 'flex';
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        };
+
+        window.closeProductModal = function () {
+            modal.style.display = 'none';
+        };
+
+        // Close on backdrop click
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeProductModal();
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeProductModal();
+        });
+
+        // =========================================================================
+        // Save Product (Create / Edit)
+        // =========================================================================
+        window.saveProduct = async function () {
+            var id = document.getElementById('formProductId').value;
+            var productCode = document.getElementById('formProductCode').value.trim();
+            var description = document.getElementById('formDescription').value.trim();
+            var sellingPrice = document.getElementById('formSellingPrice').value;
+            var costPrice = document.getElementById('formCostPrice').value;
+            var vatRate = document.getElementById('formVatRate').value;
+            var supplierId = document.getElementById('formSupplier').value;
+            var isActive = document.getElementById('formIsActive').checked;
+
+            if (!productCode) {
+                Swal.fire({ title: 'Validation', text: 'Product Code is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            if (!description) {
+                Swal.fire({ title: 'Validation', text: 'Description is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var isEdit = id !== '0';
+            var url = isEdit ? '/Product/Edit' : '/Product/Create';
+
+            var body = new URLSearchParams();
+            body.append('productCode', productCode);
+            body.append('description', description);
+            body.append('defaultSellingPrice', sellingPrice);
+            body.append('defaultCostPrice', costPrice);
+            body.append('defaultVatRate', vatRate);
+            if (supplierId) body.append('supplierId', supplierId);
+            body.append('isActive', isActive);
+            if (isEdit) body.append('id', id);
+
+            BlockUI.show(isEdit ? 'Updating product...' : 'Creating product...');
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: body.toString()
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    closeProductModal();
+                    await Swal.fire({
+                        title: isEdit ? 'Updated!' : 'Created!',
+                        text: data.message || (isEdit ? 'Product updated successfully.' : 'Product created successfully.'),
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        };
+
+        // =========================================================================
+        // Deactivate Product
+        // =========================================================================
+        window.deactivateProduct = async function (productId, description) {
+            var result = await Swal.fire({
+                title: 'Deactivate Product',
+                text: 'Are you sure you want to deactivate "' + description + '"?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, deactivate'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Deactivating...');
+            try {
+                var response = await fetch('/Product/Deactivate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: 'productId=' + productId
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Deactivated!',
+                        text: data.message || 'Product has been deactivated.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        };
+
+        // =========================================================================
+        // Price History
+        // =========================================================================
+        async function loadPriceHistory(productId) {
+            var container = document.getElementById('priceHistoryContent');
+            container.innerHTML = '<p class="muted" style="font-size:13px;">Loading...</p>';
+
+            try {
+                var response = await fetch('/Product/PriceHistory?productId=' + productId);
+                var data = await response.json();
+
+                if (!data.success || !data.records || data.records.length === 0) {
+                    container.innerHTML = '<p class="muted" style="font-size:13px;">No price changes have been recorded.</p>';
+                    return;
+                }
+
+                var html = '<table style="width:100%;font-size:13px;">';
+                html += '<thead><tr><th style="text-align:left;padding:6px 8px;">Selling Price</th><th style="text-align:left;padding:6px 8px;">Cost Price</th><th style="text-align:left;padding:6px 8px;">Effective From</th><th style="text-align:left;padding:6px 8px;">Changed By</th></tr></thead>';
+                html += '<tbody>';
+                for (var i = 0; i < data.records.length; i++) {
+                    var r = data.records[i];
+                    html += '<tr>';
+                    html += '<td style="padding:6px 8px;">' + parseFloat(r.sellingPrice).toFixed(2) + '</td>';
+                    html += '<td style="padding:6px 8px;">' + parseFloat(r.costPrice).toFixed(2) + '</td>';
+                    html += '<td style="padding:6px 8px;">' + r.effectiveFromUtc + '</td>';
+                    html += '<td style="padding:6px 8px;">' + r.changedByUserId + '</td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<p class="muted" style="font-size:13px;">No price changes have been recorded.</p>';
+            }
+        }
+    })();
+    </script>
+}

@@ -1,5 +1,7 @@
 using FsCheck;
 using FsCheck.Xunit;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
@@ -70,6 +72,10 @@ public class InvoiceVatPeriodReassignmentPropertyTests
         Mock<VatSubmissionRepository> vatSubmissionRepoMock,
         Mock<PortalDbContext> dbContextMock)
     {
+        var productServiceMock = new Mock<IProductService>();
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        var loggerMock = new Mock<ILogger<InvoiceService>>();
+
         return new InvoiceService(
             tenantMock.Object,
             invoiceRepoMock.Object,
@@ -82,7 +88,10 @@ public class InvoiceVatPeriodReassignmentPropertyTests
             auditLogRepoMock.Object,
             vatPeriodRepoMock.Object,
             vatSubmissionRepoMock.Object,
-            dbContextMock.Object);
+            dbContextMock.Object,
+            productServiceMock.Object,
+            httpContextAccessorMock.Object,
+            loggerMock.Object);
     }
 
     /// <summary>
@@ -510,6 +519,10 @@ public class InvoiceVatPeriodReassignmentPropertyTests
                     .ReturnsAsync(targetSubmission);
 
                 // Build service using the real dbContext (for BusinessProfiles query)
+                var productServiceMock2 = new Mock<IProductService>();
+                var httpContextAccessorMock2 = new Mock<IHttpContextAccessor>();
+                var loggerMock2 = new Mock<ILogger<InvoiceService>>();
+
                 var service = new InvoiceService(
                     tenantMock.Object,
                     invoiceRepoMock.Object,
@@ -522,7 +535,10 @@ public class InvoiceVatPeriodReassignmentPropertyTests
                     auditLogRepoMock.Object,
                     vatPeriodRepoMock.Object,
                     vatSubmissionRepoMock.Object,
-                    realDbContext);
+                    realDbContext,
+                    productServiceMock2.Object,
+                    httpContextAccessorMock2.Object,
+                    loggerMock2.Object);
 
                 // Act
                 var result = service.GetReassignmentImpactAsync(invoiceId, targetPeriodId).GetAwaiter().GetResult();

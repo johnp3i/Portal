@@ -41,4 +41,13 @@ public class StubEmailService : IEmailService
 
         return Task.CompletedTask;
     }
+
+    public Task SendStatementEmailAsync(string recipientEmail, string customerName, string businessName, byte[] pdfBytes, string filename)
+    {
+        _logger.LogInformation(
+            "Statement email stub: To={RecipientEmail}, Customer={CustomerName}, Business={BusinessName}, Filename={Filename}, PdfSize={PdfSize} bytes",
+            recipientEmail, customerName, businessName, filename, pdfBytes.Length);
+
+        return Task.CompletedTask;
+    }
 }

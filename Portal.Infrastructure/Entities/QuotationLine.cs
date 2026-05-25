@@ -34,6 +34,8 @@ public class QuotationLine
 
     public string? Subtitle { get; set; }
 
+    public string? ProductCode { get; set; }
+
     // Navigation properties
     public Quotation Quotation { get; set; } = null!;
 

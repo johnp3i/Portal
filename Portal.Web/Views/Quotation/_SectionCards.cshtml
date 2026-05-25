@@ -29,6 +29,7 @@
                 <div class="line-card" data-line-id="@line.Id" data-section-id="" style="padding:16px;border:1px solid rgba(13,94,166,.08);border-radius:14px;position:relative;">
                     <form method="post" asp-action="UpdateLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id">
                         @Html.AntiForgeryToken()
+                        <input type="hidden" name="ProductCode" value="@(line.ProductCode ?? "")" />
                         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
                             <div class="field">
                                 <label>Description</label>
@@ -115,6 +116,7 @@
         <div class="label" style="margin-bottom:12px;">Add Line Item</div>
         <form method="post" asp-action="AddLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id">
             @Html.AntiForgeryToken()
+            <input type="hidden" name="ProductCode" value="" />
             <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
                 <div class="field">
                     <label>Description</label>
@@ -234,6 +236,7 @@
                     <div class="line-card" data-line-id="@line.Id" data-section-id="@sect.Id" style="padding:16px;border:1px solid rgba(13,94,166,.08);border-radius:14px;position:relative;">
                         <form method="post" asp-action="UpdateLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id">
                             @Html.AntiForgeryToken()
+                            <input type="hidden" name="ProductCode" value="@(line.ProductCode ?? "")" />
                             <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
                                 <div class="field">
                                     <label>Description</label>
@@ -331,6 +334,7 @@
             <form method="post" asp-action="AddLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="ProposalSectionId" value="@sect.Id" />
+                <input type="hidden" name="ProductCode" value="" />
                 <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
                     <div class="field">
                         <label>Description</label>

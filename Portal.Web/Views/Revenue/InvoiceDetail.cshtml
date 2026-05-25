@@ -1,0 +1,202 @@
+@{
+    ViewData["Title"] = "Invoice Detail";
+
+    var invoice = ViewBag.Invoice as Portal.Infrastructure.Entities.Invoice;
+    var lines = ViewBag.Lines as List<Portal.Infrastructure.Entities.InvoiceLine> ?? new List<Portal.Infrastructure.Entities.InvoiceLine>();
+    var paymentHistory = ViewBag.PaymentHistory as List<Portal.Infrastructure.Models.PaymentHistoryDto> ?? new List<Portal.Infrastructure.Models.PaymentHistoryDto>();
+    var paymentMethods = ViewBag.PaymentMethods as List<Portal.Infrastructure.Entities.PaymentMethodType> ?? new List<Portal.Infrastructure.Entities.PaymentMethodType>();
+    var customerName = (string)(ViewBag.CustomerName ?? "Unknown");
+    var totalPaid = (decimal)(ViewBag.TotalPaid ?? 0m);
+    var outstandingBalance = (decimal)(ViewBag.OutstandingBalance ?? 0m);
+    var progressPercentage = (decimal)(ViewBag.ProgressPercentage ?? 0m);
+    var isOverdue = (bool)(ViewBag.IsOverdue ?? false);
+    var currencySymbol = (string)(ViewBag.CurrencySymbol ?? "€");
+
+    var validPaymentCount = paymentHistory.Count(p => !p.IsVoided);
+    var daysOverdue = isOverdue ? (DateOnly.FromDateTime(DateTime.UtcNow).DayNumber - invoice.DueDate.DayNumber) : 0;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Revenue Control / Invoice Detail</div>
+        <h1 style="margin-top:14px;font-size:42px;">@invoice.InvoiceNumber</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">@customerName — Issued @invoice.InvoiceDate.ToString("dd MMM yyyy")</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+        @if (isOverdue)
+        {
+            <span class="pill pill-red" style="font-size:13px;padding:6px 16px;">Overdue</span>
+        }
+        <a asp-action="Receivables" asp-controller="Revenue" class="btn btn-outline">&larr; Back to Receivables</a>
+        @if (outstandingBalance > 0)
+        {
+            <button type="button" class="btn btn-primary" onclick="openPaymentModal(@invoice.Id, '@invoice.InvoiceNumber', '@customerName', @outstandingBalance)">Record Payment</button>
+        }
+    </div>
+</div>
+
+<!-- Financial Summary KPI Cards -->
+<!-- Financial Summary KPI Cards -->
+<section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Invoice Total</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">@(currencySymbol)@invoice.TotalAmount.ToString("N2")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Incl. VAT @(currencySymbol)@invoice.TaxAmount.ToString("N2")</p>
+    </div>
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #129867;">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Total Paid</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#129867;margin:0 0 4px 0;">@(currencySymbol)@totalPaid.ToString("N2")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">@validPaymentCount payment@(validPaymentCount != 1 ? "s" : "") received</p>
+    </div>
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid @(outstandingBalance > 0 ? "#C24A4A" : "#129867");">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Outstanding Balance</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:@(outstandingBalance > 0 ? "#C24A4A" : "#129867");margin:0 0 4px 0;">@(currencySymbol)@outstandingBalance.ToString("N2")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">
+            @if (invoice.TotalAmount > 0)
+            {
+                var outstandingPct = Math.Round(outstandingBalance / invoice.TotalAmount * 100, 0);
+                @($"{outstandingPct}% remaining")
+            }
+            else
+            {
+                @("No amount due")
+            }
+        </p>
+    </div>
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid @(isOverdue ? "#C24A4A" : "#0D5EA6");">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Due Date</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:@(isOverdue ? "#C24A4A" : "#0D5EA6");margin:0 0 4px 0;">@invoice.DueDate.ToString("dd MMM yyyy")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">
+            @if (isOverdue)
+            {
+                <span style="color:#C24A4A;font-weight:700;">@daysOverdue day@(daysOverdue != 1 ? "s" : "") overdue</span>
+            }
+            else
+            {
+                <span>On schedule</span>
+            }
+        </p>
+    </div>
+</section>
+
+<!-- Payment Progress Bar -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:6px;">
+        <span style="color:var(--green);">Paid: @(currencySymbol)@totalPaid.ToString("N2") (@progressPercentage%)</span>
+        <span style="color:@(outstandingBalance > 0 ? "var(--red)" : "var(--muted)");">Outstanding: @(currencySymbol)@outstandingBalance.ToString("N2") (@(100 - progressPercentage)%)</span>
+    </div>
+    <div style="height:10px;border-radius:8px;background:#e2e8f0;overflow:hidden;">
+        <div style="height:100%;width:@(progressPercentage)%;background:linear-gradient(90deg, var(--green), #57E8A8);border-radius:8px;transition:width .3s ease;"></div>
+    </div>
+</section>
+
+<!-- Invoice Line Items -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 style="font-size:16px;margin-bottom:16px;">Invoice Lines</h3>
+    @if (lines.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Description</th>
+                    <th style="text-align:right;">Qty</th>
+                    <th style="text-align:right;">Unit Price</th>
+                    <th style="text-align:right;">Line Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var line in lines.OrderBy(l => l.SortOrder))
+                {
+                    <tr>
+                        <td>@line.SortOrder</td>
+                        <td><strong>@line.Description</strong></td>
+                        <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
+                        <td style="text-align:right;">@(currencySymbol)@line.UnitPrice.ToString("N2")</td>
+                        <td style="text-align:right;font-weight:700;">@(currencySymbol)@line.LineTotal.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr style="border-top:2px solid #e2e8f0;">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-top:12px;">Subtotal</td>
+                    <td style="text-align:right;font-weight:700;padding-top:12px;">@(currencySymbol)@invoice.Subtotal.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="text-align:right;color:var(--muted);">VAT</td>
+                    <td style="text-align:right;color:var(--muted);">@(currencySymbol)@invoice.TaxAmount.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="text-align:right;font-weight:700;font-size:16px;">Total</td>
+                    <td style="text-align:right;font-weight:700;font-size:16px;color:var(--blue);">@(currencySymbol)@invoice.TotalAmount.ToString("N2")</td>
+                </tr>
+            </tfoot>
+        </table>
+    }
+    else
+    {
+        <p class="muted" style="font-size:14px;">No line items on this invoice.</p>
+    }
+</section>
+
+<!-- Payment History -->
+<section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-size:16px;">Payment History</h3>
+        @if (outstandingBalance > 0)
+        {
+            <button type="button" class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="openPaymentModal(@invoice.Id, '@invoice.InvoiceNumber', '@customerName', @outstandingBalance)">+ Add Payment</button>
+        }
+    </div>
+    @if (paymentHistory.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th style="text-align:right;">Amount</th>
+                    <th>Method</th>
+                    <th>Reference</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payment in paymentHistory.OrderByDescending(p => p.PaymentDateUtc))
+                {
+                    var rowStyle = payment.IsVoided ? "text-decoration:line-through;opacity:0.5;" : "";
+                    <tr style="@rowStyle">
+                        <td>@payment.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
+                        <td style="text-align:right;font-weight:700;color:@(payment.IsVoided ? "var(--muted)" : "var(--green)");">@(currencySymbol)@payment.Amount.ToString("N2")</td>
+                        <td>@payment.PaymentMethodName</td>
+                        <td>@(payment.Reference ?? "—")</td>
+                        <td style="color:var(--muted);font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(payment.Notes ?? "—")</td>
+                        <td>
+                            @if (!payment.IsVoided)
+                            {
+                                <button type="button" class="btn btn-outline" style="padding:4px 12px;font-size:12px;color:var(--red);border-color:rgba(194,74,74,.2);" onclick="voidPayment(@payment.Id)">Void</button>
+                            }
+                            else
+                            {
+                                <span class="pill pill-red" style="font-size:10px;">Voided</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="muted" style="font-size:14px;">No payments recorded yet.</p>
+    }
+</section>
+
+<!-- Payment Modal Partial -->
+@await Html.PartialAsync("_PaymentModal")
+
+@section Scripts {
+    <script src="/js/revenue-payment.js"></script>
+}

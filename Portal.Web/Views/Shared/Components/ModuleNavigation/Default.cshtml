@@ -10,6 +10,7 @@
         { "invoice", ("Invoice", "Index", "Invoices") },
         { "revenue", ("Revenue", "Index", "Revenue") },
         { "purchase", ("Purchase", "Index", "Purchases") },
+        { "products", ("Product", "Index", "Products") },
         { "vat", ("Vat", "Index", "VAT") },
         { "audit", ("Audit", "Index", "Audit") }
     };
@@ -36,6 +37,12 @@
         var isActive = currentController.Equals(link.Controller, StringComparison.OrdinalIgnoreCase);
         <a class="nav-item @(isActive ? "active" : "")" asp-controller="@link.Controller" asp-action="@link.Action">@link.Label</a>
     }
+}
+
+@if (Model.TryGetValue("revenue", out var revenueAccess) && revenueAccess != "none")
+{
+    var isStatementActive = currentController.Equals("Statement", StringComparison.OrdinalIgnoreCase);
+    <a class="nav-item @(isStatementActive ? "active" : "")" asp-controller="Statement" asp-action="Index">Statement</a>
 }
 
 @{

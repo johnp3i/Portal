@@ -298,12 +298,14 @@ public class InvoiceController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddLine(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
-        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId)
+        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
+        string? productCode = null)
     {
         try
         {
             var line = await _invoiceService.AddLineAsync(invoiceId, description, quantity,
-                unitPrice, vatRate, discount, discountType, costPrice, referenceUrl, subtitle, invoiceSectionId);
+                unitPrice, vatRate, discount, discountType, costPrice, referenceUrl, subtitle, invoiceSectionId,
+                productCode);
             return Json(new { success = true, lineId = line.Id });
         }
         catch (Exception ex)

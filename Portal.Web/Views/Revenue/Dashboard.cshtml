@@ -1,0 +1,273 @@
+@using Portal.Infrastructure.Models
+@{
+    ViewData["Title"] = "Revenue Dashboard";
+
+    var kpi = (DashboardKpiDto)ViewBag.KpiData;
+    var revenueCollected = (List<MonthlyRevenueDto>)ViewBag.RevenueCollected;
+    var invoicedVsCollected = (List<InvoicedVsCollectedDto>)ViewBag.InvoicedVsCollected;
+    var collectionRate = (decimal)ViewBag.CollectionRate;
+    var vatSummary = (VatSummaryDto)ViewBag.VatSummary;
+    var vatLiability = (List<VatPeriodLiabilityDto>)ViewBag.VatLiability;
+    var overdueInvoices = (PagedResult<OverdueInvoiceDto>)ViewBag.OverdueInvoices;
+    var recentPayments = (PagedResult<RecentPaymentDto>)ViewBag.RecentPayments;
+    var currency = (string)ViewBag.CurrencySymbol;
+}
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Revenue Control</div>
+        <h1 style="margin-top:14px;font-size:42px;">Revenue Dashboard</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Track outstanding receivables, overdue invoices, and payment activity.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-outline" asp-action="Receivables" asp-controller="Revenue">View Receivables</a>
+        <a class="btn btn-outline" asp-action="Index" asp-controller="Statement">Customer Statement</a>
+        <a href="javascript:void(0)" class="btn btn-primary" onclick="openPaymentModalWithSelector()">Record Payment</a>
+    </div>
+</div>
+
+<!-- Row 1: KPI Cards -->
+<section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Outstanding Receivables</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">@currency@kpi.OutstandingReceivables.ToString("N2")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">@kpi.OutstandingInvoiceCount invoices awaiting payment</p>
+    </div>
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #C24A4A;">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Overdue Amount</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C24A4A;margin:0 0 4px 0;">@currency@kpi.OverdueAmount.ToString("N2")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">@kpi.OverdueInvoiceCount invoices past due date</p>
+    </div>
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #129867;">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Paid This Month</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#129867;margin:0 0 4px 0;">@currency@kpi.PaidThisMonth.ToString("N2")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">@kpi.PaidThisMonthCount payments received</p>
+    </div>
+    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #C8912E;">
+        <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Partially Paid</p>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C8912E;margin:0 0 4px 0;">@currency@kpi.PartiallyPaidAmount.ToString("N2")</h2>
+        <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">@kpi.PartiallyPaidCount invoices with partial payments</p>
+    </div>
+</section>
+
+<!-- Row 2: Revenue Collected, Invoiced vs Collected, Collection Rate -->
+<section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+    <div class="glass card-pad" style="flex:2;min-width:300px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Revenue Collected (Last 12 Months)</h3>
+        <div style="position:relative;height:220px;">
+            <canvas id="revenueLineChart"></canvas>
+        </div>
+    </div>
+    <div class="glass card-pad" style="flex:2;min-width:300px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Invoiced vs Collected</h3>
+        <div style="position:relative;height:220px;">
+            <canvas id="invoicedVsCollectedChart"></canvas>
+        </div>
+    </div>
+    <div class="glass card-pad" style="flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Collection Rate</h3>
+        <div style="font-family:'Manrope',sans-serif;font-size:52px;font-weight:800;color:var(--green);">@collectionRate.ToString("0")%</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px;text-align:center;">of invoiced amount collected within 30 days</div>
+        <div style="margin-top:14px;width:100%;height:10px;border-radius:8px;background:#e2e8f0;overflow:hidden;">
+            <div style="height:100%;width:@collectionRate.ToString("0")%;background:linear-gradient(90deg, var(--green), #57E8A8);border-radius:8px;"></div>
+        </div>
+    </div>
+</section>
+
+<!-- Row 3: VAT Section — KPI cards (left) + VAT Liability chart (center) + Output/Input Ratio (right) -->
+<section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;align-items:stretch;">
+    <!-- Left: 3 VAT KPI cards stacked vertically -->
+    <div style="flex:1.5;min-width:300px;display:flex;flex-direction:column;gap:16px;">
+        <div class="glass card-pad" style="border-left:4px solid #57B8E8;">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Output VAT Collected (Current Period)</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#57B8E8;margin:0 0 4px 0;">@currency@vatSummary.TotalOutputVat.ToString("N2")</h2>
+            <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">VAT received from paid invoices · @vatSummary.PeriodLabel</p>
+        </div>
+        <div class="glass card-pad" style="border-left:4px solid #129867;">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Input VAT — Purchases (Current Period)</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#129867;margin:0 0 4px 0;">@currency@vatSummary.TotalInputVat.ToString("N2")</h2>
+            <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">VAT paid on recorded purchases · @vatSummary.PeriodLabel</p>
+        </div>
+        <div class="glass card-pad" style="border-left:4px solid #C24A4A;">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Est. Net VAT Payable</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C24A4A;margin:0 0 4px 0;">@currency@vatSummary.NetVatPayable.ToString("N2")</h2>
+            <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Output VAT − Input VAT · Set aside for tax</p>
+        </div>
+    </div>
+    <!-- Center: VAT Liability by Period chart -->
+    <div class="glass card-pad" style="flex:2;min-width:300px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">VAT Liability by Period</h3>
+        <div style="position:relative;height:220px;">
+            <canvas id="vatLiabilityChart"></canvas>
+        </div>
+    </div>
+    <!-- Right: Output/Input VAT Ratio -->
+    <div class="glass card-pad" style="flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Output / Input Ratio</h3>
+        @{
+            var outputInputRatio = vatSummary.TotalInputVat == 0m ? 0m : vatSummary.TotalOutputVat / vatSummary.TotalInputVat;
+        }
+        <div style="font-family:'Manrope',sans-serif;font-size:48px;font-weight:800;color:var(--blue);">@outputInputRatio.ToString("0.00")x</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px;text-align:center;">Output VAT is @outputInputRatio.ToString("0.00")× the Input VAT</div>
+        <div style="margin-top:18px;width:100%;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;">
+                <span style="color:var(--cyan);">Output</span>
+                <span style="color:var(--cyan);">@currency@vatSummary.TotalOutputVat.ToString("N0")</span>
+            </div>
+            <div style="height:8px;border-radius:6px;background:#e2e8f0;overflow:hidden;">
+                @{
+                    var outputBarWidth = vatSummary.TotalOutputVat > 0 ? 100 : 0;
+                }
+                <div style="height:100%;width:@(outputBarWidth)%;background:var(--cyan);border-radius:6px;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;">
+                <span style="color:var(--green);">Input</span>
+                <span style="color:var(--green);">@currency@vatSummary.TotalInputVat.ToString("N0")</span>
+            </div>
+            <div style="height:8px;border-radius:6px;background:#e2e8f0;overflow:hidden;">
+                @{
+                    var inputBarWidth = vatSummary.TotalOutputVat > 0
+                        ? (int)Math.Round(vatSummary.TotalInputVat / vatSummary.TotalOutputVat * 100)
+                        : (vatSummary.TotalInputVat > 0 ? 100 : 0);
+                }
+                <div style="height:100%;width:@(inputBarWidth)%;background:var(--green);border-radius:6px;"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Overdue Invoices Table -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-size:16px;color:var(--red);margin:0;">⚠ Overdue Invoices</h3>
+        <div style="display:flex;gap:12px;align-items:flex-end;">
+            <input type="text" id="overdueSearch" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
+            <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;" onclick="searchOverdueInvoices()">Search</button>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Customer</th>
+                <th>Due Date</th>
+                <th>Days Overdue</th>
+                <th style="text-align:right;">Outstanding</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="overdueTableBody">
+            @foreach (var item in overdueInvoices.Items)
+            {
+                <tr>
+                    <td><strong>@item.InvoiceNumber</strong></td>
+                    <td>@item.CustomerName</td>
+                    <td>@item.DueDate.ToString("yyyy-MM-dd")</td>
+                    <td><span class="pill pill-red">@item.DaysOverdue days</span></td>
+                    <td style="text-align:right;font-weight:700;color:var(--red);">@currency@item.OutstandingBalance.ToString("N2")</td>
+                    <td><a asp-action="InvoiceDetail" asp-controller="Revenue" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">View</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <!-- Pagination -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="overduePaginationInfo" style="font-size:14px;color:var(--muted);">
+            @{
+                var overdueStart = overdueInvoices.TotalCount > 0 ? ((overdueInvoices.CurrentPage - 1) * overdueInvoices.PageSize) + 1 : 0;
+                var overdueEnd = Math.Min(overdueInvoices.CurrentPage * overdueInvoices.PageSize, overdueInvoices.TotalCount);
+            }
+            Showing @overdueStart–@overdueEnd of @overdueInvoices.TotalCount overdue invoices
+        </div>
+        <div id="overduePaginationControls" style="display:flex;gap:8px;"></div>
+    </div>
+</section>
+
+<!-- Recent Payments Table -->
+<section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-size:16px;color:var(--green);margin:0;">✓ Recent Payments</h3>
+        <div style="display:flex;gap:12px;align-items:flex-end;">
+            <input type="text" id="paymentsSearch" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
+            <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;" onclick="searchRecentPayments()">Search</button>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Invoice #</th>
+                <th>Customer</th>
+                <th>Method</th>
+                <th style="text-align:right;">Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="paymentsTableBody">
+            @foreach (var item in recentPayments.Items)
+            {
+                <tr>
+                    <td>@item.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
+                    <td><strong>@item.InvoiceNumber</strong></td>
+                    <td>@item.CustomerName</td>
+                    <td>@item.PaymentMethodName</td>
+                    <td style="text-align:right;font-weight:700;color:@(item.IsFullPayment ? "var(--green)" : "var(--gold)");">@currency@item.Amount.ToString("N2")</td>
+                    <td>
+                        @if (item.IsFullPayment)
+                        {
+                            <span class="pill pill-green">Full Payment</span>
+                        }
+                        else
+                        {
+                            <span class="pill pill-gold">Partial</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <!-- Pagination -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="paymentsPaginationInfo" style="font-size:14px;color:var(--muted);">
+            @{
+                var paymentsStart = recentPayments.TotalCount > 0 ? ((recentPayments.CurrentPage - 1) * recentPayments.PageSize) + 1 : 0;
+                var paymentsEnd = Math.Min(recentPayments.CurrentPage * recentPayments.PageSize, recentPayments.TotalCount);
+            }
+            Showing @paymentsStart–@paymentsEnd of @recentPayments.TotalCount payments
+        </div>
+        <div id="paymentsPaginationControls" style="display:flex;gap:8px;"></div>
+    </div>
+</section>
+
+<!-- Payment Modal Partial -->
+@await Html.PartialAsync("_PaymentModal")
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+        // Chart data from server
+        var revenueCollectedData = {
+            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(revenueCollected.Select(r => r.Label))),
+            amounts: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(revenueCollected.Select(r => r.Amount)))
+        };
+        var invoicedVsCollectedData = {
+            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(invoicedVsCollected.Select(r => r.Label))),
+            invoiced: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(invoicedVsCollected.Select(r => r.InvoicedAmount))),
+            collected: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(invoicedVsCollected.Select(r => r.CollectedAmount)))
+        };
+        var vatLiabilityData = {
+            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(vatLiability.Select(v => v.PeriodLabel))),
+            output: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(vatLiability.Select(v => v.OutputVat))),
+            input: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(vatLiability.Select(v => v.InputVat))),
+            net: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(vatLiability.Select(v => v.NetPayable)))
+        };
+        var currencySymbol = '@Html.Raw(currency)';
+        var overdueCurrentPage = @overdueInvoices.CurrentPage;
+        var overdueTotalPages = @overdueInvoices.TotalPages;
+        var paymentsCurrentPage = @recentPayments.CurrentPage;
+        var paymentsTotalPages = @recentPayments.TotalPages;
+    </script>
+    <script src="/js/revenue-dashboard.js"></script>
+    <script src="/js/revenue-payment.js"></script>
+}

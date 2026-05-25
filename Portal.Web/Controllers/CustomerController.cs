@@ -13,21 +13,35 @@ namespace Portal.Web.Controllers;
 public class CustomerController : Controller
 {
     private readonly ICustomerService _customerService;
+    private readonly ICurrentTenantService _currentTenantService;
 
-    public CustomerController(ICustomerService customerService)
+    private const int PageSize = 15;
+
+    public CustomerController(ICustomerService customerService, ICurrentTenantService currentTenantService)
     {
         _customerService = customerService;
+        _currentTenantService = currentTenantService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(string? searchTerm, bool? isActive)
+    public async Task<IActionResult> Index(string? searchTerm, bool? isActive, int page = 1)
     {
-        var customers = await _customerService.GetCustomersAsync(searchTerm, isActive);
+        // Reset to page 1 when filter criteria change (page not explicitly provided means filters changed)
+        if (page < 1)
+            page = 1;
+
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var pagedResult = await _customerService.GetCustomersPagedAsync(searchTerm, isActive, page, PageSize, businessId);
+
         var viewModel = new CustomerListViewModel
         {
-            Customers = customers,
+            Customers = pagedResult.Items,
             SearchTerm = searchTerm,
-            IsActiveFilter = isActive
+            IsActiveFilter = isActive,
+            CurrentPage = pagedResult.CurrentPage,
+            TotalPages = pagedResult.TotalPages,
+            TotalCount = pagedResult.TotalCount,
+            PageSize = pagedResult.PageSize
         };
         return View(viewModel);
     }

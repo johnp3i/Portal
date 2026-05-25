@@ -59,6 +59,10 @@ public class PortalDbContext : DbContext
     public DbSet<QuotationContact> QuotationContacts { get; set; } = null!;
     public DbSet<LineItemCatalog> LineItemCatalogs { get; set; } = null!;
 
+    // Product schema
+    public DbSet<Product> Products { get; set; } = null!;
+    public DbSet<ProductPriceHistory> ProductPriceHistories { get; set; } = null!;
+
     // Audit schema
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
@@ -92,6 +96,8 @@ public class PortalDbContext : DbContext
         ConfigureBusinessLogo(modelBuilder);
         ConfigureQuotationContact(modelBuilder);
         ConfigureLineItemCatalog(modelBuilder);
+        ConfigureProduct(modelBuilder);
+        ConfigureProductPriceHistory(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -416,6 +422,9 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.Subtitle)
                 .HasMaxLength(1000);
+
+            entity.Property(e => e.ProductCode)
+                .HasMaxLength(50);
         });
     }
 
@@ -556,6 +565,9 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.LineTotal)
                 .HasPrecision(18, 2);
+
+            entity.Property(e => e.ProductCode)
+                .HasMaxLength(50);
         });
     }
 
@@ -1088,6 +1100,106 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureProduct(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.ToTable("Product", "product");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany(b => b.Products)
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany(s => s.Products)
+                .HasForeignKey(e => e.SupplierId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_Product_BusinessId");
+
+            entity.HasIndex(e => new { e.BusinessId, e.ProductCode })
+                .IsUnique()
+                .HasDatabaseName("UQ_Product_BusinessId_ProductCode");
+
+            entity.Property(e => e.ProductCode)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.DefaultSellingPrice)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.DefaultCostPrice)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.DefaultVatRate)
+                .HasColumnType("decimal(5,2)");
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Product_DefaultSellingPrice",
+                "[DefaultSellingPrice] >= 0"));
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Product_DefaultCostPrice",
+                "[DefaultCostPrice] >= 0"));
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Product_DefaultVatRate",
+                "[DefaultVatRate] >= 0.00 AND [DefaultVatRate] <= 99.99"));
+        });
+    }
+
+    private static void ConfigureProductPriceHistory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProductPriceHistory>(entity =>
+        {
+            entity.ToTable("ProductPriceHistory", "product");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.PriceHistory)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.ProductId)
+                .HasDatabaseName("IX_ProductPriceHistory_ProductId");
+
+            entity.Property(e => e.SellingPrice)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.CostPrice)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.EffectiveFromUtc)
+                .IsRequired();
+
+            entity.Property(e => e.ChangedByUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
     private static void ConfigureBusinessLogo(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<BusinessLogo>(entity =>
@@ -1221,6 +1333,9 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<LineItemCatalog>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<Product>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

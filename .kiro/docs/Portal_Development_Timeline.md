@@ -18,6 +18,9 @@ Last Updated: 2026-05-20
 | ✅ | Purchase & Expense Tracking — Suppliers, categories, purchases with Origin Type (Domestic/EU RC/Non-EU), bulk entry with autocomplete+inline create, CSV import, bidirectional amount calculation, property-based tests | 2026-05-20 |
 | ✅ | VAT Submissions — Period generation from registration config, output/input/net VAT computation, submission tracking, mark-as-submitted workflow, audit logging | 2025-07-17 |
 | ✅ | Supplier Dashboard — Analytics page with KPIs, spend share donut chart, monthly/period bar charts, paginated purchases table, period filter, sidebar navigation | 2025-07-22 |
+| ✅ | Revenue Control — Payment recording, financial status engine, receivables tracking, revenue dashboard with KPIs/charts, VAT integration, property-based tests, integration tests | 2025-07-22 |
+| ✅ | Product Catalog — Product schema, CRUD, autocomplete, auto-population, price history, management UI with KPIs/charts, integration into Invoice/Quotation forms, property-based tests (21 properties) | 2025-07-25 |
+| ✅ | Customer Statement of Account — Statement generation, PDF export, email with attachment, email history, customer registry pagination, audit logging, navigation integration | 2025-07-25 |
 
 ---
 
@@ -105,20 +108,20 @@ Last Updated: 2026-05-20
 
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
-| [ ] | 4.1 | Create PaymentRepository | Module 0 | |
-| [ ] | 4.2 | Create IInvoiceFinancialStatusService (compute TotalPaid, Outstanding, FinancialStatus) | 4.1, Module 3 | |
-| [ ] | 4.3 | Create IPaymentApplicationService (validate, create, void payments) | 4.1, 4.2 | |
-| [ ] | 4.4 | Implement payment validation rules (amount > 0, invoice issued, not exceeding balance) | 4.3 | |
-| [ ] | 4.5 | Implement financial status recalculation after payment entry/void | 4.2 | |
-| [ ] | 4.6 | Implement overdue detection (DueDate < Today AND Outstanding > 0) | 4.2 | |
-| [ ] | 4.7 | Create IReceivablesQueryService (dashboard summaries, overdue list, outstanding list) | 4.2 | |
-| [ ] | 4.8 | Create RevenueController (dashboard, receivables, payment entry) | 4.3, 4.7 | |
-| [ ] | 4.9 | Build Revenue Dashboard UI (outstanding total, overdue amount, paid this month, KPI cards) | 4.8 | |
-| [ ] | 4.10 | Build Receivables list UI (filterable: unpaid, partial, overdue, paid) | 4.8 | |
-| [ ] | 4.11 | Build Invoice detail with payment history table | 4.8, 3.11 | |
-| [ ] | 4.12 | Build Add Payment modal/screen | 4.8 | |
-| [ ] | 4.13 | Implement payment void (soft-delete via IsVoided flag, recalculate status) | 4.3 | |
-| [ ] | 4.14 | Add audit logging for payment events | 4.3 | |
+| [x] | 4.1 | Create PaymentRepository | Module 0 | 2025-07-22 |
+| [x] | 4.2 | Create IInvoiceFinancialStatusService (compute TotalPaid, Outstanding, FinancialStatus) | 4.1, Module 3 | 2025-07-22 |
+| [x] | 4.3 | Create IPaymentApplicationService (validate, create, void payments) | 4.1, 4.2 | 2025-07-22 |
+| [x] | 4.4 | Implement payment validation rules (amount > 0, invoice issued, not exceeding balance) | 4.3 | 2025-07-22 |
+| [x] | 4.5 | Implement financial status recalculation after payment entry/void | 4.2 | 2025-07-22 |
+| [x] | 4.6 | Implement overdue detection (DueDate < Today AND Outstanding > 0) | 4.2 | 2025-07-22 |
+| [x] | 4.7 | Create IReceivablesQueryService (dashboard summaries, overdue list, outstanding list) | 4.2 | 2025-07-22 |
+| [x] | 4.8 | Create RevenueController (dashboard, receivables, payment entry) | 4.3, 4.7 | 2025-07-22 |
+| [x] | 4.9 | Build Revenue Dashboard UI (outstanding total, overdue amount, paid this month, KPI cards) | 4.8 | 2025-07-22 |
+| [x] | 4.10 | Build Receivables list UI (filterable: unpaid, partial, overdue, paid) | 4.8 | 2025-07-22 |
+| [x] | 4.11 | Build Invoice detail with payment history table | 4.8, 3.11 | 2025-07-22 |
+| [x] | 4.12 | Build Add Payment modal/screen | 4.8 | 2025-07-22 |
+| [x] | 4.13 | Implement payment void (soft-delete via IsVoided flag, recalculate status) | 4.3 | 2025-07-22 |
+| [x] | 4.14 | Add audit logging for payment events | 4.3 | 2025-07-22 |
 
 ---
 
@@ -184,21 +187,21 @@ Last Updated: 2026-05-20
 
 ### Module 8: Customer Statement of Account
 
-**Goal:** Generate a per-customer statement showing all invoices, payments, and running balance over a date range — available as an on-screen view and a downloadable PDF.
+**Goal:** Generate a per-customer statement for a selected period showing all invoices issued, payments received, and running balance — available as an on-screen view and a downloadable PDF.
 
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
-| [ ] | 8.1 | Create ICustomerStatementService (query invoices + payments for a customer within date range) | Module 4 | |
-| [ ] | 8.2 | Build StatementLineDto model (date, description, debit, credit, running balance) | 8.1 | |
-| [ ] | 8.3 | Implement statement generation logic (opening balance, invoice debits, payment credits, closing balance) | 8.1, 8.2 | |
-| [ ] | 8.4 | Create CustomerStatementController (Index with customer/date filters, Generate action) | 8.3 | |
-| [ ] | 8.5 | Build Customer Statement UI — filter panel (customer dropdown, date from/to) | 8.4 | |
-| [ ] | 8.6 | Build Customer Statement UI — statement table (date, description, debit, credit, balance columns) | 8.4 | |
-| [ ] | 8.7 | Build statement header section (customer details, statement period, opening/closing balance summary) | 8.6 | |
-| [ ] | 8.8 | Implement PDF export (HTML-to-PDF using existing rendering pattern or DinkToPdf) | 8.6 | |
-| [ ] | 8.9 | Add "Download PDF" and "Email Statement" action buttons | 8.8 | |
-| [ ] | 8.10 | Add statement access from Customer detail and Revenue Control screens | 8.4 | |
-| [ ] | 8.11 | Add audit logging for statement generation events | 8.4 | |
+| [x] | 8.1 | Create ICustomerStatementService (query invoices + payments for a customer within a selected period) | Module 4 | 2025-07-25 |
+| [x] | 8.2 | Build StatementLineDto model (date, type [Invoice/Payment], reference, description, debit, credit, running balance) | 8.1 | 2025-07-25 |
+| [x] | 8.3 | Implement statement generation logic (opening balance from prior periods, invoice debits, payment credits with method/reference, closing balance) | 8.1, 8.2 | 2025-07-25 |
+| [x] | 8.4 | Create CustomerStatementController (Index with customer/period filters, Generate action) | 8.3 | 2025-07-25 |
+| [x] | 8.5 | Build Customer Statement UI — filter panel (customer dropdown, period selector or date from/to) | 8.4 | 2025-07-25 |
+| [x] | 8.6 | Build Customer Statement UI — statement table (date, type, reference, description, debit, credit, balance columns) with invoice and payment rows interleaved chronologically | 8.4 | 2025-07-25 |
+| [x] | 8.7 | Build statement header section (customer details, statement period, opening balance, total invoiced, total paid, closing balance summary) | 8.6 | 2025-07-25 |
+| [x] | 8.8 | Implement PDF export (HTML-to-PDF using existing rendering pattern or DinkToPdf) | 8.6 | 2025-07-25 |
+| [x] | 8.9 | Add "Download PDF" and "Email Statement" action buttons | 8.8 | 2025-07-25 |
+| [x] | 8.10 | Add statement access from Customer detail and Revenue Control screens | 8.4 | 2025-07-25 |
+| [x] | 8.11 | Add audit logging for statement generation events | 8.4 | 2025-07-25 |
 
 ---
 

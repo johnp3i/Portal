@@ -34,6 +34,8 @@ public class InvoiceLine
 
     public int? InvoiceSectionId { get; set; }
 
+    public string? ProductCode { get; set; }
+
     // Navigation properties
     public Invoice Invoice { get; set; } = null!;
 

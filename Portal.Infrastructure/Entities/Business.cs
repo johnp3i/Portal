@@ -42,4 +42,6 @@ public class Business
     public ICollection<ProposalShare> ProposalShares { get; set; } = new List<ProposalShare>();
 
     public ICollection<BusinessLogo> BusinessLogos { get; set; } = new List<BusinessLogo>();
+
+    public ICollection<Product> Products { get; set; } = new List<Product>();
 }

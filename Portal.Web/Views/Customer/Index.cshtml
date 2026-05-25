@@ -70,6 +70,7 @@
                             <td>
                                 <div style="display:flex;gap:12px;align-items:center;">
                                     <a asp-action="Edit" asp-controller="Customer" asp-route-id="@customer.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                                    <a href="/Statement?customerId=@customer.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Statement</a>
                                     @if (customer.IsActive)
                                     {
                                         <form method="post" asp-action="Deactivate" asp-controller="Customer" asp-route-id="@customer.Id" style="display:inline;">
@@ -83,6 +84,115 @@
                     }
                 </tbody>
             </table>
+
+            @if (Model.TotalPages > 1)
+            {
+                var firstRecord = (Model.CurrentPage - 1) * Model.PageSize + 1;
+                var lastRecord = Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount);
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+                    <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;">
+                        Showing @firstRecord-@lastRecord of @Model.TotalCount
+                    </div>
+                    <div id="paginationControls" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        @{
+                            var baseUrl = "/Customer?";
+                            var queryParams = new List<string>();
+                            if (!string.IsNullOrEmpty(Model.SearchTerm))
+                            {
+                                queryParams.Add($"searchTerm={Uri.EscapeDataString(Model.SearchTerm)}");
+                            }
+                            if (Model.IsActiveFilter.HasValue)
+                            {
+                                queryParams.Add($"isActive={Model.IsActiveFilter.Value.ToString().ToLower()}");
+                            }
+                            var queryString = queryParams.Count > 0 ? string.Join("&", queryParams) + "&" : "";
+                        }
+
+                        @if (Model.HasPreviousPage)
+                        {
+                            <a href="@(baseUrl + queryString)page=@(Model.CurrentPage - 1)"
+                               style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#0D5EA6;border:1px solid #d0d9e2;">
+                                Previous
+                            </a>
+                        }
+                        else
+                        {
+                            <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;color:#a0aab4;border:1px solid #e2e8f0;cursor:not-allowed;">
+                                Previous
+                            </span>
+                        }
+
+                        @{
+                            var startPage = Math.Max(1, Model.CurrentPage - 2);
+                            var endPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+
+                            if (startPage > 1)
+                            {
+                                <a href="@(baseUrl + queryString)page=1"
+                                   style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#0D5EA6;border:1px solid #d0d9e2;">
+                                    1
+                                </a>
+                                if (startPage > 2)
+                                {
+                                    <span style="padding:6px 8px;font-size:13px;color:#5a6a7a;">…</span>
+                                }
+                            }
+
+                            for (var i = startPage; i <= endPage; i++)
+                            {
+                                if (i == Model.CurrentPage)
+                                {
+                                    <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;background:#0D5EA6;color:#fff;border:1px solid #0D5EA6;">
+                                        @i
+                                    </span>
+                                }
+                                else
+                                {
+                                    <a href="@(baseUrl + queryString)page=@i"
+                                       style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#0D5EA6;border:1px solid #d0d9e2;">
+                                        @i
+                                    </a>
+                                }
+                            }
+
+                            if (endPage < Model.TotalPages)
+                            {
+                                if (endPage < Model.TotalPages - 1)
+                                {
+                                    <span style="padding:6px 8px;font-size:13px;color:#5a6a7a;">…</span>
+                                }
+                                <a href="@(baseUrl + queryString)page=@Model.TotalPages"
+                                   style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#0D5EA6;border:1px solid #d0d9e2;">
+                                    @Model.TotalPages
+                                </a>
+                            }
+                        }
+
+                        @if (Model.HasNextPage)
+                        {
+                            <a href="@(baseUrl + queryString)page=@(Model.CurrentPage + 1)"
+                               style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#0D5EA6;border:1px solid #d0d9e2;">
+                                Next
+                            </a>
+                        }
+                        else
+                        {
+                            <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;color:#a0aab4;border:1px solid #e2e8f0;cursor:not-allowed;">
+                                Next
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+            else if (Model.TotalCount > 0)
+            {
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+                    <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;">
+                        Showing 1-@Model.TotalCount of @Model.TotalCount
+                    </div>
+                </div>
+            }
         }
         else
         {

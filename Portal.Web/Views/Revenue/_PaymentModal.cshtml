@@ -1,0 +1,76 @@
+@{
+    var paymentMethods = ViewBag.PaymentMethods as List<Portal.Infrastructure.Entities.PaymentMethodType> ?? new List<Portal.Infrastructure.Entities.PaymentMethodType>();
+    var currencySymbol = ViewBag.CurrencySymbol as string ?? "€";
+}
+
+<!-- Payment Modal -->
+<div id="paymentModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(13,94,166,.18);">
+        <h2 style="font-size:22px;margin-bottom:6px;">Record Payment</h2>
+        <p class="muted" style="font-size:14px;margin-bottom:24px;">Enter payment details for this invoice.</p>
+
+        <!-- Invoice context bar (shown when invoice is pre-selected) -->
+        <div id="paymentModalContext" style="background:var(--bg-secondary, #EEF4F8);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <div style="font-size:12px;color:var(--muted, #5a6a7a);font-weight:700;">INVOICE</div>
+                <div style="font-weight:700;margin-top:2px;" id="paymentModalInvoiceInfo">—</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:12px;color:var(--muted, #5a6a7a);font-weight:700;">REMAINING</div>
+                <div style="font-weight:700;color:var(--red, #C24A4A);margin-top:2px;" id="paymentModalRemainingBalance">—</div>
+            </div>
+        </div>
+
+        <!-- Invoice selector (shown when no invoice is pre-selected) -->
+        <div id="paymentModalInvoiceSelector" style="display:none;margin-bottom:20px;">
+            <div class="field">
+                <label for="paymentInvoiceSelect">Select Invoice *</label>
+                <select id="paymentInvoiceSelect" style="width:100%;" onchange="onInvoiceSelected(this)">
+                    <option value="">-- Select an invoice with outstanding balance --</option>
+                </select>
+            </div>
+        </div>
+
+        <form id="paymentForm" onsubmit="return false;" data-outstanding-balance="0">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="paymentInvoiceId" name="invoiceId" value="" />
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="field">
+                    <label for="paymentDate">Payment Date *</label>
+                    <input type="date" id="paymentDate" name="paymentDate" required />
+                </div>
+                <div class="field">
+                    <label for="paymentAmount">Amount *</label>
+                    <input type="number" id="paymentAmount" name="amount" step="0.01" min="0.01" placeholder="0.00" required />
+                </div>
+                <div class="field">
+                    <label for="paymentMethod">Payment Method *</label>
+                    <select id="paymentMethod" name="paymentMethodTypeId" required>
+                        <option value="">-- Select Method --</option>
+                        @foreach (var method in paymentMethods)
+                        {
+                            <option value="@method.Id">@method.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="paymentReference">Reference</label>
+                    <input type="text" id="paymentReference" name="reference" placeholder="e.g. TXN-12345" />
+                </div>
+            </div>
+            <div class="field" style="margin-top:16px;">
+                <label for="paymentNotes">Notes</label>
+                <textarea id="paymentNotes" name="notes" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:14px;resize:vertical;min-height:60px;" placeholder="Optional notes about this payment..."></textarea>
+            </div>
+
+            <!-- Validation error message -->
+            <div id="paymentValidationError" style="display:none;margin-top:12px;padding:10px 14px;border-radius:10px;background:rgba(194,74,74,.08);color:#C24A4A;font-size:13px;font-weight:600;"></div>
+
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+                <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="paymentSubmitBtn" onclick="submitPayment()">Record Payment</button>
+            </div>
+        </form>
+    </div>
+</div>

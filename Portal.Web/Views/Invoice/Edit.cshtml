@@ -88,6 +88,7 @@
     <!-- Add Line Form (hidden by default) -->
     <div id="addLineForm" style="display:none;margin-top:18px;" class="surface card-pad">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">New Line Item</h3>
+        <input type="hidden" id="newLine_productCode" />
         <div class="form-grid">
             <div class="field" style="grid-column:1 / -1;">
                 <label>Description *</label>
@@ -335,7 +336,8 @@
                 + '&discount=' + document.getElementById('newLine_discount').value
                 + '&discountType=' + document.getElementById('newLine_discountType').value
                 + '&costPrice=' + (document.getElementById('newLine_costPrice').value || '')
-                + '&subtitle=' + encodeURIComponent(document.getElementById('newLine_subtitle').value || '');
+                + '&subtitle=' + encodeURIComponent(document.getElementById('newLine_subtitle').value || '')
+                + '&productCode=' + encodeURIComponent(document.getElementById('newLine_productCode').value || '');
 
             fetch('/Invoice/AddLine', {
                 method: 'POST',

@@ -20,4 +20,6 @@ public class Supplier
     public Business Business { get; set; } = null!;
 
     public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
+
+    public ICollection<Product> Products { get; set; } = new List<Product>();
 }

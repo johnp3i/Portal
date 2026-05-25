@@ -1,0 +1,364 @@
+@model Portal.Infrastructure.Models.StatementPdfModel
+@{
+    Layout = null;
+    var statement = Model.Statement;
+    var currencySymbol = Model.CurrencySymbol;
+    var lines = statement.Lines;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Statement of Account — @Model.CustomerName</title>
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --border: rgba(13,94,166,.08);
+            --success: #129867;
+            --danger: #C24A4A;
+            --warning: #C8912E;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @@page { size: landscape; margin: 20mm 15mm; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background: #fff;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 0;
+        }
+        .page {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 32px 40px;
+        }
+        h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--blue);
+        }
+        h2 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--blue);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-left img {
+            max-height: 50px;
+            max-width: 160px;
+        }
+        .header-right img {
+            max-height: 50px;
+            max-width: 160px;
+        }
+        .header-right {
+            text-align: right;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .header-right .business-name {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        /* Customer & Period Info */
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .info-block .label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 3px;
+        }
+        .info-block .value {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .info-block .detail {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* KPI Summary */
+        .kpi-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .kpi-card .kpi-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .kpi-card .kpi-value {
+            font-size: 16px;
+            font-weight: 800;
+            font-family: 'Manrope', sans-serif;
+        }
+        .kpi-card .kpi-sub {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Transaction Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        th {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            padding: 8px 10px;
+            border-bottom: 2px solid var(--border);
+            text-align: left;
+        }
+        th.right { text-align: right; }
+        td {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            font-size: 11px;
+        }
+        td.right { text-align: right; }
+        tr.row-opening td,
+        tr.row-closing td {
+            background: var(--bg);
+            font-weight: 700;
+        }
+
+        /* Type Pills */
+        .type-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .type-pill.opening { background: #E3F0FF; color: var(--blue); }
+        .type-pill.invoice { background: #FFF5E0; color: var(--warning); }
+        .type-pill.payment { background: #E6F7F0; color: var(--success); }
+        .type-pill.closing { background: #FDEAEA; color: var(--danger); }
+
+        /* Footer Totals */
+        .totals-footer td {
+            border-top: 2px solid var(--blue);
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 10px;
+        }
+
+        /* Balance styling */
+        .balance-outstanding { color: var(--danger); font-weight: 700; }
+        .balance-settled { color: var(--success); font-weight: 700; }
+
+        /* Print */
+        @@media print {
+            body { padding: 0; }
+            .page { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Business Header with Logo -->
+    <div class="header">
+        <div class="header-left">
+            <div>
+                <h1>STATEMENT OF ACCOUNT</h1>
+            </div>
+        </div>
+        <div class="header-right">
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessLogoUrl))
+            {
+                <img src="@Model.BusinessLogoUrl" alt="@Model.BusinessName" />
+            }
+            else
+            {
+                <div class="business-name">@Model.BusinessName</div>
+            }
+        </div>
+    </div>
+
+    <!-- Customer Details & Period -->
+    <div class="info-section">
+        <div class="info-block">
+            <div class="label">Customer</div>
+            <div class="value">@Model.CustomerName</div>
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerAddress))
+            {
+                <div class="detail">@Model.CustomerAddress</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+            {
+                <div class="detail">@Model.CustomerEmail</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerPhone))
+            {
+                <div class="detail">@Model.CustomerPhone</div>
+            }
+        </div>
+        <div class="info-block" style="text-align:right;">
+            <div class="label">Statement Period</div>
+            <div class="value">@Model.FromDate.ToString("dd MMM yyyy") — @Model.ToDate.ToString("dd MMM yyyy")</div>
+        </div>
+    </div>
+
+    <!-- KPI Summary -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Opening Balance</div>
+            <div class="kpi-value">@currencySymbol@statement.OpeningBalance.ToString("N2")</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Total Invoiced</div>
+            <div class="kpi-value">@currencySymbol@statement.TotalInvoiced.ToString("N2")</div>
+            <div class="kpi-sub">@statement.InvoiceCount invoice@(statement.InvoiceCount != 1 ? "s" : "")</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Total Paid</div>
+            <div class="kpi-value">@currencySymbol@statement.TotalPaid.ToString("N2")</div>
+            <div class="kpi-sub">@statement.PaymentCount payment@(statement.PaymentCount != 1 ? "s" : "")</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Closing Balance</div>
+            <div class="kpi-value @(statement.ClosingBalance > 0 ? "balance-outstanding" : "balance-settled")">
+                @currencySymbol@statement.ClosingBalance.ToString("N2")
+            </div>
+            <div class="kpi-sub">@(statement.ClosingBalance > 0 ? "Outstanding" : "Settled")</div>
+        </div>
+    </div>
+
+    <!-- Transaction Table -->
+    <h2>Transaction History</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:90px;">Date</th>
+                <th style="width:80px;">Type</th>
+                <th>Reference</th>
+                <th>Description</th>
+                <th class="right" style="width:100px;">Debit</th>
+                <th class="right" style="width:100px;">Credit</th>
+                <th class="right" style="width:110px;">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in lines)
+            {
+                var rowClass = line.Type == Portal.Infrastructure.Models.StatementLineType.Opening ? "row-opening"
+                    : line.Type == Portal.Infrastructure.Models.StatementLineType.Closing ? "row-closing"
+                    : "";
+                var pillClass = line.Type.ToString().ToLower();
+
+                <tr class="@rowClass">
+                    <td>@line.Date.ToString("dd MMM yyyy")</td>
+                    <td><span class="type-pill @pillClass">@line.Type</span></td>
+                    <td>@line.Reference</td>
+                    <td>@line.Description</td>
+                    <td class="right">
+                        @if (line.Debit > 0)
+                        {
+                            @($"{currencySymbol}{line.Debit:N2}")
+                        }
+                        else if (line.Type == Portal.Infrastructure.Models.StatementLineType.Invoice)
+                        {
+                            @($"{currencySymbol}0.00")
+                        }
+                        else
+                        {
+                            <span style="color:var(--muted);">—</span>
+                        }
+                    </td>
+                    <td class="right">
+                        @if (line.Credit > 0)
+                        {
+                            @($"{currencySymbol}{line.Credit:N2}")
+                        }
+                        else if (line.Type == Portal.Infrastructure.Models.StatementLineType.Payment)
+                        {
+                            @($"{currencySymbol}0.00")
+                        }
+                        else
+                        {
+                            <span style="color:var(--muted);">—</span>
+                        }
+                    </td>
+                    <td class="right @(line.RunningBalance > 0 ? "balance-outstanding" : line.RunningBalance == 0 ? "balance-settled" : "")">
+                        @currencySymbol@line.RunningBalance.ToString("N2")
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr class="totals-footer">
+                <td colspan="4" style="text-align:right;font-weight:700;">Period Totals</td>
+                <td class="right">@currencySymbol@statement.TotalInvoiced.ToString("N2")</td>
+                <td class="right">@currencySymbol@statement.TotalPaid.ToString("N2")</td>
+                <td class="right @(statement.ClosingBalance > 0 ? "balance-outstanding" : "balance-settled")">
+                    @currencySymbol@statement.ClosingBalance.ToString("N2")
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- Footer -->
+    <div style="margin-top:24px;padding-top:12px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center;">
+        Statement generated on @DateTime.UtcNow.ToString("dd MMM yyyy") | @Model.BusinessName
+    </div>
+    <div style="margin-top:8px;font-size:9px;color:#b0bec5;text-align:center;letter-spacing:0.03em;">
+        Powered by 3 Inventors — Operational Intelligence
+    </div>
+
+</div>
+</body>
+</html>

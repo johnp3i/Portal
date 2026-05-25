@@ -1,8 +1,11 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
+using System.Security.Claims;
 
 namespace Portal.Infrastructure.Services;
 
@@ -24,6 +27,9 @@ public class InvoiceService : IInvoiceService
     private readonly VatSubmissionPeriodRepository _vatSubmissionPeriodRepository;
     private readonly VatSubmissionRepository _vatSubmissionRepository;
     private readonly PortalDbContext _portalDbContext;
+    private readonly IProductService _productService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<InvoiceService> _logger;
 
     private static readonly Dictionary<int, List<int>> ValidTransitionsMap = new()
     {
@@ -50,7 +56,10 @@ public class InvoiceService : IInvoiceService
         AuditLogRepository auditLogRepository,
         VatSubmissionPeriodRepository vatSubmissionPeriodRepository,
         VatSubmissionRepository vatSubmissionRepository,
-        PortalDbContext portalDbContext)
+        PortalDbContext portalDbContext,
+        IProductService productService,
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<InvoiceService> logger)
     {
         _currentTenantService = currentTenantService;
         _invoiceRepository = invoiceRepository;
@@ -64,6 +73,9 @@ public class InvoiceService : IInvoiceService
         _vatSubmissionPeriodRepository = vatSubmissionPeriodRepository;
         _vatSubmissionRepository = vatSubmissionRepository;
         _portalDbContext = portalDbContext;
+        _productService = productService;
+        _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
     public async Task<Invoice> ConvertFromQuotationAsync(int quotationId, string userId)
@@ -188,7 +200,8 @@ public class InvoiceService : IInvoiceService
                     SortOrder = line.SortOrder,
                     ReferenceUrl = line.ReferenceUrl,
                     Subtitle = line.Subtitle,
-                    InvoiceSectionId = invoiceSectionId
+                    InvoiceSectionId = invoiceSectionId,
+                    ProductCode = line.ProductCode
                 };
 
                 await _invoiceLineRepository.InsertAsync(invoiceLine);
@@ -243,6 +256,17 @@ public class InvoiceService : IInvoiceService
 
             // 13. Commit transaction
             await transaction.CommitAsync();
+
+            // 14. Auto-populate product catalog after successful persistence (outside transaction)
+            foreach (var line in quotationLines)
+            {
+                await _productService.AutoPopulateFromLineItemAsync(
+                    line.ProductCode,
+                    line.Description,
+                    line.UnitPrice,
+                    line.VatRate,
+                    userId);
+            }
 
             return invoice;
         }
@@ -334,6 +358,8 @@ public class InvoiceService : IInvoiceService
         decimal subtotal = 0;
         decimal taxAmount = 0;
         int sortOrder = 1;
+        var createInvoiceUserId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? string.Empty;
 
         foreach (var lineDto in lines)
         {
@@ -371,10 +397,19 @@ public class InvoiceService : IInvoiceService
                 SortOrder = sortOrder++,
                 ReferenceUrl = lineDto.ReferenceUrl,
                 Subtitle = lineDto.Subtitle,
-                InvoiceSectionId = invoiceSectionId
+                InvoiceSectionId = invoiceSectionId,
+                ProductCode = lineDto.ProductCode
             };
 
             await _invoiceLineRepository.InsertAsync(invoiceLine);
+
+            // Auto-populate product catalog after line item persistence
+            await _productService.AutoPopulateFromLineItemAsync(
+                lineDto.ProductCode,
+                lineDto.Description,
+                lineDto.UnitPrice,
+                lineDto.VatRate,
+                createInvoiceUserId);
 
             subtotal += lineTotal;
             taxAmount += lineTotal * lineDto.VatRate / 100m;
@@ -578,7 +613,8 @@ public class InvoiceService : IInvoiceService
 
     public async Task<InvoiceLine> AddLineAsync(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
-        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId)
+        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
+        string? productCode = null)
     {
         var businessId = _currentTenantService.CurrentBusinessId;
 
@@ -627,11 +663,22 @@ public class InvoiceService : IInvoiceService
             SortOrder = nextSortOrder,
             ReferenceUrl = referenceUrl,
             Subtitle = subtitle,
-            InvoiceSectionId = invoiceSectionId
+            InvoiceSectionId = invoiceSectionId,
+            ProductCode = productCode
         };
 
         var lineId = await _invoiceLineRepository.InsertAsync(invoiceLine);
         invoiceLine.Id = lineId;
+
+        // Auto-populate product catalog after line item persistence
+        var addLineUserId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? string.Empty;
+        await _productService.AutoPopulateFromLineItemAsync(
+            productCode,
+            description,
+            unitPrice,
+            vatRate,
+            addLineUserId);
 
         // Recompute invoice totals
         await RecomputeAndUpdateTotalsAsync(invoiceId);

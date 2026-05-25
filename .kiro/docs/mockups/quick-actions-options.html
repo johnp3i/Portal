@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quick Actions — Design Options</title>
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --border: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 40px;
+            line-height: 1.5;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+        h2 { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--blue); }
+        .option-section {
+            background: #fff;
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 12px rgba(13,94,166,.04);
+        }
+        .option-label {
+            display: inline-block;
+            background: var(--blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .description {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        /* ===== OPTION A: Compact Icon Row ===== */
+        .icon-row {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .icon-row a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--text);
+            transition: transform 0.15s;
+        }
+        .icon-row a:hover { transform: translateY(-2px); }
+        .icon-row .circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(13,94,166,.08);
+        }
+        .icon-row .circle-blue { background: #E3F0FF; }
+        .icon-row .circle-green { background: #E6F7F0; }
+        .icon-row .circle-gold { background: #FFF5E0; }
+        .icon-row .circle-red { background: #FDEAEA; }
+        .icon-row span {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-align: center;
+            max-width: 70px;
+        }
+
+        /* ===== OPTION B: Pill Buttons ===== */
+        .pill-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .pill-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--text);
+            background: #fff;
+            border: 1px solid #d0d9e2;
+            transition: all 0.15s;
+        }
+        .pill-btn:hover {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+        .pill-btn .emoji { font-size: 15px; }
+
+        /* ===== OPTION C: Card Tiles ===== */
+        .tile-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+        }
+        .tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 18px 12px;
+            border-radius: 14px;
+            text-decoration: none;
+            color: var(--text);
+            background: var(--bg2);
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .tile:hover {
+            background: #fff;
+            border-color: var(--blue);
+            box-shadow: 0 4px 16px rgba(13,94,166,.08);
+        }
+        .tile .tile-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .tile .tile-icon-blue { background: #E3F0FF; }
+        .tile .tile-icon-green { background: #E6F7F0; }
+        .tile .tile-icon-gold { background: #FFF5E0; }
+        .tile .tile-icon-red { background: #FDEAEA; }
+        .tile span {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* ===== OPTION D: Minimal Inline Links ===== */
+        .inline-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .inline-actions .separator {
+            width: 1px;
+            height: 16px;
+            background: #d0d9e2;
+            margin: 0 4px;
+        }
+        .inline-actions a {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--blue);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        .inline-actions a:hover {
+            background: #E3F0FF;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Quick Actions — Design Options</h1>
+<p style="color:var(--muted);margin-bottom:32px;">Pick the style that fits the operational tone. All options go at the top, right below the topbar heading.</p>
+
+<!-- OPTION A -->
+<div class="option-section">
+    <div class="option-label">Option A</div>
+    <h2>Compact Icon Row</h2>
+    <p class="description">Circular icons with short labels below. Clean, visual, app-like feel. Works well with 5-7 actions.</p>
+    <div class="icon-row">
+        <a href="#">
+            <div class="circle circle-blue">📝</div>
+            <span>New Quotation</span>
+        </a>
+        <a href="#">
+            <div class="circle circle-green">💰</div>
+            <span>Record Payment</span>
+        </a>
+        <a href="#">
+            <div class="circle circle-gold">📄</div>
+            <span>Create Invoice</span>
+        </a>
+        <a href="#">
+            <div class="circle circle-blue">📊</div>
+            <span>Statement</span>
+        </a>
+        <a href="#">
+            <div class="circle circle-red">🧾</div>
+            <span>Record Purchase</span>
+        </a>
+        <a href="#">
+            <div class="circle circle-green">👤</div>
+            <span>New Customer</span>
+        </a>
+    </div>
+</div>
+
+<!-- OPTION B -->
+<div class="option-section">
+    <div class="option-label">Option B</div>
+    <h2>Pill Buttons</h2>
+    <p class="description">Horizontal row of rounded pill buttons. Compact, professional, easy to scan. Hover turns blue.</p>
+    <div class="pill-row">
+        <a href="#" class="pill-btn"><span class="emoji">📝</span> New Quotation</a>
+        <a href="#" class="pill-btn"><span class="emoji">💰</span> Record Payment</a>
+        <a href="#" class="pill-btn"><span class="emoji">📄</span> Create Invoice</a>
+        <a href="#" class="pill-btn"><span class="emoji">📊</span> Customer Statement</a>
+        <a href="#" class="pill-btn"><span class="emoji">🧾</span> Record Purchase</a>
+        <a href="#" class="pill-btn"><span class="emoji">👤</span> New Customer</a>
+    </div>
+</div>
+
+<!-- OPTION C -->
+<div class="option-section">
+    <div class="option-label">Option C</div>
+    <h2>Card Tiles (Grid)</h2>
+    <p class="description">Equal-width tiles in a grid. Structured, dashboard-native feel. Each tile has an icon badge and label.</p>
+    <div class="tile-row">
+        <a href="#" class="tile">
+            <div class="tile-icon tile-icon-blue">📝</div>
+            <span>New Quotation</span>
+        </a>
+        <a href="#" class="tile">
+            <div class="tile-icon tile-icon-green">💰</div>
+            <span>Record Payment</span>
+        </a>
+        <a href="#" class="tile">
+            <div class="tile-icon tile-icon-gold">📄</div>
+            <span>Create Invoice</span>
+        </a>
+        <a href="#" class="tile">
+            <div class="tile-icon tile-icon-blue">📊</div>
+            <span>Customer Statement</span>
+        </a>
+        <a href="#" class="tile">
+            <div class="tile-icon tile-icon-red">🧾</div>
+            <span>Record Purchase</span>
+        </a>
+        <a href="#" class="tile">
+            <div class="tile-icon tile-icon-green">👤</div>
+            <span>New Customer</span>
+        </a>
+    </div>
+</div>
+
+<!-- OPTION D -->
+<div class="option-section">
+    <div class="option-label">Option D</div>
+    <h2>Minimal Inline Links</h2>
+    <p class="description">Simple text links in a row, separated by dividers. Ultra-minimal, no visual noise. Hover highlights with a subtle background.</p>
+    <div class="inline-actions">
+        <a href="#">New Quotation</a>
+        <div class="separator"></div>
+        <a href="#">Record Payment</a>
+        <div class="separator"></div>
+        <a href="#">Create Invoice</a>
+        <div class="separator"></div>
+        <a href="#">Customer Statement</a>
+        <div class="separator"></div>
+        <a href="#">Record Purchase</a>
+        <div class="separator"></div>
+        <a href="#">New Customer</a>
+    </div>
+</div>
+
+</body>
+</html>

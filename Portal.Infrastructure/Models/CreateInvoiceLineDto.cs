@@ -15,4 +15,5 @@ public class CreateInvoiceLineDto
     public string? ReferenceUrl { get; set; }
     public string? Subtitle { get; set; }
     public int? SectionIndex { get; set; }
+    public string? ProductCode { get; set; }
 }

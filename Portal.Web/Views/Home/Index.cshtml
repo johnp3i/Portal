@@ -1,95 +1,485 @@
+@model Portal.Infrastructure.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var draftCount = (int)ViewBag.DraftCount;
-    var sentCount = (int)ViewBag.SentThisMonthCount;
-    var sentValue = (decimal)ViewBag.SentThisMonthValue;
-    var acceptedCount = (int)ViewBag.AcceptedCount;
-    var acceptanceRate = (decimal)ViewBag.AcceptanceRate;
-    var customerCount = (int)ViewBag.ActiveCustomerCount;
-    var recentQuotations = ViewBag.RecentQuotations as List<Portal.Infrastructure.Models.QuotationListDto>;
 }
 
 <div class="topbar">
     <div>
-        <div class="eyebrow"><span class="dot"></span> Sales Workspace</div>
+        <div class="eyebrow"><span class="dot"></span> Operations Workspace</div>
         <h1 style="margin-top:14px;font-size:42px;">Dashboard</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Track quotations, customers, and operational activity in one workspace.</p>
-    </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <a class="btn btn-secondary" asp-controller="Quotation" asp-action="Index">View Quotations</a>
-        <a class="btn btn-primary" asp-controller="Quotation" asp-action="Create">New Quotation</a>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Track quotations, revenue, expenses, and operational activity in one workspace.</p>
     </div>
 </div>
 
+<!-- Quick Actions -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+    <a asp-controller="Quotation" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Quotation</a>
+    <a asp-controller="Revenue" asp-action="Dashboard" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Record Payment</a>
+    <a asp-controller="Invoice" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Create Invoice</a>
+    <a asp-controller="Statement" asp-action="Index" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Customer Statement</a>
+    <a asp-controller="Purchase" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Record Purchase</a>
+    <a asp-controller="Customer" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Customer</a>
+</div>
+
+<!-- Quotation KPIs Row -->
 <div class="grid-4">
-    <section class="surface card-pad">
+    <section class="surface card-pad" style="text-align:center;">
         <div class="label">Draft Quotations</div>
-        <div class="metric">@draftCount</div>
+        <div class="metric">@Model.DraftCount</div>
         <div class="muted">Awaiting review</div>
     </section>
-    <section class="surface card-pad">
-        <div class="label">Sent</div>
-        <div class="metric">@sentCount</div>
-        <div class="muted">@(ViewBag.CurrencySymbol)@sentValue.ToString("N2") pipeline value</div>
+    <section class="surface card-pad" style="text-align:center;">
+        <div class="label">Sent This Month</div>
+        <div class="metric">@Model.SentThisMonthCount</div>
+        <div class="muted">@Model.CurrencySymbol@Model.SentThisMonthValue.ToString("N2") pipeline value</div>
     </section>
-    <section class="surface card-pad">
+    <section class="surface card-pad" style="text-align:center;">
         <div class="label">Accepted</div>
-        <div class="metric">@acceptedCount</div>
-        <div class="muted">@acceptanceRate% acceptance rate</div>
+        <div class="metric">@Model.AcceptedCount</div>
+        <div class="muted">@Model.AcceptanceRate% acceptance rate</div>
     </section>
-    <section class="surface card-pad">
+    <section class="surface card-pad" style="text-align:center;">
         <div class="label">Active Customers</div>
-        <div class="metric">@customerCount</div>
+        <div class="metric">@Model.ActiveCustomerCount</div>
         <div class="muted">In registry</div>
     </section>
 </div>
 
-@if (recentQuotations != null && recentQuotations.Any())
-{
-    <section class="glass card-pad" style="margin-top:24px;">
-        <div class="label">Recent Quotations</div>
-        <h2 style="margin-top:8px;font-size:24px;">Latest activity</h2>
+<!-- Revenue KPI Cards Row -->
+<div class="grid-4" style="margin-top:24px;">
+    <section class="surface card-pad" style="border-left: 4px solid #129867;">
+        <div class="label">Revenue This Month</div>
+        <div class="metric-sm" style="color:#129867;">@Model.CurrencySymbol@Model.RevenueThisMonth.ToString("N2")</div>
+        <div class="muted">@Model.RevenuePaymentCount payments received</div>
+    </section>
+    <section class="surface card-pad" style="border-left: 4px solid #C24A4A;">
+        <div class="label">Outstanding</div>
+        <div class="metric-sm" style="color:#C24A4A;">@Model.CurrencySymbol@Model.OutstandingAmount.ToString("N2")</div>
+        <div class="muted">@Model.OutstandingInvoiceCount unpaid invoices</div>
+    </section>
+    <section class="surface card-pad" style="border-left: 4px solid #C8912E;">
+        <div class="label">Overdue</div>
+        <div class="metric-sm" style="color:#C8912E;">@Model.CurrencySymbol@Model.OverdueAmount.ToString("N2")</div>
+        <div class="muted">@Model.OverdueInvoiceCount invoices past due</div>
+    </section>
+    <section class="surface card-pad" style="border-left: 4px solid #0D5EA6;">
+        <div class="label">Expenses This Month</div>
+        <div class="metric-sm" style="color:#0D5EA6;">@Model.CurrencySymbol@Model.ExpensesThisMonth.ToString("N2")</div>
+        <div class="muted">@Model.ExpensesPurchaseCount purchases recorded</div>
+    </section>
+</div>
 
-        <div style="margin-top:18px;">
+<!-- Charts Row -->
+<div class="grid-2" style="margin-top:24px;">
+    <section class="glass card-pad">
+        <h3 style="margin-bottom:16px;">Monthly Revenue vs Expenses</h3>
+        @if (Model.RevenueVsExpenses.Any())
+        {
+            <div style="position:relative;height:220px;">
+                <canvas id="revenueVsExpensesChart"></canvas>
+            </div>
+        }
+        else
+        {
+            <div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No revenue or expense data available for the last 6 months.</p>
+            </div>
+        }
+    </section>
+    <section class="glass card-pad">
+        <h3 style="margin-bottom:16px;">Invoice Status Breakdown</h3>
+        @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
+        {
+            <div style="position:relative;height:220px;">
+                <canvas id="invoiceStatusChart"></canvas>
+            </div>
+        }
+        else
+        {
+            <div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No invoice data available.</p>
+            </div>
+        }
+    </section>
+</div>
+
+<!-- Tables Row 1: Recent Invoices + Overdue Invoices -->
+<div class="grid-2" style="margin-top:24px;">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Invoices</h3>
+            <a asp-controller="Invoice" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+        </div>
+        @if (Model.RecentInvoices.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th class="right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invoice in Model.RecentInvoices)
+                    {
+                        var invoicePillClass = invoice.InvoiceFinancialStatusTypeId switch
+                        {
+                            1 => "pill-blue",    // Unpaid
+                            2 => "pill-gold",    // Partially Paid
+                            3 => "pill-green",   // Paid
+                            4 => "pill-red",     // Overdue
+                            _ => "pill-blue"
+                        };
+                        <tr>
+                            <td><strong>@invoice.InvoiceNumber</strong></td>
+                            <td>@invoice.CustomerName</td>
+                            <td><span class="pill @invoicePillClass">@invoice.FinancialStatusName</span></td>
+                            <td class="right">@Model.CurrencySymbol@invoice.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No recent invoices available.</p>
+            </div>
+        }
+    </section>
+
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Overdue Invoices</h3>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:#C24A4A;text-decoration:none;">View All →</a>
+        </div>
+        @if (Model.OverdueInvoices.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Due Date</th>
+                        <th class="right">Outstanding</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var overdue in Model.OverdueInvoices)
+                    {
+                        <tr style="background:#FFF8F8;">
+                            <td><strong>@overdue.InvoiceNumber</strong></td>
+                            <td>@overdue.CustomerName</td>
+                            <td style="color:#C24A4A;font-weight:600;">@overdue.DueDate.ToString("dd MMM yyyy")</td>
+                            <td class="right" style="color:#C24A4A;font-weight:700;">@Model.CurrencySymbol@overdue.OutstandingBalance.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div style="margin-top:14px;padding:12px 16px;background:#FFF8F8;border-radius:10px;border:1px solid #FDEAEA;">
+                <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">⚠️ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
+            </div>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No overdue invoices. All payments are up to date.</p>
+            </div>
+        }
+    </section>
+</div>
+
+<!-- Tables Row 2: Recent Payments + Recent Quotations -->
+<div class="grid-2" style="margin-top:24px;">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Payments</h3>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">Revenue →</a>
+        </div>
+        @if (Model.RecentPayments.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Method</th>
+                        <th class="right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var payment in Model.RecentPayments)
+                    {
+                        var methodPillClass = payment.PaymentMethodName?.ToLower() switch
+                        {
+                            "bank transfer" => "pill-cyan",
+                            "cash" => "pill-green",
+                            "card" => "pill-blue",
+                            "cheque" => "pill-gold",
+                            _ => "pill-grey"
+                        };
+                        <tr>
+                            <td>@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
+                            <td>@payment.CustomerName</td>
+                            <td><span class="pill @methodPillClass">@payment.PaymentMethodName</span></td>
+                            <td class="right" style="color:#129867;font-weight:700;">@Model.CurrencySymbol@payment.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No recent payments available.</p>
+            </div>
+        }
+    </section>
+
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Quotations</h3>
+            <a asp-controller="Quotation" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+        </div>
+        @if (Model.RecentQuotations.Any())
+        {
             <table>
                 <thead>
                     <tr>
                         <th>Reference</th>
                         <th>Customer</th>
                         <th>Status</th>
-                        <th>Total</th>
-                        <th>Actions</th>
+                        <th class="right">Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var q in recentQuotations)
+                    @foreach (var q in Model.RecentQuotations)
                     {
+                        var quotationPillClass = q.QuotationStatusTypeId switch
+                        {
+                            1 => "pill-gold",    // Draft
+                            2 => "pill-blue",    // Sent
+                            3 => "pill-green",   // Accepted
+                            4 => "pill-blue",    // Converted
+                            5 => "pill-red",     // Rejected
+                            _ => "pill-gold"
+                        };
                         <tr>
                             <td><strong>@q.Reference</strong></td>
                             <td>@q.CustomerName</td>
-                            <td>
-                                @{
-                                    var pillClass = q.QuotationStatusTypeId switch
-                                    {
-                                        1 => "pill-gold",
-                                        2 => "pill-blue",
-                                        3 => "pill-green",
-                                        4 => "pill-blue",
-                                        5 => "pill-red",
-                                        _ => "pill-gold"
-                                    };
-                                }
-                                <span class="pill @pillClass">@q.StatusName</span>
-                            </td>
-                            <td>@(ViewBag.CurrencySymbol)@q.TotalAmount.ToString("N2")</td>
-                            <td style="display:flex;gap:12px;">
-                                <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@q.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
-                                <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@q.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Preview</a>
-                            </td>
+                            <td><span class="pill @quotationPillClass">@q.StatusName</span></td>
+                            <td class="right">@Model.CurrencySymbol@q.TotalAmount.ToString("N2")</td>
                         </tr>
                     }
                 </tbody>
             </table>
-        </div>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No recent quotations available.</p>
+            </div>
+        }
     </section>
+</div>
+
+<!-- Bottom Row: VAT Summary + Top Customers -->
+<div class="grid-2" style="margin-top:24px;">
+    <section class="glass card-pad">
+        <h3 style="margin-bottom:16px;">VAT Summary</h3>
+        @if (Model.HasVatData)
+        {
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
+                    <div class="label">Output VAT</div>
+                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C8912E;">@Model.CurrencySymbol@Model.OutputVat.ToString("N2")</div>
+                    <div class="muted" style="font-size:12px;">@(string.IsNullOrEmpty(Model.VatPeriodLabel) ? "Current period" : Model.VatPeriodLabel)</div>
+                </div>
+                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
+                    <div class="label">Input VAT</div>
+                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#129867;">@Model.CurrencySymbol@Model.InputVat.ToString("N2")</div>
+                    <div class="muted" style="font-size:12px;">@(string.IsNullOrEmpty(Model.VatPeriodLabel) ? "Current period" : Model.VatPeriodLabel)</div>
+                </div>
+                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
+                    <div class="label">Net Payable</div>
+                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C24A4A;">@Model.CurrencySymbol@Model.NetVatPayable.ToString("N2")</div>
+                    <div class="muted" style="font-size:12px;">@(string.IsNullOrEmpty(Model.VatPeriodLabel) ? "Current period" : Model.VatPeriodLabel)</div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
+                    <div class="label">Output VAT</div>
+                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C8912E;">@Model.CurrencySymbol@(0m.ToString("N2"))</div>
+                    <div class="muted" style="font-size:12px;">Current period</div>
+                </div>
+                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
+                    <div class="label">Input VAT</div>
+                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#129867;">@Model.CurrencySymbol@(0m.ToString("N2"))</div>
+                    <div class="muted" style="font-size:12px;">Current period</div>
+                </div>
+                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
+                    <div class="label">Net Payable</div>
+                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C24A4A;">@Model.CurrencySymbol@(0m.ToString("N2"))</div>
+                    <div class="muted" style="font-size:12px;">Current period</div>
+                </div>
+            </div>
+            <div style="margin-top:14px;text-align:center;color:var(--muted);font-size:13px;">
+                <p>No VAT submission data available for the current period.</p>
+            </div>
+        }
+    </section>
+
+    <section class="glass card-pad">
+        <h3 style="margin-bottom:16px;">Top Customers by Revenue</h3>
+        @if (Model.TopCustomers.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th class="right">Total Invoiced</th>
+                        <th class="right">Total Paid</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var customer in Model.TopCustomers)
+                    {
+                        <tr>
+                            <td><strong>@customer.CustomerName</strong></td>
+                            <td class="right">@Model.CurrencySymbol@customer.TotalInvoiced.ToString("N2")</td>
+                            <td class="right" style="color:#129867;">@Model.CurrencySymbol@customer.TotalPaid.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No customer invoice data available.</p>
+            </div>
+        }
+    </section>
+</div>
+
+<!-- Chart.js Scripts -->
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @if (Model.RevenueVsExpenses.Any())
+    {
+        <script id="revenueVsExpensesData" type="application/json">
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueVsExpenses.Select(r => new { label = r.Label, revenue = r.Revenue, expenses = r.Expenses })))
+        </script>
+    }
+    @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
+    {
+        <script id="invoiceStatusData" type="application/json">
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { paid = Model.InvoiceStatusBreakdown.PaidCount, partiallyPaid = Model.InvoiceStatusBreakdown.PartiallyPaidCount, unpaid = Model.InvoiceStatusBreakdown.UnpaidCount, overdue = Model.InvoiceStatusBreakdown.OverdueCount }))
+        </script>
+    }
+    <script>
+        (function() {
+            var currencySymbol = '@Html.Raw(Model.CurrencySymbol)';
+
+            // Revenue vs Expenses - Grouped Bar Chart
+            var revenueDataEl = document.getElementById('revenueVsExpensesData');
+            if (revenueDataEl) {
+                var chartData = JSON.parse(revenueDataEl.textContent);
+                var labels = chartData.map(function(d) { return d.label; });
+                var revenueValues = chartData.map(function(d) { return d.revenue; });
+                var expensesValues = chartData.map(function(d) { return d.expenses; });
+
+                var ctx = document.getElementById('revenueVsExpensesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Revenue',
+                                data: revenueValues,
+                                backgroundColor: '#129867',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Expenses',
+                                data: expensesValues,
+                                backgroundColor: '#0D5EA6',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return currencySymbol + Math.round(value).toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Invoice Status - Donut Chart
+            var statusDataEl = document.getElementById('invoiceStatusData');
+            if (statusDataEl) {
+                var statusData = JSON.parse(statusDataEl.textContent);
+                var ctx2 = document.getElementById('invoiceStatusChart').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Paid (' + statusData.paid + ')', 'Partially Paid (' + statusData.partiallyPaid + ')', 'Unpaid (' + statusData.unpaid + ')', 'Overdue (' + statusData.overdue + ')'],
+                        datasets: [{
+                            data: [statusData.paid, statusData.partiallyPaid, statusData.unpaid, statusData.overdue],
+                            backgroundColor: ['#129867', '#C8912E', '#0D5EA6', '#C24A4A'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    generateLabels: function(chart) {
+                                        var data = chart.data;
+                                        return data.labels.map(function(label, i) {
+                                            return {
+                                                text: label,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + context.raw;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
 }

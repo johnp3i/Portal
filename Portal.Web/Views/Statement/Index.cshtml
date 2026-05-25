@@ -1,0 +1,461 @@
+@using Portal.Infrastructure.Entities
+@{
+    ViewData["Title"] = "Statement of Account";
+
+    var customers = (List<Customer>)ViewBag.Customers;
+    var selectedCustomerId = (int?)ViewBag.SelectedCustomerId;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Statement of Account</div>
+        <h1 style="margin-top:14px;font-size:42px;">Customer Statement</h1>
+        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Generate a financial summary showing invoices, payments, and running balance for a selected customer and period.</p>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label>Customer</label>
+            <select id="customerSelect">
+                <option value="">Select a customer...</option>
+                @foreach (var customer in customers)
+                {
+                    <option value="@customer.Id" selected="@(selectedCustomerId.HasValue && selectedCustomerId.Value == customer.Id ? "selected" : null)">@customer.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>From Date</label>
+            <input type="date" id="fromDate" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>To Date</label>
+            <input type="date" id="toDate" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="generateStatement()">Generate</button>
+        </div>
+    </div>
+</section>
+
+<!-- Statement Results (initially hidden) -->
+<div id="statementResults" style="display:none;">
+
+    <!-- Customer Header Section -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+            <div>
+                <h3 id="customerName" style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:#1a2b3c;margin:0 0 8px 0;"></h3>
+                <p id="customerAddress" style="font-size:14px;color:#5a6a7a;margin:0 0 4px 0;"></p>
+                <p id="customerContact" style="font-size:14px;color:#5a6a7a;margin:0;"></p>
+            </div>
+            <div style="text-align:right;">
+                <p style="font-size:13px;color:#5a6a7a;margin:0 0 4px 0;">Statement Period</p>
+                <p id="statementPeriod" style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;color:#1a2b3c;margin:0;"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+        <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Opening Balance</p>
+            <h2 id="openingBalance" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">€0.00</h2>
+            <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Balance brought forward</p>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #C8912E;">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Total Invoiced</p>
+            <h2 id="totalInvoiced" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C8912E;margin:0 0 4px 0;">€0.00</h2>
+            <p id="invoiceCount" style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">0 invoices</p>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #129867;">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Total Paid</p>
+            <h2 id="totalPaid" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#129867;margin:0 0 4px 0;">€0.00</h2>
+            <p id="paymentCount" style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">0 payments</p>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #C24A4A;" id="closingBalanceCard">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Closing Balance</p>
+            <h2 id="closingBalance" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C24A4A;margin:0 0 4px 0;">€0.00</h2>
+            <p id="closingBalanceLabel" style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Balance carried forward</p>
+        </div>
+    </section>
+
+    <!-- Transaction Table -->
+    <section class="glass card-pad" id="transactionTableSection">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0;color:#1a2b3c;">Transaction History</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="downloadPdf()" id="btnDownloadPdf">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF
+                </button>
+                <button class="btn btn-secondary" onclick="emailStatement()" id="btnEmailStatement">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Statement
+                </button>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Reference</th>
+                    <th style="text-align:right;">Debit (Invoiced)</th>
+                    <th style="text-align:right;">Credit (Paid)</th>
+                    <th style="text-align:right;">Running Balance</th>
+                </tr>
+            </thead>
+            <tbody id="transactionTableBody">
+            </tbody>
+            <tfoot id="transactionTableFooter">
+            </tfoot>
+        </table>
+    </section>
+</div>
+
+<!-- Email History (shown independently when customer is selected) -->
+<section class="glass card-pad" style="margin-top:24px;display:none;" id="emailHistorySection">
+    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 6px 0;color:#1a2b3c;">Email History</h3>
+    <p style="font-size:12px;color:#8a9bab;margin:0 0 14px 0;font-style:italic;">Note: Viewing a previously sent statement regenerates it from current data. Possible changes to invoices or payments since the original send date may affect the displayed figures.</p>
+    <div id="emailHistoryContent">
+        <p style="font-size:14px;color:#5a6a7a;">No statements have been emailed for this customer.</p>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        var selectedCustomerId = @(selectedCustomerId.HasValue ? selectedCustomerId.Value.ToString() : "null");
+
+        // Auto-load email history when a customer is pre-selected
+        if (selectedCustomerId) {
+            document.addEventListener('DOMContentLoaded', function () {
+                loadEmailHistory(selectedCustomerId);
+            });
+        }
+
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        async function generateStatement() {
+            var customerId = document.getElementById('customerSelect').value;
+            var fromDate = document.getElementById('fromDate').value;
+            var toDate = document.getElementById('toDate').value;
+
+            BlockUI.show('Generating statement...');
+            try {
+                var response = await fetch('/Statement/Generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: 'customerId=' + encodeURIComponent(customerId) + '&fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate)
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    renderStatement(data);
+                    loadEmailHistory(customerId);
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function renderStatement(data) {
+            // Store customer email for the email dialog
+            window._lastCustomerEmail = data.customerEmail || '';
+
+            // Show results section
+            document.getElementById('statementResults').style.display = 'block';
+
+            // Populate customer header
+            var customerSelect = document.getElementById('customerSelect');
+            var customerName = customerSelect.options[customerSelect.selectedIndex].text;
+            document.getElementById('customerName').textContent = customerName;
+
+            var fromDate = document.getElementById('fromDate').value;
+            var toDate = document.getElementById('toDate').value;
+            document.getElementById('statementPeriod').textContent = fromDate + ' to ' + toDate;
+
+            // Populate KPI cards
+            document.getElementById('openingBalance').textContent = '€' + formatCurrency(data.openingBalance);
+            document.getElementById('totalInvoiced').textContent = '€' + formatCurrency(data.totalInvoiced);
+            document.getElementById('totalPaid').textContent = '€' + formatCurrency(data.totalPaid);
+            document.getElementById('closingBalance').textContent = '€' + formatCurrency(data.closingBalance);
+            document.getElementById('invoiceCount').textContent = data.invoiceCount + ' invoice' + (data.invoiceCount !== 1 ? 's' : '');
+            document.getElementById('paymentCount').textContent = data.paymentCount + ' payment' + (data.paymentCount !== 1 ? 's' : '');
+
+            // Style closing balance: red if > 0 (outstanding), green if = 0 (settled)
+            var closingBalanceEl = document.getElementById('closingBalance');
+            var closingBalanceCard = document.getElementById('closingBalanceCard');
+            if (data.closingBalance > 0) {
+                closingBalanceEl.style.color = '#C24A4A';
+                closingBalanceCard.style.borderLeftColor = '#C24A4A';
+                document.getElementById('closingBalanceLabel').textContent = 'Outstanding';
+            } else {
+                closingBalanceEl.style.color = '#129867';
+                closingBalanceCard.style.borderLeftColor = '#129867';
+                document.getElementById('closingBalanceLabel').textContent = 'Settled';
+            }
+
+            // Render transaction table
+            renderTransactionTable(data.lines, data.closingBalance);
+        }
+
+        function renderTransactionTable(lines, closingBalance) {
+            var tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = '';
+
+            var totalDebit = 0;
+            var totalCredit = 0;
+
+            lines.forEach(function (line) {
+                var tr = document.createElement('tr');
+
+                // Date
+                var tdDate = document.createElement('td');
+                tdDate.textContent = line.date;
+                tr.appendChild(tdDate);
+
+                // Type pill
+                var tdType = document.createElement('td');
+                var pillClass = 'pill-blue';
+                if (line.type === 'Invoice') pillClass = 'pill-gold';
+                else if (line.type === 'Payment') pillClass = 'pill-green';
+                else if (line.type === 'Closing') pillClass = 'pill-red';
+                tdType.innerHTML = '<span class="pill ' + pillClass + '">' + line.type + '</span>';
+                tr.appendChild(tdType);
+
+                // Reference
+                var tdRef = document.createElement('td');
+                tdRef.textContent = line.reference;
+                tr.appendChild(tdRef);
+
+                // Debit
+                var tdDebit = document.createElement('td');
+                tdDebit.style.textAlign = 'right';
+                if (line.debit > 0) {
+                    tdDebit.textContent = '€' + formatCurrency(line.debit);
+                    totalDebit += line.debit;
+                }
+                tr.appendChild(tdDebit);
+
+                // Credit
+                var tdCredit = document.createElement('td');
+                tdCredit.style.textAlign = 'right';
+                if (line.credit > 0) {
+                    tdCredit.textContent = '€' + formatCurrency(line.credit);
+                    totalCredit += line.credit;
+                }
+                tr.appendChild(tdCredit);
+
+                // Running Balance
+                var tdBalance = document.createElement('td');
+                tdBalance.style.textAlign = 'right';
+                tdBalance.style.fontWeight = '700';
+                tdBalance.textContent = '€' + formatCurrency(line.runningBalance);
+                tr.appendChild(tdBalance);
+
+                tbody.appendChild(tr);
+            });
+
+            // Render footer totals
+            var tfoot = document.getElementById('transactionTableFooter');
+            tfoot.innerHTML = '<tr style="font-weight:700;border-top:2px solid #0D5EA6;">' +
+                '<td colspan="3" style="text-align:right;">Period Totals</td>' +
+                '<td style="text-align:right;">€' + formatCurrency(totalDebit) + '</td>' +
+                '<td style="text-align:right;">€' + formatCurrency(totalCredit) + '</td>' +
+                '<td style="text-align:right;color:' + (closingBalance > 0 ? '#C24A4A' : '#129867') + ';">€' + formatCurrency(closingBalance) + '</td>' +
+                '</tr>';
+        }
+
+        function formatCurrency(value) {
+            return parseFloat(value).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        async function downloadPdf() {
+            var customerId = document.getElementById('customerSelect').value;
+            var fromDate = document.getElementById('fromDate').value;
+            var toDate = document.getElementById('toDate').value;
+
+            if (!customerId || !fromDate || !toDate) {
+                Swal.fire({ title: 'Error', text: 'Please generate a statement first.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            BlockUI.show('Generating PDF...');
+            try {
+                var response = await fetch('/Statement/DownloadPdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: 'customerId=' + encodeURIComponent(customerId) + '&fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate)
+                });
+
+                var contentType = response.headers.get('content-type') || '';
+
+                if (contentType.indexOf('application/pdf') !== -1) {
+                    var blob = await response.blob();
+                    var disposition = response.headers.get('content-disposition');
+                    var filename = 'Statement.pdf';
+                    if (disposition) {
+                        var match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match && match[1]) {
+                            filename = match[1].replace(/['"]/g, '');
+                        }
+                    }
+
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    BlockUI.hide();
+                } else {
+                    var data = await response.json();
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to generate PDF.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function emailStatement() {
+            var customerId = document.getElementById('customerSelect').value;
+            var fromDate = document.getElementById('fromDate').value;
+            var toDate = document.getElementById('toDate').value;
+
+            if (!customerId || !fromDate || !toDate) {
+                Swal.fire({ title: 'Error', text: 'Please generate a statement first.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            // Get the selected customer's name for the dialog
+            var customerSelect = document.getElementById('customerSelect');
+            var customerName = customerSelect.options[customerSelect.selectedIndex].text;
+
+            // Show email input dialog pre-filled with customer's registered email (if available)
+            var defaultEmail = window._lastCustomerEmail || '';
+            var { value: recipientEmail } = await Swal.fire({
+                title: 'Email Statement',
+                html: '<div style="text-align:center;">Send statement for<br><strong>' + customerName + '</strong> to:</div>',
+                input: 'email',
+                inputValue: defaultEmail,
+                inputPlaceholder: 'Enter email address',
+                showCancelButton: true,
+                confirmButtonText: 'Send',
+                confirmButtonColor: '#0D5EA6',
+                inputValidator: function (value) {
+                    if (!value) return 'Please enter an email address.';
+                    if (!value.includes('@@') || !value.includes('.')) return 'Please enter a valid email address.';
+                }
+            });
+
+            if (!recipientEmail) return; // User cancelled
+
+            BlockUI.show('Sending statement email...');
+            try {
+                var response = await fetch('/Statement/EmailStatement', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: 'customerId=' + encodeURIComponent(customerId) + '&fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate) + '&recipientEmail=' + encodeURIComponent(recipientEmail)
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({ title: 'Email Sent', html: '<p>' + (data.message || 'Statement emailed successfully.') + '</p><p style="font-size:12px;color:#8a9bab;margin-top:10px;font-style:italic;">Please note: the email may be delivered to the recipient\'s junk or spam folder.</p>', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                    loadEmailHistory(customerId);
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function loadEmailHistory(customerId) {
+            if (!customerId) return;
+
+            document.getElementById('emailHistorySection').style.display = 'block';
+            BlockUI.show('Loading email history...');
+            try {
+                var response = await fetch('/Statement/GetEmailHistory?customerId=' + encodeURIComponent(customerId));
+                var data = await response.json();
+                BlockUI.hide();
+
+                var container = document.getElementById('emailHistoryContent');
+
+                if (data.success && data.records && data.records.length > 0) {
+                    var html = '<table><thead><tr>' +
+                        '<th>Date Sent</th>' +
+                        '<th>Statement Period</th>' +
+                        '<th>Recipient Email</th>' +
+                        '<th>Sent By</th>' +
+                        '<th>Actions</th>' +
+                        '</tr></thead><tbody>';
+
+                    data.records.forEach(function (record) {
+                        html += '<tr>' +
+                            '<td>' + formatDateTime(record.sentAtUtc) + '</td>' +
+                            '<td>' + record.fromDate + ' – ' + record.toDate + '</td>' +
+                            '<td>' + escapeHtml(record.recipientEmail) + '</td>' +
+                            '<td>' + escapeHtml(record.sentByDisplayName) + '</td>' +
+                            '<td><a href="javascript:void(0)" onclick="viewHistoryStatement(\'' + record.fromDate + '\', \'' + record.toDate + '\')" style="color:var(--blue);font-weight:700;font-size:13px;">View</a></td>' +
+                            '</tr>';
+                    });
+
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else if (data.success) {
+                    container.innerHTML = '<p style="font-size:14px;color:#5a6a7a;">No statements have been emailed for this customer.</p>';
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to load email history.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred while loading email history.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function viewHistoryStatement(fromDate, toDate) {
+            document.getElementById('fromDate').value = fromDate;
+            document.getElementById('toDate').value = toDate;
+            generateStatement();
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '';
+            var date = new Date(dateStr);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+}

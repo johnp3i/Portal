@@ -412,4 +412,29 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
             throw;
         }
     }
+
+    /// <summary>
+    /// Updates only the InvoiceFinancialStatusTypeId and UpdatedAtUtc for an invoice.
+    /// Used by the FinancialStatusEngine after recalculating status.
+    /// </summary>
+    public virtual async Task UpdateFinancialStatusAsync(int invoiceId, int financialStatusTypeId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [invoice].[Invoice]
+                SET [InvoiceFinancialStatusTypeId] = @FinancialStatusTypeId,
+                    [UpdatedAtUtc] = @UpdatedAtUtc
+                WHERE [Id] = @InvoiceId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@InvoiceId", invoiceId),
+                new SqlParameter("@FinancialStatusTypeId", financialStatusTypeId),
+                new SqlParameter("@UpdatedAtUtc", DateTime.UtcNow));
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 }

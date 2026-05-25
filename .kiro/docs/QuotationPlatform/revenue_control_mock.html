@@ -138,7 +138,7 @@
         </div>
     </div>
 
-    <!-- KPI Cards -->
+    <!-- Row 1: KPI Cards -->
     <div class="kpi-grid">
         <div class="kpi-card">
             <div class="kpi-label">Outstanding Receivables</div>
@@ -162,9 +162,84 @@
         </div>
     </div>
 
+    <!-- Row 2: Revenue Collected, Invoiced vs Collected, Collection Rate -->
+    <section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+        <div class="glass card-pad" style="flex:2;min-width:300px;">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Revenue Collected (Last 12 Months)</h3>
+            <canvas id="revenueLineChart" height="180"></canvas>
+        </div>
+        <div class="glass card-pad" style="flex:2;min-width:300px;">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Invoiced vs Collected</h3>
+            <canvas id="invoicedVsCollectedChart" height="180"></canvas>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Collection Rate</h3>
+            <div style="font-family:'Manrope',sans-serif;font-size:52px;font-weight:800;color:var(--green);">78%</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:6px;text-align:center;">of invoiced amount collected within 30 days</div>
+            <div style="margin-top:14px;width:100%;height:10px;border-radius:8px;background:#e2e8f0;overflow:hidden;">
+                <div style="height:100%;width:78%;background:linear-gradient(90deg, var(--green), #57E8A8);border-radius:8px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Row 3: VAT KPI cards (left, stacked) + VAT Liability chart (center) + VAT Ratio card (right) -->
+    <section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;align-items:stretch;">
+        <!-- Left: 3 VAT KPI cards stacked vertically -->
+        <div style="flex:1.5;min-width:300px;display:flex;flex-direction:column;gap:16px;">
+            <div class="kpi-card" style="border-left-color:var(--cyan);">
+                <div class="kpi-label">Output VAT Collected (Current Period)</div>
+                <div class="kpi-value" style="color:var(--cyan);">€4,620.00</div>
+                <div class="kpi-sub">VAT received from paid invoices · May–Jun 2026</div>
+            </div>
+            <div class="kpi-card success">
+                <div class="kpi-label">Input VAT — Purchases (Current Period)</div>
+                <div class="kpi-value">€1,840.00</div>
+                <div class="kpi-sub">VAT paid on recorded purchases · May–Jun 2026</div>
+            </div>
+            <div class="kpi-card danger">
+                <div class="kpi-label">Est. Net VAT Payable</div>
+                <div class="kpi-value">€2,780.00</div>
+                <div class="kpi-sub">Output VAT − Input VAT · Set aside for tax</div>
+            </div>
+        </div>
+        <!-- Center: VAT Liability by Period chart -->
+        <div class="glass card-pad" style="flex:2;min-width:300px;">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">VAT Liability by Period</h3>
+            <canvas id="vatLiabilityChart" height="180"></canvas>
+        </div>
+        <!-- Right: Output/Input VAT Ratio -->
+        <div class="glass card-pad" style="flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Output / Input Ratio</h3>
+            <div style="font-family:'Manrope',sans-serif;font-size:48px;font-weight:800;color:var(--blue);">2.51x</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:6px;text-align:center;">Output VAT is 2.51× the Input VAT</div>
+            <div style="margin-top:18px;width:100%;display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;">
+                    <span style="color:var(--cyan);">Output</span>
+                    <span style="color:var(--cyan);">€4,620</span>
+                </div>
+                <div style="height:8px;border-radius:6px;background:#e2e8f0;overflow:hidden;">
+                    <div style="height:100%;width:100%;background:var(--cyan);border-radius:6px;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;">
+                    <span style="color:var(--green);">Input</span>
+                    <span style="color:var(--green);">€1,840</span>
+                </div>
+                <div style="height:8px;border-radius:6px;background:#e2e8f0;overflow:hidden;">
+                    <div style="height:100%;width:40%;background:var(--green);border-radius:6px;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Overdue Invoices Table -->
     <section class="glass card-pad" style="margin-bottom:22px;">
-        <h3 style="font-size:16px;margin-bottom:16px;color:var(--red);">⚠ Overdue Invoices</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:16px;color:var(--red);margin:0;">⚠ Overdue Invoices</h3>
+            <div style="display:flex;gap:12px;align-items:flex-end;">
+                <input type="text" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
+                <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;">Search</button>
+            </div>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -211,11 +286,25 @@
                 </tr>
             </tbody>
         </table>
+        <!-- Pagination -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div style="font-size:14px;color:var(--muted);">Showing 1–4 of 4 overdue invoices</div>
+            <div style="display:flex;gap:8px;">
+                <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;background:#e2e8f0;color:#a0aec0;cursor:not-allowed;">Previous</span>
+                <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;background:#e2e8f0;color:#a0aec0;cursor:not-allowed;">Next</span>
+            </div>
+        </div>
     </section>
 
     <!-- Recent Payments Table -->
     <section class="glass card-pad">
-        <h3 style="font-size:16px;margin-bottom:16px;color:var(--green);">✓ Recent Payments</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:16px;color:var(--green);margin:0;">✓ Recent Payments</h3>
+            <div style="display:flex;gap:12px;align-items:flex-end;">
+                <input type="text" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
+                <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;">Search</button>
+            </div>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -270,6 +359,14 @@
                 </tr>
             </tbody>
         </table>
+        <!-- Pagination -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div style="font-size:14px;color:var(--muted);">Showing 1–5 of 8 payments</div>
+            <div style="display:flex;gap:8px;">
+                <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;background:#e2e8f0;color:#a0aec0;cursor:not-allowed;">Previous</span>
+                <a href="#" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;text-decoration:none;">Next</a>
+            </div>
+        </div>
     </section>
 </div>
 
@@ -634,6 +731,7 @@
 <!-- ═══════════════════════════════════════════════════════════════════════════
      SCRIPTS
      ═══════════════════════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
     function openPaymentModal() {
         document.getElementById('paymentModal').classList.add('open');
@@ -654,6 +752,106 @@
             alert('Payment voided (mock). Financial status would be recalculated.');
         }
     }
+
+    // ─── Charts ────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Chart === 'undefined') return;
+
+        // Revenue Collected Line Chart (12 months)
+        var revenueCtx = document.getElementById('revenueLineChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'],
+                datasets: [{
+                    label: 'Revenue Collected',
+                    data: [9200, 11400, 8900, 13500, 12100, 14800, 10200, 15600, 13900, 16200, 14100, 15230],
+                    borderColor: '#0D5EA6',
+                    backgroundColor: 'rgba(13,94,166,.08)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#0D5EA6',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 2.5
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: function(v) { return '€' + (v/1000).toFixed(0) + 'k'; } } }
+                }
+            }
+        });
+
+        // Invoiced vs Collected Stacked Bar Chart
+        var ivcCtx = document.getElementById('invoicedVsCollectedChart').getContext('2d');
+        new Chart(ivcCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'],
+                datasets: [
+                    {
+                        label: 'Collected',
+                        data: [9200, 11400, 8900, 13500, 12100, 14800, 10200, 15600, 13900, 16200, 14100, 15230],
+                        backgroundColor: '#129867',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Outstanding',
+                        data: [2800, 1600, 3100, 2000, 2900, 1200, 4800, 1400, 2100, 800, 2900, 4850],
+                        backgroundColor: '#C8912E',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true, ticks: { callback: function(v) { return '€' + (v/1000).toFixed(0) + 'k'; } } }
+                }
+            }
+        });
+
+        // VAT Liability by Period Bar Chart
+        var vatCtx = document.getElementById('vatLiabilityChart').getContext('2d');
+        new Chart(vatCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Nov-Dec 25','Jan-Feb 26','Mar-Apr 26','May-Jun 26'],
+                datasets: [
+                    {
+                        label: 'Output VAT',
+                        data: [3800, 4200, 4900, 4620],
+                        backgroundColor: '#57B8E8',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Input VAT',
+                        data: [1500, 1700, 1900, 1840],
+                        backgroundColor: '#129867',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Net Payable',
+                        data: [2300, 2500, 3000, 2780],
+                        backgroundColor: '#C24A4A',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: function(v) { return '€' + v; } } }
+                }
+            }
+        });
+    });
 </script>
 
 </body>

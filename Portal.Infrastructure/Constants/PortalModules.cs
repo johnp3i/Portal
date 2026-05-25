@@ -9,8 +9,9 @@ public static class PortalModules
     public const string Purchase = "purchase";
     public const string Vat = "vat";
     public const string Audit = "audit";
+    public const string Products = "products";
 
-    public static readonly string[] All = { Customer, Quotation, Invoice, Revenue, Purchase, Vat, Audit };
+    public static readonly string[] All = { Customer, Quotation, Invoice, Revenue, Purchase, Vat, Audit, Products };
 
     public static bool IsValid(string module) => All.Contains(module);
 }

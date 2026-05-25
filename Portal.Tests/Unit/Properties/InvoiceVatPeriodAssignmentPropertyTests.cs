@@ -1,5 +1,7 @@
 using FsCheck;
 using FsCheck.Xunit;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
@@ -102,6 +104,10 @@ public class InvoiceVatPeriodAssignmentPropertyTests
         Mock<VatSubmissionRepository> vatSubmissionRepoMock,
         Mock<PortalDbContext> dbContextMock)
     {
+        var productServiceMock = new Mock<IProductService>();
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        var loggerMock = new Mock<ILogger<InvoiceService>>();
+
         return new InvoiceService(
             tenantMock.Object,
             invoiceRepoMock.Object,
@@ -114,7 +120,10 @@ public class InvoiceVatPeriodAssignmentPropertyTests
             auditLogRepoMock.Object,
             vatPeriodRepoMock.Object,
             vatSubmissionRepoMock.Object,
-            dbContextMock.Object);
+            dbContextMock.Object,
+            productServiceMock.Object,
+            httpContextAccessorMock.Object,
+            loggerMock.Object);
     }
 
     /// <summary>
