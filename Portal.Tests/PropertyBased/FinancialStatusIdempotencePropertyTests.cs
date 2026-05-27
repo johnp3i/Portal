@@ -22,7 +22,7 @@ public class FinancialStatusIdempotencePropertyTests
         // FinancialStatusEngine's pure functions (ComputeOutstandingBalance, DetermineFinancialStatus)
         // don't use repositories, so we can pass null for the repository dependencies.
         // Only RecalculateStatusAsync uses them, which we don't test here.
-        _engine = new FinancialStatusEngine(null!, null!);
+        _engine = new FinancialStatusEngine(null!, null!, null!);
     }
 
     #region Helpers

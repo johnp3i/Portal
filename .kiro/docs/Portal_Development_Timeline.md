@@ -1,7 +1,7 @@
 # Portal Development Timeline
 
 ## Status: Phase 1 — Core Platform
-Last Updated: 2026-05-20
+Last Updated: 2026-05-26
 
 ---
 
@@ -21,6 +21,9 @@ Last Updated: 2026-05-20
 | ✅ | Revenue Control — Payment recording, financial status engine, receivables tracking, revenue dashboard with KPIs/charts, VAT integration, property-based tests, integration tests | 2025-07-22 |
 | ✅ | Product Catalog — Product schema, CRUD, autocomplete, auto-population, price history, management UI with KPIs/charts, integration into Invoice/Quotation forms, property-based tests (21 properties) | 2025-07-25 |
 | ✅ | Customer Statement of Account — Statement generation, PDF export, email with attachment, email history, customer registry pagination, audit logging, navigation integration | 2025-07-25 |
+| ✅ | Serilog Structured Logging — Dedicated Portal.Logging database, MSSqlServer sink, LoggingEnrichmentMiddleware (UserId/BusinessId), SelfLog, migration script, property-based tests | 2026-05-26 |
+| ✅ | Audit & System Administration — EF Core SaveChangesInterceptor, audit log viewer with filtered/paginated search, super admin user management, per-module permission controls, property-based tests (13 properties) | 2026-07-14 |
+| ✅ | System Logs Viewer — Dedicated LoggingDbContext for Portal.Logging DB, SystemLogQueryRepository, filtered/paginated search by level/date/user/correlation ID, expandable detail rows with exception/stack trace, navigation integration | 2025-07-28 |
 
 ---
 
@@ -176,12 +179,12 @@ Last Updated: 2026-05-20
 
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
-| [ ] | 7.1 | Implement automatic audit logging interceptor (EF Core SaveChanges override or interceptor) | Module 0 | |
-| [ ] | 7.2 | Create IAuditLogQueryService (search by table, action, user, date range) | 7.1 | |
-| [ ] | 7.3 | Create AuditController (admin-only access) | 7.2 | |
-| [ ] | 7.4 | Build Audit log viewer UI (searchable, filterable, paginated) | 7.3 | |
-| [ ] | 7.5 | Implement super admin module access management (grant/revoke module access per user) | Module 0 | |
-| [ ] | 7.6 | Build admin user management screen | 7.5 | |
+| [x] | 7.1 | Implement automatic audit logging interceptor (EF Core SaveChanges override or interceptor) | Module 0 | 2026-07-14 |
+| [x] | 7.2 | Create IAuditLogQueryService (search by table, action, user, date range) | 7.1 | 2026-07-14 |
+| [x] | 7.3 | Create AuditController (admin-only access) | 7.2 | 2026-07-14 |
+| [x] | 7.4 | Build Audit log viewer UI (searchable, filterable, paginated) | 7.3 | 2026-07-14 |
+| [x] | 7.5 | Implement super admin module access management (grant/revoke module access per user) | Module 0 | 2026-07-14 |
+| [x] | 7.6 | Build admin user management screen | 7.5 | 2026-07-14 |
 
 ---
 
@@ -214,6 +217,21 @@ Module 6 (VAT) → Module 7 (Audit/Admin) → Module 8 (Customer Statements)
 ```
 
 Modules 5 and 6 can run in parallel with Module 4 since they share no direct dependencies beyond the foundation.
+
+---
+
+### Module 9: System Logs Viewer
+
+**Goal:** Provide SuperAdmin visibility into application-level logs (errors, warnings, request activity) from the Portal.Logging database, enabling operational monitoring and debugging without direct database access.
+
+| Done | # | Task | Dependencies | Completed |
+|------|---|------|-------------|-----------|
+| [x] | 9.1 | Create SystemLogQueryRepository (query [dbo].[Logs] from Portal.Logging DB) | Module 0 | 2025-07-28 |
+| [x] | 9.2 | Create ISystemLogQueryService (filtered, paginated access by level, date, user, correlation ID) | 9.1 | 2025-07-28 |
+| [x] | 9.3 | Create SystemLogsController (SuperAdmin-only, /Admin/SystemLogs) | 9.2 | 2025-07-28 |
+| [x] | 9.4 | Build System Logs viewer UI (filterable by level, date range, user, correlation ID; paginated; expandable detail with exception/stack trace) | 9.3 | 2025-07-28 |
+| [x] | 9.5 | Add System Logs link to Administration sidebar section | 9.4 | 2025-07-28 |
+| [x] | 9.6 | DI registration for SystemLogQueryRepository and ISystemLogQueryService | 9.2 | 2025-07-28 |
 
 ---
 

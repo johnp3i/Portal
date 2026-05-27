@@ -1,0 +1,554 @@
+@{
+    ViewData["Title"] = "System Logs";
+    var sourceContexts = ViewBag.SourceContexts as List<string> ?? new List<string>();
+    var kpi = ViewBag.KpiCounts as Portal.Infrastructure.Models.SystemLogKpiCounts;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">System Logs</h1>
+        <p class="topbar-subtitle">Browse and investigate application-level log entries.</p>
+    </div>
+</div>
+
+<div id="kpiCardsRow" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px;">
+    <div class="glass card-pad" style="border-left:4px solid #C24A4A;">
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#5a6b7c;">Errors (24h)</div>
+        <div id="kpiErrorCount" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C24A4A;margin-top:6px;">
+            @(kpi != null ? kpi.ErrorCount24h.ToString("N0") : "—")
+        </div>
+        <div style="font-family:'Inter',sans-serif;font-size:12px;color:#5a6b7c;margin-top:4px;">Last 24 hours</div>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #C8912E;">
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#5a6b7c;">Warnings (24h)</div>
+        <div id="kpiWarningCount" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C8912E;margin-top:6px;">
+            @(kpi != null ? kpi.WarningCount24h.ToString("N0") : "—")
+        </div>
+        <div style="font-family:'Inter',sans-serif;font-size:12px;color:#5a6b7c;margin-top:4px;">Last 24 hours</div>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #0D5EA6;">
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#5a6b7c;">Total Entries Today</div>
+        <div id="kpiTotalToday" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin-top:6px;">
+            @(kpi != null ? kpi.TotalToday.ToString("N0") : "—")
+        </div>
+        <div style="font-family:'Inter',sans-serif;font-size:12px;color:#5a6b7c;margin-top:4px;">Since midnight UTC</div>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label for="logLevel">Log Level</label>
+            <select id="logLevel">
+                <option value="">All</option>
+                <option value="Error">Error</option>
+                <option value="Warning">Warning</option>
+                <option value="Information">Information</option>
+                <option value="Debug">Debug</option>
+                <option value="Fatal">Fatal</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="dateFrom">Date From</label>
+            <input type="date" id="dateFrom" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="dateTo">Date To</label>
+            <input type="date" id="dateTo" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="userId">User</label>
+            <input type="text" id="userId" placeholder="User ID" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="correlationId">Correlation ID</label>
+            <input type="text" id="correlationId" placeholder="Correlation ID" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="sourceContext">Source Context</label>
+            <select id="sourceContext">
+                <option value="">All</option>
+                @foreach (var sc in sourceContexts)
+                {
+                    <option value="@sc">@sc</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="requestPath">Request Path</label>
+            <input type="text" id="requestPath" placeholder="Request Path" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="handleManualFilter()">Filter</button>
+            <button type="button" class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+            <button type="button" id="autoRefreshToggle" class="btn btn-secondary" onclick="toggleAutoRefresh()" style="margin-left:6px;position:relative;border:1px solid #0D5EA6;color:#0D5EA6;background:transparent;">
+                <span id="autoRefreshDot" style="display:none;width:8px;height:8px;border-radius:50%;background:#fff;margin-right:6px;animation:pulse-dot 1.5s ease-in-out infinite;"></span>
+                Auto-Refresh
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="exportCsv()" style="margin-left:6px;border:1px solid #0D5EA6;color:#0D5EA6;background:transparent;">
+                Export CSV
+            </button>
+        </div>
+    </div>
+</section>
+
+<section class="glass card-pad" style="overflow-x:auto;">
+    <table class="data-table" id="logsTable" style="table-layout:fixed;width:100%;">
+        <thead>
+            <tr>
+                <th style="width:36px;"></th>
+                <th style="width:145px;">TimeStamp</th>
+                <th style="width:110px;">Level</th>
+                <th style="width:32%;">Message</th>
+                <th style="width:14%;">User</th>
+                <th style="width:16%;">Source Context</th>
+                <th style="width:14%;">Correlation ID</th>
+            </tr>
+        </thead>
+        <tbody id="logsTableBody">
+            <tr>
+                <td colspan="7" style="text-align:center;padding:32px;color:#5a6b7c;">
+                    Loading log entries...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+        <div id="paginationControls" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+</section>
+
+
+@section Scripts {
+<style>
+    @@media (max-width: 768px) {
+        #kpiCardsRow {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    @@keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.75); }
+    }
+
+    #autoRefreshToggle.auto-refresh-active {
+        background: #0D5EA6 !important;
+        color: #fff !important;
+        border-color: #0D5EA6 !important;
+    }
+</style>
+<script>
+    let currentPage = 1;
+    const pageSize = 50;
+    let expandedIdx = -1;
+    let autoRefreshInterval = null;
+    let autoRefreshEnabled = false;
+    const AUTO_REFRESH_INTERVAL_MS = 30000;
+
+    async function loadSystemLogs(page, showBlockUI = true) {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+
+        if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+            Swal.fire({
+                title: 'Invalid Date Range',
+                text: 'Date From cannot be greater than Date To.',
+                icon: 'warning',
+                confirmButtonColor: '#0D5EA6'
+            });
+            return;
+        }
+
+        currentPage = page;
+
+        if (showBlockUI) {
+            BlockUI.show('Loading system logs...');
+        }
+
+        try {
+            const params = new URLSearchParams({
+                level: document.getElementById('logLevel').value,
+                dateFrom: dateFrom,
+                dateTo: dateTo,
+                userId: document.getElementById('userId').value,
+                correlationId: document.getElementById('correlationId').value,
+                sourceContext: document.getElementById('sourceContext').value,
+                requestPath: document.getElementById('requestPath').value,
+                page: page,
+                pageSize: pageSize
+            });
+
+            const response = await fetch(`/Admin/SystemLogs/Search?${params}`);
+            const data = await response.json();
+
+            if (showBlockUI) {
+                BlockUI.hide();
+            }
+
+            if (data.success) {
+                renderTable(data.data);
+                renderPagination(data.currentPage, data.totalPages, data.totalCount);
+            } else {
+                if (showBlockUI) {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        } catch (e) {
+            if (showBlockUI) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+            // On auto-refresh failure: silently skip, retain current data
+        }
+    }
+
+    function handleManualFilter() {
+        loadSystemLogs(1);
+        resetAutoRefreshTimer();
+    }
+
+    function handlePageChange(page) {
+        loadSystemLogs(page);
+        resetAutoRefreshTimer();
+    }
+
+    function toggleAutoRefresh() {
+        if (autoRefreshEnabled) {
+            disableAutoRefresh();
+        } else {
+            enableAutoRefresh();
+        }
+    }
+
+    function enableAutoRefresh() {
+        autoRefreshEnabled = true;
+        const btn = document.getElementById('autoRefreshToggle');
+        const dot = document.getElementById('autoRefreshDot');
+        btn.classList.add('auto-refresh-active');
+        dot.style.display = 'inline-block';
+        startAutoRefreshTimer();
+    }
+
+    function disableAutoRefresh() {
+        autoRefreshEnabled = false;
+        const btn = document.getElementById('autoRefreshToggle');
+        const dot = document.getElementById('autoRefreshDot');
+        btn.classList.remove('auto-refresh-active');
+        dot.style.display = 'none';
+        clearAutoRefreshTimer();
+    }
+
+    function startAutoRefreshTimer() {
+        clearAutoRefreshTimer();
+        autoRefreshInterval = setInterval(autoRefreshTick, AUTO_REFRESH_INTERVAL_MS);
+    }
+
+    function clearAutoRefreshTimer() {
+        if (autoRefreshInterval !== null) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+
+    function resetAutoRefreshTimer() {
+        if (autoRefreshEnabled) {
+            startAutoRefreshTimer();
+        }
+    }
+
+    async function autoRefreshTick() {
+        try {
+            // Refresh log data without BlockUI
+            await loadSystemLogs(currentPage, false);
+
+            // Also refresh KPI counts
+            const kpiResponse = await fetch('/Admin/SystemLogs/KpiCounts');
+            const kpiData = await kpiResponse.json();
+            if (kpiData.success) {
+                document.getElementById('kpiErrorCount').textContent = Number(kpiData.errorCount24h).toLocaleString();
+                document.getElementById('kpiWarningCount').textContent = Number(kpiData.warningCount24h).toLocaleString();
+                document.getElementById('kpiTotalToday').textContent = Number(kpiData.totalToday).toLocaleString();
+            }
+        } catch (e) {
+            // Silent skip — retain current data, do not disable auto-refresh
+        }
+    }
+
+    window.addEventListener('beforeunload', function () {
+        clearAutoRefreshTimer();
+    });
+
+    function clearFilters() {
+        document.getElementById('logLevel').value = '';
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        document.getElementById('userId').value = '';
+        document.getElementById('correlationId').value = '';
+        document.getElementById('sourceContext').value = '';
+        document.getElementById('requestPath').value = '';
+        loadSystemLogs(1);
+    }
+
+    function renderTable(records) {
+        const tbody = document.getElementById('logsTableBody');
+        expandedIdx = -1;
+
+        if (!records || records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#5a6b7c;">No log entries found matching the selected filters.</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        records.forEach((r, idx) => {
+            const ts = new Date(r.timeStamp).toISOString().replace('T', ' ').substring(0, 19);
+            const levelBadge = getLevelBadge(r.level);
+            const truncMsg = r.message ? (r.message.length > 120 ? escHtml(r.message.substring(0, 120)) + '&hellip;' : escHtml(r.message)) : '—';
+            const displayUser = r.userId || '—';
+            const displaySource = r.sourceContext || '—';
+            const correlationCell = renderCorrelationCell(r.correlationId);
+
+            html += `
+            <tr class="log-summary-row" onclick="toggleDetail(${idx})" style="cursor:pointer;">
+                <td style="text-align:center;width:36px;">
+                    <button class="expand-btn" id="expand-btn-${idx}" style="background:none;border:none;cursor:pointer;font-size:16px;transition:transform 0.2s;color:#5a6b7c;" aria-label="Expand">&#9660;</button>
+                </td>
+                <td style="font-family:monospace;font-size:13px;white-space:nowrap;">${ts}</td>
+                <td>${levelBadge}</td>
+                <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${truncMsg}</td>
+                <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(displayUser)}</td>
+                <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(displaySource)}</td>
+                <td style="font-family:monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${correlationCell}</td>
+            </tr>
+            <tr id="detail-row-${idx}" style="display:none;">
+                <td colspan="7" style="padding:0;">
+                    <div style="padding:16px 24px;background:#f7fafc;border-top:1px solid #e2eaf2;">
+                        ${renderDetail(r)}
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function renderDetail(r) {
+        let html = '';
+
+        html += `<div style="margin-bottom:12px;"><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">Message</strong><div style="font-size:13px;margin-top:4px;white-space:pre-wrap;word-break:break-word;">${escHtml(r.message || '—')}</div></div>`;
+
+        if (r.exception) {
+            html += `<div style="margin-bottom:12px;"><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">Exception</strong><pre style="font-size:12px;margin-top:4px;background:#fef2f2;border:1px solid #f5c6c6;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;">${escHtml(r.exception)}</pre></div>`;
+        }
+
+        html += `<div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:8px;">`;
+        html += `<div><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">Request Path</strong><div style="font-size:13px;margin-top:4px;">${escHtml(r.requestPath || '—')}</div></div>`;
+        html += `<div><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">Machine Name</strong><div style="font-size:13px;margin-top:4px;">${escHtml(r.machineName || '—')}</div></div>`;
+        html += `</div>`;
+
+        return html;
+    }
+
+    function toggleDetail(idx) {
+        const detailRow = document.getElementById(`detail-row-${idx}`);
+        const btn = document.getElementById(`expand-btn-${idx}`);
+        const isOpen = detailRow.style.display !== 'none';
+
+        // Close all open detail rows (accordion behavior)
+        document.querySelectorAll('[id^="detail-row-"]').forEach(row => row.style.display = 'none');
+        document.querySelectorAll('.expand-btn').forEach(b => b.style.transform = '');
+
+        if (!isOpen) {
+            detailRow.style.display = '';
+            btn.style.transform = 'rotate(180deg)';
+            expandedIdx = idx;
+        } else {
+            expandedIdx = -1;
+        }
+    }
+
+    function renderPagination(page, totalPages, totalCount) {
+        const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, totalCount);
+        document.getElementById('paginationInfo').textContent = `Showing ${start}\u2013${end} of ${totalCount}`;
+
+        const controls = document.getElementById('paginationControls');
+        if (totalPages <= 1) { controls.innerHTML = ''; return; }
+
+        let html = `<button onclick="handlePageChange(${page - 1})" ${page <= 1 ? 'disabled' : ''} class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;cursor:pointer;">\u2190 Prev</button>`;
+
+        for (let p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && Math.abs(p - page) > 2 && p !== 1 && p !== totalPages) {
+                if (p === 2 || p === totalPages - 1) html += `<span style="padding:6px 4px;color:#5a6b7c;">\u2026</span>`;
+                continue;
+            }
+            const active = p === page ? 'page-btn--active' : '';
+            html += `<button onclick="handlePageChange(${p})" class="page-btn ${active}" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid ${p === page ? '#0D5EA6' : '#d0dce8'};background:${p === page ? '#0D5EA6' : '#fff'};color:${p === page ? '#fff' : 'inherit'};cursor:pointer;">${p}</button>`;
+        }
+
+        html += `<button onclick="handlePageChange(${page + 1})" ${page >= totalPages ? 'disabled' : ''} class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;cursor:pointer;">Next \u2192</button>`;
+        controls.innerHTML = html;
+    }
+
+    function getLevelBadge(level) {
+        const colors = {
+            'Error': { dot: '#C24A4A', bg: '#fceaea', text: '#C24A4A' },
+            'Fatal': { dot: '#C24A4A', bg: '#fceaea', text: '#C24A4A' },
+            'Warning': { dot: '#C8912E', bg: '#fdf4e6', text: '#C8912E' },
+            'Information': { dot: '#0D5EA6', bg: '#e8f2fa', text: '#0D5EA6' },
+            'Debug': { dot: '#6B7B8D', bg: '#eef2f5', text: '#6B7B8D' }
+        };
+        const c = colors[level] || { dot: '#6B7B8D', bg: '#eef2f5', text: '#6B7B8D' };
+        return `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${c.bg};color:${c.text};"><span style="width:7px;height:7px;border-radius:50%;background:${c.dot};"></span>${escHtml(level || 'Unknown')}</span>`;
+    }
+
+    function escHtml(str) {
+        if (str == null) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renderCorrelationCell(correlationId) {
+        if (!correlationId || correlationId.trim() === '') {
+            return '—';
+        }
+        const escaped = escHtml(correlationId);
+        const jsEscaped = correlationId.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `<span style="display:inline-flex;align-items:center;gap:6px;max-width:100%;">` +
+            `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escaped}</span>` +
+            `<button onclick="copyCorrelationId(event, '${jsEscaped}')" aria-label="Copy correlation ID" style="position:relative;background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;display:inline-flex;align-items:center;color:#5a6b7c;flex-shrink:0;" title="Copy">` +
+            `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>` +
+            `</button></span>`;
+    }
+
+    async function copyCorrelationId(event, correlationId) {
+        event.stopPropagation();
+        const btn = event.currentTarget;
+
+        try {
+            await navigator.clipboard.writeText(correlationId);
+            showCopiedTooltip(btn);
+        } catch (e) {
+            Swal.fire({ title: 'Error', text: 'Failed to copy to clipboard.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function showCopiedTooltip(btn) {
+        const tooltip = document.createElement('span');
+        tooltip.textContent = 'Copied!';
+        tooltip.style.cssText = 'position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:1000;';
+        btn.style.position = 'relative';
+        btn.appendChild(tooltip);
+        setTimeout(() => { if (tooltip.parentNode) tooltip.remove(); }, 2000);
+    }
+
+    function suspendAutoRefresh() {
+        clearAutoRefreshTimer();
+    }
+
+    function resumeAutoRefresh() {
+        if (autoRefreshEnabled) {
+            startAutoRefreshTimer();
+        }
+    }
+
+    async function exportCsv() {
+        suspendAutoRefresh();
+        BlockUI.show('Exporting logs...');
+
+        try {
+            const params = new URLSearchParams({
+                level: document.getElementById('logLevel').value,
+                dateFrom: document.getElementById('dateFrom').value,
+                dateTo: document.getElementById('dateTo').value,
+                userId: document.getElementById('userId').value,
+                correlationId: document.getElementById('correlationId').value,
+                sourceContext: document.getElementById('sourceContext').value,
+                requestPath: document.getElementById('requestPath').value
+            });
+
+            const response = await fetch(`/Admin/SystemLogs/ExportCsv?${params}`);
+            const data = await response.json();
+
+            if (!data.success) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'Export failed. Please try again.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                resumeAutoRefresh();
+                return;
+            }
+
+            if (!data.data || data.data.length === 0) {
+                BlockUI.hide();
+                Swal.fire({ title: 'No Data', text: 'No records to export.', icon: 'info', confirmButtonColor: '#0D5EA6' });
+                resumeAutoRefresh();
+                return;
+            }
+
+            if (data.isTruncated) {
+                BlockUI.hide();
+                await Swal.fire({ title: 'Export Truncated', text: 'Export limited to 10,000 records. Apply more specific filters to narrow the result set.', icon: 'info', confirmButtonColor: '#0D5EA6' });
+            } else {
+                BlockUI.hide();
+            }
+
+            downloadCsv(data.data);
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'Export failed. Please try again.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        } finally {
+            resumeAutoRefresh();
+        }
+    }
+
+    function escapeCsvField(value) {
+        if (value == null) return '';
+        const str = String(value);
+        if (str.indexOf(',') !== -1 || str.indexOf('"') !== -1 || str.indexOf('\n') !== -1 || str.indexOf('\r') !== -1) {
+            return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+    }
+
+    function generateCsvContent(records) {
+        const columns = ['TimeStamp', 'Level', 'Message', 'Exception', 'UserId', 'CorrelationId', 'SourceContext', 'RequestPath', 'MachineName'];
+        const fieldMap = ['timeStamp', 'level', 'message', 'exception', 'userId', 'correlationId', 'sourceContext', 'requestPath', 'machineName'];
+
+        let csv = columns.join(',') + '\r\n';
+
+        for (const record of records) {
+            const row = fieldMap.map(field => escapeCsvField(record[field]));
+            csv += row.join(',') + '\r\n';
+        }
+
+        return csv;
+    }
+
+    function downloadCsv(records) {
+        const csvContent = generateCsvContent(records);
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const filename = `SystemLogs_${yyyy}-${mm}-${dd}_${hh}${min}${ss}.csv`;
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => loadSystemLogs(1));
+</script>
+}

@@ -21,8 +21,8 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Revenue Control / Invoice Detail</div>
-        <h1 style="margin-top:14px;font-size:42px;">@invoice.InvoiceNumber</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">@customerName — Issued @invoice.InvoiceDate.ToString("dd MMM yyyy")</p>
+        <h1 class="topbar-heading">@invoice.InvoiceNumber</h1>
+        <p class="topbar-subtitle">@customerName — Issued @invoice.InvoiceDate.ToString("dd MMM yyyy")</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
         @if (isOverdue)

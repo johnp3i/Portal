@@ -16,6 +16,12 @@ public interface IFinancialStatusEngine
     decimal ComputeOutstandingBalance(decimal totalAmount, IEnumerable<Payment> payments);
 
     /// <summary>
+    /// Computes the outstanding balance for an invoice: TotalAmount - sum(valid payments) - appliedCreditTotal.
+    /// Only non-voided payments are included in the sum.
+    /// </summary>
+    decimal ComputeOutstandingBalance(decimal totalAmount, IEnumerable<Payment> payments, decimal appliedCreditTotal);
+
+    /// <summary>
     /// Determines the correct InvoiceFinancialStatusTypeId based on outstanding balance,
     /// payment existence, due date, and current status.
     /// Decision tree: WrittenOff preserved → Paid → Overdue → PartiallyPaid → Unpaid.
@@ -25,7 +31,7 @@ public interface IFinancialStatusEngine
 
     /// <summary>
     /// Recalculates and persists the financial status for an invoice.
-    /// Fetches payments, computes balance, determines status, updates invoice.
+    /// Fetches payments and applied credit totals, computes balance, determines status, updates invoice.
     /// </summary>
     Task RecalculateStatusAsync(int invoiceId, int businessId);
 }

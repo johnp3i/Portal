@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log Viewer — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F7FAFC;
+            color: #1a2b3c;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== Design Tokens ===== */
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --text-muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11, 27, 40, 0.06);
+            --card-radius: 24px;
+            --pill-radius: 20px;
+        }
+
+        /* ===== Layout Container ===== */
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        /* ===== Topbar / Page Header ===== */
+        .page-header {
+            margin-bottom: 36px;
+        }
+
+        .page-header__eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+        }
+
+        .page-header__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .page-header__subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* ===== Card Container ===== */
+        .card {
+            background: #ffffff;
+            border-radius: var(--card-radius);
+            box-shadow: var(--card-shadow);
+            padding: 32px;
+        }
+
+        /* ===== Filter Card ===== */
+        .filter-card {
+            margin-bottom: 22px;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .field {
+            min-width: 180px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .field select,
+        .field input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+
+        .field select:focus,
+        .field input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+        }
+
+        .btn:hover { opacity: 0.85; }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        /* ===== Table ===== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table thead th {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .data-table tbody tr {
+            transition: background 0.15s ease;
+            cursor: pointer;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-base);
+        }
+
+        .data-table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ===== Action Badges ===== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: var(--pill-radius);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .badge--insert {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--success);
+        }
+
+        .badge--update {
+            background: rgba(13, 94, 166, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .badge--delete {
+            background: rgba(194, 74, 74, 0.1);
+            color: var(--danger);
+        }
+
+        .badge__dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .badge--insert .badge__dot { background: var(--success); }
+        .badge--update .badge__dot { background: var(--primary-blue); }
+        .badge--delete .badge__dot { background: var(--danger); }
+
+        /* ===== Pagination ===== */
+        .pagination-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .page-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .page-btn:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .page-btn--active {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
+
+        .page-btn--disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ===== Detail Expand Row ===== */
+        .detail-row {
+            display: none;
+        }
+
+        .detail-row.expanded {
+            display: table-row;
+        }
+
+        .detail-row td {
+            padding: 0 16px 20px 16px;
+            background: var(--bg-base);
+        }
+
+        .detail-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 20px;
+            border-radius: 16px;
+            background: #fff;
+            border: 1.5px solid var(--border);
+        }
+
+        .detail-panel__section {
+            padding: 16px;
+            border-radius: 12px;
+            background: var(--bg-base);
+        }
+
+        .detail-panel__label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .json-view {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        .json-view .changed {
+            background: rgba(13, 94, 166, 0.08);
+            border-left: 3px solid var(--primary-blue);
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: block;
+        }
+
+        /* ===== Expand Toggle ===== */
+        .expand-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .expand-btn:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .expand-btn.open {
+            background: var(--primary-blue);
+            border-color: var(--primary-blue);
+            color: #fff;
+            transform: rotate(180deg);
+        }
+
+        /* ===== Mono text ===== */
+        .mono {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .filter-row { flex-direction: column; }
+            .field { min-width: 100%; }
+            .detail-panel { grid-template-columns: 1fr; }
+            .page-header__title { font-size: 26px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header__eyebrow">Administration</div>
+            <h1 class="page-header__title">Audit Log</h1>
+            <p class="page-header__subtitle">Browse and investigate data changes across the platform</p>
+        </div>
+
+        <!-- Filter Card -->
+        <section class="card filter-card">
+            <div class="filter-row">
+                <div class="field">
+                    <label>Table Name</label>
+                    <select>
+                        <option value="">All Tables</option>
+                        <option value="Invoice">Invoice</option>
+                        <option value="InvoiceLine">InvoiceLine</option>
+                        <option value="Quotation">Quotation</option>
+                        <option value="QuotationLine">QuotationLine</option>
+                        <option value="Purchase">Purchase</option>
+                        <option value="Customer">Customer</option>
+                        <option value="Supplier">Supplier</option>
+                        <option value="Payment">Payment</option>
+                        <option value="VatSubmission">VatSubmission</option>
+                        <option value="UserBusinessPermission">UserBusinessPermission</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Action</label>
+                    <select>
+                        <option value="">All Actions</option>
+                        <option value="Insert">Insert</option>
+                        <option value="Update">Update</option>
+                        <option value="Delete">Delete</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>User</label>
+                    <select>
+                        <option value="">All Users</option>
+                        <option value="u1">John Papamichael</option>
+                        <option value="u2">Maria Georgiou</option>
+                        <option value="u3">Andreas Christou</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Date From</label>
+                    <input type="date" value="2026-05-01">
+                </div>
+                <div class="field">
+                    <label>Date To</label>
+                    <input type="date" value="2026-05-26">
+                </div>
+                <div style="padding-bottom:2px;">
+                    <button class="btn btn-primary">Filter</button>
+                    <button class="btn btn-secondary" style="margin-left:6px;">Clear</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Card -->
+        <section class="card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Table</th>
+                        <th>Record ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr onclick="toggleDetail('detail-1', this)">
+                        <td><button class="expand-btn" id="btn-1">▼</button></td>
+                        <td class="mono">2026-05-26 14:32:18</td>
+                        <td>John Papamichael</td>
+                        <td><span class="badge badge--update"><span class="badge__dot"></span>Update</span></td>
+                        <td>Invoice</td>
+                        <td class="mono">1042</td>
+                    </tr>
+                    <tr class="detail-row" id="detail-1">
+                        <td colspan="6">
+                            <div class="detail-panel">
+                                <div class="detail-panel__section">
+                                    <div class="detail-panel__label">Old Values</div>
+                                    <div class="json-view">
+                                        <span class="changed">"StatusTypeId": 1</span>
+                                        <span class="changed">"Notes": "Initial draft"</span>
+                                    </div>
+                                </div>
+                                <div class="detail-panel__section">
+                                    <div class="detail-panel__label">New Values</div>
+                                    <div class="json-view">
+                                        <span class="changed">"StatusTypeId": 2</span>
+                                        <span class="changed">"Notes": "Sent to customer"</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Row 2 -->
+                    <tr onclick="toggleDetail('detail-2', this)">
+                        <td><button class="expand-btn" id="btn-2">▼</button></td>
+                        <td class="mono">2026-05-26 13:15:44</td>
+                        <td>Maria Georgiou</td>
+                        <td><span class="badge badge--insert"><span class="badge__dot"></span>Insert</span></td>
+                        <td>Purchase</td>
+                        <td class="mono">587</td>
+                    </tr>
+                    <tr class="detail-row" id="detail-2">
+                        <td colspan="6">
+                            <div class="detail-panel">
+                                <div class="detail-panel__section" style="grid-column: 1 / -1;">
+                                    <div class="detail-panel__label">New Values</div>
+                                    <div class="json-view">
+                                        <span>"SupplierId": 12</span><br>
+                                        <span>"ExpenseCategoryId": 3</span><br>
+                                        <span>"Amount": 245.00</span><br>
+                                        <span>"VatAmount": 46.55</span><br>
+                                        <span>"TotalAmount": 291.55</span><br>
+                                        <span>"PurchaseOriginTypeId": 1</span><br>
+                                        <span>"PurchaseDate": "2026-05-26"</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Row 3 -->
+                    <tr onclick="toggleDetail('detail-3', this)">
+                        <td><button class="expand-btn" id="btn-3">▼</button></td>
+                        <td class="mono">2026-05-26 11:48:02</td>
+                        <td>Andreas Christou</td>
+                        <td><span class="badge badge--delete"><span class="badge__dot"></span>Delete</span></td>
+                        <td>QuotationLine</td>
+                        <td class="mono">2301</td>
+                    </tr>
+                    <tr class="detail-row" id="detail-3">
+                        <td colspan="6">
+                            <div class="detail-panel">
+                                <div class="detail-panel__section" style="grid-column: 1 / -1;">
+                                    <div class="detail-panel__label">Old Values (Deleted Record)</div>
+                                    <div class="json-view">
+                                        <span>"Description": "Network Switch 24-Port"</span><br>
+                                        <span>"Quantity": 2</span><br>
+                                        <span>"UnitPrice": 189.99</span><br>
+                                        <span>"VatRate": 19.00</span><br>
+                                        <span>"LineTotal": 379.98</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Row 4 -->
+                    <tr onclick="toggleDetail('detail-4', this)">
+                        <td><button class="expand-btn" id="btn-4">▼</button></td>
+                        <td class="mono">2026-05-26 10:22:37</td>
+                        <td>John Papamichael</td>
+                        <td><span class="badge badge--update"><span class="badge__dot"></span>Update</span></td>
+                        <td>Customer</td>
+                        <td class="mono">15</td>
+                    </tr>
+                    <tr class="detail-row" id="detail-4">
+                        <td colspan="6">
+                            <div class="detail-panel">
+                                <div class="detail-panel__section">
+                                    <div class="detail-panel__label">Old Values</div>
+                                    <div class="json-view">
+                                        <span class="changed">"Email": "info@oldcompany.com"</span>
+                                        <span class="changed">"Phone": "+357 22 123456"</span>
+                                    </div>
+                                </div>
+                                <div class="detail-panel__section">
+                                    <div class="detail-panel__label">New Values</div>
+                                    <div class="json-view">
+                                        <span class="changed">"Email": "contact@newbrand.com"</span>
+                                        <span class="changed">"Phone": "+357 22 654321"</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Row 5 -->
+                    <tr onclick="toggleDetail('detail-5', this)">
+                        <td><button class="expand-btn" id="btn-5">▼</button></td>
+                        <td class="mono">2026-05-26 09:05:11</td>
+                        <td>Maria Georgiou</td>
+                        <td><span class="badge badge--insert"><span class="badge__dot"></span>Insert</span></td>
+                        <td>Payment</td>
+                        <td class="mono">203</td>
+                    </tr>
+                    <tr class="detail-row" id="detail-5">
+                        <td colspan="6">
+                            <div class="detail-panel">
+                                <div class="detail-panel__section" style="grid-column: 1 / -1;">
+                                    <div class="detail-panel__label">New Values</div>
+                                    <div class="json-view">
+                                        <span>"InvoiceId": 1038</span><br>
+                                        <span>"Amount": 1250.00</span><br>
+                                        <span>"PaymentMethodTypeId": 2</span><br>
+                                        <span>"Reference": "TRF-20260526-001"</span><br>
+                                        <span>"PaymentDate": "2026-05-26"</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination-row">
+                <div class="pagination-info">Showing 1–5 of 142</div>
+                <div class="pagination-controls">
+                    <button class="page-btn page-btn--disabled">← Prev</button>
+                    <button class="page-btn page-btn--active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn">4</button>
+                    <button class="page-btn">...</button>
+                    <button class="page-btn">8</button>
+                    <button class="page-btn">Next →</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function toggleDetail(detailId, row) {
+            const detailRow = document.getElementById(detailId);
+            const btn = row.querySelector('.expand-btn');
+
+            if (detailRow.classList.contains('expanded')) {
+                detailRow.classList.remove('expanded');
+                btn.classList.remove('open');
+            } else {
+                // Close all other expanded rows
+                document.querySelectorAll('.detail-row.expanded').forEach(r => {
+                    r.classList.remove('expanded');
+                });
+                document.querySelectorAll('.expand-btn.open').forEach(b => {
+                    b.classList.remove('open');
+                });
+
+                detailRow.classList.add('expanded');
+                btn.classList.add('open');
+            }
+        }
+    </script>
+</body>
+</html>

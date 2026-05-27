@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Notes — Portal Mock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-dark: #0B1B28;
+            --text-muted: #5E7385;
+            --border: rgba(13, 94, 166, 0.08);
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 32px 40px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+        }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+        .eyebrow .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--blue);
+        }
+        .topbar-heading {
+            font-family: 'Manrope', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-top: 6px;
+            letter-spacing: -0.02em;
+        }
+        .topbar-subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--text-dark); }
+
+        .glass {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: 0 2px 12px rgba(13, 94, 166, 0.04);
+        }
+        .card-pad { padding: 28px 32px; }
+
+        .label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .form-grid {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .field { min-width: 180px; }
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .field select, .field input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d0dce8;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            background: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+        }
+        th {
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        tr:hover td { background: var(--bg-base); }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .pill::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+        .pill-blue { background: #e8f2fa; color: var(--blue); }
+        .pill-blue::before { background: var(--blue); }
+        .pill-green { background: #e6f5ef; color: var(--success); }
+        .pill-green::before { background: var(--success); }
+        .pill-gold { background: #fdf4e6; color: var(--warning); }
+        .pill-gold::before { background: var(--warning); }
+        .pill-red { background: #fceaea; color: var(--danger); }
+        .pill-red::before { background: var(--danger); }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .pagination-info { font-size: 14px; color: var(--text-muted); }
+        .page-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid #d0dce8;
+            background: #fff;
+            cursor: pointer;
+        }
+        .page-btn.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+        .kpi-card {
+            border-left: 4px solid;
+        }
+        .kpi-value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+        .kpi-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Credit Notes</div>
+        <h1 class="topbar-heading">Credit Notes</h1>
+        <p class="topbar-subtitle">Issue, track, and manage credit notes against invoices.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="#" class="btn btn-primary">Issue Credit Note</a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-row">
+    <div class="glass card-pad kpi-card" style="border-left-color: var(--blue);">
+        <div class="label">Total Issued</div>
+        <div class="kpi-value" style="color: var(--blue);">12</div>
+        <div class="kpi-subtitle">This month</div>
+    </div>
+    <div class="glass card-pad kpi-card" style="border-left-color: var(--danger);">
+        <div class="label">Total Value</div>
+        <div class="kpi-value" style="color: var(--danger);">€4,280.00</div>
+        <div class="kpi-subtitle">Credits issued this month</div>
+    </div>
+    <div class="glass card-pad kpi-card" style="border-left-color: var(--warning);">
+        <div class="label">Pending Application</div>
+        <div class="kpi-value" style="color: var(--warning);">3</div>
+        <div class="kpi-subtitle">Not yet applied to invoices</div>
+    </div>
+</div>
+
+<!-- Filter Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="form-grid">
+        <div class="field">
+            <label>Search</label>
+            <input type="text" placeholder="Credit note number or customer..." />
+        </div>
+        <div class="field">
+            <label>Status</label>
+            <select>
+                <option>All Statuses</option>
+                <option>Draft</option>
+                <option>Issued</option>
+                <option>Applied</option>
+                <option>Voided</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Customer</label>
+            <select>
+                <option>All Customers</option>
+                <option>Acme Corp</option>
+                <option>TechStart Ltd</option>
+                <option>Global Services</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Date From</label>
+            <input type="date" />
+        </div>
+        <div class="field">
+            <label>Date To</label>
+            <input type="date" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary">Filter</button>
+            <button class="btn btn-secondary" style="margin-left:6px;">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    <table>
+        <thead>
+            <tr>
+                <th>Credit Note #</th>
+                <th>Customer</th>
+                <th>Invoice Ref</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>CN-2026-0012</strong></td>
+                <td>Acme Corp</td>
+                <td>INV-2026-0045</td>
+                <td>2026-05-25</td>
+                <td><strong>€850.00</strong></td>
+                <td><span class="pill pill-green">Issued</span></td>
+                <td>Overcharge correction</td>
+            </tr>
+            <tr>
+                <td><strong>CN-2026-0011</strong></td>
+                <td>TechStart Ltd</td>
+                <td>INV-2026-0041</td>
+                <td>2026-05-22</td>
+                <td><strong>€1,200.00</strong></td>
+                <td><span class="pill pill-blue">Applied</span></td>
+                <td>Partial return of goods</td>
+            </tr>
+            <tr>
+                <td><strong>CN-2026-0010</strong></td>
+                <td>Global Services</td>
+                <td>INV-2026-0038</td>
+                <td>2026-05-20</td>
+                <td><strong>€430.00</strong></td>
+                <td><span class="pill pill-gold">Draft</span></td>
+                <td>Service not delivered</td>
+            </tr>
+            <tr>
+                <td><strong>CN-2026-0009</strong></td>
+                <td>Acme Corp</td>
+                <td>INV-2026-0035</td>
+                <td>2026-05-18</td>
+                <td><strong>€600.00</strong></td>
+                <td><span class="pill pill-green">Issued</span></td>
+                <td>Pricing error</td>
+            </tr>
+            <tr>
+                <td><strong>CN-2026-0008</strong></td>
+                <td>TechStart Ltd</td>
+                <td>INV-2026-0030</td>
+                <td>2026-05-15</td>
+                <td><strong>€1,200.00</strong></td>
+                <td><span class="pill pill-red">Voided</span></td>
+                <td>Issued in error</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <div class="pagination-info">Showing 1–5 of 12</div>
+        <div style="display:flex;gap:6px;">
+            <button class="page-btn" disabled>← Prev</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">Next →</button>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

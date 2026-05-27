@@ -135,9 +135,17 @@ public class PortalEmailService : IEmailService
                             <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;"">
                                 Click the button below to create your account and get started.
                             </p>
-                            <p style=""margin:28px 0 0 0;"">
-                                <a href=""{System.Net.WebUtility.HtmlEncode(invitationLink)}"" style=""display:inline-block;padding:14px 32px;background-color:#0D5EA6;color:#FFFFFF;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;"">Create Account</a>
-                            </p>
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:28px 0 0 0;"">
+                                <tr>
+                                    <td align=""center"" bgcolor=""#0D5EA6"" style=""background-color:#0D5EA6;border-radius:8px;"">
+                                        <a href=""{System.Net.WebUtility.HtmlEncode(invitationLink)}"" target=""_blank"" style=""display:inline-block;padding:14px 32px;font-size:16px;font-weight:700;font-family:'Inter',Arial,sans-serif;color:#FFFFFF;text-decoration:none;border-radius:8px;mso-padding-alt:0;text-align:center;"">
+                                            <!--[if mso]><i style=""letter-spacing:32px;mso-font-width:-100%;mso-text-raise:21pt"">&nbsp;</i><![endif]-->
+                                            <span style=""mso-text-raise:10pt;"">Create Account</span>
+                                            <!--[if mso]><i style=""letter-spacing:32px;mso-font-width:-100%"">&nbsp;</i><![endif]-->
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
                             <p style=""margin:24px 0 0 0;font-size:13px;color:#5E7385;line-height:1.6;"">
                                 This invitation expires in 72 hours. If you didn't expect this email, you can safely ignore it.
                             </p>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Note Detail — Portal Mock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-dark: #0B1B28;
+            --text-muted: #5E7385;
+            --border: rgba(13, 94, 166, 0.08);
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 32px 40px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+        }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+        .eyebrow .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--blue);
+        }
+        .topbar-heading {
+            font-family: 'Manrope', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-top: 6px;
+            letter-spacing: -0.02em;
+        }
+        .topbar-subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--text-dark); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid #d0dce8; color: var(--text-dark); }
+
+        .glass {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: 0 2px 12px rgba(13, 94, 166, 0.04);
+        }
+        .card-pad { padding: 28px 32px; }
+
+        .label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .pill::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+        .pill-green { background: #e6f5ef; color: var(--success); }
+        .pill-green::before { background: var(--success); }
+        .pill-gold { background: #fdf4e6; color: var(--warning); }
+        .pill-gold::before { background: var(--warning); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+        }
+        th {
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .totals {
+            background: var(--bg-base);
+            border-radius: var(--radius-sm);
+            padding: 18px 24px;
+        }
+        .totals .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        .totals .row + .row { border-top: 1px solid var(--border); }
+        .totals .big-total {
+            font-family: 'Manrope', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--danger);
+        }
+
+        .meta-grid {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+        .meta-item .value {
+            margin-top: 6px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .reason-box {
+            margin-top: 18px;
+            padding: 16px 20px;
+            background: var(--bg-base);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--warning);
+        }
+        .reason-box .reason-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .reason-box .reason-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-dark);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Credit Note Detail</div>
+        <h1 class="topbar-heading">CN-2026-0012 · Acme Corp</h1>
+        <p class="topbar-subtitle">Review credit note details, line items, and application status.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;">Apply to Invoice</button>
+        <a href="#" class="btn btn-secondary">Preview PDF</a>
+        <button class="btn btn-danger" style="font-size:13px;padding:8px 16px;">Void</button>
+    </div>
+</div>
+
+<!-- Overview Card -->
+<section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;flex-wrap:wrap;">
+        <div>
+            <div class="label">Status</div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
+                <span class="pill pill-green">Issued</span>
+            </div>
+        </div>
+        <div class="meta-grid">
+            <div class="meta-item">
+                <div class="label">Customer</div>
+                <div class="value">Acme Corp</div>
+            </div>
+            <div class="meta-item">
+                <div class="label">Credit Note #</div>
+                <div class="value">CN-2026-0012</div>
+            </div>
+            <div class="meta-item">
+                <div class="label">Issue Date</div>
+                <div class="value">2026-05-25</div>
+            </div>
+            <div class="meta-item">
+                <div class="label">Source Invoice</div>
+                <div class="value" style="color:var(--blue);cursor:pointer;">INV-2026-0045</div>
+            </div>
+            <div class="meta-item">
+                <div class="label">VAT Period</div>
+                <div class="value">May–Jun 2026</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reason -->
+    <div class="reason-box">
+        <div class="reason-label">Reason for Credit</div>
+        <div class="reason-text">Overcharge correction — client was billed for 10 units but only 7 were delivered. Credit issued for the 3 undelivered units.</div>
+    </div>
+</section>
+
+<!-- Line Items -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Credited Items</div>
+    <h2 style="margin-top:8px;font-size:24px;font-family:'Manrope',sans-serif;font-weight:700;">Line Items</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>VAT %</th>
+                <th>Line Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Widget Pro X — Undelivered units</strong></td>
+                <td>3</td>
+                <td>€200.00</td>
+                <td>19%</td>
+                <td><strong>€600.00</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Shipping fee reversal</strong></td>
+                <td>1</td>
+                <td>€50.00</td>
+                <td>19%</td>
+                <td><strong>€50.00</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="totals" style="margin-top:18px;">
+        <div class="row"><span style="color:var(--text-muted);">Subtotal</span><strong>€650.00</strong></div>
+        <div class="row"><span style="color:var(--text-muted);">VAT (19%)</span><strong>€123.50</strong></div>
+        <div class="row"><span>Credit Total</span><span class="big-total">−€773.50</span></div>
+    </div>
+</section>
+
+<!-- Application History -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Application</div>
+    <h2 style="margin-top:8px;font-size:24px;font-family:'Manrope',sans-serif;font-weight:700;">Application History</h2>
+    <p style="margin-top:8px;font-size:14px;color:var(--text-muted);line-height:1.6;">
+        Track how this credit note has been applied against invoices.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date Applied</th>
+                <th>Invoice</th>
+                <th>Amount Applied</th>
+                <th>Applied By</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>2026-05-26</td>
+                <td style="color:var(--blue);font-weight:600;cursor:pointer;">INV-2026-0045</td>
+                <td><strong>€773.50</strong></td>
+                <td>admin@3inventors.com</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="margin-top:16px;padding:14px 18px;background:#e6f5ef;border-radius:8px;font-size:13px;color:var(--success);font-weight:600;">
+        ✓ Fully applied — no remaining balance
+    </div>
+</section>
+
+<!-- Back link -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a href="#" class="btn btn-outline">← Back to Credit Notes</a>
+</div>
+
+</body>
+</html>

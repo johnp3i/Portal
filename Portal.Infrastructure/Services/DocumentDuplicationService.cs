@@ -195,7 +195,7 @@ public class DocumentDuplicationService : IDocumentDuplicationService
 
             return duplicate;
         }
-        catch
+        catch(Exception ex)
         {
             await transaction.RollbackAsync();
             throw;

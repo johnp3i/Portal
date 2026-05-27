@@ -30,14 +30,19 @@ public class BusinessClaimsPrincipalFactory : UserClaimsPrincipalFactory<Applica
         var identity = await base.GenerateClaimsAsync(user);
 
         // Try new model first: resolve from UserBusiness
-        var defaultBusiness = await _membershipDbContext.UserBusinesses
+        var userBusiness = await _membershipDbContext.UserBusinesses
             .Where(ub => ub.UserId == user.Id && ub.IsDefault && ub.IsActive)
-            .Select(ub => ub.BusinessId)
+            .Select(ub => new { ub.BusinessId, ub.IsOwner })
             .FirstOrDefaultAsync();
 
-        if (defaultBusiness > 0)
+        if (userBusiness != null && userBusiness.BusinessId > 0)
         {
-            identity.AddClaim(new Claim("BusinessId", defaultBusiness.ToString()));
+            identity.AddClaim(new Claim("BusinessId", userBusiness.BusinessId.ToString()));
+
+            if (userBusiness.IsOwner)
+            {
+                identity.AddClaim(new Claim("IsOwner", "true"));
+            }
         }
         else if (user.BusinessId.HasValue)
         {

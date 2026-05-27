@@ -20,7 +20,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
             const string query = @"
                 SELECT [Id], [InvoiceId], [Description], [Quantity], [UnitPrice], [VatRate],
                        [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
-                       [ReferenceUrl], [Subtitle], [InvoiceSectionId]
+                       [ReferenceUrl], [Subtitle], [InvoiceSectionId], [ProductCode]
                 FROM [invoice].[InvoiceLine]
                 WHERE [InvoiceId] = @InvoiceId
                 ORDER BY [SortOrder]";
@@ -40,7 +40,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
             const string query = @"
                 SELECT [Id], [InvoiceId], [Description], [Quantity], [UnitPrice], [VatRate],
                        [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
-                       [ReferenceUrl], [Subtitle], [InvoiceSectionId]
+                       [ReferenceUrl], [Subtitle], [InvoiceSectionId], [ProductCode]
                 FROM [invoice].[InvoiceLine]
                 WHERE [Id] = @Id";
 
@@ -60,12 +60,12 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 INSERT INTO [invoice].[InvoiceLine]
                     ([InvoiceId], [Description], [Quantity], [UnitPrice], [VatRate],
                      [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
-                     [ReferenceUrl], [Subtitle], [InvoiceSectionId])
+                     [ReferenceUrl], [Subtitle], [InvoiceSectionId], [ProductCode])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@InvoiceId, @Description, @Quantity, @UnitPrice, @VatRate,
                      @Discount, @DiscountType, @CostPrice, @LineTotal, @SortOrder,
-                     @ReferenceUrl, @Subtitle, @InvoiceSectionId)";
+                     @ReferenceUrl, @Subtitle, @InvoiceSectionId, @ProductCode)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -94,6 +94,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 command.Parameters.Add(new SqlParameter("@ReferenceUrl", entity.ReferenceUrl ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@InvoiceSectionId", entity.InvoiceSectionId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ProductCode", entity.ProductCode ?? (object)DBNull.Value));
 
                 var result = await command.ExecuteScalarAsync();
                 return (int)result!;
@@ -148,7 +149,8 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                     [SortOrder] = @SortOrder,
                     [ReferenceUrl] = @ReferenceUrl,
                     [Subtitle] = @Subtitle,
-                    [InvoiceSectionId] = @InvoiceSectionId
+                    [InvoiceSectionId] = @InvoiceSectionId,
+                    [ProductCode] = @ProductCode
                 WHERE [Id] = @Id";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -164,7 +166,8 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 new SqlParameter("@SortOrder", entity.SortOrder),
                 new SqlParameter("@ReferenceUrl", entity.ReferenceUrl ?? (object)DBNull.Value),
                 new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value),
-                new SqlParameter("@InvoiceSectionId", entity.InvoiceSectionId ?? (object)DBNull.Value)
+                new SqlParameter("@InvoiceSectionId", entity.InvoiceSectionId ?? (object)DBNull.Value),
+                new SqlParameter("@ProductCode", entity.ProductCode ?? (object)DBNull.Value)
             );
         }
         catch (Exception)

@@ -51,9 +51,20 @@ public class MyBusinessController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SaveProfile(BusinessProfile profile)
+    public async Task<IActionResult> SaveProfile(BusinessProfile profile, string? businessName)
     {
         profile.BusinessId = _tenantService.CurrentBusinessId;
+
+        // Update business name if provided
+        if (!string.IsNullOrWhiteSpace(businessName))
+        {
+            var business = await _businessService.GetBusinessByIdAsync(profile.BusinessId);
+            if (business != null && business.Name != businessName.Trim())
+            {
+                business.Name = businessName.Trim();
+                await _businessService.UpdateBusinessAsync(business);
+            }
+        }
 
         // Validate required fields
         if (string.IsNullOrWhiteSpace(profile.CompanyRegistrationNumber) ||

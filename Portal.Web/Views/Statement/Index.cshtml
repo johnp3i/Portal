@@ -11,8 +11,8 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Statement of Account</div>
-        <h1 style="margin-top:14px;font-size:42px;">Customer Statement</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Generate a financial summary showing invoices, payments, and running balance for a selected customer and period.</p>
+        <h1 class="topbar-heading">Customer Statement</h1>
+        <p class="topbar-subtitle">Generate a financial summary showing invoices, payments, and running balance for a selected customer and period.</p>
     </div>
 </div>
 
@@ -21,7 +21,7 @@
     <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:180px;">
             <label>Customer</label>
-            <select id="customerSelect">
+            <select id="customerSelect" onchange="onCustomerChanged()">
                 <option value="">Select a customer...</option>
                 @foreach (var customer in customers)
                 {
@@ -119,7 +119,7 @@
 
 <!-- Email History (shown independently when customer is selected) -->
 <section class="glass card-pad" style="margin-top:24px;display:none;" id="emailHistorySection">
-    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 6px 0;color:#1a2b3c;">Email History</h3>
+    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 6px 0;color:#1a2b3c;">Statements' Email History</h3>
     <p style="font-size:12px;color:#8a9bab;margin:0 0 14px 0;font-style:italic;">Note: Viewing a previously sent statement regenerates it from current data. Possible changes to invoices or payments since the original send date may affect the displayed figures.</p>
     <div id="emailHistoryContent">
         <p style="font-size:14px;color:#5a6a7a;">No statements have been emailed for this customer.</p>
@@ -135,6 +135,15 @@
             document.addEventListener('DOMContentLoaded', function () {
                 loadEmailHistory(selectedCustomerId);
             });
+        }
+
+        function onCustomerChanged() {
+            var customerId = document.getElementById('customerSelect').value;
+            if (customerId) {
+                loadEmailHistory(customerId);
+            } else {
+                document.getElementById('emailHistorySection').style.display = 'none';
+            }
         }
 
         function getAntiForgeryToken() {

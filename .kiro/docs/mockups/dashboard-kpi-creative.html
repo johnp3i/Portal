@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard KPI — Creative Alternatives</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --border: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 32px 40px;
+            line-height: 1.5;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+        h2 { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--blue); }
+        .section { margin-bottom: 60px; padding-bottom: 40px; border-bottom: 2px solid var(--border); }
+        .section:last-child { border-bottom: none; }
+        .description { color: var(--muted); font-size: 13px; margin-bottom: 20px; max-width: 700px; line-height: 1.6; }
+
+        /* ===== OPTION E: Inline Sentence Summary ===== */
+        .sentence-bar {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 6px rgba(13,94,166,.03);
+            padding: 16px 24px;
+            font-size: 15px;
+            line-height: 2;
+        }
+        .sentence-bar strong {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+        }
+        .sentence-bar .val-green { color: var(--success); }
+        .sentence-bar .val-red { color: var(--danger); }
+        .sentence-bar .val-gold { color: var(--warning); }
+        .sentence-bar .val-blue { color: var(--blue); }
+        .sentence-bar .sep {
+            display: inline-block;
+            width: 1px;
+            height: 14px;
+            background: #d0d9e2;
+            margin: 0 14px;
+            vertical-align: middle;
+        }
+
+        /* ===== OPTION F: Sidebar Scoreboard ===== */
+        .layout-f {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 22px;
+        }
+        .scoreboard {
+            background: linear-gradient(180deg, #0D5EA6 0%, #094A85 100%);
+            border-radius: 16px;
+            padding: 20px 18px;
+            color: #fff;
+        }
+        .scoreboard-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.7;
+            margin-bottom: 16px;
+        }
+        .scoreboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .scoreboard-item:last-child { border-bottom: none; }
+        .scoreboard-item .sb-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .scoreboard-item .sb-value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+        }
+        .scoreboard-item .sb-value.green { color: #7EECC4; }
+        .scoreboard-item .sb-value.red { color: #FF9B9B; }
+        .scoreboard-item .sb-value.gold { color: #FFD580; }
+        .scoreboard-item .sb-value.white { color: #fff; }
+        .content-placeholder {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 14px;
+            font-style: italic;
+            min-height: 300px;
+        }
+
+        /* ===== OPTION G: Progress Bars / Gauges ===== */
+        .gauge-row {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 6px rgba(13,94,166,.03);
+            padding: 18px 24px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+        .gauge-item { }
+        .gauge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+        .gauge-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+        }
+        .gauge-value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+        }
+        .gauge-track {
+            height: 6px;
+            background: var(--bg2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+        .gauge-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* ===== OPTION H: Floating Ticker ===== */
+        .ticker-wrapper {
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 6px rgba(13,94,166,.03);
+            height: 48px;
+        }
+        .ticker-track {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            animation: ticker-scroll 20s linear infinite;
+            white-space: nowrap;
+        }
+        .ticker-track:hover { animation-play-state: paused; }
+        @keyframes ticker-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 24px;
+            font-size: 13px;
+            font-weight: 600;
+            border-right: 1px solid var(--border);
+            height: 100%;
+        }
+        .ticker-item:last-child { border-right: none; }
+        .ticker-item .t-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .ticker-item .t-value { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 15px; }
+
+        /* ===== OPTION I: Collapsed Accordion Row ===== */
+        .accordion-bar {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 6px rgba(13,94,166,.03);
+            overflow: hidden;
+        }
+        .accordion-summary {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .accordion-summary:hover { background: var(--bg2); }
+        .accordion-chips {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+        .accordion-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        .accordion-chip .ac-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .accordion-chip .ac-value {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 14px;
+        }
+        .accordion-chip .ac-label {
+            color: var(--muted);
+            font-size: 11px;
+        }
+        .accordion-toggle {
+            font-size: 12px;
+            color: var(--blue);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .accordion-detail {
+            display: none;
+            padding: 0 24px 18px;
+            border-top: 1px solid var(--border);
+        }
+        .accordion-detail.open { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding-top: 16px; }
+        .ad-item { text-align: center; }
+        .ad-item .ad-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+        .ad-item .ad-value { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; }
+        .ad-item .ad-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+<h1>Creative KPI Alternatives</h1>
+<p style="color:var(--muted);font-size:14px;margin-bottom:40px;">Beyond cards — different ways to present the same 8 data points with minimal vertical footprint.</p>
+
+<!-- ===== OPTION E ===== -->
+<div class="section">
+    <h2>Option E — Natural Language Summary</h2>
+    <p class="description">KPIs presented as a readable sentence. Humans parse prose faster than scanning grid cells. One line, all context. Zero cards.</p>
+
+    <div class="sentence-bar">
+        This month you've received <strong class="val-green">€12,450.00</strong> in revenue (8 payments), with <strong class="val-red">€18,320.50</strong> outstanding across 12 invoices and <strong class="val-gold">€4,780.00</strong> overdue.
+        <span class="sep"></span>
+        Expenses total <strong class="val-blue">€6,230.00</strong> (14 purchases).
+        <span class="sep"></span>
+        Quotations: <strong class="val-blue">3</strong> drafts, <strong class="val-blue">7</strong> sent (€24,850 pipeline), <strong class="val-blue">4</strong> accepted (57%), <strong class="val-blue">21</strong> active customers.
+    </div>
+</div>
+
+<!-- ===== OPTION F ===== -->
+<div class="section">
+    <h2>Option F — Dark Sidebar Scoreboard</h2>
+    <p class="description">KPIs live in a persistent vertical scoreboard on the left. The main content area gets 100% of its width for charts and tables. Always visible, never in the way.</p>
+
+    <div class="layout-f">
+        <div class="scoreboard">
+            <div class="scoreboard-title">Monthly Pulse</div>
+            <div class="scoreboard-item">
+                <span class="sb-label">Revenue</span>
+                <span class="sb-value green">€12,450</span>
+            </div>
+            <div class="scoreboard-item">
+                <span class="sb-label">Outstanding</span>
+                <span class="sb-value red">€18,320</span>
+            </div>
+            <div class="scoreboard-item">
+                <span class="sb-label">Overdue</span>
+                <span class="sb-value gold">€4,780</span>
+            </div>
+            <div class="scoreboard-item">
+                <span class="sb-label">Expenses</span>
+                <span class="sb-value white">€6,230</span>
+            </div>
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15);">
+                <div class="scoreboard-title" style="margin-bottom:12px;">Quotations</div>
+                <div class="scoreboard-item">
+                    <span class="sb-label">Drafts</span>
+                    <span class="sb-value white">3</span>
+                </div>
+                <div class="scoreboard-item">
+                    <span class="sb-label">Sent</span>
+                    <span class="sb-value white">7</span>
+                </div>
+                <div class="scoreboard-item">
+                    <span class="sb-label">Accepted</span>
+                    <span class="sb-value white">4</span>
+                </div>
+                <div class="scoreboard-item">
+                    <span class="sb-label">Customers</span>
+                    <span class="sb-value white">21</span>
+                </div>
+            </div>
+        </div>
+        <div class="content-placeholder">
+            ← Charts, tables, and other dashboard content fills this area
+        </div>
+    </div>
+</div>
+
+<!-- ===== OPTION G ===== -->
+<div class="section">
+    <h2>Option G — Progress Bars with Inline Values</h2>
+    <p class="description">Each KPI shown as a labelled progress bar. Communicates magnitude at a glance — you instantly see how revenue compares to outstanding, or how close expenses are to revenue. One compact row.</p>
+
+    <div class="gauge-row">
+        <div class="gauge-item">
+            <div class="gauge-header">
+                <span class="gauge-label">Revenue</span>
+                <span class="gauge-value" style="color:var(--success);">€12,450</span>
+            </div>
+            <div class="gauge-track">
+                <div class="gauge-fill" style="width:68%;background:var(--success);"></div>
+            </div>
+            <div class="gauge-sub">8 payments · target €18k</div>
+        </div>
+        <div class="gauge-item">
+            <div class="gauge-header">
+                <span class="gauge-label">Outstanding</span>
+                <span class="gauge-value" style="color:var(--danger);">€18,320</span>
+            </div>
+            <div class="gauge-track">
+                <div class="gauge-fill" style="width:100%;background:var(--danger);"></div>
+            </div>
+            <div class="gauge-sub">12 invoices unpaid</div>
+        </div>
+        <div class="gauge-item">
+            <div class="gauge-header">
+                <span class="gauge-label">Overdue</span>
+                <span class="gauge-value" style="color:var(--warning);">€4,780</span>
+            </div>
+            <div class="gauge-track">
+                <div class="gauge-fill" style="width:26%;background:var(--warning);"></div>
+            </div>
+            <div class="gauge-sub">3 past due · 26% of outstanding</div>
+        </div>
+        <div class="gauge-item">
+            <div class="gauge-header">
+                <span class="gauge-label">Expenses</span>
+                <span class="gauge-value" style="color:var(--blue);">€6,230</span>
+            </div>
+            <div class="gauge-track">
+                <div class="gauge-fill" style="width:50%;background:var(--blue);"></div>
+            </div>
+            <div class="gauge-sub">14 purchases · 50% of revenue</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== OPTION H ===== -->
+<div class="section">
+    <h2>Option H — Auto-Scrolling Ticker</h2>
+    <p class="description">A stock-ticker-style bar that continuously scrolls KPIs. Takes only 48px of height. Hover to pause. Feels alive and operational without consuming layout space.</p>
+
+    <div class="ticker-wrapper">
+        <div class="ticker-track">
+            <div class="ticker-item"><span class="t-label">Revenue</span> <span class="t-value" style="color:var(--success);">€12,450</span></div>
+            <div class="ticker-item"><span class="t-label">Outstanding</span> <span class="t-value" style="color:var(--danger);">€18,320</span></div>
+            <div class="ticker-item"><span class="t-label">Overdue</span> <span class="t-value" style="color:var(--warning);">€4,780</span></div>
+            <div class="ticker-item"><span class="t-label">Expenses</span> <span class="t-value" style="color:var(--blue);">€6,230</span></div>
+            <div class="ticker-item"><span class="t-label">Drafts</span> <span class="t-value" style="color:var(--blue);">3</span></div>
+            <div class="ticker-item"><span class="t-label">Sent</span> <span class="t-value" style="color:var(--blue);">7</span></div>
+            <div class="ticker-item"><span class="t-label">Accepted</span> <span class="t-value" style="color:var(--blue);">4</span></div>
+            <div class="ticker-item"><span class="t-label">Customers</span> <span class="t-value" style="color:var(--blue);">21</span></div>
+            <!-- Duplicate for seamless loop -->
+            <div class="ticker-item"><span class="t-label">Revenue</span> <span class="t-value" style="color:var(--success);">€12,450</span></div>
+            <div class="ticker-item"><span class="t-label">Outstanding</span> <span class="t-value" style="color:var(--danger);">€18,320</span></div>
+            <div class="ticker-item"><span class="t-label">Overdue</span> <span class="t-value" style="color:var(--warning);">€4,780</span></div>
+            <div class="ticker-item"><span class="t-label">Expenses</span> <span class="t-value" style="color:var(--blue);">€6,230</span></div>
+            <div class="ticker-item"><span class="t-label">Drafts</span> <span class="t-value" style="color:var(--blue);">3</span></div>
+            <div class="ticker-item"><span class="t-label">Sent</span> <span class="t-value" style="color:var(--blue);">7</span></div>
+            <div class="ticker-item"><span class="t-label">Accepted</span> <span class="t-value" style="color:var(--blue);">4</span></div>
+            <div class="ticker-item"><span class="t-label">Customers</span> <span class="t-value" style="color:var(--blue);">21</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== OPTION I ===== -->
+<div class="section">
+    <h2>Option I — Expandable Accordion Row</h2>
+    <p class="description">Shows key financial figures as coloured chips in a single row (collapsed state). Click to expand and see full detail with descriptions. Best of both worlds: compact by default, detailed on demand.</p>
+
+    <div class="accordion-bar">
+        <div class="accordion-summary" onclick="toggleAccordion()">
+            <div class="accordion-chips">
+                <div class="accordion-chip">
+                    <span class="ac-dot" style="background:var(--success);"></span>
+                    <span class="ac-value" style="color:var(--success);">€12,450</span>
+                    <span class="ac-label">revenue</span>
+                </div>
+                <div class="accordion-chip">
+                    <span class="ac-dot" style="background:var(--danger);"></span>
+                    <span class="ac-value" style="color:var(--danger);">€18,320</span>
+                    <span class="ac-label">outstanding</span>
+                </div>
+                <div class="accordion-chip">
+                    <span class="ac-dot" style="background:var(--warning);"></span>
+                    <span class="ac-value" style="color:var(--warning);">€4,780</span>
+                    <span class="ac-label">overdue</span>
+                </div>
+                <div class="accordion-chip">
+                    <span class="ac-dot" style="background:var(--blue);"></span>
+                    <span class="ac-value" style="color:var(--blue);">€6,230</span>
+                    <span class="ac-label">expenses</span>
+                </div>
+                <div class="accordion-chip" style="margin-left:auto;opacity:0.6;">
+                    <span class="ac-value" style="color:var(--blue);">3</span><span class="ac-label">drafts</span>
+                    <span class="ac-value" style="color:var(--blue);margin-left:8px;">7</span><span class="ac-label">sent</span>
+                    <span class="ac-value" style="color:var(--blue);margin-left:8px;">4</span><span class="ac-label">accepted</span>
+                </div>
+            </div>
+            <div class="accordion-toggle">
+                <span id="accordion-icon">▼</span> Details
+            </div>
+        </div>
+        <div class="accordion-detail" id="accordion-detail">
+            <div class="ad-item">
+                <div class="ad-label">Revenue This Month</div>
+                <div class="ad-value" style="color:var(--success);">€12,450.00</div>
+                <div class="ad-sub">8 payments received</div>
+            </div>
+            <div class="ad-item">
+                <div class="ad-label">Outstanding</div>
+                <div class="ad-value" style="color:var(--danger);">€18,320.50</div>
+                <div class="ad-sub">12 unpaid invoices</div>
+            </div>
+            <div class="ad-item">
+                <div class="ad-label">Overdue</div>
+                <div class="ad-value" style="color:var(--warning);">€4,780.00</div>
+                <div class="ad-sub">3 invoices past due</div>
+            </div>
+            <div class="ad-item">
+                <div class="ad-label">Expenses This Month</div>
+                <div class="ad-value" style="color:var(--blue);">€6,230.00</div>
+                <div class="ad-sub">14 purchases recorded</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAccordion() {
+    var detail = document.getElementById('accordion-detail');
+    var icon = document.getElementById('accordion-icon');
+    if (detail.classList.contains('open')) {
+        detail.classList.remove('open');
+        icon.textContent = '▼';
+    } else {
+        detail.classList.add('open');
+        icon.textContent = '▲';
+    }
+}
+</script>
+
+</body>
+</html>

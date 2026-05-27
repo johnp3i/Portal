@@ -1,0 +1,307 @@
+@{
+    ViewData["Title"] = "Audit Log";
+    var tableNames = ViewBag.TableNames as List<string> ?? new List<string>();
+    var users = ViewBag.Users as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Audit Log</h1>
+        <p class="topbar-subtitle">Search and review all data changes across the platform.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label for="tableName">Table Name</label>
+            <select id="tableName">
+                <option value="">All Tables</option>
+                @foreach (var t in tableNames)
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label for="action">Action</label>
+            <select id="action">
+                <option value="">All Actions</option>
+                <option value="Insert">Insert</option>
+                <option value="Update">Update</option>
+                <option value="Delete">Delete</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="userId">User</label>
+            <select id="userId">
+                <option value="">All Users</option>
+                @foreach (var u in users)
+                {
+                    <option value="@u.value">@u.text</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="dateFrom">Date From</label>
+            <input type="date" id="dateFrom" />
+        </div>
+        <div class="field">
+            <label for="dateTo">Date To</label>
+            <input type="date" id="dateTo" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="loadAuditLogs(1)">Filter</button>
+            <button type="button" class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        </div>
+    </div>
+</section>
+
+<section class="glass card-pad">
+    <table class="data-table" id="auditTable">
+        <thead>
+            <tr>
+                <th style="width:40px;"></th>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Table</th>
+                <th>Record ID</th>
+            </tr>
+        </thead>
+        <tbody id="auditTableBody">
+            <tr>
+                <td colspan="6" style="text-align:center;padding:32px;color:#5a6b7c;">
+                    Loading audit records...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+        <div id="paginationControls" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+    let currentPage = 1;
+    const pageSize = 20;
+
+    function getAntiForgeryToken() {
+        const el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    async function loadAuditLogs(page) {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+
+        if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+            Swal.fire({
+                title: 'Invalid Date Range',
+                text: 'Date From cannot be greater than Date To.',
+                icon: 'warning',
+                confirmButtonColor: '#0D5EA6'
+            });
+            return;
+        }
+
+        currentPage = page;
+        BlockUI.show('Loading audit logs...');
+
+        try {
+            const params = new URLSearchParams({
+                tableName: document.getElementById('tableName').value,
+                action: document.getElementById('action').value,
+                userId: document.getElementById('userId').value,
+                dateFrom: dateFrom,
+                dateTo: dateTo,
+                page: page,
+                pageSize: pageSize
+            });
+
+            const response = await fetch(`/Admin/Audit/Search?${params}`);
+            const data = await response.json();
+            BlockUI.hide();
+
+            console.log('Audit Search response:', data);
+
+            if (data.success) {
+                renderTable(data.data);
+                renderPagination(data.currentPage, data.totalPages, data.totalCount);
+            } else {
+                Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function clearFilters() {
+        document.getElementById('tableName').value = '';
+        document.getElementById('action').value = '';
+        document.getElementById('userId').value = '';
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        loadAuditLogs(1);
+    }
+
+    function renderTable(records) {
+        const tbody = document.getElementById('auditTableBody');
+
+        if (!records || records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:#5a6b7c;">No audit records found matching the selected filters.</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        records.forEach((r, idx) => {
+            const ts = new Date(r.timestamp).toISOString().replace('T', ' ').substring(0, 19);
+            const actionBadge = getActionBadge(r.action);
+            const displayUser = r.userDisplayName || r.userId || '—';
+
+            html += `
+            <tr class="audit-summary-row" onclick="toggleDetail(${idx})" style="cursor:pointer;">
+                <td style="text-align:center;">
+                    <button class="expand-btn" id="expand-btn-${idx}" style="background:none;border:none;cursor:pointer;font-size:16px;transition:transform 0.2s;color:#5a6b7c;" aria-label="Expand">▼</button>
+                </td>
+                <td style="font-family:monospace;font-size:13px;">${ts}</td>
+                <td>${escHtml(displayUser)}</td>
+                <td>${actionBadge}</td>
+                <td>${escHtml(r.tableName)}</td>
+                <td>${escHtml(r.recordId || '—')}</td>
+            </tr>
+            <tr id="detail-row-${idx}" style="display:none;">
+                <td colspan="6" style="padding:0;">
+                    <div style="padding:16px 24px;background:#f7fafc;border-top:1px solid #e2eaf2;">
+                        ${renderDetail(r)}
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function renderDetail(r) {
+        if (r.action === 'Update') {
+            const oldVals = tryParseJson(r.oldValues);
+            const newVals = tryParseJson(r.newValues);
+            const allKeys = new Set([...Object.keys(oldVals), ...Object.keys(newVals)]);
+
+            let oldHtml = '<div><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">Old Values</strong>';
+            let newHtml = '<div><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">New Values</strong>';
+
+            allKeys.forEach(key => {
+                const changed = JSON.stringify(oldVals[key]) !== JSON.stringify(newVals[key]);
+                const style = changed ? 'background:rgba(13,94,166,0.08);border-left:3px solid #0D5EA6;padding:4px 8px;margin:2px 0;border-radius:2px;' : 'padding:4px 8px;margin:2px 0;';
+                oldHtml += `<div style="${style}"><span style="color:#5a6b7c;font-size:12px;">${escHtml(key)}:</span> <span style="font-size:13px;">${escHtml(String(oldVals[key] ?? ''))}</span></div>`;
+                newHtml += `<div style="${style}"><span style="color:#5a6b7c;font-size:12px;">${escHtml(key)}:</span> <span style="font-size:13px;">${escHtml(String(newVals[key] ?? ''))}</span></div>`;
+            });
+
+            oldHtml += '</div>';
+            newHtml += '</div>';
+
+            if (allKeys.size === 0) {
+                return '<p style="color:#5a6b7c;font-size:13px;">No changed properties recorded.</p>';
+            }
+
+            return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${oldHtml}${newHtml}</div>`;
+        }
+
+        if (r.action === 'Insert') {
+            const vals = tryParseJson(r.newValues);
+            const keys = Object.keys(vals);
+            if (keys.length === 0) return '<p style="color:#5a6b7c;font-size:13px;">No values recorded.</p>';
+            let html = '<div style="grid-column:1/-1;"><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">New Values</strong>';
+            keys.forEach(key => {
+                html += `<div style="padding:4px 8px;margin:2px 0;"><span style="color:#5a6b7c;font-size:12px;">${escHtml(key)}:</span> <span style="font-size:13px;">${escHtml(String(vals[key] ?? ''))}</span></div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        if (r.action === 'Delete') {
+            const vals = tryParseJson(r.oldValues);
+            const keys = Object.keys(vals);
+            if (keys.length === 0) return '<p style="color:#5a6b7c;font-size:13px;">No values recorded.</p>';
+            let html = '<div style="grid-column:1/-1;"><strong style="font-size:12px;color:#5a6b7c;text-transform:uppercase;letter-spacing:.05em;">Deleted Values</strong>';
+            keys.forEach(key => {
+                html += `<div style="padding:4px 8px;margin:2px 0;"><span style="color:#5a6b7c;font-size:12px;">${escHtml(key)}:</span> <span style="font-size:13px;">${escHtml(String(vals[key] ?? ''))}</span></div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        return '';
+    }
+
+    function toggleDetail(idx) {
+        const detailRow = document.getElementById(`detail-row-${idx}`);
+        const btn = document.getElementById(`expand-btn-${idx}`);
+        const isOpen = detailRow.style.display !== 'none';
+
+        // Close all open detail rows
+        document.querySelectorAll('[id^="detail-row-"]').forEach(row => row.style.display = 'none');
+        document.querySelectorAll('.expand-btn').forEach(b => b.style.transform = '');
+
+        if (!isOpen) {
+            detailRow.style.display = '';
+            btn.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    function renderPagination(page, totalPages, totalCount) {
+        const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, totalCount);
+        document.getElementById('paginationInfo').textContent = `Showing ${start}–${end} of ${totalCount}`;
+
+        const controls = document.getElementById('paginationControls');
+        if (totalPages <= 1) { controls.innerHTML = ''; return; }
+
+        let html = `<button onclick="loadAuditLogs(${page - 1})" ${page <= 1 ? 'disabled' : ''} class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;cursor:pointer;">← Prev</button>`;
+
+        for (let p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && Math.abs(p - page) > 2 && p !== 1 && p !== totalPages) {
+                if (p === 2 || p === totalPages - 1) html += `<span style="padding:6px 4px;color:#5a6b7c;">…</span>`;
+                continue;
+            }
+            const active = p === page ? 'page-btn--active' : '';
+            html += `<button onclick="loadAuditLogs(${p})" class="page-btn ${active}" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid ${p === page ? '#0D5EA6' : '#d0dce8'};background:${p === page ? '#0D5EA6' : '#fff'};color:${p === page ? '#fff' : 'inherit'};cursor:pointer;">${p}</button>`;
+        }
+
+        html += `<button onclick="loadAuditLogs(${page + 1})" ${page >= totalPages ? 'disabled' : ''} class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;cursor:pointer;">Next →</button>`;
+        controls.innerHTML = html;
+    }
+
+    function tryParseJson(str) {
+        if (!str) return {};
+        try { return JSON.parse(str); } catch { return {}; }
+    }
+
+    function escHtml(str) {
+        if (str == null) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function getActionBadge(action) {
+        const colors = {
+            'Insert': { dot: '#129867', bg: '#e8f7f1', text: '#129867' },
+            'Update': { dot: '#0D5EA6', bg: '#e8f2fa', text: '#0D5EA6' },
+            'Delete': { dot: '#C24A4A', bg: '#fceaea', text: '#C24A4A' },
+            'Duplicated': { dot: '#7c5cbf', bg: '#f3eefa', text: '#7c5cbf' },
+            'StatusChanged': { dot: '#C8912E', bg: '#fdf4e6', text: '#C8912E' },
+            'Recalculated': { dot: '#57B8E8', bg: '#e8f6fc', text: '#3a8ab5' },
+            'StatementGenerated': { dot: '#5E7385', bg: '#eef2f5', text: '#5E7385' }
+        };
+        const c = colors[action] || { dot: '#5E7385', bg: '#eef2f5', text: '#5E7385' };
+        return `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${c.bg};color:${c.text};"><span style="width:7px;height:7px;border-radius:50%;background:${c.dot};"></span>${escHtml(action)}</span>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => loadAuditLogs(1));
+</script>
+}

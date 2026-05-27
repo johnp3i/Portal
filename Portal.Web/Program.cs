@@ -1,19 +1,47 @@
+using System.Collections.ObjectModel;
+using System.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Identity;
+using Portal.Infrastructure.Interceptors;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
 using Portal.Web.Extensions;
 using Portal.Web.Security;
 using Portal.Web.Services;
 using Serilog;
+using Serilog.Sinks.MSSqlServer;
+using Portal.Web.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// --- Audit Interceptor (scoped to match PortalDbContext lifetime) ---
+// AuditInterceptor writes audit records via its own DbContext instance to avoid
+// a circular dependency: PortalDbContext → AuditInterceptor → AuditLogRepository → PortalDbContext.
+// The interceptor's AuditLogRepository uses a plain DbContext (no interceptors attached).
+builder.Services.AddScoped<AuditInterceptor>(sp =>
+{
+    var tenantService = sp.GetRequiredService<ICurrentTenantService>();
+    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+
+    // Build a plain PortalDbContext (no interceptors) for the audit write path
+    var connectionString = builder.Configuration.GetConnectionString("PortalDb");
+    var auditOptions = new DbContextOptionsBuilder<PortalDbContext>()
+        .UseSqlServer(connectionString)
+        .Options;
+    var auditDbContext = new PortalDbContext(auditOptions, tenantService);
+    var auditLogRepository = new AuditLogRepository(auditDbContext);
+
+    return new AuditInterceptor(tenantService, httpContextAccessor, auditLogRepository);
+});
+
 // --- Database Contexts ---
-builder.Services.AddDbContext<PortalDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("PortalDb")));
+builder.Services.AddDbContext<PortalDbContext>((sp, options) =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("PortalDb"));
+    options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
+});
 
 builder.Services.AddDbContext<MembershipDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("MembershipDb")));
@@ -119,11 +147,25 @@ builder.Services.AddScoped<IVatSubmissionService, VatSubmissionService>();
 // --- Revenue Control ---
 builder.Services.AddScoped<PaymentRepository>(sp =>
     new PaymentRepository(sp.GetRequiredService<PortalDbContext>()));
-builder.Services.AddScoped<IFinancialStatusEngine, FinancialStatusEngine>();
+builder.Services.AddScoped<IFinancialStatusEngine>(sp =>
+    new FinancialStatusEngine(
+        sp.GetRequiredService<PaymentRepository>(),
+        sp.GetRequiredService<InvoiceRepository>(),
+        sp.GetRequiredService<CreditNoteRepository>()));
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReceivablesQueryService, ReceivablesQueryService>();
 builder.Services.AddScoped<IVatIntegrationService, VatIntegrationService>();
+
+// --- Credit Notes ---
+builder.Services.AddScoped<CreditNoteRepository>(sp =>
+    new CreditNoteRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<CreditNoteLineRepository>(sp =>
+    new CreditNoteLineRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<CreditNoteApplicationRepository>(sp =>
+    new CreditNoteApplicationRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ICreditNoteService, CreditNoteService>();
+builder.Services.AddScoped<ICreditNoteRenderer, CreditNoteRenderer>();
 
 // --- Customer Statement ---
 builder.Services.AddScoped<StatementRepository>(sp =>
@@ -139,8 +181,30 @@ builder.Services.AddScoped<ProductPriceHistoryRepository>(sp =>
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductAutocompleteService, ProductAutocompleteService>();
 
+// --- Audit & User Admin ---
+builder.Services.AddScoped<AuditLogQueryRepository>(sp =>
+    new AuditLogQueryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IAuditLogQueryService, AuditLogQueryService>();
+builder.Services.AddScoped<UserAdminRepository>(sp =>
+    new UserAdminRepository(sp.GetRequiredService<MembershipDbContext>()));
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+
+// --- System Logs (read-only, Portal.Logging database) ---
+builder.Services.AddDbContext<LoggingDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LoggingDb"));
+    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+});
+builder.Services.AddScoped<SystemLogQueryRepository>(sp =>
+    new SystemLogQueryRepository(sp.GetRequiredService<LoggingDbContext>()));
+builder.Services.AddScoped<ISystemLogQueryService, SystemLogQueryService>();
+
 // --- MVC ---
 builder.Services.AddControllersWithViews();
+
+// --- Serilog SelfLog (must be before any Serilog configuration to capture config errors) ---
+Serilog.Debugging.SelfLog.Enable(msg =>
+    File.AppendAllText("logs/serilog-selflog-.txt", $"{DateTime.UtcNow:o} {msg}{Environment.NewLine}"));
 
 // --- Serilog ---
 builder.Host.UseSerilog((context, services, configuration) => configuration
@@ -148,17 +212,32 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "Portal.Web")
     .Enrich.WithCorrelationId()
+    .Enrich.WithMachineName()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
     .WriteTo.File("logs/portal-.log",
         rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{CorrelationId}] [{UserId}] [{BusinessId}] {Message:lj}{NewLine}{Exception}"));
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{CorrelationId}] [{UserId}] [{BusinessId}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.MSSqlServer(
+        connectionString: context.Configuration.GetConnectionString("LoggingDb"),
+        sinkOptions: new MSSqlServerSinkOptions
+        {
+            TableName = "Logs",
+            SchemaName = "dbo",
+            AutoCreateSqlTable = context.HostingEnvironment.IsDevelopment(),
+            BatchPostingLimit = 50,
+            BatchPeriod = TimeSpan.FromSeconds(5)
+        },
+        columnOptions: GetColumnOptions()));
 
 var app = builder.Build();
 
 // --- Seed Data (Development) ---
-using (var scope = app.Services.CreateScope())
+if (!app.Configuration.GetValue<bool>("SkipSeedData"))
 {
-    await Portal.Web.Data.SeedData.InitializeAsync(scope.ServiceProvider);
+    using (var scope = app.Services.CreateScope())
+    {
+        await Portal.Web.Data.SeedData.InitializeAsync(scope.ServiceProvider);
+    }
 }
 
 // --- Middleware Pipeline ---
@@ -177,9 +256,38 @@ app.UseSerilogRequestLogging();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<LoggingEnrichmentMiddleware>();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+// --- Serilog Column Options Helper ---
+static ColumnOptions GetColumnOptions()
+{
+    var columnOptions = new ColumnOptions();
+
+    // Remove Properties XML column — we use dedicated columns instead
+    columnOptions.Store.Remove(StandardColumn.Properties);
+
+    // Add custom columns for structured properties
+    columnOptions.AdditionalColumns = new Collection<SqlColumn>
+    {
+        new SqlColumn { ColumnName = "CorrelationId", DataType = SqlDbType.NVarChar, DataLength = 128, AllowNull = true },
+        new SqlColumn { ColumnName = "UserId", DataType = SqlDbType.NVarChar, DataLength = 450, AllowNull = true },
+        new SqlColumn { ColumnName = "BusinessId", DataType = SqlDbType.Int, AllowNull = true },
+        new SqlColumn { ColumnName = "SourceContext", DataType = SqlDbType.NVarChar, DataLength = 512, AllowNull = true },
+        new SqlColumn { ColumnName = "RequestPath", DataType = SqlDbType.NVarChar, DataLength = 512, AllowNull = true },
+        new SqlColumn { ColumnName = "MachineName", DataType = SqlDbType.NVarChar, DataLength = 128, AllowNull = true }
+    };
+
+    // Configure TimeStamp column
+    columnOptions.TimeStamp.ConvertToUtc = true;
+
+    return columnOptions;
+}
+
+// Make Program class accessible for WebApplicationFactory in integration tests
+public partial class Program { }

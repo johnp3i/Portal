@@ -7,6 +7,7 @@ public class UserBusiness
     public int BusinessId { get; set; }
     public bool IsDefault { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsOwner { get; set; }
     public DateTime? DeactivatedAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 

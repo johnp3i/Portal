@@ -1,0 +1,331 @@
+@model Portal.Infrastructure.Models.CreditNoteDetailDto
+@{
+    ViewData["Title"] = "Credit Note Detail";
+    var cn = Model;
+    var currencySymbol = ViewBag.CurrencySymbol as string ?? "€";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Credit Note Detail</div>
+        <h1 class="topbar-heading">@cn.CreditNoteNumber &middot; @cn.CustomerName</h1>
+        <p class="topbar-subtitle">Review credit note details, line items, and application history.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        @if (cn.CreditNoteStatusTypeId == 1)
+        {
+            <button type="button" class="btn btn-primary" id="btnIssueCreditNote" data-id="@cn.Id">Issue Credit Note</button>
+            <a class="btn btn-secondary" asp-action="Edit" asp-controller="CreditNote" asp-route-id="@cn.Id">Edit</a>
+            <button type="button" class="btn btn-danger" id="btnVoidCreditNote" data-id="@cn.Id">Void</button>
+        }
+        else if (cn.CreditNoteStatusTypeId == 2)
+        {
+            <button type="button" class="btn btn-primary" id="btnApplyCreditNote" data-id="@cn.Id">Apply to Invoice</button>
+            <a class="btn btn-secondary" href="@Url.Action("PreviewPdf", "CreditNote", new { id = cn.Id })" target="_blank">Preview PDF</a>
+            <button type="button" class="btn btn-danger" id="btnVoidCreditNote" data-id="@cn.Id">Void</button>
+        }
+        else if (cn.CreditNoteStatusTypeId == 3)
+        {
+            <a class="btn btn-secondary" href="@Url.Action("PreviewPdf", "CreditNote", new { id = cn.Id })" target="_blank">Preview PDF</a>
+            <button type="button" class="btn btn-danger" id="btnVoidCreditNote" data-id="@cn.Id">Void</button>
+        }
+    </div>
+</div>
+
+<!-- Credit Note Overview -->
+<section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;flex-wrap:wrap;">
+        <div>
+            <div class="label">Status</div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
+                @{
+                    var statusPillClass = cn.CreditNoteStatusTypeId switch
+                    {
+                        1 => "pill-gold",
+                        2 => "pill-green",
+                        3 => "pill-blue",
+                        4 => "pill-red",
+                        _ => "pill-gold"
+                    };
+                }
+                <span class="pill @statusPillClass">@cn.StatusName</span>
+                @if (cn.CreditNoteStatusTypeId == 3)
+                {
+                    <span style="font-size:13px;font-weight:700;color:#129867;">Fully applied — no remaining balance</span>
+                }
+            </div>
+        </div>
+        <div style="display:flex;gap:32px;flex-wrap:wrap;">
+            <div>
+                <div class="label">Customer</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@cn.CustomerName</div>
+            </div>
+            <div>
+                <div class="label">Credit Note Number</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@cn.CreditNoteNumber</div>
+            </div>
+            <div>
+                <div class="label">Issue Date</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@cn.IssueDate.ToString("yyyy-MM-dd")</div>
+            </div>
+            <div>
+                <div class="label">Source Invoice</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">
+                    <a href="/Invoice/Detail/@cn.InvoiceId" style="color:var(--blue);text-decoration:none;">@cn.InvoiceNumber</a>
+                </div>
+            </div>
+            <div>
+                <div class="label">VAT Period</div>
+                <div style="margin-top:6px;font-size:15px;font-weight:700;">@cn.VatPeriodLabel</div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(cn.Reason))
+    {
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(13,94,166,.08);">
+            <div class="label">Reason</div>
+            <div style="margin-top:6px;font-size:14px;color:var(--muted);line-height:1.7;white-space:pre-wrap;">@cn.Reason</div>
+        </div>
+    }
+</section>
+
+<!-- Line Items -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Line Items</div>
+    <h2 style="margin-top:8px;font-size:24px;">Credit breakdown</h2>
+
+    <div style="margin-top:18px;">
+        @if (cn.Lines.Count > 0)
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>VAT %</th>
+                        <th>Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in cn.Lines)
+                    {
+                        <tr>
+                            <td><strong>@line.Description</strong></td>
+                            <td>@line.Quantity.ToString("N2")</td>
+                            <td>@(currencySymbol)@line.UnitPrice.ToString("N2")</td>
+                            <td>@line.VatRate.ToString("N2")%</td>
+                            <td><strong>@(currencySymbol)@line.LineTotal.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="muted" style="font-size:14px;">No line items on this credit note.</p>
+        }
+    </div>
+
+    <div class="surface card-pad totals" style="margin-top:18px;">
+        <div class="row"><span class="muted">Subtotal</span><strong>@(currencySymbol)@cn.Subtotal.ToString("N2")</strong></div>
+        <div class="row"><span class="muted">VAT Amount</span><strong>@(currencySymbol)@cn.TaxAmount.ToString("N2")</strong></div>
+        <div class="row"><span>Credit Total</span><span class="big-total" style="color:#C24A4A;">-@(currencySymbol)@cn.TotalAmount.ToString("N2")</span></div>
+    </div>
+</section>
+
+<!-- Application History -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div class="label">Application History</div>
+    <h2 style="margin-top:8px;font-size:24px;">Credit applications</h2>
+
+    <div style="margin-top:18px;">
+        @if (cn.Applications.Count > 0)
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date Applied</th>
+                        <th>Invoice</th>
+                        <th>Amount Applied</th>
+                        <th>Applied By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var app in cn.Applications)
+                    {
+                        <tr>
+                            <td>@app.AppliedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                <a href="/Invoice/Detail/@app.InvoiceId" style="color:var(--blue);text-decoration:none;">@app.InvoiceNumber</a>
+                            </td>
+                            <td><strong>@(currencySymbol)@app.AmountApplied.ToString("N2")</strong></td>
+                            <td>@app.AppliedByUserId</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>No applications have been recorded for this credit note.</p>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Back link -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a asp-action="Index" asp-controller="CreditNote" class="btn btn-outline">&larr; Back to Credit Notes</a>
+</div>
+
+@section Scripts {
+    <script>
+        var creditNoteId = @cn.Id;
+
+        // Issue Credit Note
+        var btnIssue = document.getElementById('btnIssueCreditNote');
+        if (btnIssue) {
+            btnIssue.addEventListener('click', async function () {
+                var result = await Swal.fire({
+                    title: 'Issue Credit Note',
+                    text: 'Are you sure you want to issue this credit note? Once issued, it cannot be edited.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0D5EA6',
+                    confirmButtonText: 'Yes, issue it'
+                });
+
+                if (!result.isConfirmed) return;
+
+                BlockUI.show('Issuing credit note...');
+                try {
+                    var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    var response = await fetch('/CreditNote/Issue', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: 'id=' + creditNoteId
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        await Swal.fire({ title: 'Issued!', text: 'The credit note has been issued successfully.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                        location.reload();
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            });
+        }
+
+        // Apply Credit Note
+        var btnApply = document.getElementById('btnApplyCreditNote');
+        if (btnApply) {
+            btnApply.addEventListener('click', async function () {
+                var result = await Swal.fire({
+                    title: 'Apply Credit Note',
+                    text: 'Are you sure you want to apply this credit note to the source invoice? This will reduce the invoice outstanding balance.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0D5EA6',
+                    confirmButtonText: 'Yes, apply it'
+                });
+
+                if (!result.isConfirmed) return;
+
+                BlockUI.show('Applying credit note...');
+                try {
+                    var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    var response = await fetch('/CreditNote/Apply', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: 'id=' + creditNoteId
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        await Swal.fire({ title: 'Applied!', text: 'The credit note has been applied to the invoice.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                        location.reload();
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            });
+        }
+
+        // Void Credit Note (two-step confirmation)
+        var btnVoid = document.getElementById('btnVoidCreditNote');
+        if (btnVoid) {
+            btnVoid.addEventListener('click', async function () {
+                // Step 1: Warning with consequences
+                var step1 = await Swal.fire({
+                    title: 'Void Credit Note',
+                    html: '<p>You are about to void this credit note.</p><p style="margin-top:8px;font-size:13px;color:#5A6A7A;">If this credit note has been applied, voiding will reverse the financial impact and restore the invoice outstanding balance.</p>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0D5EA6',
+                    confirmButtonText: 'Continue',
+                    cancelButtonText: 'Cancel'
+                });
+
+                if (!step1.isConfirmed) return;
+
+                // Step 2: Danger confirmation
+                var step2 = await Swal.fire({
+                    title: 'Confirm Void',
+                    text: 'This action cannot be undone. Are you sure you want to void this credit note?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#C24A4A',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, void it'
+                });
+
+                if (!step2.isConfirmed) return;
+
+                BlockUI.show('Voiding credit note...');
+                try {
+                    var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    var response = await fetch('/CreditNote/Void', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: 'id=' + creditNoteId
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        await Swal.fire({ title: 'Voided!', text: 'The credit note has been voided.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                        location.reload();
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            });
+        }
+    </script>
+}

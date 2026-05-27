@@ -72,7 +72,14 @@ public class VatSubmissionService : IVatSubmissionService
                 && i.InvoiceDate <= period.PeriodEndDate)
             .SumAsync(i => (decimal?)i.TaxAmount) ?? 0m;
 
-        var totalOutputVat = explicitOutputVat + dateRangeOutputVat;
+        // Subtract credit note TaxAmount from Output VAT (only Issued or Applied credit notes)
+        var creditNoteTaxReduction = await _portalDbContext.CreditNotes
+            .Where(cn => cn.BusinessId == businessId
+                && cn.VatSubmissionPeriodId == vatSubmissionPeriodId
+                && (cn.CreditNoteStatusTypeId == 2 || cn.CreditNoteStatusTypeId == 3)) // Issued or Applied
+            .SumAsync(cn => (decimal?)cn.TaxAmount) ?? 0m;
+
+        var totalOutputVat = explicitOutputVat + dateRangeOutputVat - creditNoteTaxReduction;
 
         // Compute TotalInputVat: SUM(VatAmount) from purchases assigned to this period (VatSubmissionPeriodId)
         // This is the "actual" figure — what was reported for this period

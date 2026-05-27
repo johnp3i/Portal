@@ -29,7 +29,7 @@ public class FinancialStatusEnginePropertyTests
     /// </summary>
     private static FinancialStatusEngine CreateEngine()
     {
-        return new FinancialStatusEngine(null!, null!);
+        return new FinancialStatusEngine(null!, null!, null!);
     }
 
     /// <summary>

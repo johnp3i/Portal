@@ -1,0 +1,329 @@
+@using Portal.Infrastructure.Models
+@using Portal.Infrastructure.Entities
+@{
+    ViewData["Title"] = "Create Credit Note";
+    var eligibleInvoices = ViewBag.EligibleInvoices as List<EligibleInvoiceDto> ?? new List<EligibleInvoiceDto>();
+    var vatPeriods = ViewBag.VatPeriods as List<VatSubmissionPeriod> ?? new List<VatSubmissionPeriod>();
+    var defaultVatPeriodId = ViewBag.DefaultVatPeriodId as int?;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Credit Notes</div>
+        <h1 class="topbar-heading">Create Credit Note</h1>
+        <p class="topbar-subtitle">Issue a credit note against an existing invoice to formally reduce the amount owed.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" style="margin-bottom:18px;">
+            @TempData["Error"]
+        </div>
+    }
+
+    <form method="post" asp-action="Create" asp-controller="CreditNote" asp-antiforgery="true" id="creditNoteForm">
+        <!-- Credit Note Header -->
+        <div class="form-grid">
+            <div class="field">
+                <label for="invoiceId">Source Invoice *</label>
+                <select name="invoiceId" id="invoiceId" required>
+                    <option value="">-- Select Invoice --</option>
+                    @foreach (var invoice in eligibleInvoices)
+                    {
+                        <option value="@invoice.Id"
+                                data-customer-name="@invoice.CustomerName"
+                                data-customer-id="@invoice.CustomerId"
+                                data-outstanding="@invoice.OutstandingBalance">
+                            @invoice.InvoiceNumber — @invoice.CustomerName
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label for="customerName">Customer</label>
+                <input type="text" id="customerName" readonly placeholder="Selected automatically" style="background:#f0f4f8;cursor:not-allowed;" />
+            </div>
+            <div class="field">
+                <label for="issueDate">Issue Date *</label>
+                <input type="date" name="issueDate" id="issueDate" required />
+            </div>
+            <div class="field">
+                <label for="vatSubmissionPeriodId">VAT Period *</label>
+                <select name="vatSubmissionPeriodId" id="vatSubmissionPeriodId" required>
+                    <option value="">-- Select VAT Period --</option>
+                    @foreach (var period in vatPeriods)
+                    {
+                        if (period.Id == defaultVatPeriodId)
+                        {
+                            <option value="@period.Id" selected>
+                                @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
+                            </option>
+                        }
+                        else
+                        {
+                            <option value="@period.Id">
+                                @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+                <label for="reason">Reason *</label>
+                <textarea name="reason" id="reason" required maxlength="1000" placeholder="Explain why this credit note is being issued (max 1000 characters)" rows="3"></textarea>
+                <small id="reasonCharCount" style="color:#5a6a7a;font-size:12px;">0 / 1000 characters</small>
+            </div>
+        </div>
+
+        <!-- Outstanding Balance Display -->
+        <div id="balanceDisplay" style="display:none;margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.15);">
+            <span style="font-weight:600;color:#129867;">Outstanding Balance:</span>
+            <span id="balanceValue" style="font-weight:700;font-size:16px;margin-left:8px;"></span>
+        </div>
+
+        <!-- Line Items Section -->
+        <div style="margin-top:32px;border-top:1px solid rgba(13,94,166,.08);padding-top:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="label">Line Items</div>
+                    <h2 style="margin-top:8px;font-size:24px;">Credit note lines</h2>
+                </div>
+                <button type="button" class="btn btn-primary" id="addLineBtn" onclick="addLineItem()">+ Add Line</button>
+            </div>
+
+            <div id="lineItemsContainer" style="margin-top:18px;">
+                <!-- Line items will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Running Totals -->
+        <div style="margin-top:24px;border-top:1px solid rgba(13,94,166,.08);padding-top:20px;">
+            <div style="display:flex;justify-content:flex-end;">
+                <div style="min-width:280px;">
+                    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
+                        <span style="color:#5a6a7a;">Subtotal</span>
+                        <span id="runningSubtotal" style="font-weight:600;">0.00</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
+                        <span style="color:#5a6a7a;">VAT Amount</span>
+                        <span id="runningVat" style="font-weight:600;">0.00</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:16px;border-top:2px solid rgba(13,94,166,.12);margin-top:4px;">
+                        <span style="font-weight:700;">Total</span>
+                        <span id="runningTotal" style="font-weight:700;color:#C24A4A;">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="margin-top:32px;display:flex;align-items:center;justify-content:space-between;">
+            <button type="submit" class="btn btn-primary" id="submitBtn">Create Credit Note</button>
+            <a asp-action="Index" asp-controller="CreditNote" class="btn btn-outline">&larr; Back to Credit Notes</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        var lineIndex = 0;
+
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function () {
+            var today = new Date().toISOString().split('T')[0];
+            document.getElementById('issueDate').value = today;
+            addLineItem();
+        });
+
+        // Invoice selection handler
+        document.getElementById('invoiceId').addEventListener('change', function () {
+            var select = this;
+            var option = select.options[select.selectedIndex];
+            var customerNameField = document.getElementById('customerName');
+            var balanceDisplay = document.getElementById('balanceDisplay');
+            var balanceValue = document.getElementById('balanceValue');
+
+            if (!select.value) {
+                customerNameField.value = '';
+                balanceDisplay.style.display = 'none';
+                return;
+            }
+
+            var customerName = option.getAttribute('data-customer-name');
+            customerNameField.value = customerName || '';
+
+            // Fetch outstanding balance via AJAX
+            BlockUI.show('Loading invoice details...');
+            fetch('/CreditNote/GetInvoiceBalance?invoiceId=' + select.value)
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    BlockUI.hide();
+                    if (data.balance !== undefined) {
+                        balanceValue.textContent = parseFloat(data.balance).toFixed(2);
+                        balanceDisplay.style.display = 'block';
+                    }
+                })
+                .catch(function () {
+                    BlockUI.hide();
+                    balanceDisplay.style.display = 'none';
+                });
+        });
+
+        // Reason character counter
+        document.getElementById('reason').addEventListener('input', function () {
+            document.getElementById('reasonCharCount').textContent = this.value.length + ' / 1000 characters';
+        });
+
+        // Add line item
+        function addLineItem() {
+            var container = document.getElementById('lineItemsContainer');
+            var idx = lineIndex;
+            var html = '<div class="surface card-pad" style="margin-bottom:16px;position:relative;" id="line-' + idx + '">'
+                + '<button type="button" class="btn btn-danger" style="position:absolute;top:12px;right:12px;padding:4px 10px;font-size:12px;" onclick="removeLineItem(' + idx + ')">Remove</button>'
+                + '<div class="form-grid">'
+                + '<div class="field" style="grid-column:1 / -1;">'
+                + '<label>Description *</label>'
+                + '<input type="text" name="lines[' + idx + '].Description" required maxlength="250" placeholder="Line item description (max 250 chars)" oninput="recalcTotals()" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Quantity *</label>'
+                + '<input type="number" name="lines[' + idx + '].Quantity" step="0.0001" min="0.0001" max="999999" required value="1" oninput="recalcTotals()" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Unit Price *</label>'
+                + '<input type="number" name="lines[' + idx + '].UnitPrice" step="0.01" min="0.01" max="999999999.99" required value="0" oninput="recalcTotals()" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>VAT Rate (%)</label>'
+                + '<input type="number" name="lines[' + idx + '].VatRate" step="0.01" min="0" max="100" value="0" oninput="recalcTotals()" />'
+                + '</div>'
+                + '<div class="field">'
+                + '<label>Line Total</label>'
+                + '<input type="text" id="lineTotal-' + idx + '" readonly style="background:#f0f4f8;cursor:not-allowed;font-weight:600;" value="0.00" />'
+                + '</div>'
+                + '</div>'
+                + '</div>';
+
+            container.insertAdjacentHTML('beforeend', html);
+            lineIndex++;
+            recalcTotals();
+        }
+
+        // Remove line item
+        function removeLineItem(idx) {
+            var el = document.getElementById('line-' + idx);
+            if (el) el.remove();
+            recalcTotals();
+        }
+
+        // Recalculate running totals
+        function recalcTotals() {
+            var subtotal = 0;
+            var vatAmount = 0;
+
+            var container = document.getElementById('lineItemsContainer');
+            var lineCards = container.querySelectorAll('[id^="line-"]');
+
+            lineCards.forEach(function (card) {
+                var idx = card.id.replace('line-', '');
+                var qty = parseFloat(card.querySelector('[name="lines[' + idx + '].Quantity"]').value) || 0;
+                var price = parseFloat(card.querySelector('[name="lines[' + idx + '].UnitPrice"]').value) || 0;
+                var vatRate = parseFloat(card.querySelector('[name="lines[' + idx + '].VatRate"]').value) || 0;
+
+                var lineTotal = qty * price;
+                var lineVat = lineTotal * vatRate / 100;
+
+                subtotal += lineTotal;
+                vatAmount += lineVat;
+
+                var lineTotalField = document.getElementById('lineTotal-' + idx);
+                if (lineTotalField) {
+                    lineTotalField.value = lineTotal.toFixed(2);
+                }
+            });
+
+            var total = subtotal + vatAmount;
+
+            document.getElementById('runningSubtotal').textContent = subtotal.toFixed(2);
+            document.getElementById('runningVat').textContent = vatAmount.toFixed(2);
+            document.getElementById('runningTotal').textContent = total.toFixed(2);
+        }
+
+        // Client-side validation
+        function validateForm() {
+            var errors = [];
+            var container = document.getElementById('lineItemsContainer');
+            var lineCards = container.querySelectorAll('[id^="line-"]');
+
+            // Check at least one line item exists
+            if (lineCards.length === 0) {
+                errors.push('At least one line item is required.');
+            }
+
+            // Validate each line item
+            lineCards.forEach(function (card, i) {
+                var idx = card.id.replace('line-', '');
+                var lineNum = i + 1;
+                var desc = card.querySelector('[name="lines[' + idx + '].Description"]');
+                var qty = card.querySelector('[name="lines[' + idx + '].Quantity"]');
+                var price = card.querySelector('[name="lines[' + idx + '].UnitPrice"]');
+                var vatRate = card.querySelector('[name="lines[' + idx + '].VatRate"]');
+
+                // Description required
+                if (!desc.value || !desc.value.trim()) {
+                    errors.push('Line ' + lineNum + ': Description is required.');
+                }
+
+                // Quantity range
+                var qtyVal = parseFloat(qty.value);
+                if (isNaN(qtyVal) || qtyVal < 0.0001 || qtyVal > 999999) {
+                    errors.push('Line ' + lineNum + ': Quantity must be between 0.0001 and 999,999.');
+                }
+
+                // Unit price range
+                var priceVal = parseFloat(price.value);
+                if (isNaN(priceVal) || priceVal < 0.01 || priceVal > 999999999.99) {
+                    errors.push('Line ' + lineNum + ': Unit price must be between 0.01 and 999,999,999.99.');
+                }
+
+                // VAT rate range
+                var vatVal = parseFloat(vatRate.value);
+                if (isNaN(vatVal) || vatVal < 0 || vatVal > 100) {
+                    errors.push('Line ' + lineNum + ': VAT rate must be between 0 and 100.');
+                }
+            });
+
+            // Validate reason
+            var reason = document.getElementById('reason');
+            if (!reason.value || !reason.value.trim()) {
+                errors.push('A reason is required.');
+            }
+
+            // Validate invoice selection
+            var invoiceId = document.getElementById('invoiceId');
+            if (!invoiceId.value) {
+                errors.push('Please select a source invoice.');
+            }
+
+            return errors;
+        }
+
+        // Form submission with validation
+        document.getElementById('creditNoteForm').addEventListener('submit', function (e) {
+            var errors = validateForm();
+            if (errors.length > 0) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Validation',
+                    html: '<ul style="text-align:left;font-size:13px;margin:0;padding-left:18px;">' + errors.map(function (err) { return '<li>' + err + '</li>'; }).join('') + '</ul>',
+                    icon: 'warning',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
+        });
+    </script>
+}

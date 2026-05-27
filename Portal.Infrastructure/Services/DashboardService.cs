@@ -969,6 +969,7 @@ public class DashboardService : IDashboardService
                     WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
                       AND [invoice].[Invoice].[IsDeleted] = 0
                       AND [invoice].[Invoice].[InvoiceStatusTypeId] = @InvoiceStatusIssued
+                      AND [invoice].[Invoice].[InvoiceDate] >= @TwelveMonthsAgo
                     GROUP BY [customer].[Customer].[Id], [customer].[Customer].[Name]
                     ORDER BY [TotalInvoiced] DESC";
 
@@ -978,6 +979,7 @@ public class DashboardService : IDashboardService
 
                 command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
                 command.Parameters.Add(new SqlParameter("@InvoiceStatusIssued", InvoiceStatusIssued));
+                command.Parameters.Add(new SqlParameter("@TwelveMonthsAgo", DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-12))));
 
                 using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())

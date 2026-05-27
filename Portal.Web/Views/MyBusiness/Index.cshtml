@@ -9,8 +9,8 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Business Settings</div>
-        <h1 style="margin-top:14px;font-size:42px;">@businessName</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Manage your business profile and branding assets.</p>
+        <h1 class="topbar-heading">@businessName</h1>
+        <p class="topbar-subtitle">Manage your business profile and branding assets.</p>
     </div>
 </div>
 
@@ -56,6 +56,10 @@
             <input type="hidden" asp-for="BusinessId" />
 
             <div class="form-grid">
+                <div class="field" style="grid-column:1/-1;">
+                    <label for="BusinessName">Business Name *</label>
+                    <input type="text" id="BusinessName" name="BusinessName" value="@businessName" placeholder="Your business name" required maxlength="200" />
+                </div>
                 <div class="field">
                     <label asp-for="CompanyRegistrationNumber">Company Registration *</label>
                     <input asp-for="CompanyRegistrationNumber" placeholder="e.g. HE123456" />

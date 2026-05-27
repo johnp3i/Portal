@@ -9,8 +9,8 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Quotation Detail</div>
-        <h1 style="margin-top:14px;font-size:42px;">@Model.Quotation.Reference &middot; @Model.CustomerName</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review status, pricing structure, and conversion readiness.</p>
+        <h1 class="topbar-heading">@Model.Quotation.Reference &middot; @Model.CustomerName</h1>
+        <p class="topbar-subtitle">Review status, pricing structure, and conversion readiness.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
         @if (Model.Quotation.QuotationStatusTypeId == 1 || Model.Quotation.QuotationStatusTypeId == 2)

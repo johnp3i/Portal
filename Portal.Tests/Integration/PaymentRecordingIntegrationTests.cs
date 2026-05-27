@@ -195,9 +195,15 @@ public class PaymentRecordingIntegrationTests
                     .FirstOrDefault(p => p.Id == id && p.BusinessId == businessId)));
 
         // Create the actual FinancialStatusEngine with mocked repos
+        var mockCreditNoteRepo = new Mock<CreditNoteRepository>(MockBehavior.Loose, new object[] { null! });
+        mockCreditNoteRepo
+            .Setup(r => r.GetTotalAppliedCreditAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(0m);
+
         var statusEngine = new FinancialStatusEngine(
             mockPaymentRepo.Object,
-            mockInvoiceRepo.Object);
+            mockInvoiceRepo.Object,
+            mockCreditNoteRepo.Object);
 
         // Create the actual PaymentService with mocked repos and real status engine
         var paymentService = new PaymentService(

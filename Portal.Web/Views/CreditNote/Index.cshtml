@@ -1,0 +1,308 @@
+@using Portal.Infrastructure.Entities
+@using Portal.Infrastructure.Models
+@{
+    ViewData["Title"] = "Credit Notes";
+
+    var kpi = (CreditNoteKpiDto?)ViewBag.Kpi;
+    var customers = (List<Customer>?)ViewBag.Customers ?? new List<Customer>();
+    var currencySymbol = (string?)ViewBag.CurrencySymbol ?? "€";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Credit Notes</div>
+        <h1 class="topbar-heading">Credit Notes</h1>
+        <p class="topbar-subtitle">Issue, track, and manage credit notes against invoices.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-primary" asp-action="Create" asp-controller="CreditNote">Create Credit Note</a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
+        <!-- Total Issued -->
+        <div id="kpiTotalIssued" style="padding:18px;border-radius:14px;background:rgba(13,94,166,0.04);border:1px solid rgba(13,94,166,0.08);border-left:4px solid #0D5EA6;">
+            <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Total Issued</div>
+            <div id="kpiTotalIssuedValue" style="font-size:28px;font-weight:800;color:#1a2b3c;margin-top:6px;font-family:'Manrope',sans-serif;">
+                @(kpi?.TotalIssuedCount.ToString() ?? "0")
+            </div>
+            <div style="font-size:12px;color:#5a6a7a;margin-top:4px;">This month</div>
+        </div>
+        <!-- Total Value -->
+        <div id="kpiTotalValue" style="padding:18px;border-radius:14px;background:rgba(194,74,74,0.04);border:1px solid rgba(194,74,74,0.08);border-left:4px solid #C24A4A;">
+            <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Total Value</div>
+            <div id="kpiTotalValueAmount" style="font-size:28px;font-weight:800;color:#1a2b3c;margin-top:6px;font-family:'Manrope',sans-serif;">
+                @(currencySymbol)@(kpi?.TotalValue.ToString("N2") ?? "0.00")
+            </div>
+            <div style="font-size:12px;color:#5a6a7a;margin-top:4px;">Credits issued this month</div>
+        </div>
+        <!-- Pending Application -->
+        <div id="kpiPendingApplication" style="padding:18px;border-radius:14px;background:rgba(200,145,46,0.04);border:1px solid rgba(200,145,46,0.08);border-left:4px solid #C8912E;">
+            <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Pending Application</div>
+            <div id="kpiPendingApplicationValue" style="font-size:28px;font-weight:800;color:#1a2b3c;margin-top:6px;font-family:'Manrope',sans-serif;">
+                @(kpi?.PendingApplicationCount.ToString() ?? "0")
+            </div>
+            <div style="font-size:12px;color:#5a6a7a;margin-top:4px;">Not yet applied to invoices</div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label for="filterStatus">Status</label>
+            <select id="filterStatus">
+                <option value="">All Statuses</option>
+                <option value="1">Draft</option>
+                <option value="2">Issued</option>
+                <option value="3">Applied</option>
+                <option value="4">Voided</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="filterCustomer">Customer</label>
+            <select id="filterCustomer">
+                <option value="">All Customers</option>
+                @foreach (var customer in customers)
+                {
+                    <option value="@customer.Id">@customer.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="filterDateFrom">Date From</label>
+            <input type="date" id="filterDateFrom" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="filterDateTo">Date To</label>
+            <input type="date" id="filterDateTo" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="filterSearch">Search</label>
+            <input type="text" id="filterSearch" placeholder="Credit note # or customer..." maxlength="100" />
+        </div>
+        <div style="display:flex;gap:10px;padding-bottom:2px;">
+            <button type="button" id="btnFilter" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+            <button type="button" id="btnClear" class="btn btn-secondary" style="padding:14px 20px;">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    <table id="creditNoteTable">
+        <thead>
+            <tr>
+                <th>Credit Note #</th>
+                <th>Customer</th>
+                <th>Invoice Ref</th>
+                <th>Issue Date</th>
+                <th style="text-align:right;">Total</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="creditNoteTableBody">
+            <!-- Populated via JavaScript (task 11.1) -->
+        </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div id="creditNoteEmptyState" class="empty-state" style="display:none;">
+        <p>No credit notes found. Adjust your filters or create a new credit note.</p>
+    </div>
+
+    <!-- Pagination -->
+    <div id="paginationContainer" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+        <div id="paginationControls" style="display:flex;gap:4px;align-items:center;"></div>
+    </div>
+</section>
+
+<input type="hidden" id="currencySymbol" value="@currencySymbol" />
+
+@section Scripts {
+<script>
+    // Credit note status pill colour mapping
+    var creditNoteStatusColors = {
+        1: { bg: 'rgba(200,145,46,0.12)', color: '#C8912E', label: 'Draft' },
+        2: { bg: 'rgba(18,152,103,0.12)', color: '#129867', label: 'Issued' },
+        3: { bg: 'rgba(13,94,166,0.12)', color: '#0D5EA6', label: 'Applied' },
+        4: { bg: 'rgba(194,74,74,0.12)', color: '#C24A4A', label: 'Voided' }
+    };
+
+    var currentPage = 1;
+    var pageSize = 10;
+    var currencySymbol = document.getElementById('currencySymbol').value || '€';
+
+    function escHtml(str) {
+        if (str == null) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatCurrency(amount) {
+        return currencySymbol + Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function getStatusPill(statusId) {
+        var status = creditNoteStatusColors[statusId] || { bg: '#eee', color: '#666', label: 'Unknown' };
+        return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:' + status.bg + ';color:' + status.color + ';">' +
+            '<span style="width:7px;height:7px;border-radius:50%;background:' + status.color + ';"></span>' +
+            escHtml(status.label) + '</span>';
+    }
+
+    async function loadCreditNotes(page) {
+        currentPage = page;
+
+        var formData = new FormData();
+        var statusVal = document.getElementById('filterStatus').value;
+        var customerVal = document.getElementById('filterCustomer').value;
+        var dateFromVal = document.getElementById('filterDateFrom').value;
+        var dateToVal = document.getElementById('filterDateTo').value;
+        var searchVal = document.getElementById('filterSearch').value;
+
+        if (statusVal) formData.append('status', statusVal);
+        if (customerVal) formData.append('customerId', customerVal);
+        if (dateFromVal) formData.append('dateFrom', dateFromVal);
+        if (dateToVal) formData.append('dateTo', dateToVal);
+        if (searchVal) formData.append('search', searchVal);
+        formData.append('page', page);
+
+        BlockUI.show('Loading credit notes...');
+        try {
+            var response = await fetch('/CreditNote/GetCreditNotesPaged', {
+                method: 'POST',
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            renderTable(data.items);
+            renderPagination(data.page, data.totalCount, data.pageSize);
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'Failed to load credit notes.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function renderTable(items) {
+        var tbody = document.getElementById('creditNoteTableBody');
+        var emptyState = document.getElementById('creditNoteEmptyState');
+        var table = document.getElementById('creditNoteTable');
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = '';
+            table.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        table.style.display = '';
+        emptyState.style.display = 'none';
+
+        var html = '';
+        items.forEach(function (item) {
+            html += '<tr>';
+            html += '<td><a href="/CreditNote/Detail/' + item.id + '" style="color:#0D5EA6;font-weight:600;text-decoration:none;">' + escHtml(item.creditNoteNumber) + '</a></td>';
+            html += '<td>' + escHtml(item.customerName) + '</td>';
+            html += '<td>' + escHtml(item.invoiceNumber) + '</td>';
+            html += '<td>' + formatDate(item.issueDate) + '</td>';
+            html += '<td style="text-align:right;font-weight:600;">' + formatCurrency(item.totalAmount) + '</td>';
+            html += '<td>' + getStatusPill(item.creditNoteStatusTypeId) + '</td>';
+            html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escHtml(item.reason) + '">' + escHtml(item.reason) + '</td>';
+            html += '<td><a href="/CreditNote/Detail/' + item.id + '" class="btn btn-secondary" style="padding:6px 14px;font-size:12px;">View</a></td>';
+            html += '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function renderPagination(page, totalCount, size) {
+        var totalPages = Math.ceil(totalCount / size);
+        var start = totalCount === 0 ? 0 : (page - 1) * size + 1;
+        var end = Math.min(page * size, totalCount);
+
+        document.getElementById('paginationInfo').textContent = totalCount === 0
+            ? 'No results'
+            : 'Showing ' + start + '–' + end + ' of ' + totalCount;
+
+        var controls = document.getElementById('paginationControls');
+        if (totalPages <= 1) {
+            controls.innerHTML = '';
+            return;
+        }
+
+        var html = '<button onclick="loadCreditNotes(' + (page - 1) + ')" ' + (page <= 1 ? 'disabled' : '') + ' style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;cursor:pointer;">\u2190 Prev</button>';
+
+        for (var p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && Math.abs(p - page) > 2 && p !== 1 && p !== totalPages) {
+                if (p === 2 || p === totalPages - 1) html += '<span style="padding:6px 4px;color:#5a6b7c;">\u2026</span>';
+                continue;
+            }
+            var isActive = p === page;
+            html += '<button onclick="loadCreditNotes(' + p + ')" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid ' + (isActive ? '#0D5EA6' : '#d0dce8') + ';background:' + (isActive ? '#0D5EA6' : '#fff') + ';color:' + (isActive ? '#fff' : 'inherit') + ';cursor:pointer;">' + p + '</button>';
+        }
+
+        html += '<button onclick="loadCreditNotes(' + (page + 1) + ')" ' + (page >= totalPages ? 'disabled' : '') + ' style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;cursor:pointer;">Next \u2192</button>';
+        controls.innerHTML = html;
+    }
+
+    async function loadKpi() {
+        try {
+            var response = await fetch('/CreditNote/GetKpi');
+            var data = await response.json();
+
+            document.getElementById('kpiTotalIssuedValue').textContent = data.totalIssuedCount != null ? data.totalIssuedCount.toString() : '0';
+            document.getElementById('kpiTotalValueAmount').textContent = data.totalValue != null ? formatCurrency(data.totalValue) : formatCurrency(0);
+            document.getElementById('kpiPendingApplicationValue').textContent = data.pendingApplicationCount != null ? data.pendingApplicationCount.toString() : '0';
+        } catch (e) {
+            document.getElementById('kpiTotalIssuedValue').textContent = '\u2014';
+            document.getElementById('kpiTotalValueAmount').textContent = '\u2014';
+            document.getElementById('kpiPendingApplicationValue').textContent = '\u2014';
+        }
+    }
+
+    function clearFilters() {
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterCustomer').value = '';
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        document.getElementById('filterSearch').value = '';
+        loadCreditNotes(1);
+    }
+
+    // Event listeners
+    document.getElementById('btnFilter').addEventListener('click', function () {
+        loadCreditNotes(1);
+    });
+
+    document.getElementById('btnClear').addEventListener('click', function () {
+        clearFilters();
+    });
+
+    // Allow Enter key in search field to trigger filter
+    document.getElementById('filterSearch').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            loadCreditNotes(1);
+        }
+    });
+
+    // Load data on page ready
+    document.addEventListener('DOMContentLoaded', function () {
+        loadKpi();
+        loadCreditNotes(1);
+    });
+</script>
+}

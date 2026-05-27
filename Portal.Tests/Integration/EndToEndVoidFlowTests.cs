@@ -215,6 +215,20 @@ public class EndToEndVoidFlowTests
         }
     }
 
+    /// <summary>
+    /// Test-friendly CreditNoteRepository that returns 0 for applied credit totals.
+    /// Used in payment-focused integration tests where no credit notes are involved.
+    /// </summary>
+    private class InMemoryCreditNoteRepository : CreditNoteRepository
+    {
+        public InMemoryCreditNoteRepository(PortalDbContext dbContext) : base(dbContext) { }
+
+        public override Task<decimal> GetTotalAppliedCreditAsync(int invoiceId, int businessId)
+        {
+            return Task.FromResult(0m);
+        }
+    }
+
     #endregion
 
     #region End-to-End Void Flow Tests
@@ -238,7 +252,8 @@ public class EndToEndVoidFlowTests
         {
             var paymentRepo = new InMemoryPaymentRepository(dbContext);
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
-            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo);
+            var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
+            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
             var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
 
             var totalAmount = 1000.00m;
@@ -321,7 +336,8 @@ public class EndToEndVoidFlowTests
         {
             var paymentRepo = new InMemoryPaymentRepository(dbContext);
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
-            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo);
+            var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
+            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
             var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
 
             var totalAmount = 1000.00m;
@@ -406,7 +422,8 @@ public class EndToEndVoidFlowTests
         {
             var paymentRepo = new InMemoryPaymentRepository(dbContext);
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
-            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo);
+            var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
+            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
             var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
 
             var totalAmount = 500.00m;
@@ -464,7 +481,8 @@ public class EndToEndVoidFlowTests
         {
             var paymentRepo = new InMemoryPaymentRepository(dbContext);
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
-            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo);
+            var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
+            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
             var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
 
             var totalAmount = 1000.00m;
@@ -514,7 +532,8 @@ public class EndToEndVoidFlowTests
         {
             var paymentRepo = new InMemoryPaymentRepository(dbContext);
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
-            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo);
+            var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
+            var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
             var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
 
             var totalAmount = 1000.00m;

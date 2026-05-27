@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard KPI Variations — Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --border: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 32px 40px;
+            line-height: 1.5;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+        h2 { font-family: 'Manrope', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--blue); }
+        .section { margin-bottom: 60px; padding-bottom: 40px; border-bottom: 2px solid var(--border); }
+        .section:last-child { border-bottom: none; }
+        .description { color: var(--muted); font-size: 14px; margin-bottom: 20px; max-width: 700px; }
+
+        /* Shared */
+        .surface { background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(13,94,166,.03); border: 1px solid var(--border); padding: 20px 24px; }
+        .glass { background: #fff; border-radius: 20px; box-shadow: 0 2px 12px rgba(13,94,166,.04); border: 1px solid var(--border); }
+        .card-pad { padding: 24px; }
+        .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+        .metric { font-family: 'Manrope', sans-serif; font-size: 2.3rem; font-weight: 800; color: var(--blue); margin-top: 8px; }
+        .metric-sm { font-family: 'Manrope', sans-serif; font-size: 24px; font-weight: 800; }
+        .muted { color: var(--muted); font-size: 14px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+        .grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px; }
+
+        /* ===== OPTION A: Single Compact Strip ===== */
+        .strip {
+            display: flex;
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 6px rgba(13,94,166,.03);
+            overflow: hidden;
+        }
+        .strip-cell {
+            flex: 1;
+            padding: 14px 18px;
+            border-right: 1px solid var(--border);
+            text-align: center;
+        }
+        .strip-cell:last-child { border-right: none; }
+        .strip-cell .strip-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .strip-cell .strip-value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .strip-cell .strip-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+        .strip-divider {
+            width: 2px;
+            background: var(--blue);
+            opacity: 0.15;
+            margin: 8px 0;
+        }
+
+        /* ===== OPTION B: Topbar badges ===== */
+        .topbar-b { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .topbar-badges { display: flex; gap: 16px; flex-wrap: wrap; }
+        .badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: var(--bg2);
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .badge-value {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 16px;
+            color: var(--blue);
+        }
+        .badge-label { color: var(--muted); font-size: 11px; }
+
+        /* ===== OPTION C: Compact cards ===== */
+        .compact-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(13,94,166,.03);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            text-align: center;
+        }
+        .compact-card .compact-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .compact-card .compact-metric {
+            font-family: 'Manrope', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--blue);
+        }
+        .compact-card .compact-metric-sm {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        /* ===== OPTION D: Tabbed panel ===== */
+        .tab-panel {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 6px rgba(13,94,166,.03);
+            overflow: hidden;
+        }
+        .tab-header {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            background: var(--bg2);
+            color: var(--muted);
+            border: none;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: #fff;
+            color: var(--blue);
+            border-bottom: 2px solid var(--blue);
+        }
+        .tab-content {
+            display: none;
+            padding: 18px 24px;
+        }
+        .tab-content.active { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .tab-kpi { text-align: center; }
+        .tab-kpi .tab-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .tab-kpi .tab-value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+        }
+        .tab-kpi .tab-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Dashboard KPI Variations</h1>
+<p class="muted" style="margin-bottom:40px;">Compare four layout approaches for the KPI area. All show the same 8 data points.</p>
+
+<!-- ===== OPTION A ===== -->
+<div class="section">
+    <h2>Option A — Single Compact Strip</h2>
+    <p class="description">All 8 KPIs in one horizontal bar. Minimal vertical space. Quotation stats on the left, revenue stats on the right, separated by a visual divider.</p>
+
+    <div class="strip">
+        <div class="strip-cell">
+            <div class="strip-label">Drafts</div>
+            <div class="strip-value" style="color:var(--blue);">3</div>
+        </div>
+        <div class="strip-cell">
+            <div class="strip-label">Sent</div>
+            <div class="strip-value" style="color:var(--blue);">7</div>
+            <div class="strip-sub">€24,850</div>
+        </div>
+        <div class="strip-cell">
+            <div class="strip-label">Accepted</div>
+            <div class="strip-value" style="color:var(--blue);">4</div>
+            <div class="strip-sub">57%</div>
+        </div>
+        <div class="strip-cell">
+            <div class="strip-label">Customers</div>
+            <div class="strip-value" style="color:var(--blue);">21</div>
+        </div>
+        <div class="strip-cell" style="border-left:3px solid var(--success);">
+            <div class="strip-label">Revenue</div>
+            <div class="strip-value" style="color:var(--success);">€12,450</div>
+            <div class="strip-sub">8 payments</div>
+        </div>
+        <div class="strip-cell" style="border-left:3px solid var(--danger);">
+            <div class="strip-label">Outstanding</div>
+            <div class="strip-value" style="color:var(--danger);">€18,320</div>
+            <div class="strip-sub">12 invoices</div>
+        </div>
+        <div class="strip-cell" style="border-left:3px solid var(--warning);">
+            <div class="strip-label">Overdue</div>
+            <div class="strip-value" style="color:var(--warning);">€4,780</div>
+            <div class="strip-sub">3 past due</div>
+        </div>
+        <div class="strip-cell" style="border-left:3px solid var(--blue);">
+            <div class="strip-label">Expenses</div>
+            <div class="strip-value" style="color:var(--blue);">€6,230</div>
+            <div class="strip-sub">14 purchases</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== OPTION B ===== -->
+<div class="section">
+    <h2>Option B — Quotation Stats in Topbar + Revenue Cards</h2>
+    <p class="description">Quotation KPIs become small badges in the header area. Only the revenue row remains as cards — prioritises financial visibility.</p>
+
+    <div class="topbar-b">
+        <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:6px;">⬤ Operations Workspace</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;">Dashboard</div>
+        </div>
+        <div class="topbar-badges">
+            <div class="badge"><span class="badge-value">3</span><span class="badge-label">Drafts</span></div>
+            <div class="badge"><span class="badge-value">7</span><span class="badge-label">Sent</span></div>
+            <div class="badge"><span class="badge-value">4</span><span class="badge-label">Accepted</span></div>
+            <div class="badge"><span class="badge-value">21</span><span class="badge-label">Customers</span></div>
+        </div>
+    </div>
+
+    <div class="grid-4">
+        <div class="surface" style="border-left:4px solid var(--success);">
+            <div class="label">Revenue This Month</div>
+            <div class="metric-sm" style="color:var(--success);">€12,450.00</div>
+            <div class="muted">8 payments received</div>
+        </div>
+        <div class="surface" style="border-left:4px solid var(--danger);">
+            <div class="label">Outstanding</div>
+            <div class="metric-sm" style="color:var(--danger);">€18,320.50</div>
+            <div class="muted">12 unpaid invoices</div>
+        </div>
+        <div class="surface" style="border-left:4px solid var(--warning);">
+            <div class="label">Overdue</div>
+            <div class="metric-sm" style="color:var(--warning);">€4,780.00</div>
+            <div class="muted">3 invoices past due</div>
+        </div>
+        <div class="surface" style="border-left:4px solid var(--blue);">
+            <div class="label">Expenses This Month</div>
+            <div class="metric-sm" style="color:var(--blue);">€6,230.00</div>
+            <div class="muted">14 purchases recorded</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== OPTION C ===== -->
+<div class="section">
+    <h2>Option C — Two-Tier Compact Cards</h2>
+    <p class="description">Same two-row layout but significantly smaller: reduced padding, smaller fonts, no description text. All info visible at a glance with ~40% less vertical space.</p>
+
+    <div class="grid-4" style="gap:12px;margin-bottom:12px;">
+        <div class="compact-card">
+            <div class="compact-label">Draft Quotations</div>
+            <div class="compact-metric">3</div>
+        </div>
+        <div class="compact-card">
+            <div class="compact-label">Sent This Month</div>
+            <div class="compact-metric">7</div>
+        </div>
+        <div class="compact-card">
+            <div class="compact-label">Accepted</div>
+            <div class="compact-metric">4</div>
+        </div>
+        <div class="compact-card">
+            <div class="compact-label">Active Customers</div>
+            <div class="compact-metric">21</div>
+        </div>
+    </div>
+    <div class="grid-4" style="gap:12px;">
+        <div class="compact-card" style="border-left:3px solid var(--success);">
+            <div class="compact-label">Revenue</div>
+            <div class="compact-metric-sm" style="color:var(--success);">€12,450.00</div>
+        </div>
+        <div class="compact-card" style="border-left:3px solid var(--danger);">
+            <div class="compact-label">Outstanding</div>
+            <div class="compact-metric-sm" style="color:var(--danger);">€18,320.50</div>
+        </div>
+        <div class="compact-card" style="border-left:3px solid var(--warning);">
+            <div class="compact-label">Overdue</div>
+            <div class="compact-metric-sm" style="color:var(--warning);">€4,780.00</div>
+        </div>
+        <div class="compact-card" style="border-left:3px solid var(--blue);">
+            <div class="compact-label">Expenses</div>
+            <div class="compact-metric-sm" style="color:var(--blue);">€6,230.00</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== OPTION D ===== -->
+<div class="section">
+    <h2>Option D — Tabbed KPI Panel</h2>
+    <p class="description">One card, two tabs. Only one set of 4 KPIs visible at a time. Halves vertical space and reduces visual noise. Click tabs to switch.</p>
+
+    <div class="tab-panel">
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab('quotations')">Quotations</button>
+            <button class="tab-btn" onclick="switchTab('revenue')">Revenue & Expenses</button>
+        </div>
+        <div class="tab-content active" id="tab-quotations">
+            <div class="tab-kpi">
+                <div class="tab-label">Draft Quotations</div>
+                <div class="tab-value" style="color:var(--blue);">3</div>
+                <div class="tab-sub">Awaiting review</div>
+            </div>
+            <div class="tab-kpi">
+                <div class="tab-label">Sent This Month</div>
+                <div class="tab-value" style="color:var(--blue);">7</div>
+                <div class="tab-sub">€24,850 pipeline</div>
+            </div>
+            <div class="tab-kpi">
+                <div class="tab-label">Accepted</div>
+                <div class="tab-value" style="color:var(--blue);">4</div>
+                <div class="tab-sub">57% rate</div>
+            </div>
+            <div class="tab-kpi">
+                <div class="tab-label">Active Customers</div>
+                <div class="tab-value" style="color:var(--blue);">21</div>
+                <div class="tab-sub">In registry</div>
+            </div>
+        </div>
+        <div class="tab-content" id="tab-revenue">
+            <div class="tab-kpi">
+                <div class="tab-label">Revenue This Month</div>
+                <div class="tab-value" style="color:var(--success);">€12,450.00</div>
+                <div class="tab-sub">8 payments</div>
+            </div>
+            <div class="tab-kpi">
+                <div class="tab-label">Outstanding</div>
+                <div class="tab-value" style="color:var(--danger);">€18,320.50</div>
+                <div class="tab-sub">12 invoices</div>
+            </div>
+            <div class="tab-kpi">
+                <div class="tab-label">Overdue</div>
+                <div class="tab-value" style="color:var(--warning);">€4,780.00</div>
+                <div class="tab-sub">3 past due</div>
+            </div>
+            <div class="tab-kpi">
+                <div class="tab-label">Expenses This Month</div>
+                <div class="tab-value" style="color:var(--blue);">€6,230.00</div>
+                <div class="tab-sub">14 purchases</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    if (tab === 'quotations') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('tab-quotations').classList.add('active');
+    } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('tab-revenue').classList.add('active');
+    }
+}
+</script>
+
+</body>
+</html>

@@ -6,8 +6,8 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Operations Workspace</div>
-        <h1 style="margin-top:14px;font-size:42px;">Dashboard</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Track quotations, revenue, expenses, and operational activity in one workspace.</p>
+        <h1 class="topbar-heading">Dashboard</h1>
+        <p class="topbar-subtitle">Track quotations, revenue, expenses, and operational activity in one workspace.</p>
     </div>
 </div>
 
@@ -21,52 +21,90 @@
     <a asp-controller="Customer" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Customer</a>
 </div>
 
-<!-- Quotation KPIs Row -->
-<div class="grid-4">
-    <section class="surface card-pad" style="text-align:center;">
-        <div class="label">Draft Quotations</div>
-        <div class="metric">@Model.DraftCount</div>
-        <div class="muted">Awaiting review</div>
-    </section>
-    <section class="surface card-pad" style="text-align:center;">
-        <div class="label">Sent This Month</div>
-        <div class="metric">@Model.SentThisMonthCount</div>
-        <div class="muted">@Model.CurrencySymbol@Model.SentThisMonthValue.ToString("N2") pipeline value</div>
-    </section>
-    <section class="surface card-pad" style="text-align:center;">
-        <div class="label">Accepted</div>
-        <div class="metric">@Model.AcceptedCount</div>
-        <div class="muted">@Model.AcceptanceRate% acceptance rate</div>
-    </section>
-    <section class="surface card-pad" style="text-align:center;">
-        <div class="label">Active Customers</div>
-        <div class="metric">@Model.ActiveCustomerCount</div>
-        <div class="muted">In registry</div>
-    </section>
+<!-- KPI Gauges Row -->
+@{
+    // Compute gauge percentages
+    var maxFinancial = new[] { Model.RevenueThisMonth, Model.OutstandingAmount, Model.ExpensesThisMonth }.Max();
+    if (maxFinancial == 0) maxFinancial = 1; // avoid division by zero
+    var revenuePct = (int)Math.Round(Model.RevenueThisMonth / maxFinancial * 100);
+    var outstandingPct = (int)Math.Round(Model.OutstandingAmount / maxFinancial * 100);
+    var overduePct = Model.OutstandingAmount > 0
+        ? (int)Math.Round(Model.OverdueAmount / Model.OutstandingAmount * 100)
+        : 0;
+    var expensesPct = Model.RevenueThisMonth > 0
+        ? (int)Math.Round(Model.ExpensesThisMonth / Model.RevenueThisMonth * 100)
+        : 0;
+}
+<div class="gauge-row">
+    <div class="gauge-item">
+        <div class="gauge-header">
+            <span class="gauge-label">Revenue</span>
+            <span class="gauge-value" style="color:#129867;">@Model.CurrencySymbol@Model.RevenueThisMonth.ToString("N0")</span>
+        </div>
+        <div class="gauge-track">
+            <div class="gauge-fill" style="width:@(revenuePct)%;background:#129867;"></div>
+        </div>
+        <div class="gauge-sub">@Model.RevenuePaymentCount payments this month</div>
+    </div>
+    <div class="gauge-item">
+        <div class="gauge-header">
+            <span class="gauge-label">Outstanding</span>
+            <span class="gauge-value" style="color:#C24A4A;">@Model.CurrencySymbol@Model.OutstandingAmount.ToString("N0")</span>
+        </div>
+        <div class="gauge-track">
+            <div class="gauge-fill" style="width:@(outstandingPct)%;background:#C24A4A;"></div>
+        </div>
+        <div class="gauge-sub">@Model.OutstandingInvoiceCount unpaid invoices</div>
+    </div>
+    <div class="gauge-item">
+        <div class="gauge-header">
+            <span class="gauge-label">Overdue</span>
+            <span class="gauge-value" style="color:#C8912E;">@Model.CurrencySymbol@Model.OverdueAmount.ToString("N0")</span>
+        </div>
+        <div class="gauge-track">
+            <div class="gauge-fill" style="width:@(overduePct)%;background:#C8912E;"></div>
+        </div>
+        <div class="gauge-sub">@overduePct% of outstanding</div>
+    </div>
+    <div class="gauge-item">
+        <div class="gauge-header">
+            <span class="gauge-label">Expenses</span>
+            <span class="gauge-value" style="color:#0D5EA6;">@Model.CurrencySymbol@Model.ExpensesThisMonth.ToString("N0")</span>
+        </div>
+        <div class="gauge-track">
+            <div class="gauge-fill" style="width:@(expensesPct)%;background:#0D5EA6;"></div>
+        </div>
+        <div class="gauge-sub">@expensesPct% of revenue · @Model.ExpensesPurchaseCount purchases</div>
+    </div>
 </div>
 
-<!-- Revenue KPI Cards Row -->
-<div class="grid-4" style="margin-top:24px;">
-    <section class="surface card-pad" style="border-left: 4px solid #129867;">
-        <div class="label">Revenue This Month</div>
-        <div class="metric-sm" style="color:#129867;">@Model.CurrencySymbol@Model.RevenueThisMonth.ToString("N2")</div>
-        <div class="muted">@Model.RevenuePaymentCount payments received</div>
-    </section>
-    <section class="surface card-pad" style="border-left: 4px solid #C24A4A;">
-        <div class="label">Outstanding</div>
-        <div class="metric-sm" style="color:#C24A4A;">@Model.CurrencySymbol@Model.OutstandingAmount.ToString("N2")</div>
-        <div class="muted">@Model.OutstandingInvoiceCount unpaid invoices</div>
-    </section>
-    <section class="surface card-pad" style="border-left: 4px solid #C8912E;">
-        <div class="label">Overdue</div>
-        <div class="metric-sm" style="color:#C8912E;">@Model.CurrencySymbol@Model.OverdueAmount.ToString("N2")</div>
-        <div class="muted">@Model.OverdueInvoiceCount invoices past due</div>
-    </section>
-    <section class="surface card-pad" style="border-left: 4px solid #0D5EA6;">
-        <div class="label">Expenses This Month</div>
-        <div class="metric-sm" style="color:#0D5EA6;">@Model.CurrencySymbol@Model.ExpensesThisMonth.ToString("N2")</div>
-        <div class="muted">@Model.ExpensesPurchaseCount purchases recorded</div>
-    </section>
+<!-- Quotation Stats Strip -->
+<div class="quotation-strip">
+    <span class="qs-label" style="font-weight:700;margin-right:4px;">Quotations:</span>
+    <div class="qs-item">
+        <span class="qs-value">@Model.DraftCount</span>
+        <span class="qs-label">Drafts</span>
+    </div>
+    <div class="qs-item">
+        <span class="qs-value">@Model.SentThisMonthCount</span>
+        <span class="qs-label">Sent</span>
+        <span class="qs-sub">@Model.CurrencySymbol@Model.SentThisMonthValue.ToString("N0")</span>
+    </div>
+    <div class="qs-item">
+        <span class="qs-value">@Model.AcceptedCount</span>
+        <span class="qs-label">Accepted</span>
+        <span class="qs-sub">@Model.AcceptanceRate%</span>
+    </div>
+    <div class="qs-item">
+        <span class="qs-value">@Model.ActiveCustomerCount</span>
+        <span class="qs-label">Customers</span>
+    </div>
+    <div class="qs-vat">
+        <span class="qs-label" style="font-weight:700;margin-right:4px;">VAT@(Model.HasVatData && !string.IsNullOrEmpty(Model.VatPeriodLabel) ? $" ({Model.VatPeriodLabel})" : ""):</span>
+        <span class="qs-vat-item"><span style="color:#C8912E;font-weight:800;">@Model.CurrencySymbol@Model.OutputVat.ToString("N0")</span> out</span>
+        <span class="qs-vat-item"><span style="color:#129867;font-weight:800;">@Model.CurrencySymbol@Model.InputVat.ToString("N0")</span> in</span>
+        <span class="qs-vat-item"><span style="color:#C24A4A;font-weight:800;">@Model.CurrencySymbol@Model.NetVatPayable.ToString("N0")</span> net</span>
+    </div>
 </div>
 
 <!-- Charts Row -->
@@ -285,57 +323,10 @@
     </section>
 </div>
 
-<!-- Bottom Row: VAT Summary + Top Customers -->
+<!-- Bottom Row: Top Customers + Chart -->
 <div class="grid-2" style="margin-top:24px;">
     <section class="glass card-pad">
-        <h3 style="margin-bottom:16px;">VAT Summary</h3>
-        @if (Model.HasVatData)
-        {
-            <div style="display:flex;gap:16px;flex-wrap:wrap;">
-                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
-                    <div class="label">Output VAT</div>
-                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C8912E;">@Model.CurrencySymbol@Model.OutputVat.ToString("N2")</div>
-                    <div class="muted" style="font-size:12px;">@(string.IsNullOrEmpty(Model.VatPeriodLabel) ? "Current period" : Model.VatPeriodLabel)</div>
-                </div>
-                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
-                    <div class="label">Input VAT</div>
-                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#129867;">@Model.CurrencySymbol@Model.InputVat.ToString("N2")</div>
-                    <div class="muted" style="font-size:12px;">@(string.IsNullOrEmpty(Model.VatPeriodLabel) ? "Current period" : Model.VatPeriodLabel)</div>
-                </div>
-                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
-                    <div class="label">Net Payable</div>
-                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C24A4A;">@Model.CurrencySymbol@Model.NetVatPayable.ToString("N2")</div>
-                    <div class="muted" style="font-size:12px;">@(string.IsNullOrEmpty(Model.VatPeriodLabel) ? "Current period" : Model.VatPeriodLabel)</div>
-                </div>
-            </div>
-        }
-        else
-        {
-            <div style="display:flex;gap:16px;flex-wrap:wrap;">
-                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
-                    <div class="label">Output VAT</div>
-                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C8912E;">@Model.CurrencySymbol@(0m.ToString("N2"))</div>
-                    <div class="muted" style="font-size:12px;">Current period</div>
-                </div>
-                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
-                    <div class="label">Input VAT</div>
-                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#129867;">@Model.CurrencySymbol@(0m.ToString("N2"))</div>
-                    <div class="muted" style="font-size:12px;">Current period</div>
-                </div>
-                <div style="flex:1;min-width:140px;padding:14px;background:#EEF4F8;border-radius:12px;">
-                    <div class="label">Net Payable</div>
-                    <div style="font-size:20px;font-weight:800;font-family:'Manrope',sans-serif;color:#C24A4A;">@Model.CurrencySymbol@(0m.ToString("N2"))</div>
-                    <div class="muted" style="font-size:12px;">Current period</div>
-                </div>
-            </div>
-            <div style="margin-top:14px;text-align:center;color:var(--muted);font-size:13px;">
-                <p>No VAT submission data available for the current period.</p>
-            </div>
-        }
-    </section>
-
-    <section class="glass card-pad">
-        <h3 style="margin-bottom:16px;">Top Customers by Revenue</h3>
+        <h3 style="margin-bottom:16px;">Top Customers <span style="font-size:12px;font-weight:400;color:var(--muted);">(Last 12 Months)</span></h3>
         @if (Model.TopCustomers.Any())
         {
             <table>
@@ -361,7 +352,22 @@
         else
         {
             <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
-                <p>No customer invoice data available.</p>
+                <p>No customer invoice data available for the last 12 months.</p>
+            </div>
+        }
+    </section>
+    <section class="glass card-pad">
+        <h3 style="margin-bottom:16px;">Revenue by Customer</h3>
+        @if (Model.TopCustomers.Any())
+        {
+            <div style="position:relative;height:220px;">
+                <canvas id="topCustomersChart"></canvas>
+            </div>
+        }
+        else
+        {
+            <div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No customer data available.</p>
             </div>
         }
     </section>
@@ -482,4 +488,58 @@
             }
         })();
     </script>
+    @if (Model.TopCustomers.Any())
+    {
+        <script id="topCustomersData" type="application/json">
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopCustomers.Select(c => new { name = c.CustomerName, invoiced = c.TotalInvoiced, paid = c.TotalPaid })))
+        </script>
+        <script>
+            (function() {
+                var dataEl = document.getElementById('topCustomersData');
+                if (!dataEl) return;
+                var data = JSON.parse(dataEl.textContent);
+                var currencySymbol = '@Html.Raw(Model.CurrencySymbol)';
+
+                var ctx = document.getElementById('topCustomersChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(function(d) { return d.name; }),
+                        datasets: [
+                            {
+                                label: 'Invoiced',
+                                data: data.map(function(d) { return d.invoiced; }),
+                                backgroundColor: '#0D5EA6',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Paid',
+                                data: data.map(function(d) { return d.paid; }),
+                                backgroundColor: '#129867',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return currencySymbol + Math.round(value).toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            })();
+        </script>
+    }
 }

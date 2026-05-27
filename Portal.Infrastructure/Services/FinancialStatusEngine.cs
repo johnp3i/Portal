@@ -12,6 +12,7 @@ public class FinancialStatusEngine : IFinancialStatusEngine
 {
     private readonly PaymentRepository _paymentRepository;
     private readonly InvoiceRepository _invoiceRepository;
+    private readonly CreditNoteRepository _creditNoteRepository;
 
     // Financial Status Type IDs
     private const int StatusUnpaid = 1;
@@ -22,20 +23,28 @@ public class FinancialStatusEngine : IFinancialStatusEngine
 
     public FinancialStatusEngine(
         PaymentRepository paymentRepository,
-        InvoiceRepository invoiceRepository)
+        InvoiceRepository invoiceRepository,
+        CreditNoteRepository creditNoteRepository)
     {
         _paymentRepository = paymentRepository;
         _invoiceRepository = invoiceRepository;
+        _creditNoteRepository = creditNoteRepository;
     }
 
     /// <inheritdoc />
     public decimal ComputeOutstandingBalance(decimal totalAmount, IEnumerable<Payment> payments)
     {
+        return ComputeOutstandingBalance(totalAmount, payments, 0m);
+    }
+
+    /// <inheritdoc />
+    public decimal ComputeOutstandingBalance(decimal totalAmount, IEnumerable<Payment> payments, decimal appliedCreditTotal)
+    {
         var validPaymentSum = payments
             .Where(p => !p.IsVoided)
             .Sum(p => p.Amount);
 
-        return totalAmount - validPaymentSum;
+        return totalAmount - validPaymentSum - appliedCreditTotal;
     }
 
     /// <inheritdoc />
@@ -46,7 +55,7 @@ public class FinancialStatusEngine : IFinancialStatusEngine
         if (currentStatusId == StatusWrittenOff)
             return StatusWrittenOff;
 
-        // Fully paid: no outstanding balance and at least one valid payment exists
+        // Fully paid: no outstanding balance and at least one valid payment or credit exists
         if (outstandingBalance == 0 && hasValidPayments)
             return StatusPaid;
 
@@ -77,11 +86,14 @@ public class FinancialStatusEngine : IFinancialStatusEngine
         // Fetch all valid (non-voided) payments for this invoice
         var validPayments = await _paymentRepository.GetValidPaymentsByInvoiceIdAsync(invoiceId, businessId);
 
-        // Compute outstanding balance
-        var outstandingBalance = ComputeOutstandingBalance(invoice.TotalAmount, validPayments);
+        // Fetch total applied credit notes for this invoice
+        var appliedCreditTotal = await _creditNoteRepository.GetTotalAppliedCreditAsync(invoiceId, businessId);
+
+        // Compute outstanding balance including applied credits
+        var outstandingBalance = ComputeOutstandingBalance(invoice.TotalAmount, validPayments, appliedCreditTotal);
 
         // Determine the correct financial status
-        var hasValidPayments = validPayments.Count > 0;
+        var hasValidPayments = validPayments.Count > 0 || appliedCreditTotal > 0;
         var newStatusId = DetermineFinancialStatus(
             invoice.TotalAmount,
             outstandingBalance,

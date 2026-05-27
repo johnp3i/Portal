@@ -63,6 +63,12 @@ public class PortalDbContext : DbContext
     public DbSet<Product> Products { get; set; } = null!;
     public DbSet<ProductPriceHistory> ProductPriceHistories { get; set; } = null!;
 
+    // Credit schema
+    public DbSet<CreditNoteStatusType> CreditNoteStatusTypes { get; set; } = null!;
+    public DbSet<CreditNote> CreditNotes { get; set; } = null!;
+    public DbSet<CreditNoteLine> CreditNoteLines { get; set; } = null!;
+    public DbSet<CreditNoteApplication> CreditNoteApplications { get; set; } = null!;
+
     // Audit schema
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
@@ -98,6 +104,10 @@ public class PortalDbContext : DbContext
         ConfigureLineItemCatalog(modelBuilder);
         ConfigureProduct(modelBuilder);
         ConfigureProductPriceHistory(modelBuilder);
+        ConfigureCreditNoteStatusType(modelBuilder);
+        ConfigureCreditNote(modelBuilder);
+        ConfigureCreditNoteLine(modelBuilder);
+        ConfigureCreditNoteApplication(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -1197,6 +1207,99 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureCreditNoteStatusType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CreditNoteStatusType>(entity =>
+        {
+            entity.ToTable("CreditNoteStatusType", "credit");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.HasData(
+                new CreditNoteStatusType { Id = 1, Name = "Draft" },
+                new CreditNoteStatusType { Id = 2, Name = "Issued" },
+                new CreditNoteStatusType { Id = 3, Name = "Applied" },
+                new CreditNoteStatusType { Id = 4, Name = "Voided" }
+            );
+        });
+    }
+
+    private static void ConfigureCreditNote(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CreditNote>(entity =>
+        {
+            entity.ToTable("CreditNote", "credit");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business).WithMany()
+                .HasForeignKey(e => e.BusinessId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.Invoice).WithMany()
+                .HasForeignKey(e => e.InvoiceId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.Customer).WithMany()
+                .HasForeignKey(e => e.CustomerId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.CreditNoteStatusType).WithMany(s => s.CreditNotes)
+                .HasForeignKey(e => e.CreditNoteStatusTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.VatSubmissionPeriod).WithMany()
+                .HasForeignKey(e => e.VatSubmissionPeriodId).OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId).HasDatabaseName("IX_CreditNote_BusinessId");
+            entity.HasIndex(e => e.InvoiceId).HasDatabaseName("IX_CreditNote_InvoiceId");
+            entity.HasIndex(e => new { e.BusinessId, e.CreditNoteNumber })
+                .IsUnique()
+                .HasDatabaseName("UX_CreditNote_BusinessId_CreditNoteNumber")
+                .HasFilter("[CreditNoteStatusTypeId] <> 4");
+
+            entity.Property(e => e.CreditNoteNumber).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Reason).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+            entity.Property(e => e.TaxAmount).HasPrecision(18, 2);
+            entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
+            entity.Property(e => e.CreatedByUserId).HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureCreditNoteLine(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CreditNoteLine>(entity =>
+        {
+            entity.ToTable("CreditNoteLine", "credit");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.CreditNote).WithMany(cn => cn.CreditNoteLines)
+                .HasForeignKey(e => e.CreditNoteId).OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Quantity).HasPrecision(18, 4);
+            entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
+            entity.Property(e => e.VatRate).HasPrecision(5, 2);
+            entity.Property(e => e.LineTotal).HasPrecision(18, 2);
+        });
+    }
+
+    private static void ConfigureCreditNoteApplication(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CreditNoteApplication>(entity =>
+        {
+            entity.ToTable("CreditNoteApplication", "credit");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.CreditNote).WithMany(cn => cn.CreditNoteApplications)
+                .HasForeignKey(e => e.CreditNoteId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.Invoice).WithMany()
+                .HasForeignKey(e => e.InvoiceId).OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.CreditNoteId)
+                .HasDatabaseName("IX_CreditNoteApplication_CreditNoteId");
+            entity.HasIndex(e => e.InvoiceId)
+                .HasDatabaseName("IX_CreditNoteApplication_InvoiceId");
+
+            entity.Property(e => e.AmountApplied).HasPrecision(18, 2);
+            entity.Property(e => e.IsVoided).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.AppliedByUserId).HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
         });
     }
 

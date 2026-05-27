@@ -1,0 +1,324 @@
+@model Portal.Infrastructure.Models.CreditNoteDetailDto
+@{
+    ViewData["Title"] = "Edit Credit Note";
+    var vatPeriods = ViewBag.VatPeriods as IEnumerable<Portal.Infrastructure.Entities.VatSubmissionPeriod>
+        ?? Enumerable.Empty<Portal.Infrastructure.Entities.VatSubmissionPeriod>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Edit Credit Note</div>
+        <h1 class="topbar-heading">@Model.CreditNoteNumber</h1>
+        <p class="topbar-subtitle">Update credit note details and line items. Only Draft credit notes can be edited.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a asp-action="Detail" asp-controller="CreditNote" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" style="margin-bottom:18px;">
+            @TempData["Error"]
+        </div>
+    }
+
+    <form method="post" asp-action="Edit" asp-controller="CreditNote" asp-route-id="@Model.Id" asp-antiforgery="true" id="editCreditNoteForm">
+        <div class="form-grid">
+            <!-- Credit Note Number (read-only) -->
+            <div class="field">
+                <label for="creditNoteNumber">Credit Note Number</label>
+                <input type="text" id="creditNoteNumber" value="@Model.CreditNoteNumber" readonly disabled
+                       style="background:#f0f4f8;cursor:not-allowed;" />
+            </div>
+
+            <!-- Source Invoice (read-only) -->
+            <div class="field">
+                <label for="invoiceDisplay">Source Invoice</label>
+                <input type="text" id="invoiceDisplay" value="@Model.InvoiceNumber" readonly disabled
+                       style="background:#f0f4f8;cursor:not-allowed;" />
+            </div>
+
+            <!-- Customer (read-only, derived from invoice) -->
+            <div class="field">
+                <label for="customerDisplay">Customer</label>
+                <input type="text" id="customerDisplay" value="@Model.CustomerName" readonly disabled
+                       style="background:#f0f4f8;cursor:not-allowed;" />
+            </div>
+
+            <!-- Issue Date -->
+            <div class="field">
+                <label for="issueDate">Issue Date *</label>
+                <input type="date" name="issueDate" id="issueDate" required
+                       value="@Model.IssueDate.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <!-- VAT Period -->
+            <div class="field">
+                <label for="vatSubmissionPeriodId">VAT Period *</label>
+                <select name="vatSubmissionPeriodId" id="vatSubmissionPeriodId" required>
+                    <option value="">-- Select VAT Period --</option>
+                    @foreach (var period in vatPeriods)
+                    {
+                        if (period.Id == Model.VatSubmissionPeriodId)
+                        {
+                            <option value="@period.Id" selected>@period.PeriodLabel</option>
+                        }
+                        else
+                        {
+                            <option value="@period.Id">@period.PeriodLabel</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Reason -->
+            <div class="field" style="grid-column:1 / -1;">
+                <label for="reason">Reason *</label>
+                <textarea name="reason" id="reason" required maxlength="1000"
+                          placeholder="Reason for issuing this credit note (required)">@Model.Reason</textarea>
+                <small class="muted" id="reasonCharCount">@Model.Reason.Length / 1000 characters</small>
+            </div>
+        </div>
+
+        <!-- Line Items Section -->
+        <div style="margin-top:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:18px;font-weight:700;margin:0;">Line Items</h3>
+                <button type="button" class="btn btn-primary" id="addLineBtn" onclick="addLineRow()">+ Add Line</button>
+            </div>
+
+            <table id="linesTable">
+                <thead>
+                    <tr>
+                        <th style="min-width:200px;">Description</th>
+                        <th style="width:100px;">Quantity</th>
+                        <th style="width:120px;">Unit Price</th>
+                        <th style="width:100px;">VAT Rate (%)</th>
+                        <th style="width:120px;">Line Total</th>
+                        <th style="width:60px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="linesBody">
+                    @for (var i = 0; i < Model.Lines.Count; i++)
+                    {
+                        var line = Model.Lines[i];
+                        <tr class="line-row">
+                            <td>
+                                <input type="text" name="lines[@i].Description" required maxlength="500"
+                                       value="@line.Description" placeholder="Line item description"
+                                       class="line-description" />
+                            </td>
+                            <td>
+                                <input type="number" name="lines[@i].Quantity" required step="0.0001"
+                                       min="0.0001" max="999999" value="@line.Quantity"
+                                       class="line-quantity" onchange="recalculateTotals()" oninput="recalculateTotals()" />
+                            </td>
+                            <td>
+                                <input type="number" name="lines[@i].UnitPrice" required step="0.01"
+                                       min="0.01" max="999999999.99" value="@line.UnitPrice"
+                                       class="line-unitprice" onchange="recalculateTotals()" oninput="recalculateTotals()" />
+                            </td>
+                            <td>
+                                <input type="number" name="lines[@i].VatRate" required step="0.01"
+                                       min="0" max="100" value="@line.VatRate"
+                                       class="line-vatrate" onchange="recalculateTotals()" oninput="recalculateTotals()" />
+                            </td>
+                            <td>
+                                <span class="line-total" style="font-weight:700;">@line.LineTotal.ToString("N2")</span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;"
+                                        onclick="removeLineRow(this)">✕</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div id="noLinesMessage" style="display:@(Model.Lines.Count == 0 ? "block" : "none");padding:16px;text-align:center;color:#5a6a7a;">
+                No line items. Click "+ Add Line" to add a line item.
+            </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="surface card-pad" style="margin-top:18px;max-width:320px;margin-left:auto;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span class="muted">Subtotal</span>
+                <strong id="totals-subtotal">@Model.Subtotal.ToString("N2")</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span class="muted">VAT Amount</span>
+                <strong id="totals-tax">@Model.TaxAmount.ToString("N2")</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:8px;">
+                <span style="font-weight:700;">Credit Total</span>
+                <span style="font-weight:700;color:#C24A4A;" id="totals-total">@Model.TotalAmount.ToString("N2")</span>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="margin-top:24px;display:flex;gap:12px;">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a asp-action="Detail" asp-controller="CreditNote" asp-route-id="@Model.Id" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        var lineIndex = @Model.Lines.Count;
+
+        function addLineRow() {
+            var tbody = document.getElementById('linesBody');
+            var idx = lineIndex;
+            lineIndex++;
+
+            var tr = document.createElement('tr');
+            tr.className = 'line-row';
+            tr.innerHTML = '<td><input type="text" name="lines[' + idx + '].Description" required maxlength="500" placeholder="Line item description" class="line-description" /></td>'
+                + '<td><input type="number" name="lines[' + idx + '].Quantity" required step="0.0001" min="0.0001" max="999999" value="1" class="line-quantity" onchange="recalculateTotals()" oninput="recalculateTotals()" /></td>'
+                + '<td><input type="number" name="lines[' + idx + '].UnitPrice" required step="0.01" min="0.01" max="999999999.99" value="0.00" class="line-unitprice" onchange="recalculateTotals()" oninput="recalculateTotals()" /></td>'
+                + '<td><input type="number" name="lines[' + idx + '].VatRate" required step="0.01" min="0" max="100" value="0" class="line-vatrate" onchange="recalculateTotals()" oninput="recalculateTotals()" /></td>'
+                + '<td><span class="line-total" style="font-weight:700;">0.00</span></td>'
+                + '<td><button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="removeLineRow(this)">✕</button></td>';
+
+            tbody.appendChild(tr);
+            document.getElementById('noLinesMessage').style.display = 'none';
+            reindexLines();
+            recalculateTotals();
+        }
+
+        function removeLineRow(btn) {
+            var row = btn.closest('tr');
+            row.remove();
+            reindexLines();
+            recalculateTotals();
+
+            var rows = document.querySelectorAll('#linesBody .line-row');
+            if (rows.length === 0) {
+                document.getElementById('noLinesMessage').style.display = 'block';
+            }
+        }
+
+        function reindexLines() {
+            var rows = document.querySelectorAll('#linesBody .line-row');
+            rows.forEach(function(row, idx) {
+                var inputs = row.querySelectorAll('input');
+                inputs.forEach(function(input) {
+                    var name = input.getAttribute('name');
+                    if (name) {
+                        input.setAttribute('name', name.replace(/lines\[\d+\]/, 'lines[' + idx + ']'));
+                    }
+                });
+            });
+            lineIndex = rows.length;
+        }
+
+        function recalculateTotals() {
+            var rows = document.querySelectorAll('#linesBody .line-row');
+            var subtotal = 0;
+            var taxAmount = 0;
+
+            rows.forEach(function(row) {
+                var qty = parseFloat(row.querySelector('.line-quantity').value) || 0;
+                var price = parseFloat(row.querySelector('.line-unitprice').value) || 0;
+                var vatRate = parseFloat(row.querySelector('.line-vatrate').value) || 0;
+
+                var lineTotal = qty * price;
+                var lineTax = lineTotal * vatRate / 100;
+
+                subtotal += lineTotal;
+                taxAmount += lineTax;
+
+                row.querySelector('.line-total').textContent = lineTotal.toFixed(2);
+            });
+
+            var total = subtotal + taxAmount;
+
+            document.getElementById('totals-subtotal').textContent = subtotal.toFixed(2);
+            document.getElementById('totals-tax').textContent = taxAmount.toFixed(2);
+            document.getElementById('totals-total').textContent = total.toFixed(2);
+        }
+
+        // Reason character counter
+        var reasonField = document.getElementById('reason');
+        var reasonCount = document.getElementById('reasonCharCount');
+        if (reasonField && reasonCount) {
+            reasonField.addEventListener('input', function() {
+                reasonCount.textContent = reasonField.value.length + ' / 1000 characters';
+            });
+        }
+
+        // Client-side validation
+        function validateEditForm() {
+            var errors = [];
+            var rows = document.querySelectorAll('#linesBody .line-row');
+
+            // Check at least one line item exists
+            if (rows.length === 0) {
+                errors.push('At least one line item is required.');
+            }
+
+            // Validate each line item
+            rows.forEach(function (row, i) {
+                var lineNum = i + 1;
+                var desc = row.querySelector('.line-description');
+                var qty = row.querySelector('.line-quantity');
+                var price = row.querySelector('.line-unitprice');
+                var vatRate = row.querySelector('.line-vatrate');
+
+                // Description required
+                if (!desc.value || !desc.value.trim()) {
+                    errors.push('Line ' + lineNum + ': Description is required.');
+                }
+
+                // Quantity range
+                var qtyVal = parseFloat(qty.value);
+                if (isNaN(qtyVal) || qtyVal < 0.0001 || qtyVal > 999999) {
+                    errors.push('Line ' + lineNum + ': Quantity must be between 0.0001 and 999,999.');
+                }
+
+                // Unit price range
+                var priceVal = parseFloat(price.value);
+                if (isNaN(priceVal) || priceVal < 0.01 || priceVal > 999999999.99) {
+                    errors.push('Line ' + lineNum + ': Unit price must be between 0.01 and 999,999,999.99.');
+                }
+
+                // VAT rate range
+                var vatVal = parseFloat(vatRate.value);
+                if (isNaN(vatVal) || vatVal < 0 || vatVal > 100) {
+                    errors.push('Line ' + lineNum + ': VAT rate must be between 0 and 100.');
+                }
+            });
+
+            // Validate reason
+            var reason = document.getElementById('reason');
+            if (!reason.value || !reason.value.trim()) {
+                errors.push('A reason is required.');
+            }
+
+            return errors;
+        }
+
+        // Form submission with validation
+        document.getElementById('editCreditNoteForm').addEventListener('submit', function (e) {
+            var errors = validateEditForm();
+            if (errors.length > 0) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Validation',
+                    html: '<ul style="text-align:left;font-size:13px;margin:0;padding-left:18px;">' + errors.map(function (err) { return '<li>' + err + '</li>'; }).join('') + '</ul>',
+                    icon: 'warning',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
+        });
+
+        // Initial calculation
+        recalculateTotals();
+    </script>
+}

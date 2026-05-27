@@ -9,8 +9,8 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Edit Invoice</div>
-        <h1 style="margin-top:14px;font-size:42px;">@Model.InvoiceNumber</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Update invoice details, manage line items and sections.</p>
+        <h1 class="topbar-heading">@Model.InvoiceNumber</h1>
+        <p class="topbar-subtitle">Update invoice details, manage line items and sections.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>

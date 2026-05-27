@@ -16,7 +16,7 @@ public class OutstandingBalancePropertyTests
     public OutstandingBalancePropertyTests()
     {
         // ComputeOutstandingBalance is a pure function — no dependencies needed
-        _engine = new FinancialStatusEngine(null!, null!);
+        _engine = new FinancialStatusEngine(null!, null!, null!);
     }
 
     // Feature: revenue-control, Property 5: Outstanding balance computation correctness

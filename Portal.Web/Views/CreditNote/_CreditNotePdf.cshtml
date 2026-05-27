@@ -1,0 +1,345 @@
+@model Portal.Infrastructure.Models.CreditNotePdfModel
+@{
+    Layout = null;
+    var currencySymbol = Model.CurrencySymbol;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Credit Note — @Model.CreditNoteNumber</title>
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --border: rgba(13,94,166,.08);
+            --success: #129867;
+            --danger: #C24A4A;
+            --warning: #C8912E;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @@page { size: A4 portrait; margin: 20mm 15mm; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background: #fff;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 0;
+        }
+        .page {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 32px 40px;
+        }
+        h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--blue);
+        }
+        h2 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--blue);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-right {
+            text-align: right;
+        }
+        .header-right img {
+            max-height: 50px;
+            max-width: 160px;
+        }
+        .header-right .business-name {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        /* Info Sections */
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .info-block .label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 3px;
+        }
+        .info-block .value {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .info-block .detail {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* Document Details */
+        .doc-details {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 24px;
+            padding: 14px 18px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .doc-details .doc-field .doc-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 2px;
+        }
+        .doc-details .doc-field .doc-value {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Reason */
+        .reason-section {
+            margin-bottom: 24px;
+        }
+        .reason-section .reason-text {
+            font-size: 11px;
+            color: var(--text);
+            line-height: 1.6;
+            padding: 10px 14px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        /* Line Items Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        th {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            padding: 8px 10px;
+            border-bottom: 2px solid var(--border);
+            text-align: left;
+        }
+        th.right { text-align: right; }
+        td {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            font-size: 11px;
+        }
+        td.right { text-align: right; }
+
+        /* Totals */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 16px;
+            margin-bottom: 24px;
+        }
+        .totals-table {
+            width: 280px;
+        }
+        .totals-table .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 12px;
+        }
+        .totals-table .totals-row.total-line {
+            border-top: 2px solid var(--blue);
+            padding-top: 10px;
+            margin-top: 4px;
+            font-weight: 800;
+            font-size: 14px;
+            font-family: 'Manrope', sans-serif;
+            color: var(--danger);
+        }
+        .totals-table .totals-row .totals-label {
+            color: var(--muted);
+            font-weight: 600;
+        }
+        .totals-table .totals-row .totals-value {
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 32px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 10px;
+            color: var(--muted);
+            text-align: center;
+        }
+        .footer .powered-by {
+            margin-top: 8px;
+            font-size: 9px;
+            color: #b0bec5;
+            letter-spacing: 0.03em;
+        }
+
+        /* Print */
+        @@media print {
+            body { padding: 0; }
+            .page { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div>
+                <h1>CREDIT NOTE</h1>
+            </div>
+        </div>
+        <div class="header-right">
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessLogoUrl))
+            {
+                <img src="@Model.BusinessLogoUrl" alt="@Model.BusinessName" />
+            }
+            else
+            {
+                <div class="business-name">@Model.BusinessName</div>
+            }
+        </div>
+    </div>
+
+    <!-- Business & Customer Details -->
+    <div class="info-section">
+        <div class="info-block">
+            <div class="label">From</div>
+            <div class="value">@Model.BusinessName</div>
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessAddress))
+            {
+                <div class="detail">@Model.BusinessAddress</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessVatNumber))
+            {
+                <div class="detail">VAT: @Model.BusinessVatNumber</div>
+            }
+        </div>
+        <div class="info-block" style="text-align:right;">
+            <div class="label">To</div>
+            <div class="value">@Model.CustomerName</div>
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerAddress))
+            {
+                <div class="detail">@Model.CustomerAddress</div>
+            }
+        </div>
+    </div>
+
+    <!-- Document Details -->
+    <div class="doc-details">
+        <div class="doc-field">
+            <div class="doc-label">Credit Note #</div>
+            <div class="doc-value">@Model.CreditNoteNumber</div>
+        </div>
+        <div class="doc-field">
+            <div class="doc-label">Issue Date</div>
+            <div class="doc-value">@Model.IssueDate.ToString("dd MMM yyyy")</div>
+        </div>
+        <div class="doc-field">
+            <div class="doc-label">Invoice Reference</div>
+            <div class="doc-value">@Model.InvoiceNumber</div>
+        </div>
+    </div>
+
+    <!-- Reason -->
+    <div class="reason-section">
+        <h2>Reason</h2>
+        <div class="reason-text">@Model.Reason</div>
+    </div>
+
+    <!-- Line Items -->
+    <h2>Line Items</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:40%;">Description</th>
+                <th class="right" style="width:12%;">Quantity</th>
+                <th class="right" style="width:15%;">Unit Price</th>
+                <th class="right" style="width:13%;">VAT Rate</th>
+                <th class="right" style="width:20%;">Line Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Model.Lines)
+            {
+                <tr>
+                    <td>@line.Description</td>
+                    <td class="right">@line.Quantity.ToString("G")</td>
+                    <td class="right">@($"{currencySymbol}{line.UnitPrice:N2}")</td>
+                    <td class="right">@($"{line.VatRate:N2}%")</td>
+                    <td class="right">@($"{currencySymbol}{line.LineTotal:N2}")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals-section">
+        <div class="totals-table">
+            <div class="totals-row">
+                <span class="totals-label">Subtotal</span>
+                <span class="totals-value">@($"{currencySymbol}{Model.Subtotal:N2}")</span>
+            </div>
+            <div class="totals-row">
+                <span class="totals-label">VAT</span>
+                <span class="totals-value">@($"{currencySymbol}{Model.TaxAmount:N2}")</span>
+            </div>
+            <div class="totals-row total-line">
+                <span class="totals-label">Credit Total</span>
+                <span class="totals-value">-@($"{currencySymbol}{Model.TotalAmount:N2}")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Credit note generated on @DateTime.UtcNow.ToString("dd MMM yyyy") | @Model.BusinessName
+    </div>
+    <div class="footer powered-by">
+        Powered by 3 Inventors — Operational Intelligence
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,177 @@
+@model List<Portal.Infrastructure.Models.UserModulePermissionDto>
+@{
+    ViewData["Title"] = "Module Access";
+    var userBusinessId = (int)ViewBag.UserBusinessId;
+    var userFullName = ViewBag.UserFullName as string ?? "Unknown User";
+    var userEmail = ViewBag.UserEmail as string ?? string.Empty;
+    var userIsActive = (bool)(ViewBag.UserIsActive ?? false);
+    var modules = ViewBag.Modules as string[] ?? Array.Empty<string>();
+    var currentUserId = ViewBag.CurrentUserId as string ?? string.Empty;
+
+    // Build permission lookup
+    var permMap = Model.ToDictionary(p => p.Module, p => p);
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Module Access — @userFullName</h1>
+        <p class="topbar-subtitle">Manage per-module access levels for this user.</p>
+    </div>
+    <div>
+        <a href="/Admin/Users" class="btn btn-secondary">← Back to Users</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #e2eaf2;">
+        <div>
+            <div style="font-size:18px;font-weight:700;color:#1a2b3c;">@userFullName</div>
+            <div style="font-size:14px;color:#5a6b7c;">@userEmail</div>
+        </div>
+        <div style="margin-left:auto;">
+            @if (userIsActive)
+            {
+                <span class="badge badge--insert">Active</span>
+            }
+            else
+            {
+                <span class="badge badge--delete">Inactive</span>
+            }
+        </div>
+    </div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Module</th>
+                <th>Access Level</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var module in modules)
+            {
+                var perm = permMap.ContainsKey(module) ? permMap[module] : null;
+                var currentLevel = perm?.AccessLevel ?? "none";
+                var isActive = perm?.IsActive ?? false;
+                var isSelf = false; // We compare by UserId not UserBusinessId — disable if same user
+                var displayName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(module);
+
+                <tr>
+                    <td><strong>@displayName</strong></td>
+                    <td>
+                        <div class="segmented-control" data-module="@module" data-current-level="@currentLevel"
+                             style="display:inline-flex;border:1px solid #d0dce8;border-radius:8px;overflow:hidden;">
+                            @foreach (var level in new[] { "full", "readonly", "none" })
+                            {
+                                var isSelected = currentLevel == level;
+                                var levelLabel = level == "readonly" ? "Read Only" : System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(level);
+                                <button type="button"
+                                        class="seg-btn @(isSelected ? "seg-btn--active" : "")"
+                                        data-module="@module"
+                                        data-level="@level"
+                                        onclick="updatePermission(@userBusinessId, '@module', '@level', '@displayName')"
+                                        style="padding:6px 14px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:@(isSelected ? "#0D5EA6" : "#fff");color:@(isSelected ? "#fff" : "#5a6b7c");transition:background 0.15s,color 0.15s;">
+                                    @levelLabel
+                                </button>
+                            }
+                        </div>
+                    </td>
+                    <td>
+                        <span id="status-badge-@module" class="badge @(isActive ? "badge--insert" : "badge--delete")">
+                            @(isActive ? "Active" : "Inactive")
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    async function updatePermission(userBusinessId, module, accessLevel, moduleName) {
+        const confirmColor = accessLevel === 'none' ? '#C24A4A' : '#0D5EA6';
+        const confirmText = accessLevel === 'none'
+            ? `Remove access to ${moduleName}?`
+            : `Grant ${accessLevel} access to ${moduleName}?`;
+
+        const confirm = await Swal.fire({
+            title: 'Update Permission',
+            text: confirmText,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: confirmColor,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Confirm'
+        });
+
+        if (!confirm.isConfirmed) {
+            revertSelection(module);
+            return;
+        }
+
+        BlockUI.show('Updating permission...');
+        try {
+            const response = await fetch('/Admin/Users/UpdatePermission', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ userBusinessId: userBusinessId, module: module, accessLevel: accessLevel })
+            });
+            const data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                // Update the stored current level
+                const control = document.querySelector(`.segmented-control[data-module="${module}"]`);
+                if (control) control.setAttribute('data-current-level', accessLevel);
+
+                updateStatusBadge(module, accessLevel);
+
+                await Swal.fire({
+                    title: 'Updated',
+                    text: data.message || `${moduleName} access updated to ${accessLevel}.`,
+                    icon: 'success',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            } else {
+                revertSelection(module);
+                Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            revertSelection(module);
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function revertSelection(module) {
+        const control = document.querySelector(`.segmented-control[data-module="${module}"]`);
+        if (!control) return;
+        const currentLevel = control.getAttribute('data-current-level');
+        control.querySelectorAll('.seg-btn').forEach(btn => {
+            const isActive = btn.getAttribute('data-level') === currentLevel;
+            btn.style.background = isActive ? '#0D5EA6' : '#fff';
+            btn.style.color = isActive ? '#fff' : '#5a6b7c';
+        });
+    }
+
+    function updateStatusBadge(module, accessLevel) {
+        const badge = document.getElementById(`status-badge-${module}`);
+        if (!badge) return;
+        const isActive = accessLevel !== 'none';
+        badge.className = `badge ${isActive ? 'badge--insert' : 'badge--delete'}`;
+        badge.textContent = isActive ? 'Active' : 'Inactive';
+    }
+</script>
+}

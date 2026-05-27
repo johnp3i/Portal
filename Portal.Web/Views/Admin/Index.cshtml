@@ -1,0 +1,225 @@
+@model Portal.Infrastructure.Models.PagedResult<Portal.Infrastructure.Models.UserAdminDto>
+@{
+    ViewData["Title"] = "Users";
+    var currentUserId = ViewBag.CurrentUserId as string ?? string.Empty;
+    var searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
+    var statusFilter = ViewBag.StatusFilter as string ?? string.Empty;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Users</h1>
+        <p class="topbar-subtitle">Manage user access and permissions for your business.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" action="/Admin/Users">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:240px;">
+                <label for="searchTerm">Search</label>
+                <input type="text" id="searchTerm" name="searchTerm" value="@searchTerm" placeholder="Name or email..." maxlength="200" />
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="statusFilter">Status</label>
+                @{
+                    var optAll      = statusFilter == ""         ? "<option value=\"\" selected>All</option>"      : "<option value=\"\">All</option>";
+                    var optActive   = statusFilter == "Active"   ? "<option value=\"Active\" selected>Active</option>"   : "<option value=\"Active\">Active</option>";
+                    var optInactive = statusFilter == "Inactive" ? "<option value=\"Inactive\" selected>Inactive</option>" : "<option value=\"Inactive\">Inactive</option>";
+                }
+                @Html.Raw($"<select id=\"statusFilter\" name=\"statusFilter\">{optAll}{optActive}{optInactive}</select>")
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="/Admin/Users" class="btn btn-secondary">Clear</a>
+            </div>
+            <div style="padding-bottom:2px;margin-left:auto;">
+                <a href="/Invitation/Create" class="btn btn-primary">Invite User</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<section class="glass card-pad">
+    @if (Model.Items.Any())
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Last Login</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Items)
+                {
+                    var isSelf = user.UserId == currentUserId;
+                    <tr style="cursor:pointer;" onclick="window.location.href='/Admin/Users/ModuleAccess/@user.UserBusinessId'">
+                        <td><strong>@user.FullName</strong></td>
+                        <td>@user.Email</td>
+                        <td>@user.Role</td>
+                        <td>
+                            @if (user.IsActive)
+                            {
+                                <span class="badge badge--insert">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge--delete">Inactive</span>
+                            }
+                        </td>
+                        <td>
+                            @(user.LastLoginUtc.HasValue
+                                ? user.LastLoginUtc.Value.ToString("dd MMM yyyy HH:mm")
+                                : "Never")
+                        </td>
+                        <td onclick="event.stopPropagation();">
+                            @if (isSelf)
+                            {
+                                <span style="color:#5a6b7c;font-size:13px;" title="You cannot modify your own account.">—</span>
+                            }
+                            else if (user.IsActive)
+                            {
+                                <button type="button" class="btn btn-secondary" style="color:#C24A4A;font-size:12px;padding:6px 12px;"
+                                        onclick="deactivateUser(@user.UserBusinessId, '@Html.Raw(user.FullName.Replace("'", "\\'"))')">
+                                    Deactivate
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-primary" style="font-size:12px;padding:6px 12px;"
+                                        onclick="reactivateUser(@user.UserBusinessId, '@Html.Raw(user.FullName.Replace("'", "\\'"))')">
+                                    Reactivate
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @* Pagination *@
+        @if (Model.TotalPages > 1)
+        {
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+                <div style="font-size:14px;color:#5a6a7a;">
+                    Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)–@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount)) of @Model.TotalCount
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&page=@(Model.CurrentPage - 1)"
+                           class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;text-decoration:none;color:inherit;">← Prev</a>
+                    }
+                    @for (int p = 1; p <= Model.TotalPages; p++)
+                    {
+                        var isActive = p == Model.CurrentPage;
+                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&page=@p"
+                           class="page-btn @(isActive ? "page-btn--active" : "")"
+                           style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid @(isActive ? "#0D5EA6" : "#d0dce8");background:@(isActive ? "#0D5EA6" : "#fff");color:@(isActive ? "#fff" : "inherit");text-decoration:none;">@p</a>
+                    }
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&page=@(Model.CurrentPage + 1)"
+                           class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;text-decoration:none;color:inherit;">Next →</a>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No users found matching the selected filters.</p>
+        </div>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    async function deactivateUser(userBusinessId, userName) {
+        const confirm = await Swal.fire({
+            title: 'Deactivate User',
+            text: `Are you sure you want to deactivate ${userName}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#C24A4A',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Deactivate'
+        });
+        if (!confirm.isConfirmed) return;
+
+        BlockUI.show('Deactivating user...');
+        try {
+            const response = await fetch('/Admin/Users/ToggleStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ userBusinessId: userBusinessId, activate: false })
+            });
+            const data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({ title: 'Deactivated', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                location.reload();
+            } else {
+                Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function reactivateUser(userBusinessId, userName) {
+        const confirm = await Swal.fire({
+            title: 'Reactivate User',
+            text: `Are you sure you want to reactivate ${userName}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Reactivate'
+        });
+        if (!confirm.isConfirmed) return;
+
+        BlockUI.show('Reactivating user...');
+        try {
+            const response = await fetch('/Admin/Users/ToggleStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ userBusinessId: userBusinessId, activate: true })
+            });
+            const data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({ title: 'Reactivated', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                location.reload();
+            } else {
+                Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
+}

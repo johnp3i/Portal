@@ -227,7 +227,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
         try
         {
             const string query = @"
-                SELECT ISNULL(MAX(CAST(RIGHT([InvoiceNumber], 5) AS INT)), 0) + 1
+                SELECT ISNULL(MAX(TRY_CAST(RIGHT([InvoiceNumber], 5) AS INT)), 0) + 1
                 FROM [invoice].[Invoice]
                 WHERE [BusinessId] = @BusinessId";
 

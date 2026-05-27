@@ -12,8 +12,8 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Invoice Detail</div>
-        <h1 style="margin-top:14px;font-size:42px;">@invoice.InvoiceNumber &middot; @ViewBag.CustomerName</h1>
-        <p class="muted" style="margin-top:10px;font-size:18px;line-height:1.8;">Review status, financial details, and manage this invoice.</p>
+        <h1 class="topbar-heading">@invoice.InvoiceNumber &middot; @ViewBag.CustomerName</h1>
+        <p class="topbar-subtitle">Review status, financial details, and manage this invoice.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
         @if (invoice.InvoiceStatusTypeId == 1)
@@ -34,7 +34,7 @@
     <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;flex-wrap:wrap;">
         <div>
             <div class="label">Status</div>
-            <div style="margin-top:10px;">
+            <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
                 @{
                     var statusPillClass = invoice.InvoiceStatusTypeId switch
                     {
@@ -45,6 +45,14 @@
                     };
                 }
                 <span class="pill @statusPillClass">@ViewBag.StatusName</span>
+                @if (invoice.InvoiceStatusTypeId == 1)
+                {
+                    <button type="button" class="btn btn-primary" style="font-size:13px;padding:6px 16px;" onclick="issueInvoice(@invoice.Id)">Issue Invoice</button>
+                }
+                @if (invoice.InvoiceStatusTypeId == 2 && invoice.InvoiceFinancialStatusTypeId != 3)
+                {
+                    <a href="/Revenue/InvoiceDetail/@invoice.Id" class="btn btn-primary" style="font-size:13px;padding:6px 16px;">Record Payment</a>
+                }
             </div>
         </div>
         <div style="display:flex;gap:32px;flex-wrap:wrap;">
@@ -288,6 +296,49 @@
                     await Swal.fire({
                         title: 'Done!',
                         text: 'VAT period reassigned successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function issueInvoice(invoiceId) {
+            var result = await Swal.fire({
+                title: 'Issue Invoice',
+                text: 'Are you sure you want to issue this invoice? Once issued, it cannot be edited.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                confirmButtonText: 'Yes, issue it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Issuing invoice...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Invoice/TransitionStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'invoiceId=' + invoiceId + '&newStatusId=2'
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Issued!',
+                        text: 'The invoice has been issued successfully.',
                         icon: 'success',
                         confirmButtonColor: '#0D5EA6'
                     });
