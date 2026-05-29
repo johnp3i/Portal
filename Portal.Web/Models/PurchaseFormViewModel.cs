@@ -16,6 +16,9 @@ public class PurchaseFormViewModel
     [Required(ErrorMessage = "Purchase origin type is required")]
     public int PurchaseOriginTypeId { get; set; } = 1;
 
+    [Required(ErrorMessage = "Purchase type is required")]
+    public int PurchaseTypeId { get; set; } = 3;
+
     [MaxLength(100)]
     public string? InvoiceNumber { get; set; }
 
@@ -39,4 +42,6 @@ public class PurchaseFormViewModel
     public List<Supplier> Suppliers { get; set; } = new();
     public List<ExpenseCategory> ExpenseCategories { get; set; } = new();
     public List<PurchaseOriginType> OriginTypes { get; set; } = new();
+    public List<PurchaseType> PurchaseTypes { get; set; } = new();
+    public List<ExpenseType> ExpenseTypes { get; set; } = new();
 }

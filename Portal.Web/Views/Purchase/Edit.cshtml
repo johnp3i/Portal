@@ -39,6 +39,7 @@
                     <span class="ac-status" id="categoryStatus"></span>
                 </div>
                 <span asp-validation-for="ExpenseCategoryId" class="field-validation-error"></span>
+                <span id="expenseTypeIndicator" class="expense-type-indicator" style="display:none;"></span>
             </div>
 
             <!-- Invoice Number -->
@@ -62,11 +63,47 @@
                 <span asp-validation-for="Description" class="field-validation-error"></span>
             </div>
 
+            <!-- Purchase Type -->
+            <div class="field" style="grid-column:1 / -1;">
+                <label>Purchase Type *</label>
+                <div class="radio-group" style="display:flex;gap:24px;margin-top:6px;">
+                    @foreach (var purchaseType in Model.PurchaseTypes)
+                    {
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
+                            <input type="radio" asp-for="PurchaseTypeId" value="@purchaseType.Id"
+                                   checked="@(Model.PurchaseTypeId == purchaseType.Id ? "checked" : null)" />
+                            @switch (purchaseType.Id)
+                            {
+                                case 1:
+                                    <span>Asset</span>
+                                    break;
+                                case 2:
+                                    <span>Stock</span>
+                                    break;
+                                case 3:
+                                    <span>Expense</span>
+                                    break;
+                                default:
+                                    <span>@purchaseType.Name</span>
+                                    break;
+                            }
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="PurchaseTypeId" class="field-validation-error"></span>
+            </div>
+
             <!-- Purchase Origin Type -->
             <div class="field" style="grid-column:1 / -1;">
                 <label>Purchase Origin Type *</label>
                 <div class="radio-group" style="display:flex;gap:24px;margin-top:6px;">
-                    @foreach (var originType in Model.OriginTypes)
+                    @{
+                        var displayOrder = new[] { 1, 2, 4, 3 };
+                        var orderedOriginTypes = displayOrder
+                            .Select(id => Model.OriginTypes.FirstOrDefault(o => o.Id == id))
+                            .Where(o => o != null);
+                    }
+                    @foreach (var originType in orderedOriginTypes)
                     {
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
                             <input type="radio" asp-for="PurchaseOriginTypeId" value="@originType.Id"
@@ -79,6 +116,9 @@
                                     break;
                                 case 2:
                                     <span>EU Reverse Charge</span>
+                                    break;
+                                case 4:
+                                    <span>EU Paid</span>
                                     break;
                                 case 3:
                                     <span>Non-EU</span>
@@ -138,6 +178,17 @@
 
 @section Scripts {
     <style>
+        .expense-type-indicator {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5E7385;
+            background: #EEF4F8;
+            padding: 3px 10px;
+            border-radius: 6px;
+            letter-spacing: 0.2px;
+        }
         .autocomplete-wrapper {
             position: relative;
         }
@@ -209,14 +260,39 @@
     <script>
         // ─── Data arrays (from server) ─────────────────────────────────────────
         var suppliers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Suppliers.Select(s => new { s.Id, s.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
-        var categories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategories.Select(c => new { c.Id, c.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+        var categories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategories.Select(c => new { c.Id, c.Name, c.ExpenseTypeId }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+        var expenseTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseTypes.Select(t => new { t.Id, t.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
 
         function getAntiForgeryToken() {
             return document.querySelector('input[name="__RequestVerificationToken"]').value;
         }
 
+        // ─── Expense Type Indicator ────────────────────────────────────────────
+        function updateExpenseTypeIndicator(categoryId) {
+            var indicator = document.getElementById('expenseTypeIndicator');
+            if (!categoryId) {
+                indicator.style.display = 'none';
+                indicator.textContent = '';
+                return;
+            }
+            var category = categories.find(function(c) { return c.id === categoryId; });
+            if (!category || !category.expenseTypeId) {
+                indicator.style.display = 'none';
+                indicator.textContent = '';
+                return;
+            }
+            var expenseType = expenseTypes.find(function(t) { return t.id === category.expenseTypeId; });
+            if (expenseType) {
+                indicator.textContent = expenseType.name;
+                indicator.style.display = '';
+            } else {
+                indicator.style.display = 'none';
+                indicator.textContent = '';
+            }
+        }
+
         // ─── Autocomplete Engine ───────────────────────────────────────────────
-        function initAutocomplete(input, hiddenInput, statusEl, getItems, createEndpoint, itemsArrayRef) {
+        function initAutocomplete(input, hiddenInput, statusEl, getItems, createEndpoint, itemsArrayRef, onSelect) {
             var dropdown = document.createElement('div');
             dropdown.className = 'autocomplete-dropdown';
             input.parentNode.appendChild(dropdown);
@@ -282,6 +358,7 @@
                 hiddenInput.value = id;
                 dropdown.classList.remove('open');
                 updateStatus(true);
+                if (onSelect) onSelect(id);
             }
 
             function updateStatus(resolved) {
@@ -292,10 +369,12 @@
                     statusEl.textContent = '\u26A0';
                     statusEl.className = 'ac-status unresolved';
                     hiddenInput.value = '';
+                    if (onSelect) onSelect(null);
                 } else {
                     statusEl.textContent = '';
                     statusEl.className = 'ac-status';
                     hiddenInput.value = '';
+                    if (onSelect) onSelect(null);
                 }
             }
 
@@ -360,6 +439,7 @@
                 if (match) {
                     hiddenInput.value = match.id;
                     updateStatus(true);
+                    if (onSelect) onSelect(match.id);
                 } else {
                     updateStatus(false);
                 }
@@ -442,18 +522,21 @@
             var countryLabel = document.getElementById('countryLabel');
 
             if (originTypeId === 2) {
+                // EU Reverse Charge: VAT disabled (forced to 0), Country required
                 vatInput.value = '0';
                 vatInput.disabled = true;
                 vatInput.style.background = '#EEF4F8';
                 vatHidden.value = '0';
                 countryField.style.display = '';
                 countryLabel.textContent = 'Country *';
-            } else if (originTypeId === 3) {
+            } else if (originTypeId === 3 || originTypeId === 4) {
+                // Non-EU and EU Paid: VAT enabled, Country required
                 vatInput.disabled = false;
                 vatInput.style.background = '';
                 countryField.style.display = '';
                 countryLabel.textContent = 'Country *';
             } else {
+                // Domestic: VAT enabled, Country hidden
                 vatInput.disabled = false;
                 vatInput.style.background = '';
                 countryField.style.display = 'none';
@@ -583,8 +666,15 @@
                 document.getElementById('categoryStatus'),
                 function() { return categories; },
                 '/ExpenseCategory/Create',
-                categories
+                categories,
+                function(categoryId) { updateExpenseTypeIndicator(categoryId); }
             );
+
+            // Show expense type indicator for pre-selected category on edit
+            var preSelectedCategoryId = parseInt(document.getElementById('categoryHidden').value);
+            if (preSelectedCategoryId) {
+                updateExpenseTypeIndicator(preSelectedCategoryId);
+            }
 
             onOriginTypeChanged();
         });

@@ -67,18 +67,16 @@
                                     <span class="pill pill-red">Inactive</span>
                                 }
                             </td>
-                            <td>
-                                <div style="display:flex;gap:12px;align-items:center;">
-                                    <a asp-action="Edit" asp-controller="Customer" asp-route-id="@customer.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
-                                    <a href="/Statement?customerId=@customer.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Statement</a>
-                                    @if (customer.IsActive)
-                                    {
-                                        <form method="post" asp-action="Deactivate" asp-controller="Customer" asp-route-id="@customer.Id" style="display:inline;">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" onclick="return confirm('Are you sure you want to deactivate this customer?')">Deactivate</button>
-                                        </form>
-                                    }
-                                </div>
+                            <td style="white-space:nowrap;">
+                                <a asp-action="Edit" asp-controller="Customer" asp-route-id="@customer.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                <a href="/Statement?customerId=@customer.Id" class="tbl-action tbl-action--primary">Statement</a>
+                                @if (customer.IsActive)
+                                {
+                                    <form method="post" asp-action="Deactivate" asp-controller="Customer" asp-route-id="@customer.Id" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="tbl-action tbl-action--danger" onclick="return confirm('Are you sure you want to deactivate this customer?')">Deactivate</button>
+                                    </form>
+                                }
                             </td>
                         </tr>
                     }

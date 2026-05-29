@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3 Inventors Portal — Business Management Platform</title>
+  <meta name="description" content="Run your business with structure, clarity, and control. Manage quotations, invoices, customers, VAT, purchases, and revenue from one operational workspace." />
+  <meta name="theme-color" content="#0D5EA6" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;--warning:#C8912E;--danger:#C24A4A;
+      --text:#0B1B28;--muted:#5E7385;--bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+      --shadow:0 24px 70px rgba(13,94,166,.11);--radius:28px;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);line-height:1.6;-webkit-font-smoothing:antialiased}
+    h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}.container{max-width:1180px;margin:0 auto;padding:0 28px}.nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.84);backdrop-filter:blur(14px);border-bottom:1px solid rgba(13,94,166,.08)}.nav-inner{height:76px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:13px;text-decoration:none;color:var(--text)}.brand-mark{width:44px;height:44px;border-radius:16px;background:linear-gradient(180deg,#1670BD,#0D5EA6);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;box-shadow:0 14px 26px rgba(13,94,166,.22)}.brand-title{font-weight:900;font-size:18px;letter-spacing:-.02em}.brand-sub{font-size:10px;font-weight:800;color:#6f8394;letter-spacing:.22em;text-transform:uppercase}.nav-links{display:flex;align-items:center;gap:28px}.nav-links a{font-size:14px;font-weight:700;color:var(--muted);text-decoration:none}.nav-links a:hover{color:var(--blue)}.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:15px;padding:13px 21px;font-weight:800;text-decoration:none;transition:.18s ease;border:1px solid transparent}.btn-primary{background:linear-gradient(180deg,#1B6FBA,var(--blue));color:#fff;box-shadow:0 16px 34px rgba(13,94,166,.24)}.btn-primary:hover{transform:translateY(-1px);background:linear-gradient(180deg,#227AC8,#0B4E89)}.btn-secondary{background:rgba(255,255,255,.78);border-color:rgba(13,94,166,.15);color:var(--blue-dark)}.btn-secondary:hover{background:#fff;border-color:rgba(13,94,166,.28)}.hero{padding:90px 0 72px}.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:54px;align-items:center}.eyebrow{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(13,94,166,.12);background:rgba(255,255,255,.86);border-radius:999px;padding:10px 15px;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-dark);box-shadow:0 10px 25px rgba(13,94,166,.06)}.dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 8px rgba(87,184,232,.12)}h1{margin-top:28px;font-size:64px;max-width:780px}.hero p{margin-top:24px;font-size:20px;color:var(--muted);max-width:660px;line-height:1.75}.hero-actions{margin-top:36px;display:flex;gap:14px;flex-wrap:wrap}.hero-foot{margin-top:36px;display:flex;gap:18px;flex-wrap:wrap;color:#536b80;font-size:14px;font-weight:700}.hero-foot span{display:inline-flex;align-items:center;gap:8px}.check{color:var(--green);font-weight:900}.product-card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(244,249,253,.96));border:1px solid var(--line);border-radius:34px;padding:28px;box-shadow:var(--shadow);overflow:hidden}.product-card::after{content:"";position:absolute;right:-90px;top:-90px;width:230px;height:230px;border-radius:999px;background:rgba(13,94,166,.11)}.screen{position:relative;z-index:1;border-radius:24px;background:#fff;border:1px solid rgba(13,94,166,.10);overflow:hidden;box-shadow:0 18px 45px rgba(13,94,166,.10)}.screen-top{height:48px;background:#F2F8FC;border-bottom:1px solid rgba(13,94,166,.08);display:flex;align-items:center;gap:8px;padding:0 18px}.mini-dot{width:10px;height:10px;border-radius:50%;background:#d7e4ee}.screen-body{padding:22px}.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.kpi{border-radius:18px;background:#F7FAFC;border:1px solid rgba(13,94,166,.08);padding:16px}.kpi label{display:block;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#60778c}.kpi strong{display:block;margin-top:6px;font-size:24px;color:var(--blue-dark)}.bar{height:12px;border-radius:999px;background:#e8f0f6;overflow:hidden;margin-top:8px}.bar span{display:block;height:100%;background:var(--green);border-radius:999px}.bar.blue span{background:var(--blue)}.table{margin-top:18px;border:1px solid rgba(13,94,166,.08);border-radius:16px;overflow:hidden}.row{display:grid;grid-template-columns:1fr .7fr .6fr;padding:12px 14px;border-top:1px solid rgba(13,94,166,.06);font-size:13px}.row:first-child{border-top:0;background:#F2F8FC;font-weight:900;color:#314b62;text-transform:uppercase;font-size:11px;letter-spacing:.08em}.pill{display:inline-flex;justify-content:center;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:900;background:rgba(18,152,103,.12);color:var(--green)}.section{padding:74px 0}.center{text-align:center;max-width:780px;margin:0 auto}.section h2{font-size:44px}.section .lead{margin-top:18px;color:var(--muted);font-size:18px;line-height:1.8}.feature-grid{margin-top:42px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.card{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(244,249,253,.98));border:1px solid var(--line);border-radius:26px;padding:28px;box-shadow:0 16px 38px rgba(13,94,166,.07)}.icon{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:rgba(13,94,166,.08);font-size:22px;margin-bottom:18px}.card h3{font-size:22px}.card p{margin-top:12px;color:var(--muted);font-size:15px;line-height:1.75}.split{display:grid;grid-template-columns:.9fr 1.1fr;gap:36px;align-items:start}.quote{background:#071B2A;color:#fff;border-radius:34px;padding:40px;box-shadow:var(--shadow);position:relative;overflow:hidden}.quote::after{content:"";position:absolute;right:-100px;bottom:-120px;width:280px;height:280px;border-radius:50%;background:rgba(87,184,232,.16)}.quote h2{font-size:40px;color:#fff}.quote p{margin-top:18px;color:#b8c9d6;font-size:17px;line-height:1.8}.stack{display:grid;gap:16px}.mini-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 12px 28px rgba(13,94,166,.06)}.mini-card strong{font-family:Manrope;font-size:20px}.mini-card p{margin-top:7px;color:var(--muted)}.pricing{background:#fff;border-top:1px solid rgba(13,94,166,.07);border-bottom:1px solid rgba(13,94,166,.07)}.pricing-grid{margin-top:42px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.price-card{background:linear-gradient(180deg,#fff,#F6FAFD);border:1px solid var(--line);border-radius:30px;padding:30px;box-shadow:0 18px 42px rgba(13,94,166,.08);position:relative}.price-card.featured{border-color:rgba(13,94,166,.35);transform:translateY(-8px);box-shadow:0 28px 58px rgba(13,94,166,.14)}.badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;border-radius:999px;padding:6px 15px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.price-card h3{font-size:26px}.desc{margin-top:8px;color:var(--muted);min-height:52px}.price{margin-top:20px;font-family:Manrope;font-size:46px;font-weight:900}.price span{font-size:16px;color:var(--muted);font-weight:700}.features{margin-top:24px;list-style:none}.features li{padding:10px 0;border-top:1px solid rgba(13,94,166,.07);font-size:15px;color:#334d64}.features li::before{content:"✓";color:var(--green);font-weight:900;margin-right:9px}.features li.off{color:#9aa9b5}.features li.off::before{content:"—";color:#aab7c0}.cta-strip{padding:78px 0}.cta-box{background:linear-gradient(135deg,#0B4E89,#0D5EA6 58%,#1683CF);border-radius:34px;padding:48px;color:#fff;display:flex;justify-content:space-between;gap:28px;align-items:center;box-shadow:0 30px 80px rgba(13,94,166,.25)}.cta-box h2{font-size:40px;color:#fff}.cta-box p{margin-top:12px;color:#d8e9f6;font-size:17px;max-width:620px}.cta-box .btn{background:#fff;color:var(--blue-dark);white-space:nowrap}.footer{padding:36px 0;color:#6f8394;font-size:13px;border-top:1px solid rgba(13,94,166,.08)}.footer-inner{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.footer b{color:#344f66}@media(max-width:980px){.hero-grid,.split{grid-template-columns:1fr}.feature-grid,.pricing-grid{grid-template-columns:1fr 1fr}.nav-links a:not(.btn){display:none}h1{font-size:46px}.section h2{font-size:36px}.price-card.featured{transform:none}.cta-box{flex-direction:column;align-items:flex-start}}@media(max-width:640px){.container{padding:0 18px}.nav-inner{height:auto;padding:14px 0}.brand-sub{display:none}.hero{padding:58px 0}.hero-actions,.cta-box{align-items:stretch}.btn{width:100%}.feature-grid,.pricing-grid,.kpis{grid-template-columns:1fr}h1{font-size:38px}.section{padding:52px 0}.nav-links{gap:10px}.product-card,.quote,.cta-box{border-radius:26px;padding:24px}}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" aria-label="3 Inventors Portal">
+        <div class="brand-mark">3</div>
+        <div><div class="brand-title">3 Inventors Portal</div><div class="brand-sub">Business Management Platform</div></div>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a><a href="#pricing">Pricing</a><a href="/Account/Login" class="btn btn-secondary">Sign In</a><a href="#pricing" class="btn btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow"><span class="dot"></span>Business Management Platform</div>
+          <h1>Run your business with structure, clarity, and control.</h1>
+          <p>Manage quotations, invoices, customers, VAT, purchases, and revenue from a single operational workspace — built for serious businesses without enterprise complexity.</p>
+          <div class="hero-actions"><a class="btn btn-primary" href="#pricing">Start Free Trial</a><a class="btn btn-secondary" href="#features">See Features</a></div>
+          <div class="hero-foot"><span><b class="check">✓</b> Quotation to invoice flow</span><span><b class="check">✓</b> VAT-ready operations</span><span><b class="check">✓</b> Built by 3 Inventors</span></div>
+        </div>
+        <div class="product-card" aria-label="Portal dashboard preview">
+          <div class="screen">
+            <div class="screen-top"><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-dot"></span></div>
+            <div class="screen-body">
+              <div class="kpis">
+                <div class="kpi"><label>Revenue</label><strong>€12,480</strong><div class="bar"><span style="width:78%"></span></div></div>
+                <div class="kpi"><label>Outstanding</label><strong>€1,260</strong><div class="bar blue"><span style="width:34%"></span></div></div>
+                <div class="kpi"><label>VAT Net</label><strong>€840</strong><div class="bar"><span style="width:55%"></span></div></div>
+                <div class="kpi"><label>Expenses</label><strong>€3,120</strong><div class="bar blue"><span style="width:62%"></span></div></div>
+              </div>
+              <div class="table">
+                <div class="row"><span>Invoice</span><span>Status</span><span>Amount</span></div>
+                <div class="row"><span>INV-00089</span><span><em class="pill">Paid</em></span><span>€420</span></div>
+                <div class="row"><span>INV-00090</span><span><em class="pill">Issued</em></span><span>€1,180</span></div>
+                <div class="row"><span>INV-00091</span><span><em class="pill">Draft</em></span><span>€760</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="center"><h2>Everything your business needs to operate professionally.</h2><p class="lead">The Portal keeps daily business administration structured, traceable, and easy to control.</p></div>
+        <div class="feature-grid">
+          <div class="card"><div class="icon">📋</div><h3>Sales</h3><p>Customers, quotations, proposals, invoices, credit notes, and shared document links.</p></div>
+          <div class="card"><div class="icon">💶</div><h3>Finance</h3><p>Revenue control, payment recording, outstanding balances, statements, and overdue visibility.</p></div>
+          <div class="card"><div class="icon">📊</div><h3>VAT</h3><p>VAT periods, input/output VAT computation, submission tracking, and export-ready reports.</p></div>
+          <div class="card"><div class="icon">📦</div><h3>Purchasing</h3><p>Suppliers, purchase records, expense categories, CSV import, and spend tracking.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container split">
+        <div class="quote"><h2>Designed for operators, not accounting complexity.</h2><p>Many tools are built around accounting workflows. 3 Inventors Portal is built around the operational rhythm of a business: quote, invoice, collect, purchase, report, and control.</p></div>
+        <div class="stack">
+          <div class="mini-card"><strong>Clear daily workspace</strong><p>Users immediately see revenue, outstanding balances, overdue invoices, expenses, and VAT exposure.</p></div>
+          <div class="mini-card"><strong>Professional documents</strong><p>Create structured quotations, invoices, credit notes, customer statements, and downloadable PDFs.</p></div>
+          <div class="mini-card"><strong>Controlled growth</strong><p>Start with essentials, then grow into supplier management, audit logs, multi-user permissions, inventory, and production tools.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section pricing" id="pricing">
+      <div class="container">
+        <div class="center"><h2>Choose your operational foundation.</h2><p class="lead">Start simple. Upgrade when your business needs more control.</p></div>
+        <div class="pricing-grid">
+          <div class="price-card"><h3>Starter</h3><p class="desc">For solo operators and small businesses that need professional invoicing.</p><div class="price">€29<span>/mo</span></div><ul class="features"><li>Quotations & proposals</li><li>Invoicing & credit notes</li><li>Revenue control</li><li>Customer registry</li><li>Product catalog</li><li>VAT submissions</li><li>1 user</li><li class="off">Purchases & expenses</li></ul><a class="btn btn-secondary" href="/Account/Register?plan=starter">Get Started</a></div>
+          <div class="price-card featured"><div class="badge">Most Practical</div><h3>Business</h3><p class="desc">For growing businesses that need full sales, finance, and expense visibility.</p><div class="price">€59<span>/mo</span></div><ul class="features"><li>Everything in Starter</li><li>Purchases & expenses</li><li>Supplier management</li><li>Customer statements</li><li>Audit logs</li><li>CSV import</li><li>Up to 5 users</li><li class="off">Inventory & BOM</li></ul><a class="btn btn-primary" href="/Account/Register?plan=business">Get Started</a></div>
+          <div class="price-card"><h3>Enterprise</h3><p class="desc">For larger or operationally complex businesses needing advanced modules.</p><div class="price">€149<span>/mo</span></div><ul class="features"><li>Everything in Business</li><li>Inventory management</li><li>Bill of Materials</li><li>Production planning</li><li>Advanced analytics</li><li>Unlimited users</li><li>Priority support</li><li>API access</li></ul><a class="btn btn-secondary" href="/Account/Register?plan=enterprise">Contact Sales</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-strip">
+      <div class="container"><div class="cta-box"><div><h2>Ready to bring structure to your business?</h2><p>Start with the core platform today. Keep your documents, revenue, VAT, purchases, and customers under control.</p></div><a class="btn" href="#pricing">View Pricing</a></div></div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container footer-inner"><span><b>3 Inventors Limited</b> · Business Management Platform</span><span>Knowledge · Professionalism · Innovation</span></div></footer>
+</body>
+</html>

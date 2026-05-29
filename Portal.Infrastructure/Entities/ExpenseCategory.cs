@@ -14,10 +14,14 @@ public class ExpenseCategory
 
     public bool IsActive { get; set; }
 
+    public int? ExpenseTypeId { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties
     public Business Business { get; set; } = null!;
+
+    public ExpenseType? ExpenseType { get; set; }
 
     public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
 }

@@ -39,7 +39,7 @@ public class QuotationRepository : GenericStoredProcedureRepository<Quotation>
         }
     }
 
-    public async Task<Quotation?> GetByIdAndBusinessIdAsync(int id, int businessId)
+    public virtual async Task<Quotation?> GetByIdAndBusinessIdAsync(int id, int businessId)
     {
         try
         {
@@ -155,7 +155,7 @@ public class QuotationRepository : GenericStoredProcedureRepository<Quotation>
         }
     }
 
-    public async Task UpdateAsync(Quotation entity)
+    public virtual async Task UpdateAsync(Quotation entity)
     {
         try
         {

@@ -103,16 +103,14 @@
                                 }
                             </td>
                             <td>@(ViewBag.CurrencySymbol)@quotation.TotalAmount.ToString("N2")</td>
-                            <td>
-                                <div style="display:flex;gap:12px;align-items:center;">
-                                    <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Detail</a>
-                                    <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
-                                    <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" style="color:var(--blue);font-weight:700;font-size:13px;">Preview</a>
-                                    @if (quotation.QuotationStatusTypeId == 1)
-                                    {
-                                        <a href="javascript:void(0)" onclick="deleteQuotation(@quotation.Id, '@Html.Raw(quotation.Reference)')" style="color:var(--danger);font-weight:700;font-size:13px;">Delete</a>
-                                    }
-                                </div>
+                            <td style="white-space:nowrap;">
+                                <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Detail</a>
+                                <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>
+                                @if (quotation.QuotationStatusTypeId == 1)
+                                {
+                                    <a href="javascript:void(0)" onclick="deleteQuotation(@quotation.Id, '@Html.Raw(quotation.Reference)')" class="tbl-action tbl-action--danger">Delete</a>
+                                }
                             </td>
                         </tr>
                     }

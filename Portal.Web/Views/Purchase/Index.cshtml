@@ -13,6 +13,8 @@
         <a asp-action="Create" class="btn btn-primary">Create Purchase</a>
         <a asp-action="BulkEntry" class="btn btn-secondary">Bulk Entry</a>
         <a asp-action="CsvImport" class="btn btn-secondary">CSV Import</a>
+        <a class="btn btn-secondary" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export CSV</a>
+        <a class="btn btn-secondary" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export PDF</a>
     </div>
 </div>
 
@@ -50,7 +52,29 @@
                 @foreach (var originType in Model.OriginTypes)
                 {
                     <option value="@originType.Id" selected="@(Model.PurchaseOriginTypeId == originType.Id)">
-                        @(originType.Id == 2 ? "EU Reverse Charge" : originType.Id == 3 ? "Non-EU" : originType.Name)
+                        @(originType.Id == 2 ? "EU Reverse Charge" : originType.Id == 3 ? "Non-EU" : originType.Id == 4 ? "EU Paid" : originType.Name)
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+            <label for="purchaseTypeId">Purchase Type</label>
+            <select id="purchaseTypeId" name="purchaseTypeId">
+                <option value="">All Types</option>
+                @foreach (var purchaseType in Model.PurchaseTypes)
+                {
+                    <option value="@purchaseType.Id" selected="@(Model.PurchaseTypeId == purchaseType.Id)">@purchaseType.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="flex:1;min-width:180px;">
+            <label for="vatPeriodId">VAT Period</label>
+            <select id="vatPeriodId" name="vatPeriodId">
+                <option value="">All Periods</option>
+                @foreach (var period in Model.VatPeriods)
+                {
+                    <option value="@period.Id" selected="@(Model.VatPeriodId == period.Id)">
+                        @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
                     </option>
                 }
             </select>
@@ -80,6 +104,10 @@
         p.VatSubmissionPeriod != null
         && (p.InvoiceDate < p.VatSubmissionPeriod.PeriodStartDate
             || p.InvoiceDate > p.VatSubmissionPeriod.PeriodEndDate));
+    var domesticCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 1);
+    var euRcCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 2);
+    var euPaidCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 4);
+    var nonEuCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 3);
 }
 <section class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:18px;">
@@ -100,6 +128,25 @@
             <div style="font-size:28px;font-weight:800;color:@(outdatedCount > 0 ? "#C24A4A" : "#1a2b3c");margin-top:6px;font-family:'Manrope',sans-serif;">@outdatedCount</div>
         </div>
     </div>
+    <!-- Origin Type Breakdown -->
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid rgba(13,94,166,0.06);">
+        <div>
+            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Domestic</span>
+            <div style="font-size:1rem;font-weight:700;margin-top:4px;">@domesticCount</div>
+        </div>
+        <div>
+            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU RC</span>
+            <div style="font-size:1rem;font-weight:700;color:#0D5EA6;margin-top:4px;">@euRcCount</div>
+        </div>
+        <div>
+            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU Paid</span>
+            <div style="font-size:1rem;font-weight:700;color:#1A8AB5;margin-top:4px;">@euPaidCount</div>
+        </div>
+        <div>
+            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Non-EU</span>
+            <div style="font-size:1rem;font-weight:700;color:#8D5D07;margin-top:4px;">@nonEuCount</div>
+        </div>
+    </div>
 </section>
 
 <!-- Purchase Table -->
@@ -117,6 +164,7 @@
                     <th style="text-align:right;">VAT</th>
                     <th style="text-align:right;">Total</th>
                     <th>Origin</th>
+                    <th>Type</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -141,6 +189,24 @@
                             {
                                 <span class="pill pill-gold">Non-EU</span>
                             }
+                            else if (purchase.PurchaseOriginTypeId == 4)
+                            {
+                                <span class="pill pill-cyan">EU Paid</span>
+                            }
+                        </td>
+                        <td>
+                            @if (purchase.PurchaseTypeId == 1)
+                            {
+                                <span class="pill pill-blue">Asset</span>
+                            }
+                            else if (purchase.PurchaseTypeId == 2)
+                            {
+                                <span class="pill pill-green">Stock</span>
+                            }
+                            else if (purchase.PurchaseTypeId == 3)
+                            {
+                                <span class="pill pill-grey">Expense</span>
+                            }
                         </td>
                         <td>
                             @if (purchase.IsCancelled)
@@ -154,11 +220,11 @@
                                 <span class="pill pill-red" title="This purchase was reported in a different VAT period than its invoice date">Outdated — @purchase.VatSubmissionPeriod.PeriodLabel</span>
                             }
                         </td>
-                        <td style="display:flex;gap:8px;align-items:center;">
-                            <a asp-action="Edit" asp-route-id="@purchase.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                        <td style="white-space:nowrap;">
+                            <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
                             @if (!purchase.IsCancelled)
                             {
-                                <button type="button" class="btn-cancel-purchase" data-id="@purchase.Id" style="background:none;border:none;color:#C24A4A;font-weight:700;font-size:13px;cursor:pointer;padding:0;">Cancel</button>
+                                <button type="button" class="tbl-action tbl-action--danger btn-cancel-purchase" data-id="@purchase.Id">Cancel</button>
                             }
                         </td>
                     </tr>

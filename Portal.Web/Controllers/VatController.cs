@@ -7,6 +7,9 @@ using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
 using Portal.Web.Models;
 using Portal.Web.Security;
+using Portal.Web.Services;
+using PuppeteerSharp;
+using PuppeteerSharp.Media;
 
 namespace Portal.Web.Controllers;
 
@@ -18,17 +21,20 @@ public class VatController : Controller
     private readonly IVatSubmissionService _vatSubmissionService;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly PortalDbContext _dbContext;
+    private readonly IViewRenderService _viewRenderService;
 
     public VatController(
         IVatPeriodGenerationService vatPeriodGenerationService,
         IVatSubmissionService vatSubmissionService,
         ICurrentTenantService currentTenantService,
-        PortalDbContext dbContext)
+        PortalDbContext dbContext,
+        IViewRenderService viewRenderService)
     {
         _vatPeriodGenerationService = vatPeriodGenerationService;
         _vatSubmissionService = vatSubmissionService;
         _currentTenantService = currentTenantService;
         _dbContext = dbContext;
+        _viewRenderService = viewRenderService;
     }
 
     [HttpGet]
@@ -350,5 +356,185 @@ public class VatController : Controller
                 })
                 .ToListAsync()
         });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PeriodReport(int periodId)
+    {
+        var model = await BuildPeriodReportModelAsync(periodId);
+        if (model == null) return NotFound();
+
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PeriodReportPdf(int periodId)
+    {
+        var model = await BuildPeriodReportModelAsync(periodId);
+        if (model == null) return NotFound();
+
+        var html = await _viewRenderService.RenderViewToStringAsync("~/Views/Vat/_PeriodReportPdf.cshtml", model);
+
+        await new BrowserFetcher().DownloadAsync();
+
+        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        {
+            Headless = true,
+            Args = new[] { "--no-sandbox", "--disable-setuid-sandbox" }
+        });
+
+        await using var page = await browser.NewPageAsync();
+        await page.SetContentAsync(html, new NavigationOptions
+        {
+            WaitUntil = new[] { WaitUntilNavigation.Networkidle0 }
+        });
+
+        var pdfBytes = await page.PdfDataAsync(new PdfOptions
+        {
+            Format = PaperFormat.A4,
+            PrintBackground = true,
+            MarginOptions = new MarginOptions
+            {
+                Top = "12mm",
+                Bottom = "12mm",
+                Left = "12mm",
+                Right = "12mm"
+            }
+        });
+
+        var fileName = $"vat-period-report-{model.PeriodStartDate:yyyyMMdd}-{model.PeriodEndDate:yyyyMMdd}.pdf";
+        return File(pdfBytes, "application/pdf", fileName);
+    }
+
+    private async Task<VatPeriodReportViewModel?> BuildPeriodReportModelAsync(int periodId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        var period = await _dbContext.VatSubmissionPeriods
+            .FirstOrDefaultAsync(p => p.Id == periodId && p.BusinessId == businessId);
+
+        if (period == null) return null;
+
+        var profile = await _dbContext.BusinessProfiles
+            .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+
+        var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+        // Generate all months in the period
+        var months = new List<(DateOnly Start, DateOnly End, string Name)>();
+        var current = new DateOnly(period.PeriodStartDate.Year, period.PeriodStartDate.Month, 1);
+        var periodEnd = period.PeriodEndDate;
+        while (current <= periodEnd)
+        {
+            var monthEnd = current.AddMonths(1).AddDays(-1);
+            if (monthEnd > periodEnd) monthEnd = periodEnd;
+            months.Add((current, monthEnd, current.ToString("MMMM yyyy")));
+            current = current.AddMonths(1);
+        }
+
+        // Load invoices for this period
+        var invoices = await _dbContext.Invoices
+            .Where(i => i.BusinessId == businessId
+                && i.InvoiceStatusTypeId == 2
+                && !i.IsDeleted
+                && (i.VatSubmissionPeriodId == periodId
+                    || (i.VatSubmissionPeriodId == null
+                        && i.InvoiceDate >= period.PeriodStartDate
+                        && i.InvoiceDate <= period.PeriodEndDate)))
+            .Select(i => new { i.InvoiceDate, i.Subtotal, i.TaxAmount, i.TotalAmount })
+            .ToListAsync();
+
+        // Load purchases for this period
+        var purchases = await _dbContext.Purchases
+            .Where(p => p.BusinessId == businessId
+                && !p.IsCancelled
+                && (p.VatSubmissionPeriodId == periodId
+                    || (p.VatSubmissionPeriodId == null
+                        && p.InvoiceDate >= period.PeriodStartDate
+                        && p.InvoiceDate <= period.PeriodEndDate)))
+            .Select(p => new { p.InvoiceDate, p.AmountExcludingVat, p.VatAmount, p.TotalAmount, p.PurchaseOriginTypeId })
+            .ToListAsync();
+
+        // Section 1: Sales by month
+        var salesByMonth = months.Select(m =>
+        {
+            var monthInvoices = invoices.Where(i => i.InvoiceDate >= m.Start && i.InvoiceDate <= m.End).ToList();
+            return new MonthlyAmountRow
+            {
+                MonthName = m.Name,
+                Net = monthInvoices.Sum(i => i.Subtotal),
+                Vat = monthInvoices.Sum(i => i.TaxAmount),
+                Gross = monthInvoices.Sum(i => i.TotalAmount),
+                Count = monthInvoices.Count
+            };
+        }).ToList();
+
+        // Section 2: Purchases by month
+        var purchasesByMonth = months.Select(m =>
+        {
+            var monthPurchases = purchases.Where(p => p.InvoiceDate >= m.Start && p.InvoiceDate <= m.End).ToList();
+            return new MonthlyAmountRow
+            {
+                MonthName = m.Name,
+                Net = monthPurchases.Sum(p => p.AmountExcludingVat),
+                Vat = monthPurchases.Sum(p => p.VatAmount),
+                Gross = monthPurchases.Sum(p => p.TotalAmount),
+                Count = monthPurchases.Count
+            };
+        }).ToList();
+
+        // Section 3: Purchases by origin per month
+        var purchasesByOriginPerMonth = months.Select(m =>
+        {
+            var monthPurchases = purchases.Where(p => p.InvoiceDate >= m.Start && p.InvoiceDate <= m.End).ToList();
+            return new MonthlyOriginRow
+            {
+                MonthName = m.Name,
+                Domestic = monthPurchases.Where(p => p.PurchaseOriginTypeId == 1).Sum(p => p.AmountExcludingVat),
+                EuReverseCharge = monthPurchases.Where(p => p.PurchaseOriginTypeId == 2).Sum(p => p.AmountExcludingVat),
+                NonEu = monthPurchases.Where(p => p.PurchaseOriginTypeId == 3).Sum(p => p.AmountExcludingVat),
+                Total = monthPurchases.Sum(p => p.AmountExcludingVat)
+            };
+        }).ToList();
+
+        // Section 4: Period totals by origin
+        var originNames = new Dictionary<int, string>
+        {
+            { 1, "Domestic" },
+            { 2, "EU Reverse Charge" },
+            { 3, "Non-EU" }
+        };
+
+        var periodTotalsByOrigin = purchases
+            .GroupBy(p => p.PurchaseOriginTypeId)
+            .OrderBy(g => g.Key)
+            .Select(g => new OriginTotalRow
+            {
+                OriginName = originNames.GetValueOrDefault(g.Key, "Other"),
+                Net = g.Sum(p => p.AmountExcludingVat),
+                Vat = g.Sum(p => p.VatAmount),
+                Gross = g.Sum(p => p.TotalAmount),
+                Count = g.Count()
+            })
+            .ToList();
+
+        var totalOutputVat = invoices.Sum(i => i.TaxAmount);
+        var totalInputVat = purchases.Where(p => p.PurchaseOriginTypeId != 2).Sum(p => p.VatAmount);
+
+        return new VatPeriodReportViewModel
+        {
+            PeriodId = period.Id,
+            PeriodLabel = period.PeriodLabel,
+            PeriodStartDate = period.PeriodStartDate,
+            PeriodEndDate = period.PeriodEndDate,
+            CurrencySymbol = currencySymbol,
+            OutputVat = totalOutputVat,
+            InputVat = totalInputVat,
+            TaxOwed = totalOutputVat - totalInputVat,
+            SalesByMonth = salesByMonth,
+            PurchasesByMonth = purchasesByMonth,
+            PurchasesByOriginPerMonth = purchasesByOriginPerMonth,
+            PeriodTotalsByOrigin = periodTotalsByOrigin
+        };
     }
 }

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3 Inventors Portal — Business Management Platform</title>
+  <meta name="description" content="3 Inventors Portal is a simple, clear, reliable business management platform for quotations, invoicing, VAT, purchases, revenue control, and customer management." />
+  <meta name="theme-color" content="#0D5EA6" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#0D5EA6; --blue-dark:#0B4E89; --cyan:#57B8E8; --green:#129867;
+      --warning:#C8912E; --danger:#C24A4A; --text:#0B1B28; --muted:#5E7385;
+      --bg:#F7FAFC; --bg2:#EEF4F8; --surface:#fff; --line:rgba(13,94,166,.10);
+      --shadow:0 22px 60px rgba(13,94,166,.10);
+    }
+    html { scroll-behavior:smooth; }
+    body {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(13,94,166,.09), transparent 30%),
+        radial-gradient(circle at 80% 12%, rgba(87,184,232,.08), transparent 28%),
+        linear-gradient(180deg, #FBFDFF 0%, var(--bg2) 48%, var(--bg) 100%);
+      line-height: 1.6;
+    }
+    h1,h2,h3 { font-family: Manrope, Inter, sans-serif; letter-spacing:-.035em; }
+    a { color: inherit; text-decoration:none; }
+    .wrap { max-width:1180px; margin:0 auto; padding:0 28px; }
+    .nav {
+      position:sticky; top:0; z-index:20; backdrop-filter:blur(14px);
+      background:rgba(255,255,255,.86); border-bottom:1px solid rgba(13,94,166,.08);
+    }
+    .nav-inner { height:76px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+    .brand { display:flex; align-items:center; gap:14px; }
+    .brand-mark { width:42px; height:42px; border-radius:15px; display:grid; place-items:center; background:#fff; border:1px solid var(--line); color:var(--blue-dark); font-weight:800; box-shadow:0 10px 22px rgba(13,94,166,.08); }
+    .brand-title { font-weight:800; font-size:17px; line-height:1.1; }
+    .brand-sub { font-size:11px; text-transform:uppercase; letter-spacing:.18em; color:var(--muted); margin-top:3px; font-weight:700; }
+    .nav-links { display:flex; align-items:center; gap:28px; color:var(--muted); font-size:14px; font-weight:700; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:14px; padding:12px 20px; font-weight:800; transition:.18s ease; border:1px solid transparent; }
+    .btn-primary { background:linear-gradient(180deg, #1A6BB8 0%, var(--blue) 100%); color:#fff; box-shadow:0 14px 28px rgba(13,94,166,.22); }
+    .btn-primary:hover { transform:translateY(-1px); background:var(--blue-dark); }
+    .btn-secondary { background:#fff; border-color:rgba(13,94,166,.14); color:var(--blue-dark); }
+    .btn-secondary:hover { background:rgba(13,94,166,.05); }
+    .hero { padding:92px 0 64px; text-align:center; }
+    .eyebrow { display:inline-flex; align-items:center; gap:10px; padding:9px 14px; border-radius:999px; background:rgba(255,255,255,.88); border:1px solid var(--line); color:var(--blue-dark); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.16em; box-shadow:0 10px 22px rgba(13,94,166,.06); }
+    .dot { width:9px; height:9px; border-radius:999px; background:var(--cyan); box-shadow:0 0 0 8px rgba(87,184,232,.11); }
+    h1 { max-width:850px; margin:24px auto 0; font-size:clamp(42px, 6vw, 76px); line-height:.97; font-weight:800; }
+    .highlight { background:linear-gradient(135deg, var(--blue), var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .hero p { max-width:690px; margin:26px auto 0; color:var(--muted); font-size:20px; line-height:1.75; }
+    .hero-cta { margin-top:38px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+    .trust { display:grid; grid-template-columns:repeat(6, 1fr); gap:14px; margin-top:56px; }
+    .trust-card { background:rgba(255,255,255,.92); border:1px solid rgba(13,94,166,.08); border-radius:18px; padding:18px 14px; font-size:13px; font-weight:800; color:#20384d; box-shadow:0 10px 24px rgba(13,94,166,.05); }
+    .section { padding:76px 0; }
+    .section-head { text-align:center; max-width:760px; margin:0 auto 42px; }
+    .section-head h2 { font-size:clamp(32px,4vw,48px); line-height:1.08; }
+    .section-head p { margin-top:16px; color:var(--muted); font-size:18px; }
+    .grid-4 { display:grid; grid-template-columns:repeat(4, 1fr); gap:20px; }
+    .card { background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(244,249,253,.96)); border:1px solid rgba(13,94,166,.08); border-radius:26px; padding:28px; box-shadow:0 16px 34px rgba(13,94,166,.07); }
+    .card small { color:var(--blue-dark); text-transform:uppercase; letter-spacing:.14em; font-weight:800; font-size:11px; }
+    .card h3 { margin-top:12px; font-size:23px; }
+    .card p { margin-top:12px; color:var(--muted); }
+    .pricing-wrap { display:grid; grid-template-columns:1fr .72fr; gap:28px; align-items:stretch; }
+    .pricing-card { position:relative; overflow:hidden; background:#fff; border:1px solid rgba(13,94,166,.14); border-radius:32px; padding:38px; box-shadow:var(--shadow); }
+    .pricing-card::after { content:""; position:absolute; right:-90px; top:-90px; width:240px; height:240px; border-radius:999px; background:rgba(87,184,232,.12); }
+    .pricing-card > * { position:relative; z-index:1; }
+    .badge { display:inline-flex; padding:7px 12px; border-radius:999px; background:rgba(18,152,103,.10); color:#0C734B; border:1px solid rgba(18,152,103,.16); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; }
+    .price { margin-top:22px; font-family:Manrope, Inter, sans-serif; font-size:62px; line-height:1; font-weight:800; letter-spacing:-.04em; }
+    .price span { font-size:18px; color:var(--muted); font-weight:700; letter-spacing:0; }
+    .per-day { margin-top:12px; display:inline-flex; padding:10px 14px; border-radius:999px; background:rgba(13,94,166,.07); color:var(--blue-dark); font-weight:800; }
+    .billing-note { margin-top:10px; color:var(--muted); font-size:14px; }
+    .features { columns:2; list-style:none; margin-top:28px; column-gap:32px; }
+    .features li { break-inside:avoid; padding:8px 0 8px 28px; position:relative; font-size:15px; color:#20384d; }
+    .features li::before { content:"✓"; position:absolute; left:0; color:var(--green); font-weight:900; }
+    .contact-card { background:linear-gradient(180deg, rgba(13,94,166,.08), rgba(87,184,232,.05)); border:1px solid rgba(13,94,166,.12); border-radius:32px; padding:34px; }
+    .contact-card h3 { font-size:30px; line-height:1.12; }
+    .contact-card p { margin-top:16px; color:var(--muted); }
+    .contact-list { margin-top:22px; display:grid; gap:12px; }
+    .contact-list div { background:rgba(255,255,255,.76); border:1px solid rgba(13,94,166,.08); border-radius:16px; padding:14px; font-weight:700; color:#20384d; }
+    .story { display:grid; grid-template-columns:.9fr 1.1fr; gap:28px; align-items:center; }
+    .story-box { background:#fff; border:1px solid rgba(13,94,166,.08); border-radius:32px; padding:36px; box-shadow:var(--shadow); }
+    .quote { font-size:25px; line-height:1.45; font-weight:800; font-family:Manrope, Inter, sans-serif; letter-spacing:-.03em; }
+    .footer { padding:44px 0; border-top:1px solid rgba(13,94,166,.08); color:var(--muted); font-size:13px; }
+    .footer-inner { display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+    @media (max-width: 980px) {
+      .nav-links a:not(.btn) { display:none; }
+      .trust { grid-template-columns:repeat(2,1fr); }
+      .grid-4, .pricing-wrap, .story { grid-template-columns:1fr; }
+      .features { columns:1; }
+      .hero { padding-top:68px; }
+    }
+    @media (max-width: 620px) {
+      .wrap { padding:0 20px; }
+      .nav-inner { height:auto; padding:14px 0; flex-direction:column; align-items:flex-start; }
+      .nav-links { width:100%; justify-content:space-between; }
+      .trust { grid-template-columns:1fr; }
+      .pricing-card, .contact-card, .story-box, .card { padding:24px; border-radius:24px; }
+      .price { font-size:50px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top" aria-label="3 Inventors Portal Home">
+        <div class="brand-mark">3I</div>
+        <div>
+          <div class="brand-title">3 Inventors Portal</div>
+          <div class="brand-sub">Business Management Platform</div>
+        </div>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#purpose">Purpose</a>
+        <a class="btn btn-secondary" href="/Account/Login">Sign In</a>
+        <a class="btn btn-primary" href="#pricing">Start Free Trial</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow"><span class="dot"></span> Simple. Clear. Reliable.</div>
+        <h1>Business management that respects your <span class="highlight">time and attention.</span></h1>
+        <p>Manage quotations, invoices, revenue, VAT, purchases, customers, suppliers, and products from one clean operational workspace — without unnecessary complexity.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#pricing">Start Free Trial</a>
+          <a class="btn btn-secondary" href="#features">See What’s Included</a>
+        </div>
+        <div class="trust" aria-label="Included modules">
+          <div class="trust-card">Quotations</div>
+          <div class="trust-card">Invoicing</div>
+          <div class="trust-card">Revenue</div>
+          <div class="trust-card">VAT</div>
+          <div class="trust-card">Purchases</div>
+          <div class="trust-card">Customers</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Everything needed to run daily business administration professionally.</h2>
+          <p>The Portal focuses on the work businesses actually use every day: documents, payments, customers, purchases, VAT, and financial visibility.</p>
+        </div>
+        <div class="grid-4">
+          <article class="card">
+            <small>Sales</small>
+            <h3>Quotations & Invoices</h3>
+            <p>Create professional quotations, convert them to invoices, issue credit notes, and share documents through secure links.</p>
+          </article>
+          <article class="card">
+            <small>Finance</small>
+            <h3>Revenue Control</h3>
+            <p>Track payments, outstanding balances, overdue invoices, customer statements, and revenue status from a clear dashboard.</p>
+          </article>
+          <article class="card">
+            <small>Compliance</small>
+            <h3>VAT Submissions</h3>
+            <p>Organise VAT periods, review input and output VAT, and keep your submission workflow structured and traceable.</p>
+          </article>
+          <article class="card">
+            <small>Operations</small>
+            <h3>Purchases & Products</h3>
+            <p>Manage suppliers, expenses, product catalogues, categories, audit logs, and the operational records behind your business.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>One plan. Everything currently available.</h2>
+          <p>Simple annual pricing for the first released subscription tier. No confusing packages. No hidden module maze.</p>
+        </div>
+        <div class="pricing-wrap">
+          <article class="pricing-card">
+            <span class="badge">Available now</span>
+            <h3 style="font-size:34px;margin-top:18px;">Business Management Platform</h3>
+            <p style="margin-top:10px;color:var(--muted);font-size:17px;">For businesses that want a clean and reliable way to manage core administration.</p>
+            <div class="price">€348 <span>/ year</span></div>
+            <div class="per-day">Less than €1 per day</div>
+            <div class="billing-note">Paid annually. Equivalent to €29/month.</div>
+            <ul class="features">
+              <li>Quotations & proposals</li>
+              <li>Invoices & credit notes</li>
+              <li>Revenue control</li>
+              <li>Customer registry</li>
+              <li>Product catalogue</li>
+              <li>VAT submissions</li>
+              <li>Purchases & expenses</li>
+              <li>Supplier management</li>
+              <li>Customer statements</li>
+              <li>Audit logs</li>
+              <li>CSV and PDF exports</li>
+              <li>Up to 5 users</li>
+            </ul>
+            <div style="margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;">
+              <a class="btn btn-primary" href="/Account/Register?plan=business">Start Free Trial</a>
+              <a class="btn btn-secondary" href="/Account/Login">Already have an account?</a>
+            </div>
+          </article>
+
+          <aside class="contact-card">
+            <h3>Need something beyond the standard plan?</h3>
+            <p>For additional users, custom onboarding, integrations, operational modules, or business-specific requirements, contact 3 Inventors directly.</p>
+            <div class="contact-list">
+              <div>Additional users</div>
+              <div>Custom integrations</div>
+              <div>Advanced operational modules</div>
+              <div>Tailored business setup</div>
+            </div>
+            <a class="btn btn-secondary" style="margin-top:24px;" href="mailto:johnp@3inventors.com">Contact Us</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="purpose">
+      <div class="wrap story">
+        <div class="section-head" style="text-align:left;margin:0;">
+          <h2>Built first for our own business needs.</h2>
+          <p>We wanted a platform that was simple to use, clear in structure, reliable in daily work, and not overcrowded with features we do not use.</p>
+        </div>
+        <div class="story-box">
+          <div class="quote">“Business software should help the work become clearer — not make the business feel heavier.”</div>
+          <p style="margin-top:18px;color:var(--muted);">3 Inventors Portal keeps the focus on practical administration, traceable documents, financial visibility, and calm daily execution.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div>© 2026 3 Inventors Limited · Business Management Platform</div>
+      <div>Simple. Clear. Reliable.</div>
+    </div>
+  </footer>
+</body>
+</html>

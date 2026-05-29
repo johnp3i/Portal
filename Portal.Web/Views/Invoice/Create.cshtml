@@ -116,6 +116,11 @@
                 + '<label>Unit Price *</label>'
                 + '<input type="number" name="lines[' + idx + '].UnitPrice" step="0.01" min="0" required value="0" />'
                 + '</div>'
+                + '<div style="grid-column:1 / -1;display:flex;align-items:center;gap:8px;padding:8px 0;">'
+                + '<input type="checkbox" name="lines[' + idx + '].IsReverseCharge" value="true" id="line-rc-' + idx + '" onchange="toggleCreateReverseCharge(this, ' + idx + ')" style="width:16px;height:16px;" />'
+                + '<label for="line-rc-' + idx + '" style="margin:0;font-size:13px;font-weight:600;">Reverse Charge</label>'
+                + '<span style="font-size:12px;color:#5a6a7a;margin-left:4px;">— VAT is accounted for by the buyer (B2B EU cross-border services)</span>'
+                + '</div>'
                 + '<div class="field">'
                 + '<label>VAT Rate (%)</label>'
                 + '<input type="number" name="lines[' + idx + '].VatRate" step="0.01" min="0" max="100" value="0" />'
@@ -153,6 +158,21 @@
         function removeLineItem(idx) {
             var el = document.getElementById('line-' + idx);
             if (el) el.remove();
+        }
+
+        function toggleCreateReverseCharge(checkbox, idx) {
+            var vatInput = document.querySelector('input[name="lines[' + idx + '].VatRate"]');
+            if (checkbox.checked) {
+                vatInput.dataset.previousVatRate = vatInput.value;
+                vatInput.value = '0';
+                vatInput.readOnly = true;
+                vatInput.style.opacity = '0.6';
+            } else {
+                var previousRate = vatInput.dataset.previousVatRate || '0';
+                vatInput.value = previousRate;
+                vatInput.readOnly = false;
+                vatInput.style.opacity = '1';
+            }
         }
 
         function addSection() {

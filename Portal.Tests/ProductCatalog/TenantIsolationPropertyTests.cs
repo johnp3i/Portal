@@ -208,7 +208,8 @@ public class TenantIsolationPropertyTests
             Description = GenerateDescription(descSeed.Get),
             DefaultSellingPrice = GeneratePrice(priceSeed.Get),
             DefaultCostPrice = GeneratePrice(priceSeed.Get + 1),
-            DefaultVatRate = GenerateVatRate(priceSeed.Get + 2)
+            DefaultVatRate = GenerateVatRate(priceSeed.Get + 2),
+            ProductTypeId = 1 // Required for new products
         };
 
         var result = service.CreateProductAsync(product, "user-1").Result;

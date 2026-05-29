@@ -16,7 +16,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId],
+                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
                        [Country], [Notes], [IsCancelled], [CancelledAtUtc], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
@@ -36,7 +36,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId],
+                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
                        [Country], [Notes], [IsCancelled], [CancelledAtUtc], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
@@ -59,12 +59,12 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         {
             const string query = @"
                 INSERT INTO [purchase].[Purchase]
-                    ([BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId],
+                    ([BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                      [InvoiceNumber], [InvoiceDate], [Description],
                      [AmountExcludingVat], [VatAmount], [TotalAmount],
                      [Country], [Notes], [CreatedAtUtc], [UpdatedAtUtc])
                 VALUES
-                    (@BusinessId, @SupplierId, @ExpenseCategoryId, @PurchaseOriginTypeId,
+                    (@BusinessId, @SupplierId, @ExpenseCategoryId, @PurchaseOriginTypeId, @PurchaseTypeId,
                      @InvoiceNumber, @InvoiceDate, @Description,
                      @AmountExcludingVat, @VatAmount, @TotalAmount,
                      @Country, @Notes, @CreatedAtUtc, @UpdatedAtUtc)";
@@ -74,6 +74,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 new SqlParameter("@SupplierId", entity.SupplierId),
                 new SqlParameter("@ExpenseCategoryId", entity.ExpenseCategoryId),
                 new SqlParameter("@PurchaseOriginTypeId", entity.PurchaseOriginTypeId),
+                new SqlParameter("@PurchaseTypeId", entity.PurchaseTypeId),
                 new SqlParameter("@InvoiceNumber", entity.InvoiceNumber ?? (object)DBNull.Value),
                 new SqlParameter("@InvoiceDate", entity.InvoiceDate),
                 new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value),
@@ -102,6 +103,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                     [SupplierId] = @SupplierId,
                     [ExpenseCategoryId] = @ExpenseCategoryId,
                     [PurchaseOriginTypeId] = @PurchaseOriginTypeId,
+                    [PurchaseTypeId] = @PurchaseTypeId,
                     [InvoiceNumber] = @InvoiceNumber,
                     [InvoiceDate] = @InvoiceDate,
                     [Description] = @Description,
@@ -119,6 +121,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 new SqlParameter("@SupplierId", entity.SupplierId),
                 new SqlParameter("@ExpenseCategoryId", entity.ExpenseCategoryId),
                 new SqlParameter("@PurchaseOriginTypeId", entity.PurchaseOriginTypeId),
+                new SqlParameter("@PurchaseTypeId", entity.PurchaseTypeId),
                 new SqlParameter("@InvoiceNumber", entity.InvoiceNumber ?? (object)DBNull.Value),
                 new SqlParameter("@InvoiceDate", entity.InvoiceDate),
                 new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value),
@@ -166,7 +169,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         try
         {
             var sql = @"
-                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId],
+                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
                        [Country], [Notes], [IsCancelled], [CancelledAtUtc], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]

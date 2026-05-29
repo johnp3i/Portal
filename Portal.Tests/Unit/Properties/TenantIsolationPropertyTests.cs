@@ -164,7 +164,8 @@ public class TenantIsolationPropertyTests
                 var category = new ExpenseCategory
                 {
                     BusinessId = inputBusinessId,
-                    Name = "Test Category"
+                    Name = "Test Category",
+                    ExpenseTypeId = 1
                 };
 
                 var result = service.CreateExpenseCategoryAsync(category).GetAwaiter().GetResult();
@@ -198,6 +199,7 @@ public class TenantIsolationPropertyTests
                     SupplierId = TestSupplierId,
                     ExpenseCategoryId = TestExpenseCategoryId,
                     PurchaseOriginTypeId = 1,
+                    PurchaseTypeId = 3,
                     InvoiceDate = DateOnly.FromDateTime(DateTime.Today),
                     Description = "Test purchase",
                     AmountExcludingVat = amountExclVat,

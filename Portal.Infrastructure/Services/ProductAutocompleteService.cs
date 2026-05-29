@@ -67,7 +67,13 @@ public class ProductAutocompleteService : IProductAutocompleteService
                     SupplierName = product.SupplierId.HasValue && supplierNames.ContainsKey(product.SupplierId.Value)
                         ? supplierNames[product.SupplierId.Value]
                         : null,
-                    Date = product.LastUsedDate
+                    Date = product.LastUsedDate,
+                    ProductTypeName = product.ProductTypeId switch
+                    {
+                        1 => "Services",
+                        2 => "Goods",
+                        _ => null
+                    }
                 });
             }
 

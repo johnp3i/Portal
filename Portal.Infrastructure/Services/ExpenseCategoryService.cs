@@ -46,6 +46,11 @@ public class ExpenseCategoryService : IExpenseCategoryService
             return ServiceResult.Fail("Expense category name is required.");
         }
 
+        if (category.ExpenseTypeId is null || category.ExpenseTypeId is not (1 or 2))
+        {
+            return ServiceResult.Fail("Expense Type is required. Select Services or Goods.");
+        }
+
         category.BusinessId = _currentTenantService.CurrentBusinessId;
         category.IsActive = true;
 
@@ -69,6 +74,11 @@ public class ExpenseCategoryService : IExpenseCategoryService
         if (string.IsNullOrWhiteSpace(category.Name))
         {
             return ServiceResult.Fail("Expense category name is required.");
+        }
+
+        if (category.ExpenseTypeId is null || category.ExpenseTypeId is not (1 or 2))
+        {
+            return ServiceResult.Fail("Expense Type is required. Select Services or Goods.");
         }
 
         var existing = await _expenseCategoryRepository.GetByIdAndBusinessIdAsync(category.Id, _currentTenantService.CurrentBusinessId);

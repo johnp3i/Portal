@@ -34,6 +34,7 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                        [product].[Product].[IsActive],
                        [product].[Product].[LastUsedDate],
                        [product].[Product].[CreatedAtUtc],
+                       [product].[Product].[ProductTypeId],
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [product].[Product]
                 WHERE [product].[Product].[BusinessId] = @BusinessId
@@ -83,7 +84,10 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                         LastUsedDate = reader.IsDBNull(reader.GetOrdinal("LastUsedDate"))
                             ? null
                             : reader.GetDateTime(reader.GetOrdinal("LastUsedDate")),
-                        CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+                        CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc")),
+                        ProductTypeId = reader.IsDBNull(reader.GetOrdinal("ProductTypeId"))
+                            ? null
+                            : reader.GetInt32(reader.GetOrdinal("ProductTypeId"))
                     });
                 }
             }
@@ -108,7 +112,8 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
             const string query = @"
                 SELECT [Id], [BusinessId], [ProductCode], [Description],
                        [DefaultSellingPrice], [DefaultCostPrice], [DefaultVatRate],
-                       [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc]
+                       [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc],
+                       [ProductTypeId]
                 FROM [product].[Product]
                 WHERE [product].[Product].[Id] = @Id
                   AND [product].[Product].[BusinessId] = @BusinessId";
@@ -130,7 +135,8 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
             const string query = @"
                 SELECT [Id], [BusinessId], [ProductCode], [Description],
                        [DefaultSellingPrice], [DefaultCostPrice], [DefaultVatRate],
-                       [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc]
+                       [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc],
+                       [ProductTypeId]
                 FROM [product].[Product]
                 WHERE [product].[Product].[ProductCode] = @ProductCode
                   AND [product].[Product].[BusinessId] = @BusinessId";
@@ -152,7 +158,8 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
             const string query = @"
                 SELECT [Id], [BusinessId], [ProductCode], [Description],
                        [DefaultSellingPrice], [DefaultCostPrice], [DefaultVatRate],
-                       [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc]
+                       [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc],
+                       [ProductTypeId]
                 FROM [product].[Product]
                 WHERE [product].[Product].[Description] = @Description
                   AND [product].[Product].[BusinessId] = @BusinessId";
@@ -175,11 +182,11 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 INSERT INTO [product].[Product]
                     ([BusinessId], [ProductCode], [Description], [DefaultSellingPrice],
                      [DefaultCostPrice], [DefaultVatRate], [SupplierId], [IsActive],
-                     [LastUsedDate], [CreatedAtUtc])
+                     [LastUsedDate], [CreatedAtUtc], [ProductTypeId])
                 VALUES
                     (@BusinessId, @ProductCode, @Description, @DefaultSellingPrice,
                      @DefaultCostPrice, @DefaultVatRate, @SupplierId, @IsActive,
-                     @LastUsedDate, @CreatedAtUtc);
+                     @LastUsedDate, @CreatedAtUtc, @ProductTypeId);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
@@ -206,6 +213,7 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 command.Parameters.Add(new SqlParameter("@IsActive", product.IsActive));
                 command.Parameters.Add(new SqlParameter("@LastUsedDate", product.LastUsedDate ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", product.CreatedAtUtc));
+                command.Parameters.Add(new SqlParameter("@ProductTypeId", product.ProductTypeId ?? (object)DBNull.Value));
 
                 var result = await command.ExecuteScalarAsync();
                 var insertedId = result != null ? Convert.ToInt32(result) : 0;
@@ -238,7 +246,8 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                     [DefaultVatRate] = @DefaultVatRate,
                     [SupplierId] = @SupplierId,
                     [IsActive] = @IsActive,
-                    [LastUsedDate] = @LastUsedDate
+                    [LastUsedDate] = @LastUsedDate,
+                    [ProductTypeId] = @ProductTypeId
                 WHERE [product].[Product].[Id] = @Id
                   AND [product].[Product].[BusinessId] = @BusinessId";
 
@@ -252,7 +261,8 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 new SqlParameter("@DefaultVatRate", product.DefaultVatRate),
                 new SqlParameter("@SupplierId", product.SupplierId ?? (object)DBNull.Value),
                 new SqlParameter("@IsActive", product.IsActive),
-                new SqlParameter("@LastUsedDate", product.LastUsedDate ?? (object)DBNull.Value)
+                new SqlParameter("@LastUsedDate", product.LastUsedDate ?? (object)DBNull.Value),
+                new SqlParameter("@ProductTypeId", product.ProductTypeId ?? (object)DBNull.Value)
             );
         }
         catch (Exception)
@@ -466,7 +476,8 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 SELECT TOP (@MaxResults)
                     [Id], [BusinessId], [ProductCode], [Description],
                     [DefaultSellingPrice], [DefaultCostPrice], [DefaultVatRate],
-                    [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc]
+                    [SupplierId], [IsActive], [LastUsedDate], [CreatedAtUtc],
+                    [ProductTypeId]
                 FROM [product].[Product]
                 WHERE [product].[Product].[BusinessId] = @BusinessId
                   AND [product].[Product].[IsActive] = 1

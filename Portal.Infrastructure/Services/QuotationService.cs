@@ -282,8 +282,13 @@ public class QuotationService : IQuotationService
         }
     }
 
-    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null)
+    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null, bool isReverseCharge = false)
     {
+        if (isReverseCharge && vatRate > 0)
+        {
+            throw new ArgumentException("Reverse charge lines require 0% VAT");
+        }
+
         if (costPrice.HasValue && costPrice.Value < 0)
         {
             throw new ArgumentException("Cost price must be zero or greater");
@@ -322,7 +327,8 @@ public class QuotationService : IQuotationService
             SortOrder = nextSortOrder,
             ReferenceUrl = referenceUrl,
             Subtitle = subtitle,
-            ProductCode = productCode
+            ProductCode = productCode,
+            IsReverseCharge = isReverseCharge
         };
 
         await _quotationLineRepository.InsertAsync(line);
@@ -342,8 +348,13 @@ public class QuotationService : IQuotationService
         return line;
     }
 
-    public async Task UpdateLineAsync(int lineId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null)
+    public async Task UpdateLineAsync(int lineId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, bool isReverseCharge = false)
     {
+        if (isReverseCharge && vatRate > 0)
+        {
+            throw new ArgumentException("Reverse charge lines require 0% VAT");
+        }
+
         if (costPrice.HasValue && costPrice.Value < 0)
         {
             throw new ArgumentException("Cost price must be zero or greater");
@@ -379,6 +390,7 @@ public class QuotationService : IQuotationService
         line.LineTotal = CalculateLineTotal(quantity, unitPrice, discount, discountType);
         line.ReferenceUrl = referenceUrl;
         line.Subtitle = subtitle;
+        line.IsReverseCharge = isReverseCharge;
 
         await _quotationLineRepository.UpdateAsync(line);
 

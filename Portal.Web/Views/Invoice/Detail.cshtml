@@ -162,12 +162,26 @@
                             ? line.UnitPrice * (1 - line.Discount / 100)
                             : line.UnitPrice - line.Discount;
                         var lineTotal = line.Quantity * discountedPrice;
+                        var productTypeName = line.ProductTypeId switch
+                        {
+                            1 => "Services",
+                            2 => "Goods",
+                            _ => (string?)null
+                        };
                         <tr>
                             <td>
                                 <strong>@line.Description</strong>
                                 @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
                                 {
                                     <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&nearr; ref</a>
+                                }
+                                @if (line.IsReverseCharge)
+                                {
+                                    <span style="margin-left:8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#C8912E;background:rgba(200,145,46,.08);padding:3px 8px;border-radius:6px;">Reverse Charge</span>
+                                }
+                                @if (productTypeName != null)
+                                {
+                                    <span style="margin-left:8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:rgba(13,94,166,.06);padding:3px 8px;border-radius:6px;">@productTypeName</span>
                                 }
                             </td>
                             <td>@line.Quantity.ToString("N2")</td>

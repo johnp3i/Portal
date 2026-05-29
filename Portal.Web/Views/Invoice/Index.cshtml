@@ -12,6 +12,8 @@
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a class="btn btn-primary" asp-action="Create" asp-controller="Invoice">Create Invoice</a>
+        <a class="btn btn-secondary" href="/Invoice/ExportCsv?status=@ViewBag.StatusFilter&financialStatus=@ViewBag.FinancialStatusFilter&customer=@ViewBag.CustomerFilter&search=@ViewBag.SearchTerm&vatPeriodId=@ViewBag.VatPeriodFilter">Export CSV</a>
+        <a class="btn btn-secondary" href="/Invoice/ExportPdf?status=@ViewBag.StatusFilter&financialStatus=@ViewBag.FinancialStatusFilter&customer=@ViewBag.CustomerFilter&search=@ViewBag.SearchTerm&vatPeriodId=@ViewBag.VatPeriodFilter">Export PDF</a>
     </div>
 </div>
 
@@ -56,6 +58,18 @@
                     @foreach (var c in (IEnumerable<Portal.Infrastructure.Entities.Customer>)ViewBag.Customers)
                     {
                         <option value="@c.Id" selected="@(ViewBag.CustomerFilter != null && (int)ViewBag.CustomerFilter == c.Id ? "selected" : null)">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label>VAT Period</label>
+                <select name="vatPeriodId">
+                    <option value="">All Periods</option>
+                    @foreach (var period in (List<Portal.Infrastructure.Entities.VatSubmissionPeriod>)ViewBag.VatPeriods)
+                    {
+                        <option value="@period.Id" selected="@(ViewBag.VatPeriodFilter != null && (int)ViewBag.VatPeriodFilter == period.Id ? "selected" : null)">
+                            @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
+                        </option>
                     }
                 </select>
             </div>
@@ -117,15 +131,15 @@
                                 <span class="pill @financialPillClass">@item.FinancialStatusName</span>
                             </td>
                             <td style="white-space:nowrap;">
-                                <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">Detail</a>
+                                <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Detail</a>
                                 @if (item.InvoiceStatusTypeId == 1)
                                 {
-                                    <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;margin-left:12px;">Edit</a>
+                                    <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Edit</a>
                                 }
-                                <a asp-action="Preview" asp-controller="Invoice" asp-route-id="@item.Id" target="_blank" style="color:var(--blue);font-weight:700;font-size:13px;margin-left:12px;">Preview</a>
+                                <a asp-action="Preview" asp-controller="Invoice" asp-route-id="@item.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>
                                 @if (item.InvoiceStatusTypeId == 1)
                                 {
-                                    <a href="javascript:void(0)" onclick="deleteInvoice(@item.Id)" style="color:var(--danger);font-weight:700;font-size:13px;margin-left:12px;">Delete</a>
+                                    <a href="javascript:void(0)" onclick="deleteInvoice(@item.Id)" class="tbl-action tbl-action--danger">Delete</a>
                                 }
                             </td>
                         </tr>

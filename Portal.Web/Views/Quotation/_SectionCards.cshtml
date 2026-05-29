@@ -1,7 +1,7 @@
 @model Portal.Web.Models.QuotationEditViewModel
 @{
     var sectionList = Model.Sections.OrderBy(s => s.SortOrder).ToList();
-    var defaultLines = Model.Lines.Where(l => l.ProposalSectionId == null).OrderBy(l => l.SortOrder).ToList();
+    var defaultDisplayLines = Model.DisplayLines.Where(dl => dl.Line.ProposalSectionId == null).OrderBy(dl => dl.Line.SortOrder).ToList();
 }
 
 <!-- Section Management Controls -->
@@ -22,10 +22,11 @@
     </div>
 
     <div style="display:grid;gap:16px;">
-        @if (defaultLines.Count > 0)
+        @if (defaultDisplayLines.Count > 0)
         {
-            @foreach (var line in defaultLines)
+            @foreach (var displayLine in defaultDisplayLines)
             {
+                var line = displayLine.Line;
                 <div class="line-card" data-line-id="@line.Id" data-section-id="" style="padding:16px;border:1px solid rgba(13,94,166,.08);border-radius:14px;position:relative;">
                     <form method="post" asp-action="UpdateLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id">
                         @Html.AntiForgeryToken()
@@ -55,7 +56,7 @@
                             </div>
                             <div class="field">
                                 <label>VAT %</label>
-                                <input type="number" name="VatRate" value="@line.VatRate.ToString("G")" step="0.01" min="0" max="100" required />
+                                <input type="number" name="VatRate" value="@line.VatRate.ToString("G")" step="0.01" min="0" max="100" required @(line.IsReverseCharge ? "readonly" : "") style="@(line.IsReverseCharge ? "opacity:0.6;" : "")" />
                             </div>
                             <div class="field">
                                 <label>Discount</label>
@@ -73,6 +74,18 @@
                                 <input type="number" name="CostPrice" value="@(line.CostPrice?.ToString("G") ?? "")" step="0.01" min="0" placeholder="Optional" />
                             </div>
                             <button type="submit" class="btn btn-primary" style="padding:12px 24px;font-size:13px;font-weight:700;">Save</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+                            <div class="field" style="display:flex;align-items:center;gap:6px;margin:0;">
+                                <input type="checkbox" name="IsReverseCharge" value="true"
+                                       checked="@(line.IsReverseCharge ? "checked" : null)"
+                                       onchange="toggleReverseCharge(this)" />
+                                <label style="margin:0;font-size:12px;">Reverse Charge</label>
+                            </div>
+                            @if (!string.IsNullOrEmpty(displayLine.ProductTypeName))
+                            {
+                                <span class="product-type-badge" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:rgba(13,94,166,.06);padding:3px 8px;border-radius:6px;">@displayLine.ProductTypeName</span>
+                            }
                         </div>
                     </form>
                     <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
@@ -161,6 +174,11 @@
                 </div>
                 <button type="submit" class="btn btn-green" style="padding:12px 24px;font-size:13px;font-weight:700;">Add Line</button>
             </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:12px;">
+                <input type="checkbox" name="IsReverseCharge" value="true"
+                       onchange="toggleReverseCharge(this)" />
+                <label style="margin:0;font-size:12px;">Reverse Charge</label>
+            </div>
         </form>
     </div>
 </div>
@@ -169,7 +187,7 @@
 @for (var i = 0; i < sectionList.Count; i++)
 {
     var sect = sectionList[i];
-    var sectionLines = Model.Lines.Where(l => l.ProposalSectionId == sect.Id).OrderBy(l => l.SortOrder).ToList();
+    var sectionDisplayLines = Model.DisplayLines.Where(dl => dl.Line.ProposalSectionId == sect.Id).OrderBy(dl => dl.Line.SortOrder).ToList();
 
     <div class="glass card-pad section-card" data-section-id="@sect.Id" style="margin-bottom:20px;">
         <!-- Section Header -->
@@ -229,10 +247,11 @@
         {
         <!-- Section Line Items -->
         <div style="display:grid;gap:16px;margin-top:14px;">
-            @if (sectionLines.Count > 0)
+            @if (sectionDisplayLines.Count > 0)
             {
-                @foreach (var line in sectionLines)
+                @foreach (var displayLine in sectionDisplayLines)
                 {
+                    var line = displayLine.Line;
                     <div class="line-card" data-line-id="@line.Id" data-section-id="@sect.Id" style="padding:16px;border:1px solid rgba(13,94,166,.08);border-radius:14px;position:relative;">
                         <form method="post" asp-action="UpdateLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id">
                             @Html.AntiForgeryToken()
@@ -262,7 +281,7 @@
                                 </div>
                                 <div class="field">
                                     <label>VAT %</label>
-                                    <input type="number" name="VatRate" value="@line.VatRate.ToString("G")" step="0.01" min="0" max="100" required />
+                                    <input type="number" name="VatRate" value="@line.VatRate.ToString("G")" step="0.01" min="0" max="100" required @(line.IsReverseCharge ? "readonly" : "") style="@(line.IsReverseCharge ? "opacity:0.6;" : "")" />
                                 </div>
                                 <div class="field">
                                     <label>Discount</label>
@@ -280,6 +299,18 @@
                                     <input type="number" name="CostPrice" value="@(line.CostPrice?.ToString("G") ?? "")" step="0.01" min="0" placeholder="Optional" />
                                 </div>
                                 <button type="submit" class="btn btn-primary" style="padding:12px 24px;font-size:13px;font-weight:700;">Save</button>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+                                <div class="field" style="display:flex;align-items:center;gap:6px;margin:0;">
+                                    <input type="checkbox" name="IsReverseCharge" value="true"
+                                           checked="@(line.IsReverseCharge ? "checked" : null)"
+                                           onchange="toggleReverseCharge(this)" />
+                                    <label style="margin:0;font-size:12px;">Reverse Charge</label>
+                                </div>
+                                @if (!string.IsNullOrEmpty(displayLine.ProductTypeName))
+                                {
+                                    <span class="product-type-badge" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:rgba(13,94,166,.06);padding:3px 8px;border-radius:6px;">@displayLine.ProductTypeName</span>
+                                }
                             </div>
                         </form>
                         <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
@@ -378,6 +409,11 @@
                         <input type="number" name="CostPrice" placeholder="Optional" step="0.01" min="0" />
                     </div>
                     <button type="submit" class="btn btn-green" style="padding:12px 24px;font-size:13px;font-weight:700;">Add Line</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:12px;">
+                    <input type="checkbox" name="IsReverseCharge" value="true"
+                           onchange="toggleReverseCharge(this)" />
+                    <label style="margin:0;font-size:12px;">Reverse Charge</label>
                 </div>
             </form>
         </div>

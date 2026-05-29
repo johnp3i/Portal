@@ -21,6 +21,7 @@ public class QuotationEditViewModel
     public bool IsGrandTotalShown { get; set; } = true;
 
     public List<QuotationLine> Lines { get; set; } = new();
+    public List<QuotationLineDisplayViewModel> DisplayLines { get; set; } = new();
     public List<ProposalSection> Sections { get; set; } = new();
     public decimal Subtotal { get; set; }
     public decimal TaxAmount { get; set; }

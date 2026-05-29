@@ -28,12 +28,16 @@ public class CsvPurchaseRowDto
 
     public string? Notes { get; set; }
 
+    public string? PurchaseType { get; set; }
+
     // Resolved IDs (after matching against active records)
     public int? ResolvedSupplierId { get; set; }
 
     public int? ResolvedExpenseCategoryId { get; set; }
 
     public int? ResolvedPurchaseOriginTypeId { get; set; }
+
+    public int? ResolvedPurchaseTypeId { get; set; }
 
     // Validation state
     public bool IsValid { get; set; }

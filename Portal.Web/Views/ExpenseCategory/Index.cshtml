@@ -21,6 +21,7 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Expense Type</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -31,6 +32,20 @@
                     <tr>
                         <td><strong>@category.Name</strong></td>
                         <td>
+                            @if (category.ExpenseTypeId == 1)
+                            {
+                                <span class="pill pill-blue">Services</span>
+                            }
+                            else if (category.ExpenseTypeId == 2)
+                            {
+                                <span class="pill pill-blue">Goods</span>
+                            }
+                            else
+                            {
+                                <span style="font-size:12px;color:#8a9bae;font-style:italic;">Not set</span>
+                            }
+                        </td>
+                        <td>
                             @if (category.IsActive)
                             {
                                 <span class="pill pill-green">Active</span>
@@ -40,14 +55,12 @@
                                 <span class="pill pill-red">Inactive</span>
                             }
                         </td>
-                        <td>
-                            <div style="display:flex;gap:12px;align-items:center;">
-                                <button type="button" style="background:none;border:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;" data-id="@category.Id" data-name="@category.Name" onclick="openEditModal(this.dataset.id, this.dataset.name)">Edit</button>
-                                @if (category.IsActive)
-                                {
-                                    <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" data-id="@category.Id" data-name="@category.Name" onclick="confirmDeactivate(this.dataset.id, this.dataset.name)">Deactivate</button>
-                                }
-                            </div>
+                        <td style="white-space:nowrap;">
+                            <button type="button" class="tbl-action tbl-action--primary" data-id="@category.Id" data-name="@category.Name" data-expense-type-id="@(category.ExpenseTypeId?.ToString() ?? "")" onclick="openEditModal(this.dataset.id, this.dataset.name, this.dataset.expenseTypeId)">Edit</button>
+                            @if (category.IsActive)
+                            {
+                                <button type="button" class="tbl-action tbl-action--danger" data-id="@category.Id" data-name="@category.Name" onclick="confirmDeactivate(this.dataset.id, this.dataset.name)">Deactivate</button>
+                            }
                         </td>
                     </tr>
                 }
@@ -75,6 +88,14 @@
             <label for="categoryName" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Name</label>
             <input type="text" id="categoryName" placeholder="Enter category name" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#0D5EA6'" onblur="this.style.borderColor='rgba(13,94,166,.15)'" />
         </div>
+        <div class="field" style="margin-bottom:24px;">
+            <label for="expenseTypeId" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Expense Type</label>
+            <select id="expenseTypeId" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;background:#fff;appearance:auto;" onfocus="this.style.borderColor='#0D5EA6'" onblur="this.style.borderColor='rgba(13,94,166,.15)'">
+                <option value="">-- Select Expense Type --</option>
+                <option value="1">Services</option>
+                <option value="2">Goods</option>
+            </select>
+        </div>
         <input type="hidden" id="categoryId" value="" />
         <div style="display:flex;gap:12px;justify-content:flex-end;">
             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -93,15 +114,17 @@
             document.getElementById('modalTitle').textContent = 'Create Category';
             document.getElementById('categoryName').value = '';
             document.getElementById('categoryId').value = '';
+            document.getElementById('expenseTypeId').value = '';
             var modal = document.getElementById('categoryModal');
             modal.style.display = 'flex';
             document.getElementById('categoryName').focus();
         }
 
-        function openEditModal(id, name) {
+        function openEditModal(id, name, expenseTypeId) {
             document.getElementById('modalTitle').textContent = 'Edit Category';
             document.getElementById('categoryName').value = name;
             document.getElementById('categoryId').value = id;
+            document.getElementById('expenseTypeId').value = expenseTypeId || '';
             var modal = document.getElementById('categoryModal');
             modal.style.display = 'flex';
             document.getElementById('categoryName').focus();
@@ -123,12 +146,19 @@
                 return;
             }
 
+            var expenseTypeId = document.getElementById('expenseTypeId').value;
+            if (!expenseTypeId) {
+                Swal.fire({ title: 'Validation', text: 'Expense Type is required. Select Services or Goods.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
             var id = document.getElementById('categoryId').value;
             var isEdit = id !== '';
             var url = isEdit ? '/ExpenseCategory/Edit' : '/ExpenseCategory/Create';
 
             var formData = new FormData();
             formData.append('Name', name);
+            formData.append('expenseTypeId', expenseTypeId);
             if (isEdit) {
                 formData.append('Id', id);
             }

@@ -85,7 +85,7 @@
                             }
                             else if (user.IsActive)
                             {
-                                <button type="button" class="btn btn-secondary" style="color:#C24A4A;font-size:12px;padding:6px 12px;"
+                                <button type="button" class="tbl-action tbl-action--danger"
                                         onclick="deactivateUser(@user.UserBusinessId, '@Html.Raw(user.FullName.Replace("'", "\\'"))')">
                                     Deactivate
                                 </button>

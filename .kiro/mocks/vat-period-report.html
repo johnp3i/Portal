@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAT Period Report — Mock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --muted: #5a6a7a;
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #1a2b3c;
+            padding: 40px;
+            line-height: 1.5;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+        .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+        .report-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 16px rgba(13,94,166,.06);
+            border: 1px solid rgba(13,94,166,.08);
+        }
+        .report-card h2 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .report-card .section-desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 18px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            background: var(--bg2);
+            border-bottom: 1px solid rgba(13,94,166,.08);
+        }
+        thead th.right { text-align: right; }
+        tbody td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(13,94,166,.05);
+        }
+        tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+        tbody td.bold { font-weight: 700; }
+        .total-row td {
+            font-weight: 700;
+            background: rgba(13,94,166,.03);
+            border-top: 2px solid rgba(13,94,166,.12);
+        }
+        .period-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(13,94,166,.08);
+        }
+        .period-header .period-label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--blue);
+            background: rgba(13,94,166,.06);
+            padding: 6px 14px;
+            border-radius: 8px;
+        }
+        .period-header .period-dates {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-box {
+            padding: 16px;
+            border-radius: 12px;
+            background: var(--bg2);
+            border: 1px solid rgba(13,94,166,.06);
+        }
+        .summary-box .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .summary-box .value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+        }
+        .summary-box .value.blue { color: var(--blue); }
+        .summary-box .value.green { color: var(--green); }
+        .summary-box .value.danger { color: var(--danger); }
+        .note {
+            margin-top: 32px;
+            padding: 20px 24px;
+            background: rgba(13,94,166,.03);
+            border: 1px solid rgba(13,94,166,.08);
+            border-radius: 12px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .note strong { color: var(--blue); }
+    </style>
+</head>
+<body>
+
+<h1>VAT Period Report</h1>
+<p class="subtitle">Exportable as CSV or PDF from the VAT Detail view</p>
+
+<!-- Period Header -->
+<div class="report-card">
+    <div class="period-header">
+        <div>
+            <h2>01 Mar 2024 – 31 May 2024</h2>
+            <span class="period-dates">3-month VAT period</span>
+        </div>
+        <span class="period-label">Q1 2024</span>
+    </div>
+
+    <!-- Period Summary -->
+    <div class="summary-grid">
+        <div class="summary-box">
+            <div class="label">Output VAT (Sales)</div>
+            <div class="value blue">€1,855.45</div>
+        </div>
+        <div class="summary-box">
+            <div class="label">Input VAT (Purchases)</div>
+            <div class="value green">€269.73</div>
+        </div>
+        <div class="summary-box">
+            <div class="label">Tax Owed</div>
+            <div class="value danger">€1,585.72</div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 1: Sales by Month -->
+<div class="report-card">
+    <h2>1. Sales Amount by Month</h2>
+    <p class="section-desc">Total sales invoices analysed by month within the period (Net / VAT / Gross)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th class="right">Net (Excl. VAT)</th>
+                <th class="right">VAT Amount</th>
+                <th class="right">Gross (Incl. VAT)</th>
+                <th class="right">Invoice Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="bold">March 2024</td>
+                <td class="right">€4,316.00</td>
+                <td class="right">€820.04</td>
+                <td class="right">€5,136.04</td>
+                <td class="right">4</td>
+            </tr>
+            <tr>
+                <td class="bold">April 2024</td>
+                <td class="right">€5,449.50</td>
+                <td class="right">€1,035.41</td>
+                <td class="right">€6,484.91</td>
+                <td class="right">5</td>
+            </tr>
+            <tr>
+                <td class="bold">May 2024</td>
+                <td class="right">€0.00</td>
+                <td class="right">€0.00</td>
+                <td class="right">€0.00</td>
+                <td class="right">0</td>
+            </tr>
+            <tr class="total-row">
+                <td>Period Total</td>
+                <td class="right">€9,765.50</td>
+                <td class="right">€1,855.45</td>
+                <td class="right">€11,620.95</td>
+                <td class="right">9</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Section 2: Purchases by Month -->
+<div class="report-card">
+    <h2>2. Purchases Amount by Month</h2>
+    <p class="section-desc">Total purchases analysed by month within the period (Net / VAT / Gross)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th class="right">Net (Excl. VAT)</th>
+                <th class="right">VAT Amount</th>
+                <th class="right">Gross (Incl. VAT)</th>
+                <th class="right">Purchase Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="bold">March 2024</td>
+                <td class="right">€312.40</td>
+                <td class="right">€48.22</td>
+                <td class="right">€360.62</td>
+                <td class="right">8</td>
+            </tr>
+            <tr>
+                <td class="bold">April 2024</td>
+                <td class="right">€185.60</td>
+                <td class="right">€28.14</td>
+                <td class="right">€213.74</td>
+                <td class="right">5</td>
+            </tr>
+            <tr>
+                <td class="bold">May 2024</td>
+                <td class="right">€1,245.80</td>
+                <td class="right">€193.37</td>
+                <td class="right">€1,439.17</td>
+                <td class="right">24</td>
+            </tr>
+            <tr class="total-row">
+                <td>Period Total</td>
+                <td class="right">€1,743.80</td>
+                <td class="right">€269.73</td>
+                <td class="right">€2,013.53</td>
+                <td class="right">37</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Section 3: Purchases by Origin per Month -->
+<div class="report-card">
+    <h2>3. Purchases by Origin Type per Month</h2>
+    <p class="section-desc">Monthly breakdown of purchase amounts by origin (Domestic, EU Reverse Charge, Non-EU)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th class="right">Domestic</th>
+                <th class="right">EU Reverse Charge</th>
+                <th class="right">Non-EU</th>
+                <th class="right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="bold">March 2024</td>
+                <td class="right">€298.40</td>
+                <td class="right">€0.00</td>
+                <td class="right">€14.00</td>
+                <td class="right">€312.40</td>
+            </tr>
+            <tr>
+                <td class="bold">April 2024</td>
+                <td class="right">€165.60</td>
+                <td class="right">€4.56</td>
+                <td class="right">€15.44</td>
+                <td class="right">€185.60</td>
+            </tr>
+            <tr>
+                <td class="bold">May 2024</td>
+                <td class="right">€1,228.24</td>
+                <td class="right">€0.00</td>
+                <td class="right">€17.56</td>
+                <td class="right">€1,245.80</td>
+            </tr>
+            <tr class="total-row">
+                <td>Period Total</td>
+                <td class="right">€1,692.24</td>
+                <td class="right">€4.56</td>
+                <td class="right">€47.00</td>
+                <td class="right">€1,743.80</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Section 4: Period Totals by Origin -->
+<div class="report-card">
+    <h2>4. Period Totals by Purchase Origin</h2>
+    <p class="section-desc">Aggregate totals for the entire VAT period, grouped by purchase origin type</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Origin Type</th>
+                <th class="right">Net (Excl. VAT)</th>
+                <th class="right">VAT Amount</th>
+                <th class="right">Gross (Incl. VAT)</th>
+                <th class="right">Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="bold">Domestic</td>
+                <td class="right">€1,692.24</td>
+                <td class="right">€252.17</td>
+                <td class="right">€1,944.41</td>
+                <td class="right">33</td>
+            </tr>
+            <tr>
+                <td class="bold">EU Reverse Charge</td>
+                <td class="right">€24.00</td>
+                <td class="right">€4.56</td>
+                <td class="right">€28.56</td>
+                <td class="right">2</td>
+            </tr>
+            <tr>
+                <td class="bold">Non-EU</td>
+                <td class="right">€27.56</td>
+                <td class="right">€17.56</td>
+                <td class="right">€45.12</td>
+                <td class="right">2</td>
+            </tr>
+            <tr class="total-row">
+                <td>All Origins</td>
+                <td class="right">€1,743.80</td>
+                <td class="right">€269.73</td>
+                <td class="right">€2,013.53</td>
+                <td class="right">37</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Implementation Note -->
+<div class="note">
+    <strong>Implementation:</strong> Two export buttons ("Export CSV" and "Export PDF") will be added to the VAT Detail view topbar. The report includes all 4 sections above. The CSV will have multiple sections separated by blank rows. The PDF will use this exact layout with the MyChair design system styling.
+</div>
+
+</body>
+</html>

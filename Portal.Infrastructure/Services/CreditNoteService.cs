@@ -85,14 +85,7 @@ public class CreditNoteService : ICreditNoteService
         // 4. Compute amounts
         var (subtotal, taxAmount, totalAmount) = ComputeAmounts(dto.Lines);
 
-        // 5. Final balance check with computed total
-        if (totalAmount > outstandingBalance)
-        {
-            return ServiceResult<int>.Fail(
-                $"Credit note total ({totalAmount:F2}) exceeds the available balance ({outstandingBalance:F2}).");
-        }
-
-        // 6. Generate credit note number with retry logic
+        // 5. Generate credit note number with retry logic
         for (int attempt = 1; attempt <= MaxRetryAttempts; attempt++)
         {
             var creditNoteNumber = await GenerateCreditNoteNumberAsync(businessId, dto.IssueDate);
@@ -486,18 +479,15 @@ public class CreditNoteService : ICreditNoteService
             var totalCredited = await _creditNoteRepository.GetTotalAppliedCreditAsync(item.Invoice.Id, businessId);
             var outstandingBalance = item.Invoice.TotalAmount - totalPaid - totalCredited;
 
-            if (outstandingBalance > 0)
+            eligibleInvoices.Add(new EligibleInvoiceDto
             {
-                eligibleInvoices.Add(new EligibleInvoiceDto
-                {
-                    Id = item.Invoice.Id,
-                    InvoiceNumber = item.Invoice.InvoiceNumber,
-                    CustomerName = item.CustomerName,
-                    CustomerId = item.Invoice.CustomerId,
-                    TotalAmount = item.Invoice.TotalAmount,
-                    OutstandingBalance = outstandingBalance
-                });
-            }
+                Id = item.Invoice.Id,
+                InvoiceNumber = item.Invoice.InvoiceNumber,
+                CustomerName = item.CustomerName,
+                CustomerId = item.Invoice.CustomerId,
+                TotalAmount = item.Invoice.TotalAmount,
+                OutstandingBalance = outstandingBalance
+            });
         }
 
         return eligibleInvoices;

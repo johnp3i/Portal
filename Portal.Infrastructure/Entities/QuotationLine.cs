@@ -36,6 +36,8 @@ public class QuotationLine
 
     public string? ProductCode { get; set; }
 
+    public bool IsReverseCharge { get; set; }
+
     // Navigation properties
     public Quotation Quotation { get; set; } = null!;
 

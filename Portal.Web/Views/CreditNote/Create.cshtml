@@ -28,16 +28,21 @@
     <form method="post" asp-action="Create" asp-controller="CreditNote" asp-antiforgery="true" id="creditNoteForm">
         <!-- Credit Note Header -->
         <div class="form-grid">
-            <div class="field">
-                <label for="invoiceId">Source Invoice *</label>
-                <select name="invoiceId" id="invoiceId" required>
+            <div class="field" style="position:relative;">
+                <label for="invoiceSearch">Source Invoice *</label>
+                <input type="text" id="invoiceSearch" placeholder="Search by invoice number or customer..." autocomplete="off"
+                       style="width:100%;" />
+                <div id="invoiceDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:100;max-height:280px;overflow-y:auto;background:#fff;border:1px solid rgba(13,94,166,.15);border-radius:12px;box-shadow:0 8px 24px rgba(13,94,166,.12);margin-top:4px;">
+                </div>
+                <select name="invoiceId" id="invoiceId" required style="display:none;">
                     <option value="">-- Select Invoice --</option>
                     @foreach (var invoice in eligibleInvoices)
                     {
                         <option value="@invoice.Id"
                                 data-customer-name="@invoice.CustomerName"
                                 data-customer-id="@invoice.CustomerId"
-                                data-outstanding="@invoice.OutstandingBalance">
+                                data-outstanding="@invoice.OutstandingBalance"
+                                data-total-amount="@invoice.TotalAmount">
                             @invoice.InvoiceNumber — @invoice.CustomerName
                         </option>
                     }
@@ -79,10 +84,18 @@
             </div>
         </div>
 
-        <!-- Outstanding Balance Display -->
-        <div id="balanceDisplay" style="display:none;margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.15);">
-            <span style="font-weight:600;color:#129867;">Outstanding Balance:</span>
-            <span id="balanceValue" style="font-weight:700;font-size:16px;margin-left:8px;"></span>
+        <!-- Invoice Amount & Outstanding Balance Display -->
+        <div id="balanceDisplay" style="display:none;margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.15);display:none;">
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+                <div>
+                    <span style="font-weight:600;color:#0D5EA6;">Invoice Amount:</span>
+                    <span id="invoiceAmountValue" style="font-weight:700;font-size:16px;margin-left:8px;">@(ViewBag.CurrencySymbol)<span id="invoiceAmountNumber"></span></span>
+                </div>
+                <div>
+                    <span style="font-weight:600;color:#129867;">Outstanding Balance:</span>
+                    <span id="balanceValue" style="font-weight:700;font-size:16px;margin-left:8px;">@(ViewBag.CurrencySymbol)<span id="balanceNumber"></span></span>
+                </div>
+            </div>
         </div>
 
         <!-- Line Items Section -->
@@ -137,7 +150,72 @@
             var today = new Date().toISOString().split('T')[0];
             document.getElementById('issueDate').value = today;
             addLineItem();
+            initSearchableInvoiceDropdown();
         });
+
+        // Searchable invoice dropdown
+        function initSearchableInvoiceDropdown() {
+            var searchInput = document.getElementById('invoiceSearch');
+            var dropdown = document.getElementById('invoiceDropdown');
+            var hiddenSelect = document.getElementById('invoiceId');
+            var options = Array.from(hiddenSelect.querySelectorAll('option')).filter(function(o) { return o.value; });
+
+            function renderDropdown(filter) {
+                var filtered = options.filter(function(o) {
+                    if (!filter) return true;
+                    return o.textContent.toLowerCase().indexOf(filter.toLowerCase()) !== -1;
+                });
+
+                if (filtered.length === 0) {
+                    dropdown.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#5a6a7a;">No invoices found</div>';
+                } else {
+                    dropdown.innerHTML = filtered.map(function(o) {
+                        return '<div class="invoice-search-item" data-value="' + o.value + '" style="padding:10px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid rgba(13,94,166,.06);transition:background .15s;"'
+                            + ' onmouseenter="this.style.background=\'rgba(13,94,166,.06)\'"'
+                            + ' onmouseleave="this.style.background=\'transparent\'">'
+                            + o.textContent.trim()
+                            + '</div>';
+                    }).join('');
+                }
+
+                dropdown.style.display = 'block';
+            }
+
+            searchInput.addEventListener('focus', function() {
+                renderDropdown(searchInput.value);
+            });
+
+            searchInput.addEventListener('input', function() {
+                renderDropdown(searchInput.value);
+            });
+
+            dropdown.addEventListener('click', function(e) {
+                var item = e.target.closest('.invoice-search-item');
+                if (!item) return;
+
+                var value = item.getAttribute('data-value');
+                hiddenSelect.value = value;
+                searchInput.value = item.textContent.trim();
+                dropdown.style.display = 'none';
+
+                // Trigger the change event on the hidden select
+                hiddenSelect.dispatchEvent(new Event('change'));
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#invoiceSearch') && !e.target.closest('#invoiceDropdown')) {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            // Allow clearing
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
 
         // Invoice selection handler
         document.getElementById('invoiceId').addEventListener('change', function () {
@@ -145,16 +223,21 @@
             var option = select.options[select.selectedIndex];
             var customerNameField = document.getElementById('customerName');
             var balanceDisplay = document.getElementById('balanceDisplay');
-            var balanceValue = document.getElementById('balanceValue');
 
             if (!select.value) {
                 customerNameField.value = '';
                 balanceDisplay.style.display = 'none';
+                window.selectedInvoiceTotalAmount = 0;
                 return;
             }
 
             var customerName = option.getAttribute('data-customer-name');
             customerNameField.value = customerName || '';
+
+            // Show invoice total amount from data attribute
+            var totalAmount = parseFloat(option.getAttribute('data-total-amount')) || 0;
+            window.selectedInvoiceTotalAmount = totalAmount;
+            document.getElementById('invoiceAmountNumber').textContent = totalAmount.toFixed(2);
 
             // Fetch outstanding balance via AJAX
             BlockUI.show('Loading invoice details...');
@@ -163,7 +246,7 @@
                 .then(function (data) {
                     BlockUI.hide();
                     if (data.balance !== undefined) {
-                        balanceValue.textContent = parseFloat(data.balance).toFixed(2);
+                        document.getElementById('balanceNumber').textContent = parseFloat(data.balance).toFixed(2);
                         balanceDisplay.style.display = 'block';
                     }
                 })
@@ -307,6 +390,13 @@
             var invoiceId = document.getElementById('invoiceId');
             if (!invoiceId.value) {
                 errors.push('Please select a source invoice.');
+            }
+
+            // Validate credit note total does not exceed invoice amount
+            var creditTotal = parseFloat(document.getElementById('runningTotal').textContent) || 0;
+            var invoiceAmount = window.selectedInvoiceTotalAmount || 0;
+            if (invoiceId.value && invoiceAmount > 0 && creditTotal > invoiceAmount) {
+                errors.push('Credit note total (' + creditTotal.toFixed(2) + ') cannot exceed the invoice amount (' + invoiceAmount.toFixed(2) + ').');
             }
 
             return errors;

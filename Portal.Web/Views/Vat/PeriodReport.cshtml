@@ -1,0 +1,199 @@
+@model Portal.Web.Models.VatPeriodReportViewModel
+@{
+    ViewData["Title"] = "VAT Period Report";
+
+    var netLabel = Model.TaxOwed > 0 ? "Tax Owed" :
+                   Model.TaxOwed < 0 ? "Refund Due" : "No Payment Due";
+
+    var netColor = Model.TaxOwed > 0 ? "#C24A4A" :
+                   Model.TaxOwed < 0 ? "#129867" : "#5E7385";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> VAT Period Report</div>
+        <h1 class="topbar-heading">@Model.PeriodLabel</h1>
+        <p class="topbar-subtitle">
+            @Model.PeriodStartDate.ToString("dd MMM yyyy") &ndash; @Model.PeriodEndDate.ToString("dd MMM yyyy")
+        </p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <a href="/Vat/PeriodReportPdf?periodId=@Model.PeriodId" class="btn btn-primary">Download PDF</a>
+        <a href="/Vat/Detail?periodId=@Model.PeriodId" class="btn btn-outline">&larr; Back to Detail</a>
+    </div>
+</div>
+
+<!-- Period Summary -->
+<section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(13,94,166,.08);">
+        <div>
+            <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;">@Model.PeriodStartDate.ToString("dd MMM yyyy") – @Model.PeriodEndDate.ToString("dd MMM yyyy")</h2>
+            <span style="font-size:13px;color:#5a6a7a;">3-month VAT period</span>
+        </div>
+        <span style="font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#0D5EA6;background:rgba(13,94,166,.06);padding:6px 14px;border-radius:8px;">@Model.PeriodLabel</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div style="padding:16px;border-radius:12px;background:#EEF4F8;border:1px solid rgba(13,94,166,.06);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#5a6a7a;margin-bottom:4px;">Output VAT (Sales)</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#0D5EA6;">@Model.CurrencySymbol@Model.OutputVat.ToString("N2")</div>
+        </div>
+        <div style="padding:16px;border-radius:12px;background:#EEF4F8;border:1px solid rgba(13,94,166,.06);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#5a6a7a;margin-bottom:4px;">Input VAT (Purchases)</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#129867;">@Model.CurrencySymbol@Model.InputVat.ToString("N2")</div>
+        </div>
+        <div style="padding:16px;border-radius:12px;background:#EEF4F8;border:1px solid rgba(13,94,166,.06);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#5a6a7a;margin-bottom:4px;">@netLabel</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:@netColor;">@Model.CurrencySymbol@Math.Abs(Model.TaxOwed).ToString("N2")</div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 1: Sales by Month -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:4px;">1. Sales Amount by Month</h2>
+    <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">Total sales invoices analysed by month within the period (Net / VAT / Gross)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th class="text-right">Net (Excl. VAT)</th>
+                <th class="text-right">VAT Amount</th>
+                <th class="text-right">Gross (Incl. VAT)</th>
+                <th class="text-right">Invoice Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.SalesByMonth)
+            {
+                <tr>
+                    <td><strong>@row.MonthName</strong></td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Net.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Vat.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Gross.ToString("N2")</td>
+                    <td class="text-right">@row.Count</td>
+                </tr>
+            }
+            <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
+                <td>Period Total</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.SalesByMonth.Sum(r => r.Net).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.SalesByMonth.Sum(r => r.Vat).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.SalesByMonth.Sum(r => r.Gross).ToString("N2")</td>
+                <td class="text-right">@Model.SalesByMonth.Sum(r => r.Count)</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Section 2: Purchases by Month -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:4px;">2. Purchases Amount by Month</h2>
+    <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">Total purchases analysed by month within the period (Net / VAT / Gross)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th class="text-right">Net (Excl. VAT)</th>
+                <th class="text-right">VAT Amount</th>
+                <th class="text-right">Gross (Incl. VAT)</th>
+                <th class="text-right">Purchase Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.PurchasesByMonth)
+            {
+                <tr>
+                    <td><strong>@row.MonthName</strong></td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Net.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Vat.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Gross.ToString("N2")</td>
+                    <td class="text-right">@row.Count</td>
+                </tr>
+            }
+            <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
+                <td>Period Total</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByMonth.Sum(r => r.Net).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByMonth.Sum(r => r.Vat).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByMonth.Sum(r => r.Gross).ToString("N2")</td>
+                <td class="text-right">@Model.PurchasesByMonth.Sum(r => r.Count)</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Section 3: Purchases by Origin per Month -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:4px;">3. Purchases by Origin Type per Month</h2>
+    <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">Monthly breakdown of purchase amounts by origin (Domestic, EU Reverse Charge, Non-EU)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th class="text-right">Domestic</th>
+                <th class="text-right">EU Reverse Charge</th>
+                <th class="text-right">Non-EU</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.PurchasesByOriginPerMonth)
+            {
+                <tr>
+                    <td><strong>@row.MonthName</strong></td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Domestic.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.EuReverseCharge.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.NonEu.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Total.ToString("N2")</td>
+                </tr>
+            }
+            <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
+                <td>Period Total</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.Domestic).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.EuReverseCharge).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.NonEu).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.Total).ToString("N2")</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Section 4: Period Totals by Origin -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:4px;">4. Period Totals by Purchase Origin</h2>
+    <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">Aggregate totals for the entire VAT period, grouped by purchase origin type</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Origin Type</th>
+                <th class="text-right">Net (Excl. VAT)</th>
+                <th class="text-right">VAT Amount</th>
+                <th class="text-right">Gross (Incl. VAT)</th>
+                <th class="text-right">Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.PeriodTotalsByOrigin)
+            {
+                <tr>
+                    <td><strong>@row.OriginName</strong></td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Net.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Vat.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@row.Gross.ToString("N2")</td>
+                    <td class="text-right">@row.Count</td>
+                </tr>
+            }
+            <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
+                <td>All Origins</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PeriodTotalsByOrigin.Sum(r => r.Net).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PeriodTotalsByOrigin.Sum(r => r.Vat).ToString("N2")</td>
+                <td class="text-right">@Model.CurrencySymbol@Model.PeriodTotalsByOrigin.Sum(r => r.Gross).ToString("N2")</td>
+                <td class="text-right">@Model.PeriodTotalsByOrigin.Sum(r => r.Count)</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Back link -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a href="/Vat/Detail?periodId=@Model.PeriodId" class="btn btn-outline">&larr; Back to Detail</a>
+</div>

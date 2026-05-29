@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Infrastructure.Constants;
@@ -6,7 +7,11 @@ using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Web.Models;
 using Portal.Web.Security;
+using Portal.Web.Services;
+using PuppeteerSharp;
+using PuppeteerSharp.Media;
 
 namespace Portal.Web.Controllers;
 
@@ -25,6 +30,7 @@ public class InvoiceController : Controller
     private readonly IDocumentDuplicationService _duplicationService;
     private readonly IDocumentSoftDeleteService _softDeleteService;
     private readonly VatSubmissionPeriodRepository _vatPeriodRepository;
+    private readonly IViewRenderService _viewRenderService;
 
     public InvoiceController(
         IInvoiceService invoiceService,
@@ -37,7 +43,8 @@ public class InvoiceController : Controller
         IInvoiceSharingService sharingService,
         IDocumentDuplicationService duplicationService,
         IDocumentSoftDeleteService softDeleteService,
-        VatSubmissionPeriodRepository vatPeriodRepository)
+        VatSubmissionPeriodRepository vatPeriodRepository,
+        IViewRenderService viewRenderService)
     {
         _invoiceService = invoiceService;
         _sectionService = sectionService;
@@ -50,14 +57,16 @@ public class InvoiceController : Controller
         _duplicationService = duplicationService;
         _softDeleteService = softDeleteService;
         _vatPeriodRepository = vatPeriodRepository;
+        _viewRenderService = viewRenderService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(int? status, int? financialStatus, int? customer, string? search, int page = 1)
+    public async Task<IActionResult> Index(int? status, int? financialStatus, int? customer, string? search, int? vatPeriodId, int page = 1)
     {
-        var pagedResult = await _invoiceService.GetInvoicesPagedAsync(status, financialStatus, customer, search, page);
+        var pagedResult = await _invoiceService.GetInvoicesPagedAsync(status, financialStatus, customer, search, page, vatPeriodId: vatPeriodId);
         var customers = await _customerService.GetCustomersAsync(null, true);
         var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+        var vatPeriods = await _vatPeriodRepository.GetAllByBusinessIdAsync(_tenantService.CurrentBusinessId);
 
         ViewBag.PagedResult = pagedResult;
         ViewBag.SearchTerm = search;
@@ -66,6 +75,8 @@ public class InvoiceController : Controller
         ViewBag.CustomerFilter = customer;
         ViewBag.Customers = customers;
         ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
+        ViewBag.VatPeriods = vatPeriods;
+        ViewBag.VatPeriodFilter = vatPeriodId;
         ViewBag.Statuses = new List<InvoiceStatusType>
         {
             new() { Id = 1, Name = "Draft" },
@@ -82,6 +93,71 @@ public class InvoiceController : Controller
         };
 
         return View(pagedResult.Items);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportCsv(int? status, int? financialStatus, int? customer, string? search, int? vatPeriodId)
+    {
+        var invoices = await _invoiceService.GetInvoicesFilteredAsync(status, financialStatus, customer, search, vatPeriodId);
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+        var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+        var csv = new StringBuilder();
+        csv.AppendLine("Invoice Number,Customer,Invoice Date,Due Date,Total Amount,Status,Financial Status");
+        foreach (var inv in invoices)
+        {
+            csv.AppendLine($"\"{inv.InvoiceNumber}\",\"{inv.CustomerName}\",{inv.InvoiceDate:yyyy-MM-dd},{inv.DueDate:yyyy-MM-dd},{inv.TotalAmount:F2},\"{inv.StatusName}\",\"{inv.FinancialStatusName}\"");
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        return File(bytes, "text/csv", $"invoices-export-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPdf(int? status, int? financialStatus, int? customer, string? search, int? vatPeriodId)
+    {
+        var invoices = await _invoiceService.GetInvoicesFilteredAsync(status, financialStatus, customer, search, vatPeriodId);
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+        var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+        var model = new InvoiceExportPdfModel
+        {
+            Invoices = invoices,
+            CurrencySymbol = currencySymbol,
+            GeneratedAt = DateTime.Now
+        };
+
+        var html = await _viewRenderService.RenderViewToStringAsync("~/Views/Invoice/_ExportPdf.cshtml", model);
+
+        await new BrowserFetcher().DownloadAsync();
+
+        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        {
+            Headless = true,
+            Args = new[] { "--no-sandbox", "--disable-setuid-sandbox" }
+        });
+
+        await using var page = await browser.NewPageAsync();
+        await page.SetContentAsync(html, new NavigationOptions
+        {
+            WaitUntil = new[] { WaitUntilNavigation.Networkidle0 }
+        });
+
+        var pdfBytes = await page.PdfDataAsync(new PdfOptions
+        {
+            Landscape = true,
+            Format = PaperFormat.A4,
+            PrintBackground = true,
+            MarginOptions = new MarginOptions
+            {
+                Top = "10mm",
+                Bottom = "10mm",
+                Left = "10mm",
+                Right = "10mm"
+            }
+        });
+
+        return File(pdfBytes, "application/pdf", $"invoices-export-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
     }
 
     [HttpGet]
@@ -299,13 +375,13 @@ public class InvoiceController : Controller
     public async Task<IActionResult> AddLine(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
         decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
-        string? productCode = null)
+        string? productCode = null, bool isReverseCharge = false)
     {
         try
         {
             var line = await _invoiceService.AddLineAsync(invoiceId, description, quantity,
                 unitPrice, vatRate, discount, discountType, costPrice, referenceUrl, subtitle, invoiceSectionId,
-                productCode);
+                productCode, isReverseCharge: isReverseCharge);
             return Json(new { success = true, lineId = line.Id });
         }
         catch (Exception ex)
@@ -318,12 +394,14 @@ public class InvoiceController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateLine(int lineId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
-        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId)
+        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
+        bool isReverseCharge = false)
     {
         try
         {
             await _invoiceService.UpdateLineAsync(lineId, description, quantity,
-                unitPrice, vatRate, discount, discountType, costPrice, referenceUrl, subtitle, invoiceSectionId);
+                unitPrice, vatRate, discount, discountType, costPrice, referenceUrl, subtitle, invoiceSectionId,
+                isReverseCharge: isReverseCharge);
             return Json(new { success = true });
         }
         catch (Exception ex)

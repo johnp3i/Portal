@@ -72,10 +72,12 @@ public class CreditNoteController : Controller
         var eligibleInvoices = await _creditNoteService.GetEligibleInvoicesAsync(businessId);
         var vatPeriods = await _vatPeriodRepository.GetUnsubmittedPeriodsFromAsync(
             businessId, DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-2)));
+        var profile = await _businessService.GetBusinessProfileAsync(businessId);
 
         ViewBag.EligibleInvoices = eligibleInvoices;
         ViewBag.VatPeriods = vatPeriods;
         ViewBag.DefaultVatPeriodId = vatPeriods.LastOrDefault()?.Id;
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
         return View();
     }

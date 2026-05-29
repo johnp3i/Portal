@@ -84,6 +84,7 @@
                     <th style="text-align:right;">Cost Price</th>
                     <th style="text-align:right;">VAT Rate</th>
                     <th>Supplier</th>
+                    <th>Type</th>
                     <th>Status</th>
                     <th>Last Used</th>
                     <th>Actions</th>
@@ -100,6 +101,20 @@
                         <td style="text-align:right;">@product.DefaultVatRate.ToString("N2")%</td>
                         <td>@(product.Supplier?.Name ?? "—")</td>
                         <td>
+                            @switch (product.ProductTypeId)
+                            {
+                                case 1:
+                                    <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:rgba(13,94,166,.06);padding:3px 8px;border-radius:6px;">Services</span>
+                                    break;
+                                case 2:
+                                    <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:rgba(13,94,166,.06);padding:3px 8px;border-radius:6px;">Goods</span>
+                                    break;
+                                default:
+                                    <span>—</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
                             @if (product.IsActive)
                             {
                                 <span class="pill pill-green">Active</span>
@@ -111,10 +126,10 @@
                         </td>
                         <td>@(product.LastUsedDate?.ToString("dd MMM yyyy") ?? "—")</td>
                         <td style="white-space:nowrap;">
-                            <a href="javascript:void(0)" onclick="openEditModal(@product.Id)" style="color:var(--blue);font-weight:700;font-size:13px;">Edit</a>
+                            <a href="javascript:void(0)" onclick="openEditModal(@product.Id)" class="tbl-action tbl-action--primary">Edit</a>
                             @if (product.IsActive)
                             {
-                                <a href="javascript:void(0)" onclick="deactivateProduct(@product.Id, '@product.Description.Replace("'", "\\'")') " style="color:var(--danger);font-weight:700;font-size:13px;margin-left:12px;">Deactivate</a>
+                                <a href="javascript:void(0)" onclick="deactivateProduct(@product.Id, '@product.Description.Replace("'", "\\'")') " class="tbl-action tbl-action--danger">Deactivate</a>
                             }
                         </td>
                     </tr>
@@ -174,6 +189,16 @@
                         @foreach (var supplier in suppliers)
                         {
                             <option value="@supplier.Id">@supplier.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="formProductType">Product Type <span id="productTypeRequired" style="color:#C24A4A;">*</span></label>
+                    <select id="formProductType">
+                        <option value="">Select type...</option>
+                        @foreach (var type in (List<ProductType>)ViewBag.ProductTypes)
+                        {
+                            <option value="@type.Id">@type.Name</option>
                         }
                     </select>
                 </div>
@@ -262,6 +287,8 @@
             document.getElementById('formCostPrice').value = '0.00';
             document.getElementById('formVatRate').value = '0.00';
             document.getElementById('formSupplier').value = '';
+            document.getElementById('formProductType').value = '';
+            document.getElementById('productTypeRequired').style.display = 'inline';
             document.getElementById('formIsActive').checked = true;
             document.getElementById('priceHistorySection').style.display = 'none';
             modal.style.display = 'flex';
@@ -290,6 +317,8 @@
                 document.getElementById('formCostPrice').value = p.defaultCostPrice;
                 document.getElementById('formVatRate').value = p.defaultVatRate;
                 document.getElementById('formSupplier').value = p.supplierId || '';
+                document.getElementById('formProductType').value = p.productTypeId || '';
+                document.getElementById('productTypeRequired').style.display = 'none';
                 document.getElementById('formIsActive').checked = p.isActive;
 
                 document.getElementById('priceHistorySection').style.display = 'block';
@@ -327,6 +356,7 @@
             var costPrice = document.getElementById('formCostPrice').value;
             var vatRate = document.getElementById('formVatRate').value;
             var supplierId = document.getElementById('formSupplier').value;
+            var productTypeId = document.getElementById('formProductType').value;
             var isActive = document.getElementById('formIsActive').checked;
 
             if (!productCode) {
@@ -339,6 +369,13 @@
             }
 
             var isEdit = id !== '0';
+
+            // Product Type is required for new products
+            if (!isEdit && !productTypeId) {
+                Swal.fire({ title: 'Validation', text: 'Product Type is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
             var url = isEdit ? '/Product/Edit' : '/Product/Create';
 
             var body = new URLSearchParams();
@@ -348,6 +385,7 @@
             body.append('defaultCostPrice', costPrice);
             body.append('defaultVatRate', vatRate);
             if (supplierId) body.append('supplierId', supplierId);
+            if (productTypeId) body.append('productTypeId', productTypeId);
             body.append('isActive', isActive);
             if (isEdit) body.append('id', id);
 

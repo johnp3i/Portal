@@ -16,13 +16,13 @@ h1,h2,h3,h4{font-family:Manrope,Inter,sans-serif;letter-spacing:-.03em;margin:0}
 a{text-decoration:none;color:inherit}
 
 /* ===== APP SHELL ===== */
-.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh;transition:grid-template-columns .2s cubic-bezier(.4,0,.2,1)}
 .app.sidebar-collapsed{grid-template-columns:64px 1fr}
-.sidebar{padding:24px 18px;border-right:1px solid var(--line);background:rgba(255,255,255,.72);backdrop-filter:blur(10px);overflow:hidden;transition:padding .25s ease}
+.sidebar{padding:24px 18px;border-right:1px solid var(--line);background:rgba(255,255,255,.72);overflow:hidden;will-change:padding}
 .app.sidebar-collapsed .sidebar{padding:24px 8px}
 .brand{display:flex;gap:14px;align-items:center;margin-bottom:28px}
 .brand-chip{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid rgba(13,94,166,.12);color:var(--blue3);font-weight:800;box-shadow:0 10px 22px rgba(13,94,166,.08)}
-.nav-title{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);padding:0 10px 10px;white-space:nowrap;overflow:hidden;transition:opacity .2s}
+.nav-title{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);padding:0 10px 10px;white-space:nowrap;overflow:hidden;transition:opacity .15s ease}
 .app.sidebar-collapsed .nav-title{opacity:0;height:0;padding:0;margin:0}
 .nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;color:var(--muted);font-weight:700;font-size:14px;transition:background .15s,color .15s;white-space:nowrap;overflow:hidden;text-decoration:none}
 .nav-item:hover{background:rgba(13,94,166,.04);color:var(--text)}
@@ -30,10 +30,21 @@ a{text-decoration:none;color:inherit}
 .nav-item + .nav-item{margin-top:6px}
 .nav-item .nav-icon{min-width:20px;display:flex;align-items:center;justify-content:center}
 .nav-item .nav-text{transition:opacity .2s,width .2s;overflow:hidden}
+.nav-section{margin-top:8px}
+.nav-section:first-of-type{margin-top:0}
+.nav-sub-item{display:flex;align-items:center;gap:10px;padding:9px 14px 9px 42px;border-radius:12px;color:var(--muted);font-weight:600;font-size:13px;transition:background .15s,color .15s;white-space:nowrap;overflow:hidden;text-decoration:none}
+.nav-sub-item:hover{background:rgba(13,94,166,.04);color:var(--text)}
+.nav-sub-item.active{color:var(--blue);font-weight:700;background:rgba(13,94,166,.1);border-left:3px solid var(--blue)}
+.nav-sub-item + .nav-sub-item{margin-top:1px}
+.nav-sub-item .nav-text{transition:opacity .2s,width .2s;overflow:hidden}
 .app.sidebar-collapsed .nav-item .nav-text{opacity:0;width:0}
-.app.sidebar-collapsed .nav-item{justify-content:center;padding:12px}
+.app.sidebar-collapsed .nav-item{justify-content:center;padding:12px 0px 12px 12px}
+.app.sidebar-collapsed .nav-sub-item{justify-content:center;padding:12px 0px 12px 10px;border-left:none}
+.app.sidebar-collapsed .nav-sub-item .nav-text{opacity:0;width:0}
+.app.sidebar-collapsed .nav-sub-item.active{border-left:none;background:rgba(13,94,166,.1);border-radius:12px}
+.app.sidebar-collapsed .nav-section{margin-top:2px}
 .app.sidebar-collapsed .brand img{display:none}
-.sidebar-toggle{position:absolute;top:28px;right:23px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:30%;border:1px solid rgba(13,94,166,.1);background:#fff;cursor:pointer;z-index:10;box-shadow:0 2px 8px rgba(13,94,166,.1);transition:transform .25s}
+.sidebar-toggle{position:absolute;top:18px;right:18px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:30%;border:1px solid rgba(13,94,166,.1);background:#fff;cursor:pointer;z-index:10;box-shadow:0 2px 8px rgba(13,94,166,.1);transition:transform .25s}
 .sidebar{position:relative}
 .app.sidebar-collapsed .sidebar-toggle svg{transform:rotate(180deg)}
 
@@ -61,6 +72,15 @@ a{text-decoration:none;color:inherit}
 .btn-outline{background:transparent;color:var(--blue);border:2px solid var(--blue);box-shadow:none;text-decoration:none}
 .btn-outline:hover{background:rgba(13,94,166,.05);opacity:1}
 .btn-danger{background:linear-gradient(180deg,#D04E4E 0%, #C24A4A 100%);color:#fff;box-shadow:0 14px 28px rgba(194,74,74,.20)}
+
+/* ===== TABLE ACTION BUTTONS (Theme C: Soft Filled) ===== */
+.tbl-action{font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;border:none;transition:all .15s;font-family:inherit}
+.tbl-action--primary{color:#0D5EA6;background:rgba(13,94,166,.08)}
+.tbl-action--primary:hover{background:rgba(13,94,166,.14);text-decoration:none}
+.tbl-action--secondary{color:#5a6a7a;background:rgba(90,106,122,.08)}
+.tbl-action--secondary:hover{background:rgba(90,106,122,.14);text-decoration:none}
+.tbl-action--danger{color:#C24A4A;background:rgba(194,74,74,.08)}
+.tbl-action--danger:hover{background:rgba(194,74,74,.14);text-decoration:none}
 
 /* ===== GRID LAYOUTS ===== */
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}

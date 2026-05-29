@@ -221,7 +221,7 @@
             html += '<td style="text-align:right;font-weight:600;">' + formatCurrency(item.totalAmount) + '</td>';
             html += '<td>' + getStatusPill(item.creditNoteStatusTypeId) + '</td>';
             html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escHtml(item.reason) + '">' + escHtml(item.reason) + '</td>';
-            html += '<td><a href="/CreditNote/Detail/' + item.id + '" class="btn btn-secondary" style="padding:6px 14px;font-size:12px;">View</a></td>';
+            html += '<td><a href="/CreditNote/Detail/' + item.id + '" class="tbl-action tbl-action--primary">View</a></td>';
             html += '</tr>';
         });
 

@@ -178,6 +178,8 @@ builder.Services.AddScoped<ProductRepository>(sp =>
     new ProductRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ProductPriceHistoryRepository>(sp =>
     new ProductPriceHistoryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ProductTypeRepository>(sp =>
+    new ProductTypeRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductAutocompleteService, ProductAutocompleteService>();
 

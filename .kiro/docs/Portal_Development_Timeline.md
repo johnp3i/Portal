@@ -24,6 +24,8 @@ Last Updated: 2026-05-26
 | ✅ | Serilog Structured Logging — Dedicated Portal.Logging database, MSSqlServer sink, LoggingEnrichmentMiddleware (UserId/BusinessId), SelfLog, migration script, property-based tests | 2026-05-26 |
 | ✅ | Audit & System Administration — EF Core SaveChangesInterceptor, audit log viewer with filtered/paginated search, super admin user management, per-module permission controls, property-based tests (13 properties) | 2026-07-14 |
 | ✅ | System Logs Viewer — Dedicated LoggingDbContext for Portal.Logging DB, SystemLogQueryRepository, filtered/paginated search by level/date/user/correlation ID, expandable detail rows with exception/stack trace, navigation integration | 2025-07-28 |
+| ✅ | Credit Notes — Credit note creation against source invoices, lifecycle (Draft → Issued → Applied → Voided), line items, amount computation, number generation, VAT period assignment, application to invoices, void with reversal, property-based tests | 2026-05-28 |
+| ✅ | Invoice Line Product Type & Reverse Charge — ProductType lookup table (Services/Goods), ProductTypeId on Product with derivation on quotation lines, immutable snapshot on invoice lines, IsReverseCharge flag with VatRate=0% enforcement, quotation-to-invoice conversion preservation, property-based tests (7 properties) | 2025-07-28 |
 
 ---
 
@@ -235,18 +237,63 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 
 ---
 
-## Phase 2 — Future Modules (Not Phase 1)
+### Module 10: Subscription & Self-Service Onboarding
+
+**Goal:** Enable new tenants to self-register via a public landing page, select a subscription plan, pay via Stripe, and start working immediately — replacing the invitation-only model for initial tenant creation while preserving it for adding users within a tenant.
+
+| Done | # | Task | Dependencies | Completed |
+|------|---|------|-------------|-----------|
+| [ ] | 10.1 | Design and build public landing page (hero, features, pricing cards, CTA) | Module 0 | |
+| [ ] | 10.2 | Create subscription schema: `[subscription].[Plan]`, `[subscription].[Subscription]`, `[subscription].[PlanModule]` | Module 0 | |
+| [ ] | 10.3 | Seed Plan data (Starter, Business, Enterprise) with module mappings | 10.2 | |
+| [ ] | 10.4 | Integrate Stripe: create Checkout Session on plan selection | 10.2 | |
+| [ ] | 10.5 | Implement Stripe webhook handler (`checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`) | 10.4 | |
+| [ ] | 10.6 | Auto-provision tenant on successful payment: create Business, first User (owner), assign modules per plan | 10.5 | |
+| [ ] | 10.7 | Build post-signup setup wizard (business name, VAT number, address, logo, currency) | 10.6 | |
+| [ ] | 10.8 | Update module access middleware: check subscription plan includes module before checking user-level permission | 10.2, Module 7 | |
+| [ ] | 10.9 | Build subscription status indicator in sidebar/topbar (plan name, days remaining) | 10.8 | |
+| [ ] | 10.10 | Implement grace period and "billing required" lockout screen for lapsed subscriptions | 10.5 | |
+| [ ] | 10.11 | Integrate Stripe Customer Portal for self-service billing management (plan changes, payment methods, invoice history) | 10.4 | |
+| [ ] | 10.12 | Build super admin "Subscriptions" view (all tenants, plans, payment status, MRR) | 10.2 | |
+| [ ] | 10.13 | Routing: unauthenticated `/` → landing page; authenticated `/` → redirect to Dashboard | 10.1 | |
+| [ ] | 10.14 | Property-based tests (plan-module mapping, provisioning atomicity, webhook idempotency, access gating) | 10.8 | |
+
+---
+
+## Phase 2 — Subscription Maturity & Advanced Modules
+
+**Goal:** Differentiate subscription tiers with advanced features, add usage-based controls, and build the modules that justify higher-tier plans.
 
 | Done | Module | Description | Prerequisite | Completed |
 |------|--------|-------------|-------------|-----------|
-| [ ] | Insights | Operational analytics, KPI cards, trend signals, story engine | Modules 2-4 complete | |
-| [ ] | JDS Integration | Production orchestration connection | Architecture review | |
-| [ ] | ERP Integration | Export to external accounting systems | Modules 3-6 complete | |
-| [ ] | COM Pipeline | Canonical Operational Model ingestion | All Phase 1 modules | |
-| [ ] | Credit Notes | Issue credit against invoices | Module 4 | |
-| [ ] | Bank Feed Integration | Automated payment matching | Module 4 | |
-| [ ] | Reminder Workflow | Automated overdue notifications | Module 4 | |
-| [ ] | Mobile Responsive Layout | Hamburger menu, collapsible sidebar, mobile-friendly topbar with action buttons, proper "My Account" placement on mobile | Module 0 | |
+| [ ] | Inventory Management | Stock tracking from purchases, stock levels, reorder points, warehouse locations | Module 5, Module 10 | |
+| [ ] | Bill of Materials (BOM) | Product composition, cost roll-up, multi-level BOM, production cost estimation | Inventory, Product Catalog | |
+| [ ] | Production Planning | Work orders, BOM-to-production flow, scheduling, completion tracking | BOM, Inventory | |
+| [ ] | Advanced Analytics (Insights) | Operational KPI cards, trend signals, margin analysis, story engine | Modules 2-5 complete | |
+| [ ] | Seat-Based Pricing | Per-user billing within plans, user count limits per tier, overage handling | Module 10 | |
+| [ ] | Usage Limits & Metering | Document count limits per plan (invoices/month, quotations/month), upgrade prompts | Module 10 | |
+| [ ] | Plan Upgrade/Downgrade Flow | In-app plan switching with prorated billing via Stripe, module access adjustment | Module 10 | |
+| [ ] | Customer Account Credits | Standalone credit notes (no invoice reference), running credit balance, apply to future invoices | Module 4, Credit Notes | |
+| [ ] | Bank Feed Integration | Automated payment matching from bank statements | Module 4 | |
+| [ ] | Reminder Workflow | Automated overdue notifications via email, configurable schedules | Module 4 | |
+
+---
+
+## Phase 3 — Platform Scale & Ecosystem
+
+**Goal:** Enterprise-grade features, external integrations, and platform extensibility for large-scale operations.
+
+| Done | Module | Description | Prerequisite | Completed |
+|------|--------|-------------|-------------|-----------|
+| [ ] | ERP Integration | Export to external accounting systems (Xero, QuickBooks, SAP) | Modules 3-6 | |
+| [ ] | JDS Integration | Production orchestration connection (3 Inventors internal) | Architecture review | |
+| [ ] | COM Pipeline | Canonical Operational Model ingestion | All Phase 2 modules | |
+| [ ] | API Access & Webhooks | RESTful API for external integrations, webhook notifications for events | Module 10 (Enterprise tier) | |
+| [ ] | Multi-Currency Support | Per-invoice currency, exchange rate management, multi-currency reporting | Modules 3-4 | |
+| [ ] | Mobile Responsive Layout | Hamburger menu, collapsible sidebar, mobile-friendly topbar, touch-optimized tables | Module 0 | |
+| [ ] | White-Label / Custom Branding | Per-tenant branding (logo, colors, custom domain CNAME) | Module 10 (Enterprise tier) | |
+| [ ] | Marketplace & Add-Ons | Optional paid add-on modules, third-party integrations marketplace | Module 10 | |
+| [ ] | Custom Integrations | Tenant-specific integration configurations, custom field mapping | API Access | |
 
 ---
 

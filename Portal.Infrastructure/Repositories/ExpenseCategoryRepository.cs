@@ -16,7 +16,7 @@ public class ExpenseCategoryRepository : GenericStoredProcedureRepository<Expens
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [Name], [IsActive], [CreatedAtUtc]
+                SELECT [Id], [BusinessId], [Name], [IsActive], [ExpenseTypeId], [CreatedAtUtc]
                 FROM [purchase].[ExpenseCategory]
                 WHERE ExpenseCategory.BusinessId = @BusinessId";
 
@@ -33,7 +33,7 @@ public class ExpenseCategoryRepository : GenericStoredProcedureRepository<Expens
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [Name], [IsActive], [CreatedAtUtc]
+                SELECT [Id], [BusinessId], [Name], [IsActive], [ExpenseTypeId], [CreatedAtUtc]
                 FROM [purchase].[ExpenseCategory]
                 WHERE ExpenseCategory.Id = @Id AND ExpenseCategory.BusinessId = @BusinessId";
 
@@ -53,20 +53,22 @@ public class ExpenseCategoryRepository : GenericStoredProcedureRepository<Expens
         {
             const string query = @"
                 INSERT INTO [purchase].[ExpenseCategory]
-                    ([BusinessId], [Name], [IsActive])
+                    ([BusinessId], [Name], [IsActive], [ExpenseTypeId])
                 VALUES
-                    (@BusinessId, @Name, @IsActive);
+                    (@BusinessId, @Name, @IsActive, @ExpenseTypeId);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var idParam = new SqlParameter("@BusinessId", entity.BusinessId);
             var nameParam = new SqlParameter("@Name", entity.Name ?? (object)DBNull.Value);
             var isActiveParam = new SqlParameter("@IsActive", entity.IsActive);
+            var expenseTypeIdParam = new SqlParameter("@ExpenseTypeId", entity.ExpenseTypeId ?? (object)DBNull.Value);
 
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandText = query;
             command.Parameters.Add(idParam);
             command.Parameters.Add(nameParam);
             command.Parameters.Add(isActiveParam);
+            command.Parameters.Add(expenseTypeIdParam);
 
             if (command.Connection!.State != System.Data.ConnectionState.Open)
                 await command.Connection.OpenAsync();
@@ -89,13 +91,15 @@ public class ExpenseCategoryRepository : GenericStoredProcedureRepository<Expens
             const string query = @"
                 UPDATE [purchase].[ExpenseCategory]
                 SET
-                    [Name] = @Name
+                    [Name] = @Name,
+                    [ExpenseTypeId] = @ExpenseTypeId
                 WHERE ExpenseCategory.Id = @Id AND ExpenseCategory.BusinessId = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", entity.Id),
                 new SqlParameter("@BusinessId", entity.BusinessId),
-                new SqlParameter("@Name", entity.Name ?? (object)DBNull.Value)
+                new SqlParameter("@Name", entity.Name ?? (object)DBNull.Value),
+                new SqlParameter("@ExpenseTypeId", entity.ExpenseTypeId ?? (object)DBNull.Value)
             );
         }
         catch (Exception)

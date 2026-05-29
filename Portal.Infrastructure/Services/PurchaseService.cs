@@ -223,12 +223,17 @@ public class PurchaseService : IPurchaseService
             return ServiceResult.Fail("VAT amount cannot be negative.");
         }
 
-        if (purchase.PurchaseOriginTypeId < 1 || purchase.PurchaseOriginTypeId > 3)
+        if (purchase.PurchaseOriginTypeId < 1 || purchase.PurchaseOriginTypeId > 4)
         {
             return ServiceResult.Fail("Invalid purchase origin type.");
         }
 
-        // Validate Country requirement for EU RC and Non-EU
+        if (purchase.PurchaseTypeId < 1 || purchase.PurchaseTypeId > 3)
+        {
+            return ServiceResult.Fail("Purchase type is required. Select Asset, Stock, or Expense.");
+        }
+
+        // Validate Country requirement for EU RC, Non-EU, and EU Paid
         if (purchase.PurchaseOriginTypeId == 2 && string.IsNullOrWhiteSpace(purchase.Country))
         {
             return ServiceResult.Fail("Country is required for EU Reverse Charge transactions.");
@@ -237,6 +242,11 @@ public class PurchaseService : IPurchaseService
         if (purchase.PurchaseOriginTypeId == 3 && string.IsNullOrWhiteSpace(purchase.Country))
         {
             return ServiceResult.Fail("Country is required for Non-EU purchases.");
+        }
+
+        if (purchase.PurchaseOriginTypeId == 4 && string.IsNullOrWhiteSpace(purchase.Country))
+        {
+            return ServiceResult.Fail("Country is required for EU Paid purchases.");
         }
 
         // Validate SupplierId references an active supplier belonging to the current tenant
@@ -267,6 +277,7 @@ public class PurchaseService : IPurchaseService
 
             case 1: // Domestic — preserve VatAmount, compute TotalAmount
             case 3: // Non-EU — preserve VatAmount, compute TotalAmount
+            case 4: // EU Paid — preserve VatAmount, compute TotalAmount (same as Domestic/Non-EU)
             default:
                 purchase.TotalAmount = purchase.AmountExcludingVat + purchase.VatAmount;
                 break;

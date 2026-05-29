@@ -322,7 +322,8 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
         int? customerFilter,
         string? searchTerm,
         int offset,
-        int pageSize)
+        int pageSize,
+        int? vatPeriodId = null)
     {
         try
         {
@@ -348,6 +349,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                   AND (@StatusFilter IS NULL OR [invoice].[Invoice].[InvoiceStatusTypeId] = @StatusFilter)
                   AND (@FinancialStatusFilter IS NULL OR [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = @FinancialStatusFilter)
                   AND (@CustomerFilter IS NULL OR [invoice].[Invoice].[CustomerId] = @CustomerFilter)
+                  AND (@VatPeriodId IS NULL OR [invoice].[Invoice].[VatSubmissionPeriodId] = @VatPeriodId)
                   AND (@SearchTerm IS NULL OR (
                       [invoice].[Invoice].[InvoiceNumber] LIKE '%' + @SearchTerm + '%'
                       OR [customer].[Customer].[Name] LIKE '%' + @SearchTerm + '%'
@@ -375,6 +377,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 command.Parameters.Add(new SqlParameter("@StatusFilter", statusFilter ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@FinancialStatusFilter", financialStatusFilter ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CustomerFilter", customerFilter ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@VatPeriodId", vatPeriodId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@SearchTerm", (object?)escapedSearchTerm ?? DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@Offset", offset));
                 command.Parameters.Add(new SqlParameter("@PageSize", pageSize));
@@ -406,6 +409,103 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
             }
 
             return (results, totalCount);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Returns all invoices matching the given filters without pagination.
+    /// Used for CSV/PDF export operations.
+    /// </summary>
+    public async Task<List<InvoiceListDto>> GetAllFilteredByBusinessIdAsync(
+        int businessId,
+        int? statusFilter,
+        int? financialStatusFilter,
+        int? customerFilter,
+        string? searchTerm,
+        int? vatPeriodId = null)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [invoice].[Invoice].[Id],
+                       [invoice].[Invoice].[InvoiceNumber],
+                       [invoice].[Invoice].[CustomerId],
+                       [customer].[Customer].[Name] AS [CustomerName],
+                       [invoice].[Invoice].[InvoiceDate],
+                       [invoice].[Invoice].[DueDate],
+                       [invoice].[Invoice].[TotalAmount],
+                       [invoice].[InvoiceStatusType].[Name] AS [StatusName],
+                       [invoice].[InvoiceFinancialStatusType].[Name] AS [FinancialStatusName],
+                       [invoice].[Invoice].[InvoiceStatusTypeId],
+                       [invoice].[Invoice].[InvoiceFinancialStatusTypeId]
+                FROM [invoice].[Invoice]
+                INNER JOIN [customer].[Customer] ON [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
+                INNER JOIN [invoice].[InvoiceStatusType] ON [invoice].[Invoice].[InvoiceStatusTypeId] = [invoice].[InvoiceStatusType].[Id]
+                INNER JOIN [invoice].[InvoiceFinancialStatusType] ON [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = [invoice].[InvoiceFinancialStatusType].[Id]
+                WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
+                  AND [invoice].[Invoice].[IsDeleted] = 0
+                  AND (@StatusFilter IS NULL OR [invoice].[Invoice].[InvoiceStatusTypeId] = @StatusFilter)
+                  AND (@FinancialStatusFilter IS NULL OR [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = @FinancialStatusFilter)
+                  AND (@CustomerFilter IS NULL OR [invoice].[Invoice].[CustomerId] = @CustomerFilter)
+                  AND (@VatPeriodId IS NULL OR [invoice].[Invoice].[VatSubmissionPeriodId] = @VatPeriodId)
+                  AND (@SearchTerm IS NULL OR (
+                      [invoice].[Invoice].[InvoiceNumber] LIKE '%' + @SearchTerm + '%'
+                      OR [customer].[Customer].[Name] LIKE '%' + @SearchTerm + '%'
+                  ))
+                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC";
+
+            var results = new List<InvoiceListDto>();
+            var connection = _context.Database.GetDbConnection();
+
+            // Escape SQL wildcards in search term
+            string? escapedSearchTerm = searchTerm != null
+                ? searchTerm.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")
+                : null;
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@StatusFilter", statusFilter ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@FinancialStatusFilter", financialStatusFilter ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CustomerFilter", customerFilter ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@VatPeriodId", vatPeriodId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@SearchTerm", (object?)escapedSearchTerm ?? DBNull.Value));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new InvoiceListDto
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        InvoiceNumber = reader.GetString(reader.GetOrdinal("InvoiceNumber")),
+                        CustomerId = reader.GetInt32(reader.GetOrdinal("CustomerId")),
+                        CustomerName = reader.GetString(reader.GetOrdinal("CustomerName")),
+                        InvoiceDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("InvoiceDate"))),
+                        DueDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("DueDate"))),
+                        TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                        StatusName = reader.GetString(reader.GetOrdinal("StatusName")),
+                        FinancialStatusName = reader.GetString(reader.GetOrdinal("FinancialStatusName")),
+                        InvoiceStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceStatusTypeId")),
+                        InvoiceFinancialStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceFinancialStatusTypeId"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    await connection.CloseAsync();
+            }
+
+            return results;
         }
         catch (Exception)
         {

@@ -37,4 +37,6 @@ public class QuotationLineFormViewModel
 
     [MaxLength(50)]
     public string? ProductCode { get; set; }
+
+    public bool IsReverseCharge { get; set; }
 }

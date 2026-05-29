@@ -36,8 +36,14 @@ public class InvoiceLine
 
     public string? ProductCode { get; set; }
 
+    public bool IsReverseCharge { get; set; }
+
+    public int? ProductTypeId { get; set; }
+
     // Navigation properties
     public Invoice Invoice { get; set; } = null!;
 
     public InvoiceSection? InvoiceSection { get; set; }
+
+    public ProductType? ProductType { get; set; }
 }

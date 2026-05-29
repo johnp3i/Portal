@@ -102,6 +102,12 @@
                 <label>Unit Price *</label>
                 <input type="number" id="newLine_unitPrice" step="0.01" min="0" value="0" />
             </div>
+            <div style="grid-column:1 / -1;display:flex;align-items:center;gap:8px;padding:8px 0;">
+                <input type="checkbox" id="newLine_isReverseCharge"
+                       onchange="toggleInvoiceReverseCharge(this, 'newLine_vatRate')" style="width:16px;height:16px;" />
+                <label for="newLine_isReverseCharge" style="margin:0;font-size:13px;font-weight:600;">Reverse Charge</label>
+                <span style="font-size:12px;color:#5a6a7a;margin-left:4px;">— VAT is accounted for by the buyer (B2B EU cross-border services)</span>
+            </div>
             <div class="field">
                 <label>VAT Rate (%)</label>
                 <input type="number" id="newLine_vatRate" step="0.01" min="0" max="100" value="0" />
@@ -194,9 +200,16 @@
                                             <label>Unit Price *</label>
                                             <input type="number" id="editLine_unitPrice_@line.Id" step="0.01" min="0" value="@line.UnitPrice" />
                                         </div>
+                                        <div style="grid-column:1 / -1;display:flex;align-items:center;gap:8px;padding:8px 0;">
+                                            <input type="checkbox" id="editLine_isReverseCharge_@line.Id"
+                                                   @(line.IsReverseCharge ? "checked" : "")
+                                                   onchange="toggleInvoiceReverseCharge(this, 'editLine_vatRate_@line.Id')" style="width:16px;height:16px;" />
+                                            <label for="editLine_isReverseCharge_@line.Id" style="margin:0;font-size:13px;font-weight:600;">Reverse Charge</label>
+                                            <span style="font-size:12px;color:#5a6a7a;margin-left:4px;">— VAT is accounted for by the buyer (B2B EU cross-border services)</span>
+                                        </div>
                                         <div class="field">
                                             <label>VAT Rate (%)</label>
-                                            <input type="number" id="editLine_vatRate_@line.Id" step="0.01" min="0" max="100" value="@line.VatRate" />
+                                            <input type="number" id="editLine_vatRate_@line.Id" step="0.01" min="0" max="100" value="@line.VatRate" @(line.IsReverseCharge ? "readonly style=\"opacity:0.6;\"" : "") />
                                         </div>
                                         <div class="field">
                                             <label>Discount</label>
@@ -307,6 +320,21 @@
 @section Scripts {
     <script>
         var invoiceId = @Model.Id;
+
+        function toggleInvoiceReverseCharge(checkbox, vatInputId) {
+            var vatInput = document.getElementById(vatInputId);
+            if (checkbox.checked) {
+                vatInput.dataset.previousVatRate = vatInput.value;
+                vatInput.value = '0';
+                vatInput.readOnly = true;
+                vatInput.style.opacity = '0.6';
+            } else {
+                var previousRate = vatInput.dataset.previousVatRate || '0';
+                vatInput.value = previousRate;
+                vatInput.readOnly = false;
+                vatInput.style.opacity = '1';
+            }
+        }
         var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
 
         function showAddLineForm() {
@@ -337,7 +365,8 @@
                 + '&discountType=' + document.getElementById('newLine_discountType').value
                 + '&costPrice=' + (document.getElementById('newLine_costPrice').value || '')
                 + '&subtitle=' + encodeURIComponent(document.getElementById('newLine_subtitle').value || '')
-                + '&productCode=' + encodeURIComponent(document.getElementById('newLine_productCode').value || '');
+                + '&productCode=' + encodeURIComponent(document.getElementById('newLine_productCode').value || '')
+                + '&isReverseCharge=' + document.getElementById('newLine_isReverseCharge').checked;
 
             fetch('/Invoice/AddLine', {
                 method: 'POST',
@@ -367,7 +396,8 @@
                 + '&discount=' + document.getElementById('editLine_discount_' + lineId).value
                 + '&discountType=' + document.getElementById('editLine_discountType_' + lineId).value
                 + '&costPrice=' + (document.getElementById('editLine_costPrice_' + lineId).value || '')
-                + '&subtitle=' + encodeURIComponent(document.getElementById('editLine_subtitle_' + lineId).value || '');
+                + '&subtitle=' + encodeURIComponent(document.getElementById('editLine_subtitle_' + lineId).value || '')
+                + '&isReverseCharge=' + document.getElementById('editLine_isReverseCharge_' + lineId).checked;
 
             fetch('/Invoice/UpdateLine', {
                 method: 'POST',

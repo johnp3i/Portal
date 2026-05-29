@@ -8,12 +8,16 @@ public class PurchaseListViewModel
     public List<Supplier> Suppliers { get; set; } = new();
     public List<ExpenseCategory> ExpenseCategories { get; set; } = new();
     public List<PurchaseOriginType> OriginTypes { get; set; } = new();
+    public List<PurchaseType> PurchaseTypes { get; set; } = new();
+    public List<VatSubmissionPeriod> VatPeriods { get; set; } = new();
     public string CurrencySymbol { get; set; } = "€";
 
     // Filter state
     public int? SupplierId { get; set; }
     public int? ExpenseCategoryId { get; set; }
     public int? PurchaseOriginTypeId { get; set; }
+    public int? PurchaseTypeId { get; set; }
+    public int? VatPeriodId { get; set; }
     public DateOnly? DateFrom { get; set; }
     public DateOnly? DateTo { get; set; }
     public string? SearchTerm { get; set; }

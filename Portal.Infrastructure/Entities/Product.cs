@@ -28,10 +28,14 @@ public class Product
 
     public DateTime CreatedAtUtc { get; set; }
 
+    public int? ProductTypeId { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 
     public Supplier? Supplier { get; set; }
+
+    public ProductType? ProductType { get; set; }
 
     public ICollection<ProductPriceHistory> PriceHistory { get; set; } = new List<ProductPriceHistory>();
 }

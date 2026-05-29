@@ -76,6 +76,7 @@ public class PurchaseVatPropertyTests
             SupplierId = TestSupplierId,
             ExpenseCategoryId = TestExpenseCategoryId,
             PurchaseOriginTypeId = originTypeId,
+            PurchaseTypeId = 3,
             InvoiceDate = DateOnly.FromDateTime(DateTime.Today),
             Description = "Test purchase",
             AmountExcludingVat = amountExclVat,

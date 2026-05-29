@@ -11,12 +11,12 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
 {
     public QuotationLineRepository(DbContext context) : base(context) { }
 
-    public async Task<List<QuotationLine>> GetByQuotationIdAsync(int quotationId)
+    public virtual async Task<List<QuotationLine>> GetByQuotationIdAsync(int quotationId)
     {
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge]
                 FROM [quotation].[QuotationLine]
                 WHERE [QuotationId] = @QuotationId
                 ORDER BY [SortOrder]";
@@ -29,12 +29,12 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         }
     }
 
-    public async Task<QuotationLine?> GetByIdAsync(int id)
+    public virtual async Task<QuotationLine?> GetByIdAsync(int id)
     {
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge]
                 FROM [quotation].[QuotationLine]
                 WHERE [Id] = @Id";
 
@@ -46,15 +46,15 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         }
     }
 
-    public async Task InsertAsync(QuotationLine entity)
+    public virtual async Task InsertAsync(QuotationLine entity)
     {
         try
         {
             const string query = @"
                 INSERT INTO [quotation].[QuotationLine]
-                    ([QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle])
+                    ([QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge])
                 VALUES
-                    (@QuotationId, @Description, @Quantity, @UnitPrice, @VatRate, @Discount, @DiscountType, @CostPrice, @LineTotal, @SortOrder, @ReferenceUrl, @ProposalSectionId, @Subtitle)";
+                    (@QuotationId, @Description, @Quantity, @UnitPrice, @VatRate, @Discount, @DiscountType, @CostPrice, @LineTotal, @SortOrder, @ReferenceUrl, @ProposalSectionId, @Subtitle, @IsReverseCharge)";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@QuotationId", entity.QuotationId),
@@ -69,7 +69,8 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
                 new SqlParameter("@SortOrder", entity.SortOrder),
                 new SqlParameter("@ReferenceUrl", entity.ReferenceUrl ?? (object)DBNull.Value),
                 new SqlParameter("@ProposalSectionId", entity.ProposalSectionId ?? (object)DBNull.Value),
-                new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value)
+                new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value),
+                new SqlParameter("@IsReverseCharge", entity.IsReverseCharge)
             );
         }
         catch (Exception)
@@ -78,7 +79,7 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         }
     }
 
-    public async Task UpdateAsync(QuotationLine entity)
+    public virtual async Task UpdateAsync(QuotationLine entity)
     {
         try
         {
@@ -96,7 +97,8 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
                     [SortOrder] = @SortOrder,
                     [ReferenceUrl] = @ReferenceUrl,
                     [ProposalSectionId] = @ProposalSectionId,
-                    [Subtitle] = @Subtitle
+                    [Subtitle] = @Subtitle,
+                    [IsReverseCharge] = @IsReverseCharge
                 WHERE [Id] = @Id";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -112,7 +114,8 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
                 new SqlParameter("@SortOrder", entity.SortOrder),
                 new SqlParameter("@ReferenceUrl", entity.ReferenceUrl ?? (object)DBNull.Value),
                 new SqlParameter("@ProposalSectionId", entity.ProposalSectionId ?? (object)DBNull.Value),
-                new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value)
+                new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value),
+                new SqlParameter("@IsReverseCharge", entity.IsReverseCharge)
             );
         }
         catch (Exception)

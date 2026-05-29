@@ -105,6 +105,7 @@ public class InvoiceVatPeriodAssignmentPropertyTests
         Mock<PortalDbContext> dbContextMock)
     {
         var productServiceMock = new Mock<IProductService>();
+        var productRepositoryMock = new Mock<ProductRepository>(dbContextMock.Object);
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         var loggerMock = new Mock<ILogger<InvoiceService>>();
 
@@ -122,6 +123,7 @@ public class InvoiceVatPeriodAssignmentPropertyTests
             vatSubmissionRepoMock.Object,
             dbContextMock.Object,
             productServiceMock.Object,
+            productRepositoryMock.Object,
             httpContextAccessorMock.Object,
             loggerMock.Object);
     }

@@ -27,6 +27,8 @@ public class BulkPurchaseRowDto
 
     public int PurchaseOriginTypeId { get; set; } = 1;
 
+    public int PurchaseTypeId { get; set; } = 3;
+
     [MaxLength(100)]
     public string? Country { get; set; }
 }

@@ -27,18 +27,18 @@ public class ExpenseCategoryController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([FromForm] string name)
+    public async Task<IActionResult> Create([FromForm] string name, [FromForm] int? expenseTypeId)
     {
-        var category = new ExpenseCategory { Name = name };
+        var category = new ExpenseCategory { Name = name, ExpenseTypeId = expenseTypeId };
         var result = await _expenseCategoryService.CreateExpenseCategoryAsync(category);
         return Json(new { success = result.Success, message = result.Message, id = result.Id });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string name)
+    public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string name, [FromForm] int? expenseTypeId)
     {
-        var category = new ExpenseCategory { Id = id, Name = name };
+        var category = new ExpenseCategory { Id = id, Name = name, ExpenseTypeId = expenseTypeId };
         var result = await _expenseCategoryService.UpdateExpenseCategoryAsync(category);
         return Json(new { success = result.Success, message = result.Message });
     }

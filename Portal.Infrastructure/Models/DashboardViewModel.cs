@@ -49,4 +49,16 @@ public class DashboardViewModel
 
     // Top Customers
     public List<TopCustomerDto> TopCustomers { get; set; } = new();
+
+    // Scope visibility flags
+    public bool ShowRevenue { get; set; } = true;
+    public bool ShowInvoice { get; set; } = true;
+    public bool ShowQuotation { get; set; } = true;
+    public bool ShowPurchase { get; set; } = true;
+    public bool ShowVat { get; set; } = true;
+    public bool ShowCustomer { get; set; } = true;
+    public bool HasAnyKpiSection { get; set; } = true;
+
+    // Empty state
+    public string? BusinessName { get; set; }
 }

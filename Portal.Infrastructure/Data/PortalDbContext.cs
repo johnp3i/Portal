@@ -47,6 +47,8 @@ public class PortalDbContext : DbContext
     public DbSet<ExpenseCategory> ExpenseCategories { get; set; } = null!;
     public DbSet<Purchase> Purchases { get; set; } = null!;
     public DbSet<PurchaseOriginType> PurchaseOriginTypes { get; set; } = null!;
+    public DbSet<ExpenseType> ExpenseTypes { get; set; } = null!;
+    public DbSet<PurchaseType> PurchaseTypes { get; set; } = null!;
 
     // VAT schema
     public DbSet<VatSubmissionPeriod> VatSubmissionPeriods { get; set; } = null!;
@@ -93,6 +95,8 @@ public class PortalDbContext : DbContext
         ConfigureSupplier(modelBuilder);
         ConfigureExpenseCategory(modelBuilder);
         ConfigurePurchaseOriginType(modelBuilder);
+        ConfigureExpenseType(modelBuilder);
+        ConfigurePurchaseType(modelBuilder);
         ConfigurePurchase(modelBuilder);
         ConfigureVatSubmissionPeriod(modelBuilder);
         ConfigureVatSubmission(modelBuilder);
@@ -748,6 +752,12 @@ public class PortalDbContext : DbContext
                 .HasForeignKey(e => e.BusinessId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
+            entity.HasOne(e => e.ExpenseType)
+                .WithMany()
+                .HasForeignKey(e => e.ExpenseTypeId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
             entity.HasIndex(e => e.BusinessId)
                 .HasDatabaseName("IX_ExpenseCategory_BusinessId");
 
@@ -758,6 +768,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
         });
     }
 
@@ -776,7 +790,47 @@ public class PortalDbContext : DbContext
             entity.HasData(
                 new PurchaseOriginType { Id = 1, Name = "Domestic" },
                 new PurchaseOriginType { Id = 2, Name = "EuReverseCharge" },
-                new PurchaseOriginType { Id = 3, Name = "NonEu" }
+                new PurchaseOriginType { Id = 3, Name = "NonEu" },
+                new PurchaseOriginType { Id = 4, Name = "EuPaid" }
+            );
+        });
+    }
+
+    private static void ConfigureExpenseType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ExpenseType>(entity =>
+        {
+            entity.ToTable("ExpenseType", "purchase");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasData(
+                new ExpenseType { Id = 1, Name = "Services" },
+                new ExpenseType { Id = 2, Name = "Goods" }
+            );
+        });
+    }
+
+    private static void ConfigurePurchaseType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PurchaseType>(entity =>
+        {
+            entity.ToTable("PurchaseType", "purchase");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasData(
+                new PurchaseType { Id = 1, Name = "Asset" },
+                new PurchaseType { Id = 2, Name = "Stock" },
+                new PurchaseType { Id = 3, Name = "Expense" }
             );
         });
     }
@@ -809,6 +863,11 @@ public class PortalDbContext : DbContext
                 .HasForeignKey(e => e.PurchaseOriginTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
+            entity.HasOne(e => e.PurchaseType)
+                .WithMany()
+                .HasForeignKey(e => e.PurchaseTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
             entity.HasOne(e => e.VatSubmissionPeriod)
                 .WithMany()
                 .HasForeignKey(e => e.VatSubmissionPeriodId)
@@ -837,6 +896,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.PurchaseOriginTypeId)
                 .IsRequired()
                 .HasDefaultValue(1);
+
+            entity.Property(e => e.PurchaseTypeId)
+                .IsRequired()
+                .HasDefaultValue(3);
 
             entity.Property(e => e.Country)
                 .HasMaxLength(100);

@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,9 @@ using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Services;
 using Portal.Web.Models;
 using Portal.Web.Security;
+using Portal.Web.Services;
+using PuppeteerSharp;
+using PuppeteerSharp.Media;
 
 namespace Portal.Web.Controllers;
 
@@ -19,42 +23,28 @@ public class PurchaseController : Controller
     private readonly IExpenseCategoryService _expenseCategoryService;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly PortalDbContext _dbContext;
+    private readonly IViewRenderService _viewRenderService;
 
     public PurchaseController(
         IPurchaseService purchaseService,
         ISupplierService supplierService,
         IExpenseCategoryService expenseCategoryService,
         ICurrentTenantService currentTenantService,
-        PortalDbContext dbContext)
+        PortalDbContext dbContext,
+        IViewRenderService viewRenderService)
     {
         _purchaseService = purchaseService;
         _supplierService = supplierService;
         _expenseCategoryService = expenseCategoryService;
         _currentTenantService = currentTenantService;
         _dbContext = dbContext;
+        _viewRenderService = viewRenderService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
     {
-        var purchases = await _purchaseService.GetFilteredPurchasesAsync(supplierId, expenseCategoryId, dateFrom, dateTo);
-
-        // Apply origin type filter in-memory (not yet supported by service method)
-        if (purchaseOriginTypeId.HasValue)
-        {
-            purchases = purchases.Where(p => p.PurchaseOriginTypeId == purchaseOriginTypeId.Value).ToList();
-        }
-
-        // Apply search term filter in-memory
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var term = searchTerm.Trim();
-            purchases = purchases.Where(p =>
-                (p.Description != null && p.Description.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                (p.InvoiceNumber != null && p.InvoiceNumber.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                (p.Supplier?.Name != null && p.Supplier.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
-            ).ToList();
-        }
+        var purchases = await GetFilteredPurchasesForExportAsync(supplierId, expenseCategoryId, purchaseOriginTypeId, purchaseTypeId, vatPeriodId, dateFrom, dateTo, searchTerm);
 
         // Load VAT periods for discrepancy badge display
         var businessId = _currentTenantService.CurrentBusinessId;
@@ -74,6 +64,7 @@ public class PurchaseController : Controller
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var categories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
         var originTypes = await _dbContext.PurchaseOriginTypes.ToListAsync();
+        var purchaseTypes = await _dbContext.PurchaseTypes.ToListAsync();
 
         var profile = await _dbContext.BusinessProfiles
             .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
@@ -85,16 +76,102 @@ public class PurchaseController : Controller
             Suppliers = suppliers,
             ExpenseCategories = categories,
             OriginTypes = originTypes,
+            PurchaseTypes = purchaseTypes,
+            VatPeriods = vatPeriods,
             CurrencySymbol = currencySymbol,
             SupplierId = supplierId,
             ExpenseCategoryId = expenseCategoryId,
             PurchaseOriginTypeId = purchaseOriginTypeId,
+            PurchaseTypeId = purchaseTypeId,
+            VatPeriodId = vatPeriodId,
             DateFrom = dateFrom,
             DateTo = dateTo,
             SearchTerm = searchTerm
         };
 
         return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportCsv(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    {
+        var purchases = await GetFilteredPurchasesForExportAsync(supplierId, expenseCategoryId, purchaseOriginTypeId, purchaseTypeId, vatPeriodId, dateFrom, dateTo, searchTerm);
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var profile = await _dbContext.BusinessProfiles.FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+        var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+        var csv = new StringBuilder();
+        csv.AppendLine("Invoice Number,Supplier,Date,Description,Excl. VAT,VAT,Total,Origin,Category,Type,Status");
+        foreach (var p in purchases)
+        {
+            var originName = p.PurchaseOriginTypeId switch
+            {
+                1 => "Domestic",
+                2 => "EU Reverse Charge",
+                3 => "Non-EU",
+                4 => "EU Paid",
+                _ => ""
+            };
+            var typeName = p.PurchaseTypeId switch
+            {
+                1 => "Asset",
+                2 => "Stock",
+                3 => "Expense",
+                _ => ""
+            };
+            csv.AppendLine($"\"{p.InvoiceNumber}\",\"{p.Supplier?.Name}\",{p.InvoiceDate:yyyy-MM-dd},\"{p.Description}\",{p.AmountExcludingVat:F2},{p.VatAmount:F2},{p.TotalAmount:F2},\"{originName}\",\"{p.ExpenseCategory?.Name}\",\"{typeName}\",\"{(p.IsCancelled ? "Cancelled" : "Active")}\"");
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        return File(bytes, "text/csv", $"purchases-export-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPdf(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    {
+        var purchases = await GetFilteredPurchasesForExportAsync(supplierId, expenseCategoryId, purchaseOriginTypeId, purchaseTypeId, vatPeriodId, dateFrom, dateTo, searchTerm);
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var profile = await _dbContext.BusinessProfiles.FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+        var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+        var model = new PurchaseExportPdfModel
+        {
+            Purchases = purchases,
+            CurrencySymbol = currencySymbol,
+            GeneratedAt = DateTime.Now
+        };
+
+        var html = await _viewRenderService.RenderViewToStringAsync("~/Views/Purchase/_ExportPdf.cshtml", model);
+
+        await new BrowserFetcher().DownloadAsync();
+
+        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        {
+            Headless = true,
+            Args = new[] { "--no-sandbox", "--disable-setuid-sandbox" }
+        });
+
+        await using var page = await browser.NewPageAsync();
+        await page.SetContentAsync(html, new NavigationOptions
+        {
+            WaitUntil = new[] { WaitUntilNavigation.Networkidle0 }
+        });
+
+        var pdfBytes = await page.PdfDataAsync(new PdfOptions
+        {
+            Landscape = true,
+            Format = PaperFormat.A4,
+            PrintBackground = true,
+            MarginOptions = new MarginOptions
+            {
+                Top = "10mm",
+                Bottom = "10mm",
+                Left = "10mm",
+                Right = "10mm"
+            }
+        });
+
+        return File(pdfBytes, "application/pdf", $"purchases-export-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
     }
 
     [HttpGet]
@@ -135,6 +212,7 @@ public class PurchaseController : Controller
         model.SupplierId = purchase.SupplierId;
         model.ExpenseCategoryId = purchase.ExpenseCategoryId;
         model.PurchaseOriginTypeId = purchase.PurchaseOriginTypeId;
+        model.PurchaseTypeId = purchase.PurchaseTypeId;
         model.InvoiceNumber = purchase.InvoiceNumber;
         model.InvoiceDate = purchase.InvoiceDate;
         model.Description = purchase.Description;
@@ -179,10 +257,14 @@ public class PurchaseController : Controller
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var categories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
         var originTypes = await _dbContext.PurchaseOriginTypes.ToListAsync();
+        var purchaseTypes = await _dbContext.PurchaseTypes.ToListAsync();
+        var expenseTypes = await _dbContext.ExpenseTypes.ToListAsync();
 
         ViewBag.Suppliers = suppliers;
         ViewBag.ExpenseCategories = categories;
         ViewBag.OriginTypes = originTypes;
+        ViewBag.PurchaseTypes = purchaseTypes;
+        ViewBag.ExpenseTypes = expenseTypes;
 
         return View();
     }
@@ -216,6 +298,7 @@ public class PurchaseController : Controller
                     SupplierId = row.SupplierId,
                     ExpenseCategoryId = row.ExpenseCategoryId,
                     PurchaseOriginTypeId = row.PurchaseOriginTypeId,
+                    PurchaseTypeId = row.PurchaseTypeId,
                     InvoiceNumber = row.InvoiceNumber,
                     InvoiceDate = row.InvoiceDate,
                     Description = row.Description,
@@ -323,7 +406,8 @@ public class PurchaseController : Controller
         var validRows = rows.Where(r => r.IsValid &&
             r.ResolvedSupplierId.HasValue &&
             r.ResolvedExpenseCategoryId.HasValue &&
-            r.ResolvedPurchaseOriginTypeId.HasValue).ToList();
+            r.ResolvedPurchaseOriginTypeId.HasValue &&
+            r.ResolvedPurchaseTypeId.HasValue).ToList();
 
         if (validRows.Count == 0)
         {
@@ -335,6 +419,7 @@ public class PurchaseController : Controller
             SupplierId = row.ResolvedSupplierId!.Value,
             ExpenseCategoryId = row.ResolvedExpenseCategoryId!.Value,
             PurchaseOriginTypeId = row.ResolvedPurchaseOriginTypeId!.Value,
+            PurchaseTypeId = row.ResolvedPurchaseTypeId!.Value,
             InvoiceNumber = row.InvoiceNumber,
             InvoiceDate = row.InvoiceDate,
             Description = row.Description,
@@ -355,17 +440,55 @@ public class PurchaseController : Controller
 
     #region Private Helpers
 
+    private async Task<List<Purchase>> GetFilteredPurchasesForExportAsync(
+        int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId,
+        int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    {
+        var purchases = await _purchaseService.GetFilteredPurchasesAsync(supplierId, expenseCategoryId, dateFrom, dateTo);
+
+        if (purchaseOriginTypeId.HasValue)
+        {
+            purchases = purchases.Where(p => p.PurchaseOriginTypeId == purchaseOriginTypeId.Value).ToList();
+        }
+
+        if (purchaseTypeId.HasValue)
+        {
+            purchases = purchases.Where(p => p.PurchaseTypeId == purchaseTypeId.Value).ToList();
+        }
+
+        if (vatPeriodId.HasValue)
+        {
+            purchases = purchases.Where(p => p.VatSubmissionPeriodId == vatPeriodId.Value).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.Trim();
+            purchases = purchases.Where(p =>
+                (p.Description != null && p.Description.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (p.InvoiceNumber != null && p.InvoiceNumber.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (p.Supplier?.Name != null && p.Supplier.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+        return purchases;
+    }
+
     private async Task<PurchaseFormViewModel> BuildFormViewModelAsync()
     {
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var categories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
         var originTypes = await _dbContext.PurchaseOriginTypes.ToListAsync();
+        var purchaseTypes = await _dbContext.PurchaseTypes.ToListAsync();
+        var expenseTypes = await _dbContext.ExpenseTypes.ToListAsync();
 
         return new PurchaseFormViewModel
         {
             Suppliers = suppliers,
             ExpenseCategories = categories,
             OriginTypes = originTypes,
+            PurchaseTypes = purchaseTypes,
+            ExpenseTypes = expenseTypes,
             InvoiceDate = DateOnly.FromDateTime(DateTime.Today)
         };
     }
@@ -375,6 +498,8 @@ public class PurchaseController : Controller
         model.Suppliers = await _supplierService.GetActiveSuppliersAsync();
         model.ExpenseCategories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
         model.OriginTypes = await _dbContext.PurchaseOriginTypes.ToListAsync();
+        model.PurchaseTypes = await _dbContext.PurchaseTypes.ToListAsync();
+        model.ExpenseTypes = await _dbContext.ExpenseTypes.ToListAsync();
     }
 
     private static Purchase MapFormToEntity(PurchaseFormViewModel model)
@@ -384,6 +509,7 @@ public class PurchaseController : Controller
             SupplierId = model.SupplierId,
             ExpenseCategoryId = model.ExpenseCategoryId,
             PurchaseOriginTypeId = model.PurchaseOriginTypeId,
+            PurchaseTypeId = model.PurchaseTypeId,
             InvoiceNumber = model.InvoiceNumber,
             InvoiceDate = model.InvoiceDate,
             Description = model.Description,
@@ -418,14 +544,19 @@ public class PurchaseController : Controller
             errors.Add(new { row = rowNumber, field = "ExpenseCategoryId", message = "Expense category is required." });
         }
 
-        if (row.PurchaseOriginTypeId < 1 || row.PurchaseOriginTypeId > 3)
+        if (row.PurchaseOriginTypeId < 1 || row.PurchaseOriginTypeId > 4)
         {
             errors.Add(new { row = rowNumber, field = "PurchaseOriginTypeId", message = "Invalid purchase origin type." });
         }
 
-        if ((row.PurchaseOriginTypeId == 2 || row.PurchaseOriginTypeId == 3) && string.IsNullOrWhiteSpace(row.Country))
+        if (row.PurchaseTypeId < 1 || row.PurchaseTypeId > 3)
         {
-            errors.Add(new { row = rowNumber, field = "Country", message = "Country is required for EU RC and Non-EU purchases." });
+            errors.Add(new { row = rowNumber, field = "PurchaseTypeId", message = "Purchase type is required. Select Asset, Stock, or Expense." });
+        }
+
+        if ((row.PurchaseOriginTypeId == 2 || row.PurchaseOriginTypeId == 3 || row.PurchaseOriginTypeId == 4) && string.IsNullOrWhiteSpace(row.Country))
+        {
+            errors.Add(new { row = rowNumber, field = "Country", message = "Country is required for EU RC, Non-EU, and EU Paid purchases." });
         }
 
         return errors;
@@ -533,18 +664,34 @@ public class PurchaseController : Controller
         if (originTypeId == null)
         {
             dto.IsValid = false;
-            dto.ErrorMessage = $"Invalid purchase origin type: '{dto.PurchaseOriginType}'. Expected: Domestic, EuReverseCharge, or NonEu.";
+            dto.ErrorMessage = $"Invalid purchase origin type: '{dto.PurchaseOriginType}'. Expected: Domestic, EuReverseCharge, EuPaid, or NonEu.";
             return dto;
         }
         dto.ResolvedPurchaseOriginTypeId = originTypeId;
 
-        // Validate Country requirement for EU RC and Non-EU
-        if ((originTypeId == 2 || originTypeId == 3) && string.IsNullOrWhiteSpace(dto.Country))
+        // Validate Country requirement for EU RC, Non-EU, and EU Paid
+        if ((originTypeId == 2 || originTypeId == 3 || originTypeId == 4) && string.IsNullOrWhiteSpace(dto.Country))
         {
             dto.IsValid = false;
-            dto.ErrorMessage = "Country is required for EU Reverse Charge and Non-EU purchases.";
+            dto.ErrorMessage = "Country is required for EU Reverse Charge, EU Paid, and Non-EU purchases.";
             return dto;
         }
+
+        // PurchaseType (optional column 11, defaults to Expense)
+        if (columns.Length > 10 && !string.IsNullOrWhiteSpace(columns[10]))
+        {
+            dto.PurchaseType = columns[10].Trim();
+        }
+
+        // Resolve PurchaseType
+        var purchaseTypeId = ResolvePurchaseTypeId(dto.PurchaseType);
+        if (purchaseTypeId == null)
+        {
+            dto.IsValid = false;
+            dto.ErrorMessage = $"Invalid purchase type: '{dto.PurchaseType}'. Expected: Asset, Stock, or Expense.";
+            return dto;
+        }
+        dto.ResolvedPurchaseTypeId = purchaseTypeId;
 
         return dto;
     }
@@ -561,7 +708,23 @@ public class PurchaseController : Controller
             "noneu" => 3,
             "non-eu" => 3,
             "non eu" => 3,
+            "eupaid" => 4,
+            "eu paid" => 4,
             _ => null
+        };
+    }
+
+    private static int? ResolvePurchaseTypeId(string? purchaseTypeName)
+    {
+        if (string.IsNullOrWhiteSpace(purchaseTypeName))
+            return 3; // Default to Expense
+
+        return purchaseTypeName.Trim().ToLowerInvariant() switch
+        {
+            "asset" => 1,
+            "stock" => 2,
+            "expense" => 3,
+            _ => null // Unrecognised value — mark row invalid
         };
     }
 

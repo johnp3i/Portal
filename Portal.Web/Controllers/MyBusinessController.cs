@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using System.Security.Claims;
 
 namespace Portal.Web.Controllers;
 
 /// <summary>
 /// Controller for regular business users to manage their own business profile, logo library, and payment details.
 /// Tab-based view: Profile | Logos | Payment Details
+/// Non-owner users have read-only access.
 /// </summary>
 [Authorize]
 public class MyBusinessController : Controller
@@ -27,6 +29,11 @@ public class MyBusinessController : Controller
         _paymentDetailRepository = paymentDetailRepository;
     }
 
+    private bool CanEdit()
+    {
+        return User.IsInRole("SuperAdmin") || User.HasClaim("IsOwner", "true");
+    }
+
     [HttpGet]
     public async Task<IActionResult> Index(string tab = "profile")
     {
@@ -40,6 +47,7 @@ public class MyBusinessController : Controller
         ViewBag.ActiveTab = tab;
         ViewBag.Logos = logos;
         ViewBag.PaymentDetails = paymentDetails;
+        ViewBag.IsReadOnly = !CanEdit();
 
         if (profile == null)
         {
@@ -53,6 +61,12 @@ public class MyBusinessController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveProfile(BusinessProfile profile, string? businessName)
     {
+        if (!CanEdit())
+        {
+            TempData["Error"] = "You do not have permission to edit business settings.";
+            return RedirectToAction(nameof(Index), new { tab = "profile" });
+        }
+
         profile.BusinessId = _tenantService.CurrentBusinessId;
 
         // Update business name if provided
@@ -117,6 +131,12 @@ public class MyBusinessController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UploadLogo(IFormFile file, string displayName)
     {
+        if (!CanEdit())
+        {
+            TempData["Error"] = "You do not have permission to edit business settings.";
+            return RedirectToAction(nameof(Index), new { tab = "logos" });
+        }
+
         if (file == null || string.IsNullOrWhiteSpace(displayName))
         {
             TempData["Error"] = "File and display name are required.";
@@ -144,6 +164,12 @@ public class MyBusinessController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteLogo(int id)
     {
+        if (!CanEdit())
+        {
+            TempData["Error"] = "You do not have permission to edit business settings.";
+            return RedirectToAction(nameof(Index), new { tab = "logos" });
+        }
+
         try
         {
             await _logoService.DeleteAsync(id, _tenantService.CurrentBusinessId);
@@ -161,6 +187,12 @@ public class MyBusinessController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SetPrimaryLogo(int id)
     {
+        if (!CanEdit())
+        {
+            TempData["Error"] = "You do not have permission to edit business settings.";
+            return RedirectToAction(nameof(Index), new { tab = "logos" });
+        }
+
         try
         {
             await _logoService.SetPrimaryAsync(id, _tenantService.CurrentBusinessId);
@@ -178,6 +210,12 @@ public class MyBusinessController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddPaymentDetail(string label, string bankName, string iban, string payeeName)
     {
+        if (!CanEdit())
+        {
+            TempData["Error"] = "You do not have permission to edit business settings.";
+            return RedirectToAction(nameof(Index), new { tab = "payment" });
+        }
+
         if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(bankName) ||
             string.IsNullOrWhiteSpace(iban) || string.IsNullOrWhiteSpace(payeeName))
         {
@@ -208,6 +246,12 @@ public class MyBusinessController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeletePaymentDetail(int id)
     {
+        if (!CanEdit())
+        {
+            TempData["Error"] = "You do not have permission to edit business settings.";
+            return RedirectToAction(nameof(Index), new { tab = "payment" });
+        }
+
         await _paymentDetailRepository.DeleteAsync(id, _tenantService.CurrentBusinessId);
         TempData["Success"] = "Payment detail removed.";
         return RedirectToAction(nameof(Index), new { tab = "payment" });
@@ -217,6 +261,12 @@ public class MyBusinessController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdatePaymentDetail(int id, string label, string bankName, string iban, string payeeName)
     {
+        if (!CanEdit())
+        {
+            TempData["Error"] = "You do not have permission to edit business settings.";
+            return RedirectToAction(nameof(Index), new { tab = "payment" });
+        }
+
         if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(bankName) ||
             string.IsNullOrWhiteSpace(iban) || string.IsNullOrWhiteSpace(payeeName))
         {

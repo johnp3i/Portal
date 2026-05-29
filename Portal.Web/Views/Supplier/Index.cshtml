@@ -60,15 +60,13 @@
                             }
                         </td>
                         <td>@supplier.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
-                        <td>
-                            <div style="display:flex;gap:12px;align-items:center;">
-                                <button type="button" style="background:none;border:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;" onclick="openEditModal(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Edit</button>
-                                @if (supplier.IsActive)
-                                {
-                                    <a href="/Supplier/Dashboard/@supplier.Id" target="_blank" style="background:linear-gradient(135deg,#0D5EA6,#57B8E8);color:#fff;font-weight:700;font-size:12px;text-decoration:none;font-family:inherit;padding:6px 14px;border-radius:8px;display:inline-block;">Dashboard</a>
-                                    <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;color:var(--red);" onclick="confirmDeactivate(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Deactivate</button>
-                                }
-                            </div>
+                        <td style="white-space:nowrap;">
+                            <button type="button" class="tbl-action tbl-action--primary" onclick="openEditModal(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Edit</button>
+                            @if (supplier.IsActive)
+                            {
+                                <a href="/Supplier/Dashboard/@supplier.Id" target="_blank" class="tbl-action tbl-action--primary">Dashboard</a>
+                                <button type="button" class="tbl-action tbl-action--danger" onclick="confirmDeactivate(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Deactivate</button>
+                            }
                         </td>
                     </tr>
                 }

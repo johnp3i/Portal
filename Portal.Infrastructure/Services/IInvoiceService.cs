@@ -26,7 +26,14 @@ public interface IInvoiceService
         int? customerFilter = null,
         string? searchTerm = null,
         int page = 1,
-        int pageSize = 15);
+        int pageSize = 15,
+        int? vatPeriodId = null);
+    Task<List<InvoiceListDto>> GetInvoicesFilteredAsync(
+        int? statusFilter = null,
+        int? financialStatusFilter = null,
+        int? customerFilter = null,
+        string? searchTerm = null,
+        int? vatPeriodId = null);
     Task<Invoice?> GetInvoiceByIdAsync(int id);
     Task<List<InvoiceLine>> GetInvoiceLinesAsync(int invoiceId);
 
@@ -45,10 +52,11 @@ public interface IInvoiceService
     Task<InvoiceLine> AddLineAsync(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
         decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
-        string? productCode = null);
+        string? productCode = null, bool isReverseCharge = false);
     Task UpdateLineAsync(int lineId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
-        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId);
+        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
+        bool isReverseCharge = false);
     Task RemoveLineAsync(int lineId);
 
     // VAT Period Reassignment

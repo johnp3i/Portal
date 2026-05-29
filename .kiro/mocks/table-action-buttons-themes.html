@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Action Buttons — Theme Options</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --muted: #5a6a7a;
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #1a2b3c;
+            padding: 40px;
+            line-height: 1.5;
+        }
+
+        h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 15px;
+            margin-bottom: 40px;
+        }
+
+        .theme-section {
+            background: #fff;
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 16px rgba(13,94,166,.06);
+            border: 1px solid rgba(13,94,166,.08);
+        }
+
+        .theme-section h2 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .theme-section .desc {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead th {
+            text-align: left;
+            padding: 12px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            background: var(--bg2);
+            border-bottom: 1px solid rgba(13,94,166,.08);
+        }
+
+        tbody td {
+            padding: 14px;
+            border-bottom: 1px solid rgba(13,94,166,.05);
+            vertical-align: middle;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        .actions { white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+
+        /* ============================================================
+           THEME A: Text Links (clean, minimal)
+           ============================================================ */
+        .theme-a .action-link {
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .theme-a .action-link--primary { color: var(--blue); }
+        .theme-a .action-link--primary:hover { text-decoration: underline; }
+        .theme-a .action-link--secondary { color: var(--muted); }
+        .theme-a .action-link--secondary:hover { color: var(--blue); text-decoration: underline; }
+        .theme-a .action-link--danger { color: var(--danger); }
+        .theme-a .action-link--danger:hover { text-decoration: underline; }
+
+        /* ============================================================
+           THEME B: Outlined Pill Buttons
+           ============================================================ */
+        .theme-b .action-btn {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: all .15s;
+        }
+        .theme-b .action-btn--primary {
+            color: var(--blue);
+            background: transparent;
+            border: 1.5px solid rgba(13,94,166,.25);
+        }
+        .theme-b .action-btn--primary:hover {
+            background: rgba(13,94,166,.06);
+            border-color: var(--blue);
+        }
+        .theme-b .action-btn--secondary {
+            color: var(--muted);
+            background: transparent;
+            border: 1.5px solid rgba(90,106,122,.2);
+        }
+        .theme-b .action-btn--secondary:hover {
+            background: rgba(90,106,122,.06);
+            border-color: var(--muted);
+        }
+        .theme-b .action-btn--danger {
+            color: var(--danger);
+            background: transparent;
+            border: 1.5px solid rgba(194,74,74,.25);
+        }
+        .theme-b .action-btn--danger:hover {
+            background: rgba(194,74,74,.06);
+            border-color: var(--danger);
+        }
+
+        /* ============================================================
+           THEME C: Soft Filled Buttons (subtle background)
+           ============================================================ */
+        .theme-c .action-btn {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            border: none;
+            transition: all .15s;
+        }
+        .theme-c .action-btn--primary {
+            color: var(--blue);
+            background: rgba(13,94,166,.08);
+        }
+        .theme-c .action-btn--primary:hover {
+            background: rgba(13,94,166,.14);
+        }
+        .theme-c .action-btn--secondary {
+            color: var(--muted);
+            background: rgba(90,106,122,.08);
+        }
+        .theme-c .action-btn--secondary:hover {
+            background: rgba(90,106,122,.14);
+        }
+        .theme-c .action-btn--danger {
+            color: var(--danger);
+            background: rgba(194,74,74,.08);
+        }
+        .theme-c .action-btn--danger:hover {
+            background: rgba(194,74,74,.14);
+        }
+
+        /* ============================================================
+           THEME D: Ghost Buttons (border-radius square, subtle border on hover)
+           ============================================================ */
+        .theme-d .action-btn {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid transparent;
+            background: transparent;
+            transition: all .15s;
+        }
+        .theme-d .action-btn--primary {
+            color: var(--blue);
+        }
+        .theme-d .action-btn--primary:hover {
+            background: rgba(13,94,166,.06);
+            border-color: rgba(13,94,166,.15);
+        }
+        .theme-d .action-btn--secondary {
+            color: var(--muted);
+        }
+        .theme-d .action-btn--secondary:hover {
+            background: rgba(90,106,122,.06);
+            border-color: rgba(90,106,122,.12);
+        }
+        .theme-d .action-btn--danger {
+            color: var(--danger);
+        }
+        .theme-d .action-btn--danger:hover {
+            background: rgba(194,74,74,.06);
+            border-color: rgba(194,74,74,.15);
+        }
+
+        /* ============================================================
+           THEME E: Compact Solid Buttons (small, filled)
+           ============================================================ */
+        .theme-e .action-btn {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            border: none;
+            color: #fff;
+            transition: all .15s;
+            letter-spacing: 0.02em;
+        }
+        .theme-e .action-btn--primary {
+            background: var(--blue);
+        }
+        .theme-e .action-btn--primary:hover {
+            background: #0a4d8a;
+        }
+        .theme-e .action-btn--secondary {
+            background: #6c7a8a;
+        }
+        .theme-e .action-btn--secondary:hover {
+            background: #556270;
+        }
+        .theme-e .action-btn--danger {
+            background: var(--danger);
+        }
+        .theme-e .action-btn--danger:hover {
+            background: #a33d3d;
+        }
+
+        .badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .badge-green { color: #129867; background: rgba(18,152,103,.1); }
+        .badge-red { color: #C24A4A; background: rgba(194,74,74,.1); }
+    </style>
+</head>
+<body>
+
+<h1>Table Action Buttons — Theme Options</h1>
+<p class="subtitle">Pick one consistent style for all table action columns across the Portal. Each theme is shown with typical actions: Edit, Detail/Dashboard, Deactivate.</p>
+
+<!-- THEME A -->
+<div class="theme-section theme-a">
+    <h2>Theme A: Text Links</h2>
+    <p class="desc">Clean, minimal text links. Lightweight footprint. Currently used on Products and some views.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Orestis Craft Center Cyprus Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-link action-link--primary" href="#">Edit</a>
+                        <a class="action-link action-link--secondary" href="#">Statement</a>
+                        <a class="action-link action-link--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>INV-1-00015</strong></td>
+                <td><span class="badge badge-green">Issued</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-link action-link--primary" href="#">Detail</a>
+                        <a class="action-link action-link--secondary" href="#">Preview</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Hatlo Trading Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-link action-link--primary" href="#">Edit</a>
+                        <a class="action-link action-link--primary" href="#">Dashboard</a>
+                        <a class="action-link action-link--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- THEME B -->
+<div class="theme-section theme-b">
+    <h2>Theme B: Outlined Pill Buttons</h2>
+    <p class="desc">Rounded pill-shaped buttons with a subtle border. More visible than text links, still lightweight.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Orestis Craft Center Cyprus Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--secondary" href="#">Statement</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>INV-1-00015</strong></td>
+                <td><span class="badge badge-green">Issued</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Detail</a>
+                        <a class="action-btn action-btn--secondary" href="#">Preview</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Hatlo Trading Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--primary" href="#">Dashboard</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- THEME C -->
+<div class="theme-section theme-c">
+    <h2>Theme C: Soft Filled Buttons</h2>
+    <p class="desc">Subtle background fill with no border. Compact and modern. Good balance between visibility and weight.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Orestis Craft Center Cyprus Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--secondary" href="#">Statement</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>INV-1-00015</strong></td>
+                <td><span class="badge badge-green">Issued</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Detail</a>
+                        <a class="action-btn action-btn--secondary" href="#">Preview</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Hatlo Trading Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--primary" href="#">Dashboard</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- THEME D -->
+<div class="theme-section theme-d">
+    <h2>Theme D: Ghost Buttons</h2>
+    <p class="desc">Invisible at rest, border appears on hover. Cleanest look with discoverability on interaction.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Orestis Craft Center Cyprus Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--secondary" href="#">Statement</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>INV-1-00015</strong></td>
+                <td><span class="badge badge-green">Issued</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Detail</a>
+                        <a class="action-btn action-btn--secondary" href="#">Preview</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Hatlo Trading Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--primary" href="#">Dashboard</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- THEME E -->
+<div class="theme-section theme-e">
+    <h2>Theme E: Compact Solid Buttons</h2>
+    <p class="desc">Small filled buttons with white text. Most prominent — clear call to action but heavier visual weight.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Orestis Craft Center Cyprus Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--secondary" href="#">Statement</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>INV-1-00015</strong></td>
+                <td><span class="badge badge-green">Issued</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Detail</a>
+                        <a class="action-btn action-btn--secondary" href="#">Preview</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Hatlo Trading Ltd</strong></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <a class="action-btn action-btn--primary" href="#">Edit</a>
+                        <a class="action-btn action-btn--primary" href="#">Dashboard</a>
+                        <a class="action-btn action-btn--danger" href="#">Deactivate</a>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

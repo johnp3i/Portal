@@ -16,6 +16,8 @@ public class Purchase
 
     public int PurchaseOriginTypeId { get; set; }
 
+    public int PurchaseTypeId { get; set; }
+
     public string? InvoiceNumber { get; set; }
 
     public DateOnly InvoiceDate { get; set; }
@@ -50,6 +52,8 @@ public class Purchase
     public ExpenseCategory ExpenseCategory { get; set; } = null!;
 
     public PurchaseOriginType PurchaseOriginType { get; set; } = null!;
+
+    public PurchaseType PurchaseType { get; set; } = null!;
 
     public VatSubmissionPeriod? VatSubmissionPeriod { get; set; }
 }

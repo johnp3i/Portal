@@ -45,4 +45,10 @@ public class AutocompleteResultDto
     /// The relevant date for sorting: LastUsedDate for products, InvoiceDate for invoice lines, CreatedAtUtc for quotation lines.
     /// </summary>
     public DateTime? Date { get; set; }
+
+    /// <summary>
+    /// The product type name (Services or Goods) derived from the product's ProductTypeId.
+    /// Null when the product has no ProductTypeId assigned.
+    /// </summary>
+    public string? ProductTypeName { get; set; }
 }

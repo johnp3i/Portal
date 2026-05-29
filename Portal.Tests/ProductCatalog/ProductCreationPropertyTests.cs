@@ -13,6 +13,7 @@ namespace Portal.Tests.ProductCatalog;
 // Feature: product-catalog, Property 1: Product creation persists with correct defaults
 // Feature: product-catalog, Property 2: Duplicate ProductCode rejection
 // Feature: product-catalog, Property 3: Invalid input rejection
+// Feature: invoice-line-product-type-reverse-charge, Property 4: New product creation requires ProductTypeId
 // Feature: product-catalog, Property 5: Product creation includes initial price history
 
 /// <summary>
@@ -122,11 +123,12 @@ public class ProductCreationPropertyTests
             from sellingPrice in ValidPriceGen()
             from costPrice in ValidPriceGen()
             from vatRate in ValidVatRateGen()
-            select (productCode, description, sellingPrice, costPrice, vatRate));
+            from productTypeId in Gen.Elements(1, 2)
+            select (productCode, description, sellingPrice, costPrice, vatRate, productTypeId));
 
         return Prop.ForAll(arb, async tuple =>
         {
-            var (productCode, description, sellingPrice, costPrice, vatRate) = tuple;
+            var (productCode, description, sellingPrice, costPrice, vatRate, productTypeId) = tuple;
 
             var (service, productRepoMock, priceHistoryRepoMock) = CreateService();
 
@@ -151,7 +153,8 @@ public class ProductCreationPropertyTests
                 Description = description,
                 DefaultSellingPrice = sellingPrice,
                 DefaultCostPrice = costPrice,
-                DefaultVatRate = vatRate
+                DefaultVatRate = vatRate,
+                ProductTypeId = productTypeId
             };
 
             var beforeUtc = DateTime.UtcNow;
@@ -204,11 +207,12 @@ public class ProductCreationPropertyTests
             from sellingPrice in ValidPriceGen()
             from costPrice in ValidPriceGen()
             from vatRate in ValidVatRateGen()
-            select (productCode, description, sellingPrice, costPrice, vatRate));
+            from productTypeId in Gen.Elements(1, 2)
+            select (productCode, description, sellingPrice, costPrice, vatRate, productTypeId));
 
         return Prop.ForAll(arb, async tuple =>
         {
-            var (productCode, description, sellingPrice, costPrice, vatRate) = tuple;
+            var (productCode, description, sellingPrice, costPrice, vatRate, productTypeId) = tuple;
 
             var (service, productRepoMock, priceHistoryRepoMock) = CreateService();
 
@@ -236,7 +240,8 @@ public class ProductCreationPropertyTests
                 Description = description,
                 DefaultSellingPrice = sellingPrice,
                 DefaultCostPrice = costPrice,
-                DefaultVatRate = vatRate
+                DefaultVatRate = vatRate,
+                ProductTypeId = productTypeId
             };
 
             var result = await service.CreateProductAsync(product, "test-user");
@@ -349,6 +354,116 @@ public class ProductCreationPropertyTests
 
     #endregion
 
+    #region Property 4: New product creation requires ProductTypeId
+
+    /// <summary>
+    /// Property 4: For any product creation request where ProductTypeId is not provided (null),
+    /// the service layer SHALL reject the creation with an ArgumentException.
+    /// For any creation request where ProductTypeId is 1 or 2, the product SHALL be created successfully.
+    /// Feature: invoice-line-product-type-reverse-charge, Property 4: New product creation requires ProductTypeId
+    /// **Validates: Requirements 2.2**
+    /// </summary>
+    [Property(MaxTest = 100)]
+    public Property NullProductTypeId_ThrowsArgumentException()
+    {
+        var arb = Arb.From(
+            from productCode in ValidProductCodeGen()
+            from description in ValidDescriptionGen()
+            from sellingPrice in ValidPriceGen()
+            from costPrice in ValidPriceGen()
+            from vatRate in ValidVatRateGen()
+            select (productCode, description, sellingPrice, costPrice, vatRate));
+
+        return Prop.ForAll(arb, async tuple =>
+        {
+            var (productCode, description, sellingPrice, costPrice, vatRate) = tuple;
+
+            var (service, productRepoMock, priceHistoryRepoMock) = CreateService();
+
+            var product = new Product
+            {
+                ProductCode = productCode,
+                Description = description,
+                DefaultSellingPrice = sellingPrice,
+                DefaultCostPrice = costPrice,
+                DefaultVatRate = vatRate,
+                ProductTypeId = null // Null ProductTypeId
+            };
+
+            // Assert: ArgumentException is thrown for null ProductTypeId
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                () => service.CreateProductAsync(product, "test-user"));
+
+            Assert.Contains("Product Type is required", ex.Message);
+
+            // Assert: no product was inserted
+            productRepoMock.Verify(r => r.InsertAsync(It.IsAny<Product>()), Times.Never);
+
+            // Assert: no price history was inserted
+            priceHistoryRepoMock.Verify(r => r.InsertAsync(It.IsAny<ProductPriceHistory>()), Times.Never);
+        });
+    }
+
+    /// <summary>
+    /// Property 4: For any product creation request where ProductTypeId is 1 (Services) or 2 (Goods),
+    /// the product SHALL be created successfully (assuming all other fields are valid).
+    /// Feature: invoice-line-product-type-reverse-charge, Property 4: New product creation requires ProductTypeId
+    /// **Validates: Requirements 2.2**
+    /// </summary>
+    [Property(MaxTest = 100)]
+    public Property ValidProductTypeId_CreatesSuccessfully()
+    {
+        var arb = Arb.From(
+            from productCode in ValidProductCodeGen()
+            from description in ValidDescriptionGen()
+            from sellingPrice in ValidPriceGen()
+            from costPrice in ValidPriceGen()
+            from vatRate in ValidVatRateGen()
+            from productTypeId in Gen.Elements(1, 2)
+            select (productCode, description, sellingPrice, costPrice, vatRate, productTypeId));
+
+        return Prop.ForAll(arb, async tuple =>
+        {
+            var (productCode, description, sellingPrice, costPrice, vatRate, productTypeId) = tuple;
+
+            var (service, productRepoMock, priceHistoryRepoMock) = CreateService();
+
+            // No existing product with this code
+            productRepoMock
+                .Setup(r => r.GetByProductCodeAndBusinessIdAsync(It.IsAny<string>(), TestBusinessId))
+                .ReturnsAsync((Product?)null);
+
+            productRepoMock
+                .Setup(r => r.InsertAsync(It.IsAny<Product>()))
+                .ReturnsAsync(GeneratedProductId);
+
+            priceHistoryRepoMock
+                .Setup(r => r.InsertAsync(It.IsAny<ProductPriceHistory>()))
+                .Returns(Task.CompletedTask);
+
+            var product = new Product
+            {
+                ProductCode = productCode,
+                Description = description,
+                DefaultSellingPrice = sellingPrice,
+                DefaultCostPrice = costPrice,
+                DefaultVatRate = vatRate,
+                ProductTypeId = productTypeId // Valid: 1 or 2
+            };
+
+            // Should not throw — creation succeeds
+            var result = await service.CreateProductAsync(product, "test-user");
+
+            // Assert: operation succeeded
+            Assert.True(result.Success, $"Expected success but got: {result.Message}");
+
+            // Assert: product was inserted
+            productRepoMock.Verify(r => r.InsertAsync(It.IsAny<Product>()), Times.Once);
+        });
+    }
+
+    #endregion
+
     #region Property 5: Product creation includes initial price history
 
     /// <summary>
@@ -366,11 +481,12 @@ public class ProductCreationPropertyTests
             from sellingPrice in ValidPriceGen()
             from costPrice in ValidPriceGen()
             from vatRate in ValidVatRateGen()
-            select (productCode, description, sellingPrice, costPrice, vatRate));
+            from productTypeId in Gen.Elements(1, 2)
+            select (productCode, description, sellingPrice, costPrice, vatRate, productTypeId));
 
         return Prop.ForAll(arb, async tuple =>
         {
-            var (productCode, description, sellingPrice, costPrice, vatRate) = tuple;
+            var (productCode, description, sellingPrice, costPrice, vatRate, productTypeId) = tuple;
 
             var (service, productRepoMock, priceHistoryRepoMock) = CreateService();
 
@@ -395,7 +511,8 @@ public class ProductCreationPropertyTests
                 Description = description,
                 DefaultSellingPrice = sellingPrice,
                 DefaultCostPrice = costPrice,
-                DefaultVatRate = vatRate
+                DefaultVatRate = vatRate,
+                ProductTypeId = productTypeId
             };
 
             var beforeUtc = DateTime.UtcNow;

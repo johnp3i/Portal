@@ -25,6 +25,7 @@ public class QuotationController : Controller
     private readonly IBusinessService _businessService;
     private readonly IDocumentDuplicationService _duplicationService;
     private readonly IDocumentSoftDeleteService _softDeleteService;
+    private readonly ProductRepository _productRepository;
 
     public QuotationController(
         IQuotationService quotationService,
@@ -37,7 +38,8 @@ public class QuotationController : Controller
         IInvoiceService invoiceService,
         IBusinessService businessService,
         IDocumentDuplicationService duplicationService,
-        IDocumentSoftDeleteService softDeleteService)
+        IDocumentSoftDeleteService softDeleteService,
+        ProductRepository productRepository)
     {
         _quotationService = quotationService;
         _customerService = customerService;
@@ -50,6 +52,7 @@ public class QuotationController : Controller
         _businessService = businessService;
         _duplicationService = duplicationService;
         _softDeleteService = softDeleteService;
+        _productRepository = productRepository;
     }
 
     [HttpGet]
@@ -135,6 +138,9 @@ public class QuotationController : Controller
         var contacts = await _contactRepository.GetByBusinessIdAsync(_tenantService.CurrentBusinessId);
         var sections = await _sectionService.GetByQuotationIdAsync(id);
 
+        // Build DisplayLines with derived ProductTypeName from linked products
+        var displayLines = await BuildDisplayLinesAsync(lines);
+
         var viewModel = new QuotationEditViewModel
         {
             Id = quotation.Id,
@@ -145,6 +151,7 @@ public class QuotationController : Controller
             QuotationContactId = quotation.QuotationContactId,
             IsGrandTotalShown = quotation.IsGrandTotalShown,
             Lines = lines,
+            DisplayLines = displayLines,
             Sections = sections,
             Subtotal = quotation.Subtotal,
             TaxAmount = quotation.TaxAmount,
@@ -169,6 +176,7 @@ public class QuotationController : Controller
             model.Id = id;
             model.Reference = quotation.Reference;
             model.Lines = await _quotationService.GetQuotationLinesAsync(id);
+            model.DisplayLines = await BuildDisplayLinesAsync(model.Lines);
             model.Sections = await _sectionService.GetByQuotationIdAsync(id);
             model.Subtotal = quotation.Subtotal;
             model.TaxAmount = quotation.TaxAmount;
@@ -189,6 +197,7 @@ public class QuotationController : Controller
             model.Id = id;
             model.Reference = q?.Reference ?? string.Empty;
             model.Lines = await _quotationService.GetQuotationLinesAsync(id);
+            model.DisplayLines = await BuildDisplayLinesAsync(model.Lines);
             model.Sections = await _sectionService.GetByQuotationIdAsync(id);
             model.Subtotal = q?.Subtotal ?? 0;
             model.TaxAmount = q?.TaxAmount ?? 0;
@@ -203,6 +212,7 @@ public class QuotationController : Controller
             model.Id = id;
             model.Reference = q?.Reference ?? string.Empty;
             model.Lines = await _quotationService.GetQuotationLinesAsync(id);
+            model.DisplayLines = await BuildDisplayLinesAsync(model.Lines);
             model.Sections = await _sectionService.GetByQuotationIdAsync(id);
             model.Subtotal = q?.Subtotal ?? 0;
             model.TaxAmount = q?.TaxAmount ?? 0;
@@ -332,7 +342,7 @@ public class QuotationController : Controller
 
         try
         {
-            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, productCode: model.ProductCode);
+            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, productCode: model.ProductCode, isReverseCharge: model.IsReverseCharge);
         }
         catch (ArgumentException ex)
         {
@@ -372,7 +382,7 @@ public class QuotationController : Controller
 
         try
         {
-            await _quotationService.UpdateLineAsync(lineId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice);
+            await _quotationService.UpdateLineAsync(lineId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, isReverseCharge: model.IsReverseCharge);
         }
         catch (ArgumentException ex)
         {
@@ -527,6 +537,48 @@ public class QuotationController : Controller
         {
             return Json(new { success = false, message = "An unexpected error occurred while deleting the quotation." });
         }
+    }
+
+    private async Task<List<QuotationLineDisplayViewModel>> BuildDisplayLinesAsync(List<QuotationLine> lines)
+    {
+        var businessId = _tenantService.CurrentBusinessId;
+        var displayLines = new List<QuotationLineDisplayViewModel>();
+
+        var productCodes = lines
+            .Where(l => !string.IsNullOrEmpty(l.ProductCode))
+            .Select(l => l.ProductCode!)
+            .Distinct()
+            .ToList();
+
+        var productLookup = new Dictionary<string, Product?>();
+        foreach (var code in productCodes)
+        {
+            var product = await _productRepository.GetByProductCodeAndBusinessIdAsync(code, businessId);
+            productLookup[code] = product;
+        }
+
+        foreach (var line in lines)
+        {
+            string? productTypeName = null;
+
+            if (!string.IsNullOrEmpty(line.ProductCode) && productLookup.TryGetValue(line.ProductCode, out var product))
+            {
+                productTypeName = product?.ProductTypeId switch
+                {
+                    1 => "Services",
+                    2 => "Goods",
+                    _ => null
+                };
+            }
+
+            displayLines.Add(new QuotationLineDisplayViewModel
+            {
+                Line = line,
+                ProductTypeName = productTypeName
+            });
+        }
+
+        return displayLines;
     }
 
     private bool IsAjaxRequest()

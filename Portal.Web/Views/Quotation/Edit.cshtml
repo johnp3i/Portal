@@ -335,6 +335,26 @@ function rteCmd(command) {
 }
 
 
+// --- Reverse Charge Toggle ---
+function toggleReverseCharge(checkbox) {
+    var lineCard = checkbox.closest('.line-card') || checkbox.closest('form');
+    var vatInput = lineCard.querySelector('input[name="VatRate"]');
+
+    if (checkbox.checked) {
+        // Store current VatRate for restoration
+        vatInput.dataset.previousVatRate = vatInput.value;
+        vatInput.value = '0';
+        vatInput.readOnly = true;
+        vatInput.style.opacity = '0.6';
+    } else {
+        // Restore previous VatRate (or product default, or 0)
+        var previousRate = vatInput.dataset.previousVatRate || '0';
+        vatInput.value = previousRate;
+        vatInput.readOnly = false;
+        vatInput.style.opacity = '1';
+    }
+}
+
 // --- Catalog Autocomplete ---
 (function() {
     var debounceTimer = null;

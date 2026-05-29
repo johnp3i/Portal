@@ -11,19 +11,8 @@
     </div>
 </div>
 
-<!-- Quick Actions -->
-<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
-    <a asp-controller="Quotation" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Quotation</a>
-    <a asp-controller="Revenue" asp-action="Dashboard" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Record Payment</a>
-    <a asp-controller="Invoice" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Create Invoice</a>
-    <a asp-controller="Statement" asp-action="Index" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Customer Statement</a>
-    <a asp-controller="Purchase" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Record Purchase</a>
-    <a asp-controller="Customer" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Customer</a>
-</div>
-
-<!-- KPI Gauges Row -->
 @{
-    // Compute gauge percentages
+    // Compute gauge percentages (computed before conditional block for Razor compatibility)
     var maxFinancial = new[] { Model.RevenueThisMonth, Model.OutstandingAmount, Model.ExpensesThisMonth }.Max();
     if (maxFinancial == 0) maxFinancial = 1; // avoid division by zero
     var revenuePct = (int)Math.Round(Model.RevenueThisMonth / maxFinancial * 100);
@@ -35,7 +24,43 @@
         ? (int)Math.Round(Model.ExpensesThisMonth / Model.RevenueThisMonth * 100)
         : 0;
 }
+
+@if (Model.HasAnyKpiSection)
+{
+<!-- Quick Actions -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+    @if (Model.ShowQuotation)
+    {
+        <a asp-controller="Quotation" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Quotation</a>
+    }
+    @if (Model.ShowRevenue)
+    {
+        <a asp-controller="Revenue" asp-action="Dashboard" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Record Payment</a>
+    }
+    @if (Model.ShowInvoice)
+    {
+        <a asp-controller="Invoice" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Create Invoice</a>
+    }
+    @if (Model.ShowRevenue)
+    {
+        <a asp-controller="Statement" asp-action="Index" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Customer Statement</a>
+    }
+    @if (Model.ShowPurchase)
+    {
+        <a asp-controller="Purchase" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">Record Purchase</a>
+    }
+    @if (Model.ShowCustomer)
+    {
+        <a asp-controller="Customer" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Customer</a>
+    }
+</div>
+
+<!-- KPI Gauges Row -->
+@if (Model.ShowRevenue || Model.ShowPurchase)
+{
 <div class="gauge-row">
+    @if (Model.ShowRevenue)
+    {
     <div class="gauge-item">
         <div class="gauge-header">
             <span class="gauge-label">Revenue</span>
@@ -66,6 +91,9 @@
         </div>
         <div class="gauge-sub">@overduePct% of outstanding</div>
     </div>
+    }
+    @if (Model.ShowPurchase)
+    {
     <div class="gauge-item">
         <div class="gauge-header">
             <span class="gauge-label">Expenses</span>
@@ -76,10 +104,16 @@
         </div>
         <div class="gauge-sub">@expensesPct% of revenue · @Model.ExpensesPurchaseCount purchases</div>
     </div>
+    }
 </div>
+}
 
 <!-- Quotation Stats Strip -->
+@if (Model.ShowQuotation || Model.ShowVat)
+{
 <div class="quotation-strip">
+    @if (Model.ShowQuotation)
+    {
     <span class="qs-label" style="font-weight:700;margin-right:4px;">Quotations:</span>
     <div class="qs-item">
         <span class="qs-value">@Model.DraftCount</span>
@@ -99,15 +133,22 @@
         <span class="qs-value">@Model.ActiveCustomerCount</span>
         <span class="qs-label">Customers</span>
     </div>
+    }
+    @if (Model.ShowVat)
+    {
     <div class="qs-vat">
         <span class="qs-label" style="font-weight:700;margin-right:4px;">VAT@(Model.HasVatData && !string.IsNullOrEmpty(Model.VatPeriodLabel) ? $" ({Model.VatPeriodLabel})" : ""):</span>
         <span class="qs-vat-item"><span style="color:#C8912E;font-weight:800;">@Model.CurrencySymbol@Model.OutputVat.ToString("N0")</span> out</span>
         <span class="qs-vat-item"><span style="color:#129867;font-weight:800;">@Model.CurrencySymbol@Model.InputVat.ToString("N0")</span> in</span>
         <span class="qs-vat-item"><span style="color:#C24A4A;font-weight:800;">@Model.CurrencySymbol@Model.NetVatPayable.ToString("N0")</span> net</span>
     </div>
+    }
 </div>
+}
 
 <!-- Charts Row -->
+@if (Model.ShowRevenue && Model.ShowInvoice)
+{
 <div class="grid-2" style="margin-top:24px;">
     <section class="glass card-pad">
         <h3 style="margin-bottom:16px;">Monthly Revenue vs Expenses</h3>
@@ -140,8 +181,51 @@
         }
     </section>
 </div>
+}
+else if (Model.ShowRevenue)
+{
+<div style="margin-top:24px;">
+    <section class="glass card-pad">
+        <h3 style="margin-bottom:16px;">Monthly Revenue vs Expenses</h3>
+        @if (Model.RevenueVsExpenses.Any())
+        {
+            <div style="position:relative;height:220px;">
+                <canvas id="revenueVsExpensesChart"></canvas>
+            </div>
+        }
+        else
+        {
+            <div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No revenue or expense data available for the last 6 months.</p>
+            </div>
+        }
+    </section>
+</div>
+}
+else if (Model.ShowInvoice)
+{
+<div style="margin-top:24px;">
+    <section class="glass card-pad">
+        <h3 style="margin-bottom:16px;">Invoice Status Breakdown</h3>
+        @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
+        {
+            <div style="position:relative;height:220px;">
+                <canvas id="invoiceStatusChart"></canvas>
+            </div>
+        }
+        else
+        {
+            <div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No invoice data available.</p>
+            </div>
+        }
+    </section>
+</div>
+}
 
 <!-- Tables Row 1: Recent Invoices + Overdue Invoices -->
+@if (Model.ShowInvoice && Model.ShowRevenue)
+{
 <div class="grid-2" style="margin-top:24px;">
     <section class="glass card-pad">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -228,8 +312,104 @@
         }
     </section>
 </div>
+}
+else if (Model.ShowInvoice)
+{
+<div style="margin-top:24px;">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Invoices</h3>
+            <a asp-controller="Invoice" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+        </div>
+        @if (Model.RecentInvoices.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th class="right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invoice in Model.RecentInvoices)
+                    {
+                        var invoicePillClass = invoice.InvoiceFinancialStatusTypeId switch
+                        {
+                            1 => "pill-blue",    // Unpaid
+                            2 => "pill-gold",    // Partially Paid
+                            3 => "pill-green",   // Paid
+                            4 => "pill-red",     // Overdue
+                            _ => "pill-blue"
+                        };
+                        <tr>
+                            <td><strong>@invoice.InvoiceNumber</strong></td>
+                            <td>@invoice.CustomerName</td>
+                            <td><span class="pill @invoicePillClass">@invoice.FinancialStatusName</span></td>
+                            <td class="right">@Model.CurrencySymbol@invoice.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No recent invoices available.</p>
+            </div>
+        }
+    </section>
+</div>
+}
+else if (Model.ShowRevenue)
+{
+<div style="margin-top:24px;">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Overdue Invoices</h3>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:#C24A4A;text-decoration:none;">View All →</a>
+        </div>
+        @if (Model.OverdueInvoices.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Due Date</th>
+                        <th class="right">Outstanding</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var overdue in Model.OverdueInvoices)
+                    {
+                        <tr style="background:#FFF8F8;">
+                            <td><strong>@overdue.InvoiceNumber</strong></td>
+                            <td>@overdue.CustomerName</td>
+                            <td style="color:#C24A4A;font-weight:600;">@overdue.DueDate.ToString("dd MMM yyyy")</td>
+                            <td class="right" style="color:#C24A4A;font-weight:700;">@Model.CurrencySymbol@overdue.OutstandingBalance.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div style="margin-top:14px;padding:12px 16px;background:#FFF8F8;border-radius:10px;border:1px solid #FDEAEA;">
+                <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">⚠️ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
+            </div>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No overdue invoices. All payments are up to date.</p>
+            </div>
+        }
+    </section>
+</div>
+}
 
 <!-- Tables Row 2: Recent Payments + Recent Quotations -->
+@if (Model.ShowRevenue && Model.ShowQuotation)
+{
 <div class="grid-2" style="margin-top:24px;">
     <section class="glass card-pad">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -322,8 +502,110 @@
         }
     </section>
 </div>
+}
+else if (Model.ShowRevenue)
+{
+<div style="margin-top:24px;">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Payments</h3>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">Revenue →</a>
+        </div>
+        @if (Model.RecentPayments.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Method</th>
+                        <th class="right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var payment in Model.RecentPayments)
+                    {
+                        var methodPillClass = payment.PaymentMethodName?.ToLower() switch
+                        {
+                            "bank transfer" => "pill-cyan",
+                            "cash" => "pill-green",
+                            "card" => "pill-blue",
+                            "cheque" => "pill-gold",
+                            _ => "pill-grey"
+                        };
+                        <tr>
+                            <td>@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
+                            <td>@payment.CustomerName</td>
+                            <td><span class="pill @methodPillClass">@payment.PaymentMethodName</span></td>
+                            <td class="right" style="color:#129867;font-weight:700;">@Model.CurrencySymbol@payment.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No recent payments available.</p>
+            </div>
+        }
+    </section>
+</div>
+}
+else if (Model.ShowQuotation)
+{
+<div style="margin-top:24px;">
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3>Recent Quotations</h3>
+            <a asp-controller="Quotation" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+        </div>
+        @if (Model.RecentQuotations.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th class="right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var q in Model.RecentQuotations)
+                    {
+                        var quotationPillClass = q.QuotationStatusTypeId switch
+                        {
+                            1 => "pill-gold",    // Draft
+                            2 => "pill-blue",    // Sent
+                            3 => "pill-green",   // Accepted
+                            4 => "pill-blue",    // Converted
+                            5 => "pill-red",     // Rejected
+                            _ => "pill-gold"
+                        };
+                        <tr>
+                            <td><strong>@q.Reference</strong></td>
+                            <td>@q.CustomerName</td>
+                            <td><span class="pill @quotationPillClass">@q.StatusName</span></td>
+                            <td class="right">@Model.CurrencySymbol@q.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">
+                <p>No recent quotations available.</p>
+            </div>
+        }
+    </section>
+</div>
+}
 
 <!-- Bottom Row: Top Customers + Chart -->
+@if (Model.ShowRevenue)
+{
 <div class="grid-2" style="margin-top:24px;">
     <section class="glass card-pad">
         <h3 style="margin-bottom:16px;">Top Customers <span style="font-size:12px;font-weight:400;color:var(--muted);">(Last 12 Months)</span></h3>
@@ -372,174 +654,186 @@
         }
     </section>
 </div>
+}
+}
+else
+{
+    <!-- Empty state welcome message -->
+    <section class="glass card-pad" style="text-align:center;padding:60px 30px;">
+        <h2 style="font-family:'Manrope',sans-serif;font-weight:700;color:#1a2b3c;margin-bottom:12px;">Welcome to the Dashboard</h2>
+        @if (!string.IsNullOrEmpty(Model.BusinessName))
+        {
+            <p style="font-size:16px;color:#5a6a7a;margin-bottom:8px;">@Model.BusinessName</p>
+        }
+        <p style="font-size:14px;color:#7a8a9a;">No dashboard data is available for your current permissions.</p>
+        <p style="font-size:14px;color:#7a8a9a;">If you need additional access, please contact an administrator.</p>
+    </section>
+}
 
 <!-- Chart.js Scripts -->
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    @if (Model.RevenueVsExpenses.Any())
-    {
-        <script id="revenueVsExpensesData" type="application/json">
-            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueVsExpenses.Select(r => new { label = r.Label, revenue = r.Revenue, expenses = r.Expenses })))
-        </script>
-    }
-    @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
-    {
-        <script id="invoiceStatusData" type="application/json">
-            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { paid = Model.InvoiceStatusBreakdown.PaidCount, partiallyPaid = Model.InvoiceStatusBreakdown.PartiallyPaidCount, unpaid = Model.InvoiceStatusBreakdown.UnpaidCount, overdue = Model.InvoiceStatusBreakdown.OverdueCount }))
-        </script>
-    }
     <script>
-        (function() {
-            var currencySymbol = '@Html.Raw(Model.CurrencySymbol)';
+        @if (Model.ShowRevenue)
+        {
+            @if (Model.RevenueVsExpenses.Any())
+            {
+                <text>
+                var revenueVsExpensesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueVsExpenses.Select(r => new { label = r.Label, revenue = r.Revenue, expenses = r.Expenses })));
+                (function() {
+                    var currencySymbol = '@Html.Raw(Model.CurrencySymbol)';
+                    var chartData = revenueVsExpensesData;
+                    var labels = chartData.map(function(d) { return d.label; });
+                    var revenueValues = chartData.map(function(d) { return d.revenue; });
+                    var expensesValues = chartData.map(function(d) { return d.expenses; });
 
-            // Revenue vs Expenses - Grouped Bar Chart
-            var revenueDataEl = document.getElementById('revenueVsExpensesData');
-            if (revenueDataEl) {
-                var chartData = JSON.parse(revenueDataEl.textContent);
-                var labels = chartData.map(function(d) { return d.label; });
-                var revenueValues = chartData.map(function(d) { return d.revenue; });
-                var expensesValues = chartData.map(function(d) { return d.expenses; });
-
-                var ctx = document.getElementById('revenueVsExpensesChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'Revenue',
-                                data: revenueValues,
-                                backgroundColor: '#129867',
-                                borderRadius: 4
-                            },
-                            {
-                                label: 'Expenses',
-                                data: expensesValues,
-                                backgroundColor: '#0D5EA6',
-                                borderRadius: 4
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom' }
+                    var ctx = document.getElementById('revenueVsExpensesChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Revenue',
+                                    data: revenueValues,
+                                    backgroundColor: '#129867',
+                                    borderRadius: 4
+                                },
+                                {
+                                    label: 'Expenses',
+                                    data: expensesValues,
+                                    backgroundColor: '#0D5EA6',
+                                    borderRadius: 4
+                                }
+                            ]
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return currencySymbol + Math.round(value).toLocaleString();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Invoice Status - Donut Chart
-            var statusDataEl = document.getElementById('invoiceStatusData');
-            if (statusDataEl) {
-                var statusData = JSON.parse(statusDataEl.textContent);
-                var ctx2 = document.getElementById('invoiceStatusChart').getContext('2d');
-                new Chart(ctx2, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Paid (' + statusData.paid + ')', 'Partially Paid (' + statusData.partiallyPaid + ')', 'Unpaid (' + statusData.unpaid + ')', 'Overdue (' + statusData.overdue + ')'],
-                        datasets: [{
-                            data: [statusData.paid, statusData.partiallyPaid, statusData.unpaid, statusData.overdue],
-                            backgroundColor: ['#129867', '#C8912E', '#0D5EA6', '#C24A4A'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    generateLabels: function(chart) {
-                                        var data = chart.data;
-                                        return data.labels.map(function(label, i) {
-                                            return {
-                                                text: label,
-                                                fillStyle: data.datasets[0].backgroundColor[i],
-                                                hidden: false,
-                                                index: i
-                                            };
-                                        });
-                                    }
-                                }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.label + ': ' + context.raw;
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return currencySymbol + Math.round(value).toLocaleString();
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                })();
+                </text>
             }
-        })();
+        }
+        @if (Model.ShowInvoice)
+        {
+            @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
+            {
+                <text>
+                var invoiceStatusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { paid = Model.InvoiceStatusBreakdown.PaidCount, partiallyPaid = Model.InvoiceStatusBreakdown.PartiallyPaidCount, unpaid = Model.InvoiceStatusBreakdown.UnpaidCount, overdue = Model.InvoiceStatusBreakdown.OverdueCount }));
+                (function() {
+                    var statusData = invoiceStatusData;
+                    var ctx2 = document.getElementById('invoiceStatusChart').getContext('2d');
+                    new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Paid (' + statusData.paid + ')', 'Partially Paid (' + statusData.partiallyPaid + ')', 'Unpaid (' + statusData.unpaid + ')', 'Overdue (' + statusData.overdue + ')'],
+                            datasets: [{
+                                data: [statusData.paid, statusData.partiallyPaid, statusData.unpaid, statusData.overdue],
+                                backgroundColor: ['#129867', '#C8912E', '#0D5EA6', '#C24A4A'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        generateLabels: function(chart) {
+                                            var data = chart.data;
+                                            return data.labels.map(function(label, i) {
+                                                return {
+                                                    text: label,
+                                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                                    hidden: false,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': ' + context.raw;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })();
+                </text>
+            }
+        }
+        @if (Model.ShowRevenue)
+        {
+            @if (Model.TopCustomers.Any())
+            {
+                <text>
+                var topCustomersData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopCustomers.Select(c => new { name = c.CustomerName, invoiced = c.TotalInvoiced, paid = c.TotalPaid })));
+                (function() {
+                    var data = topCustomersData;
+                    var currencySymbol = '@Html.Raw(Model.CurrencySymbol)';
+
+                    var ctx = document.getElementById('topCustomersChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(function(d) { return d.name; }),
+                            datasets: [
+                                {
+                                    label: 'Invoiced',
+                                    data: data.map(function(d) { return d.invoiced; }),
+                                    backgroundColor: '#0D5EA6',
+                                    borderRadius: 4
+                                },
+                                {
+                                    label: 'Paid',
+                                    data: data.map(function(d) { return d.paid; }),
+                                    backgroundColor: '#129867',
+                                    borderRadius: 4
+                                }
+                            ]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return currencySymbol + Math.round(value).toLocaleString();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })();
+                </text>
+            }
+        }
     </script>
-    @if (Model.TopCustomers.Any())
-    {
-        <script id="topCustomersData" type="application/json">
-            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopCustomers.Select(c => new { name = c.CustomerName, invoiced = c.TotalInvoiced, paid = c.TotalPaid })))
-        </script>
-        <script>
-            (function() {
-                var dataEl = document.getElementById('topCustomersData');
-                if (!dataEl) return;
-                var data = JSON.parse(dataEl.textContent);
-                var currencySymbol = '@Html.Raw(Model.CurrencySymbol)';
-
-                var ctx = document.getElementById('topCustomersChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.map(function(d) { return d.name; }),
-                        datasets: [
-                            {
-                                label: 'Invoiced',
-                                data: data.map(function(d) { return d.invoiced; }),
-                                backgroundColor: '#0D5EA6',
-                                borderRadius: 4
-                            },
-                            {
-                                label: 'Paid',
-                                data: data.map(function(d) { return d.paid; }),
-                                backgroundColor: '#129867',
-                                borderRadius: 4
-                            }
-                        ]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom' }
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return currencySymbol + Math.round(value).toLocaleString();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            })();
-        </script>
-    }
 }

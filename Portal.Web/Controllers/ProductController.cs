@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
+using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
 using Portal.Web.Security;
 
@@ -16,15 +17,18 @@ public class ProductController : Controller
     private readonly IProductService _productService;
     private readonly IProductAutocompleteService _autocompleteService;
     private readonly ISupplierService _supplierService;
+    private readonly ProductTypeRepository _productTypeRepository;
 
     public ProductController(
         IProductService productService,
         IProductAutocompleteService autocompleteService,
-        ISupplierService supplierService)
+        ISupplierService supplierService,
+        ProductTypeRepository productTypeRepository)
     {
         _productService = productService;
         _autocompleteService = autocompleteService;
         _supplierService = supplierService;
+        _productTypeRepository = productTypeRepository;
     }
 
     [HttpGet]
@@ -37,12 +41,14 @@ public class ProductController : Controller
         var kpis = await _productService.GetKpisAsync();
         var topProducts = await _productService.GetTopProductsByUsageAsync(10);
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
+        var productTypes = await _productTypeRepository.GetAllAsync();
 
         ViewBag.PagedResult = pagedResult;
         ViewBag.SearchTerm = search;
         ViewBag.Kpis = kpis;
         ViewBag.TopProducts = topProducts;
         ViewBag.Suppliers = suppliers;
+        ViewBag.ProductTypes = productTypes;
 
         return View(pagedResult.Items);
     }
@@ -70,6 +76,7 @@ public class ProductController : Controller
         [FromForm] decimal defaultCostPrice,
         [FromForm] decimal defaultVatRate,
         [FromForm] int? supplierId,
+        [FromForm] int? productTypeId,
         [FromForm] bool isActive = true)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
@@ -82,11 +89,19 @@ public class ProductController : Controller
             DefaultCostPrice = defaultCostPrice,
             DefaultVatRate = defaultVatRate,
             SupplierId = supplierId,
+            ProductTypeId = productTypeId,
             IsActive = isActive
         };
 
-        var result = await _productService.CreateProductAsync(product, userId);
-        return Json(new { success = result.Success, message = result.Message });
+        try
+        {
+            var result = await _productService.CreateProductAsync(product, userId);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 
     [HttpPost]
@@ -99,6 +114,7 @@ public class ProductController : Controller
         [FromForm] decimal defaultCostPrice,
         [FromForm] decimal defaultVatRate,
         [FromForm] int? supplierId,
+        [FromForm] int? productTypeId,
         [FromForm] bool isActive = true)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
@@ -112,11 +128,19 @@ public class ProductController : Controller
             DefaultCostPrice = defaultCostPrice,
             DefaultVatRate = defaultVatRate,
             SupplierId = supplierId,
+            ProductTypeId = productTypeId,
             IsActive = isActive
         };
 
-        var result = await _productService.UpdateProductAsync(product, userId);
-        return Json(new { success = result.Success, message = result.Message });
+        try
+        {
+            var result = await _productService.UpdateProductAsync(product, userId);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 
     [HttpPost]
@@ -146,6 +170,7 @@ public class ProductController : Controller
                 product.DefaultCostPrice,
                 product.DefaultVatRate,
                 product.SupplierId,
+                product.ProductTypeId,
                 product.IsActive,
                 product.LastUsedDate
             }

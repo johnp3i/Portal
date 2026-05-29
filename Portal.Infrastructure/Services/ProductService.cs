@@ -40,6 +40,14 @@ public class ProductService : IProductService
         if (string.IsNullOrWhiteSpace(product.ProductCode) || string.IsNullOrWhiteSpace(product.Description))
             return ServiceResult.Fail("ProductCode and Description are required.");
 
+        // Validate ProductTypeId is required for new products
+        if (!product.ProductTypeId.HasValue)
+            throw new ArgumentException("Product Type is required for new products");
+
+        // Validate ProductTypeId is a valid value (Services=1, Goods=2)
+        if (product.ProductTypeId != 1 && product.ProductTypeId != 2)
+            throw new ArgumentException("Product Type must be Services (1) or Goods (2)");
+
         // Check duplicate ProductCode for this business
         var existing = await _productRepository.GetByProductCodeAndBusinessIdAsync(product.ProductCode.Trim(), businessId);
         if (existing != null)
@@ -84,6 +92,10 @@ public class ProductService : IProductService
         // Validate required fields
         if (string.IsNullOrWhiteSpace(product.ProductCode) || string.IsNullOrWhiteSpace(product.Description))
             return ServiceResult.Fail("ProductCode and Description are required.");
+
+        // Validate ProductTypeId if provided (allow NULL for legacy products)
+        if (product.ProductTypeId.HasValue && product.ProductTypeId != 1 && product.ProductTypeId != 2)
+            throw new ArgumentException("Product Type must be Services (1) or Goods (2)");
 
         // Check product exists and belongs to this business
         var existing = await _productRepository.GetByIdAndBusinessIdAsync(product.Id, businessId);

@@ -1,0 +1,156 @@
+@model Portal.Web.Models.PurchaseExportPdfModel
+@{
+    Layout = null;
+    var activePurchases = Model.Purchases.Where(p => !p.IsCancelled).ToList();
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Purchase Export</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 11px;
+            color: #1a2b3c;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+        .subtitle {
+            font-size: 11px;
+            color: #5a6a7a;
+            margin-bottom: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th {
+            background: #0D5EA6;
+            color: #fff;
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #e8edf2;
+            font-size: 10px;
+        }
+        tr:nth-child(even) td {
+            background: #f7fafc;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: 700;
+            background: #eef4f8 !important;
+        }
+        .total-row td {
+            border-top: 2px solid #0D5EA6;
+            padding-top: 10px;
+        }
+        .pill {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+        .pill-cancelled { background: #F8D7DA; color: #721C24; }
+        .pill-domestic { background: #D4EDDA; color: #155724; }
+        .pill-eurc { background: #CCE5FF; color: #004085; }
+        .pill-eupaid { background: #D1ECF1; color: #0C5460; }
+        .pill-noneu { background: #FEF3CD; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>Purchase Export</h1>
+    <div class="subtitle">Generated: @Model.GeneratedAt.ToString("dd MMM yyyy HH:mm") &bull; @Model.Purchases.Count purchase(s)</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Invoice #</th>
+                <th>Supplier</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th class="text-right">Excl. VAT</th>
+                <th class="text-right">VAT</th>
+                <th class="text-right">Total</th>
+                <th>Origin</th>
+                <th>Type</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model.Purchases)
+            {
+                var originClass = p.PurchaseOriginTypeId switch
+                {
+                    1 => "pill-domestic",
+                    2 => "pill-eurc",
+                    3 => "pill-noneu",
+                    4 => "pill-eupaid",
+                    _ => ""
+                };
+                var originName = p.PurchaseOriginTypeId switch
+                {
+                    1 => "Domestic",
+                    2 => "EU RC",
+                    3 => "Non-EU",
+                    4 => "EU Paid",
+                    _ => ""
+                };
+                var typeName = p.PurchaseTypeId switch
+                {
+                    1 => "Asset",
+                    2 => "Stock",
+                    3 => "Expense",
+                    _ => ""
+                };
+                <tr>
+                    <td>@p.InvoiceDate.ToString("dd MMM yyyy")</td>
+                    <td>@p.InvoiceNumber</td>
+                    <td><strong>@p.Supplier?.Name</strong></td>
+                    <td>@p.ExpenseCategory?.Name</td>
+                    <td>@p.Description</td>
+                    <td class="text-right">@Model.CurrencySymbol@p.AmountExcludingVat.ToString("N2")</td>
+                    <td class="text-right">@Model.CurrencySymbol@p.VatAmount.ToString("N2")</td>
+                    <td class="text-right"><strong>@Model.CurrencySymbol@p.TotalAmount.ToString("N2")</strong></td>
+                    <td><span class="pill @originClass">@originName</span></td>
+                    <td>@typeName</td>
+                    <td>
+                        @if (p.IsCancelled)
+                        {
+                            <span class="pill pill-cancelled">Cancelled</span>
+                        }
+                        else
+                        {
+                            <text>Active</text>
+                        }
+                    </td>
+                </tr>
+            }
+            <tr class="total-row">
+                <td colspan="5"><strong>Total (@activePurchases.Count active purchases)</strong></td>
+                <td class="text-right"><strong>@Model.CurrencySymbol@activePurchases.Sum(p => p.AmountExcludingVat).ToString("N2")</strong></td>
+                <td class="text-right"><strong>@Model.CurrencySymbol@activePurchases.Sum(p => p.VatAmount).ToString("N2")</strong></td>
+                <td class="text-right"><strong>@Model.CurrencySymbol@activePurchases.Sum(p => p.TotalAmount).ToString("N2")</strong></td>
+                <td colspan="3"></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

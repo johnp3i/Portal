@@ -28,6 +28,7 @@ public class InvoiceService : IInvoiceService
     private readonly VatSubmissionRepository _vatSubmissionRepository;
     private readonly PortalDbContext _portalDbContext;
     private readonly IProductService _productService;
+    private readonly ProductRepository _productRepository;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<InvoiceService> _logger;
 
@@ -58,6 +59,7 @@ public class InvoiceService : IInvoiceService
         VatSubmissionRepository vatSubmissionRepository,
         PortalDbContext portalDbContext,
         IProductService productService,
+        ProductRepository productRepository,
         IHttpContextAccessor httpContextAccessor,
         ILogger<InvoiceService> logger)
     {
@@ -74,6 +76,7 @@ public class InvoiceService : IInvoiceService
         _vatSubmissionRepository = vatSubmissionRepository;
         _portalDbContext = portalDbContext;
         _productService = productService;
+        _productRepository = productRepository;
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
     }
@@ -186,13 +189,25 @@ public class InvoiceService : IInvoiceService
                     invoiceSectionId = sectionMapping[line.ProposalSectionId.Value];
                 }
 
+                // Resolve ProductTypeId from product (snapshot)
+                int? productTypeId = null;
+                if (!string.IsNullOrEmpty(line.ProductCode))
+                {
+                    var product = await _productRepository.GetByProductCodeAndBusinessIdAsync(
+                        line.ProductCode, businessId);
+                    productTypeId = product?.ProductTypeId;
+                }
+
+                // Enforce RC invariant during conversion
+                var invoiceVatRate = line.IsReverseCharge ? 0m : line.VatRate;
+
                 var invoiceLine = new InvoiceLine
                 {
                     InvoiceId = invoiceId,
                     Description = line.Description,
                     Quantity = line.Quantity,
                     UnitPrice = line.UnitPrice,
-                    VatRate = line.VatRate,
+                    VatRate = invoiceVatRate,
                     Discount = line.Discount,
                     DiscountType = line.DiscountType,
                     CostPrice = line.CostPrice,
@@ -201,15 +216,18 @@ public class InvoiceService : IInvoiceService
                     ReferenceUrl = line.ReferenceUrl,
                     Subtitle = line.Subtitle,
                     InvoiceSectionId = invoiceSectionId,
-                    ProductCode = line.ProductCode
+                    ProductCode = line.ProductCode,
+                    IsReverseCharge = line.IsReverseCharge,
+                    ProductTypeId = productTypeId
                 };
 
                 await _invoiceLineRepository.InsertAsync(invoiceLine);
             }
 
-            // 9. Compute totals
-            var subtotal = quotationLines.Sum(l => l.LineTotal);
-            var taxAmount = Math.Round(quotationLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
+            // 9. Compute totals (respecting RC lines with VatRate=0)
+            var invoiceLines = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
+            var subtotal = invoiceLines.Sum(l => l.LineTotal);
+            var taxAmount = Math.Round(invoiceLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
             var totalAmount = subtotal + taxAmount;
 
             // 10. Update invoice with computed totals
@@ -476,7 +494,8 @@ public class InvoiceService : IInvoiceService
         int? customerFilter = null,
         string? searchTerm = null,
         int page = 1,
-        int pageSize = 15)
+        int pageSize = 15,
+        int? vatPeriodId = null)
     {
         var businessId = _currentTenantService.CurrentBusinessId;
 
@@ -489,7 +508,7 @@ public class InvoiceService : IInvoiceService
         int offset = (page - 1) * pageSize;
 
         var (items, totalCount) = await _invoiceRepository.GetPagedByBusinessIdAsync(
-            businessId, statusFilter, financialStatusFilter, customerFilter, searchTerm, offset, pageSize);
+            businessId, statusFilter, financialStatusFilter, customerFilter, searchTerm, offset, pageSize, vatPeriodId);
 
         return new PagedResult<InvoiceListDto>
         {
@@ -498,6 +517,18 @@ public class InvoiceService : IInvoiceService
             PageSize = pageSize,
             TotalCount = totalCount
         };
+    }
+
+    public async Task<List<InvoiceListDto>> GetInvoicesFilteredAsync(
+        int? statusFilter = null,
+        int? financialStatusFilter = null,
+        int? customerFilter = null,
+        string? searchTerm = null,
+        int? vatPeriodId = null)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        return await _invoiceRepository.GetAllFilteredByBusinessIdAsync(
+            businessId, statusFilter, financialStatusFilter, customerFilter, searchTerm, vatPeriodId);
     }
 
     public async Task<Invoice?> GetInvoiceByIdAsync(int id)
@@ -614,8 +645,12 @@ public class InvoiceService : IInvoiceService
     public async Task<InvoiceLine> AddLineAsync(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
         decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
-        string? productCode = null)
+        string? productCode = null, bool isReverseCharge = false)
     {
+        // Validation: Reverse Charge Invariant
+        if (isReverseCharge && vatRate > 0)
+            throw new ArgumentException("Reverse charge lines require 0% VAT");
+
         var businessId = _currentTenantService.CurrentBusinessId;
 
         var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
@@ -664,7 +699,8 @@ public class InvoiceService : IInvoiceService
             ReferenceUrl = referenceUrl,
             Subtitle = subtitle,
             InvoiceSectionId = invoiceSectionId,
-            ProductCode = productCode
+            ProductCode = productCode,
+            IsReverseCharge = isReverseCharge
         };
 
         var lineId = await _invoiceLineRepository.InsertAsync(invoiceLine);
@@ -702,8 +738,13 @@ public class InvoiceService : IInvoiceService
 
     public async Task UpdateLineAsync(int lineId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
-        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId)
+        decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
+        bool isReverseCharge = false)
     {
+        // Validation: Reverse Charge Invariant
+        if (isReverseCharge && vatRate > 0)
+            throw new ArgumentException("Reverse charge lines require 0% VAT");
+
         var businessId = _currentTenantService.CurrentBusinessId;
 
         var line = await _invoiceLineRepository.GetByIdAsync(lineId);
@@ -751,6 +792,7 @@ public class InvoiceService : IInvoiceService
         line.ReferenceUrl = referenceUrl;
         line.Subtitle = subtitle;
         line.InvoiceSectionId = invoiceSectionId;
+        line.IsReverseCharge = isReverseCharge;
 
         await _invoiceLineRepository.UpdateAsync(line);
 
