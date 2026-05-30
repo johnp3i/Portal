@@ -34,6 +34,7 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    [Route("/Dashboard")]
     public async Task<IActionResult> Index()
     {
         var businessId = _tenantService.CurrentBusinessId;

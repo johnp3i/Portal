@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyChair — Terms & Conditions</title>
+  <meta name="description" content="General contractual terms governing access to and use of MyChair Operational Suite." />
+  <meta name="theme-color" content="#0D5EA6" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root{
+      --bg:#F7FAFC;
+      --bg2:#EEF4F8;
+      --text:#0B1B28;
+      --muted:#5E7385;
+      --blue:#0D5EA6;
+      --blue-dark:#0B4E89;
+      --line:rgba(13,94,166,.10);
+      --shadow:0 22px 56px rgba(13,94,166,.10);
+    }
+    html { scroll-behavior:smooth; }
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(13,94,166,.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(87,184,232,.06), transparent 24%),
+        linear-gradient(180deg,#FBFDFF 0%, var(--bg2) 48%, var(--bg) 100%);
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    h1,h2,h3{
+      font-family:Manrope,Inter,sans-serif;
+      letter-spacing:-.03em;
+    }
+    .grid-fog::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(to right, rgba(13,94,166,.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(13,94,166,.035) 1px, transparent 1px);
+      background-size:40px 40px;
+      mask-image:radial-gradient(circle at center, rgba(0,0,0,.62), transparent 76%);
+      -webkit-mask-image:radial-gradient(circle at center, rgba(0,0,0,.62), transparent 76%);
+      z-index:0;
+    }
+    .wrap{position:relative; z-index:1;}
+    .shell{max-width:1080px; margin:0 auto; padding:0 24px;}
+    .topbar{
+      position:sticky; top:0; z-index:20;
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      background:rgba(255,255,255,.78);
+      border-bottom:1px solid rgba(13,94,166,.08);
+    }
+    .topbar-inner{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 0;
+    }
+    .brand{
+      display:flex; align-items:center; gap:14px; text-decoration:none; color:var(--text);
+    }
+    .logo{
+      display:flex; align-items:center; justify-content:center;
+      width:44px; height:44px; border-radius:16px;
+      border:1px solid rgba(13,94,166,.14);
+      background:#fff; color:var(--blue-dark); font-weight:800;
+      box-shadow:0 8px 22px rgba(13,94,166,.08);
+    }
+    .hero{
+      padding:56px 0 28px;
+    }
+    .eyebrow{
+      display:inline-flex; align-items:center; gap:10px;
+      border:1px solid rgba(13,94,166,.10);
+      background:rgba(255,255,255,.86);
+      color:var(--blue-dark);
+      border-radius:999px;
+      padding:10px 14px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      box-shadow:0 10px 22px rgba(13,94,166,.06);
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background:#57B8E8;
+      box-shadow:0 0 0 8px rgba(87,184,232,.10);
+    }
+    .hero h1{
+      margin:22px 0 14px;
+      font-size:clamp(40px,5vw,64px);
+      line-height:.98;
+      max-width:10ch;
+    }
+    .hero p{
+      max-width:60ch;
+      color:var(--muted);
+      font-size:18px;
+      line-height:1.8;
+      margin:0;
+    }
+    .meta{
+      margin-top:18px;
+      color:var(--muted);
+      font-size:14px;
+      font-weight:600;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(244,249,253,.97) 100%);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      border-radius:30px;
+      padding:34px 28px;
+      margin:22px 0 60px;
+    }
+    .card h2{
+      margin:0 0 14px;
+      font-size:30px;
+      line-height:1.08;
+    }
+    .card h3{
+      margin:28px 0 10px;
+      font-size:22px;
+      line-height:1.15;
+    }
+    .card p, .card li{
+      color:#33475B;
+      font-size:16px;
+      line-height:1.85;
+    }
+    .card ul{
+      margin:10px 0 0 0;
+      padding-left:20px;
+    }
+    .footer{
+      border-top:1px solid rgba(13,94,166,.08);
+      background:rgba(255,255,255,.60);
+    }
+    .footer-inner{
+      display:flex; justify-content:space-between; gap:16px;
+      padding:22px 0 28px; color:var(--muted); font-size:14px;
+    }
+    .footer a{color:var(--blue-dark); text-decoration:none; font-weight:600;}
+    .footer a:hover{text-decoration:underline;}
+    @media (max-width:720px){
+      .footer-inner{flex-direction:column;}
+      .hero p{font-size:17px;}
+      .card{padding:24px 20px;}
+    }
+  </style>
+
+</head>
+<body class="grid-fog">
+  <div class="wrap">
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="brand" href="#">
+          <span class="logo">MC</span>
+          <span>
+            <div style="font-weight:800; font-size:16px; letter-spacing:-.02em;">MyChair</div>
+            <div style="font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#73889A;">Operational Suite</div>
+          </span>
+        </a>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div class="eyebrow"><span class="dot"></span> Legal &amp; Policy</div>
+        <h1>Terms & Conditions</h1>
+        <p>General contractual terms governing access to and use of MyChair Operational Suite.</p>
+        <div class="meta">Last updated: April 10, 2026</div>
+      </section>
+
+      <section class="card">
+        
+<h2>Terms &amp; Conditions</h2>
+<p>These Terms &amp; Conditions govern access to and use of the MyChair Operational Suite, including associated modules such as POS, Control, ERP, OPS, and Production. By accessing or using the platform, the customer agrees to these terms.</p>
+
+<h3>1. Scope of Service</h3>
+<p>MyChair is provided as an operational software suite designed to support transactional, operational, production, and business-control workflows. The specific modules, integrations, and configurations made available to a customer depend on the purchased subscription, add-ons, deployment plan, and implementation scope.</p>
+
+<h3>2. Account Responsibility</h3>
+<p>The customer is responsible for all activity performed under its authorised accounts, including administrator actions, user management, permissions, and operational configuration. Login credentials must be kept secure and may not be shared in a way that weakens access control.</p>
+
+<h3>3. Acceptable Use</h3>
+<p>The customer may not use MyChair in a way that is unlawful, misleading, abusive, malicious, or intended to disrupt platform availability, integrity, or security. The customer may not attempt to reverse engineer, interfere with, or bypass system controls unless explicitly authorised in writing.</p>
+
+<h3>4. Configuration and Deployment</h3>
+<p>MyChair environments may be deployed differently depending on business type, operational structure, and selected modules. Certain features may require implementation work, data preparation, third-party software, device setup, or operational review before activation.</p>
+
+<h3>5. Third-Party Dependencies</h3>
+<p>Some workflows may rely on third-party systems, devices, software, or suppliers, including but not limited to printers, labels, payment systems, external sales channels, or ERP-related services. Compatibility may depend on the agreed implementation scope and supported configuration.</p>
+
+<h3>6. Fees and Commercial Terms</h3>
+<p>Use of the MyChair platform is subject to the fees, billing schedule, and pricing model agreed between the parties. Additional modules, onboarding, integrations, production workflows, labeling support, or operational reviews may be billed separately where applicable.</p>
+
+<h3>7. Service Availability</h3>
+<p>Reasonable efforts are made to maintain availability and reliability. However, the platform may occasionally require maintenance, updates, or corrective actions. No service should be assumed to be uninterrupted or error-free unless expressly committed in a separate support or service agreement.</p>
+
+<h3>8. Intellectual Property</h3>
+<p>All software, platform logic, documentation, designs, and related intellectual property connected to MyChair remain the property of 3 Inventors or its licensors unless explicitly agreed otherwise in writing. The customer receives a limited right to use the platform according to the active subscription and agreed scope.</p>
+
+<h3>9. Data and Backups</h3>
+<p>The customer remains responsible for the accuracy of its business data, data-entry processes, and operational decisions made using the platform. Backup, recovery, export, and retention arrangements should be reviewed as part of implementation and support planning.</p>
+
+<h3>10. Termination</h3>
+<p>Access may be suspended or terminated in accordance with the applicable commercial agreement, including for non-payment, misuse, breach of contract, or security concerns. On termination, access to the platform may end and data handling will be managed according to the agreed commercial and legal framework.</p>
+
+<h3>11. Limitation of Liability</h3>
+<p>To the extent permitted by law, MyChair is provided without liability for indirect, incidental, special, or consequential damages. Nothing in this document removes liability where exclusion is not legally permitted.</p>
+
+<h3>12. Contact</h3>
+<p>Questions regarding these Terms &amp; Conditions may be directed to 3 Inventors through the appropriate commercial or support channels.</p>
+
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell footer-inner">
+        <div>© 2026 3 Inventors. MyChair Operational Suite.</div>
+        <div><a href="#">www.3inventors.com</a></div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

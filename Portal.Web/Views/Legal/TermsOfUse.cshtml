@@ -1,0 +1,258 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terms of Use — 3 Inventors Portal</title>
+    <meta name="description" content="Acceptable use policies and user responsibilities when accessing the 3 Inventors Portal — Business Management Platform." />
+    <meta name="theme-color" content="#0D5EA6" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/favicon/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/favicon/apple-touch-icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/favicon/apple-touch-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/favicon/apple-touch-icon-76x76.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/favicon/apple-touch-icon-57x57.png" />
+    <meta name="msapplication-TileImage" content="/images/favicon/ms-icon-144x144.png" />
+    <meta name="msapplication-TileColor" content="#0D5EA6" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;
+            --warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;
+            --bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+            --shadow:0 24px 70px rgba(13,94,166,.11);--radius:28px;
+        }
+        html{scroll-behavior:smooth}
+        body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+        h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}
+        a{color:inherit;text-decoration:none}
+        .container{max-width:1180px;margin:0 auto;padding:0 28px}
+
+        /* Navigation */
+        .nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.84);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(13,94,166,.08)}
+        .nav-inner{height:76px;display:flex;align-items:center;justify-content:space-between}
+        .brand{display:flex;align-items:center;gap:13px;text-decoration:none;color:var(--text)}
+        .brand-logo{height:32px;width:auto}
+        .nav-links-centre{display:flex;align-items:center;gap:24px}
+        .nav-links-centre a{font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;transition:.18s ease}
+        .nav-links-centre a:hover{color:var(--blue)}
+        .nav-links-centre a.active{color:var(--blue);font-weight:800}
+        .nav-links{display:flex;align-items:center;gap:14px}
+        .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:15px;padding:13px 21px;font-weight:800;text-decoration:none;transition:.18s ease;border:1px solid transparent;font-size:14px}
+        .btn-primary{background:linear-gradient(180deg,#1B6FBA,var(--blue));color:#fff;box-shadow:0 16px 34px rgba(13,94,166,.24)}
+        .btn-primary:hover{transform:translateY(-1px);background:linear-gradient(180deg,#227AC8,#0B4E89)}
+        .btn-secondary{background:rgba(255,255,255,.78);border-color:rgba(13,94,166,.15);color:var(--blue-dark)}
+        .btn-secondary:hover{background:#fff;border-color:rgba(13,94,166,.28)}
+
+        /* Hero */
+        .hero{padding:80px 0 56px;text-align:center}
+        .hero-content{max-width:720px;margin:0 auto}
+        .eyebrow{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(13,94,166,.12);background:rgba(255,255,255,.86);border-radius:999px;padding:10px 15px;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-dark);box-shadow:0 10px 25px rgba(13,94,166,.06)}
+        .dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 8px rgba(87,184,232,.12)}
+        .hero h1{margin:24px 0 0;font-size:clamp(38px,5vw,52px);font-weight:800}
+        .hero-desc{margin:18px 0 0;color:var(--muted);font-size:18px;line-height:1.75;max-width:600px;margin-left:auto;margin-right:auto}
+        .last-updated{margin:14px 0 0;color:var(--muted);font-size:14px;font-weight:600;opacity:.8}
+
+        /* Content Card */
+        .content-section{padding:0 0 80px;flex:1}
+        .content-card{background:rgba(255,255,255,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(13,94,166,.09);border-radius:28px;box-shadow:0 24px 70px rgba(13,94,166,.11);max-width:860px;margin:0 auto;padding:48px}
+        .content-card h2{font-size:28px;font-weight:800;margin-bottom:32px;color:var(--text)}
+        .content-card h3{font-size:20px;font-weight:700;margin-top:36px;margin-bottom:14px;color:var(--text)}
+        .content-card p{margin-bottom:14px;color:#2a3d4e;font-size:15px;line-height:1.8}
+        .content-card ul{margin:0 0 14px 24px;color:#2a3d4e;font-size:15px;line-height:1.8}
+        .content-card ul li{margin-bottom:6px}
+        .content-card a{color:var(--blue);text-decoration:underline}
+        .content-card a:hover{opacity:.8}
+
+        /* Footer */
+        .footer-bottom{border-top:1px solid rgba(13,94,166,.08);padding:24px 0;background:rgba(255,255,255,.6)}
+        .footer-inner{max-width:1180px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+        .footer-inner span{font-size:14px;color:var(--muted)}
+        .footer-links{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+        .footer-links a{color:var(--muted);text-decoration:none;font-size:14px;transition:.18s ease}
+        .footer-links a:hover{opacity:.8}
+
+        /* Responsive */
+        @@media(max-width:720px){
+            .container{padding:0 18px}
+            .nav-inner{height:auto;padding:14px 0;flex-wrap:wrap;gap:12px}
+            .nav-links-centre{gap:14px;flex-wrap:wrap;order:3;width:100%;justify-content:center}
+            .nav-links-centre a{font-size:13px}
+            .nav-links{gap:10px}
+            .btn{padding:11px 16px;font-size:13px}
+            .hero{padding:56px 0 40px}
+            .hero h1{font-size:32px}
+            .hero-desc{font-size:16px}
+            .content-card{padding:24px;border-radius:22px}
+            .content-card h2{font-size:24px;margin-bottom:24px}
+            .content-card h3{font-size:18px;margin-top:28px}
+            .content-card p,.content-card ul{font-size:14px}
+            .content-section{padding:0 0 48px}
+            .footer-inner{flex-direction:column;align-items:flex-start;gap:12px}
+            .footer-links{flex-direction:column;align-items:flex-start;gap:10px}
+        }
+    </style>
+</head>
+<body>
+    <!-- Legal Header -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-inner">
+                <a class="brand" href="/">
+                    <img src="/images/logo_blue_web_toolbar_oi.png" alt="3 Inventors" class="brand-logo" />
+                </a>
+                <div class="nav-links-centre">
+                    <a href="/Terms-and-Conditions">Terms &amp; Conditions</a>
+                    <a href="/Terms-of-Use" class="active">Terms of Use</a>
+                    <a href="/Privacy-Policy">Privacy Policy</a>
+                    <a href="/Cookies-Policy">Cookies Policy</a>
+                </div>
+                <div class="nav-links">
+                    <a class="btn btn-secondary" href="/">Back to Site</a>
+                    <a class="btn btn-primary" href="/Account/Login">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <span class="eyebrow"><span class="dot"></span> Legal &amp; Policy</span>
+                <h1>Terms of Use</h1>
+                <p class="hero-desc">Acceptable use policies and user responsibilities when accessing the platform.</p>
+                <p class="last-updated">Last updated: January 2026</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Card -->
+    <section class="content-section">
+        <div class="container">
+            <div class="content-card">
+                <h2>Terms of Use</h2>
+
+                <h3>1. Acceptance of Terms</h3>
+                <p>By accessing or using the 3 Inventors Portal — Business Management Platform ("the Platform"), you acknowledge that you have read, understood, and agree to be bound by these Terms of Use. If you do not agree to these Terms of Use, you must immediately cease all use of the Platform.</p>
+                <p>These Terms of Use apply to all visitors, registered users, and any other persons who access or use the Platform. They supplement and operate alongside our Terms &amp; Conditions, Privacy Policy, and Cookie Policy.</p>
+
+                <h3>2. Eligibility</h3>
+                <p>To use the Platform, you must:</p>
+                <ul>
+                    <li>Be at least 18 years of age or the age of legal majority in your jurisdiction.</li>
+                    <li>Have the legal capacity to enter into a binding agreement.</li>
+                    <li>Not be prohibited from using the Platform under any applicable law or regulation.</li>
+                    <li>Have received a valid invitation and completed the registration process as approved by a super administrator.</li>
+                </ul>
+                <p>If you are using the Platform on behalf of a business or organisation, you represent and warrant that you have the authority to bind that entity to these Terms of Use.</p>
+
+                <h3>3. Permitted Use</h3>
+                <p>The Platform is provided for legitimate business management purposes. You are permitted to:</p>
+                <ul>
+                    <li>Access and use the modules and features assigned to your account by your business administrator.</li>
+                    <li>Create, manage, and export business data including quotations, invoices, and financial records.</li>
+                    <li>Generate reports and documents for your business operations.</li>
+                    <li>Collaborate with other authorised users within your business account.</li>
+                    <li>Access the Platform from any compatible device using your registered credentials.</li>
+                </ul>
+
+                <h3>4. Prohibited Activities</h3>
+                <p>When using the Platform, you agree not to:</p>
+                <ul>
+                    <li>Use the Platform for any unlawful, fraudulent, or deceptive purpose.</li>
+                    <li>Attempt to reverse engineer, decompile, disassemble, or otherwise derive the source code of the Platform.</li>
+                    <li>Circumvent, disable, or interfere with any security features or access controls of the Platform.</li>
+                    <li>Use automated scripts, bots, crawlers, or similar tools to access or scrape data from the Platform without prior written consent.</li>
+                    <li>Upload, transmit, or distribute any malicious code, viruses, or harmful software.</li>
+                    <li>Impersonate another user, person, or entity, or falsely represent your affiliation with any person or entity.</li>
+                    <li>Interfere with or disrupt the Platform's infrastructure, servers, or networks.</li>
+                    <li>Use the Platform to send unsolicited communications, spam, or bulk messages.</li>
+                    <li>Attempt to access accounts, data, or areas of the Platform for which you do not have authorisation.</li>
+                    <li>Resell, sublicense, or commercially exploit access to the Platform without our prior written consent.</li>
+                </ul>
+
+                <h3>5. User-Generated Content</h3>
+                <p>You are solely responsible for all data, text, documents, and materials ("User Content") that you upload, create, or store on the Platform. By submitting User Content, you represent and warrant that:</p>
+                <ul>
+                    <li>You own or have the necessary rights and permissions to use and share the User Content.</li>
+                    <li>Your User Content does not infringe upon the intellectual property rights, privacy rights, or any other rights of any third party.</li>
+                    <li>Your User Content does not contain any unlawful, defamatory, obscene, or otherwise objectionable material.</li>
+                    <li>Your User Content is accurate and not misleading.</li>
+                </ul>
+                <p>We do not claim ownership of your User Content. However, we reserve the right to remove or disable access to any User Content that violates these Terms of Use or is otherwise objectionable, without prior notice.</p>
+
+                <h3>6. Account Responsibilities</h3>
+                <p>You are responsible for maintaining the confidentiality and security of your account credentials. You agree to:</p>
+                <ul>
+                    <li>Keep your login credentials secure and not share them with any unauthorised person.</li>
+                    <li>Use a strong, unique password for your Platform account.</li>
+                    <li>Notify us immediately if you suspect any unauthorised access to or use of your account.</li>
+                    <li>Accept full responsibility for all activities that occur under your account, whether or not authorised by you.</li>
+                    <li>Log out of your account when using shared or public devices.</li>
+                </ul>
+                <p>We reserve the right to suspend or terminate your account if we reasonably believe that your credentials have been compromised or that your account is being used in violation of these Terms of Use.</p>
+
+                <h3>7. Third-Party Links &amp; Services</h3>
+                <p>The Platform may contain links to third-party websites, services, or resources that are not owned or controlled by us. We provide these links for convenience only and do not endorse or assume responsibility for the content, privacy policies, or practices of any third-party sites or services.</p>
+                <p>You acknowledge and agree that:</p>
+                <ul>
+                    <li>We are not responsible for the availability or accuracy of third-party websites or services.</li>
+                    <li>Your use of third-party services is at your own risk and subject to the terms and conditions of those services.</li>
+                    <li>We shall not be liable for any loss or damage caused by your reliance on any third-party content, goods, or services.</li>
+                </ul>
+
+                <h3>8. Modifications to Terms</h3>
+                <p>We reserve the right to modify or update these Terms of Use at any time at our sole discretion. When we make changes, we will update the "Last updated" date at the top of this page.</p>
+                <p>Your continued use of the Platform after any modifications to these Terms of Use constitutes your acceptance of the revised terms. If you do not agree to the updated Terms of Use, you must stop using the Platform immediately.</p>
+                <p>We encourage you to review these Terms of Use periodically to stay informed of any changes that may affect your use of the Platform.</p>
+
+                <h3>9. Disclaimer</h3>
+                <p>The Platform is provided on an "as is" and "as available" basis. To the fullest extent permitted by applicable law, we disclaim all warranties, whether express, implied, or statutory, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement.</p>
+                <p>We do not warrant that:</p>
+                <ul>
+                    <li>The Platform will meet your specific requirements or expectations.</li>
+                    <li>The Platform will be available at all times without interruption, delay, or error.</li>
+                    <li>Any information obtained through the Platform will be accurate, reliable, or complete.</li>
+                    <li>Any defects or errors in the Platform will be corrected.</li>
+                </ul>
+                <p>Your use of the Platform is at your sole risk. You are responsible for ensuring that your use of the Platform complies with all applicable laws and regulations in your jurisdiction.</p>
+
+                <h3>10. Contact</h3>
+                <p>If you have any questions or concerns about these Terms of Use, or if you wish to report a violation of these terms, please contact us at:</p>
+                <ul>
+                    <li>Email: <a href="mailto:privacy@3inventors.com">privacy@3inventors.com</a></li>
+                    <li>Company: 3 Inventors</li>
+                    <li>Location: Nicosia, Cyprus</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Legal Footer -->
+    <footer class="footer-bottom">
+        <div class="container">
+            <div class="footer-inner">
+                <span>&copy; 2026 3 Inventors. All rights reserved.</span>
+                <div class="footer-links">
+                    <a href="/Terms-and-Conditions">Terms &amp; Conditions</a>
+                    <a href="/Terms-of-Use">Terms of Use</a>
+                    <a href="/Privacy-Policy">Privacy Policy</a>
+                    <a href="/Cookies-Policy">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

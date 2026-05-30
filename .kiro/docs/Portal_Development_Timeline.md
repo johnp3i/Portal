@@ -243,7 +243,7 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
-| [ ] | 10.1 | Design and build public landing page (hero, features, pricing cards, CTA) | Module 0 | |
+| [x] | 10.1 | Design and build public landing page (hero, features, pricing cards, CTA) | Module 0 | 2025-07-28 |
 | [ ] | 10.2 | Create subscription schema: `[subscription].[Plan]`, `[subscription].[Subscription]`, `[subscription].[PlanModule]` | Module 0 | |
 | [ ] | 10.3 | Seed Plan data (Starter, Business, Enterprise) with module mappings | 10.2 | |
 | [ ] | 10.4 | Integrate Stripe: create Checkout Session on plan selection | 10.2 | |
@@ -255,8 +255,23 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [ ] | 10.10 | Implement grace period and "billing required" lockout screen for lapsed subscriptions | 10.5 | |
 | [ ] | 10.11 | Integrate Stripe Customer Portal for self-service billing management (plan changes, payment methods, invoice history) | 10.4 | |
 | [ ] | 10.12 | Build super admin "Subscriptions" view (all tenants, plans, payment status, MRR) | 10.2 | |
-| [ ] | 10.13 | Routing: unauthenticated `/` → landing page; authenticated `/` → redirect to Dashboard | 10.1 | |
+| [x] | 10.13 | Routing: unauthenticated `/` → landing page; authenticated `/` → redirect to Dashboard | 10.1 | 2025-07-28 |
 | [ ] | 10.14 | Property-based tests (plan-module mapping, provisioning atomicity, webhook idempotency, access gating) | 10.8 | |
+
+---
+
+### Module 11: Identity Pages
+
+**Goal:** Design and implement registration, confirm account, and forgot password pages following the 3 Inventors Identity Page Design Guide — shared visual language with frosted glass cards, interactive particle background, and per-product branding.
+
+| Done | # | Task | Dependencies | Completed |
+|------|---|------|-------------|-----------|
+| [ ] | 11.1 | Create Registration page (plan-aware, collects email/password/name, links to Stripe checkout) | Module 10 | |
+| [ ] | 11.2 | Create Confirm Account page (email verification success/failure states) | 11.1 | |
+| [ ] | 11.3 | Create Forgot Password page (email input, reset link sent confirmation) | Module 0 | |
+| [ ] | 11.4 | Create Reset Password page (new password form with token validation) | 11.3 | |
+| [ ] | 11.5 | Apply Identity Page Design Guide styling (frosted glass card, particle background, top bar, responsive layout) | 11.1 | |
+| [ ] | 11.6 | Ensure all identity pages share favicon, SEO meta tags, and consistent branding | 11.5 | |
 
 ---
 

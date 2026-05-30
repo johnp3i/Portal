@@ -1,0 +1,259 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cookie Policy — 3 Inventors Portal</title>
+    <meta name="description" content="Cookie Policy for the 3 Inventors Portal — Business Management Platform." />
+    <meta name="theme-color" content="#0D5EA6" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/favicon/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/favicon/apple-touch-icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/favicon/apple-touch-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/favicon/apple-touch-icon-76x76.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/favicon/apple-touch-icon-57x57.png" />
+    <meta name="msapplication-TileImage" content="/images/favicon/ms-icon-144x144.png" />
+    <meta name="msapplication-TileColor" content="#0D5EA6" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;
+            --warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;
+            --bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+            --shadow:0 24px 70px rgba(13,94,166,.11);--radius:28px;
+        }
+        html{scroll-behavior:smooth}
+        body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+        h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}
+        a{color:inherit;text-decoration:none}
+        .container{max-width:1180px;margin:0 auto;padding:0 28px}
+
+        /* Navigation */
+        .nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.84);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(13,94,166,.08)}
+        .nav-inner{height:76px;display:flex;align-items:center;justify-content:space-between}
+        .brand{display:flex;align-items:center;gap:13px;text-decoration:none;color:var(--text)}
+        .brand-logo{height:32px;width:auto}
+        .nav-links-centre{display:flex;align-items:center;gap:24px}
+        .nav-links-centre a{font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;transition:.18s ease}
+        .nav-links-centre a:hover{color:var(--blue)}
+        .nav-links-centre a.active{color:var(--blue);font-weight:800}
+        .nav-links{display:flex;align-items:center;gap:14px}
+        .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:15px;padding:13px 21px;font-weight:800;text-decoration:none;transition:.18s ease;border:1px solid transparent;font-size:14px}
+        .btn-primary{background:linear-gradient(180deg,#1B6FBA,var(--blue));color:#fff;box-shadow:0 16px 34px rgba(13,94,166,.24)}
+        .btn-primary:hover{transform:translateY(-1px);background:linear-gradient(180deg,#227AC8,#0B4E89)}
+        .btn-secondary{background:rgba(255,255,255,.78);border-color:rgba(13,94,166,.15);color:var(--blue-dark)}
+        .btn-secondary:hover{background:#fff;border-color:rgba(13,94,166,.28)}
+
+        /* Hero */
+        .hero{padding:80px 0 56px;text-align:center}
+        .hero-content{max-width:720px;margin:0 auto}
+        .eyebrow{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(13,94,166,.12);background:rgba(255,255,255,.86);border-radius:999px;padding:10px 15px;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-dark);box-shadow:0 10px 25px rgba(13,94,166,.06)}
+        .dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 8px rgba(87,184,232,.12)}
+        .hero h1{margin:24px 0 0;font-size:clamp(38px,5vw,52px);font-weight:800}
+        .hero-desc{margin:18px 0 0;color:var(--muted);font-size:18px;line-height:1.75;max-width:600px;margin-left:auto;margin-right:auto}
+        .last-updated{margin:14px 0 0;color:var(--muted);font-size:14px;font-weight:600;opacity:.8}
+
+        /* Content Card */
+        .content-section{padding:0 0 80px;flex:1}
+        .content-card{background:rgba(255,255,255,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(13,94,166,.09);border-radius:28px;box-shadow:0 24px 70px rgba(13,94,166,.11);max-width:860px;margin:0 auto;padding:48px}
+        .content-card h2{font-size:28px;font-weight:800;margin-bottom:32px;color:var(--text)}
+        .content-card h3{font-size:20px;font-weight:700;margin-top:36px;margin-bottom:14px;color:var(--text)}
+        .content-card p{margin-bottom:14px;color:#2a3d4e;font-size:15px;line-height:1.8}
+        .content-card ul{margin:0 0 14px 24px;color:#2a3d4e;font-size:15px;line-height:1.8}
+        .content-card ul li{margin-bottom:6px}
+        .content-card a{color:var(--blue);text-decoration:underline}
+        .content-card a:hover{opacity:.8}
+
+        /* Footer */
+        .footer-bottom{border-top:1px solid rgba(13,94,166,.08);padding:24px 0;background:rgba(255,255,255,.6)}
+        .footer-inner{max-width:1180px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+        .footer-inner span{font-size:14px;color:var(--muted)}
+        .footer-links{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+        .footer-links a{color:var(--muted);text-decoration:none;font-size:14px;transition:.18s ease}
+        .footer-links a:hover{opacity:.8}
+
+        /* Responsive */
+        @@media(max-width:720px){
+            .container{padding:0 18px}
+            .nav-inner{height:auto;padding:14px 0;flex-wrap:wrap;gap:12px}
+            .nav-links-centre{gap:14px;flex-wrap:wrap;order:3;width:100%;justify-content:center}
+            .nav-links-centre a{font-size:13px}
+            .nav-links{gap:10px}
+            .btn{padding:11px 16px;font-size:13px}
+            .hero{padding:56px 0 40px}
+            .hero h1{font-size:32px}
+            .hero-desc{font-size:16px}
+            .content-card{padding:24px;border-radius:22px}
+            .content-card h2{font-size:24px;margin-bottom:24px}
+            .content-card h3{font-size:18px;margin-top:28px}
+            .content-card p,.content-card ul{font-size:14px}
+            .content-section{padding:0 0 48px}
+            .footer-inner{flex-direction:column;align-items:flex-start;gap:12px}
+            .footer-links{flex-direction:column;align-items:flex-start;gap:10px}
+        }
+    </style>
+</head>
+<body>
+    <!-- Legal Header -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-inner">
+                <a class="brand" href="/">
+                    <img src="/images/logo_blue_web_toolbar_oi.png" alt="3 Inventors" class="brand-logo" />
+                </a>
+                <div class="nav-links-centre">
+                    <a href="/Terms-and-Conditions">Terms &amp; Conditions</a>
+                    <a href="/Terms-of-Use">Terms of Use</a>
+                    <a href="/Privacy-Policy">Privacy Policy</a>
+                    <a href="/Cookies-Policy" class="active">Cookies Policy</a>
+                </div>
+                <div class="nav-links">
+                    <a class="btn btn-secondary" href="/">Back to Site</a>
+                    <a class="btn btn-primary" href="/Account/Login">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <span class="eyebrow"><span class="dot"></span> Legal &amp; Policy</span>
+                <h1>Cookie Policy</h1>
+                <p class="hero-desc">Information about cookies and tracking technologies used on this platform.</p>
+                <p class="last-updated">Last updated: January 2026</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Card -->
+    <section class="content-section">
+        <div class="container">
+            <div class="content-card">
+                <h2>Cookie Policy</h2>
+
+                <h3>1. What Are Cookies</h3>
+                <p>Cookies are small text files that are placed on your device (computer, tablet, or mobile phone) when you visit a website. They are widely used to make websites work more efficiently, provide a better user experience, and supply information to the site operators.</p>
+                <p>Cookies allow the Platform to recognise your device and remember certain information about your visit, such as your preferences, login status, and how you interact with the Platform.</p>
+
+                <h3>2. How We Use Cookies</h3>
+                <p>The 3 Inventors Portal uses cookies and similar tracking technologies to:</p>
+                <ul>
+                    <li>Authenticate your identity and maintain your session when you are logged in.</li>
+                    <li>Remember your preferences and settings across visits.</li>
+                    <li>Ensure the security and integrity of your account and the Platform.</li>
+                    <li>Understand how you interact with the Platform to improve functionality and performance.</li>
+                    <li>Analyse usage patterns to enhance the overall user experience.</li>
+                </ul>
+
+                <h3>3. Types of Cookies We Use</h3>
+                <p>We categorise the cookies used on the Platform into the following types:</p>
+                <ul>
+                    <li><strong>Essential Cookies</strong> — Required for the Platform to function correctly. These cannot be disabled.</li>
+                    <li><strong>Performance Cookies</strong> — Help us understand how visitors interact with the Platform by collecting anonymous usage data.</li>
+                    <li><strong>Functionality Cookies</strong> — Remember your choices and preferences to provide a more personalised experience.</li>
+                    <li><strong>Analytics Cookies</strong> — Allow us to measure and analyse how the Platform is used so we can improve its performance and design.</li>
+                </ul>
+
+                <h3>4. Essential Cookies</h3>
+                <p>Essential cookies are strictly necessary for the operation of the Platform. Without these cookies, core features such as authentication, session management, and security protections would not function. These cookies include:</p>
+                <ul>
+                    <li><strong>Authentication cookies</strong> — Verify your identity and keep you logged in during your session.</li>
+                    <li><strong>Session management cookies</strong> — Maintain your session state as you navigate between pages and modules.</li>
+                    <li><strong>Security cookies</strong> — Protect against cross-site request forgery (CSRF) and other security threats.</li>
+                    <li><strong>Load balancing cookies</strong> — Distribute traffic across servers to ensure Platform availability.</li>
+                </ul>
+                <p>Because these cookies are essential to the Platform's operation, they cannot be refused or disabled. They are set automatically when you access the Platform.</p>
+
+                <h3>5. Performance &amp; Analytics Cookies</h3>
+                <p>Performance and analytics cookies collect information about how you use the Platform, such as which pages you visit most often, how long you spend on each page, and whether you encounter any errors. This data is aggregated and anonymised, meaning it does not identify you personally.</p>
+                <p>We use this information to:</p>
+                <ul>
+                    <li>Identify and resolve technical issues and errors.</li>
+                    <li>Understand which features and modules are most used.</li>
+                    <li>Optimise page load times and overall Platform performance.</li>
+                    <li>Make informed decisions about future development and improvements.</li>
+                </ul>
+
+                <h3>6. Third-Party Cookies</h3>
+                <p>In some cases, we use third-party services that may set their own cookies on your device. These third parties include:</p>
+                <ul>
+                    <li><strong>Analytics providers</strong> — To help us understand Platform usage patterns and performance metrics.</li>
+                    <li><strong>Security services</strong> — To detect and prevent fraudulent activity and protect against automated threats.</li>
+                    <li><strong>Payment processors</strong> — To facilitate secure payment transactions for subscription services.</li>
+                </ul>
+                <p>We do not control the cookies set by third parties. We recommend reviewing the privacy and cookie policies of these third-party services for more information about how they use cookies.</p>
+
+                <h3>7. Managing Your Cookie Preferences</h3>
+                <p>You have the right to decide whether to accept or reject non-essential cookies. Essential cookies cannot be disabled as they are necessary for the Platform to function.</p>
+                <p>For non-essential cookies, you can manage your preferences through:</p>
+                <ul>
+                    <li>Your browser settings — Most browsers allow you to view, manage, and delete cookies.</li>
+                    <li>Device settings — Mobile devices typically provide cookie management options within their system settings.</li>
+                </ul>
+                <p>Please note that if you choose to disable certain cookies, some features of the Platform may not function as intended, and your user experience may be affected.</p>
+
+                <h3>8. How to Disable Cookies</h3>
+                <p>You can configure your browser to refuse cookies or to alert you when cookies are being sent. Below are instructions for common browsers:</p>
+                <ul>
+                    <li><strong>Google Chrome</strong> — Settings &gt; Privacy and Security &gt; Cookies and other site data.</li>
+                    <li><strong>Mozilla Firefox</strong> — Settings &gt; Privacy &amp; Security &gt; Cookies and Site Data.</li>
+                    <li><strong>Microsoft Edge</strong> — Settings &gt; Cookies and site permissions &gt; Manage and delete cookies and site data.</li>
+                    <li><strong>Safari</strong> — Preferences &gt; Privacy &gt; Manage Website Data.</li>
+                    <li><strong>Opera</strong> — Settings &gt; Privacy &amp; Security &gt; Cookies.</li>
+                </ul>
+                <p>For other browsers, please consult the browser's help documentation or official website for instructions on managing cookie settings.</p>
+
+                <h3>9. Impact of Disabling Cookies</h3>
+                <p>If you choose to disable or block cookies, please be aware of the following potential impacts:</p>
+                <ul>
+                    <li>You may be unable to log in or maintain an authenticated session on the Platform.</li>
+                    <li>Your preferences and settings may not be remembered between visits.</li>
+                    <li>Some features and modules may not function correctly or may be unavailable.</li>
+                    <li>The Platform's performance may be degraded as it cannot optimise your experience.</li>
+                </ul>
+                <p>We recommend keeping essential cookies enabled to ensure the Platform operates as intended.</p>
+
+                <h3>10. Changes to This Cookie Policy</h3>
+                <p>We may update this Cookie Policy from time to time to reflect changes in our practices, technology, legal requirements, or other factors. When we make changes, we will update the "Last updated" date at the top of this page.</p>
+                <p>We encourage you to review this Cookie Policy periodically to stay informed about how we use cookies. Your continued use of the Platform after any changes to this policy constitutes your acceptance of the updated terms.</p>
+
+                <h3>11. Contact Us</h3>
+                <p>If you have any questions about this Cookie Policy or our use of cookies, please contact us at:</p>
+                <ul>
+                    <li>Email: <a href="mailto:privacy@3inventors.com">privacy@3inventors.com</a></li>
+                    <li>Company: 3 Inventors</li>
+                    <li>Location: Nicosia, Cyprus</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Legal Footer -->
+    <footer class="footer-bottom">
+        <div class="container">
+            <div class="footer-inner">
+                <span>&copy; 2026 3 Inventors. All rights reserved.</span>
+                <div class="footer-links">
+                    <a href="/Terms-and-Conditions">Terms &amp; Conditions</a>
+                    <a href="/Terms-of-Use">Terms of Use</a>
+                    <a href="/Privacy-Policy">Privacy Policy</a>
+                    <a href="/Cookies-Policy">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

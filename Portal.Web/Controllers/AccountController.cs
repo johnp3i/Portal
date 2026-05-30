@@ -78,6 +78,17 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
+    public IActionResult Register(string? plan = null)
+    {
+        var loginUrl = string.IsNullOrWhiteSpace(plan)
+            ? Url.Action("Login", "Account")
+            : Url.Action("Login", "Account", new { plan });
+
+        return Redirect(loginUrl!);
+    }
+
+    [HttpGet]
     public IActionResult AccessDenied()
     {
         return View();

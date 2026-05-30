@@ -177,6 +177,36 @@ The only data involved is:
 - `User.Identity?.IsAuthenticated` — read from the existing ASP.NET Core Identity authentication cookie
 - Query parameter `plan` (string) — passed through URL routing, not persisted
 
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+> **Note:** This feature is primarily static UI rendering and simple boolean routing, which limits the applicability of property-based testing. The properties below capture the routing invariants that must hold regardless of request context, user state, or plan parameter values.
+
+### Property 1: Unauthenticated users always see the landing page
+
+*For any* HTTP request to the root URL (`/`) where the user is not authenticated, the `LandingController` SHALL return a `ViewResult` (HTTP 200) rendering the landing page — never a redirect, error, or other response type.
+
+**Validates: Requirements 1.1, 1.4**
+
+### Property 2: Authenticated users always get redirected to Dashboard
+
+*For any* HTTP request to the root URL (`/`) where the user is authenticated (regardless of roles, claims, or session state), the `LandingController` SHALL return an HTTP 302 redirect to `/Dashboard` — never the landing page view.
+
+**Validates: Requirements 1.2, 1.3**
+
+### Property 3: Registration URL redirect preserves plan parameter
+
+*For any* string value of the `plan` query parameter (including empty, whitespace, special characters, and long strings), navigating to `/Account/Register?plan={value}` SHALL redirect to `/Account/Login?plan={value}` with the plan parameter value preserved exactly as provided.
+
+**Validates: Requirements 8.1, 8.2, 8.3, 8.4**
+
+### Property 4: Landing page renders without authenticated layout
+
+*For any* rendering of the landing page view, the output HTML SHALL NOT contain the authenticated layout elements (sidebar navigation, topbar with user menu) — the view operates with `Layout = null` as a standalone document.
+
+**Validates: Requirements 2.1**
+
 ## Error Handling
 
 This feature has a minimal error surface due to its static nature:

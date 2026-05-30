@@ -1,0 +1,292 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — 3 Inventors Portal</title>
+    <meta name="description" content="Privacy Policy for the 3 Inventors Portal — Business Management Platform." />
+    <meta name="theme-color" content="#0D5EA6" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/favicon/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/favicon/apple-touch-icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/favicon/apple-touch-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/favicon/apple-touch-icon-76x76.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/favicon/apple-touch-icon-57x57.png" />
+    <meta name="msapplication-TileImage" content="/images/favicon/ms-icon-144x144.png" />
+    <meta name="msapplication-TileColor" content="#0D5EA6" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;
+            --warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;
+            --bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+            --shadow:0 24px 70px rgba(13,94,166,.11);--radius:28px;
+        }
+        html{scroll-behavior:smooth}
+        body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+        h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}
+        a{color:inherit;text-decoration:none}
+        .container{max-width:1180px;margin:0 auto;padding:0 28px}
+
+        /* Navigation */
+        .nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.84);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(13,94,166,.08)}
+        .nav-inner{height:76px;display:flex;align-items:center;justify-content:space-between}
+        .brand{display:flex;align-items:center;gap:13px;text-decoration:none;color:var(--text)}
+        .brand-logo{height:32px;width:auto}
+        .nav-links-centre{display:flex;align-items:center;gap:24px}
+        .nav-links-centre a{font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;transition:.18s ease}
+        .nav-links-centre a:hover{color:var(--blue)}
+        .nav-links-centre a.active{color:var(--blue);font-weight:800}
+        .nav-links{display:flex;align-items:center;gap:14px}
+        .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:15px;padding:13px 21px;font-weight:800;text-decoration:none;transition:.18s ease;border:1px solid transparent;font-size:14px}
+        .btn-primary{background:linear-gradient(180deg,#1B6FBA,var(--blue));color:#fff;box-shadow:0 16px 34px rgba(13,94,166,.24)}
+        .btn-primary:hover{transform:translateY(-1px);background:linear-gradient(180deg,#227AC8,#0B4E89)}
+        .btn-secondary{background:rgba(255,255,255,.78);border-color:rgba(13,94,166,.15);color:var(--blue-dark)}
+        .btn-secondary:hover{background:#fff;border-color:rgba(13,94,166,.28)}
+
+        /* Hero */
+        .hero{padding:80px 0 56px;text-align:center}
+        .hero-content{max-width:720px;margin:0 auto}
+        .eyebrow{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(13,94,166,.12);background:rgba(255,255,255,.86);border-radius:999px;padding:10px 15px;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-dark);box-shadow:0 10px 25px rgba(13,94,166,.06)}
+        .dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 8px rgba(87,184,232,.12)}
+        .hero h1{margin:24px 0 0;font-size:clamp(38px,5vw,52px);font-weight:800}
+        .hero-desc{margin:18px 0 0;color:var(--muted);font-size:18px;line-height:1.75;max-width:600px;margin-left:auto;margin-right:auto}
+        .last-updated{margin:14px 0 0;color:var(--muted);font-size:14px;font-weight:600;opacity:.8}
+
+        /* Content Card */
+        .content-section{padding:0 0 80px;flex:1}
+        .content-card{background:rgba(255,255,255,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(13,94,166,.09);border-radius:28px;box-shadow:0 24px 70px rgba(13,94,166,.11);max-width:860px;margin:0 auto;padding:48px}
+        .content-card h2{font-size:28px;font-weight:800;margin-bottom:32px;color:var(--text)}
+        .content-card h3{font-size:20px;font-weight:700;margin-top:36px;margin-bottom:14px;color:var(--text)}
+        .content-card p{margin-bottom:14px;color:#2a3d4e;font-size:15px;line-height:1.8}
+        .content-card ul{margin:0 0 14px 24px;color:#2a3d4e;font-size:15px;line-height:1.8}
+        .content-card ul li{margin-bottom:6px}
+        .content-card a{color:var(--blue);text-decoration:underline}
+        .content-card a:hover{opacity:.8}
+
+        /* Footer */
+        .footer-bottom{border-top:1px solid rgba(13,94,166,.08);padding:24px 0;background:rgba(255,255,255,.6)}
+        .footer-inner{max-width:1180px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+        .footer-inner span{font-size:14px;color:var(--muted)}
+        .footer-links{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+        .footer-links a{color:var(--muted);text-decoration:none;font-size:14px;transition:.18s ease}
+        .footer-links a:hover{opacity:.8}
+
+        /* Responsive */
+        @@media(max-width:720px){
+            .container{padding:0 18px}
+            .nav-inner{height:auto;padding:14px 0;flex-wrap:wrap;gap:12px}
+            .nav-links-centre{gap:14px;flex-wrap:wrap;order:3;width:100%;justify-content:center}
+            .nav-links-centre a{font-size:13px}
+            .nav-links{gap:10px}
+            .btn{padding:11px 16px;font-size:13px}
+            .hero{padding:56px 0 40px}
+            .hero h1{font-size:32px}
+            .hero-desc{font-size:16px}
+            .content-card{padding:24px;border-radius:22px}
+            .content-card h2{font-size:24px;margin-bottom:24px}
+            .content-card h3{font-size:18px;margin-top:28px}
+            .content-card p,.content-card ul{font-size:14px}
+            .content-section{padding:0 0 48px}
+            .footer-inner{flex-direction:column;align-items:flex-start;gap:12px}
+            .footer-links{flex-direction:column;align-items:flex-start;gap:10px}
+        }
+    </style>
+</head>
+<body>
+    <!-- Legal Header -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-inner">
+                <a class="brand" href="/">
+                    <img src="/images/logo_blue_web_toolbar_oi.png" alt="3 Inventors" class="brand-logo" />
+                </a>
+                <div class="nav-links-centre">
+                    <a href="/Terms-and-Conditions">Terms &amp; Conditions</a>
+                    <a href="/Terms-of-Use">Terms of Use</a>
+                    <a href="/Privacy-Policy" class="active">Privacy Policy</a>
+                    <a href="/Cookies-Policy">Cookies Policy</a>
+                </div>
+                <div class="nav-links">
+                    <a class="btn btn-secondary" href="/">Back to Site</a>
+                    <a class="btn btn-primary" href="/Account/Login">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <span class="eyebrow"><span class="dot"></span> Legal &amp; Policy</span>
+                <h1>Privacy Policy</h1>
+                <p class="hero-desc">How we collect, use, store, and protect your personal information.</p>
+                <p class="last-updated">Last updated: January 2026</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Card -->
+    <section class="content-section">
+        <div class="container">
+            <div class="content-card">
+                <h2>Privacy Policy</h2>
+
+                <h3>1. Introduction</h3>
+                <p>Welcome to the 3 Inventors Portal — Business Management Platform ("the Platform"). This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our Platform. We are committed to protecting your privacy and ensuring that your personal data is handled responsibly and in compliance with applicable data protection laws, including the General Data Protection Regulation (GDPR).</p>
+                <p>By accessing or using the Platform, you acknowledge that you have read and understood this Privacy Policy. If you do not agree with our practices, please do not use the Platform.</p>
+
+                <h3>2. Information We Collect</h3>
+                <p>We collect the following categories of information:</p>
+                <p><strong>Personal Data:</strong></p>
+                <ul>
+                    <li>Full name, email address, and contact details provided during registration.</li>
+                    <li>Account credentials (passwords are stored in encrypted form).</li>
+                    <li>Role and access level within your organisation.</li>
+                </ul>
+                <p><strong>Business Data:</strong></p>
+                <ul>
+                    <li>Business name, registration number, VAT number, and address.</li>
+                    <li>Financial records including quotations, invoices, payments, purchases, and VAT submissions created within the Platform.</li>
+                    <li>Customer and supplier information entered by your organisation.</li>
+                </ul>
+                <p><strong>Usage Data:</strong></p>
+                <ul>
+                    <li>IP address, browser type, operating system, and device information.</li>
+                    <li>Pages visited, features used, and time spent on the Platform.</li>
+                    <li>Error logs and performance data to improve service reliability.</li>
+                </ul>
+                <p><strong>Cookies &amp; Tracking Technologies:</strong></p>
+                <ul>
+                    <li>Session cookies required for authentication and Platform functionality.</li>
+                    <li>Analytics cookies to understand usage patterns and improve the Platform.</li>
+                    <li>For detailed information about cookies, please refer to our <a href="/Cookies-Policy">Cookie Policy</a>.</li>
+                </ul>
+
+                <h3>3. How We Use Your Information</h3>
+                <p>We use the information we collect for the following purposes:</p>
+                <ul>
+                    <li>To provide, operate, and maintain the Platform and its features.</li>
+                    <li>To create and manage your user account and authenticate your identity.</li>
+                    <li>To process business operations including quotations, invoices, payments, and financial reporting.</li>
+                    <li>To communicate with you regarding account activity, service updates, and support requests.</li>
+                    <li>To monitor and analyse usage trends to improve Platform performance and user experience.</li>
+                    <li>To detect, prevent, and address technical issues, fraud, or security breaches.</li>
+                    <li>To comply with legal obligations and enforce our Terms &amp; Conditions.</li>
+                    <li>To send administrative notifications related to your account or subscription.</li>
+                </ul>
+
+                <h3>4. Legal Basis for Processing</h3>
+                <p>We process your personal data under the following legal bases as defined by the GDPR:</p>
+                <ul>
+                    <li><strong>Contract Performance:</strong> Processing necessary to fulfil our contractual obligations to you, including providing Platform access and services.</li>
+                    <li><strong>Legitimate Interests:</strong> Processing necessary for our legitimate business interests, such as improving the Platform, ensuring security, and preventing fraud.</li>
+                    <li><strong>Legal Obligation:</strong> Processing necessary to comply with applicable laws, regulations, or legal proceedings.</li>
+                    <li><strong>Consent:</strong> Where required, we obtain your explicit consent before processing personal data for specific purposes such as marketing communications.</li>
+                </ul>
+
+                <h3>5. Data Sharing &amp; Third Parties</h3>
+                <p>We do not sell your personal data. We may share your information with third parties only in the following circumstances:</p>
+                <ul>
+                    <li><strong>Service Providers:</strong> Trusted third-party vendors who assist in operating the Platform (e.g., hosting providers, payment processors, email delivery services). These providers are contractually bound to protect your data.</li>
+                    <li><strong>Legal Requirements:</strong> When required by law, regulation, legal process, or governmental request.</li>
+                    <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets, your data may be transferred as part of the transaction.</li>
+                    <li><strong>With Your Consent:</strong> When you have given explicit permission to share your data with a specific third party.</li>
+                    <li><strong>Protection of Rights:</strong> When necessary to protect our rights, privacy, safety, or property, or that of our users or the public.</li>
+                </ul>
+
+                <h3>6. Data Retention</h3>
+                <p>We retain your personal data only for as long as necessary to fulfil the purposes outlined in this Privacy Policy, unless a longer retention period is required or permitted by law. Specifically:</p>
+                <ul>
+                    <li>Account data is retained for the duration of your active subscription and for a reasonable period thereafter to allow for account reactivation.</li>
+                    <li>Business and financial records are retained in accordance with applicable tax and accounting regulations (typically 6–10 years).</li>
+                    <li>Usage and analytics data is retained in anonymised form for up to 24 months.</li>
+                    <li>Upon account termination, we will make your data available for export for a reasonable period, after which it will be securely deleted.</li>
+                </ul>
+
+                <h3>7. Data Security</h3>
+                <p>We implement appropriate technical and organisational measures to protect your personal data against unauthorised access, alteration, disclosure, or destruction. These measures include:</p>
+                <ul>
+                    <li>Encryption of data in transit (TLS/SSL) and at rest.</li>
+                    <li>Secure password hashing using industry-standard algorithms.</li>
+                    <li>Role-based access controls limiting data access to authorised personnel only.</li>
+                    <li>Regular security assessments and vulnerability testing.</li>
+                    <li>Audit logging of access to sensitive data and system operations.</li>
+                    <li>Secure hosting infrastructure with redundancy and disaster recovery capabilities.</li>
+                </ul>
+                <p>While we strive to protect your personal data, no method of transmission over the Internet or electronic storage is completely secure. We cannot guarantee absolute security but are committed to maintaining industry-standard protections.</p>
+
+                <h3>8. Your Rights</h3>
+                <p>Under applicable data protection laws, you have the following rights regarding your personal data:</p>
+                <ul>
+                    <li><strong>Right of Access:</strong> You may request a copy of the personal data we hold about you.</li>
+                    <li><strong>Right to Rectification:</strong> You may request correction of inaccurate or incomplete personal data.</li>
+                    <li><strong>Right to Erasure:</strong> You may request deletion of your personal data where there is no compelling reason for its continued processing.</li>
+                    <li><strong>Right to Data Portability:</strong> You may request a copy of your data in a structured, commonly used, machine-readable format.</li>
+                    <li><strong>Right to Object:</strong> You may object to processing of your personal data based on legitimate interests or for direct marketing purposes.</li>
+                    <li><strong>Right to Restrict Processing:</strong> You may request that we limit the processing of your personal data under certain circumstances.</li>
+                    <li><strong>Right to Withdraw Consent:</strong> Where processing is based on consent, you may withdraw your consent at any time without affecting the lawfulness of prior processing.</li>
+                </ul>
+                <p>To exercise any of these rights, please contact us at <a href="mailto:privacy@3inventors.com">privacy@3inventors.com</a>. We will respond to your request within 30 days in accordance with applicable law.</p>
+
+                <h3>9. International Data Transfers</h3>
+                <p>Your personal data may be transferred to and processed in countries outside your country of residence. Where such transfers occur, we ensure that appropriate safeguards are in place to protect your data, including:</p>
+                <ul>
+                    <li>Standard Contractual Clauses (SCCs) approved by the European Commission.</li>
+                    <li>Transfers to countries recognised as providing an adequate level of data protection.</li>
+                    <li>Binding Corporate Rules where applicable.</li>
+                </ul>
+                <p>By using the Platform, you acknowledge that your data may be processed in jurisdictions with different data protection laws than your own.</p>
+
+                <h3>10. Children's Privacy</h3>
+                <p>The Platform is not intended for use by individuals under the age of 18. We do not knowingly collect personal data from children. If we become aware that we have collected personal data from a child without parental consent, we will take steps to delete that information promptly. If you believe a child has provided us with personal data, please contact us at <a href="mailto:privacy@3inventors.com">privacy@3inventors.com</a>.</p>
+
+                <h3>11. Changes to This Policy</h3>
+                <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, or other factors. When we make material changes, we will:</p>
+                <ul>
+                    <li>Update the "Last updated" date at the top of this page.</li>
+                    <li>Notify registered users via email or through a prominent notice on the Platform.</li>
+                    <li>Where required by law, obtain your consent to material changes in how we process your data.</li>
+                </ul>
+                <p>We encourage you to review this Privacy Policy periodically to stay informed about how we protect your information.</p>
+
+                <h3>12. Contact Us</h3>
+                <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:</p>
+                <ul>
+                    <li>Email: <a href="mailto:privacy@3inventors.com">privacy@3inventors.com</a></li>
+                    <li>Company: 3 Inventors</li>
+                    <li>Location: Nicosia, Cyprus</li>
+                </ul>
+                <p>If you are not satisfied with our response, you have the right to lodge a complaint with your local data protection supervisory authority.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Legal Footer -->
+    <footer class="footer-bottom">
+        <div class="container">
+            <div class="footer-inner">
+                <span>&copy; 2026 3 Inventors. All rights reserved.</span>
+                <div class="footer-links">
+                    <a href="/Terms-and-Conditions">Terms &amp; Conditions</a>
+                    <a href="/Terms-of-Use">Terms of Use</a>
+                    <a href="/Privacy-Policy">Privacy Policy</a>
+                    <a href="/Cookies-Policy">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
