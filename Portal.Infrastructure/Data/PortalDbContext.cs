@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Entities.Billing;
+using Portal.Infrastructure.Entities.Stripe;
 using Portal.Infrastructure.Services;
 
 namespace Portal.Infrastructure.Data;
@@ -74,6 +76,20 @@ public class PortalDbContext : DbContext
     // Audit schema
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
+    // Subscription plan schema
+    public DbSet<Plan> Plans { get; set; } = null!;
+    public DbSet<PlanFeature> PlanFeatures { get; set; } = null!;
+    public DbSet<BusinessPlan> BusinessPlans { get; set; } = null!;
+
+    // Billing schema
+    public DbSet<Subscription> Subscriptions { get; set; } = null!;
+    public DbSet<BillingInvoice> BillingInvoices { get; set; } = null!;
+    public DbSet<BillingPayment> BillingPayments { get; set; } = null!;
+
+    // Stripe schema
+    public DbSet<StripeCustomer> StripeCustomers { get; set; } = null!;
+    public DbSet<WebhookEvent> WebhookEvents { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -112,6 +128,14 @@ public class PortalDbContext : DbContext
         ConfigureCreditNote(modelBuilder);
         ConfigureCreditNoteLine(modelBuilder);
         ConfigureCreditNoteApplication(modelBuilder);
+        ConfigurePlan(modelBuilder);
+        ConfigurePlanFeature(modelBuilder);
+        ConfigureBusinessPlan(modelBuilder);
+        ConfigureSubscription(modelBuilder);
+        ConfigureBillingInvoice(modelBuilder);
+        ConfigureBillingPayment(modelBuilder);
+        ConfigureStripeCustomer(modelBuilder);
+        ConfigureWebhookEvent(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -1363,6 +1387,262 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsVoided).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.AppliedByUserId).HasMaxLength(450);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigurePlan(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Plan>(entity =>
+        {
+            entity.ToTable("Plan", "dbo");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(50);
+            entity.HasIndex(e => e.Slug).IsUnique().HasDatabaseName("UX_Plan_Slug");
+
+            entity.Property(e => e.MonthlyPriceEur).HasPrecision(10, 2);
+            entity.Property(e => e.AnnualPriceEur).HasPrecision(10, 2);
+            entity.Property(e => e.MaxUsers).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.StripePriceId).HasMaxLength(100);
+
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.ToTable(t => t.HasCheckConstraint("CK_Plan_MonthlyPriceEur", "[MonthlyPriceEur] >= 0.00"));
+            entity.ToTable(t => t.HasCheckConstraint("CK_Plan_AnnualPriceEur", "[AnnualPriceEur] IS NULL OR [AnnualPriceEur] >= 0.00"));
+            entity.ToTable(t => t.HasCheckConstraint("CK_Plan_MaxUsers", "[MaxUsers] = -1 OR [MaxUsers] >= 1"));
+        });
+    }
+
+    private static void ConfigurePlanFeature(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PlanFeature>(entity =>
+        {
+            entity.ToTable("PlanFeature", "dbo");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.ModuleName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.IsIncluded).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Plan)
+                .WithMany(p => p.PlanFeatures)
+                .HasForeignKey(e => e.PlanId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(e => new { e.PlanId, e.ModuleName })
+                .IsUnique()
+                .HasDatabaseName("UX_PlanFeature_PlanId_ModuleName");
+
+            entity.HasIndex(e => e.PlanId).HasDatabaseName("IX_PlanFeature_PlanId");
+        });
+    }
+
+    private static void ConfigureBusinessPlan(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BusinessPlan>(entity =>
+        {
+            entity.ToTable("BusinessPlan", "dbo");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.StartDateUtc).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.Plan)
+                .WithMany(p => p.BusinessPlans)
+                .HasForeignKey(e => e.PlanId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(e => new { e.BusinessId, e.IsActive })
+                .IsUnique()
+                .HasDatabaseName("UX_BusinessPlan_BusinessId_IsActive")
+                .HasFilter("[IsActive] = 1");
+
+            entity.HasIndex(e => e.BusinessId).HasDatabaseName("IX_BusinessPlan_BusinessId");
+            entity.HasIndex(e => e.PlanId).HasDatabaseName("IX_BusinessPlan_PlanId");
+        });
+    }
+
+    private static void ConfigureSubscription(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.ToTable("Subscription", "billing");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Plan)
+                .WithMany()
+                .HasForeignKey(e => e.PlanId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_Subscription_BusinessId");
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Subscription_Status",
+                "[Status] IN ('active','past_due','cancelled','trialing','incomplete','unpaid')"));
+
+            entity.Property(e => e.StripeSubscriptionId)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.CurrentPeriodStart).IsRequired();
+            entity.Property(e => e.CurrentPeriodEnd).IsRequired();
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureBillingInvoice(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BillingInvoice>(entity =>
+        {
+            entity.ToTable("Invoice", "billing");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_BillingInvoice_BusinessId");
+
+            entity.Property(e => e.StripeInvoiceId)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.AmountEur)
+                .HasPrecision(10, 2);
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_BillingInvoice_AmountEur",
+                "[AmountEur] >= 0.00"));
+
+            entity.Property(e => e.PeriodStart).IsRequired();
+            entity.Property(e => e.PeriodEnd).IsRequired();
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_BillingInvoice_Status",
+                "[Status] IN ('draft','open','paid','void','uncollectible')"));
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureBillingPayment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BillingPayment>(entity =>
+        {
+            entity.ToTable("Payment", "billing");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.BillingInvoice)
+                .WithMany(i => i.BillingPayments)
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.InvoiceId)
+                .HasDatabaseName("IX_BillingPayment_InvoiceId");
+
+            entity.Property(e => e.AmountEur)
+                .HasPrecision(10, 2);
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_BillingPayment_AmountEur",
+                "[AmountEur] >= 0.00"));
+
+            entity.Property(e => e.Method)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.PaidAtUtc).IsRequired();
+
+            entity.Property(e => e.StripePaymentIntentId)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureStripeCustomer(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StripeCustomer>(entity =>
+        {
+            entity.ToTable("Customer", "stripe");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne<Business>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_StripeCustomer_BusinessId");
+
+            entity.Property(e => e.StripeCustomerId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasIndex(e => e.StripeCustomerId)
+                .IsUnique()
+                .HasDatabaseName("UX_StripeCustomer_StripeCustomerId");
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureWebhookEvent(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WebhookEvent>(entity =>
+        {
+            entity.ToTable("WebhookEvent", "stripe");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.EventId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasIndex(e => e.EventId)
+                .IsUnique()
+                .HasDatabaseName("UX_WebhookEvent_EventId");
+
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
         });
     }
 

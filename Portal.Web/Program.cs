@@ -13,6 +13,7 @@ using Portal.Web.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
 using Portal.Web.Middleware;
+using Portal.Web.Services.Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,6 +78,25 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.ConfigureWebsiteSettings(builder.Configuration);
 builder.Services.ConfigureEmailAccounts(builder.Configuration);
 builder.Services.ConfigureEmail();
+
+// --- Stripe ---
+builder.Services.ConfigureStripe(builder.Configuration);
+builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+builder.Services.AddScoped<IWebhookProcessingService, WebhookProcessingService>();
+builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
+builder.Services.AddScoped<ISetupWizardService, SetupWizardService>();
+builder.Services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
+builder.Services.AddScoped<IBillingService, BillingService>();
+builder.Services.AddScoped<SubscriptionRepository>(sp =>
+    new SubscriptionRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<BillingInvoiceRepository>(sp =>
+    new BillingInvoiceRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<BillingPaymentRepository>(sp =>
+    new BillingPaymentRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<StripeCustomerRepository>(sp =>
+    new StripeCustomerRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<WebhookEventRepository>(sp =>
+    new WebhookEventRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<BusinessRepository>(sp =>
     new BusinessRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<CustomerRepository>(sp =>
@@ -107,7 +127,16 @@ builder.Services.AddScoped<BusinessPaymentDetailRepository>(sp =>
     new BusinessPaymentDetailRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<SupplierRepository>(sp =>
     new SupplierRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IBusinessPlanRepository>(sp =>
+    new BusinessPlanRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IPlanRepository>(sp =>
+    new PlanRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IPlanFeatureRepository>(sp =>
+    new PlanFeatureRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ICurrentTenantService, CurrentTenantService>();
+builder.Services.AddScoped<IRegistrationService, RegistrationService>();
+builder.Services.AddScoped<IPlanService, PlanService>();
+builder.Services.AddScoped<IIdentityEmailService, IdentityEmailService>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IQuotationService, QuotationService>();
@@ -143,6 +172,9 @@ builder.Services.AddScoped<VatSubmissionRepository>(sp =>
     new VatSubmissionRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IVatPeriodGenerationService, VatPeriodGenerationService>();
 builder.Services.AddScoped<IVatSubmissionService, VatSubmissionService>();
+
+// --- reCAPTCHA ---
+builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();
 
 // --- Revenue Control ---
 builder.Services.AddScoped<PaymentRepository>(sp =>
@@ -202,7 +234,11 @@ builder.Services.AddScoped<SystemLogQueryRepository>(sp =>
 builder.Services.AddScoped<ISystemLogQueryService, SystemLogQueryService>();
 
 // --- MVC ---
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<Portal.Web.Filters.SetupWizardRedirectFilter>();
+    options.Filters.Add<Portal.Web.Filters.SubscriptionWarningResultFilter>();
+});
 
 // --- Serilog SelfLog (must be before any Serilog configuration to capture config errors) ---
 Serilog.Debugging.SelfLog.Enable(msg =>

@@ -1,0 +1,154 @@
+@model Portal.Web.Models.RegisterViewModel
+@{
+    Layout = "~/Views/Shared/_IdentityLayout.cshtml";
+}
+
+<h2 style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:700;color:#ffffff;margin-bottom:8px;text-align:center;">
+    Create Account
+</h2>
+<p style="color:rgba(255,255,255,0.7);font-size:14px;text-align:center;margin-bottom:28px;">
+    Sign up to get started with Portal.
+</p>
+
+<form method="post" asp-action="Register" asp-controller="Account" novalidate>
+    @Html.AntiForgeryToken()
+
+    @* Summary-level errors (e.g. duplicate email) *@
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Any() == true)
+    {
+        <div role="alert" style="background:rgba(194,74,74,0.15);border:1px solid rgba(194,74,74,0.4);border-radius:10px;padding:12px 16px;margin-bottom:20px;">
+            @foreach (var error in ViewData.ModelState[string.Empty]!.Errors)
+            {
+                <p style="color:#ff8a8a;font-size:13px;margin:0;">@error.ErrorMessage</p>
+            }
+        </div>
+    }
+
+    @* First Name *@
+    <div style="margin-bottom:18px;">
+        <label for="FirstName" style="display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:6px;">
+            First Name
+        </label>
+        <input id="FirstName" name="FirstName" type="text" asp-for="FirstName"
+               aria-required="true"
+               aria-invalid="@(ViewData.ModelState["FirstName"]?.Errors.Any() == true ? "true" : null)"
+               aria-describedby="@(ViewData.ModelState["FirstName"]?.Errors.Any() == true ? "FirstName-error" : null)"
+               autocomplete="given-name" placeholder="Your first name"
+               style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#ffffff;font-size:15px;outline:none;transition:border-color 0.2s;" />
+        <span id="FirstName-error" asp-validation-for="FirstName" role="alert"
+              style="display:block;color:#ff8a8a;font-size:12px;margin-top:4px;min-height:16px;"></span>
+    </div>
+
+    @* Last Name *@
+    <div style="margin-bottom:18px;">
+        <label for="LastName" style="display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:6px;">
+            Last Name
+        </label>
+        <input id="LastName" name="LastName" type="text" asp-for="LastName"
+               aria-required="true"
+               aria-invalid="@(ViewData.ModelState["LastName"]?.Errors.Any() == true ? "true" : null)"
+               aria-describedby="@(ViewData.ModelState["LastName"]?.Errors.Any() == true ? "LastName-error" : null)"
+               autocomplete="family-name" placeholder="Your last name"
+               style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#ffffff;font-size:15px;outline:none;transition:border-color 0.2s;" />
+        <span id="LastName-error" asp-validation-for="LastName" role="alert"
+              style="display:block;color:#ff8a8a;font-size:12px;margin-top:4px;min-height:16px;"></span>
+    </div>
+
+    @* Email *@
+    <div style="margin-bottom:18px;">
+        <label for="Email" style="display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:6px;">
+            Email Address
+        </label>
+        <input id="Email" name="Email" type="email" asp-for="Email"
+               aria-required="true"
+               aria-invalid="@(ViewData.ModelState["Email"]?.Errors.Any() == true ? "true" : null)"
+               aria-describedby="@(ViewData.ModelState["Email"]?.Errors.Any() == true ? "Email-error" : null)"
+               autocomplete="email" placeholder="you@company.com"
+               style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#ffffff;font-size:15px;outline:none;transition:border-color 0.2s;" />
+        <span id="Email-error" asp-validation-for="Email" role="alert"
+              style="display:block;color:#ff8a8a;font-size:12px;margin-top:4px;min-height:16px;"></span>
+    </div>
+
+    @* Password *@
+    <div style="margin-bottom:18px;">
+        <label for="Password" style="display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:6px;">
+            Password
+        </label>
+        <input id="Password" name="Password" type="password" asp-for="Password"
+               aria-required="true"
+               aria-invalid="@(ViewData.ModelState["Password"]?.Errors.Any() == true ? "true" : null)"
+               aria-describedby="@(ViewData.ModelState["Password"]?.Errors.Any() == true ? "Password-error" : null)"
+               autocomplete="new-password" placeholder="Minimum 8 characters"
+               style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#ffffff;font-size:15px;outline:none;transition:border-color 0.2s;" />
+        <span id="Password-error" asp-validation-for="Password" role="alert"
+              style="display:block;color:#ff8a8a;font-size:12px;margin-top:4px;min-height:16px;"></span>
+    </div>
+
+    @* Confirm Password *@
+    <div style="margin-bottom:24px;">
+        <label for="ConfirmPassword" style="display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:6px;">
+            Confirm Password
+        </label>
+        <input id="ConfirmPassword" name="ConfirmPassword" type="password" asp-for="ConfirmPassword"
+               aria-required="true"
+               aria-invalid="@(ViewData.ModelState["ConfirmPassword"]?.Errors.Any() == true ? "true" : null)"
+               aria-describedby="@(ViewData.ModelState["ConfirmPassword"]?.Errors.Any() == true ? "ConfirmPassword-error" : null)"
+               autocomplete="new-password" placeholder="Re-enter your password"
+               style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#ffffff;font-size:15px;outline:none;transition:border-color 0.2s;" />
+        <span id="ConfirmPassword-error" asp-validation-for="ConfirmPassword" role="alert"
+              style="display:block;color:#ff8a8a;font-size:12px;margin-top:4px;min-height:16px;"></span>
+    </div>
+
+    @* Plan Selection *@
+    @if (Model.PreSelectedPlan != null)
+    {
+        <input type="hidden" name="SelectedPlanId" value="@Model.PreSelectedPlan.Id" />
+        <div style="background:rgba(87,184,232,0.1);border:1px solid rgba(87,184,232,0.3);border-radius:12px;padding:14px 18px;margin-bottom:24px;">
+            <p style="font-size:12px;font-weight:600;color:#57B8E8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Selected Plan</p>
+            <p style="font-size:16px;font-weight:700;color:#ffffff;margin-bottom:2px;">@Model.PreSelectedPlan.Name</p>
+            <p style="font-size:14px;color:rgba(255,255,255,0.7);">&euro;@Model.PreSelectedPlan.MonthlyPriceEur.ToString("F2") / month</p>
+        </div>
+    }
+    else if (Model.AvailablePlans != null && Model.AvailablePlans.Any())
+    {
+        <fieldset style="border:none;padding:0;margin:0 0 24px 0;">
+            <legend style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:12px;display:block;">Select a Plan</legend>
+
+            @if (ViewData.ModelState["SelectedPlanId"]?.Errors.Any() == true)
+            {
+                <div role="alert" style="color:#ff8a8a;font-size:12px;margin-bottom:10px;">
+                    @ViewData.ModelState["SelectedPlanId"]!.Errors.First().ErrorMessage
+                </div>
+            }
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                @foreach (var plan in Model.AvailablePlans)
+                {
+                    var isSelected = Model.SelectedPlanId == plan.Id;
+                    <label style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:@(isSelected ? "rgba(87,184,232,0.12)" : "rgba(255,255,255,0.04)");border:1px solid @(isSelected ? "rgba(87,184,232,0.4)" : "rgba(255,255,255,0.12)");border-radius:10px;cursor:pointer;transition:border-color 0.2s,background 0.2s;">
+                        <input type="radio" name="SelectedPlanId" value="@plan.Id" checked="@isSelected" aria-required="true"
+                               style="width:18px;height:18px;accent-color:#57B8E8;flex-shrink:0;" />
+                        <div style="flex:1;">
+                            <span style="font-size:15px;font-weight:600;color:#ffffff;">@plan.Name</span>
+                            @if (!string.IsNullOrEmpty(plan.Description))
+                            {
+                                <span style="display:block;font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;">@plan.Description</span>
+                            }
+                        </div>
+                        <span style="font-size:14px;font-weight:700;color:#57B8E8;white-space:nowrap;">&euro;@plan.MonthlyPriceEur.ToString("F2")/mo</span>
+                    </label>
+                }
+            </div>
+        </fieldset>
+    }
+
+    <button type="submit"
+            style="width:100%;padding:14px;background:#0D5EA6;color:#ffffff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:background 0.2s;">
+        Create Account
+    </button>
+</form>
+
+<div style="text-align:center;margin-top:20px;">
+    <span style="color:rgba(255,255,255,0.6);font-size:13px;">Already have an account?</span>
+    <a href="@Url.Action("Login", "Account")" style="color:#57B8E8;font-size:13px;text-decoration:none;font-weight:500;margin-left:4px;">Log in</a>
+</div>

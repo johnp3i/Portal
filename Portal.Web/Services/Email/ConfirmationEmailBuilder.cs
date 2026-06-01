@@ -32,8 +32,8 @@ public static class ConfirmationEmailBuilder
                      && DemoInquiryTypes.Contains(inquiryType.Trim());
 
         var subject = isDemo
-            ? "3 Inventors — Demo Request Received"
-            : "3 Inventors — Message Received";
+            ? "3 Inventors Portal — Demo Request Received"
+            : "3 Inventors Portal — Message Received";
 
         var safeFirstName = Sanitize(firstName);
         var safeLastName = Sanitize(lastName);
@@ -188,9 +188,9 @@ public static class ConfirmationEmailBuilder
                     <tr>
                         <td style=""background-color:#F7FAFC; padding:32px 40px; text-align:center; border-bottom:1px solid #E2EBF3;"">
                             <img src=""https://www.3inventors.com/img/logo_blue_web_toolbar_oi.png"" alt=""3 Inventors"" width=""220"" style=""display:block; margin:0 auto; max-width:220px; height:auto; color:#0D5EA6; font-size:22px; font-weight:700;"" />
-                           <!--- <p style=""margin:12px 0 0 0; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:#0D5EA6; font-weight:600;"">
-                                Operational Intelligence Infrastructure
-                            </p>-->
+                            <p style=""margin:12px 0 0 0; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:#0D5EA6; font-weight:600;"">
+                                Business Management Platform
+                            </p>
                         </td>
                     </tr>
 

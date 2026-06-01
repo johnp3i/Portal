@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Update MVP Launch Checklist",
+  "description": "After a spec task completes, checks if the completed work corresponds to any checkbox in Final_Modules_Before_MVP_Launch.md and marks it as done.",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A spec task just completed. Read the tasks.md file for the current spec and check if ALL tasks are now marked as completed. If they are, this means the entire module is done. Open .kiro/docs/Final_Modules_Before_MVP_Launch.md and find the corresponding module tasks. Update every task row in that module: change [ ] to [x] in the Done column and add today's date (YYYY-MM-DD format) in the Completed column. Also add a new row to the Completed milestones table at the top of the file with the module name and today's date. If not all tasks are complete yet, do nothing."
+  },
+  "workspaceFolderName": "Portal",
+  "shortName": "update-mvp-checklist"
+}

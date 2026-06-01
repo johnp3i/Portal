@@ -1,0 +1,53 @@
+@{
+    Layout = "~/Views/Shared/_IdentityLayout.cshtml";
+}
+
+<div style="text-align:center;">
+    @if (ViewBag.Status == "success")
+    {
+        <div style="margin-bottom:20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#129867" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        </div>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#ffffff;margin-bottom:12px;">Account Confirmed</h2>
+        <p style="color:rgba(255,255,255,0.75);font-size:15px;line-height:1.5;margin-bottom:28px;">@ViewBag.Message</p>
+        <a href="@ViewBag.CheckoutUrl"
+           style="display:inline-block;padding:14px 32px;background:#0D5EA6;color:#ffffff;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;">
+            Continue to Checkout
+        </a>
+    }
+    else if (ViewBag.Status == "already-confirmed")
+    {
+        <div style="margin-bottom:20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+        </div>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#ffffff;margin-bottom:12px;">Already Verified</h2>
+        <p style="color:rgba(255,255,255,0.75);font-size:15px;line-height:1.5;margin-bottom:28px;">@ViewBag.Message</p>
+        <a href="@ViewBag.CheckoutUrl"
+           style="display:inline-block;padding:14px 32px;background:#0D5EA6;color:#ffffff;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;">
+            Continue to Checkout
+        </a>
+    }
+    else
+    {
+        <div style="margin-bottom:20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#C24A4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+        </div>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#ffffff;margin-bottom:12px;">Verification Failed</h2>
+        <p role="alert" style="color:rgba(255,255,255,0.75);font-size:15px;line-height:1.5;margin-bottom:28px;">@ViewBag.Message</p>
+        <a href="@Url.Action("Register", "Account")"
+           style="display:inline-block;padding:12px 28px;background:#0D5EA6;color:#ffffff;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;">
+            Request New Verification Email
+        </a>
+    }
+</div>

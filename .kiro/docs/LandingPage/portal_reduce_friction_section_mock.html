@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3 Inventors Portal — Designed to Reduce Friction</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #0D5EA6;
+      --blue-dark: #0B4E89;
+      --cyan: #57B8E8;
+      --green: #129867;
+      --warning: #C8912E;
+      --text: #0B1B28;
+      --muted: #5E7385;
+      --bg: #F7FAFC;
+      --surface: #FFFFFF;
+      --line: rgba(13, 94, 166, 0.10);
+      --shadow: 0 22px 55px rgba(13, 94, 166, 0.10);
+    }
+    body {
+      font-family: Inter, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(13,94,166,.08), transparent 30%),
+        radial-gradient(circle at top right, rgba(87,184,232,.08), transparent 26%),
+        linear-gradient(180deg, #FBFDFF 0%, #EEF4F8 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 64px 24px;
+    }
+    .section {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--line);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 22px rgba(13,94,166,.06);
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--cyan);
+      box-shadow: 0 0 0 7px rgba(87,184,232,.12);
+    }
+    .header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 42px;
+    }
+    h1 {
+      font-family: Manrope, sans-serif;
+      font-size: clamp(34px, 5vw, 52px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      margin-top: 20px;
+    }
+    .lead {
+      margin-top: 18px;
+      font-size: 18px;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+    .card {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,252,.96));
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 30px;
+      min-height: 300px;
+      box-shadow: var(--shadow);
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -52px;
+      top: -52px;
+      width: 150px;
+      height: 150px;
+      border-radius: 999px;
+      background: rgba(13,94,166,.06);
+    }
+    .icon {
+      position: relative;
+      z-index: 1;
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 22px;
+      border: 1px solid rgba(13,94,166,.09);
+      background: #fff;
+      box-shadow: 0 12px 26px rgba(13,94,166,.08);
+    }
+    h2 {
+      position: relative;
+      z-index: 1;
+      font-family: Manrope, sans-serif;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+    .card p {
+      position: relative;
+      z-index: 1;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+    .small-note {
+      margin-top: 32px;
+      padding: 22px 26px;
+      border-radius: 22px;
+      background: rgba(13,94,166,.055);
+      border: 1px solid rgba(13,94,166,.10);
+      color: #365468;
+      text-align: center;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .small-note strong { color: var(--blue-dark); }
+    @media (max-width: 900px) {
+      .cards { grid-template-columns: 1fr; }
+      .card { min-height: auto; }
+      body { padding: 42px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="section">
+    <div class="header">
+      <div class="eyebrow"><span class="dot"></span> Simple. Clear. Reliable.</div>
+      <h1>Designed to reduce business administration friction.</h1>
+      <p class="lead">
+        The Portal helps you replace scattered files, manual tracking, and email attachments with one calm, structured workspace for everyday business operations.
+      </p>
+    </div>
+
+    <div class="cards">
+      <article class="card">
+        <div class="icon">📄</div>
+        <h2>Structured Documents</h2>
+        <p>
+          Create quotations, invoices, credit notes, and customer documents from one consistent workspace — without manually managing Word files and repeated document versions.
+        </p>
+      </article>
+
+      <article class="card">
+        <div class="icon">🔗</div>
+        <h2>Quiet Communication</h2>
+        <p>
+          Share quotations and invoices through secure links instead of sending multiple attachments. Your customer can open the document directly, clearly, and without version confusion.
+        </p>
+      </article>
+
+      <article class="card">
+        <div class="icon">✅</div>
+        <h2>VAT-Ready Records</h2>
+        <p>
+          Keep purchases, expenses, invoices, and VAT-relevant activity organised throughout the year, so VAT preparation becomes clearer and less dependent on last-minute spreadsheet work.
+        </p>
+      </article>
+    </div>
+
+    <div class="small-note">
+      <strong>Built from real operational need:</strong> the Portal was created because business management should feel organised, practical, and reliable — not overcrowded or unnecessarily complex.
+    </div>
+  </section>
+</body>
+</html>

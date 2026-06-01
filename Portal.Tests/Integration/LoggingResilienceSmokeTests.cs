@@ -73,6 +73,12 @@ public class LoggingResilienceSmokeTests : IClassFixture<LoggingResilienceSmokeT
     /// </summary>
     public class InvalidLoggingDbFactory : WebApplicationFactory<Program>
     {
+        public InvalidLoggingDbFactory()
+        {
+            // Skip Stripe validation during integration tests
+            Environment.SetEnvironmentVariable("SKIP_STRIPE_VALIDATION", "true");
+        }
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Production");

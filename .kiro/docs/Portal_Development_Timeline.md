@@ -1,7 +1,7 @@
 # Portal Development Timeline
 
 ## Status: Phase 1 — Core Platform
-Last Updated: 2026-05-26
+Last Updated: 2025-07-29
 
 ---
 
@@ -26,6 +26,8 @@ Last Updated: 2026-05-26
 | ✅ | System Logs Viewer — Dedicated LoggingDbContext for Portal.Logging DB, SystemLogQueryRepository, filtered/paginated search by level/date/user/correlation ID, expandable detail rows with exception/stack trace, navigation integration | 2025-07-28 |
 | ✅ | Credit Notes — Credit note creation against source invoices, lifecycle (Draft → Issued → Applied → Voided), line items, amount computation, number generation, VAT period assignment, application to invoices, void with reversal, property-based tests | 2026-05-28 |
 | ✅ | Invoice Line Product Type & Reverse Charge — ProductType lookup table (Services/Goods), ProductTypeId on Product with derivation on quotation lines, immutable snapshot on invoice lines, IsReverseCharge flag with VatRate=0% enforcement, quotation-to-invoice conversion preservation, property-based tests (7 properties) | 2025-07-28 |
+| ✅ | Subscription Plans — Plan/PlanFeature/BusinessPlan schema in [dbo], EF Core entities and DbContext config, PlanRepository/PlanFeatureRepository/BusinessPlanRepository, InvitationService user limit enforcement, seed data (Business plan + 9 modules), property-based tests (7 properties, 34 test cases), unit tests (7 scenarios) | 2025-07-29 |
+| ✅ | Identity Pages — Registration, Confirm Account, Forgot Password, Reset Password pages with Identity Page Design Guide styling (frosted glass card, particle background, responsive layout), PendingRegistration entity, PlanService, RegistrationService, IdentityEmailService, full accessibility (ARIA attributes, focus indicators, WCAG AA contrast), SEO meta tags, invitation flow coexistence verified | 2025-07-29 |
 
 ---
 
@@ -244,8 +246,8 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
 | [x] | 10.1 | Design and build public landing page (hero, features, pricing cards, CTA) | Module 0 | 2025-07-28 |
-| [ ] | 10.2 | Create subscription schema: `[subscription].[Plan]`, `[subscription].[Subscription]`, `[subscription].[PlanModule]` | Module 0 | |
-| [ ] | 10.3 | Seed Plan data (Starter, Business, Enterprise) with module mappings | 10.2 | |
+| [x] | 10.2 | Create subscription schema: `[dbo].[Plan]`, `[dbo].[PlanFeature]`, `[dbo].[BusinessPlan]` with EF Core entities, repositories, and user limit enforcement in InvitationService | Module 0 | 2025-07-29 |
+| [x] | 10.3 | Seed Plan data (Business plan with 9 module mappings); Starter and Enterprise to be added as data inserts when needed | 10.2 | 2025-07-29 |
 | [ ] | 10.4 | Integrate Stripe: create Checkout Session on plan selection | 10.2 | |
 | [ ] | 10.5 | Implement Stripe webhook handler (`checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`) | 10.4 | |
 | [ ] | 10.6 | Auto-provision tenant on successful payment: create Business, first User (owner), assign modules per plan | 10.5 | |
@@ -266,12 +268,12 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 
 | Done | # | Task | Dependencies | Completed |
 |------|---|------|-------------|-----------|
-| [ ] | 11.1 | Create Registration page (plan-aware, collects email/password/name, links to Stripe checkout) | Module 10 | |
-| [ ] | 11.2 | Create Confirm Account page (email verification success/failure states) | 11.1 | |
-| [ ] | 11.3 | Create Forgot Password page (email input, reset link sent confirmation) | Module 0 | |
-| [ ] | 11.4 | Create Reset Password page (new password form with token validation) | 11.3 | |
-| [ ] | 11.5 | Apply Identity Page Design Guide styling (frosted glass card, particle background, top bar, responsive layout) | 11.1 | |
-| [ ] | 11.6 | Ensure all identity pages share favicon, SEO meta tags, and consistent branding | 11.5 | |
+| [x] | 11.1 | Create Registration page (plan-aware, collects email/password/name, links to Stripe checkout) | Module 10 | 2025-07-29 |
+| [x] | 11.2 | Create Confirm Account page (email verification success/failure states) | 11.1 | 2025-07-29 |
+| [x] | 11.3 | Create Forgot Password page (email input, reset link sent confirmation) | Module 0 | 2025-07-29 |
+| [x] | 11.4 | Create Reset Password page (new password form with token validation) | 11.3 | 2025-07-29 |
+| [x] | 11.5 | Apply Identity Page Design Guide styling (frosted glass card, particle background, top bar, responsive layout) | 11.1 | 2025-07-29 |
+| [x] | 11.6 | Ensure all identity pages share favicon, SEO meta tags, and consistent branding | 11.5 | 2025-07-29 |
 
 ---
 
@@ -285,7 +287,7 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [ ] | Bill of Materials (BOM) | Product composition, cost roll-up, multi-level BOM, production cost estimation | Inventory, Product Catalog | |
 | [ ] | Production Planning | Work orders, BOM-to-production flow, scheduling, completion tracking | BOM, Inventory | |
 | [ ] | Advanced Analytics (Insights) | Operational KPI cards, trend signals, margin analysis, story engine | Modules 2-5 complete | |
-| [ ] | Seat-Based Pricing | Per-user billing within plans, user count limits per tier, overage handling | Module 10 | |
+| [ ] | Seat-Based Pricing | Per-user billing within plans, user count limits per tier, overage handling (note: MaxUsers enforcement in InvitationService already implemented in subscription-plans spec) | Module 10 | |
 | [ ] | Usage Limits & Metering | Document count limits per plan (invoices/month, quotations/month), upgrade prompts | Module 10 | |
 | [ ] | Plan Upgrade/Downgrade Flow | In-app plan switching with prorated billing via Stripe, module access adjustment | Module 10 | |
 | [ ] | Customer Account Credits | Standalone credit notes (no invoice reference), running credit balance, apply to future invoices | Module 4, Credit Notes | |

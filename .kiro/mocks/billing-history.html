@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing & Payment History — Mock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --muted: #5a6a7a;
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --line: rgba(13,94,166,.08);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #1a2b3c;
+            padding: 40px;
+            line-height: 1.5;
+        }
+
+        /* Topbar */
+        .topbar {
+            margin-bottom: 32px;
+        }
+        .topbar .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--blue);
+            margin-bottom: 6px;
+        }
+        .topbar h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: #0B1B28;
+            margin-bottom: 4px;
+        }
+        .topbar .desc {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        /* Cards */
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px 32px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 16px rgba(13,94,166,.06);
+            border: 1px solid var(--line);
+        }
+        .card h2 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #0B1B28;
+        }
+        .card .section-desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 18px;
+        }
+
+        /* Subscription Status */
+        .subscription-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .sub-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sub-item .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .sub-item .value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0B1B28;
+        }
+        .sub-item .value.active {
+            color: var(--green);
+        }
+
+        /* KPI Summary */
+        .kpi-row {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 22px;
+        }
+        .kpi-card {
+            flex: 1;
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: 0 2px 8px rgba(13,94,166,.04);
+            border: 1px solid var(--line);
+        }
+        .kpi-card .kpi-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .kpi-card .kpi-value {
+            font-size: 22px;
+            font-weight: 800;
+            font-family: 'Manrope', sans-serif;
+            color: #0B1B28;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            background: var(--bg2);
+            border-bottom: 1px solid var(--line);
+        }
+        thead th.right { text-align: right; }
+        tbody td {
+            padding: 14px 14px;
+            border-bottom: 1px solid rgba(13,94,166,.05);
+            vertical-align: middle;
+        }
+        tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+        tbody tr:hover { background: rgba(13,94,166,.02); }
+
+        /* Status Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .badge-paid {
+            background: rgba(18,152,103,.1);
+            color: var(--green);
+        }
+        .badge-open {
+            background: rgba(200,145,46,.1);
+            color: var(--warning);
+        }
+
+        /* Action Button */
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--bg2);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--blue);
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-download:hover {
+            background: rgba(13,94,166,.06);
+            border-color: rgba(13,94,166,.2);
+        }
+        .btn-download svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Stripe Portal Link */
+        .stripe-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: var(--blue);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .stripe-link:hover { background: #0B4E89; }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+        }
+        .pagination .info {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .pagination .pages {
+            display: flex;
+            gap: 6px;
+        }
+        .pagination .page-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--muted);
+            cursor: pointer;
+        }
+        .pagination .page-btn.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+
+        @media (max-width: 768px) {
+            .subscription-grid { grid-template-columns: repeat(2, 1fr); }
+            .kpi-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="eyebrow">Account</div>
+        <h1>Billing & Payments</h1>
+        <p class="desc">View your subscription details, payment history, and download invoices.</p>
+    </div>
+
+    <!-- Subscription Status Card -->
+    <section class="card">
+        <h2>Current Subscription</h2>
+        <p class="section-desc">Your active plan and billing cycle details.</p>
+        <div class="subscription-grid">
+            <div class="sub-item">
+                <span class="label">Plan</span>
+                <span class="value">Business</span>
+            </div>
+            <div class="sub-item">
+                <span class="label">Status</span>
+                <span class="value active">Active</span>
+            </div>
+            <div class="sub-item">
+                <span class="label">Current Period</span>
+                <span class="value">1 Jul – 31 Jul 2025</span>
+            </div>
+            <div class="sub-item">
+                <span class="label">Next Renewal</span>
+                <span class="value">1 Aug 2025</span>
+            </div>
+        </div>
+        <a href="#" class="stripe-link">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Manage Payment Methods
+        </a>
+    </section>
+
+    <!-- KPI Summary -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Total Paid</div>
+            <div class="kpi-value">€174.00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Invoices</div>
+            <div class="kpi-value">6</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Last Payment</div>
+            <div class="kpi-value">1 Jul 2025</div>
+        </div>
+    </div>
+
+    <!-- Payment History Table -->
+    <section class="card">
+        <h2>Payment History</h2>
+        <p class="section-desc">All invoices for your subscription.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice Date</th>
+                    <th>Period</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th class="right">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1 Jul 2025</strong></td>
+                    <td>1 Jul – 31 Jul 2025</td>
+                    <td>€29.00</td>
+                    <td><span class="badge badge-paid">Paid</span></td>
+                    <td class="right">
+                        <a href="#" class="btn-download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            PDF
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>1 Jun 2025</strong></td>
+                    <td>1 Jun – 30 Jun 2025</td>
+                    <td>€29.00</td>
+                    <td><span class="badge badge-paid">Paid</span></td>
+                    <td class="right">
+                        <a href="#" class="btn-download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            PDF
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>1 May 2025</strong></td>
+                    <td>1 May – 31 May 2025</td>
+                    <td>€29.00</td>
+                    <td><span class="badge badge-paid">Paid</span></td>
+                    <td class="right">
+                        <a href="#" class="btn-download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            PDF
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>1 Apr 2025</strong></td>
+                    <td>1 Apr – 30 Apr 2025</td>
+                    <td>€29.00</td>
+                    <td><span class="badge badge-paid">Paid</span></td>
+                    <td class="right">
+                        <a href="#" class="btn-download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            PDF
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>1 Mar 2025</strong></td>
+                    <td>1 Mar – 31 Mar 2025</td>
+                    <td>€29.00</td>
+                    <td><span class="badge badge-paid">Paid</span></td>
+                    <td class="right">
+                        <a href="#" class="btn-download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            PDF
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>1 Feb 2025</strong></td>
+                    <td>1 Feb – 28 Feb 2025</td>
+                    <td>€29.00</td>
+                    <td><span class="badge badge-paid">Paid</span></td>
+                    <td class="right">
+                        <a href="#" class="btn-download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            PDF
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <div class="info">Showing 1–6 of 6</div>
+            <div class="pages">
+                <button class="page-btn active">1</button>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>

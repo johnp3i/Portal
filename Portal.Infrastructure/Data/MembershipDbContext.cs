@@ -13,6 +13,7 @@ public class MembershipDbContext : IdentityDbContext<ApplicationUser, IdentityRo
     public MembershipDbContext(DbContextOptions<MembershipDbContext> options) : base(options) { }
 
     public DbSet<Invitation> Invitations { get; set; } = null!;
+    public DbSet<PendingRegistration> PendingRegistrations { get; set; } = null!;
     public DbSet<UserBusiness> UserBusinesses { get; set; } = null!;
     public DbSet<UserBusinessPermission> UserBusinessPermissions { get; set; } = null!;
 
@@ -34,6 +35,19 @@ public class MembershipDbContext : IdentityDbContext<ApplicationUser, IdentityRo
         {
             entity.Property(e => e.FirstName).HasMaxLength(100).IsRequired();
             entity.Property(e => e.LastName).HasMaxLength(100).IsRequired();
+        });
+
+        builder.Entity<PendingRegistration>(entity =>
+        {
+            entity.ToTable("PendingRegistration", "membership");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne(e => e.User)
+                  .WithOne()
+                  .HasForeignKey<PendingRegistration>(e => e.UserId)
+                  .OnDelete(DeleteBehavior.NoAction);
         });
 
         builder.Entity<UserBusiness>(entity =>

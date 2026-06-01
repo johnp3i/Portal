@@ -1,0 +1,24 @@
+@*
+    Grace Access Modal — displayed when a user's subscription has expired and they are granted
+    one final grace access. Uses SweetAlert2 to show a non-dismissible warning modal.
+    Include this partial in _Layout.cshtml after the SweetAlert2 script reference.
+    Usage: @await Html.PartialAsync("_GraceAccessModal")
+    The modal is only rendered when HttpContext.Items["GraceAccessGranted"] is true.
+*@
+
+@if (Context.Items["GraceAccessGranted"] is true)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Subscription Expired',
+                text: 'Your subscription has expired. This is your last access. Please renew to continue using the platform.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                confirmButtonText: 'I Understand',
+                confirmButtonColor: '#0D5EA6'
+            });
+        });
+    </script>
+}

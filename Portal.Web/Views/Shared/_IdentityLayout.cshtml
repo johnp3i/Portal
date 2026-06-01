@@ -1,0 +1,305 @@
+@{
+    var pageTitle = ViewData["Title"]?.ToString() ?? "Portal";
+    var metaDescription = ViewData["Description"]?.ToString() ?? "Portal - Operational Intelligence Platform by 3 Inventors";
+    var ogDescription = ViewData["OgDescription"]?.ToString() ?? metaDescription;
+    var ogUrl = ViewData["OgUrl"]?.ToString() ?? "";
+    var noIndex = ViewData["NoIndex"] as bool? ?? false;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@pageTitle - Portal</title>
+    <meta name="description" content="@metaDescription" />
+    <meta property="og:title" content="@pageTitle - Portal" />
+    <meta property="og:description" content="@ogDescription" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@ogUrl" />
+    @if (noIndex)
+    {
+        <meta name="robots" content="noindex" />
+    }
+    <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon-180x180.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            color: #1a1a2e;
+            overflow-x: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d2847 100%);
+        }
+
+        /* Top Bar — full-width background with centered inner content */
+        .identity-topbar-wrapper {
+            background: linear-gradient(180deg, #1A6BB8 0%, #0D5EA6 100%);
+            position: relative;
+            z-index: 10;
+        }
+
+        .identity-topbar {
+            padding: 18px 80px;
+            display: flex;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .identity-topbar-brand {
+            font-family: 'Manrope', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffffff;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .identity-topbar-sub {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+
+        /* Main Content Area — full-width centered like MyChair */
+        .identity-main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            padding: 60px 80px;
+            gap: 60px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Hero Panel (left column) */
+        .identity-hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .identity-hero-eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #57B8E8;
+            margin-bottom: 16px;
+        }
+
+        .identity-hero-tagline {
+            font-family: 'Manrope', sans-serif;
+            font-size: 40px;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .identity-hero-subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.7;
+            margin-bottom: 36px;
+            max-width: 440px;
+        }
+
+        .identity-hero-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .identity-hero-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .identity-hero-features li::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #57B8E8;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Card Column */
+        .identity-card-column {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Frosted Glass Card */
+        .identity-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            max-width: 440px;
+            width: 100%;
+            padding: 40px 36px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Input placeholder text — visible white on dark card */
+        .identity-card input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Particle Background Canvas */
+        .identity-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Footer */
+        .identity-footer {
+            text-align: center;
+            padding: 20px 32px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Focus indicators for accessibility */
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid #57B8E8;
+            outline-offset: 2px;
+        }
+
+        /* Responsive: single column at/below 900px */
+        @@media (max-width: 900px) {
+            .identity-main {
+                grid-template-columns: 1fr;
+                padding: 32px 20px;
+                justify-items: center;
+                gap: 32px;
+            }
+
+            .identity-hero {
+                display: none;
+            }
+
+            .identity-card-column {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .identity-card {
+                max-width: 440px;
+                width: 100%;
+            }
+        }
+
+        /* Reduced motion: disable animations, static gradient fallback */
+        @@media (prefers-reduced-motion: reduce) {
+            .identity-particles {
+                display: none;
+            }
+
+            body {
+                background: linear-gradient(135deg, #0D5EA6 0%, #1A6BB8 50%, #0a3d6b 100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle Background Canvas -->
+    <canvas class="identity-particles" id="identityParticles" aria-hidden="true"></canvas>
+
+    <!-- Top Bar -->
+    <div class="identity-topbar-wrapper">
+        <header class="identity-topbar">
+            <a href="/" class="identity-topbar-brand" aria-label="Portal - Home">
+                <img src="/images/logo_web_toolbar.png" alt="Portal" style="height:35px;width:auto;margin-left:-5px;" />
+                <span class="identity-topbar-sub">Business Management Platform</span>
+            </a>
+        </header>
+    </div>
+
+    <!-- Main Content -->
+    <main class="identity-main">
+        <!-- Hero Panel (left column, hidden on mobile) -->
+        <section class="identity-hero" aria-label="Product information">
+            <p class="identity-hero-eyebrow">Operational Access</p>
+            <h1 class="identity-hero-tagline">Operational Intelligence<br />for Your Business</h1>
+            <p class="identity-hero-subtitle">
+                Portal brings quotations, invoicing, and revenue control into one connected environment — so your day starts with operational clarity.
+            </p>
+            <ul class="identity-hero-features">
+                <li>Quotation &amp; proposal management</li>
+                <li>Automated invoicing workflows</li>
+                <li>Revenue tracking &amp; insights</li>
+                <li>Multi-tenant business platform</li>
+            </ul>
+        </section>
+
+        <!-- Card Column -->
+        <div class="identity-card-column">
+            <div class="identity-card">
+                @RenderBody()
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="identity-footer">
+        &copy; @DateTime.UtcNow.Year Portal &middot; 3 Inventors
+    </footer>
+
+    <!-- Particle Background Script -->
+    <script src="/js/identity-particles.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -150,6 +150,7 @@
         .footer-links{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
         .footer-links a{color:var(--muted);text-decoration:none;font-size:14px;transition:.18s ease}
         .footer-links a:hover{opacity:.8}
+        .grecaptcha-badge{visibility:hidden !important}
         @@media(max-width:980px){
             .hero-grid{grid-template-columns:1fr}
             .hero-content{text-align:center}
@@ -199,6 +200,7 @@
             </a>
             <div class="nav-links">
                 <a href="#features">Features</a>
+                <a href="#reduce-friction">Why We Built It</a>
                 <a href="#pricing">Pricing</a>
                 <a href="/Account/Login" class="btn btn-secondary">Sign In</a>
                 <a href="#pricing" class="btn btn-primary">Get Started</a>
@@ -214,7 +216,7 @@
                     <h1>Run your business with <span class="highlight">structure, clarity, and control.</span></h1>
                     <p>Manage quotations, invoices, revenue, VAT, purchases, customers, suppliers, and products from one clean operational workspace — without unnecessary complexity.</p>
                     <div class="hero-cta">
-                        <a class="btn btn-primary" href="#pricing">Get Started</a>
+                        <a class="btn btn-primary" href="javascript:void(0)" data-inquiry-type="Demo Request">Get Started</a>
                         <a class="btn btn-secondary" href="#features">See Features</a>
                     </div>
                 </div>
@@ -254,7 +256,7 @@
                         <p>Create professional quotations, convert them to invoices, issue credit notes, and share documents through secure links.</p>
                     </div>
                     <div class="card">
-                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><text x="12" y="17" text-anchor="middle" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0D5EA6">€</text></svg></div>
                         <small>Finance</small>
                         <h3>Revenue Control</h3>
                         <p>Track payments, outstanding balances, overdue invoices, customer statements, and revenue status from a clear dashboard.</p>
@@ -318,7 +320,7 @@
                             <li>Up to 5 users</li>
                         </ul>
                         <div style="margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;">
-                            <a class="btn btn-primary" href="/Account/Register?plan=business">Get Started</a>
+                            <a class="btn btn-primary" href="javascript:void(0)" data-inquiry-type="Pricing - Core">Get Started</a>
                             <a class="btn btn-secondary" href="/Account/Login">Already have an account?</a>
                         </div>
                     </article>
@@ -331,7 +333,7 @@
                             <div>Advanced operational modules</div>
                             <div>Tailored business setup</div>
                         </div>
-                        <a class="btn btn-secondary" style="margin-top:24px;" href="mailto:johnp@@3inventors.com">Contact Us</a>
+                        <a class="btn btn-secondary" style="margin-top:24px;" href="javascript:void(0)" data-inquiry-type="General Inquiry">Contact Us</a>
                     </aside>
                 </div>
             </div>
@@ -388,6 +390,35 @@
             </div>
         </section>
 
+        <section class="section" id="reduce-friction">
+            <div class="container">
+                <div class="center">
+                    <h2>Designed to reduce business administration friction.</h2>
+                    <p class="lead">The Portal helps you replace scattered files, manual tracking, and email attachments with one calm, structured workspace for everyday business operations.</p>
+                </div>
+                <div class="feature-grid" style="grid-template-columns:repeat(3,1fr);margin-top:42px;">
+                    <div class="card" style="min-height:280px;">
+                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                        <h3>Structured Documents</h3>
+                        <p>Create quotations, invoices, credit notes, and customer documents from one consistent workspace — without manually managing Word files and repeated document versions.</p>
+                    </div>
+                    <div class="card" style="min-height:280px;">
+                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+                        <h3>Quiet Communication</h3>
+                        <p>Share quotations and invoices through secure links instead of sending multiple attachments. Your customer can open the document directly, clearly, and without version confusion.</p>
+                    </div>
+                    <div class="card" style="min-height:280px;">
+                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                        <h3>VAT-Ready Records</h3>
+                        <p>Keep purchases, expenses, invoices, and VAT-relevant activity organised throughout the year, so VAT preparation becomes clearer and less dependent on last-minute spreadsheet work.</p>
+                    </div>
+                </div>
+                <div style="margin-top:32px;padding:22px 26px;border-radius:22px;background:rgba(13,94,166,.055);border:1px solid rgba(13,94,166,.10);text-align:center;font-size:15px;line-height:1.7;color:#365468;">
+                    <strong style="color:var(--blue-dark);">Built from real operational need:</strong> the Portal was created because business management should feel organised, practical, and reliable — not overcrowded or unnecessarily complex.
+                </div>
+            </div>
+        </section>
+
         <section class="cta-strip">
             <div class="container">
                 <div class="cta-box">
@@ -395,7 +426,7 @@
                         <h2>Ready to bring structure to your business?</h2>
                         <p>Start with the core platform today. Keep your documents, revenue, VAT, purchases, and customers under control.</p>
                     </div>
-                    <a class="btn" href="#pricing">Get Started</a>
+                    <a class="btn" href="javascript:void(0)" data-inquiry-type="Demo Request">Get Started</a>
                 </div>
             </div>
         </section>
@@ -409,7 +440,7 @@
                     <p class="footer-desc">The operational backbone that connects quotations, invoicing, revenue control, VAT, purchases, and customer management into a structured business workspace — ready for intelligence-layer evolution.</p>
                     <p class="footer-note">3 Inventors Portal is part of the 3 Inventors Operational Intelligence Platform.</p>
                     <div class="footer-actions">
-                        <a class="btn btn-primary" href="#pricing">Get Started</a>
+                        <a class="btn btn-primary" href="javascript:void(0)" data-inquiry-type="Demo Request">Get Started</a>
                         <a class="btn btn-secondary" href="/Account/Login">Sign In</a>
                     </div>
                 </div>
@@ -445,5 +476,13 @@
             </div>
         </div>
     </footer>
+
+    @await Html.PartialAsync("_ContactModal")
+
+    @if (!string.IsNullOrEmpty(ViewBag.ReCaptchaSiteKey))
+    {
+        <script src="https://www.google.com/recaptcha/api.js?render=@ViewBag.ReCaptchaSiteKey" async defer></script>
+    }
+    <script src="~/js/contact-modal.js" data-recaptcha-sitekey="@ViewBag.ReCaptchaSiteKey"></script>
 </body>
 </html>

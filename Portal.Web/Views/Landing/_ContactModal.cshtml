@@ -1,0 +1,329 @@
+@* Contact Modal Partial View *@
+@* Requirements: 1.1–1.6, 2.1–2.6, 3.1, 13.1, 13.3, 13.4, 13.5 *@
+
+<style>
+    /* Contact Modal Styles */
+    #contactModalOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    #contactModalOverlay.is-visible {
+        display: flex;
+    }
+
+    #contactModalCard {
+        position: relative;
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border-radius: 28px;
+        padding: 40px 36px 36px;
+        box-shadow: 0 32px 80px rgba(13, 94, 166, 0.18), 0 8px 24px rgba(0, 0, 0, 0.08);
+        margin: auto;
+    }
+
+    #contactModalClose {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        width: 36px;
+        height: 36px;
+        border: none;
+        background: rgba(13, 94, 166, 0.06);
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.18s ease;
+        color: #5E7385;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    #contactModalClose:hover {
+        background: rgba(13, 94, 166, 0.12);
+        color: #0B1B28;
+    }
+
+    #contactModalBadge {
+        display: inline-flex;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: rgba(13, 94, 166, 0.08);
+        color: #0D5EA6;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 14px;
+        font-family: Inter, system-ui, sans-serif;
+    }
+
+    #contactModalTitle {
+        font-family: Manrope, Inter, sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        line-height: 1.1;
+        color: #0B1B28;
+        margin: 0 0 8px;
+    }
+
+    #contactModalSubtitle {
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 15px;
+        color: #5E7385;
+        line-height: 1.6;
+        margin: 0 0 24px;
+    }
+
+    #contactForm .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    #contactForm .form-field {
+        margin-bottom: 16px;
+    }
+
+    #contactForm .form-field.full-width {
+        grid-column: 1 / -1;
+    }
+
+    #contactForm label {
+        display: block;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: #314b62;
+        margin-bottom: 6px;
+    }
+
+    #contactForm label .required-mark {
+        color: #C24A4A;
+        margin-left: 2px;
+    }
+
+    #contactForm input[type="text"],
+    #contactForm input[type="email"],
+    #contactForm input[type="tel"],
+    #contactForm select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid rgba(13, 94, 166, 0.15);
+        border-radius: 12px;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 14px;
+        color: #0B1B28;
+        background: #fff;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    #contactForm input[type="text"]:focus,
+    #contactForm input[type="email"]:focus,
+    #contactForm input[type="tel"]:focus,
+    #contactForm select:focus {
+        border-color: #0D5EA6;
+        box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.1);
+    }
+
+    #contactForm input[type="text"]::placeholder,
+    #contactForm input[type="email"]::placeholder,
+    #contactForm input[type="tel"]::placeholder {
+        color: #9fb3c4;
+    }
+
+    #contactForm select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235E7385' d='M6 8.5L1.5 4h9L6 8.5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 36px;
+    }
+
+    #contactFormSubmit {
+        width: 100%;
+        padding: 14px 24px;
+        border: none;
+        border-radius: 15px;
+        background: linear-gradient(180deg, #1B6FBA, #0D5EA6);
+        color: #fff;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.18s ease, background 0.18s ease;
+        box-shadow: 0 12px 28px rgba(13, 94, 166, 0.22);
+        margin-top: 8px;
+    }
+
+    #contactFormSubmit:hover:not(:disabled) {
+        transform: translateY(-1px);
+        background: linear-gradient(180deg, #227AC8, #0B4E89);
+    }
+
+    #contactFormSubmit:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .contact-modal-recaptcha-text {
+        margin-top: 14px;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 11px;
+        color: #8a9baa;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    .contact-modal-recaptcha-text a {
+        color: #5E7385;
+        text-decoration: underline;
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 640px) {
+        #contactModalCard {
+            padding: 28px 22px 24px;
+            border-radius: 22px;
+        }
+
+        #contactModalTitle {
+            font-size: 24px;
+        }
+
+        #contactForm .form-row {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+
+        #contactFormSubmit {
+            padding: 13px 20px;
+            font-size: 14px;
+        }
+    }
+
+    @@media (max-width: 380px) {
+        #contactModalOverlay {
+            padding: 12px;
+        }
+
+        #contactModalCard {
+            padding: 24px 18px 20px;
+        }
+
+        #contactModalTitle {
+            font-size: 22px;
+        }
+
+        #contactModalSubtitle {
+            font-size: 14px;
+        }
+    }
+</style>
+
+<!-- Contact Modal Overlay -->
+<div id="contactModalOverlay"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="contactModalTitle">
+
+    <!-- Modal Card -->
+    <div id="contactModalCard">
+        <!-- Close Button -->
+        <button type="button" id="contactModalClose" aria-label="Close dialog">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+
+        <!-- Contextual Header -->
+        <div id="contactModalBadge">Contact Us</div>
+        <h2 id="contactModalTitle">Talk to Us</h2>
+        <p id="contactModalSubtitle">Have a question? We'll get back to you within 24 hours.</p>
+
+        <!-- Contact Form -->
+        <form id="contactForm" method="post" action="/Landing/ContactUs" novalidate>
+            @Html.AntiForgeryToken()
+
+            <!-- Hidden inquiry type field -->
+            <input type="hidden" name="inquiryType" id="contactInquiryType" value="" />
+
+            <!-- Honeypot field (off-screen, invisible to real users) -->
+            <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
+                <label for="contactHoneypot">Website</label>
+                <input type="text" name="Website" id="contactHoneypot" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <!-- Company Name -->
+            <div class="form-field">
+                <label for="contactCompanyName">Company Name</label>
+                <input type="text" id="contactCompanyName" name="companyName" placeholder="Your company name" />
+            </div>
+
+            <!-- First Name & Last Name -->
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="contactFirstName">First Name <span class="required-mark">*</span></label>
+                    <input type="text" id="contactFirstName" name="firstName" placeholder="First name" required />
+                </div>
+                <div class="form-field">
+                    <label for="contactLastName">Last Name</label>
+                    <input type="text" id="contactLastName" name="lastName" placeholder="Last name" />
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div class="form-field">
+                <label for="contactEmail">Email <span class="required-mark">*</span></label>
+                <input type="email" id="contactEmail" name="email" placeholder="you@company.com" required />
+            </div>
+
+            <!-- Telephone -->
+            <div class="form-field">
+                <label for="contactTelephone">Telephone</label>
+                <input type="tel" id="contactTelephone" name="telephone" placeholder="+357 00 000000" />
+            </div>
+
+            <!-- Industry Dropdown -->
+            <div class="form-field">
+                <label for="contactIndustry">Industry</label>
+                <select id="contactIndustry" name="industry">
+                    <option value="">Select your industry (optional)</option>
+                    <option value="HORECA">HORECA (Hotels, Restaurants, Caf&#233;s)</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Warehouse / Logistics">Warehouse / Logistics</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Services">Services</option>
+                    <option value="Office">Office</option>
+                    <option value="Gym / Fitness">Gym / Fitness</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="contactFormSubmit">Send Request</button>
+
+            <!-- Google reCAPTCHA Attribution -->
+            <p class="contact-modal-recaptcha-text">
+                This site is protected by reCAPTCHA and the Google
+                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a> and
+                <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms of Service</a> apply.
+            </p>
+        </form>
+    </div>
+</div>

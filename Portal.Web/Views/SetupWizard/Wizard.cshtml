@@ -1,0 +1,256 @@
+@model Portal.Web.Models.Stripe.SetupWizardModel
+@{
+    ViewData["Title"] = "Setup Wizard";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Getting Started</div>
+        <h1 class="topbar-heading">Set up your business</h1>
+        <p class="topbar-subtitle">Complete the details below to configure your account. Only business name and currency are required.</p>
+    </div>
+</div>
+
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.Any(ms => ms.Value?.Errors.Count > 0))
+{
+    <div role="alert" style="background:rgba(194,74,74,.06);border:1px solid rgba(194,74,74,.18);border-radius:16px;padding:14px 18px;margin-bottom:22px;color:#C24A4A;font-size:13px;font-weight:600;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+        Please correct the errors below and try again.
+    </div>
+}
+
+<section class="glass card-pad">
+    <div class="label">Business Details</div>
+    <h2 style="margin-top:8px;font-size:24px;">Tell us about your business</h2>
+
+    <form method="post"
+          asp-controller="SetupWizard"
+          asp-action="Wizard"
+          enctype="multipart/form-data"
+          id="setupWizardForm"
+          novalidate
+          style="margin-top:18px;">
+        @Html.AntiForgeryToken()
+
+        <!-- Business Name -->
+        <div class="form-grid">
+            <div class="field" style="grid-column:1/-1;">
+                <label for="BusinessName">Business Name *</label>
+                <input type="text"
+                       id="BusinessName"
+                       name="BusinessName"
+                       value="@Model.BusinessName"
+                       placeholder="Your business name"
+                       required
+                       maxlength="200"
+                       aria-required="true"
+                       aria-invalid="@(ViewData.ModelState.ContainsKey("BusinessName") && ViewData.ModelState["BusinessName"]?.Errors.Count > 0 ? "true" : "false")"
+                       class="@(ViewData.ModelState.ContainsKey("BusinessName") && ViewData.ModelState["BusinessName"]?.Errors.Count > 0 ? "input-validation-error" : "")" />
+                @if (ViewData.ModelState.ContainsKey("BusinessName") && ViewData.ModelState["BusinessName"]?.Errors.Count > 0)
+                {
+                    <span class="field-validation-error" role="alert">@ViewData.ModelState["BusinessName"]!.Errors[0].ErrorMessage</span>
+                }
+            </div>
+        </div>
+
+        <!-- VAT Number -->
+        <div class="form-grid" style="margin-top:16px;">
+            <div class="field">
+                <label for="VatNumber">VAT Registration Number</label>
+                <input type="text"
+                       id="VatNumber"
+                       name="VatNumber"
+                       value="@Model.VatNumber"
+                       placeholder="e.g. CY12345678X"
+                       maxlength="50"
+                       aria-invalid="@(ViewData.ModelState.ContainsKey("VatNumber") && ViewData.ModelState["VatNumber"]?.Errors.Count > 0 ? "true" : "false")"
+                       class="@(ViewData.ModelState.ContainsKey("VatNumber") && ViewData.ModelState["VatNumber"]?.Errors.Count > 0 ? "input-validation-error" : "")" />
+                @if (ViewData.ModelState.ContainsKey("VatNumber") && ViewData.ModelState["VatNumber"]?.Errors.Count > 0)
+                {
+                    <span class="field-validation-error" role="alert">@ViewData.ModelState["VatNumber"]!.Errors[0].ErrorMessage</span>
+                }
+            </div>
+            <div class="field">
+                <label for="CurrencySymbol">Currency *</label>
+                <select id="CurrencySymbol"
+                        name="CurrencySymbol"
+                        required
+                        aria-required="true"
+                        aria-invalid="@(ViewData.ModelState.ContainsKey("CurrencySymbol") && ViewData.ModelState["CurrencySymbol"]?.Errors.Count > 0 ? "true" : "false")"
+                        class="@(ViewData.ModelState.ContainsKey("CurrencySymbol") && ViewData.ModelState["CurrencySymbol"]?.Errors.Count > 0 ? "input-validation-error" : "")">
+                    <option value="€" selected="@(Model.CurrencySymbol == "€")">€ Euro (EUR)</option>
+                    <option value="$" selected="@(Model.CurrencySymbol == "$")">$ Dollar (USD)</option>
+                    <option value="£" selected="@(Model.CurrencySymbol == "£")">£ Pound (GBP)</option>
+                    <option value="CHF" selected="@(Model.CurrencySymbol == "CHF")">CHF Franc</option>
+                    <option value="kr" selected="@(Model.CurrencySymbol == "kr")">kr Krone (SEK/NOK/DKK)</option>
+                </select>
+                @if (ViewData.ModelState.ContainsKey("CurrencySymbol") && ViewData.ModelState["CurrencySymbol"]?.Errors.Count > 0)
+                {
+                    <span class="field-validation-error" role="alert">@ViewData.ModelState["CurrencySymbol"]!.Errors[0].ErrorMessage</span>
+                }
+            </div>
+        </div>
+
+        <!-- Address Fields -->
+        <div class="form-grid" style="margin-top:16px;">
+            <div class="field" style="grid-column:1/-1;">
+                <label for="AddressLine1">Address Line 1</label>
+                <input type="text"
+                       id="AddressLine1"
+                       name="AddressLine1"
+                       value="@Model.AddressLine1"
+                       placeholder="Street address"
+                       maxlength="200" />
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+                <label for="AddressLine2">Address Line 2</label>
+                <input type="text"
+                       id="AddressLine2"
+                       name="AddressLine2"
+                       value="@Model.AddressLine2"
+                       placeholder="Apartment, suite, etc."
+                       maxlength="200" />
+            </div>
+            <div class="field">
+                <label for="City">City</label>
+                <input type="text"
+                       id="City"
+                       name="City"
+                       value="@Model.City"
+                       placeholder="City"
+                       maxlength="100" />
+            </div>
+            <div class="field">
+                <label for="PostalCode">Postal Code</label>
+                <input type="text"
+                       id="PostalCode"
+                       name="PostalCode"
+                       value="@Model.PostalCode"
+                       placeholder="Postal code"
+                       maxlength="20" />
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+                <label for="Country">Country</label>
+                <input type="text"
+                       id="Country"
+                       name="Country"
+                       value="@Model.Country"
+                       placeholder="Country"
+                       maxlength="100" />
+            </div>
+        </div>
+
+        <!-- Logo Upload -->
+        <div class="form-grid" style="margin-top:16px;">
+            <div class="field" style="grid-column:1/-1;">
+                <label for="Logo">Business Logo</label>
+                <input type="file"
+                       id="Logo"
+                       name="Logo"
+                       accept="image/png,image/jpeg,image/svg+xml"
+                       aria-invalid="@(ViewData.ModelState.ContainsKey("Logo") && ViewData.ModelState["Logo"]?.Errors.Count > 0 ? "true" : "false")"
+                       class="@(ViewData.ModelState.ContainsKey("Logo") && ViewData.ModelState["Logo"]?.Errors.Count > 0 ? "input-validation-error" : "")" />
+                <small class="muted" style="display:block;margin-top:6px;">PNG, JPG, or SVG. Max 2MB.</small>
+                @if (ViewData.ModelState.ContainsKey("Logo") && ViewData.ModelState["Logo"]?.Errors.Count > 0)
+                {
+                    <span class="field-validation-error" role="alert">@ViewData.ModelState["Logo"]!.Errors[0].ErrorMessage</span>
+                }
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="margin-top:28px;">
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                Complete Setup
+            </button>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+<script>
+(function () {
+    var form = document.getElementById('setupWizardForm');
+    var submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', function (e) {
+        var isValid = true;
+        var errors = [];
+
+        // Validate business name
+        var businessName = document.getElementById('BusinessName');
+        var businessNameValue = businessName.value.trim();
+        if (!businessNameValue) {
+            isValid = false;
+            errors.push('Business name is required.');
+            businessName.setAttribute('aria-invalid', 'true');
+            businessName.classList.add('input-validation-error');
+        } else if (businessNameValue.length > 200) {
+            isValid = false;
+            errors.push('Business name cannot exceed 200 characters.');
+            businessName.setAttribute('aria-invalid', 'true');
+            businessName.classList.add('input-validation-error');
+        } else {
+            businessName.setAttribute('aria-invalid', 'false');
+            businessName.classList.remove('input-validation-error');
+        }
+
+        // Validate currency
+        var currency = document.getElementById('CurrencySymbol');
+        if (!currency.value) {
+            isValid = false;
+            errors.push('Currency is required.');
+            currency.setAttribute('aria-invalid', 'true');
+            currency.classList.add('input-validation-error');
+        } else {
+            currency.setAttribute('aria-invalid', 'false');
+            currency.classList.remove('input-validation-error');
+        }
+
+        // Validate logo file if selected
+        var logoInput = document.getElementById('Logo');
+        if (logoInput.files && logoInput.files.length > 0) {
+            var file = logoInput.files[0];
+            var allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
+            var maxSize = 2 * 1024 * 1024; // 2MB
+
+            if (allowedTypes.indexOf(file.type) === -1) {
+                isValid = false;
+                errors.push('Logo must be a PNG, JPG, or SVG file.');
+                logoInput.setAttribute('aria-invalid', 'true');
+                logoInput.classList.add('input-validation-error');
+            } else if (file.size > maxSize) {
+                isValid = false;
+                errors.push('Logo file size must not exceed 2MB.');
+                logoInput.setAttribute('aria-invalid', 'true');
+                logoInput.classList.add('input-validation-error');
+            } else {
+                logoInput.setAttribute('aria-invalid', 'false');
+                logoInput.classList.remove('input-validation-error');
+            }
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Validation Error',
+                html: errors.join('<br>'),
+                icon: 'error',
+                confirmButtonColor: '#0D5EA6'
+            });
+        }
+    });
+
+    // Clear validation state on input
+    document.getElementById('BusinessName').addEventListener('input', function () {
+        this.setAttribute('aria-invalid', 'false');
+        this.classList.remove('input-validation-error');
+    });
+
+    document.getElementById('Logo').addEventListener('change', function () {
+        this.setAttribute('aria-invalid', 'false');
+        this.classList.remove('input-validation-error');
+    });
+})();
+</script>
+}

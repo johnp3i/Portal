@@ -1,0 +1,301 @@
+@using Portal.Infrastructure.Models
+@using Portal.Web.Models.Stripe
+@{
+    ViewData["Title"] = "Billing";
+
+    var overview = ViewData["Overview"] as BillingOverviewModel;
+    var invoices = ViewData["Invoices"] as PagedResult<BillingInvoiceModel>;
+
+    var hasSubscription = overview != null && !string.IsNullOrEmpty(overview.SubscriptionStatus);
+    var hasInvoices = invoices != null && invoices.Items.Count > 0;
+
+    // Compute summary from invoices
+    var totalPaid = 0m;
+    var invoiceCount = 0;
+    DateTime? lastPaymentDate = null;
+
+    if (invoices != null)
+    {
+        invoiceCount = invoices.TotalCount;
+        // Summary is computed from all items on the current page — for accurate totals,
+        // the controller should pass full summary data. For now we display page-level info.
+        totalPaid = invoices.Items.Where(i => i.Status == "paid").Sum(i => i.AmountEur);
+        lastPaymentDate = invoices.Items
+            .Where(i => i.PaidAtUtc.HasValue)
+            .OrderByDescending(i => i.PaidAtUtc)
+            .Select(i => i.PaidAtUtc)
+            .FirstOrDefault();
+    }
+
+    // Status badge CSS class mapping
+    string GetStatusBadgeClass(string status) => status?.ToLower() switch
+    {
+        "active" => "badge-active",
+        "trialing" => "badge-active",
+        "paid" => "badge-paid",
+        "past_due" => "badge-warning",
+        "cancelled" => "badge-danger",
+        "canceled" => "badge-danger",
+        "void" => "badge-danger",
+        "open" => "badge-warning",
+        "draft" => "badge-muted",
+        "incomplete" => "badge-warning",
+        "unpaid" => "badge-danger",
+        _ => "badge-muted"
+    };
+
+    string GetStatusLabel(string status) => status?.ToLower() switch
+    {
+        "active" => "Active",
+        "trialing" => "Trialing",
+        "past_due" => "Past Due",
+        "cancelled" => "Cancelled",
+        "canceled" => "Cancelled",
+        "incomplete" => "Incomplete",
+        "unpaid" => "Unpaid",
+        "paid" => "Paid",
+        "open" => "Open",
+        "draft" => "Draft",
+        "void" => "Void",
+        "uncollectible" => "Uncollectible",
+        _ => status ?? "Unknown"
+    };
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Account</div>
+        <h1 class="topbar-heading">Billing & Payments</h1>
+        <p class="topbar-subtitle">View your subscription details, payment history, and download invoices.</p>
+    </div>
+</div>
+
+<!-- Subscription Status Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;color:#0B1B28;">Current Subscription</h2>
+    <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">Your active plan and billing cycle details.</p>
+
+    @if (hasSubscription)
+    {
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;">Plan</span>
+                <span style="font-size:16px;font-weight:700;color:#0B1B28;">@overview!.PlanName</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;">Status</span>
+                <span class="badge @GetStatusBadgeClass(overview.SubscriptionStatus)" style="align-self:flex-start;">@GetStatusLabel(overview.SubscriptionStatus)</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;">Current Period</span>
+                <span style="font-size:16px;font-weight:700;color:#0B1B28;">@overview.CurrentPeriodStart.ToString("d MMM") – @overview.CurrentPeriodEnd.ToString("d MMM yyyy")</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;">Next Renewal</span>
+                <span style="font-size:16px;font-weight:700;color:#0B1B28;">
+                    @if (overview.NextRenewalDate.HasValue)
+                    {
+                        @overview.NextRenewalDate.Value.ToString("d MMM yyyy")
+                    }
+                    else
+                    {
+                        <text>—</text>
+                    }
+                </span>
+            </div>
+        </div>
+
+        @if (ViewData["StripePortalUrl"] is string portalUrl && !string.IsNullOrEmpty(portalUrl))
+        {
+            <a href="@portalUrl" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:10px 20px;background:#0D5EA6;color:#fff;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;transition:background 0.2s;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Manage Payment Methods
+            </a>
+        }
+    }
+    else
+    {
+        <p style="font-size:14px;color:#5a6a7a;">No active subscription found.</p>
+    }
+</section>
+
+<!-- KPI Summary -->
+<div style="display:flex;gap:24px;margin-bottom:22px;">
+    <div style="flex:1;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;margin-bottom:6px;">Total Paid</div>
+        <div style="font-size:22px;font-weight:800;font-family:'Manrope',sans-serif;color:#0B1B28;">€@totalPaid.ToString("N2")</div>
+    </div>
+    <div style="flex:1;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;margin-bottom:6px;">Invoices</div>
+        <div style="font-size:22px;font-weight:800;font-family:'Manrope',sans-serif;color:#0B1B28;">@invoiceCount</div>
+    </div>
+    <div style="flex:1;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;margin-bottom:6px;">Last Payment</div>
+        <div style="font-size:22px;font-weight:800;font-family:'Manrope',sans-serif;color:#0B1B28;">
+            @if (lastPaymentDate.HasValue)
+            {
+                @lastPaymentDate.Value.ToString("d MMM yyyy")
+            }
+            else
+            {
+                <text>—</text>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Payment History Table -->
+<section class="glass card-pad">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;color:#0B1B28;">Payment History</h2>
+    <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">All invoices for your subscription.</p>
+
+    @if (hasInvoices)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice Date</th>
+                    <th>Period</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var invoice in invoices!.Items)
+                {
+                    <tr>
+                        <td><strong>@invoice.InvoiceDate.ToString("d MMM yyyy")</strong></td>
+                        <td>@invoice.PeriodStart.ToString("d MMM") – @invoice.PeriodEnd.ToString("d MMM yyyy")</td>
+                        <td>€@invoice.AmountEur.ToString("N2")</td>
+                        <td><span class="badge @GetStatusBadgeClass(invoice.Status)">@GetStatusLabel(invoice.Status)</span></td>
+                        <td style="text-align:right;">
+                            <a href="/Account/Billing/DownloadInvoice/@invoice.Id" class="btn-download">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                PDF
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div style="font-size:13px;color:#5a6a7a;">
+                @{
+                    var startItem = (invoices.CurrentPage - 1) * invoices.PageSize + 1;
+                    var endItem = Math.Min(invoices.CurrentPage * invoices.PageSize, invoices.TotalCount);
+                }
+                Showing @startItem–@endItem of @invoices.TotalCount
+            </div>
+            <div style="display:flex;gap:6px;">
+                @if (invoices.HasPreviousPage)
+                {
+                    <a href="/Account/Billing?page=@(invoices.CurrentPage - 1)" class="page-btn">Previous</a>
+                }
+                @for (var i = 1; i <= invoices.TotalPages; i++)
+                {
+                    <a href="/Account/Billing?page=@i" class="page-btn @(i == invoices.CurrentPage ? "active" : "")">@i</a>
+                }
+                @if (invoices.HasNextPage)
+                {
+                    <a href="/Account/Billing?page=@(invoices.CurrentPage + 1)" class="page-btn">Next</a>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No payment history available yet. Your invoices will appear here once your first payment is processed.</p>
+        </div>
+    }
+</section>
+
+<style>
+    /* Status Badges */
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .badge-active {
+        background: rgba(18,152,103,.1);
+        color: #129867;
+    }
+    .badge-paid {
+        background: rgba(18,152,103,.1);
+        color: #129867;
+    }
+    .badge-warning {
+        background: rgba(200,145,46,.1);
+        color: #C8912E;
+    }
+    .badge-danger {
+        background: rgba(194,74,74,.1);
+        color: #C24A4A;
+    }
+    .badge-muted {
+        background: rgba(90,106,122,.1);
+        color: #5a6a7a;
+    }
+
+    /* Download Button */
+    .btn-download {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: #EEF4F8;
+        border: 1px solid rgba(13,94,166,.08);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #0D5EA6;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-download:hover {
+        background: rgba(13,94,166,.06);
+        border-color: rgba(13,94,166,.2);
+    }
+
+    /* Pagination */
+    .page-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        border: 1px solid rgba(13,94,166,.08);
+        background: #fff;
+        color: #5a6a7a;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+    }
+    .page-btn:hover {
+        background: #EEF4F8;
+        border-color: #0D5EA6;
+    }
+    .page-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .glass.card-pad [style*="grid-template-columns:repeat(4"] {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+        div[style*="display:flex;gap:24px;margin-bottom:22px"] {
+            flex-direction: column;
+        }
+    }
+</style>

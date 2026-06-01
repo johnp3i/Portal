@@ -1,0 +1,28 @@
+@*
+    Subscription Warning Banner — displayed when subscription status is past_due.
+    Include this partial in pages where the user should be warned about overdue payment.
+    Usage: @await Html.PartialAsync("_SubscriptionWarningBanner")
+    The banner is only rendered when ViewData["SubscriptionWarning"] is set to true.
+*@
+
+@if (ViewData["SubscriptionWarning"] is true)
+{
+    <div role="alert"
+         aria-live="polite"
+         style="background:rgba(200,145,46,0.08);border:1px solid rgba(200,145,46,0.3);border-radius:12px;padding:14px 20px;margin-bottom:22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <div style="flex:1;min-width:200px;">
+            <span style="font-size:13px;font-weight:700;color:#C8912E;">Payment Overdue</span>
+            <span style="font-size:13px;color:#5a6a7a;margin-left:8px;">Your subscription payment is past due. Please update your payment method to avoid service interruption.</span>
+        </div>
+        <a href="/Account/Billing"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#C8912E;color:#ffffff;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;white-space:nowrap;transition:background 0.2s;"
+           aria-label="Go to billing page to update payment method">
+            Update Payment
+        </a>
+    </div>
+}

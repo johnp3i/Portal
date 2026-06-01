@@ -4,6 +4,7 @@ using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Models;
+using Portal.Infrastructure.Repositories;
 
 namespace Portal.Infrastructure.Services;
 
@@ -13,14 +14,47 @@ namespace Portal.Infrastructure.Services;
 public class InvitationService : IInvitationService
 {
     private readonly MembershipDbContext _membershipDbContext;
+    private readonly IBusinessPlanRepository _businessPlanRepository;
+    private readonly IPlanRepository _planRepository;
 
-    public InvitationService(MembershipDbContext membershipDbContext)
+    public InvitationService(
+        MembershipDbContext membershipDbContext,
+        IBusinessPlanRepository businessPlanRepository,
+        IPlanRepository planRepository)
     {
         _membershipDbContext = membershipDbContext;
+        _businessPlanRepository = businessPlanRepository;
+        _planRepository = planRepository;
     }
 
     public async Task<Invitation> CreateInvitationAsync(string email, int businessId, string createdByUserId, List<InvitationModulePermission>? modulePermissions = null)
     {
+        // --- User Limit Enforcement ---
+        var activePlan = await _businessPlanRepository.GetActiveByBusinessIdAsync(businessId);
+        if (activePlan == null)
+        {
+            throw new InvalidOperationException("Cannot create invitation: no active subscription plan found for this business.");
+        }
+
+        var plan = await _planRepository.GetByIdAsync(activePlan.PlanId);
+        var maxUsers = plan!.MaxUsers;
+        if (maxUsers != -1)
+        {
+            var activeUserCount = await _membershipDbContext.UserBusinesses
+                .CountAsync(ub => ub.BusinessId == businessId && ub.IsActive);
+
+            var pendingInvitationCount = await _membershipDbContext.Invitations
+                .CountAsync(i => i.BusinessId == businessId && !i.IsUsed && i.ExpiresAtUtc > DateTime.UtcNow);
+
+            var occupiedSeats = activeUserCount + pendingInvitationCount;
+            if (occupiedSeats >= maxUsers)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot create invitation: the user limit of {maxUsers} has been reached for this business. " +
+                    $"Current seats occupied: {occupiedSeats} (active users: {activeUserCount}, pending invitations: {pendingInvitationCount}).");
+            }
+        }
+
         if (modulePermissions != null && modulePermissions.Count > 0)
         {
             foreach (var permission in modulePermissions)
