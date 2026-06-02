@@ -63,7 +63,7 @@ The subscription plan mechanism is complete (Plan, PlanFeature, BusinessPlan sch
 
 ### 6. Subscription Lifecycle (Module 10.9–10.11)
 
-- [ ] Sidebar/topbar indicator showing plan name and subscription status
+- [x] Sidebar/topbar indicator showing plan name and subscription status (Completed 2025-07-29)
 - [ ] Grace period handling for lapsed subscriptions (e.g., 7-day grace before lockout)
 - [ ] "Billing required" lockout screen when subscription lapses
 - [ ] Stripe Customer Portal link for self-service billing management (upgrade/downgrade, payment methods, invoice history)

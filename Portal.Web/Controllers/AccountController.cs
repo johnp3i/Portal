@@ -2,8 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Infrastructure.Entities.Identity;
+using Portal.Infrastructure.Repositories;
 using Portal.Web.Models;
+using Portal.Web.Models.PromoCode;
 using Portal.Web.Services;
+using Portal.Web.Services.Stripe;
 
 namespace Portal.Web.Controllers;
 
@@ -15,6 +18,10 @@ public class AccountController : Controller
     private readonly IPlanService _planService;
     private readonly IIdentityEmailService _identityEmailService;
     private readonly LinkGenerator _linkGenerator;
+    private readonly IPlatformConfigService _platformConfigService;
+    private readonly IProvisioningService _provisioningService;
+    private readonly PromoCodeRepository _promoCodeRepository;
+    private readonly IPromoCodeValidationService _promoCodeValidationService;
 
     public AccountController(
         SignInManager<ApplicationUser> signInManager,
@@ -22,7 +29,11 @@ public class AccountController : Controller
         IRegistrationService registrationService,
         IPlanService planService,
         IIdentityEmailService identityEmailService,
-        LinkGenerator linkGenerator)
+        LinkGenerator linkGenerator,
+        IPlatformConfigService platformConfigService,
+        IProvisioningService provisioningService,
+        PromoCodeRepository promoCodeRepository,
+        IPromoCodeValidationService promoCodeValidationService)
     {
         _signInManager = signInManager;
         _userManager = userManager;
@@ -30,6 +41,10 @@ public class AccountController : Controller
         _planService = planService;
         _identityEmailService = identityEmailService;
         _linkGenerator = linkGenerator;
+        _platformConfigService = platformConfigService;
+        _provisioningService = provisioningService;
+        _promoCodeRepository = promoCodeRepository;
+        _promoCodeValidationService = promoCodeValidationService;
     }
 
     [HttpGet]
@@ -120,6 +135,23 @@ public class AccountController : Controller
             model.AvailablePlans = await _planService.GetActivePlansOrderedAsync();
         }
 
+        // Promo code field visibility logic
+        var showPromoCodeConfig = await _platformConfigService.GetValueAsync("ShowPromoCodeField");
+        var promoCodeQueryParam = Request.Query["promoCode"].ToString();
+        var hasPromoCodeParam = !string.IsNullOrWhiteSpace(promoCodeQueryParam);
+
+        // Show promo code field if config is "true" OR if promoCode query param is present
+        var showPromoCodeField = string.Equals(showPromoCodeConfig, "true", StringComparison.OrdinalIgnoreCase) || hasPromoCodeParam;
+
+        ViewBag.ShowPromoCodeField = showPromoCodeField;
+        ViewBag.PrePopulatedPromoCode = hasPromoCodeParam ? promoCodeQueryParam : null;
+
+        // Pre-populate the model if promoCode query param is present
+        if (hasPromoCodeParam)
+        {
+            model.PromoCode = promoCodeQueryParam.Trim().ToUpperInvariant();
+        }
+
         return View(model);
     }
 
@@ -136,7 +168,25 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
         {
             await ReloadPlansForViewModel(model);
+            await SetPromoCodeViewBag(model);
             return View(model);
+        }
+
+        // Promo code validation — server-side, before user creation (Req 5.4, 5.5, 9.2)
+        if (!string.IsNullOrWhiteSpace(model.PromoCode))
+        {
+            var promoValidation = await _promoCodeValidationService.ValidateForRegistrationAsync(model.PromoCode, model.Email);
+
+            if (!promoValidation.IsValid)
+            {
+                ModelState.AddModelError("PromoCode", promoValidation.ErrorMessage ?? "Invalid promo code.");
+                await ReloadPlansForViewModel(model);
+                await SetPromoCodeViewBag(model);
+                return View(model);
+            }
+
+            // Store validated PromoCodeId for use by RegistrationService (Req 5.9)
+            model.ValidatedPromoCodeId = promoValidation.PromoCodeId;
         }
 
         var result = await _registrationService.RegisterAsync(model);
@@ -152,6 +202,7 @@ public class AccountController : Controller
         }
 
         await ReloadPlansForViewModel(model);
+        await SetPromoCodeViewBag(model);
         return View(model);
     }
 
@@ -209,6 +260,45 @@ public class AccountController : Controller
 
         if (result.Succeeded)
         {
+            // Load PendingRegistration to check for promo code path
+            var pendingRegistration = await _registrationService.GetPendingRegistrationByUserIdAsync(userId);
+
+            if (pendingRegistration?.PromoCodeId != null)
+            {
+                // Promo code user — provision trial without Stripe
+                var promoCode = await _promoCodeRepository.GetByIdAsync(pendingRegistration.PromoCodeId.Value);
+
+                if (promoCode != null)
+                {
+                    var promoRequest = new PromoProvisioningRequest
+                    {
+                        UserId = userId,
+                        PendingRegistrationId = pendingRegistration.Id,
+                        PlanId = pendingRegistration.PlanId,
+                        PromoCodeId = promoCode.Id,
+                        DurationMonths = promoCode.DurationMonths
+                    };
+
+                    var provisioningResult = await _provisioningService.ProvisionPromoTrialAsync(promoRequest);
+
+                    if (provisioningResult.Success)
+                    {
+                        ViewBag.Status = "promo-success";
+                        ViewBag.Message = "Your email address has been confirmed and your trial has been activated.";
+                        ViewBag.RedirectUrl = "/SetupWizard";
+                        return View();
+                    }
+                    else
+                    {
+                        ViewBag.Status = "promo-failed";
+                        ViewBag.Message = "Your email has been confirmed, but your promo code is no longer valid.";
+                        ViewBag.RedirectUrl = "/Account/PromoCodeExpired";
+                        return View();
+                    }
+                }
+            }
+
+            // Standard Stripe checkout flow
             ViewBag.Status = "success";
             ViewBag.Message = "Your email address has been confirmed successfully.";
             ViewBag.CheckoutUrl = await BuildCheckoutUrlAsync(userId);
@@ -238,6 +328,19 @@ public class AccountController : Controller
         {
             model.AvailablePlans = await _planService.GetActivePlansOrderedAsync();
         }
+    }
+
+    /// <summary>
+    /// Sets ViewBag properties for promo code field visibility on POST validation failures.
+    /// Shows the field if config is "true" OR if the user submitted a promo code value.
+    /// </summary>
+    private async Task SetPromoCodeViewBag(RegisterViewModel model)
+    {
+        var showPromoCodeConfig = await _platformConfigService.GetValueAsync("ShowPromoCodeField");
+        var hasPromoCode = !string.IsNullOrWhiteSpace(model.PromoCode);
+
+        ViewBag.ShowPromoCodeField = string.Equals(showPromoCodeConfig, "true", StringComparison.OrdinalIgnoreCase) || hasPromoCode;
+        ViewBag.PrePopulatedPromoCode = hasPromoCode ? model.PromoCode : null;
     }
 
     [HttpGet]
@@ -406,6 +509,19 @@ public class AccountController : Controller
         ViewData["Description"] = "Your password has been successfully reset. You can now log in with your new password.";
         ViewData["OgDescription"] = "Your password has been successfully reset. You can now log in with your new password.";
         ViewData["OgUrl"] = $"{Request.Scheme}://{Request.Host}/Account/ResetPasswordConfirmation";
+
+        return View();
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult PromoCodeExpired()
+    {
+        ViewData["Title"] = "Promo Code No Longer Valid";
+        ViewData["Description"] = "Your promotional code is no longer valid. Subscribe to continue using the platform.";
+        ViewData["OgDescription"] = "Your promotional code is no longer valid. Subscribe to continue using the platform.";
+        ViewData["OgUrl"] = $"{Request.Scheme}://{Request.Host}/Account/PromoCodeExpired";
+        ViewData["NoIndex"] = true;
 
         return View();
     }

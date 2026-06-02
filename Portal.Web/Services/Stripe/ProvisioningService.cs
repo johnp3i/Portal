@@ -4,16 +4,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Data;
+using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Entities.Billing;
 using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Entities.Stripe;
 using Portal.Infrastructure.Repositories;
+using Portal.Web.Models.PromoCode;
 using Portal.Web.Models.Stripe;
 
 namespace Portal.Web.Services.Stripe;
 
 /// <summary>
-/// Provisions a new tenant from a completed Stripe checkout session.
+/// Provisions a new tenant from a completed Stripe checkout session or promo code redemption.
 /// Creates Business, UserBusiness, Subscription, StripeCustomer, Invoice, Payment,
 /// and Permissions within a single database transaction.
 /// </summary>
@@ -25,6 +27,8 @@ public class ProvisioningService : IProvisioningService
     private readonly BillingInvoiceRepository _billingInvoiceRepository;
     private readonly BillingPaymentRepository _billingPaymentRepository;
     private readonly StripeCustomerRepository _stripeCustomerRepository;
+    private readonly PromoCodeRepository _promoCodeRepository;
+    private readonly PromoCodeRedemptionRepository _promoCodeRedemptionRepository;
     private readonly ILogger<ProvisioningService> _logger;
 
     public ProvisioningService(
@@ -34,6 +38,8 @@ public class ProvisioningService : IProvisioningService
         BillingInvoiceRepository billingInvoiceRepository,
         BillingPaymentRepository billingPaymentRepository,
         StripeCustomerRepository stripeCustomerRepository,
+        PromoCodeRepository promoCodeRepository,
+        PromoCodeRedemptionRepository promoCodeRedemptionRepository,
         ILogger<ProvisioningService> logger)
     {
         _membershipDbContext = membershipDbContext;
@@ -42,6 +48,8 @@ public class ProvisioningService : IProvisioningService
         _billingInvoiceRepository = billingInvoiceRepository;
         _billingPaymentRepository = billingPaymentRepository;
         _stripeCustomerRepository = stripeCustomerRepository;
+        _promoCodeRepository = promoCodeRepository;
+        _promoCodeRedemptionRepository = promoCodeRedemptionRepository;
         _logger = logger;
     }
 
@@ -189,6 +197,214 @@ public class ProvisioningService : IProvisioningService
             _logger.LogError(ex,
                 "Unexpected error during provisioning. UserId: {UserId}, PlanId: {PlanId}, StripeSessionId: {StripeSessionId}",
                 request.UserId, request.PlanId, request.StripeSessionId);
+
+            return new ProvisioningResult
+            {
+                Success = false,
+                ErrorMessage = "An unexpected error occurred during provisioning."
+            };
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<ProvisioningResult> ProvisionPromoTrialAsync(PromoProvisioningRequest request)
+    {
+        try
+        {
+            // Load PendingRegistration and verify it's not already completed
+            var pendingRegistration = await _membershipDbContext.PendingRegistrations
+                .Include(pr => pr.User)
+                .FirstOrDefaultAsync(pr => pr.Id == request.PendingRegistrationId);
+
+            if (pendingRegistration == null)
+            {
+                _logger.LogWarning(
+                    "PendingRegistration not found during promo provisioning. PendingRegistrationId: {PendingRegistrationId}, UserId: {UserId}",
+                    request.PendingRegistrationId, request.UserId);
+                return new ProvisioningResult
+                {
+                    Success = false,
+                    ErrorMessage = "Registration record not found."
+                };
+            }
+
+            if (pendingRegistration.IsCompleted)
+            {
+                _logger.LogInformation(
+                    "PendingRegistration already completed, skipping promo provisioning. PendingRegistrationId: {PendingRegistrationId}, UserId: {UserId}",
+                    request.PendingRegistrationId, request.UserId);
+                return new ProvisioningResult { Success = true };
+            }
+
+            // Get user's first and last name for business name
+            var firstName = pendingRegistration.User?.FirstName ?? "User";
+            var lastName = pendingRegistration.User?.LastName ?? "";
+            var businessName = $"{firstName} {lastName}'s Business".Trim();
+
+            // Begin transaction on PortalDbContext (main transaction for all portal-schema operations)
+            await using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
+
+            try
+            {
+                var now = DateTime.UtcNow;
+
+                // 1. Create Business
+                var businessId = await InsertBusinessAsync(businessName, now);
+
+                // 2. Create UserBusiness in MembershipDbContext
+                var userBusinessId = await InsertUserBusinessAsync(request.UserId, businessId, now);
+
+                // 3. Create Subscription (trialing, null StripeSubscriptionId, period now + DurationMonths)
+                var subscriptionId = await _subscriptionRepository.InsertAsync(new Subscription
+                {
+                    BusinessId = businessId,
+                    PlanId = request.PlanId,
+                    Status = "trialing",
+                    StripeSubscriptionId = null,
+                    CurrentPeriodStart = now,
+                    CurrentPeriodEnd = now.AddMonths(request.DurationMonths),
+                    CancelledAtUtc = null,
+                    CreatedAtUtc = now
+                });
+
+                // 4. Create UserBusinessPermissions (all Business plan module permissions)
+                var planFeatures = await GetIncludedPlanFeaturesAsync(request.PlanId);
+                foreach (var feature in planFeatures)
+                {
+                    await InsertUserBusinessPermissionAsync(userBusinessId, feature.ModuleName, AccessLevels.Full, now);
+                }
+
+                // 5a. Re-validate promo code within transaction (guards against stale code since registration)
+                var promoCode = await _promoCodeRepository.GetByIdAsync(request.PromoCodeId);
+                if (promoCode == null)
+                {
+                    await transaction.RollbackAsync();
+
+                    _logger.LogWarning(
+                        "Promo code not found during provisioning re-validation. UserId: {UserId}, PromoCodeId: {PromoCodeId}",
+                        request.UserId, request.PromoCodeId);
+
+                    return new ProvisioningResult
+                    {
+                        Success = false,
+                        ErrorMessage = "This promo code is no longer valid."
+                    };
+                }
+
+                if (promoCode.IsRevoked)
+                {
+                    await transaction.RollbackAsync();
+
+                    _logger.LogInformation(
+                        "Promo code rejected during provisioning: code has been revoked. UserId: {UserId}, PromoCodeId: {PromoCodeId}",
+                        request.UserId, request.PromoCodeId);
+
+                    return new ProvisioningResult
+                    {
+                        Success = false,
+                        ErrorMessage = "This promo code has been revoked and is no longer valid."
+                    };
+                }
+
+                if (promoCode.ExpiresAtUtc <= now)
+                {
+                    await transaction.RollbackAsync();
+
+                    _logger.LogInformation(
+                        "Promo code rejected during provisioning: code has expired. UserId: {UserId}, PromoCodeId: {PromoCodeId}, ExpiresAtUtc: {ExpiresAtUtc}",
+                        request.UserId, request.PromoCodeId, promoCode.ExpiresAtUtc);
+
+                    return new ProvisioningResult
+                    {
+                        Success = false,
+                        ErrorMessage = "This promo code has expired and is no longer valid."
+                    };
+                }
+
+                if (promoCode.CurrentRedemptions >= promoCode.MaxRedemptions)
+                {
+                    await transaction.RollbackAsync();
+
+                    _logger.LogInformation(
+                        "Promo code rejected during provisioning: fully redeemed. UserId: {UserId}, PromoCodeId: {PromoCodeId}, CurrentRedemptions: {CurrentRedemptions}, MaxRedemptions: {MaxRedemptions}",
+                        request.UserId, request.PromoCodeId, promoCode.CurrentRedemptions, promoCode.MaxRedemptions);
+
+                    return new ProvisioningResult
+                    {
+                        Success = false,
+                        ErrorMessage = "This promo code has been fully redeemed and is no longer valid."
+                    };
+                }
+
+                // 5b. Increment PromoCode.CurrentRedemptions with WHERE guard (atomic concurrency check)
+                var incrementSuccess = await _promoCodeRepository.IncrementRedemptionsAsync(request.PromoCodeId);
+                if (!incrementSuccess)
+                {
+                    // Concurrent redemption race lost — rollback
+                    await transaction.RollbackAsync();
+
+                    _logger.LogInformation(
+                        "Promo code redemption failed (concurrent race). UserId: {UserId}, PromoCodeId: {PromoCodeId}",
+                        request.UserId, request.PromoCodeId);
+
+                    return new ProvisioningResult
+                    {
+                        Success = false,
+                        ErrorMessage = "This promo code is no longer valid. It may have been fully redeemed."
+                    };
+                }
+
+                // 6. Create PromoCodeRedemption record
+                await _promoCodeRedemptionRepository.InsertAsync(new PromoCodeRedemption
+                {
+                    PromoCodeId = request.PromoCodeId,
+                    UserId = request.UserId,
+                    BusinessId = businessId,
+                    RedeemedAtUtc = now
+                });
+
+                _logger.LogInformation(
+                    "Promo code redeemed. UserId={UserId}, PromoCodeId={PromoCodeId}, BusinessId={BusinessId}",
+                    request.UserId, request.PromoCodeId, businessId);
+
+                // 7. Mark PendingRegistration as completed
+                pendingRegistration.IsCompleted = true;
+                pendingRegistration.CompletedAtUtc = now;
+                await _membershipDbContext.SaveChangesAsync();
+
+                // Commit the transaction
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Promo trial provisioned successfully. BusinessId: {BusinessId}, UserId: {UserId}, PlanId: {PlanId}, PromoCodeId: {PromoCodeId}, DurationMonths: {DurationMonths}",
+                    businessId, request.UserId, request.PlanId, request.PromoCodeId, request.DurationMonths);
+
+                return new ProvisioningResult
+                {
+                    Success = true,
+                    BusinessId = businessId
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+
+                _logger.LogError(ex,
+                    "Promo provisioning failed. UserId: {UserId}, PlanId: {PlanId}, PromoCodeId: {PromoCodeId}",
+                    request.UserId, request.PlanId, request.PromoCodeId);
+
+                return new ProvisioningResult
+                {
+                    Success = false,
+                    ErrorMessage = "Provisioning failed due to an internal error."
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Unexpected error during promo provisioning. UserId: {UserId}, PlanId: {PlanId}, PromoCodeId: {PromoCodeId}",
+                request.UserId, request.PlanId, request.PromoCodeId);
 
             return new ProvisioningResult
             {

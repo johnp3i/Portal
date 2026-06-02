@@ -20,6 +20,12 @@ public class PendingRegistration
     public int PlanId { get; set; }
 
     /// <summary>
+    /// FK to Portal.dbo.PromoCode.Id (cross-database logical reference, no physical FK).
+    /// Populated when the user registers with a valid promo code.
+    /// </summary>
+    public int? PromoCodeId { get; set; }
+
+    /// <summary>
     /// Whether the user has completed email confirmation and Stripe checkout.
     /// </summary>
     public bool IsCompleted { get; set; }

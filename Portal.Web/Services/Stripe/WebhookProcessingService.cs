@@ -24,6 +24,7 @@ public class WebhookProcessingService : IWebhookProcessingService
     private readonly BillingPaymentRepository _billingPaymentRepository;
     private readonly StripeCustomerRepository _stripeCustomerRepository;
     private readonly IProvisioningService _provisioningService;
+    private readonly MembershipDbContext _membershipDbContext;
     private readonly PortalDbContext _portalDbContext;
     private readonly ILogger<WebhookProcessingService> _logger;
 
@@ -35,6 +36,7 @@ public class WebhookProcessingService : IWebhookProcessingService
         BillingPaymentRepository billingPaymentRepository,
         StripeCustomerRepository stripeCustomerRepository,
         IProvisioningService provisioningService,
+        MembershipDbContext membershipDbContext,
         PortalDbContext portalDbContext,
         ILogger<WebhookProcessingService> logger)
     {
@@ -45,6 +47,7 @@ public class WebhookProcessingService : IWebhookProcessingService
         _billingPaymentRepository = billingPaymentRepository;
         _stripeCustomerRepository = stripeCustomerRepository;
         _provisioningService = provisioningService;
+        _membershipDbContext = membershipDbContext;
         _portalDbContext = portalDbContext;
         _logger = logger;
     }
@@ -188,6 +191,13 @@ public class WebhookProcessingService : IWebhookProcessingService
         // Provisioning handles its own transaction; record webhook event after
         var result = await _provisioningService.ProvisionTenantAsync(provisioningRequest);
 
+        // If provisioning returned success without a BusinessId, the user may already be provisioned
+        // (e.g., promo trial user subscribing via Stripe). Check for a trialing subscription to upgrade.
+        if (result.Success && result.BusinessId == null && !string.IsNullOrEmpty(subscriptionId))
+        {
+            await HandleTrialingSubscriptionUpgrade(userId, customerId, subscriptionId, subscriptionStart, subscriptionEnd, planId, eventId);
+        }
+
         // Record the webhook event after successful provisioning
         await using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
         try
@@ -211,6 +221,96 @@ public class WebhookProcessingService : IWebhookProcessingService
         if (!result.Success)
         {
             _logger.LogWarning("Provisioning returned failure for checkout.session.completed. EventId: {EventId}, Error: {Error}", eventId, result.ErrorMessage);
+        }
+    }
+
+    /// <summary>
+    /// Handles the scenario where a promo trial user (with an existing trialing subscription and
+    /// null StripeSubscriptionId) subscribes via Stripe. Updates the existing subscription record
+    /// to "active" with Stripe data and creates the StripeCustomer mapping for future webhook events.
+    /// </summary>
+    private async Task HandleTrialingSubscriptionUpgrade(
+        string userId,
+        string stripeCustomerId,
+        string stripeSubscriptionId,
+        DateTime periodStart,
+        DateTime periodEnd,
+        int planId,
+        string eventId)
+    {
+        // Find the user's business via UserBusiness association
+        var userBusiness = await _membershipDbContext.UserBusinesses
+            .Where(ub => ub.UserId == userId && ub.IsActive)
+            .OrderByDescending(ub => ub.IsDefault)
+            .FirstOrDefaultAsync();
+
+        if (userBusiness == null)
+        {
+            _logger.LogWarning("No UserBusiness found for promo trial upgrade. UserId: {UserId}, EventId: {EventId}", userId, eventId);
+            return;
+        }
+
+        var businessId = userBusiness.BusinessId;
+
+        // Check if the business has a trialing subscription with null StripeSubscriptionId
+        var subscription = await _subscriptionRepository.GetByBusinessIdAsync(businessId);
+        if (subscription == null)
+        {
+            _logger.LogWarning("No subscription found for promo trial upgrade. UserId: {UserId}, BusinessId: {BusinessId}, EventId: {EventId}", userId, businessId, eventId);
+            return;
+        }
+
+        if (subscription.Status != "trialing" || subscription.StripeSubscriptionId != null)
+        {
+            _logger.LogInformation(
+                "Subscription not eligible for promo trial upgrade (Status: {Status}, StripeSubscriptionId: {StripeSubscriptionId}). UserId: {UserId}, BusinessId: {BusinessId}, EventId: {EventId}",
+                subscription.Status, subscription.StripeSubscriptionId, userId, businessId, eventId);
+            return;
+        }
+
+        // Use the existing plan if none was provided in the checkout metadata
+        var effectivePlanId = planId > 0 ? planId : subscription.PlanId;
+
+        // Upgrade the trialing subscription to active with Stripe data
+        await using var upgradeTransaction = await _portalDbContext.Database.BeginTransactionAsync();
+        try
+        {
+            // Update the subscription: set StripeSubscriptionId, Status="active", period dates
+            await _subscriptionRepository.ActivateTrialingSubscriptionAsync(
+                subscription.Id,
+                stripeSubscriptionId,
+                periodStart,
+                periodEnd,
+                effectivePlanId);
+
+            // Create the StripeCustomer mapping so future webhook events work correctly
+            if (!string.IsNullOrEmpty(stripeCustomerId))
+            {
+                var existingStripeCustomer = await _stripeCustomerRepository.GetByBusinessIdAsync(businessId);
+                if (existingStripeCustomer == null)
+                {
+                    await _stripeCustomerRepository.InsertAsync(new StripeCustomer
+                    {
+                        BusinessId = businessId,
+                        StripeCustomerId = stripeCustomerId,
+                        CreatedAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
+            await upgradeTransaction.CommitAsync();
+
+            _logger.LogInformation(
+                "Promo trial subscription upgraded to active. UserId: {UserId}, BusinessId: {BusinessId}, SubscriptionId: {SubscriptionId}, StripeSubscriptionId: {StripeSubscriptionId}, EventId: {EventId}",
+                userId, businessId, subscription.Id, stripeSubscriptionId, eventId);
+        }
+        catch (Exception ex)
+        {
+            await upgradeTransaction.RollbackAsync();
+            _logger.LogError(ex,
+                "Failed to upgrade promo trial subscription. UserId: {UserId}, BusinessId: {BusinessId}, EventId: {EventId}",
+                userId, businessId, eventId);
+            throw;
         }
     }
 

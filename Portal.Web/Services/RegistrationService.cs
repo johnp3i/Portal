@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Identity;
+using Portal.Infrastructure.Repositories;
 using Portal.Web.Models;
 
 namespace Portal.Web.Services;
@@ -17,6 +18,7 @@ public class RegistrationService : IRegistrationService
     private readonly IIdentityEmailService _identityEmailService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly LinkGenerator _linkGenerator;
+    private readonly IPlanRepository _planRepository;
     private readonly ILogger<RegistrationService> _logger;
 
     public RegistrationService(
@@ -25,6 +27,7 @@ public class RegistrationService : IRegistrationService
         IIdentityEmailService identityEmailService,
         IHttpContextAccessor httpContextAccessor,
         LinkGenerator linkGenerator,
+        IPlanRepository planRepository,
         ILogger<RegistrationService> logger)
     {
         _userManager = userManager;
@@ -32,6 +35,7 @@ public class RegistrationService : IRegistrationService
         _identityEmailService = identityEmailService;
         _httpContextAccessor = httpContextAccessor;
         _linkGenerator = linkGenerator;
+        _planRepository = planRepository;
         _logger = logger;
     }
 
@@ -68,11 +72,25 @@ public class RegistrationService : IRegistrationService
                 return RegistrationResult.Failure(errors);
             }
 
-            // Create PendingRegistration record with selected PlanId
+            // Determine PlanId — force Business plan when promo code is present
+            var planId = model.SelectedPlanId!.Value;
+            if (model.ValidatedPromoCodeId.HasValue)
+            {
+                var businessPlan = await _planRepository.GetBySlugAsync("business");
+                if (businessPlan == null)
+                {
+                    _logger.LogError("Business plan not found in database. Cannot complete promo code registration for user {UserId}", user.Id);
+                    return RegistrationResult.Failure("Registration could not be completed. Please try again later.");
+                }
+                planId = businessPlan.Id;
+            }
+
+            // Create PendingRegistration record with resolved PlanId
             var pendingRegistration = new PendingRegistration
             {
                 UserId = user.Id,
-                PlanId = model.SelectedPlanId!.Value,
+                PlanId = planId,
+                PromoCodeId = model.ValidatedPromoCodeId,
                 IsCompleted = false,
                 CreatedAtUtc = DateTime.UtcNow
             };

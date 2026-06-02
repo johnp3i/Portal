@@ -253,7 +253,7 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [ ] | 10.6 | Auto-provision tenant on successful payment: create Business, first User (owner), assign modules per plan | 10.5 | |
 | [ ] | 10.7 | Build post-signup setup wizard (business name, VAT number, address, logo, currency) | 10.6 | |
 | [ ] | 10.8 | Update module access middleware: check subscription plan includes module before checking user-level permission | 10.2, Module 7 | |
-| [ ] | 10.9 | Build subscription status indicator in sidebar/topbar (plan name, days remaining) | 10.8 | |
+| [x] | 10.9 | Build subscription status indicator in sidebar/topbar (plan name, days remaining) | 10.8 | 2025-07-29 |
 | [ ] | 10.10 | Implement grace period and "billing required" lockout screen for lapsed subscriptions | 10.5 | |
 | [ ] | 10.11 | Integrate Stripe Customer Portal for self-service billing management (plan changes, payment methods, invoice history) | 10.4 | |
 | [ ] | 10.12 | Build super admin "Subscriptions" view (all tenants, plans, payment status, MRR) | 10.2 | |

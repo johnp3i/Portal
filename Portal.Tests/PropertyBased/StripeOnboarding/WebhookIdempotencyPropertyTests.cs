@@ -125,6 +125,12 @@ public class WebhookIdempotencyPropertyTests
             .Options;
         var portalDbContext = new PortalDbContext(dbContextOptions, new Mock<ICurrentTenantService>().Object);
 
+        // Mock MembershipDbContext — not needed for idempotency path but required by constructor
+        var membershipDbContextOptions = new DbContextOptionsBuilder<MembershipDbContext>()
+            .UseInMemoryDatabase(databaseName: $"IdempotencyMembershipTest_{Guid.NewGuid()}")
+            .Options;
+        var membershipDbContext = new MembershipDbContext(membershipDbContextOptions);
+
         var service = new WebhookProcessingService(
             stripeSettings,
             mockWebhookEventRepo.Object,
@@ -133,6 +139,7 @@ public class WebhookIdempotencyPropertyTests
             mockPaymentRepo.Object,
             mockCustomerRepo.Object,
             mockProvisioning.Object,
+            membershipDbContext,
             portalDbContext,
             mockLogger.Object);
 

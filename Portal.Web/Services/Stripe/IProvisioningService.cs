@@ -1,9 +1,10 @@
+using Portal.Web.Models.PromoCode;
 using Portal.Web.Models.Stripe;
 
 namespace Portal.Web.Services.Stripe;
 
 /// <summary>
-/// Provisions a new tenant from a completed Stripe checkout session.
+/// Provisions a new tenant from a completed Stripe checkout session or promo code redemption.
 /// Creates Business, UserBusiness, Subscription, StripeCustomer, Invoice, Payment,
 /// and Permissions within a single database transaction.
 /// </summary>
@@ -15,4 +16,12 @@ public interface IProvisioningService
     /// Returns a success result with the new BusinessId, or an error if provisioning fails.
     /// </summary>
     Task<ProvisioningResult> ProvisionTenantAsync(ProvisioningRequest request);
+
+    /// <summary>
+    /// Provisions a new tenant from a promo code redemption without Stripe payment.
+    /// Creates Business, UserBusiness, Subscription (trialing, null StripeId), Permissions,
+    /// increments promo code redemptions (with concurrency guard), creates PromoCodeRedemption record,
+    /// and marks PendingRegistration as completed — all within a single database transaction.
+    /// </summary>
+    Task<ProvisioningResult> ProvisionPromoTrialAsync(PromoProvisioningRequest request);
 }

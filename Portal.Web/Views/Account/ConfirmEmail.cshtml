@@ -34,6 +34,45 @@
             Continue to Checkout
         </a>
     }
+    else if (ViewBag.Status == "promo-success")
+    {
+        <div style="margin-bottom:20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#129867" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        </div>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#ffffff;margin-bottom:12px;">Trial Activated</h2>
+        <p style="color:rgba(255,255,255,0.75);font-size:15px;line-height:1.5;margin-bottom:28px;">@ViewBag.Message</p>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:20px;">Redirecting you to the Setup Wizard...</p>
+        <a href="@ViewBag.RedirectUrl"
+           style="display:inline-block;padding:14px 32px;background:#129867;color:#ffffff;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;">
+            Go to Setup Wizard
+        </a>
+        <script>
+            setTimeout(function () { window.location.href = '@ViewBag.RedirectUrl'; }, 3000);
+        </script>
+    }
+    else if (ViewBag.Status == "promo-failed")
+    {
+        <div style="margin-bottom:20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </div>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#ffffff;margin-bottom:12px;">Promo Code No Longer Valid</h2>
+        <p role="alert" style="color:rgba(255,255,255,0.75);font-size:15px;line-height:1.5;margin-bottom:28px;">@ViewBag.Message</p>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:20px;">Redirecting...</p>
+        <a href="@ViewBag.RedirectUrl"
+           style="display:inline-block;padding:14px 32px;background:#0D5EA6;color:#ffffff;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;">
+            View Options
+        </a>
+        <script>
+            setTimeout(function () { window.location.href = '@ViewBag.RedirectUrl'; }, 3000);
+        </script>
+    }
     else
     {
         <div style="margin-bottom:20px;">

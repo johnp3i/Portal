@@ -90,6 +90,13 @@ public class PortalDbContext : DbContext
     public DbSet<StripeCustomer> StripeCustomers { get; set; } = null!;
     public DbSet<WebhookEvent> WebhookEvents { get; set; } = null!;
 
+    // Platform configuration
+    public DbSet<PlatformConfig> PlatformConfigs { get; set; } = null!;
+
+    // Promo code schema
+    public DbSet<PromoCode> PromoCodes { get; set; } = null!;
+    public DbSet<PromoCodeRedemption> PromoCodeRedemptions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -136,6 +143,9 @@ public class PortalDbContext : DbContext
         ConfigureBillingPayment(modelBuilder);
         ConfigureStripeCustomer(modelBuilder);
         ConfigureWebhookEvent(modelBuilder);
+        ConfigurePromoCode(modelBuilder);
+        ConfigurePromoCodeRedemption(modelBuilder);
+        ConfigurePlatformConfig(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -1722,6 +1732,124 @@ public class PortalDbContext : DbContext
                 .HasDefaultValue(true);
 
             entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigurePromoCode(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PromoCode>(entity =>
+        {
+            entity.ToTable("PromoCode", "dbo");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.Code)
+                .IsUnique()
+                .HasDatabaseName("UX_PromoCode_Code");
+
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.DurationMonths)
+                .IsRequired();
+
+            // CHECK constraint: DurationMonths BETWEEN 1 AND 24
+            // EF Core does not support CHECK constraints directly; enforced at database level via migration
+
+            entity.Property(e => e.MaxRedemptions)
+                .IsRequired();
+
+            entity.Property(e => e.CurrentRedemptions)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            // CHECK constraint: CurrentRedemptions >= 0 AND CurrentRedemptions <= MaxRedemptions
+            // Enforced at database level via migration
+
+            entity.Property(e => e.ExpiresAtUtc)
+                .IsRequired();
+
+            entity.Property(e => e.BoundEmail)
+                .HasMaxLength(256);
+
+            entity.Property(e => e.IsRevoked)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedByUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasMany(e => e.Redemptions)
+                .WithOne(r => r.PromoCode)
+                .HasForeignKey(r => r.PromoCodeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePromoCodeRedemption(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PromoCodeRedemption>(entity =>
+        {
+            entity.ToTable("PromoCodeRedemption", "dbo");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.PromoCode)
+                .WithMany(p => p.Redemptions)
+                .HasForeignKey(e => e.PromoCodeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.PromoCodeId)
+                .HasDatabaseName("IX_PromoCodeRedemption_PromoCodeId");
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_PromoCodeRedemption_BusinessId");
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.RedeemedAtUtc)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigurePlatformConfig(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PlatformConfig>(entity =>
+        {
+            entity.ToTable("PlatformConfig", "dbo");
+
+            entity.HasKey(e => e.Key);
+
+            entity.Property(e => e.Key)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            entity.Property(e => e.Value)
+                .IsRequired();
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.LastModifiedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
         });

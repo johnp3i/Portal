@@ -43,6 +43,7 @@ public class MembershipDbContext : IdentityDbContext<ApplicationUser, IdentityRo
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId).IsUnique();
             entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(e => e.PromoCodeId).IsRequired(false);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne(e => e.User)
                   .WithOne()

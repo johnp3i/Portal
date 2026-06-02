@@ -133,6 +133,16 @@ builder.Services.AddScoped<IPlanRepository>(sp =>
     new PlanRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IPlanFeatureRepository>(sp =>
     new PlanFeatureRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PlatformConfigRepository>(sp =>
+    new PlatformConfigRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PromoCodeRepository>(sp =>
+    new PromoCodeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PromoCodeRedemptionRepository>(sp =>
+    new PromoCodeRedemptionRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IPlatformConfigService, PlatformConfigService>();
+builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
+builder.Services.AddScoped<IPromoEmailService, PromoEmailService>();
+builder.Services.AddScoped<IPromoCodeValidationService, PromoCodeValidationService>();
 builder.Services.AddScoped<ICurrentTenantService, CurrentTenantService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPlanService, PlanService>();

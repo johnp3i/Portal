@@ -1,0 +1,464 @@
+@using Portal.Infrastructure.Models
+@using Portal.Web.Models.PromoCode
+@model PagedResult<PromoCodeListItem>
+@{
+    ViewData["Title"] = "Promo Codes";
+    var statusFilter = ViewBag.StatusFilter as string ?? "";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Promo Codes</h1>
+        <p class="topbar-subtitle">Create, manage, and monitor promotional trial codes.</p>
+    </div>
+</div>
+
+<!-- Collapsible Create Form -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a2b3c;">Create Promo Code</h3>
+        <button type="button" id="toggleCreateForm" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;">
+            Show Form
+        </button>
+    </div>
+    <div id="createFormSection" style="display:none;margin-top:18px;">
+        <form id="createPromoCodeForm" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+            @Html.AntiForgeryToken()
+            <div class="field" style="min-width:160px;">
+                <label for="durationMonths">Duration (Months)</label>
+                <input type="number" id="durationMonths" name="DurationMonths" min="1" max="24" value="3" required />
+            </div>
+            <div class="field" style="min-width:180px;">
+                <label for="maxRedemptions">Max Redemptions</label>
+                <input type="number" id="maxRedemptions" name="MaxRedemptions" min="1" max="500" value="1" required />
+            </div>
+            <div class="field" style="min-width:180px;">
+                <label for="expiresAtUtc">Expiry Date</label>
+                <input type="date" id="expiresAtUtc" name="ExpiresAtUtc" required />
+            </div>
+            <div class="field" style="min-width:220px;">
+                <label for="boundEmail">Email (optional, for email-bound)</label>
+                <input type="email" id="boundEmail" name="BoundEmail" placeholder="recipient@example.com" />
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" id="btnCreatePromoCode" class="btn btn-primary" style="padding:14px 20px;">Create</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Status Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label for="statusFilterSelect">Status</label>
+            <select id="statusFilterSelect">
+                <option value="" selected="@(string.IsNullOrEmpty(statusFilter))">All</option>
+                <option value="Active" selected="@(statusFilter == "Active")">Active</option>
+                <option value="Redeemed" selected="@(statusFilter == "Redeemed")">Redeemed</option>
+                <option value="Expired" selected="@(statusFilter == "Expired")">Expired</option>
+                <option value="Revoked" selected="@(statusFilter == "Revoked")">Revoked</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" id="btnFilterStatus" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+            <button type="button" id="btnClearFilter" class="btn btn-secondary" style="padding:14px 20px;">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Promo Codes Table -->
+<section class="glass card-pad">
+    @if (Model.Items != null && Model.Items.Count > 0)
+    {
+        <table id="promoCodesTable">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Redemptions</th>
+                    <th>Expiry</th>
+                    <th>Bound Email</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="promoCodesTableBody">
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td><code style="font-weight:700;font-size:13px;letter-spacing:0.5px;">@item.Code</code></td>
+                        <td>@item.Type</td>
+                        <td>@item.DurationMonths month@(item.DurationMonths != 1 ? "s" : "")</td>
+                        <td>@item.CurrentRedemptions / @item.MaxRedemptions</td>
+                        <td>@item.ExpiresAtUtc.ToString("dd MMM yyyy")</td>
+                        <td>@(item.BoundEmail ?? "—")</td>
+                        <td>
+                            @if (item.Status == "Active")
+                            {
+                                <span class="pill pill-promo-active">Active</span>
+                            }
+                            else if (item.Status == "Redeemed")
+                            {
+                                <span class="pill pill-promo-redeemed">Redeemed</span>
+                            }
+                            else if (item.Status == "Expired")
+                            {
+                                <span class="pill pill-promo-expired">Expired</span>
+                            }
+                            else if (item.Status == "Revoked")
+                            {
+                                <span class="pill pill-promo-revoked">Revoked</span>
+                            }
+                        </td>
+                        <td>@item.CreatedAtUtc.ToString("dd MMM yyyy")</td>
+                        <td style="white-space:nowrap;">
+                            <button type="button"
+                                    class="tbl-action tbl-action--danger btn-revoke-promo"
+                                    data-id="@item.Id"
+                                    @(item.Status != "Active" ? "disabled" : "")>
+                                Revoke
+                            </button>
+                            <button type="button"
+                                    class="tbl-action tbl-action--primary btn-send-code"
+                                    data-id="@item.Id"
+                                    data-type="@item.Type"
+                                    data-email="@item.BoundEmail"
+                                    data-code="@item.Code"
+                                    @(item.Status != "Active" ? "disabled" : "")>
+                                Send Code
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;">
+                Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)–@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount)) of @Model.TotalCount
+            </div>
+            <div id="paginationControls" style="display:flex;gap:4px;align-items:center;">
+                @if (Model.HasPreviousPage)
+                {
+                    <a href="/Admin/PromoCodes?status=@statusFilter&page=@(Model.CurrentPage - 1)" class="pagination-btn">Previous</a>
+                }
+                else
+                {
+                    <span class="pagination-btn" style="opacity:0.4;cursor:not-allowed;">Previous</span>
+                }
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == Model.CurrentPage)
+                    {
+                        <span class="pagination-btn active">@i</span>
+                    }
+                    else
+                    {
+                        <a href="/Admin/PromoCodes?status=@statusFilter&page=@i" class="pagination-btn">@i</a>
+                    }
+                }
+
+                @if (Model.HasNextPage)
+                {
+                    <a href="/Admin/PromoCodes?status=@statusFilter&page=@(Model.CurrentPage + 1)" class="pagination-btn">Next</a>
+                }
+                else
+                {
+                    <span class="pagination-btn" style="opacity:0.4;cursor:not-allowed;">Next</span>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No promo codes found. Create your first promo code or adjust your filters.</p>
+        </div>
+    }
+</section>
+
+<style>
+    .pill-promo-active {
+        background: #129867;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pill-promo-redeemed {
+        background: #0D5EA6;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pill-promo-expired {
+        background: #C8912E;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pill-promo-revoked {
+        background: #C24A4A;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pagination-btn {
+        padding: 6px 12px;
+        border: 1px solid #d0d9e2;
+        border-radius: 8px;
+        background: #fff;
+        color: #0D5EA6;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .pagination-btn:hover {
+        background: #EEF4F8;
+        border-color: #0D5EA6;
+    }
+    .pagination-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+    #createFormSection input[type="number"],
+    #createFormSection input[type="date"],
+    #createFormSection input[type="email"] {
+        width: 100%;
+    }
+    .tbl-action:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+</style>
+
+@section Scripts {
+<script>
+(function() {
+    // =========================================================================
+    // Toggle Create Form
+    // =========================================================================
+    var toggleBtn = document.getElementById('toggleCreateForm');
+    var formSection = document.getElementById('createFormSection');
+
+    if (toggleBtn && formSection) {
+        toggleBtn.addEventListener('click', function() {
+            var isHidden = formSection.style.display === 'none';
+            formSection.style.display = isHidden ? 'block' : 'none';
+            toggleBtn.textContent = isHidden ? 'Hide Form' : 'Show Form';
+        });
+    }
+
+    // =========================================================================
+    // Status Filter Navigation
+    // =========================================================================
+    var btnFilter = document.getElementById('btnFilterStatus');
+    var btnClear = document.getElementById('btnClearFilter');
+    var statusSelect = document.getElementById('statusFilterSelect');
+
+    if (btnFilter && statusSelect) {
+        btnFilter.addEventListener('click', function() {
+            var value = statusSelect.value;
+            window.location.href = '/Admin/PromoCodes?status=' + encodeURIComponent(value);
+        });
+    }
+
+    if (btnClear) {
+        btnClear.addEventListener('click', function() {
+            window.location.href = '/Admin/PromoCodes';
+        });
+    }
+
+    // =========================================================================
+    // Helper: Get Antiforgery Token
+    // =========================================================================
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    // =========================================================================
+    // Create Promo Code — AJAX submission
+    // =========================================================================
+    var createForm = document.getElementById('createPromoCodeForm');
+    if (createForm) {
+        createForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(createForm);
+
+            BlockUI.show('Creating promo code...');
+            try {
+                var response = await fetch('/Admin/PromoCodes/Create', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Code Created!',
+                        text: data.message || 'Promo code created successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to create promo code.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        });
+    }
+
+    // =========================================================================
+    // Revoke Promo Code — Confirmation + AJAX
+    // =========================================================================
+    document.querySelectorAll('.btn-revoke-promo').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var promoCodeId = this.getAttribute('data-id');
+
+            var result = await Swal.fire({
+                title: 'Revoke Promo Code',
+                text: 'Are you sure you want to revoke this promo code? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, revoke it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            var formData = new FormData();
+            formData.append('promoCodeId', promoCodeId);
+
+            BlockUI.show('Revoking promo code...');
+            try {
+                var response = await fetch('/Admin/PromoCodes/Revoke', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Revoked!',
+                        text: data.message || 'Promo code has been revoked.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to revoke promo code.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        });
+    });
+
+    // =========================================================================
+    // Send Code — Email-bound: direct send; Generic: SweetAlert2 email input modal
+    // =========================================================================
+    document.querySelectorAll('.btn-send-code').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var promoCodeId = this.getAttribute('data-id');
+            var codeType = this.getAttribute('data-type');
+            var boundEmail = this.getAttribute('data-email');
+            var code = this.getAttribute('data-code');
+
+            if (codeType === 'Generic') {
+                // Show SweetAlert2 modal asking for recipient email
+                var result = await Swal.fire({
+                    title: 'Send Promo Code',
+                    text: 'Enter the recipient email address to send code ' + code + ':',
+                    input: 'email',
+                    inputPlaceholder: 'recipient@example.com',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0D5EA6',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Send',
+                    inputValidator: function(value) {
+                        if (!value) {
+                            return 'Please enter an email address.';
+                        }
+                    }
+                });
+
+                if (!result.isConfirmed || !result.value) return;
+
+                await sendPromoCodeEmail(promoCodeId, result.value);
+            } else {
+                // Email-bound: directly call endpoint with the bound email
+                await sendPromoCodeEmail(promoCodeId, boundEmail);
+            }
+        });
+    });
+
+    async function sendPromoCodeEmail(promoCodeId, recipientEmail) {
+        var formData = new FormData();
+        formData.append('promoCodeId', promoCodeId);
+        if (recipientEmail) {
+            formData.append('recipientEmail', recipientEmail);
+        }
+
+        BlockUI.show('Sending promo code email...');
+        try {
+            var response = await fetch('/Admin/PromoCodes/SendCode', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'Sent!',
+                    text: data.message || 'Promo code email sent successfully.',
+                    icon: 'success',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Email could not be sent.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+})();
+</script>
+}

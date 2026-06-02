@@ -67,8 +67,8 @@ public class SubscriptionPlanService : ISubscriptionPlanService
             var isActive = subscription.Status is "active" or "trialing" or "past_due";
             var isGraceAccess = false;
 
-            // Expiry detection: check if an "active" subscription has passed its billing period end
-            if (subscription.Status == "active" && subscription.CurrentPeriodEnd < DateTime.UtcNow)
+            // Expiry detection: check if an "active" or "trialing" subscription has passed its billing period end
+            if ((subscription.Status is "active" or "trialing") && subscription.CurrentPeriodEnd < DateTime.UtcNow)
             {
                 // BusinessId == 1 (Three Inventors) is exempt from expiry detection
                 if (subscription.BusinessId != 1)
@@ -136,6 +136,7 @@ public class SubscriptionPlanService : ISubscriptionPlanService
                 IsGraceAccess = isGraceAccess,
                 SubscriptionStatus = subscription.Status,
                 PlanName = planData?.Name ?? string.Empty,
+                StripeSubscriptionId = subscription.StripeSubscriptionId,
                 IncludedModules = new HashSet<string>(planData?.IncludedModules ?? Enumerable.Empty<string>())
             };
 

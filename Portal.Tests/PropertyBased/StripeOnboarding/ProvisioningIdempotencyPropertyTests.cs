@@ -120,6 +120,8 @@ public class ProvisioningIdempotencyPropertyTests
             mockInvoiceRepo.Object,
             mockPaymentRepo.Object,
             mockCustomerRepo.Object,
+            new Mock<PromoCodeRepository>(MockBehavior.Loose, new object[] { null! }).Object,
+            new Mock<PromoCodeRedemptionRepository>(MockBehavior.Loose, new object[] { null! }).Object,
             mockLogger.Object);
 
         return (service, mockSubscriptionRepo, mockInvoiceRepo, mockPaymentRepo, mockCustomerRepo);
@@ -194,6 +196,8 @@ public class ProvisioningIdempotencyPropertyTests
             mockInvoiceRepo.Object,
             mockPaymentRepo.Object,
             mockCustomerRepo.Object,
+            new Mock<PromoCodeRepository>(MockBehavior.Loose, new object[] { null! }).Object,
+            new Mock<PromoCodeRedemptionRepository>(MockBehavior.Loose, new object[] { null! }).Object,
             mockLogger.Object);
 
         return (service, mockSubscriptionRepo, mockInvoiceRepo, mockPaymentRepo, mockCustomerRepo);

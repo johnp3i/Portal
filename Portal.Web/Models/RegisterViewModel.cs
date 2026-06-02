@@ -28,6 +28,17 @@ public class RegisterViewModel
     [Required(ErrorMessage = "Please select a plan")]
     public int? SelectedPlanId { get; set; }
 
+    [StringLength(8)]
+    [RegularExpression(@"^[A-Z0-9]*$", ErrorMessage = "Promo code must be alphanumeric")]
+    public string? PromoCode { get; set; }
+
+    /// <summary>
+    /// Set by the controller after successful promo code validation.
+    /// Used by RegistrationService to store in PendingRegistration.
+    /// Not bound from form input.
+    /// </summary>
+    public int? ValidatedPromoCodeId { get; set; }
+
     // For display
     public List<PlanDisplayModel>? AvailablePlans { get; set; }
     public PlanDisplayModel? PreSelectedPlan { get; set; }

@@ -213,4 +213,38 @@ public class SubscriptionRepository : GenericStoredProcedureRepository<Subscript
             throw;
         }
     }
+
+    /// <summary>
+    /// Activates a trialing subscription by setting the StripeSubscriptionId, updating the status
+    /// to "active", updating the period dates, and resetting IsGraceAccessUsed.
+    /// Used when a promo trial user subscribes via Stripe and the webhook needs to upgrade
+    /// their existing trialing subscription record.
+    /// </summary>
+    public virtual async Task ActivateTrialingSubscriptionAsync(int id, string stripeSubscriptionId, DateTime periodStart, DateTime periodEnd, int planId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [billing].[Subscription]
+                SET [StripeSubscriptionId] = @StripeSubscriptionId,
+                    [Status] = 'active',
+                    [CurrentPeriodStart] = @CurrentPeriodStart,
+                    [CurrentPeriodEnd] = @CurrentPeriodEnd,
+                    [PlanId] = @PlanId,
+                    [IsGraceAccessUsed] = 0,
+                    [CancelledAtUtc] = NULL
+                WHERE [billing].[Subscription].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@StripeSubscriptionId", stripeSubscriptionId),
+                new SqlParameter("@CurrentPeriodStart", periodStart),
+                new SqlParameter("@CurrentPeriodEnd", periodEnd),
+                new SqlParameter("@PlanId", planId));
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 }
