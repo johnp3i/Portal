@@ -39,6 +39,16 @@
                 <span id="expenseTypeIndicator" class="expense-type-indicator" style="display:none;"></span>
             </div>
 
+            <!-- Limit Warning Banner -->
+            <div id="limitWarningBanner" class="limit-warning-banner" style="display:none;grid-column:1 / -1;">
+                <div class="limit-warning-header">
+                    <span class="limit-warning-icon">&#9888;</span>
+                    <strong>Warning</strong>
+                    <button type="button" onclick="hideLimitWarning()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:#C8912E;padding:2px 6px;border-radius:4px;" title="Dismiss">&times;</button>
+                </div>
+                <div id="limitWarningContent" class="limit-warning-content"></div>
+            </div>
+
             <!-- Invoice Number -->
             <div class="field">
                 <label asp-for="InvoiceNumber">Invoice Number</label>
@@ -175,6 +185,42 @@
 
 @section Scripts {
     <style>
+        .limit-warning-banner {
+            background: #FEF6E8;
+            border: 1px solid #C8912E;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+        .limit-warning-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #C8912E;
+            font-size: 14px;
+        }
+        .limit-warning-icon {
+            font-size: 16px;
+        }
+        .limit-warning-content {
+            font-size: 13px;
+            color: #5E4B1E;
+            line-height: 1.6;
+        }
+        .limit-warning-content .limit-warning-item {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(200,145,46,0.15);
+        }
+        .limit-warning-content .limit-warning-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .limit-warning-content .limit-type-label {
+            font-weight: 600;
+            color: #9A6F1E;
+        }
         .expense-type-indicator {
             display: inline-block;
             margin-top: 6px;
@@ -712,6 +758,83 @@
             clearComputed(document.getElementById('totalAmountInput'));
         }
 
+        // ─── Expense Category Limit Check (Advisory) ────────────────────────
+        var _limitCheckTimer = null;
+        var _limitCheckDebounceMs = 300;
+
+        function checkLimits() {
+            var categoryId = parseInt(document.getElementById('categoryHidden').value);
+            var totalInput = document.getElementById('totalAmountInput');
+            var invoiceDateInput = document.querySelector('input[name="InvoiceDate"]');
+            var totalAmount = parseFloat(totalInput.value) || 0;
+            var invoiceDate = invoiceDateInput ? invoiceDateInput.value : '';
+
+            // If no category selected or no amount, clear warning
+            if (!categoryId || totalAmount <= 0 || !invoiceDate) {
+                hideLimitWarning();
+                return;
+            }
+
+            fetch('/ExpenseCategoryLimit/CheckLimits', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    expenseCategoryId: categoryId,
+                    totalAmount: totalAmount,
+                    invoiceDate: invoiceDate,
+                    purchaseId: null
+                })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.hasWarning && data.warnings && data.warnings.length > 0) {
+                    showLimitWarning(data.warnings);
+                } else {
+                    hideLimitWarning();
+                }
+            })
+            .catch(function() {
+                hideLimitWarning();
+            });
+        }
+
+        function debouncedCheckLimits() {
+            if (_limitCheckTimer) clearTimeout(_limitCheckTimer);
+            _limitCheckTimer = setTimeout(checkLimits, _limitCheckDebounceMs);
+        }
+
+        function showLimitWarning(warnings) {
+            var banner = document.getElementById('limitWarningBanner');
+            var content = document.getElementById('limitWarningContent');
+            var html = '';
+
+            warnings.forEach(function(w) {
+                var typeLabel = w.limitType === 'annual' ? 'Annual Limit' : 'Period Limit';
+                html += '<div class="limit-warning-item">';
+                html += '<span class="limit-type-label">' + typeLabel + ':</span> ';
+                html += 'Configured limit: <strong>\u20AC' + formatDecimal(w.configuredLimit) + '</strong> &mdash; ';
+                html += 'Current total: \u20AC' + formatDecimal(w.cumulativeTotal) + ' &mdash; ';
+                html += 'Projected total: \u20AC' + formatDecimal(w.projectedTotal) + ' &mdash; ';
+                html += 'Exceeded by: <strong>\u20AC' + formatDecimal(w.exceededBy) + '</strong>';
+                html += '</div>';
+            });
+
+            content.innerHTML = html;
+            banner.style.display = '';
+        }
+
+        function hideLimitWarning() {
+            var banner = document.getElementById('limitWarningBanner');
+            banner.style.display = 'none';
+            document.getElementById('limitWarningContent').innerHTML = '';
+        }
+
+        function formatDecimal(value) {
+            return parseFloat(value).toFixed(2);
+        }
+
         // ─── Initialize on page load ──────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
             // Init supplier autocomplete
@@ -732,8 +855,15 @@
                 function() { return categories; },
                 '/ExpenseCategory/Create',
                 categories,
-                function(categoryId) { updateExpenseTypeIndicator(categoryId); }
+                function(categoryId) {
+                    updateExpenseTypeIndicator(categoryId);
+                    debouncedCheckLimits();
+                }
             );
+
+            // Hook amount and total inputs for limit checking
+            document.getElementById('amountInput').addEventListener('input', debouncedCheckLimits);
+            document.getElementById('totalAmountInput').addEventListener('input', debouncedCheckLimits);
 
             onOriginTypeChanged();
         });

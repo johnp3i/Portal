@@ -13,6 +13,7 @@ using Portal.Infrastructure.Services;
 using Portal.Infrastructure.Repositories;
 using Portal.Web.Configuration;
 using Portal.Web.Models.Stripe;
+using Portal.Web.Services.Billing;
 using Portal.Web.Services.Stripe;
 using Xunit;
 using StripeLib = Stripe;
@@ -104,6 +105,8 @@ public class WebhookIdempotencyPropertyTests
         var mockPaymentRepo = new Mock<BillingPaymentRepository>(MockBehavior.Loose, new object[] { null! });
         var mockCustomerRepo = new Mock<StripeCustomerRepository>(MockBehavior.Loose, new object[] { null! });
         var mockProvisioning = new Mock<IProvisioningService>();
+        var mockInvoiceNumberGenerator = new Mock<IInvoiceNumberGenerator>();
+        var mockInvoiceEmailService = new Mock<IInvoiceEmailService>();
         var mockLogger = new Mock<ILogger<WebhookProcessingService>>();
 
         // Configure ExistsByEventIdAsync to always return true (simulating duplicate event)
@@ -139,6 +142,8 @@ public class WebhookIdempotencyPropertyTests
             mockPaymentRepo.Object,
             mockCustomerRepo.Object,
             mockProvisioning.Object,
+            mockInvoiceNumberGenerator.Object,
+            mockInvoiceEmailService.Object,
             membershipDbContext,
             portalDbContext,
             mockLogger.Object);

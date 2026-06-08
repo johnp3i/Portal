@@ -60,4 +60,21 @@ public class CheckoutController : Controller
         ViewData["Description"] = "Your payment was cancelled. You can try again when you're ready.";
         return View();
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Status()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Json(new { provisioned = false });
+        }
+
+        // Check if the user now has a business associated
+        var userManager = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Portal.Infrastructure.Entities.Identity.ApplicationUser>>();
+        var user = await userManager.FindByIdAsync(userId);
+
+        return Json(new { provisioned = user?.BusinessId != null });
+    }
 }

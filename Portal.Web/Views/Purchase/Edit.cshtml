@@ -169,6 +169,16 @@
             </div>
         </div>
 
+        <!-- Limit Warning Banner -->
+        <div id="limitWarningBanner" style="display:none;margin-top:18px;padding:14px 18px;border-radius:10px;background:rgba(200,145,46,0.10);border:1px solid #C8912E;color:#7A5A1A;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:16px;">&#9888;</span>
+                <strong style="color:#C8912E;font-size:13px;letter-spacing:0.2px;">Warning — Advisory Limit Exceeded</strong>
+                <button type="button" onclick="clearLimitWarning()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:#C8912E;padding:2px 6px;border-radius:4px;" title="Dismiss">&times;</button>
+            </div>
+            <div id="limitWarningMessages" style="font-size:13px;line-height:1.6;"></div>
+        </div>
+
         <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">
             <button type="submit" class="btn btn-primary">Save Changes</button>
             <a asp-action="Index" asp-controller="Purchase" class="btn btn-outline">&larr; Back to Purchases</a>
@@ -647,6 +657,82 @@
             clearComputed(document.getElementById('totalAmountInput'));
         }
 
+        // ─── Limit Check (Advisory Spending Warning) ─────────────────────────
+        var _limitCheckTimer = null;
+        var _currentPurchaseId = @Model.Id;
+
+        function checkLimits() {
+            var categoryId = parseInt(document.getElementById('categoryHidden').value);
+            var totalAmount = parseFloat(document.getElementById('totalAmountInput').value) || 0;
+            var invoiceDate = document.getElementById('InvoiceDate').value;
+
+            // Clear warning if no category selected
+            if (!categoryId) {
+                clearLimitWarning();
+                return;
+            }
+
+            // Debounce 300ms
+            if (_limitCheckTimer) clearTimeout(_limitCheckTimer);
+            _limitCheckTimer = setTimeout(function() {
+                performLimitCheck(categoryId, totalAmount, invoiceDate);
+            }, 300);
+        }
+
+        async function performLimitCheck(categoryId, totalAmount, invoiceDate) {
+            try {
+                var response = await fetch('/ExpenseCategoryLimit/CheckLimits', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        expenseCategoryId: categoryId,
+                        totalAmount: totalAmount,
+                        invoiceDate: invoiceDate,
+                        purchaseId: _currentPurchaseId
+                    })
+                });
+                var data = await response.json();
+
+                if (data.hasWarning && data.warnings && data.warnings.length > 0) {
+                    showLimitWarning(data.warnings);
+                } else {
+                    clearLimitWarning();
+                }
+            } catch (e) {
+                // Fail-safe: on any error, clear warning and allow user to continue
+                clearLimitWarning();
+            }
+        }
+
+        function showLimitWarning(warnings) {
+            var banner = document.getElementById('limitWarningBanner');
+            var messagesDiv = document.getElementById('limitWarningMessages');
+            var html = '';
+
+            warnings.forEach(function(w) {
+                var typeLabel = w.limitType === 'annual' ? 'Annual Limit' : 'Period Limit';
+                html += '<div style="margin-bottom:4px;">';
+                html += '<strong>' + typeLabel + ':</strong> ';
+                html += 'Configured \u20AC' + w.configuredLimit.toFixed(2);
+                html += ' &bull; Current total \u20AC' + w.cumulativeTotal.toFixed(2);
+                html += ' &bull; Projected \u20AC' + w.projectedTotal.toFixed(2);
+                html += ' &bull; Exceeded by <strong>\u20AC' + w.exceededBy.toFixed(2) + '</strong>';
+                html += '</div>';
+            });
+
+            messagesDiv.innerHTML = html;
+            banner.style.display = '';
+        }
+
+        function clearLimitWarning() {
+            var banner = document.getElementById('limitWarningBanner');
+            banner.style.display = 'none';
+            document.getElementById('limitWarningMessages').innerHTML = '';
+        }
+
         // ─── Initialize on page load ──────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
             // Init supplier autocomplete
@@ -659,7 +745,7 @@
                 suppliers
             );
 
-            // Init category autocomplete
+            // Init category autocomplete with limit check on selection
             initAutocomplete(
                 document.getElementById('categoryText'),
                 document.getElementById('categoryHidden'),
@@ -667,7 +753,10 @@
                 function() { return categories; },
                 '/ExpenseCategory/Create',
                 categories,
-                function(categoryId) { updateExpenseTypeIndicator(categoryId); }
+                function(categoryId) {
+                    updateExpenseTypeIndicator(categoryId);
+                    checkLimits();
+                }
             );
 
             // Show expense type indicator for pre-selected category on edit
@@ -677,6 +766,16 @@
             }
 
             onOriginTypeChanged();
+
+            // Hook amount and total input events for limit check
+            document.getElementById('amountInput').addEventListener('input', function() { checkLimits(); });
+            document.getElementById('vatAmountInput').addEventListener('input', function() { checkLimits(); });
+            document.getElementById('totalAmountInput').addEventListener('input', function() { checkLimits(); });
+
+            // Initial limit check on page load if category is already set
+            if (preSelectedCategoryId) {
+                checkLimits();
+            }
         });
     </script>
 }

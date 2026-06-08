@@ -197,7 +197,9 @@
     <div class="canvas-panel">
         <canvas id="particles"></canvas>
         <div class="canvas-brand">
-            <img src="/images/favicon.png" alt="3 Inventors" />
+            <a href="/" style="display:inline-block;">
+                <img src="/images/favicon.png" alt="3 Inventors" />
+            </a>
             <div class="tagline">Business Management Platform</div>
             <div style="margin-top:12px;font-size:18px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.85);">Simple. Clear. Reliable.</div>
         </div>
@@ -230,7 +232,13 @@
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password" />
+                    <div style="position:relative;">
+                        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password" style="padding-right:48px;" />
+                        <button type="button" id="togglePassword" aria-label="Show password" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#94a3b8;display:flex;align-items:center;">
+                            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg id="eyeOffIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-login">Sign In</button>
@@ -339,6 +347,24 @@
         window.addEventListener('resize', resize);
         init();
         animate();
+    })();
+    </script>
+
+    <!-- Password Toggle -->
+    <script>
+    (function() {
+        const toggle = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+        toggle.addEventListener('click', function() {
+            const isPassword = password.type === 'password';
+            password.type = isPassword ? 'text' : 'password';
+            eyeIcon.style.display = isPassword ? 'none' : 'block';
+            eyeOffIcon.style.display = isPassword ? 'block' : 'none';
+            toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        });
     })();
     </script>
 

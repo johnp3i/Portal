@@ -1,7 +1,10 @@
+using Microsoft.Extensions.Options;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Web.Configuration;
 using Portal.Web.Models.Stripe;
+using Portal.Web.Services.Billing;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 
@@ -19,6 +22,8 @@ public class BillingService : IBillingService
     private readonly IPlanRepository _planRepository;
     private readonly IBusinessService _businessService;
     private readonly IViewRenderService _viewRenderService;
+    private readonly IVatCalculationService _vatCalculationService;
+    private readonly InvoiceSettings _invoiceSettings;
     private readonly ILogger<BillingService> _logger;
 
     public BillingService(
@@ -28,6 +33,8 @@ public class BillingService : IBillingService
         IPlanRepository planRepository,
         IBusinessService businessService,
         IViewRenderService viewRenderService,
+        IVatCalculationService vatCalculationService,
+        IOptions<InvoiceSettings> invoiceSettings,
         ILogger<BillingService> logger)
     {
         _subscriptionRepository = subscriptionRepository;
@@ -36,6 +43,8 @@ public class BillingService : IBillingService
         _planRepository = planRepository;
         _businessService = businessService;
         _viewRenderService = viewRenderService;
+        _vatCalculationService = vatCalculationService;
+        _invoiceSettings = invoiceSettings.Value;
         _logger = logger;
     }
 
@@ -153,16 +162,29 @@ public class BillingService : IBillingService
             var planName = plan?.Name ?? "Subscription";
             var unitPrice = invoice.AmountEur;
 
+            // Use persisted InvoiceNumber; fall back to legacy format for NULL records
+            var invoiceNumber = invoice.InvoiceNumber ?? $"INV-{invoice.Id:D6}";
+
+            // Calculate VAT based on customer country and VAT registration
+            var vatResult = _vatCalculationService.Calculate(
+                unitPrice,
+                profile?.Country,
+                profile?.VatRegistrationNumber);
+
             // Build the PDF model
             var pdfModel = new BillingInvoicePdfModel
             {
-                // 3 Inventors company header
-                CompanyName = "3 Inventors",
-                CompanyAddress = "3 Inventors Ltd",
+                // Issuer details from InvoiceSettings
+                CompanyName = _invoiceSettings.CompanyName,
+                CompanyAddress = _invoiceSettings.CompanyAddress,
+                CompanyCountryCode = _invoiceSettings.CompanyCountryCode,
+                CompanyVatNumber = _invoiceSettings.CompanyVatNumber,
+                CompanyEmail = _invoiceSettings.CompanyEmail,
 
                 // Subscribing business details
                 BusinessName = business?.Name ?? string.Empty,
                 VatNumber = profile?.VatRegistrationNumber,
+                SubscriberVatNumber = profile?.VatRegistrationNumber,
                 AddressLine1 = profile?.AddressLine1,
                 AddressLine2 = profile?.AddressLine2,
                 City = profile?.City,
@@ -170,7 +192,7 @@ public class BillingService : IBillingService
                 Country = profile?.Country,
 
                 // Invoice details
-                InvoiceNumber = $"INV-{invoice.Id:D6}",
+                InvoiceNumber = invoiceNumber,
                 InvoiceDate = invoice.CreatedAtUtc,
                 PeriodStart = invoice.PeriodStart,
                 PeriodEnd = invoice.PeriodEnd,
@@ -189,8 +211,11 @@ public class BillingService : IBillingService
 
                 // Totals
                 Subtotal = unitPrice,
-                VatAmount = 0m,
-                Total = invoice.AmountEur,
+                VatRate = vatResult.VatRate,
+                VatAmount = vatResult.VatAmount,
+                Total = unitPrice + vatResult.VatAmount,
+                IsReverseCharge = vatResult.IsReverseCharge,
+                ReverseChargeNotation = vatResult.ReverseChargeNotation,
 
                 // Payment info
                 PaymentMethod = payment?.Method,

@@ -162,6 +162,39 @@
         letter-spacing: 0.2px;
     }
 
+    /* Limit warning per row */
+    .row-limit-warning {
+        background: rgba(200,145,46,0.08);
+        border: 1px solid #C8912E;
+        border-radius: 8px;
+        padding: 6px 10px;
+        margin-top: 4px;
+        font-size: 11px;
+        color: #7A5A1A;
+        line-height: 1.5;
+        display: none;
+        position: relative;
+    }
+    .row-limit-warning strong {
+        color: #C8912E;
+    }
+    .row-limit-warning .limit-dismiss {
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        color: #C8912E;
+        line-height: 1;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+    .row-limit-warning .limit-dismiss:hover {
+        background: rgba(200,145,46,0.15);
+    }
+
     /* Autocomplete styles */
     .autocomplete-wrapper {
         position: relative;
@@ -185,11 +218,8 @@
         color: #C8912E;
     }
     .autocomplete-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        z-index: 1000;
+        position: fixed;
+        z-index: 9999;
         background: #fff;
         border: 1px solid rgba(13,94,166,.15);
         border-radius: 10px;
@@ -269,7 +299,7 @@
     function initAutocomplete(input, hiddenInput, statusEl, getItems, createEndpoint, itemsArrayRef, onSelectCallback) {
         var dropdown = document.createElement('div');
         dropdown.className = 'autocomplete-dropdown';
-        input.parentNode.appendChild(dropdown);
+        document.body.appendChild(dropdown);
 
         var highlightedIndex = -1;
         var currentItems = [];
@@ -301,6 +331,7 @@
 
             if (filtered.length === 0 && !showCreate) {
                 dropdown.innerHTML = '<div class="ac-empty">No matches found</div>';
+                positionDropdown();
                 dropdown.classList.add('open');
                 return;
             }
@@ -324,7 +355,15 @@
                 dropdown.appendChild(createDiv);
             }
 
+            positionDropdown();
             dropdown.classList.add('open');
+        }
+
+        function positionDropdown() {
+            var rect = input.getBoundingClientRect();
+            dropdown.style.top = (rect.bottom + 4) + 'px';
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.width = rect.width + 'px';
         }
 
         function selectItem(id, name) {
@@ -616,7 +655,7 @@
             '<td><input type="date" class="cell-date" value="' + dateVal + '" data-field="InvoiceDate" /></td>' +
             '<td><input type="text" class="cell-invoice" value="' + escapeHtml(invoiceNumVal) + '" placeholder="INV-001" maxlength="100" data-field="InvoiceNumber" /></td>' +
             '<td><div class="autocomplete-wrapper"><input type="text" class="cell-supplier-text" value="' + escapeHtml(supplierName) + '" placeholder="Type supplier..." autocomplete="off" /><input type="hidden" class="cell-supplier" value="' + supplierId + '" data-field="SupplierId" /><span class="ac-status"></span></div></td>' +
-            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-category-text" value="' + escapeHtml(categoryName) + '" placeholder="Type category..." autocomplete="off" /><input type="hidden" class="cell-category" value="' + categoryId + '" data-field="ExpenseCategoryId" /><span class="ac-status"></span></div><span class="expense-type-indicator" style="display:none;"></span></td>' +
+            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-category-text" value="' + escapeHtml(categoryName) + '" placeholder="Type category..." autocomplete="off" /><input type="hidden" class="cell-category" value="' + categoryId + '" data-field="ExpenseCategoryId" /><span class="ac-status"></span></div><span class="expense-type-indicator" style="display:none;"></span><div class="row-limit-warning"></div></td>' +
             '<td><input type="text" class="cell-desc" value="' + escapeHtml(descVal) + '" placeholder="Description..." maxlength="500" data-field="Description" /></td>' +
             '<td><input type="number" class="cell-amount" value="' + amtVal + '" step="0.01" min="0.01" placeholder="0.00" data-field="AmountExcludingVat" oninput="onAmountEdit(this)" /></td>' +
             '<td><input type="number" class="cell-vat" value="' + vatDisplay + '" step="0.01" min="0" placeholder="0.00" data-field="VatAmount"' + vatDisabled + ' oninput="onVatEdit(this)" /></td>' +
@@ -646,7 +685,7 @@
             function() { return categories; },
             '/ExpenseCategory/Create',
             categories,
-            function() { updateExpenseTypeIndicator(tr); }
+            function() { updateExpenseTypeIndicator(tr); debouncedCheckRowLimits(tr); }
         );
 
         // Set initial expense type indicator if category is prefilled
@@ -1032,6 +1071,68 @@
         if (tr) {
             computeRowTotal(tr);
             updateSummary();
+        }
+    });
+
+    // ─── Spending Limit Check (Advisory, per-row) ──────────────────────────
+    var _limitTimers = {};
+
+    function debouncedCheckRowLimits(tr) {
+        var rowId = tr.getAttribute('data-row-id');
+        if (_limitTimers[rowId]) clearTimeout(_limitTimers[rowId]);
+        _limitTimers[rowId] = setTimeout(function() { checkRowLimits(tr); }, 300);
+    }
+
+    function checkRowLimits(tr) {
+        var categoryId = parseInt(tr.querySelector('.cell-category').value);
+        var totalAmount = parseFloat(tr.querySelector('.cell-total').value) || 0;
+        var invoiceDate = tr.querySelector('.cell-date').value;
+        var warningDiv = tr.querySelector('.row-limit-warning');
+
+        if (!categoryId || totalAmount <= 0 || !invoiceDate) {
+            warningDiv.style.display = 'none';
+            warningDiv.innerHTML = '';
+            return;
+        }
+
+        fetch('/ExpenseCategoryLimit/CheckLimits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                expenseCategoryId: categoryId,
+                totalAmount: totalAmount,
+                invoiceDate: invoiceDate,
+                purchaseId: null
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.hasWarning && data.warnings && data.warnings.length > 0) {
+                var html = '<button type="button" class="limit-dismiss" onclick="this.parentNode.style.display=\'none\'" title="Dismiss">&times;</button>';
+                html += '<strong>⚠ Warning:</strong> ';
+                data.warnings.forEach(function(w, i) {
+                    var label = w.limitType === 'annual' ? 'Annual' : 'Period';
+                    html += label + ' limit €' + w.configuredLimit.toFixed(2) + ' exceeded by €' + w.exceededBy.toFixed(2);
+                    if (i < data.warnings.length - 1) html += ' · ';
+                });
+                warningDiv.innerHTML = html;
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+                warningDiv.innerHTML = '';
+            }
+        })
+        .catch(function() {
+            warningDiv.style.display = 'none';
+            warningDiv.innerHTML = '';
+        });
+    }
+
+    // Listen for amount/total/date/vat changes to trigger limit checks
+    document.getElementById('bulkGridBody').addEventListener('input', function(e) {
+        var tr = e.target.closest('tr');
+        if (tr && (e.target.classList.contains('cell-amount') || e.target.classList.contains('cell-total') || e.target.classList.contains('cell-date') || e.target.classList.contains('cell-vat'))) {
+            debouncedCheckRowLimits(tr);
         }
     });
 

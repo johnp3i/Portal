@@ -51,6 +51,7 @@ public class PortalDbContext : DbContext
     public DbSet<PurchaseOriginType> PurchaseOriginTypes { get; set; } = null!;
     public DbSet<ExpenseType> ExpenseTypes { get; set; } = null!;
     public DbSet<PurchaseType> PurchaseTypes { get; set; } = null!;
+    public DbSet<ExpenseCategoryLimit> ExpenseCategoryLimits { get; set; } = null!;
 
     // VAT schema
     public DbSet<VatSubmissionPeriod> VatSubmissionPeriods { get; set; } = null!;
@@ -85,6 +86,7 @@ public class PortalDbContext : DbContext
     public DbSet<Subscription> Subscriptions { get; set; } = null!;
     public DbSet<BillingInvoice> BillingInvoices { get; set; } = null!;
     public DbSet<BillingPayment> BillingPayments { get; set; } = null!;
+    public DbSet<InvoiceSequence> InvoiceSequences { get; set; } = null!;
 
     // Stripe schema
     public DbSet<StripeCustomer> StripeCustomers { get; set; } = null!;
@@ -121,6 +123,7 @@ public class PortalDbContext : DbContext
         ConfigureExpenseType(modelBuilder);
         ConfigurePurchaseType(modelBuilder);
         ConfigurePurchase(modelBuilder);
+        ConfigureExpenseCategoryLimit(modelBuilder);
         ConfigureVatSubmissionPeriod(modelBuilder);
         ConfigureVatSubmission(modelBuilder);
         ConfigureAuditLog(modelBuilder);
@@ -141,6 +144,7 @@ public class PortalDbContext : DbContext
         ConfigureSubscription(modelBuilder);
         ConfigureBillingInvoice(modelBuilder);
         ConfigureBillingPayment(modelBuilder);
+        ConfigureInvoiceSequence(modelBuilder);
         ConfigureStripeCustomer(modelBuilder);
         ConfigureWebhookEvent(modelBuilder);
         ConfigurePromoCode(modelBuilder);
@@ -948,6 +952,43 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureExpenseCategoryLimit(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ExpenseCategoryLimit>(entity =>
+        {
+            entity.ToTable("ExpenseCategoryLimit", "purchase");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ExpenseCategory)
+                .WithMany()
+                .HasForeignKey(e => e.ExpenseCategoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_ExpenseCategoryLimit_BusinessId");
+
+            entity.HasIndex(e => new { e.BusinessId, e.ExpenseCategoryId })
+                .IsUnique()
+                .HasDatabaseName("UX_ExpenseCategoryLimit_BusinessId_ExpenseCategoryId");
+
+            entity.Property(e => e.AnnualLimitEur)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.PeriodLimitEur)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
     private static void ConfigureVatSubmissionPeriod(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<VatSubmissionPeriod>(entity =>
@@ -1417,6 +1458,7 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
             entity.Property(e => e.DisplayOrder).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.StripeProductId).HasMaxLength(100);
             entity.Property(e => e.StripePriceId).HasMaxLength(100);
 
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
@@ -1559,6 +1601,18 @@ public class PortalDbContext : DbContext
                 "CK_BillingInvoice_Status",
                 "[Status] IN ('draft','open','paid','void','uncollectible')"));
 
+            entity.Property(e => e.InvoiceNumber)
+                .HasMaxLength(50);
+
+            entity.HasIndex(e => e.InvoiceNumber)
+                .IsUnique()
+                .HasDatabaseName("UX_Invoice_InvoiceNumber")
+                .HasFilter("[InvoiceNumber] IS NOT NULL");
+
+            entity.Property(e => e.IsEmailSent)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
@@ -1595,6 +1649,31 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.StripePaymentIntentId)
                 .HasMaxLength(100);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureInvoiceSequence(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<InvoiceSequence>(entity =>
+        {
+            entity.ToTable("InvoiceSequence", "billing");
+
+            entity.HasKey(e => e.Year);
+
+            entity.Property(e => e.Year)
+                .ValueGeneratedNever();
+
+            entity.Property(e => e.LastNumber)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_InvoiceSequence_LastNumber",
+                "[LastNumber] >= 0"));
 
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
@@ -1882,6 +1961,9 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<Purchase>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<ExpenseCategoryLimit>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<VatSubmissionPeriod>()

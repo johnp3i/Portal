@@ -6,14 +6,18 @@ namespace Portal.Web.Models.Stripe;
 /// </summary>
 public class BillingInvoicePdfModel
 {
-    // 3 Inventors company header
+    // 3 Inventors company header (issuer details from InvoiceSettings)
     public string CompanyName { get; set; } = "3 Inventors";
     public string CompanyAddress { get; set; } = "3 Inventors Ltd";
+    public string CompanyCountryCode { get; set; } = null!;
+    public string CompanyVatNumber { get; set; } = null!;
+    public string CompanyEmail { get; set; } = null!;
     public string? CompanyLogoUrl { get; set; }
 
     // Subscribing business details
     public string BusinessName { get; set; } = string.Empty;
     public string? VatNumber { get; set; }
+    public string? SubscriberVatNumber { get; set; }
     public string? AddressLine1 { get; set; }
     public string? AddressLine2 { get; set; }
     public string? City { get; set; }
@@ -31,8 +35,11 @@ public class BillingInvoicePdfModel
 
     // Totals
     public decimal Subtotal { get; set; }
+    public decimal VatRate { get; set; }
     public decimal VatAmount { get; set; }
     public decimal Total { get; set; }
+    public bool IsReverseCharge { get; set; }
+    public string? ReverseChargeNotation { get; set; }
 
     // Payment info
     public string? PaymentMethod { get; set; }

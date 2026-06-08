@@ -7,5 +7,7 @@ namespace Portal.Web.Configuration
         public string SecretKey { get; set; } = null!;
         public string PublishableKey { get; set; } = null!;
         public string WebhookSigningSecret { get; set; } = null!;
+        public string? DefaultTaxRateId { get; set; }
+        public string? BaseUrl { get; set; }
     }
 }

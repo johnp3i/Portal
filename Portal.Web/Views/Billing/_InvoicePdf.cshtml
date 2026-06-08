@@ -40,6 +40,14 @@
             letter-spacing: -0.02em;
             color: var(--blue);
         }
+        .invoice-number-header {
+            font-family: 'Manrope', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 4px;
+            letter-spacing: 0.02em;
+        }
 
         /* Header */
         .header {
@@ -192,6 +200,18 @@
             font-family: 'Manrope', sans-serif;
         }
 
+        /* Reverse Charge Notice */
+        .reverse-charge-notice {
+            margin-bottom: 24px;
+            padding: 12px 18px;
+            background: #FFF8E6;
+            border: 1px solid #F5DFA0;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #7A5C00;
+        }
+
         /* Payment Info */
         .payment-info {
             padding: 14px 18px;
@@ -260,7 +280,7 @@
 <body>
 <div class="page">
 
-    <!-- Company Header -->
+    <!-- Company Header with Invoice Number -->
     <div class="header">
         <div class="header-left">
             @if (!string.IsNullOrWhiteSpace(Model.CompanyLogoUrl))
@@ -269,27 +289,37 @@
             }
             <div>
                 <h1>INVOICE</h1>
+                <div class="invoice-number-header">@Model.InvoiceNumber</div>
             </div>
         </div>
         <div class="header-right">
             <div class="company-name">@Model.CompanyName</div>
             <div>@Model.CompanyAddress</div>
+            <div>@Model.CompanyCountryCode</div>
+            <div>VAT: @Model.CompanyVatNumber</div>
+            <div>@Model.CompanyEmail</div>
         </div>
     </div>
 
     <!-- From / To Parties -->
     <div class="parties">
         <div class="party-block">
-            <div class="party-label">From</div>
+            <div class="party-label">From (Issuer)</div>
             <div class="party-name">@Model.CompanyName</div>
             <div class="party-detail">@Model.CompanyAddress</div>
+            <div class="party-detail">@Model.CompanyCountryCode</div>
+            <div class="party-detail">VAT: @Model.CompanyVatNumber</div>
+            <div class="party-detail">@Model.CompanyEmail</div>
         </div>
         <div class="party-block" style="text-align:right;">
-            <div class="party-label">Bill To</div>
+            <div class="party-label">Bill To (Subscriber)</div>
             <div class="party-name">@Model.BusinessName</div>
-            @if (!string.IsNullOrWhiteSpace(Model.VatNumber))
+            @{
+                var subscriberVat = Model.SubscriberVatNumber ?? Model.VatNumber;
+            }
+            @if (!string.IsNullOrWhiteSpace(subscriberVat))
             {
-                <div class="party-detail">VAT: @Model.VatNumber</div>
+                <div class="party-detail">VAT: @subscriberVat</div>
             }
             @if (!string.IsNullOrWhiteSpace(Model.AddressLine1))
             {
@@ -365,19 +395,24 @@
                 <span class="totals-label">Subtotal</span>
                 <span class="totals-value">€@Model.Subtotal.ToString("F2")</span>
             </div>
-            @if (Model.VatAmount > 0)
-            {
-                <div class="totals-row">
-                    <span class="totals-label">VAT</span>
-                    <span class="totals-value">€@Model.VatAmount.ToString("F2")</span>
-                </div>
-            }
+            <div class="totals-row">
+                <span class="totals-label">VAT (@Model.VatRate.ToString("0")%)</span>
+                <span class="totals-value">€@Model.VatAmount.ToString("F2")</span>
+            </div>
             <div class="totals-row total-final">
                 <span class="totals-label">Total</span>
                 <span class="totals-value">€@Model.Total.ToString("F2")</span>
             </div>
         </div>
     </div>
+
+    <!-- Reverse Charge Notation -->
+    @if (Model.IsReverseCharge && !string.IsNullOrWhiteSpace(Model.ReverseChargeNotation))
+    {
+        <div class="reverse-charge-notice">
+            @Model.ReverseChargeNotation
+        </div>
+    }
 
     <!-- Payment Information -->
     @if (Model.PaymentDate.HasValue || !string.IsNullOrWhiteSpace(Model.PaymentMethod))

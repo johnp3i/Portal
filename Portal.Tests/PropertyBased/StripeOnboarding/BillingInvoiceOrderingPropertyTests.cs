@@ -1,13 +1,16 @@
 using FsCheck;
 using FsCheck.Xunit;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Portal.Infrastructure.Entities.Billing;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Web.Configuration;
 using Portal.Web.Models.Stripe;
 using Portal.Web.Services;
+using Portal.Web.Services.Billing;
 using Portal.Web.Services.Stripe;
 using Xunit;
 
@@ -40,6 +43,16 @@ public class BillingInvoiceOrderingPropertyTests
         var planRepoMock = new Mock<IPlanRepository>();
         var businessServiceMock = new Mock<IBusinessService>();
         var viewRenderServiceMock = new Mock<IViewRenderService>();
+        var vatCalculationServiceMock = new Mock<IVatCalculationService>();
+        var invoiceSettingsMock = Options.Create(new InvoiceSettings
+        {
+            CompanyName = "3 Inventors",
+            CompanyAddress = "Nicosia, Cyprus",
+            CompanyCountryCode = "CY",
+            CompanyVatNumber = "10439718W",
+            CompanyEmail = "invoices@3inventors.com",
+            PlatformCode = "BILI"
+        });
         var loggerMock = new Mock<ILogger<BillingService>>();
 
         billingInvoiceRepoMock
@@ -53,6 +66,8 @@ public class BillingInvoiceOrderingPropertyTests
             planRepoMock.Object,
             businessServiceMock.Object,
             viewRenderServiceMock.Object,
+            vatCalculationServiceMock.Object,
+            invoiceSettingsMock,
             loggerMock.Object);
     }
 

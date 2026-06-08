@@ -99,7 +99,10 @@ public class CheckoutService : ICheckoutService
                     new SessionLineItemOptions
                     {
                         Price = plan.StripePriceId,
-                        Quantity = 1
+                        Quantity = 1,
+                        TaxRates = string.IsNullOrWhiteSpace(_stripeSettings.DefaultTaxRateId)
+                            ? null
+                            : new List<string> { _stripeSettings.DefaultTaxRateId }
                     }
                 },
                 SuccessUrl = successUrl,
@@ -108,11 +111,12 @@ public class CheckoutService : ICheckoutService
                 Metadata = new Dictionary<string, string>
                 {
                     { "PendingRegistrationId", pendingRegistration.Id.ToString() },
-                    { "UserId", userId }
+                    { "UserId", userId },
+                    { "PlanId", pendingRegistration.PlanId.ToString() }
                 }
             };
 
-            var sessionService = new SessionService();
+            var sessionService = new SessionService(new StripeClient(_stripeSettings.SecretKey));
             var session = await sessionService.CreateAsync(sessionOptions);
 
             _logger.LogInformation(

@@ -24,6 +24,8 @@ public class Plan
 
     public string? Description { get; set; }
 
+    public string? StripeProductId { get; set; }
+
     public string? StripePriceId { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }

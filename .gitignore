@@ -49,6 +49,7 @@ $RECYCLE.BIN/
 ## Environment / Secrets
 *.env
 appsettings.Development.json
+appsettings.Production.json
 appsettings.Local.json
 
 ## EF Core Migrations (keep tracked, but ignore designer temp files)

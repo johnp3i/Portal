@@ -137,6 +137,13 @@
             <span class="nav-icon">@Html.Raw(categoryIcon)</span>
             <span class="nav-text">Categories</span>
         </a>
+        @{
+            var isLimitsActive = currentController.Equals("ExpenseCategoryLimit", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-sub-item @(isLimitsActive ? "active" : "")" asp-controller="ExpenseCategoryLimit" asp-action="Index">
+            <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+            <span class="nav-text">Spending Limits</span>
+        </a>
     </div>
 }
 

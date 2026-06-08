@@ -19,6 +19,12 @@ namespace Portal.Web.Extensions
             services.Configure<WebsiteSettings>(configuration.GetSection(WebsiteSettings.SectionName));
             services.AddSingleton(s => s.GetRequiredService<IOptions<WebsiteSettings>>().Value);
         }
+
+        public static void ConfigureInvoiceSettings(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<InvoiceSettings>(configuration.GetSection(InvoiceSettings.SectionName));
+            services.AddSingleton(s => s.GetRequiredService<IOptions<InvoiceSettings>>().Value);
+        }
         public static void ConfigureEmailAccounts(this IServiceCollection services, IConfiguration configuration)
         {
             var emailAccounts = new List<EmailAccount>();
@@ -41,7 +47,12 @@ namespace Portal.Web.Extensions
             var skipValidation = Environment.GetEnvironmentVariable("SKIP_STRIPE_VALIDATION") == "true";
 
             if (skipValidation)
+            {
+                // Still set the API key if available, even when skipping validation
+                if (stripeSettings != null && !string.IsNullOrWhiteSpace(stripeSettings.SecretKey))
+                    StripeConfiguration.ApiKey = stripeSettings.SecretKey;
                 return;
+            }
 
             var missingKeys = new List<string>();
 

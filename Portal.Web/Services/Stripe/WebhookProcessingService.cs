@@ -7,6 +7,7 @@ using Portal.Infrastructure.Entities.Stripe;
 using Portal.Infrastructure.Repositories;
 using Portal.Web.Configuration;
 using Portal.Web.Models.Stripe;
+using Portal.Web.Services.Billing;
 using StripeLib = Stripe;
 
 namespace Portal.Web.Services.Stripe;
@@ -24,6 +25,8 @@ public class WebhookProcessingService : IWebhookProcessingService
     private readonly BillingPaymentRepository _billingPaymentRepository;
     private readonly StripeCustomerRepository _stripeCustomerRepository;
     private readonly IProvisioningService _provisioningService;
+    private readonly IInvoiceNumberGenerator _invoiceNumberGenerator;
+    private readonly IInvoiceEmailService _invoiceEmailService;
     private readonly MembershipDbContext _membershipDbContext;
     private readonly PortalDbContext _portalDbContext;
     private readonly ILogger<WebhookProcessingService> _logger;
@@ -36,6 +39,8 @@ public class WebhookProcessingService : IWebhookProcessingService
         BillingPaymentRepository billingPaymentRepository,
         StripeCustomerRepository stripeCustomerRepository,
         IProvisioningService provisioningService,
+        IInvoiceNumberGenerator invoiceNumberGenerator,
+        IInvoiceEmailService invoiceEmailService,
         MembershipDbContext membershipDbContext,
         PortalDbContext portalDbContext,
         ILogger<WebhookProcessingService> logger)
@@ -47,6 +52,8 @@ public class WebhookProcessingService : IWebhookProcessingService
         _billingPaymentRepository = billingPaymentRepository;
         _stripeCustomerRepository = stripeCustomerRepository;
         _provisioningService = provisioningService;
+        _invoiceNumberGenerator = invoiceNumberGenerator;
+        _invoiceEmailService = invoiceEmailService;
         _membershipDbContext = membershipDbContext;
         _portalDbContext = portalDbContext;
         _logger = logger;
@@ -156,6 +163,17 @@ public class WebhookProcessingService : IWebhookProcessingService
         // Extract plan from metadata or subscription
         var planIdStr = metadata?.ContainsKey("PlanId") == true ? metadata["PlanId"] : null;
         int.TryParse(planIdStr, out var planId);
+
+        // Fallback: resolve PlanId from PendingRegistration if not in metadata
+        if (planId == 0)
+        {
+            var pendingReg = await _membershipDbContext.PendingRegistrations
+                .FirstOrDefaultAsync(pr => pr.Id == pendingRegistrationId);
+            if (pendingReg != null)
+            {
+                planId = pendingReg.PlanId;
+            }
+        }
 
         // Extract amounts
         var amountTotal = session.AmountTotal ?? 0L;
@@ -348,6 +366,8 @@ public class WebhookProcessingService : IWebhookProcessingService
             return;
         }
 
+        int billingInvoiceId;
+
         await using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
         try
         {
@@ -362,9 +382,12 @@ public class WebhookProcessingService : IWebhookProcessingService
                 "active",
                 subscription.PlanId);
 
-            // Record the billing invoice
+            // Generate invoice number (atomic sequence increment within this transaction)
+            var invoiceNumber = await _invoiceNumberGenerator.GenerateNextAsync(DateTime.UtcNow);
+
+            // Record the billing invoice with InvoiceNumber
             var amountEur = invoice.AmountPaid / 100m;
-            var invoiceId = await _billingInvoiceRepository.InsertAsync(new BillingInvoice
+            billingInvoiceId = await _billingInvoiceRepository.InsertAsync(new BillingInvoice
             {
                 BusinessId = stripeCustomer.BusinessId,
                 StripeInvoiceId = invoice.Id,
@@ -373,13 +396,18 @@ public class WebhookProcessingService : IWebhookProcessingService
                 PeriodEnd = periodEnd,
                 Status = "paid",
                 PaidAtUtc = DateTime.UtcNow,
+                InvoiceNumber = invoiceNumber,
                 CreatedAtUtc = DateTime.UtcNow
             });
+
+            _logger.LogInformation(
+                "Invoice number generated successfully. InvoiceNumber={InvoiceNumber}, BusinessId={BusinessId}, InvoiceId={InvoiceId}",
+                invoiceNumber, stripeCustomer.BusinessId, billingInvoiceId);
 
             // Record the payment
             await _billingPaymentRepository.InsertAsync(new BillingPayment
             {
-                InvoiceId = invoiceId,
+                InvoiceId = billingInvoiceId,
                 AmountEur = amountEur,
                 Method = "stripe",
                 PaidAtUtc = DateTime.UtcNow,
@@ -403,6 +431,21 @@ public class WebhookProcessingService : IWebhookProcessingService
             await transaction.RollbackAsync();
             throw;
         }
+
+        // Fire-and-forget: send invoice email notification after transaction commit
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _invoiceEmailService.SendInvoiceNotificationAsync(billingInvoiceId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Failed to send invoice notification email (fire-and-forget). BillingInvoiceId={BillingInvoiceId}",
+                    billingInvoiceId);
+            }
+        });
     }
 
     private async Task HandleInvoicePaymentFailed(StripeLib.Event stripeEvent, string eventId, string eventType)

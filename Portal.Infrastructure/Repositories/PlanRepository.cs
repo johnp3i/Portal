@@ -19,7 +19,8 @@ public class PlanRepository : GenericStoredProcedureRepository<Plan>, IPlanRepos
                 SELECT [Plan].[Id], [Plan].[Name], [Plan].[Slug], [Plan].[MonthlyPriceEur],
                        [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[IsActive],
                        [Plan].[DisplayOrder], [Plan].[Description],
-                       [Plan].[StripePriceId], [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
+                       [Plan].[StripeProductId], [Plan].[StripePriceId],
+                       [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
                 FROM [dbo].[Plan]
                 WHERE [Plan].[Slug] = @Slug";
 
@@ -40,7 +41,8 @@ public class PlanRepository : GenericStoredProcedureRepository<Plan>, IPlanRepos
                 SELECT [Plan].[Id], [Plan].[Name], [Plan].[Slug], [Plan].[MonthlyPriceEur],
                        [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[IsActive],
                        [Plan].[DisplayOrder], [Plan].[Description],
-                       [Plan].[StripePriceId], [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
+                       [Plan].[StripeProductId], [Plan].[StripePriceId],
+                       [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
                 FROM [dbo].[Plan]
                 WHERE [Plan].[Id] = @Id";
 
@@ -61,7 +63,8 @@ public class PlanRepository : GenericStoredProcedureRepository<Plan>, IPlanRepos
                 SELECT [Plan].[Id], [Plan].[Name], [Plan].[Slug], [Plan].[MonthlyPriceEur],
                        [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[IsActive],
                        [Plan].[DisplayOrder], [Plan].[Description],
-                       [Plan].[StripePriceId], [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
+                       [Plan].[StripeProductId], [Plan].[StripePriceId],
+                       [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
                 FROM [dbo].[Plan]
                 WHERE [Plan].[IsActive] = 1
                 ORDER BY [Plan].[DisplayOrder]";

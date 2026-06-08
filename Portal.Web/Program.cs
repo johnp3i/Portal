@@ -13,6 +13,7 @@ using Portal.Web.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
 using Portal.Web.Middleware;
+using Portal.Web.Services.Billing;
 using Portal.Web.Services.Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,6 +77,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 // --- Application Services ---
 builder.Services.AddHttpContextAccessor();
 builder.Services.ConfigureWebsiteSettings(builder.Configuration);
+builder.Services.ConfigureInvoiceSettings(builder.Configuration);
 builder.Services.ConfigureEmailAccounts(builder.Configuration);
 builder.Services.ConfigureEmail();
 
@@ -87,6 +89,12 @@ builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 builder.Services.AddScoped<ISetupWizardService, SetupWizardService>();
 builder.Services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
+builder.Services.AddScoped<IInvoiceSequenceRepository>(sp =>
+    new InvoiceSequenceRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IInvoiceNumberGenerator, InvoiceNumberGenerator>();
+builder.Services.AddScoped<IVatCalculationService, VatCalculationService>();
+builder.Services.AddScoped<IInvoiceEmailService, InvoiceEmailService>();
+builder.Services.AddScoped<IInvoiceBackfillService, InvoiceBackfillService>();
 builder.Services.AddScoped<SubscriptionRepository>(sp =>
     new SubscriptionRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<BillingInvoiceRepository>(sp =>
@@ -171,10 +179,13 @@ builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<ISupplierDashboardService, SupplierDashboardService>();
 builder.Services.AddScoped<ExpenseCategoryRepository>(sp =>
     new ExpenseCategoryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ExpenseCategoryLimitRepository>(sp =>
+    new ExpenseCategoryLimitRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<PurchaseRepository>(sp =>
     new PurchaseRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
+builder.Services.AddScoped<IExpenseCategoryLimitService, ExpenseCategoryLimitService>();
 builder.Services.AddScoped<ICsvImportService, CsvImportService>();
 builder.Services.AddScoped<VatSubmissionPeriodRepository>(sp =>
     new VatSubmissionPeriodRepository(sp.GetRequiredService<PortalDbContext>()));

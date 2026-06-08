@@ -212,4 +212,79 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
             throw;
         }
     }
+
+    public virtual async Task<decimal> GetAnnualSpendingAsync(int businessId, int expenseCategoryId, int year, int? excludePurchaseId)
+    {
+        try
+        {
+            var sql = @"
+                SELECT ISNULL(SUM([purchase].[Purchase].[TotalAmount]), 0)
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[IsCancelled] = 0
+                  AND [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[ExpenseCategoryId] = @ExpenseCategoryId
+                  AND YEAR([purchase].[Purchase].[InvoiceDate]) = @Year";
+
+            var parameters = new List<SqlParameter>
+            {
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@ExpenseCategoryId", expenseCategoryId),
+                new SqlParameter("@Year", year)
+            };
+
+            if (excludePurchaseId.HasValue)
+            {
+                sql += " AND [purchase].[Purchase].[Id] != @ExcludePurchaseId";
+                parameters.Add(new SqlParameter("@ExcludePurchaseId", excludePurchaseId.Value));
+            }
+
+            var result = await _context.Database
+                .SqlQueryRaw<decimal>(sql, parameters.ToArray())
+                .ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<decimal> GetPeriodSpendingAsync(int businessId, int expenseCategoryId, DateOnly periodStart, DateOnly periodEnd, int? excludePurchaseId)
+    {
+        try
+        {
+            var sql = @"
+                SELECT ISNULL(SUM([purchase].[Purchase].[TotalAmount]), 0)
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[IsCancelled] = 0
+                  AND [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[ExpenseCategoryId] = @ExpenseCategoryId
+                  AND [purchase].[Purchase].[InvoiceDate] BETWEEN @PeriodStart AND @PeriodEnd";
+
+            var parameters = new List<SqlParameter>
+            {
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@ExpenseCategoryId", expenseCategoryId),
+                new SqlParameter("@PeriodStart", periodStart),
+                new SqlParameter("@PeriodEnd", periodEnd)
+            };
+
+            if (excludePurchaseId.HasValue)
+            {
+                sql += " AND [purchase].[Purchase].[Id] != @ExcludePurchaseId";
+                parameters.Add(new SqlParameter("@ExcludePurchaseId", excludePurchaseId.Value));
+            }
+
+            var result = await _context.Database
+                .SqlQueryRaw<decimal>(sql, parameters.ToArray())
+                .ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 }

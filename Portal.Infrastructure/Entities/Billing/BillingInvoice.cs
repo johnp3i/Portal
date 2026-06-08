@@ -22,6 +22,10 @@ public class BillingInvoice
 
     public DateTime? PaidAtUtc { get; set; }
 
+    public string? InvoiceNumber { get; set; }
+
+    public bool IsEmailSent { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties

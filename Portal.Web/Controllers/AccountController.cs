@@ -73,17 +73,29 @@ public class AccountController : Controller
             return View();
         }
 
-        // Check if user has BusinessId or is SuperAdmin
+        // Check if user has BusinessId or is SuperAdmin or has a pending registration (needs to complete checkout)
         var roles = await _userManager.GetRolesAsync(user);
         if (!user.BusinessId.HasValue && !roles.Contains("SuperAdmin"))
         {
-            ModelState.AddModelError(string.Empty, "Account not linked to a business.");
-            return View();
+            // Allow login if user has a pending (incomplete) registration — they need to reach /Checkout
+            var pendingRegistration = await _registrationService.GetPendingRegistrationByUserIdAsync(user.Id);
+            if (pendingRegistration == null || pendingRegistration.IsCompleted)
+            {
+                ModelState.AddModelError(string.Empty, "Account not linked to a business.");
+                return View();
+            }
         }
 
         var result = await _signInManager.PasswordSignInAsync(user, password, isPersistent: false, lockoutOnFailure: true);
         if (result.Succeeded)
         {
+            // If user has no business, redirect to checkout to complete payment
+            if (!user.BusinessId.HasValue && !roles.Contains("SuperAdmin"))
+            {
+                TempData["CheckoutMessage"] = "Your registration is incomplete. Please complete your subscription payment to activate your account.";
+                return Redirect("/Checkout");
+            }
+
             return LocalRedirect(returnUrl ?? "/");
         }
 
@@ -104,6 +116,36 @@ public class AccountController : Controller
     {
         await _signInManager.SignOutAsync();
         return RedirectToAction(nameof(Login));
+    }
+
+    /// <summary>
+    /// Signs out and re-signs in the current user to refresh auth cookie claims (e.g., after provisioning sets BusinessId).
+    /// Redirects to the dashboard after refresh.
+    /// </summary>
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> RefreshSession()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        // Sign out current session (stale claims)
+        await _signInManager.SignOutAsync();
+
+        // Re-sign in with fresh claims from the database
+        await _signInManager.SignInAsync(user, isPersistent: false);
+
+        return Redirect("/");
     }
 
     [HttpGet]
@@ -298,11 +340,9 @@ public class AccountController : Controller
                 }
             }
 
-            // Standard Stripe checkout flow
-            ViewBag.Status = "success";
-            ViewBag.Message = "Your email address has been confirmed successfully.";
-            ViewBag.CheckoutUrl = await BuildCheckoutUrlAsync(userId);
-            return View();
+            // Standard Stripe checkout flow — auto-sign-in and redirect directly to checkout
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return Redirect("/Checkout");
         }
 
         // Invalid or expired token
@@ -316,10 +356,10 @@ public class AccountController : Controller
         var pendingRegistration = await _registrationService.GetPendingRegistrationByUserIdAsync(userId);
         if (pendingRegistration != null)
         {
-            return $"/Checkout/Start?planId={pendingRegistration.PlanId}";
+            return "/Checkout";
         }
 
-        return "/Checkout/Start";
+        return "/Checkout";
     }
 
     private async Task ReloadPlansForViewModel(RegisterViewModel model)

@@ -133,11 +133,11 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
             const string query = @"
                 INSERT INTO [billing].[Invoice]
                     ([BusinessId], [StripeInvoiceId], [AmountEur], [PeriodStart],
-                     [PeriodEnd], [Status], [PaidAtUtc], [CreatedAtUtc])
+                     [PeriodEnd], [Status], [PaidAtUtc], [InvoiceNumber], [CreatedAtUtc])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@BusinessId, @StripeInvoiceId, @AmountEur, @PeriodStart,
-                     @PeriodEnd, @Status, @PaidAtUtc, @CreatedAtUtc)";
+                     @PeriodEnd, @Status, @PaidAtUtc, @InvoiceNumber, @CreatedAtUtc)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -160,6 +160,7 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                 command.Parameters.Add(new SqlParameter("@PeriodEnd", entity.PeriodEnd));
                 command.Parameters.Add(new SqlParameter("@Status", entity.Status));
                 command.Parameters.Add(new SqlParameter("@PaidAtUtc", entity.PaidAtUtc ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@InvoiceNumber", entity.InvoiceNumber ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
 
                 var result = await command.ExecuteScalarAsync();

@@ -1,0 +1,219 @@
+@model List<Portal.Infrastructure.Models.ExpenseCategoryLimitViewModel>
+@{
+    ViewData["Title"] = "Expense Category Limits";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Expense Category Limits</div>
+        <h1 class="topbar-heading">Spending Limits</h1>
+        <p class="topbar-subtitle">Configure advisory spending thresholds per expense category. Limits are soft warnings only — they never block purchases.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:260px;flex:1;">
+            <label for="searchInput">Search Categories</label>
+            <input type="text" id="searchInput" placeholder="Type to filter by category name..." oninput="filterCategories()" style="width:100%;" />
+        </div>
+    </div>
+</section>
+
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table id="limitsTable">
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Annual Limit (EUR)</th>
+                    <th>Period Limit (EUR)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr data-category-id="@item.ExpenseCategoryId">
+                        <td><strong>@item.CategoryName</strong></td>
+                        <td>
+                            <input type="number"
+                                   class="limit-input"
+                                   id="annual-@item.ExpenseCategoryId"
+                                   value="@(item.AnnualLimitEur?.ToString("0.00") ?? "")"
+                                   placeholder="No limit"
+                                   step="0.01"
+                                   min="0.01"
+                                   style="width:140px;padding:8px 12px;border:1px solid rgba(13,94,166,.15);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;" />
+                        </td>
+                        <td>
+                            <input type="number"
+                                   class="limit-input"
+                                   id="period-@item.ExpenseCategoryId"
+                                   value="@(item.PeriodLimitEur?.ToString("0.00") ?? "")"
+                                   placeholder="No limit"
+                                   step="0.01"
+                                   min="0.01"
+                                   style="width:140px;padding:8px 12px;border:1px solid rgba(13,94,166,.15);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;" />
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <button type="button" class="tbl-action tbl-action--primary" onclick="saveLimit(@item.ExpenseCategoryId)">Save</button>
+                            <button type="button" class="tbl-action tbl-action--danger" onclick="clearLimit(@item.ExpenseCategoryId, 'annual')">Clear Annual</button>
+                            <button type="button" class="tbl-action tbl-action--danger" onclick="clearLimit(@item.ExpenseCategoryId, 'period')">Clear Period</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No active expense categories found. Create expense categories first to configure spending limits.</p>
+        </div>
+    }
+</section>
+
+<form id="antiforgery-form" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]').value;
+        }
+
+        function filterCategories() {
+            var query = document.getElementById('searchInput').value.toLowerCase().trim();
+            var rows = document.querySelectorAll('#limitsTable tbody tr');
+            rows.forEach(function(row) {
+                var categoryName = row.querySelector('td:first-child').textContent.toLowerCase();
+                row.style.display = categoryName.indexOf(query) !== -1 ? '' : 'none';
+            });
+        }
+
+        async function saveLimit(expenseCategoryId) {
+            var annualInput = document.getElementById('annual-' + expenseCategoryId);
+            var periodInput = document.getElementById('period-' + expenseCategoryId);
+
+            var annualValue = annualInput.value.trim();
+            var periodValue = periodInput.value.trim();
+
+            var annualLimitEur = annualValue ? parseFloat(annualValue) : null;
+            var periodLimitEur = periodValue ? parseFloat(periodValue) : null;
+
+            // Validate at least one limit is > 0
+            if (annualLimitEur === null && periodLimitEur === null) {
+                Swal.fire({ title: 'Validation', text: 'Please enter at least one limit value (annual or period).', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            if (annualLimitEur !== null && annualLimitEur <= 0) {
+                Swal.fire({ title: 'Validation', text: 'Annual limit must be greater than zero.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            if (periodLimitEur !== null && periodLimitEur <= 0) {
+                Swal.fire({ title: 'Validation', text: 'Period limit must be greater than zero.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var confirm = await Swal.fire({
+                title: 'Save Limit',
+                text: 'Are you sure you want to save this spending limit configuration?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, save'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            BlockUI.show('Saving limit...');
+            try {
+                var response = await fetch('/ExpenseCategoryLimit/Save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        expenseCategoryId: expenseCategoryId,
+                        annualLimitEur: annualLimitEur,
+                        periodLimitEur: periodLimitEur
+                    })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Saved!',
+                        text: data.message || 'Spending limit saved successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred while saving.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function clearLimit(expenseCategoryId, limitType) {
+            var label = limitType === 'annual' ? 'annual' : 'period';
+
+            var confirm = await Swal.fire({
+                title: 'Clear ' + label.charAt(0).toUpperCase() + label.slice(1) + ' Limit',
+                text: 'Are you sure you want to clear the ' + label + ' limit for this category?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, clear it'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            BlockUI.show('Clearing limit...');
+            try {
+                var response = await fetch('/ExpenseCategoryLimit/Clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        expenseCategoryId: expenseCategoryId,
+                        limitType: limitType
+                    })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    // Clear the input field
+                    var input = document.getElementById(limitType + '-' + expenseCategoryId);
+                    if (input) input.value = '';
+
+                    Swal.fire({
+                        title: 'Cleared!',
+                        text: data.message || 'Limit has been cleared.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred while clearing.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

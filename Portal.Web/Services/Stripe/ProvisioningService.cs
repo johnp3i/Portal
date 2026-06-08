@@ -162,6 +162,17 @@ public class ProvisioningService : IProvisioningService
                 // 8. Mark PendingRegistration as completed
                 pendingRegistration.IsCompleted = true;
                 pendingRegistration.CompletedAtUtc = now;
+
+                // 9. Update ApplicationUser.BusinessId so login check passes
+                var updateUserQuery = @"
+                    UPDATE [dbo].[AspNetUsers]
+                    SET [BusinessId] = @BusinessId
+                    WHERE [Id] = @UserId";
+
+                await _membershipDbContext.Database.ExecuteSqlRawAsync(updateUserQuery,
+                    new Microsoft.Data.SqlClient.SqlParameter("@BusinessId", businessId),
+                    new Microsoft.Data.SqlClient.SqlParameter("@UserId", request.UserId));
+
                 await _membershipDbContext.SaveChangesAsync();
 
                 // Commit the transaction
@@ -370,6 +381,17 @@ public class ProvisioningService : IProvisioningService
                 // 7. Mark PendingRegistration as completed
                 pendingRegistration.IsCompleted = true;
                 pendingRegistration.CompletedAtUtc = now;
+
+                // 8. Update ApplicationUser.BusinessId so login check passes
+                var updateUserQuery = @"
+                    UPDATE [dbo].[AspNetUsers]
+                    SET [BusinessId] = @BusinessId
+                    WHERE [Id] = @UserId";
+
+                await _membershipDbContext.Database.ExecuteSqlRawAsync(updateUserQuery,
+                    new Microsoft.Data.SqlClient.SqlParameter("@BusinessId", businessId),
+                    new Microsoft.Data.SqlClient.SqlParameter("@UserId", request.UserId));
+
                 await _membershipDbContext.SaveChangesAsync();
 
                 // Commit the transaction
