@@ -26,4 +26,9 @@ public interface IExpenseCategoryLimitService
     /// Clears a specific limit field (annual or period) for a category.
     /// </summary>
     Task<ServiceResult> ClearLimitAsync(int expenseCategoryId, string limitType);
+
+    /// <summary>
+    /// Returns spending progress for all categories with configured limits for the current business.
+    /// </summary>
+    Task<List<CategorySpendingProgress>> GetSpendingProgressAsync();
 }

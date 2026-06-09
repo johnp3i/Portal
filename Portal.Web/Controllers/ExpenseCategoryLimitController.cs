@@ -62,4 +62,35 @@ public class ExpenseCategoryLimitController : Controller
 
         return Json(new { success = result.Success, message = result.Message });
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Progress()
+    {
+        try
+        {
+            var progress = await _expenseCategoryLimitService.GetSpendingProgressAsync();
+            return Json(progress);
+        }
+        catch
+        {
+            return Json(new List<object>());
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CategoryProgress(int expenseCategoryId)
+    {
+        try
+        {
+            var allProgress = await _expenseCategoryLimitService.GetSpendingProgressAsync();
+            var categoryProgress = allProgress.FirstOrDefault(p => p.ExpenseCategoryId == expenseCategoryId);
+            if (categoryProgress == null)
+                return Json(new { found = false });
+            return Json(new { found = true, data = categoryProgress });
+        }
+        catch
+        {
+            return Json(new { found = false });
+        }
+    }
 }

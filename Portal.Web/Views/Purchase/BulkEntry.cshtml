@@ -194,6 +194,44 @@
     .row-limit-warning .limit-dismiss:hover {
         background: rgba(200,145,46,0.15);
     }
+    .bulk-progress-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        font-size: 11px;
+        font-weight: 600;
+        color: #0D5EA6;
+        padding: 2px 0;
+        margin-top: 4px;
+        font-family: inherit;
+    }
+    .bulk-progress-toggle:hover { opacity: 0.8; }
+    .bulk-progress-toggle .chevron { transition: transform 0.2s ease; display: inline-block; font-size: 9px; }
+    .bulk-progress-toggle.open .chevron { transform: rotate(180deg); }
+    .bulk-progress-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .bulk-progress-body.open { max-height: 200px; padding-top: 6px; }
+    .bp-row { margin-bottom: 6px; }
+    .bp-row:last-child { margin-bottom: 0; }
+    .bp-label { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: #5E7385; margin-bottom: 3px; }
+    .bp-bar { width: 100%; height: 6px; background: #EEF4F8; border-radius: 8px; overflow: hidden; }
+    .bp-fill { height: 100%; border-radius: 8px; }
+    .bp-fill.green { background: #129867; }
+    .bp-fill.amber { background: #C8912E; }
+    .bp-fill.red { background: #C24A4A; }
+    .bp-detail { display: flex; justify-content: space-between; font-size: 10px; color: #5E7385; margin-top: 2px; }
+    .bp-detail .over { color: #C24A4A; font-weight: 600; }
+    .row-progress-panel {
+        margin-top: 6px;
+        background: #F7FAFC;
+        border: 1px solid rgba(13,94,166,.08);
+        border-radius: 8px;
+        padding: 6px 10px;
+    }
+    .row-progress-content { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .row-progress-content.open { max-height: 200px; padding-top: 6px; }
 
     /* Autocomplete styles */
     .autocomplete-wrapper {
@@ -655,7 +693,7 @@
             '<td><input type="date" class="cell-date" value="' + dateVal + '" data-field="InvoiceDate" /></td>' +
             '<td><input type="text" class="cell-invoice" value="' + escapeHtml(invoiceNumVal) + '" placeholder="INV-001" maxlength="100" data-field="InvoiceNumber" /></td>' +
             '<td><div class="autocomplete-wrapper"><input type="text" class="cell-supplier-text" value="' + escapeHtml(supplierName) + '" placeholder="Type supplier..." autocomplete="off" /><input type="hidden" class="cell-supplier" value="' + supplierId + '" data-field="SupplierId" /><span class="ac-status"></span></div></td>' +
-            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-category-text" value="' + escapeHtml(categoryName) + '" placeholder="Type category..." autocomplete="off" /><input type="hidden" class="cell-category" value="' + categoryId + '" data-field="ExpenseCategoryId" /><span class="ac-status"></span></div><span class="expense-type-indicator" style="display:none;"></span><div class="row-limit-warning"></div></td>' +
+            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-category-text" value="' + escapeHtml(categoryName) + '" placeholder="Type category..." autocomplete="off" /><input type="hidden" class="cell-category" value="' + categoryId + '" data-field="ExpenseCategoryId" /><span class="ac-status"></span></div><span class="expense-type-indicator" style="display:none;"></span><div class="row-limit-warning"></div><div class="row-progress-panel" style="display:none;"><button type="button" class="bulk-progress-toggle" onclick="toggleRowProgress(this)"><span class="chevron">&#9660;</span> <span class="toggle-text">Spending Status</span></button><div class="row-progress-content"></div></div></td>' +
             '<td><input type="text" class="cell-desc" value="' + escapeHtml(descVal) + '" placeholder="Description..." maxlength="500" data-field="Description" /></td>' +
             '<td><input type="number" class="cell-amount" value="' + amtVal + '" step="0.01" min="0.01" placeholder="0.00" data-field="AmountExcludingVat" oninput="onAmountEdit(this)" /></td>' +
             '<td><input type="number" class="cell-vat" value="' + vatDisplay + '" step="0.01" min="0" placeholder="0.00" data-field="VatAmount"' + vatDisabled + ' oninput="onVatEdit(this)" /></td>' +
@@ -685,7 +723,7 @@
             function() { return categories; },
             '/ExpenseCategory/Create',
             categories,
-            function() { updateExpenseTypeIndicator(tr); debouncedCheckRowLimits(tr); }
+            function() { updateExpenseTypeIndicator(tr); debouncedCheckRowLimits(tr); loadRowProgress(tr); }
         );
 
         // Set initial expense type indicator if category is prefilled
@@ -1108,6 +1146,7 @@
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.hasWarning && data.warnings && data.warnings.length > 0) {
+                var rowId = tr.getAttribute('data-row-id');
                 var html = '<button type="button" class="limit-dismiss" onclick="this.parentNode.style.display=\'none\'" title="Dismiss">&times;</button>';
                 html += '<strong>⚠ Warning:</strong> ';
                 data.warnings.forEach(function(w, i) {
@@ -1115,6 +1154,8 @@
                     html += label + ' limit €' + w.configuredLimit.toFixed(2) + ' exceeded by €' + w.exceededBy.toFixed(2);
                     if (i < data.warnings.length - 1) html += ' · ';
                 });
+                html += '<br><button type="button" class="bulk-progress-toggle" onclick="toggleBulkProgress(this, ' + categoryId + ', \'' + rowId + '\')"><span class="chevron">&#9660;</span> <span class="toggle-text">View Progress</span></button>';
+                html += '<div class="bulk-progress-body" id="bulk-progress-' + rowId + '"></div>';
                 warningDiv.innerHTML = html;
                 warningDiv.style.display = 'block';
             } else {
@@ -1126,6 +1167,105 @@
             warningDiv.style.display = 'none';
             warningDiv.innerHTML = '';
         });
+    }
+
+    function toggleBulkProgress(btn, categoryId, rowId) {
+        var body = document.getElementById('bulk-progress-' + rowId);
+        var isOpen = body.classList.contains('open');
+        if (isOpen) {
+            body.classList.remove('open');
+            btn.classList.remove('open');
+            btn.querySelector('.toggle-text').textContent = 'View Progress';
+        } else {
+            // Load progress data
+            fetch('/ExpenseCategoryLimit/CategoryProgress?expenseCategoryId=' + categoryId)
+                .then(function(r) { return r.json(); })
+                .then(function(result) {
+                    if (result.found) {
+                        renderBulkProgress(body, result.data);
+                    }
+                })
+                .catch(function() {});
+            body.classList.add('open');
+            btn.classList.add('open');
+            btn.querySelector('.toggle-text').textContent = 'Hide Progress';
+        }
+    }
+
+    function renderBulkProgress(container, data) {
+        var html = '';
+        if (data.annualLimitEur && data.annualSpent !== null) {
+            var pct = Math.min((data.annualSpent / data.annualLimitEur) * 100, 100);
+            var actualPct = (data.annualSpent / data.annualLimitEur) * 100;
+            var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+            var remaining = data.annualLimitEur - data.annualSpent;
+            var remainingText = remaining >= 0 ? '\u20AC' + remaining.toFixed(2) + ' remaining' : '\u20AC' + Math.abs(remaining).toFixed(2) + ' over limit';
+            var remainingClass = remaining < 0 ? 'over' : '';
+
+            html += '<div class="bp-row"><div class="bp-label"><span>Annual (' + data.annualYear + ')</span><span>\u20AC' + data.annualSpent.toFixed(2) + ' / \u20AC' + data.annualLimitEur.toFixed(2) + '</span></div>';
+            html += '<div class="bp-bar"><div class="bp-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+            html += '<div class="bp-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div></div>';
+        }
+        if (data.periodLimitEur && data.periodSpent !== null && data.periodLabel) {
+            var pct = Math.min((data.periodSpent / data.periodLimitEur) * 100, 100);
+            var actualPct = (data.periodSpent / data.periodLimitEur) * 100;
+            var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+            var remaining = data.periodLimitEur - data.periodSpent;
+            var remainingText = remaining >= 0 ? '\u20AC' + remaining.toFixed(2) + ' remaining' : '\u20AC' + Math.abs(remaining).toFixed(2) + ' over limit';
+            var remainingClass = remaining < 0 ? 'over' : '';
+
+            html += '<div class="bp-row"><div class="bp-label"><span>Period (' + data.periodLabel + ')</span><span>\u20AC' + data.periodSpent.toFixed(2) + ' / \u20AC' + data.periodLimitEur.toFixed(2) + '</span></div>';
+            html += '<div class="bp-bar"><div class="bp-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+            html += '<div class="bp-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div></div>';
+        }
+        container.innerHTML = html || '<span style="font-size:11px;color:#94a3b8;">No progress data</span>';
+    }
+
+    // ─── Always-Visible Row Progress Panel ──────────────────────────────────
+    function loadRowProgress(tr) {
+        var categoryId = parseInt(tr.querySelector('.cell-category').value);
+        var panel = tr.querySelector('.row-progress-panel');
+        var content = tr.querySelector('.row-progress-content');
+
+        if (!categoryId) {
+            panel.style.display = 'none';
+            content.innerHTML = '';
+            return;
+        }
+
+        fetch('/ExpenseCategoryLimit/CategoryProgress?expenseCategoryId=' + categoryId)
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.found && (result.data.annualLimitEur || result.data.periodLimitEur)) {
+                    renderBulkProgress(content, result.data);
+                    panel.style.display = 'block';
+                    content.classList.add('open');
+                    var btn = panel.querySelector('.bulk-progress-toggle');
+                    if (btn) btn.classList.add('open');
+                    if (btn) btn.querySelector('.toggle-text').textContent = 'Spending Status';
+                } else {
+                    panel.style.display = 'none';
+                    content.innerHTML = '';
+                }
+            })
+            .catch(function() {
+                panel.style.display = 'none';
+                content.innerHTML = '';
+            });
+    }
+
+    function toggleRowProgress(btn) {
+        var content = btn.nextElementSibling;
+        var isOpen = content.classList.contains('open');
+        if (isOpen) {
+            content.classList.remove('open');
+            btn.classList.remove('open');
+            btn.querySelector('.toggle-text').textContent = 'Spending Status';
+        } else {
+            content.classList.add('open');
+            btn.classList.add('open');
+            btn.querySelector('.toggle-text').textContent = 'Spending Status';
+        }
     }
 
     // Listen for amount/total/date/vat changes to trigger limit checks

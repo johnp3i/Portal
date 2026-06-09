@@ -39,6 +39,16 @@
                 <span id="expenseTypeIndicator" class="expense-type-indicator" style="display:none;"></span>
             </div>
 
+            <!-- Category Spending Progress (always visible when category has limits) -->
+            <div id="categoryProgressPanel" class="category-progress-panel" style="display:none;grid-column:1 / -1;">
+                <button type="button" class="category-progress-header" onclick="toggleCategoryProgress()">
+                    <span class="category-progress-icon">📊</span>
+                    <span id="categoryProgressTitle">Spending Status</span>
+                    <span class="chevron" id="categoryProgressChevron">&#9660;</span>
+                </button>
+                <div id="categoryProgressContent" class="category-progress-content"></div>
+            </div>
+
             <!-- Limit Warning Banner -->
             <div id="limitWarningBanner" class="limit-warning-banner" style="display:none;grid-column:1 / -1;">
                 <div class="limit-warning-header">
@@ -47,6 +57,10 @@
                     <button type="button" onclick="hideLimitWarning()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:#C8912E;padding:2px 6px;border-radius:4px;" title="Dismiss">&times;</button>
                 </div>
                 <div id="limitWarningContent" class="limit-warning-content"></div>
+                <button type="button" id="limitProgressToggle" class="limit-progress-toggle" onclick="toggleLimitProgress()" style="display:none;">
+                    <span class="chevron" id="limitProgressChevron">&#9660;</span> <span id="limitProgressToggleText">View Progress</span>
+                </button>
+                <div id="limitProgressBody" class="limit-progress-body"></div>
             </div>
 
             <!-- Invoice Number -->
@@ -221,6 +235,85 @@
             font-weight: 600;
             color: #9A6F1E;
         }
+        .limit-progress-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            color: #0D5EA6;
+            padding: 4px 0;
+            margin-top: 8px;
+            font-family: inherit;
+        }
+        .limit-progress-toggle:hover { opacity: 0.8; }
+        .limit-progress-toggle .chevron {
+            transition: transform 0.2s ease;
+            display: inline-block;
+            font-size: 10px;
+        }
+        .limit-progress-toggle.open .chevron { transform: rotate(180deg); }
+        .limit-progress-body {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease;
+        }
+        .limit-progress-body.open {
+            max-height: 300px;
+            padding-top: 8px;
+        }
+        .category-progress-panel {
+            background: #F7FAFC;
+            border: 1px solid rgba(13,94,166,.10);
+            border-radius: 12px;
+            padding: 14px 18px;
+        }
+        .category-progress-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0B1B28;
+            font-family: inherit;
+            padding: 0;
+            width: 100%;
+        }
+        .category-progress-header:hover { opacity: 0.8; }
+        .category-progress-header .chevron {
+            margin-left: auto;
+            font-size: 10px;
+            transition: transform 0.2s ease;
+        }
+        .category-progress-header.open .chevron { transform: rotate(180deg); }
+        .category-progress-content {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease;
+        }
+        .category-progress-content.open {
+            max-height: 300px;
+            padding-top: 12px;
+        }
+        .lp-row { margin-bottom: 10px; }
+        .lp-row:last-child { margin-bottom: 0; }
+        .lp-label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .lp-label-left { font-size: 11px; font-weight: 600; color: #5E7385; text-transform: uppercase; letter-spacing: 0.04em; }
+        .lp-label-right { font-size: 12px; font-weight: 600; color: #0B1B28; }
+        .lp-bar { width: 100%; height: 8px; background: #EEF4F8; border-radius: 10px; overflow: hidden; }
+        .lp-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+        .lp-fill.green { background: #129867; }
+        .lp-fill.amber { background: #C8912E; }
+        .lp-fill.red { background: #C24A4A; }
+        .lp-detail { display: flex; justify-content: space-between; margin-top: 3px; font-size: 11px; color: #5E7385; }
+        .lp-detail .remaining { font-weight: 600; }
+        .lp-detail .remaining.over { color: #C24A4A; }
         .expense-type-indicator {
             display: inline-block;
             margin-top: 6px;
@@ -823,12 +916,171 @@
 
             content.innerHTML = html;
             banner.style.display = '';
+
+            // Show progress toggle and load progress data
+            var categoryId = parseInt(document.getElementById('categoryHidden').value);
+            if (categoryId) {
+                document.getElementById('limitProgressToggle').style.display = '';
+                loadCategoryProgress(categoryId);
+            }
         }
 
         function hideLimitWarning() {
             var banner = document.getElementById('limitWarningBanner');
             banner.style.display = 'none';
             document.getElementById('limitWarningContent').innerHTML = '';
+            document.getElementById('limitProgressToggle').style.display = 'none';
+            document.getElementById('limitProgressBody').classList.remove('open');
+            document.getElementById('limitProgressBody').innerHTML = '';
+            document.getElementById('limitProgressToggle').classList.remove('open');
+            document.getElementById('limitProgressToggleText').textContent = 'View Progress';
+        }
+
+        function toggleLimitProgress() {
+            var body = document.getElementById('limitProgressBody');
+            var btn = document.getElementById('limitProgressToggle');
+            var isOpen = body.classList.contains('open');
+            if (isOpen) {
+                body.classList.remove('open');
+                btn.classList.remove('open');
+                document.getElementById('limitProgressToggleText').textContent = 'View Progress';
+            } else {
+                body.classList.add('open');
+                btn.classList.add('open');
+                document.getElementById('limitProgressToggleText').textContent = 'Hide Progress';
+            }
+        }
+
+        function loadCategoryProgress(categoryId) {
+            fetch('/ExpenseCategoryLimit/CategoryProgress?expenseCategoryId=' + categoryId)
+                .then(function(r) { return r.json(); })
+                .then(function(result) {
+                    if (result.found) {
+                        renderCategoryProgress(result.data);
+                    }
+                })
+                .catch(function() {});
+        }
+
+        function renderCategoryProgress(data) {
+            var container = document.getElementById('limitProgressBody');
+            var html = '';
+
+            if (data.annualLimitEur && data.annualSpent !== null) {
+                var pct = Math.min((data.annualSpent / data.annualLimitEur) * 100, 100);
+                var actualPct = (data.annualSpent / data.annualLimitEur) * 100;
+                var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+                var remaining = data.annualLimitEur - data.annualSpent;
+                var remainingText = remaining >= 0 ? '\u20AC' + remaining.toFixed(2) + ' remaining' : '\u20AC' + Math.abs(remaining).toFixed(2) + ' over limit';
+                var remainingClass = remaining < 0 ? 'remaining over' : 'remaining';
+
+                html += '<div class="lp-row">';
+                html += '<div class="lp-label"><span class="lp-label-left">Annual (' + data.annualYear + ')</span><span class="lp-label-right">\u20AC' + data.annualSpent.toFixed(2) + ' / \u20AC' + data.annualLimitEur.toFixed(2) + '</span></div>';
+                html += '<div class="lp-bar"><div class="lp-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+                html += '<div class="lp-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div>';
+                html += '</div>';
+            }
+
+            if (data.periodLimitEur && data.periodSpent !== null && data.periodLabel) {
+                var pct = Math.min((data.periodSpent / data.periodLimitEur) * 100, 100);
+                var actualPct = (data.periodSpent / data.periodLimitEur) * 100;
+                var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+                var remaining = data.periodLimitEur - data.periodSpent;
+                var remainingText = remaining >= 0 ? '\u20AC' + remaining.toFixed(2) + ' remaining' : '\u20AC' + Math.abs(remaining).toFixed(2) + ' over limit';
+                var remainingClass = remaining < 0 ? 'remaining over' : 'remaining';
+
+                html += '<div class="lp-row">';
+                html += '<div class="lp-label"><span class="lp-label-left">Period (' + data.periodLabel + ')</span><span class="lp-label-right">\u20AC' + data.periodSpent.toFixed(2) + ' / \u20AC' + data.periodLimitEur.toFixed(2) + '</span></div>';
+                html += '<div class="lp-bar"><div class="lp-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+                html += '<div class="lp-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div>';
+                html += '</div>';
+            }
+
+            container.innerHTML = html || '';
+        }
+
+        // ─── Always-Visible Category Progress Panel ─────────────────────────
+        var _categoryProgressOpen = true;
+
+        function loadCategoryProgressPanel(categoryId) {
+            var panel = document.getElementById('categoryProgressPanel');
+            var content = document.getElementById('categoryProgressContent');
+
+            if (!categoryId) {
+                panel.style.display = 'none';
+                content.innerHTML = '';
+                return;
+            }
+
+            fetch('/ExpenseCategoryLimit/CategoryProgress?expenseCategoryId=' + categoryId)
+                .then(function(r) { return r.json(); })
+                .then(function(result) {
+                    if (result.found && (result.data.annualLimitEur || result.data.periodLimitEur)) {
+                        var html = renderProgressBarsHtml(result.data);
+                        content.innerHTML = html;
+                        panel.style.display = '';
+                        // Auto-open on first load
+                        if (_categoryProgressOpen) {
+                            content.classList.add('open');
+                            document.querySelector('.category-progress-header').classList.add('open');
+                        }
+                    } else {
+                        panel.style.display = 'none';
+                        content.innerHTML = '';
+                    }
+                })
+                .catch(function() {
+                    panel.style.display = 'none';
+                    content.innerHTML = '';
+                });
+        }
+
+        function toggleCategoryProgress() {
+            var content = document.getElementById('categoryProgressContent');
+            var header = document.querySelector('.category-progress-header');
+            var isOpen = content.classList.contains('open');
+            if (isOpen) {
+                content.classList.remove('open');
+                header.classList.remove('open');
+                _categoryProgressOpen = false;
+            } else {
+                content.classList.add('open');
+                header.classList.add('open');
+                _categoryProgressOpen = true;
+            }
+        }
+
+        function renderProgressBarsHtml(data) {
+            var html = '';
+            if (data.annualLimitEur && data.annualSpent !== null) {
+                var pct = Math.min((data.annualSpent / data.annualLimitEur) * 100, 100);
+                var actualPct = (data.annualSpent / data.annualLimitEur) * 100;
+                var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+                var remaining = data.annualLimitEur - data.annualSpent;
+                var remainingText = remaining >= 0 ? '\u20AC' + remaining.toFixed(2) + ' remaining' : '\u20AC' + Math.abs(remaining).toFixed(2) + ' over limit';
+                var remainingClass = remaining < 0 ? 'remaining over' : 'remaining';
+
+                html += '<div class="lp-row">';
+                html += '<div class="lp-label"><span class="lp-label-left">Annual (' + data.annualYear + ')</span><span class="lp-label-right">\u20AC' + data.annualSpent.toFixed(2) + ' / \u20AC' + data.annualLimitEur.toFixed(2) + '</span></div>';
+                html += '<div class="lp-bar"><div class="lp-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+                html += '<div class="lp-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div>';
+                html += '</div>';
+            }
+            if (data.periodLimitEur && data.periodSpent !== null && data.periodLabel) {
+                var pct = Math.min((data.periodSpent / data.periodLimitEur) * 100, 100);
+                var actualPct = (data.periodSpent / data.periodLimitEur) * 100;
+                var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+                var remaining = data.periodLimitEur - data.periodSpent;
+                var remainingText = remaining >= 0 ? '\u20AC' + remaining.toFixed(2) + ' remaining' : '\u20AC' + Math.abs(remaining).toFixed(2) + ' over limit';
+                var remainingClass = remaining < 0 ? 'remaining over' : 'remaining';
+
+                html += '<div class="lp-row">';
+                html += '<div class="lp-label"><span class="lp-label-left">Period (' + data.periodLabel + ')</span><span class="lp-label-right">\u20AC' + data.periodSpent.toFixed(2) + ' / \u20AC' + data.periodLimitEur.toFixed(2) + '</span></div>';
+                html += '<div class="lp-bar"><div class="lp-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+                html += '<div class="lp-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div>';
+                html += '</div>';
+            }
+            return html;
         }
 
         function formatDecimal(value) {
@@ -858,6 +1110,7 @@
                 function(categoryId) {
                     updateExpenseTypeIndicator(categoryId);
                     debouncedCheckLimits();
+                    loadCategoryProgressPanel(categoryId);
                 }
             );
 

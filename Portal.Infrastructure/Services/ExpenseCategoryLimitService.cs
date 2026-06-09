@@ -212,4 +212,53 @@ public class ExpenseCategoryLimitService : IExpenseCategoryLimitService
 
         return ServiceResult.Ok();
     }
+
+    /// <inheritdoc />
+    public async Task<List<CategorySpendingProgress>> GetSpendingProgressAsync()
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var limits = await _expenseCategoryLimitRepository.GetAllByBusinessIdAsync(businessId);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var currentYear = today.Year;
+
+        // Find the current VAT period for this business
+        var currentPeriod = await _portalDbContext.VatSubmissionPeriods
+            .Where(p => p.BusinessId == businessId
+                && p.PeriodStartDate <= today
+                && p.PeriodEndDate >= today)
+            .FirstOrDefaultAsync();
+
+        var result = new List<CategorySpendingProgress>();
+
+        foreach (var limit in limits)
+        {
+            if (limit.AnnualLimitEur == null && limit.PeriodLimitEur == null)
+                continue;
+
+            var progress = new CategorySpendingProgress
+            {
+                ExpenseCategoryId = limit.ExpenseCategoryId,
+                AnnualLimitEur = limit.AnnualLimitEur,
+                PeriodLimitEur = limit.PeriodLimitEur
+            };
+
+            if (limit.AnnualLimitEur.HasValue)
+            {
+                progress.AnnualSpent = await _purchaseRepository.GetAnnualSpendingAsync(
+                    businessId, limit.ExpenseCategoryId, currentYear, null);
+                progress.AnnualYear = currentYear;
+            }
+
+            if (limit.PeriodLimitEur.HasValue && currentPeriod != null)
+            {
+                progress.PeriodSpent = await _purchaseRepository.GetPeriodSpendingAsync(
+                    businessId, limit.ExpenseCategoryId, currentPeriod.PeriodStartDate, currentPeriod.PeriodEndDate, null);
+                progress.PeriodLabel = $"{currentPeriod.PeriodStartDate:MMM}–{currentPeriod.PeriodEndDate:MMM yyyy}";
+            }
+
+            result.Add(progress);
+        }
+
+        return result;
+    }
 }

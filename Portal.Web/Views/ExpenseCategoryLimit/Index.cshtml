@@ -29,6 +29,7 @@
                     <th>Category Name</th>
                     <th>Annual Limit (EUR)</th>
                     <th>Period Limit (EUR)</th>
+                    <th>Progress</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -57,6 +58,21 @@
                                    min="0.01"
                                    style="width:140px;padding:8px 12px;border:1px solid rgba(13,94,166,.15);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;" />
                         </td>
+                        <td style="min-width:240px;">
+                            <div id="progress-@item.ExpenseCategoryId">
+                                @if (item.AnnualLimitEur.HasValue || item.PeriodLimitEur.HasValue)
+                                {
+                                    <button type="button" class="progress-toggle" onclick="toggleProgress(this, @item.ExpenseCategoryId)">
+                                        <span class="chevron">&#9660;</span> <span class="toggle-text">View Progress</span>
+                                    </button>
+                                    <div class="progress-body" id="progress-body-@item.ExpenseCategoryId"></div>
+                                }
+                                else
+                                {
+                                    <span style="font-size:12px;color:#94a3b8;font-style:italic;">No limits configured</span>
+                                }
+                            </div>
+                        </td>
                         <td style="white-space:nowrap;">
                             <button type="button" class="tbl-action tbl-action--primary" onclick="saveLimit(@item.ExpenseCategoryId)">Save</button>
                             <button type="button" class="tbl-action tbl-action--danger" onclick="clearLimit(@item.ExpenseCategoryId, 'annual')">Clear Annual</button>
@@ -80,6 +96,83 @@
 </form>
 
 @section Scripts {
+    <style>
+        .progress-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            color: #0D5EA6;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: inherit;
+        }
+        .progress-toggle:hover { background: rgba(13,94,166,.06); }
+        .progress-toggle .chevron {
+            transition: transform 0.2s ease;
+            display: inline-block;
+            font-size: 10px;
+        }
+        .progress-toggle.open .chevron { transform: rotate(180deg); }
+        .progress-body {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease;
+            padding-top: 0;
+        }
+        .progress-body.open {
+            max-height: 300px;
+            padding-top: 8px;
+        }
+        .progress-row { margin-bottom: 10px; }
+        .progress-row:last-child { margin-bottom: 0; }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .progress-label-left {
+            font-size: 11px;
+            font-weight: 600;
+            color: #5E7385;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .progress-label-right {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0B1B28;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #EEF4F8;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.4s ease;
+        }
+        .progress-bar-fill.green { background: #129867; }
+        .progress-bar-fill.amber { background: #C8912E; }
+        .progress-bar-fill.red { background: #C24A4A; }
+        .progress-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3px;
+            font-size: 11px;
+            color: #5E7385;
+        }
+        .progress-detail .remaining { font-weight: 600; }
+        .progress-detail .remaining.over { color: #C24A4A; }
+    </style>
     <script>
         function getAntiForgeryToken() {
             return document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]').value;
@@ -215,5 +308,100 @@
                 Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
             }
         }
+
+        // ─── Progress Bars ─────────────────────────────────────────────────
+        var _progressData = null;
+
+        async function loadProgressData() {
+            try {
+                var response = await fetch('/ExpenseCategoryLimit/Progress');
+                _progressData = await response.json();
+            } catch (e) {
+                _progressData = [];
+            }
+        }
+
+        function toggleProgress(btn, categoryId) {
+            var body = document.getElementById('progress-body-' + categoryId);
+            var isOpen = body.classList.contains('open');
+
+            if (isOpen) {
+                body.classList.remove('open');
+                btn.classList.remove('open');
+                btn.querySelector('.toggle-text').textContent = 'View Progress';
+            } else {
+                // Load and render progress data
+                renderProgress(categoryId, body);
+                body.classList.add('open');
+                btn.classList.add('open');
+                btn.querySelector('.toggle-text').textContent = 'Hide Progress';
+            }
+        }
+
+        function renderProgress(categoryId, container) {
+            if (!_progressData) {
+                container.innerHTML = '<span style="font-size:12px;color:#94a3b8;">Loading...</span>';
+                return;
+            }
+
+            var data = _progressData.find(function(p) { return p.expenseCategoryId === categoryId; });
+            if (!data) {
+                container.innerHTML = '<span style="font-size:12px;color:#94a3b8;">No spending data available</span>';
+                return;
+            }
+
+            var html = '';
+
+            // Annual bar
+            if (data.annualLimitEur && data.annualSpent !== null) {
+                var pct = Math.min((data.annualSpent / data.annualLimitEur) * 100, 100);
+                var actualPct = (data.annualSpent / data.annualLimitEur) * 100;
+                var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+                var remaining = data.annualLimitEur - data.annualSpent;
+                var remainingText = remaining >= 0
+                    ? '€' + remaining.toFixed(2) + ' remaining'
+                    : '€' + Math.abs(remaining).toFixed(2) + ' over limit';
+                var remainingClass = remaining < 0 ? 'remaining over' : 'remaining';
+
+                html += '<div class="progress-row">';
+                html += '<div class="progress-label"><span class="progress-label-left">Annual (' + data.annualYear + ')</span>';
+                html += '<span class="progress-label-right">€' + data.annualSpent.toFixed(2) + ' / €' + data.annualLimitEur.toFixed(2) + '</span></div>';
+                html += '<div class="progress-bar-container"><div class="progress-bar-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+                html += '<div class="progress-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div>';
+                html += '</div>';
+            } else if (data.annualLimitEur === null) {
+                html += '<div style="font-size:11px;color:#94a3b8;font-style:italic;margin-bottom:6px;">No annual limit</div>';
+            }
+
+            // Period bar
+            if (data.periodLimitEur && data.periodSpent !== null && data.periodLabel) {
+                var pct = Math.min((data.periodSpent / data.periodLimitEur) * 100, 100);
+                var actualPct = (data.periodSpent / data.periodLimitEur) * 100;
+                var barClass = actualPct > 100 ? 'red' : actualPct >= 75 ? 'amber' : 'green';
+                var remaining = data.periodLimitEur - data.periodSpent;
+                var remainingText = remaining >= 0
+                    ? '€' + remaining.toFixed(2) + ' remaining'
+                    : '€' + Math.abs(remaining).toFixed(2) + ' over limit';
+                var remainingClass = remaining < 0 ? 'remaining over' : 'remaining';
+
+                html += '<div class="progress-row">';
+                html += '<div class="progress-label"><span class="progress-label-left">Period (' + data.periodLabel + ')</span>';
+                html += '<span class="progress-label-right">€' + data.periodSpent.toFixed(2) + ' / €' + data.periodLimitEur.toFixed(2) + '</span></div>';
+                html += '<div class="progress-bar-container"><div class="progress-bar-fill ' + barClass + '" style="width:' + pct + '%;"></div></div>';
+                html += '<div class="progress-detail"><span>' + Math.round(actualPct) + '% used</span><span class="' + remainingClass + '">' + remainingText + '</span></div>';
+                html += '</div>';
+            } else if (data.periodLimitEur === null) {
+                html += '<div style="font-size:11px;color:#94a3b8;font-style:italic;">No period limit</div>';
+            } else if (data.periodLimitEur && !data.periodLabel) {
+                html += '<div style="font-size:11px;color:#94a3b8;font-style:italic;">No active VAT period</div>';
+            }
+
+            container.innerHTML = html || '<span style="font-size:12px;color:#94a3b8;">No data</span>';
+        }
+
+        // Load progress data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProgressData();
+        });
     </script>
 }
