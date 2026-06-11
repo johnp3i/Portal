@@ -202,13 +202,13 @@
      * that holds all the fields for a single line item.
      */
     function findLineItemContainer(input) {
-        // Try form first (Quotation line items are in individual forms)
-        var form = input.closest('form');
-        if (form) return form;
-
-        // Try .line-card or .surface.card-pad (Invoice edit line items)
+        // Try .line-card or .surface.card-pad first (Invoice create/edit line items)
         var card = input.closest('.line-card') || input.closest('.surface.card-pad');
         if (card) return card;
+
+        // Try form (Quotation line items are in individual forms)
+        var form = input.closest('form');
+        if (form) return form;
 
         // Fallback: parent container with form-grid
         var formGrid = input.closest('.form-grid');

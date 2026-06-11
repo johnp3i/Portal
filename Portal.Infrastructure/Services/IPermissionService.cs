@@ -13,4 +13,10 @@ public interface IPermissionService
     /// Returns a dictionary of module → accessLevel.
     /// </summary>
     Task<Dictionary<string, string>> GetAllAccessLevelsAsync(string userId, int? businessId = null);
+
+    /// <summary>
+    /// Gets module permissions for a demo invitation from DemoInvitationPermission.
+    /// Returns a dictionary of module → accessLevel.
+    /// </summary>
+    Task<Dictionary<string, string>> GetDemoPermissionsAsync(int invitationId);
 }

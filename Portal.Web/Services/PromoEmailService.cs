@@ -104,16 +104,11 @@ public class PromoEmailService : IPromoEmailService
                                 </tr>
                             </table>
                             <!-- CTA Button -->
-                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:28px auto 0 auto;"">
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin:28px 0 0 0;"">
                                 <tr>
-                                    <td>
-                                        <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""border-radius:12px;overflow:hidden;"">
-                                            <tr>
-                                                <td style=""background-color:#0D5EA6;padding:16px 40px;text-align:center;"">
-                                                    <a href=""{registrationUrl}"" style=""color:#FFFFFF;font-size:16px;font-weight:700;text-decoration:none;display:block;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">Register Now</a>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <td align=""center"">
+                                        <!--[if mso]><v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" href=""{registrationUrl}"" style=""height:48px;v-text-anchor:middle;width:240px;"" arcsize=""10%"" strokecolor=""#0D5EA6"" fillcolor=""#0D5EA6""><w:anchorlock/><center style=""color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;"">Register Now</center></v:roundrect><![endif]-->
+                                        <!--[if !mso]><!--><a href=""{registrationUrl}"" target=""_blank"" style=""display:inline-block;padding:14px 48px;background-color:#0D5EA6;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;"">Register Now</a><!--<![endif]-->
                                     </td>
                                 </tr>
                             </table>

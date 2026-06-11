@@ -29,6 +29,10 @@ public class ModuleAccessAttribute : Attribute, IAsyncAuthorizationFilter
         if (user.IsInRole("SuperAdmin"))
             return;
 
+        // (2) Demo sessions bypass ModuleAccessAttribute — enforced by DemoPermissionFilter instead
+        if (user.HasClaim("IsDemoSession", "true"))
+            return;
+
         // (2) Resolve BusinessId from claims
         var businessIdClaim = user.FindFirst("BusinessId");
         if (businessIdClaim is null || !int.TryParse(businessIdClaim.Value, out var businessId) || businessId == 0)

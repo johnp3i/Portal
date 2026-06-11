@@ -16,7 +16,7 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode]
                 FROM [quotation].[QuotationLine]
                 WHERE [QuotationId] = @QuotationId
                 ORDER BY [SortOrder]";
@@ -34,7 +34,7 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode]
                 FROM [quotation].[QuotationLine]
                 WHERE [Id] = @Id";
 

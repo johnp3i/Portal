@@ -12,6 +12,8 @@ public class Business
 
     public bool IsActive { get; set; }
 
+    public bool IsDemoAccount { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime UpdatedAtUtc { get; set; }

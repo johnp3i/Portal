@@ -18,6 +18,7 @@ public class ModuleNavigationViewComponent : ViewComponent
     {
         var userId = UserClaimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
         var isSuperAdmin = UserClaimsPrincipal.IsInRole("SuperAdmin");
+        var demoInvitationIdClaim = UserClaimsPrincipal.FindFirstValue("DemoInvitationId");
 
         Dictionary<string, string> permissions;
 
@@ -25,6 +26,11 @@ public class ModuleNavigationViewComponent : ViewComponent
         {
             // SuperAdmin sees everything
             permissions = PortalModules.All.ToDictionary(m => m, _ => AccessLevels.Full);
+        }
+        else if (!string.IsNullOrEmpty(demoInvitationIdClaim) && int.TryParse(demoInvitationIdClaim, out var invitationId))
+        {
+            // Demo session — load permissions from DemoInvitationPermission
+            permissions = await _permissionService.GetDemoPermissionsAsync(invitationId);
         }
         else if (!string.IsNullOrEmpty(userId))
         {

@@ -16,4 +16,10 @@ public class InvoiceListDto
     public string FinancialStatusName { get; set; } = null!;
     public int InvoiceStatusTypeId { get; set; }
     public int InvoiceFinancialStatusTypeId { get; set; }
+
+    /// <summary>
+    /// Acceptance status for the invoice's shared link.
+    /// Null = no active share, "awaiting" = shared but not accepted, "accepted" = accepted by customer.
+    /// </summary>
+    public string? AcceptanceStatus { get; set; }
 }

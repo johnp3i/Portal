@@ -13,4 +13,9 @@ public interface IEmailService
     /// Sends a statement of account email with the PDF attached.
     /// </summary>
     Task SendStatementEmailAsync(string recipientEmail, string customerName, string businessName, byte[] pdfBytes, string filename);
+
+    /// <summary>
+    /// Sends a demo invitation email with a magic link for auto-authentication into a demo business.
+    /// </summary>
+    Task SendDemoInvitationEmailAsync(string toEmail, string magicLink, string businessName, DateTime expiresAtUtc);
 }

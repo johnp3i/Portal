@@ -99,7 +99,17 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td><strong>@item.InvoiceNumber</strong></td>
+                            <td>
+                                <strong>@item.InvoiceNumber</strong>
+                                @if (item.AcceptanceStatus == "accepted")
+                                {
+                                    <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>
+                                }
+                                else if (item.AcceptanceStatus == "awaiting")
+                                {
+                                    <div style="font-size:11px;color:#C8912E;font-weight:600;margin-top:3px;">⏳ Awaiting acceptance</div>
+                                }
+                            </td>
                             <td>@item.CustomerName</td>
                             <td>@item.InvoiceDate.ToString("yyyy-MM-dd")</td>
                             <td>@item.DueDate.ToString("yyyy-MM-dd")</td>

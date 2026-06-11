@@ -39,6 +39,7 @@ public class PortalDbContext : DbContext
     public DbSet<Invoice> Invoices { get; set; } = null!;
     public DbSet<InvoiceLine> InvoiceLines { get; set; } = null!;
     public DbSet<InvoiceShare> InvoiceShares { get; set; } = null!;
+    public DbSet<InvoiceAcceptance> InvoiceAcceptances { get; set; } = null!;
 
     // Revenue schema
     public DbSet<PaymentMethodType> PaymentMethodTypes { get; set; } = null!;
@@ -99,6 +100,10 @@ public class PortalDbContext : DbContext
     public DbSet<PromoCode> PromoCodes { get; set; } = null!;
     public DbSet<PromoCodeRedemption> PromoCodeRedemptions { get; set; } = null!;
 
+    // Demo invitation schema
+    public DbSet<DemoInvitation> DemoInvitations { get; set; } = null!;
+    public DbSet<DemoInvitationPermission> DemoInvitationPermissions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -115,6 +120,7 @@ public class PortalDbContext : DbContext
         ConfigureInvoice(modelBuilder);
         ConfigureInvoiceLine(modelBuilder);
         ConfigureInvoiceShare(modelBuilder);
+        ConfigureInvoiceAcceptance(modelBuilder);
         ConfigurePaymentMethodType(modelBuilder);
         ConfigurePayment(modelBuilder);
         ConfigureSupplier(modelBuilder);
@@ -150,6 +156,8 @@ public class PortalDbContext : DbContext
         ConfigurePromoCode(modelBuilder);
         ConfigurePromoCodeRedemption(modelBuilder);
         ConfigurePlatformConfig(modelBuilder);
+        ConfigureDemoInvitation(modelBuilder);
+        ConfigureDemoInvitationPermission(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -172,6 +180,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
+
+            entity.Property(e => e.IsDemoAccount)
+                .IsRequired()
+                .HasDefaultValue(false);
 
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
@@ -673,6 +685,41 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
+        });
+    }
+
+    private static void ConfigureInvoiceAcceptance(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<InvoiceAcceptance>(entity =>
+        {
+            entity.ToTable("InvoiceAcceptance", "invoice");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.InvoiceShare)
+                .WithOne()
+                .HasForeignKey<InvoiceAcceptance>(e => e.InvoiceShareId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.InvoiceShareId)
+                .IsUnique()
+                .HasDatabaseName("UX_InvoiceAcceptance_InvoiceShareId");
+
+            entity.Property(e => e.AcceptedTerms)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.IpAddress)
+                .IsRequired()
+                .HasMaxLength(45);
+
+            entity.Property(e => e.UserAgent)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("SYSDATETIMEOFFSET()");
         });
     }
 
@@ -1929,6 +1976,103 @@ public class PortalDbContext : DbContext
                 .HasMaxLength(500);
 
             entity.Property(e => e.LastModifiedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureDemoInvitation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DemoInvitation>(entity =>
+        {
+            entity.ToTable("DemoInvitation", "portal");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasMany(e => e.Permissions)
+                .WithOne(p => p.DemoInvitation)
+                .HasForeignKey(p => p.DemoInvitationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.Token)
+                .IsUnique()
+                .HasDatabaseName("UX_DemoInvitation_Token");
+
+            entity.HasIndex(e => e.Status)
+                .HasDatabaseName("IX_DemoInvitation_Status");
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_DemoInvitation_Status",
+                "[Status] IN ('sent', 'accessed', 'expired', 'revoked')"));
+
+            entity.Property(e => e.Token)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.RecipientEmail)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            entity.Property(e => e.RecipientName)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.CreatedByUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.AccessCount)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureDemoInvitationPermission(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DemoInvitationPermission>(entity =>
+        {
+            entity.ToTable("DemoInvitationPermission", "portal");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.DemoInvitation)
+                .WithMany(d => d.Permissions)
+                .HasForeignKey(e => e.DemoInvitationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.DemoInvitationId, e.Module })
+                .IsUnique()
+                .HasDatabaseName("UQ_DemoInvitationPermission_Module");
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_DemoInvitationPermission_Module",
+                "[Module] IN ('customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'audit', 'products')"));
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_DemoInvitationPermission_AccessLevel",
+                "[AccessLevel] IN ('full', 'readonly', 'none')"));
+
+            entity.Property(e => e.Module)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.AccessLevel)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
         });

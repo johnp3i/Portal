@@ -353,11 +353,14 @@
     }
 
     <!-- Grand Totals -->
+    @if (Model.IsGrandTotalShown)
+    {
     <div class="totals-card" style="margin-top:32px;">
         <div class="totals-row"><span class="label">Subtotal</span><span class="value">@currencySymbol@Model.Subtotal.ToString("N2")</span></div>
         <div class="totals-row"><span class="label">Tax</span><span class="value">@currencySymbol@Model.TaxAmount.ToString("N2")</span></div>
         <div class="totals-row grand-total"><span class="label">Total</span><span class="value">@currencySymbol@Model.TotalAmount.ToString("N2")</span></div>
     </div>
+    }
 
     <!-- Narrative Sections (after totals) -->
     @foreach (var invSec in narrativeSections)

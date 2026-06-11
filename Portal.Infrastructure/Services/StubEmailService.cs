@@ -50,4 +50,13 @@ public class StubEmailService : IEmailService
 
         return Task.CompletedTask;
     }
+
+    public Task SendDemoInvitationEmailAsync(string toEmail, string magicLink, string businessName, DateTime expiresAtUtc)
+    {
+        _logger.LogInformation(
+            "Demo invitation email stub: To={ToEmail}, Business={BusinessName}, MagicLink={MagicLink}, ExpiresAtUtc={ExpiresAtUtc}",
+            toEmail, businessName, magicLink, expiresAtUtc);
+
+        return Task.CompletedTask;
+    }
 }

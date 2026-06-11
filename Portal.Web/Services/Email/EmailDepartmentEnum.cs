@@ -20,6 +20,7 @@ namespace Portal.Web.Services.Email
         Support,
         Invoices,
         Proposals,
-        PromoCode
+        PromoCode,
+        Demo
     }
 }

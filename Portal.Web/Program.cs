@@ -74,6 +74,30 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+// --- Demo Session Cookie (isolated from primary authentication) ---
+builder.Services.AddAuthentication().AddCookie("DemoScheme", options =>
+{
+    options.ExpireTimeSpan = TimeSpan.FromHours(2);
+    options.SlidingExpiration = true;
+    options.Cookie.Name = ".Portal.Demo";
+    options.Events = new Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationEvents
+    {
+        OnRedirectToLogin = context =>
+        {
+            // Detect expired demo sessions and redirect to session-expired page
+            if (context.Request.Cookies.ContainsKey(".Portal.Demo"))
+            {
+                context.Response.Redirect("/Demo/SessionExpired");
+            }
+            else
+            {
+                context.Response.Redirect(context.RedirectUri);
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
+
 // --- Application Services ---
 builder.Services.AddHttpContextAccessor();
 builder.Services.ConfigureWebsiteSettings(builder.Configuration);
@@ -173,6 +197,9 @@ builder.Services.AddScoped<InvoiceShareRepository>(sp =>
     new InvoiceShareRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IInvoiceRenderer, InvoiceRenderer>();
 builder.Services.AddScoped<IInvoiceSharingService, InvoiceSharingService>();
+builder.Services.AddScoped<InvoiceAcceptanceRepository>(sp =>
+    new InvoiceAcceptanceRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IInvoiceAcceptanceService, InvoiceAcceptanceService>();
 builder.Services.AddScoped<IDocumentDuplicationService, DocumentDuplicationService>();
 builder.Services.AddScoped<IDocumentSoftDeleteService, DocumentSoftDeleteService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
@@ -254,11 +281,17 @@ builder.Services.AddScoped<SystemLogQueryRepository>(sp =>
     new SystemLogQueryRepository(sp.GetRequiredService<LoggingDbContext>()));
 builder.Services.AddScoped<ISystemLogQueryService, SystemLogQueryService>();
 
+// --- Demo Access Invitations ---
+builder.Services.AddScoped<DemoInvitationRepository>(sp =>
+    new DemoInvitationRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IDemoInvitationService, DemoInvitationService>();
+
 // --- MVC ---
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<Portal.Web.Filters.SetupWizardRedirectFilter>();
     options.Filters.Add<Portal.Web.Filters.SubscriptionWarningResultFilter>();
+    options.Filters.Add<Portal.Web.Filters.DemoPermissionFilter>();
 });
 
 // --- Serilog SelfLog (must be before any Serilog configuration to capture config errors) ---
@@ -296,6 +329,7 @@ if (!app.Configuration.GetValue<bool>("SkipSeedData"))
     using (var scope = app.Services.CreateScope())
     {
         await Portal.Web.Data.SeedData.InitializeAsync(scope.ServiceProvider);
+        await Portal.Web.Data.SeedDemoUser.InitializeAsync(scope.ServiceProvider);
     }
 }
 

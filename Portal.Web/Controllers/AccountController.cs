@@ -73,9 +73,9 @@ public class AccountController : Controller
             return View();
         }
 
-        // Check if user has BusinessId or is SuperAdmin or has a pending registration (needs to complete checkout)
+        // Check if user has BusinessId or is SuperAdmin/DemoUser or has a pending registration (needs to complete checkout)
         var roles = await _userManager.GetRolesAsync(user);
-        if (!user.BusinessId.HasValue && !roles.Contains("SuperAdmin"))
+        if (!user.BusinessId.HasValue && !roles.Contains("SuperAdmin") && !roles.Contains("DemoUser"))
         {
             // Allow login if user has a pending (incomplete) registration — they need to reach /Checkout
             var pendingRegistration = await _registrationService.GetPendingRegistrationByUserIdAsync(user.Id);
@@ -90,7 +90,7 @@ public class AccountController : Controller
         if (result.Succeeded)
         {
             // If user has no business, redirect to checkout to complete payment
-            if (!user.BusinessId.HasValue && !roles.Contains("SuperAdmin"))
+            if (!user.BusinessId.HasValue && !roles.Contains("SuperAdmin") && !roles.Contains("DemoUser"))
             {
                 TempData["CheckoutMessage"] = "Your registration is incomplete. Please complete your subscription payment to activate your account.";
                 return Redirect("/Checkout");

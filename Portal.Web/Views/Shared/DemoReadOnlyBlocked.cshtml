@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Read-Only Access";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot" style="background:#C8912E;"></span> Demo Session</div>
+        <h1 class="topbar-heading">Read-Only Access</h1>
+        <p class="topbar-subtitle">This module is available in view-only mode during your demo session.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="text-align:center;padding:60px 40px;">
+    <div style="margin-bottom:20px;">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="1.5">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </svg>
+    </div>
+    <h2 style="margin:0 0 12px 0;font-size:22px;font-weight:700;color:#1a2b3c;">Changes Not Permitted</h2>
+    <p style="margin:0 0 24px 0;font-size:15px;color:#5a6a7a;max-width:420px;margin-left:auto;margin-right:auto;">
+        Your demo session grants read-only access to this module. You can explore and view data, but creating or editing records is not available.
+    </p>
+    <a href="/" class="btn btn-primary" style="padding:12px 28px;">Back to Dashboard</a>
+</section>

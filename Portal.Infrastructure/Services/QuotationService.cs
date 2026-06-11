@@ -176,7 +176,8 @@ public class QuotationService : IQuotationService
             UpdatedAtUtc = DateTime.UtcNow
         };
 
-        await _quotationRepository.InsertAsync(quotation);
+        var newId = await _quotationRepository.InsertAndReturnIdAsync(quotation);
+        quotation.Id = newId;
 
         return quotation;
     }

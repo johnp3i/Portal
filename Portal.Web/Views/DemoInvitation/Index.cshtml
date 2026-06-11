@@ -1,0 +1,447 @@
+@using Portal.Infrastructure.Models
+@model PagedResult<DemoInvitationListItem>
+@{
+    ViewData["Title"] = "Demo Invitations";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Demo Invitations</h1>
+        <p class="topbar-subtitle">Create, manage, and track demo access invitations for prospects.</p>
+    </div>
+</div>
+
+<!-- Action Bar -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a2b3c;">Manage Invitations</h3>
+        <a href="/Admin/DemoInvitations/Create" class="btn btn-primary" style="padding:10px 20px;font-size:13px;">
+            Create Invitation
+        </a>
+    </div>
+</section>
+
+<!-- Demo Invitations Table -->
+<section class="glass card-pad">
+    @Html.AntiForgeryToken()
+
+    @if (Model.Items != null && Model.Items.Count > 0)
+    {
+        <table id="demoInvitationsTable">
+            <thead>
+                <tr>
+                    <th>Recipient Email</th>
+                    <th>Name</th>
+                    <th>Business</th>
+                    <th>Status</th>
+                    <th>Expiry</th>
+                    <th>Access Count</th>
+                    <th>First Accessed</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    var isActive = item.Status == "sent" || item.Status == "accessed";
+                    var isNotExpired = item.ExpiresAtUtc > DateTime.UtcNow;
+                    var canRevoke = isActive;
+                    var canResend = isActive && isNotExpired;
+
+                    <tr>
+                        <td>@item.RecipientEmail</td>
+                        <td>@(item.RecipientName ?? "—")</td>
+                        <td>@item.BusinessName</td>
+                        <td>
+                            @if (item.Status == "sent")
+                            {
+                                <span class="pill pill-demo-sent">Sent</span>
+                            }
+                            else if (item.Status == "accessed")
+                            {
+                                <span class="pill pill-demo-accessed">Accessed</span>
+                            }
+                            else if (item.Status == "expired")
+                            {
+                                <span class="pill pill-demo-expired">Expired</span>
+                            }
+                            else if (item.Status == "revoked")
+                            {
+                                <span class="pill pill-demo-revoked">Revoked</span>
+                            }
+                        </td>
+                        <td>@item.ExpiresAtUtc.ToString("dd MMM yyyy")</td>
+                        <td>@item.AccessCount</td>
+                        <td>@(item.FirstAccessedAtUtc.HasValue ? item.FirstAccessedAtUtc.Value.ToString("dd MMM yyyy HH:mm") : "—")</td>
+                        <td>@item.CreatedAtUtc.ToString("dd MMM yyyy")</td>
+                        <td style="white-space:nowrap;">
+                            <button type="button"
+                                    class="tbl-action tbl-action--primary btn-permissions-invitation"
+                                    data-id="@item.Id">
+                                Permissions
+                            </button>
+                            <button type="button"
+                                    class="tbl-action tbl-action--danger btn-revoke-invitation"
+                                    data-id="@item.Id"
+                                    @(canRevoke ? "" : "disabled")>
+                                Revoke
+                            </button>
+                            <button type="button"
+                                    class="tbl-action tbl-action--primary btn-resend-invitation"
+                                    data-id="@item.Id"
+                                    @(canResend ? "" : "disabled")>
+                                Resend
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;">
+                Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)–@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount)) of @Model.TotalCount
+            </div>
+            <div id="paginationControls" style="display:flex;gap:4px;align-items:center;">
+                @if (Model.HasPreviousPage)
+                {
+                    <a href="/Admin/DemoInvitations?page=@(Model.CurrentPage - 1)" class="pagination-btn">Previous</a>
+                }
+                else
+                {
+                    <span class="pagination-btn" style="opacity:0.4;cursor:not-allowed;">Previous</span>
+                }
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == Model.CurrentPage)
+                    {
+                        <span class="pagination-btn active">@i</span>
+                    }
+                    else
+                    {
+                        <a href="/Admin/DemoInvitations?page=@i" class="pagination-btn">@i</a>
+                    }
+                }
+
+                @if (Model.HasNextPage)
+                {
+                    <a href="/Admin/DemoInvitations?page=@(Model.CurrentPage + 1)" class="pagination-btn">Next</a>
+                }
+                else
+                {
+                    <span class="pagination-btn" style="opacity:0.4;cursor:not-allowed;">Next</span>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No demo invitations found. Create your first invitation to get started.</p>
+        </div>
+    }
+</section>
+
+<style>
+    .pill-demo-sent {
+        background: #0D5EA6;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pill-demo-accessed {
+        background: #129867;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pill-demo-expired {
+        background: #C8912E;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pill-demo-revoked {
+        background: #C24A4A;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .pagination-btn {
+        padding: 6px 12px;
+        border: 1px solid #d0d9e2;
+        border-radius: 8px;
+        background: #fff;
+        color: #0D5EA6;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .pagination-btn:hover {
+        background: #EEF4F8;
+        border-color: #0D5EA6;
+    }
+    .pagination-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+    .tbl-action:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+</style>
+
+@section Scripts {
+<!-- Permissions Modal -->
+<div id="permissionsModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,0.15);">
+        <h3 style="margin:0 0 20px 0;font-size:18px;font-weight:700;color:#1a2b3c;">Edit Module Permissions</h3>
+        <table class="permissions-grid" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">Module</th>
+                    <th style="text-align:center;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">Full</th>
+                    <th style="text-align:center;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">Read Only</th>
+                    <th style="text-align:center;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">None</th>
+                </tr>
+            </thead>
+            <tbody id="permissionsModalBody"></tbody>
+        </table>
+        <div style="margin-top:24px;display:flex;justify-content:flex-end;gap:12px;">
+            <button type="button" class="btn btn-secondary" onclick="closePermissionsModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // =========================================================================
+    // Helper: Get Antiforgery Token
+    // =========================================================================
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    // =========================================================================
+    // Revoke Invitation — Confirmation + AJAX
+    // =========================================================================
+    document.querySelectorAll('.btn-revoke-invitation').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var invitationId = parseInt(this.getAttribute('data-id'));
+
+            var result = await Swal.fire({
+                title: 'Revoke Invitation',
+                text: 'Are you sure you want to revoke this invitation? The recipient will no longer be able to access the demo.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, revoke it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Revoking invitation...');
+            try {
+                var response = await fetch('/Admin/DemoInvitations/Revoke', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ invitationId: invitationId })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({
+                        title: 'Revoked!',
+                        text: data.message || 'Invitation has been revoked.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to revoke invitation.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        });
+    });
+
+    // =========================================================================
+    // Resend Invitation Email — Confirmation + AJAX
+    // =========================================================================
+    document.querySelectorAll('.btn-resend-invitation').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var invitationId = parseInt(this.getAttribute('data-id'));
+
+            var result = await Swal.fire({
+                title: 'Resend Invitation',
+                text: 'Are you sure you want to resend the invitation email?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, resend it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Resending invitation email...');
+            try {
+                var response = await fetch('/Admin/DemoInvitations/Resend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ invitationId: invitationId })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Sent!',
+                        text: data.message || 'Invitation email resent successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to resend invitation email.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        });
+    });
+    // =========================================================================
+    // Permissions Modal — View + Edit
+    // =========================================================================
+    var currentPermissionsInvitationId = null;
+    var moduleLabels = {
+        customer: 'Customers', quotation: 'Quotations', invoice: 'Invoices',
+        revenue: 'Revenue', purchase: 'Purchases', vat: 'VAT',
+        credit: 'Credit Notes', audit: 'Audit', products: 'Products'
+    };
+    var modules = ['customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'audit', 'products'];
+
+    document.querySelectorAll('.btn-permissions-invitation').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var invitationId = parseInt(this.getAttribute('data-id'));
+            currentPermissionsInvitationId = invitationId;
+
+            BlockUI.show('Loading permissions...');
+            try {
+                var response = await fetch('/Admin/DemoInvitations/Permissions/' + invitationId);
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    renderPermissionsModal(data.permissions);
+                    document.getElementById('permissionsModal').style.display = 'flex';
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to load permissions.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        });
+    });
+
+    function renderPermissionsModal(permissions) {
+        var tbody = document.getElementById('permissionsModalBody');
+        tbody.innerHTML = '';
+        for (var i = 0; i < modules.length; i++) {
+            var m = modules[i];
+            var level = permissions[m] || 'none';
+            var row = '<tr>'
+                + '<td style="font-weight:600;padding:10px 12px;border-bottom:1px solid #eef4f8;">' + moduleLabels[m] + '</td>'
+                + '<td style="text-align:center;padding:10px 12px;border-bottom:1px solid #eef4f8;"><input type="radio" name="modal_perm_' + m + '" value="full" ' + (level === 'full' ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#0D5EA6;cursor:pointer;" /></td>'
+                + '<td style="text-align:center;padding:10px 12px;border-bottom:1px solid #eef4f8;"><input type="radio" name="modal_perm_' + m + '" value="readonly" ' + (level === 'readonly' ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#0D5EA6;cursor:pointer;" /></td>'
+                + '<td style="text-align:center;padding:10px 12px;border-bottom:1px solid #eef4f8;"><input type="radio" name="modal_perm_' + m + '" value="none" ' + (level === 'none' ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#0D5EA6;cursor:pointer;" /></td>'
+                + '</tr>';
+            tbody.innerHTML += row;
+        }
+    }
+
+    window.closePermissionsModal = function() {
+        document.getElementById('permissionsModal').style.display = 'none';
+        currentPermissionsInvitationId = null;
+    };
+
+    window.savePermissions = async function() {
+        if (!currentPermissionsInvitationId) return;
+
+        var permissions = [];
+        for (var i = 0; i < modules.length; i++) {
+            var m = modules[i];
+            var selected = document.querySelector('input[name="modal_perm_' + m + '"]:checked');
+            if (selected) {
+                permissions.push({ module: m, accessLevel: selected.value });
+            }
+        }
+
+        var hasGranted = permissions.some(function(p) { return p.accessLevel === 'full' || p.accessLevel === 'readonly'; });
+        if (!hasGranted) {
+            Swal.fire({ title: 'Validation', text: 'At least one module must have Full or Read Only access.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving permissions...');
+        try {
+            var response = await fetch('/Admin/DemoInvitations/Permissions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ invitationId: currentPermissionsInvitationId, permissions: permissions })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                closePermissionsModal();
+                Swal.fire({ title: 'Updated!', text: data.message || 'Permissions updated successfully.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Failed to update permissions.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    // Close modal on overlay click
+    document.getElementById('permissionsModal').addEventListener('click', function(e) {
+        if (e.target === this) closePermissionsModal();
+    });
+})();
+</script>
+}

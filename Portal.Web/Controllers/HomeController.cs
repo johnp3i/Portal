@@ -49,9 +49,17 @@ public class HomeController : Controller
         var isPrivileged = User.HasClaim("IsOwner", "true")
                         || User.IsInRole("SuperAdmin");
 
+        var demoInvitationIdClaim = User.FindFirst("DemoInvitationId")?.Value;
+
         if (isPrivileged)
         {
             scope = DashboardScopeDto.FullAccess();
+        }
+        else if (!string.IsNullOrEmpty(demoInvitationIdClaim) && int.TryParse(demoInvitationIdClaim, out var invitationId))
+        {
+            // Demo session — load permissions from DemoInvitationPermission
+            var permissions = await _permissionService.GetDemoPermissionsAsync(invitationId);
+            scope = DashboardScopeDto.FromPermissions(permissions);
         }
         else
         {

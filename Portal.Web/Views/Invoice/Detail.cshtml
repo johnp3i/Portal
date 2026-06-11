@@ -21,6 +21,7 @@
             <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
         }
         <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
+        <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
         <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
         @if (invoice.InvoiceStatusTypeId == 1)
         {
@@ -113,6 +114,27 @@
         </div>
     }
 </section>
+
+@if (ViewBag.AcceptanceStatus != null)
+{
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="label">Customer Acceptance</div>
+        <div style="margin-top:10px;">
+            @if (ViewBag.AcceptanceStatus == "accepted")
+            {
+                <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#e6f7f1;border:1px solid #129867;border-radius:10px;color:#129867;font-size:14px;font-weight:700;">
+                    &#x2713; Accepted on @(((DateTimeOffset)ViewBag.AcceptedAtUtc).ToString("dd MMM yyyy"))
+                </span>
+            }
+            else if (ViewBag.AcceptanceStatus == "awaiting")
+            {
+                <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#fef7ec;border:1px solid #C8912E;border-radius:10px;color:#C8912E;font-size:14px;font-weight:700;">
+                    &#x23F3; Awaiting acceptance
+                </span>
+            }
+        </div>
+    </section>
+}
 
 <!-- VAT Period Reassignment -->
 <section class="glass card-pad" style="margin-top:24px;">
@@ -469,6 +491,143 @@
                     icon: 'error',
                     confirmButtonColor: '#0D5EA6'
                 });
+            }
+        }
+
+        async function openShareDialog(invoiceId) {
+            var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            // Check for existing active share
+            var existingShare = null;
+            try {
+                var checkResponse = await fetch('/Invoice/GetActiveShare?invoiceId=' + invoiceId);
+                var checkData = await checkResponse.json();
+                if (checkData.hasActiveShare) {
+                    existingShare = checkData;
+                }
+            } catch (e) { /* proceed without existing share info */ }
+
+            var customerEmail = existingShare?.customerEmail || '@(ViewBag.CustomerEmail ?? "")';
+            var defaultExpiry = new Date();
+            defaultExpiry.setDate(defaultExpiry.getDate() + 7);
+            var expiryStr = defaultExpiry.toISOString().split('T')[0];
+
+            if (existingShare) {
+                // Show existing share info with option to copy link or resend
+                var result = await Swal.fire({
+                    title: 'Invoice Shared',
+                    html: '<div style="text-align:left;font-size:14px;line-height:1.8;">'
+                        + '<p>This invoice already has an active share link:</p>'
+                        + '<input type="text" id="swal-share-url" value="' + window.location.origin + existingShare.shareUrl + '" readonly style="width:100%;padding:8px;border:1px solid #d0d9e2;border-radius:6px;font-size:13px;margin:8px 0;" />'
+                        + '<p style="font-size:12px;color:#5a6a7a;">Expires: ' + new Date(existingShare.expiresAt).toLocaleDateString() + '</p>'
+                        + '</div>',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0D5EA6',
+                    confirmButtonText: 'Copy Link',
+                    cancelButtonText: 'Close',
+                    showDenyButton: true,
+                    denyButtonText: 'Send by Email',
+                    denyButtonColor: '#129867'
+                });
+
+                if (result.isConfirmed) {
+                    var urlInput = document.getElementById('swal-share-url');
+                    if (urlInput) {
+                        navigator.clipboard.writeText(urlInput.value);
+                        Swal.fire({ title: 'Copied!', text: 'Link copied to clipboard.', icon: 'success', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+                    }
+                } else if (result.isDenied) {
+                    await sendShareEmail(invoiceId, antiForgeryToken, customerEmail);
+                }
+            } else {
+                // Create new share
+                var result = await Swal.fire({
+                    title: 'Share Invoice',
+                    html: '<div style="text-align:left;font-size:14px;">'
+                        + '<div style="margin-bottom:12px;"><label style="font-weight:600;display:block;margin-bottom:4px;">Recipient Email</label>'
+                        + '<input type="email" id="swal-recipient-email" value="' + customerEmail + '" placeholder="customer@example.com" style="width:100%;padding:8px;border:1px solid #d0d9e2;border-radius:6px;" /></div>'
+                        + '<div><label style="font-weight:600;display:block;margin-bottom:4px;">Expiry Date</label>'
+                        + '<input type="date" id="swal-expiry-date" value="' + expiryStr + '" style="width:100%;padding:8px;border:1px solid #d0d9e2;border-radius:6px;" /></div>'
+                        + '</div>',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0D5EA6',
+                    confirmButtonText: 'Share & Send Email',
+                    cancelButtonText: 'Cancel'
+                });
+
+                if (!result.isConfirmed) return;
+
+                var email = document.getElementById('swal-recipient-email').value.trim();
+                var expiry = document.getElementById('swal-expiry-date').value;
+
+                if (!email) {
+                    Swal.fire({ title: 'Error', text: 'Recipient email is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                BlockUI.show('Sharing invoice...');
+                try {
+                    var response = await fetch('/Invoice/Share', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: 'invoiceId=' + invoiceId + '&expiresAtUtc=' + encodeURIComponent(expiry + 'T23:59:59Z') + '&sendEmail=true&recipientEmail=' + encodeURIComponent(email)
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ title: 'Shared!', text: 'Invoice shared and email sent to ' + email, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message || 'Failed to share invoice.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        }
+
+        async function sendShareEmail(invoiceId, antiForgeryToken, defaultEmail) {
+            var result = await Swal.fire({
+                title: 'Send Invoice Email',
+                html: '<div style="text-align:left;font-size:14px;">'
+                    + '<label style="font-weight:600;display:block;margin-bottom:4px;">Recipient Email</label>'
+                    + '<input type="email" id="swal-resend-email" value="' + defaultEmail + '" style="width:100%;padding:8px;border:1px solid #d0d9e2;border-radius:6px;" />'
+                    + '</div>',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                confirmButtonText: 'Send Email'
+            });
+
+            if (!result.isConfirmed) return;
+
+            var email = document.getElementById('swal-resend-email').value.trim();
+            if (!email) return;
+
+            BlockUI.show('Sending email...');
+            try {
+                var response = await fetch('/Invoice/Share', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'invoiceId=' + invoiceId + '&sendEmail=true&recipientEmail=' + encodeURIComponent(email)
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({ title: 'Sent!', text: 'Invoice email sent to ' + email, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to send email.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
             }
         }
     </script>

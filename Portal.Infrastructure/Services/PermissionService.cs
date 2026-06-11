@@ -7,11 +7,13 @@ namespace Portal.Infrastructure.Services;
 public class PermissionService : IPermissionService
 {
     private readonly MembershipDbContext _dbContext;
+    private readonly PortalDbContext _portalDbContext;
     private readonly ICurrentTenantService _tenantService;
 
-    public PermissionService(MembershipDbContext dbContext, ICurrentTenantService tenantService)
+    public PermissionService(MembershipDbContext dbContext, PortalDbContext portalDbContext, ICurrentTenantService tenantService)
     {
         _dbContext = dbContext;
+        _portalDbContext = portalDbContext;
         _tenantService = tenantService;
     }
 
@@ -49,6 +51,22 @@ public class PermissionService : IPermissionService
                          && p.UserBusiness.BusinessId == resolvedBusinessId
                          && p.UserBusiness.IsActive
                          && p.IsActive)
+                .ToDictionaryAsync(p => p.Module, p => p.AccessLevel);
+
+            return permissions;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<Dictionary<string, string>> GetDemoPermissionsAsync(int invitationId)
+    {
+        try
+        {
+            var permissions = await _portalDbContext.DemoInvitationPermissions
+                .Where(p => p.DemoInvitationId == invitationId)
                 .ToDictionaryAsync(p => p.Module, p => p.AccessLevel);
 
             return permissions;

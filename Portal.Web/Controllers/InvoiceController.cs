@@ -27,6 +27,7 @@ public class InvoiceController : Controller
     private readonly IBusinessService _businessService;
     private readonly BusinessPaymentDetailRepository _paymentDetailRepository;
     private readonly IInvoiceSharingService _sharingService;
+    private readonly IInvoiceAcceptanceService _acceptanceService;
     private readonly IDocumentDuplicationService _duplicationService;
     private readonly IDocumentSoftDeleteService _softDeleteService;
     private readonly VatSubmissionPeriodRepository _vatPeriodRepository;
@@ -41,6 +42,7 @@ public class InvoiceController : Controller
         IBusinessService businessService,
         BusinessPaymentDetailRepository paymentDetailRepository,
         IInvoiceSharingService sharingService,
+        IInvoiceAcceptanceService acceptanceService,
         IDocumentDuplicationService duplicationService,
         IDocumentSoftDeleteService softDeleteService,
         VatSubmissionPeriodRepository vatPeriodRepository,
@@ -54,6 +56,7 @@ public class InvoiceController : Controller
         _businessService = businessService;
         _paymentDetailRepository = paymentDetailRepository;
         _sharingService = sharingService;
+        _acceptanceService = acceptanceService;
         _duplicationService = duplicationService;
         _softDeleteService = softDeleteService;
         _vatPeriodRepository = vatPeriodRepository;
@@ -67,6 +70,28 @@ public class InvoiceController : Controller
         var customers = await _customerService.GetCustomersAsync(null, true);
         var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
         var vatPeriods = await _vatPeriodRepository.GetAllByBusinessIdAsync(_tenantService.CurrentBusinessId);
+
+        // Load acceptance status for invoices that have active shares
+        var invoiceIds = pagedResult.Items.Select(i => i.Id).ToList();
+        var activeShares = new Dictionary<int, int>(); // invoiceId → shareId
+        foreach (var invoiceId in invoiceIds)
+        {
+            var share = await _sharingService.GetActiveShareByInvoiceIdAsync(invoiceId);
+            if (share != null)
+                activeShares[invoiceId] = share.Id;
+        }
+
+        if (activeShares.Count > 0)
+        {
+            var acceptedShareIds = await _acceptanceService.GetAcceptedShareIdsAsync(activeShares.Values);
+            foreach (var item in pagedResult.Items)
+            {
+                if (activeShares.TryGetValue(item.Id, out var shareId))
+                {
+                    item.AcceptanceStatus = acceptedShareIds.Contains(shareId) ? "accepted" : "awaiting";
+                }
+            }
+        }
 
         ViewBag.PagedResult = pagedResult;
         ViewBag.SearchTerm = search;
@@ -199,6 +224,26 @@ public class InvoiceController : Controller
                 invoice.VatSubmissionPeriodId.Value, _tenantService.CurrentBusinessId);
             if (vatPeriod != null)
                 invoice.VatSubmissionPeriod = vatPeriod;
+        }
+
+        // Load acceptance status for the invoice share
+        var activeShare = await _sharingService.GetActiveShareByInvoiceIdAsync(id);
+        if (activeShare != null)
+        {
+            var acceptance = await _acceptanceService.GetByInvoiceShareIdAsync(activeShare.Id);
+            if (acceptance != null)
+            {
+                ViewBag.AcceptanceStatus = "accepted";
+                ViewBag.AcceptedAtUtc = acceptance.AcceptedAtUtc;
+            }
+            else
+            {
+                ViewBag.AcceptanceStatus = "awaiting";
+            }
+        }
+        else
+        {
+            ViewBag.AcceptanceStatus = null;
         }
 
         return View(invoice);
