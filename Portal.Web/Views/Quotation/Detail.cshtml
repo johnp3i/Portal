@@ -268,6 +268,28 @@
     </form>
 </section>
 
+<!-- Acceptance Status -->
+@if (ViewBag.AcceptanceStatus != null)
+{
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="label">Customer Acceptance</div>
+        <div style="margin-top:10px;">
+            @if (ViewBag.AcceptanceStatus == "accepted")
+            {
+                <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#e6f7f1;border:1px solid #129867;border-radius:10px;color:#129867;font-size:14px;font-weight:700;">
+                    &#x2713; Accepted on @(((DateTimeOffset)ViewBag.AcceptedAtUtc).ToString("dd MMM yyyy"))
+                </span>
+            }
+            else if (ViewBag.AcceptanceStatus == "awaiting")
+            {
+                <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#fef7ec;border:1px solid #C8912E;border-radius:10px;color:#C8912E;font-size:14px;font-weight:700;">
+                    &#x23F3; Awaiting acceptance
+                </span>
+            }
+        </div>
+    </section>
+}
+
 <!-- Back link -->
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
     <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>

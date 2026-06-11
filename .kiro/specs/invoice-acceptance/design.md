@@ -130,6 +130,22 @@ The existing `Detail` action will be extended to:
 3. Set `ViewBag.AcceptanceStatus` to one of: `"accepted"`, `"awaiting"`, or `null` (no share)
 4. Set `ViewBag.AcceptedAtUtc` when status is `"accepted"`
 
+### InvoiceController.Index Changes (Invoice List)
+
+The existing `Index` action is extended to populate `AcceptanceStatus` on each `InvoiceListDto`:
+1. After loading the paged invoice results, iterate over the page's invoice IDs and load active shares via `_sharingService.GetActiveShareByInvoiceIdAsync`
+2. Collect all active share IDs into a dictionary (invoiceId → shareId)
+3. Batch-load accepted share IDs via `_acceptanceService.GetAcceptedShareIdsAsync(shareIds)`
+4. Set `item.AcceptanceStatus` to `"accepted"` or `"awaiting"` for each invoice that has an active share
+
+The `InvoiceListDto` has an `AcceptanceStatus` property (nullable string) that is `null` for invoices with no active share, `"awaiting"` for shared-but-not-accepted, and `"accepted"` for shared-and-accepted.
+
+**Invoice List View (Index.cshtml):**
+Below the invoice number in the table's first column, a small note is rendered:
+- `"✓ Accepted"` — green text (#129867), font-size 11px, font-weight 600
+- `"⏳ Awaiting acceptance"` — amber text (#C8912E), font-size 11px, font-weight 600
+- No note shown when `AcceptanceStatus` is null (no active share)
+
 ## Data Models
 
 ### Database Schema: `[invoice].[InvoiceAcceptance]`
@@ -232,6 +248,23 @@ public static class InvoiceAcceptanceConstants
 {
     public const string AcceptanceTermsText = 
         "I accept this invoice as correct and agree to pay by the due date.";
+}
+```
+
+### InvoiceListDto Extension
+
+The existing `InvoiceListDto` is extended with an acceptance status field for the invoice list view:
+
+```csharp
+public class InvoiceListDto
+{
+    // ... existing properties ...
+
+    /// <summary>
+    /// Acceptance status for the invoice's shared link.
+    /// Null = no active share, "awaiting" = shared but not accepted, "accepted" = accepted by customer.
+    /// </summary>
+    public string? AcceptanceStatus { get; set; }
 }
 ```
 

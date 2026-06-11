@@ -60,6 +60,7 @@ public class PortalDbContext : DbContext
 
     // Proposal schema
     public DbSet<ProposalShare> ProposalShares { get; set; } = null!;
+    public DbSet<ProposalAcceptance> ProposalAcceptances { get; set; } = null!;
     public DbSet<ProposalSection> ProposalSections { get; set; } = null!;
     public DbSet<BusinessLogo> BusinessLogos { get; set; } = null!;
     public DbSet<QuotationContact> QuotationContacts { get; set; } = null!;
@@ -134,6 +135,7 @@ public class PortalDbContext : DbContext
         ConfigureVatSubmission(modelBuilder);
         ConfigureAuditLog(modelBuilder);
         ConfigureProposalShare(modelBuilder);
+        ConfigureProposalAcceptance(modelBuilder);
         ConfigureProposalSection(modelBuilder);
         ConfigureBusinessLogo(modelBuilder);
         ConfigureQuotationContact(modelBuilder);
@@ -1198,6 +1200,41 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
+        });
+    }
+
+    private static void ConfigureProposalAcceptance(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProposalAcceptance>(entity =>
+        {
+            entity.ToTable("ProposalAcceptance", "quotation");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.ProposalShare)
+                .WithOne()
+                .HasForeignKey<ProposalAcceptance>(e => e.ProposalShareId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.ProposalShareId)
+                .IsUnique()
+                .HasDatabaseName("UX_ProposalAcceptance_ProposalShareId");
+
+            entity.Property(e => e.AcceptedTerms)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.IpAddress)
+                .IsRequired()
+                .HasMaxLength(45);
+
+            entity.Property(e => e.UserAgent)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("SYSDATETIMEOFFSET()");
         });
     }
 

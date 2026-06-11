@@ -73,7 +73,17 @@
                     @foreach (var quotation in Model.PagedQuotations.Items)
                     {
                         <tr>
-                            <td><strong>@quotation.Reference</strong></td>
+                            <td>
+                                <strong>@quotation.Reference</strong>
+                                @if (quotation.AcceptanceStatus == "accepted")
+                                {
+                                    <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>
+                                }
+                                else if (quotation.AcceptanceStatus == "awaiting")
+                                {
+                                    <div style="font-size:11px;color:#C8912E;font-weight:600;margin-top:3px;">⏳ Awaiting acceptance</div>
+                                }
+                            </td>
                             <td>@quotation.CustomerName</td>
                             <td>
                                 @{

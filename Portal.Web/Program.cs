@@ -200,6 +200,9 @@ builder.Services.AddScoped<IInvoiceSharingService, InvoiceSharingService>();
 builder.Services.AddScoped<InvoiceAcceptanceRepository>(sp =>
     new InvoiceAcceptanceRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IInvoiceAcceptanceService, InvoiceAcceptanceService>();
+builder.Services.AddScoped<ProposalAcceptanceRepository>(sp =>
+    new ProposalAcceptanceRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IProposalAcceptanceService, ProposalAcceptanceService>();
 builder.Services.AddScoped<IDocumentDuplicationService, DocumentDuplicationService>();
 builder.Services.AddScoped<IDocumentSoftDeleteService, DocumentSoftDeleteService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();

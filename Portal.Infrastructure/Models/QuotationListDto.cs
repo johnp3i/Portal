@@ -14,4 +14,10 @@ public class QuotationListDto
     public DateOnly? ValidUntil { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public bool IsExpired { get; set; }
+
+    /// <summary>
+    /// Acceptance status for the quotation's shared proposal link.
+    /// Null = no active share, "awaiting" = shared but not accepted, "accepted" = accepted by customer.
+    /// </summary>
+    public string? AcceptanceStatus { get; set; }
 }

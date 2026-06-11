@@ -11,7 +11,7 @@ public class ProposalShareRepository : GenericStoredProcedureRepository<Proposal
 {
     public ProposalShareRepository(DbContext context) : base(context) { }
 
-    public async Task<ProposalShare?> GetByTokenAsync(string token)
+    public virtual async Task<ProposalShare?> GetByTokenAsync(string token)
     {
         try
         {

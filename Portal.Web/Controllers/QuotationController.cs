@@ -26,6 +26,7 @@ public class QuotationController : Controller
     private readonly IDocumentDuplicationService _duplicationService;
     private readonly IDocumentSoftDeleteService _softDeleteService;
     private readonly ProductRepository _productRepository;
+    private readonly IProposalAcceptanceService _acceptanceService;
 
     public QuotationController(
         IQuotationService quotationService,
@@ -39,7 +40,8 @@ public class QuotationController : Controller
         IBusinessService businessService,
         IDocumentDuplicationService duplicationService,
         IDocumentSoftDeleteService softDeleteService,
-        ProductRepository productRepository)
+        ProductRepository productRepository,
+        IProposalAcceptanceService acceptanceService)
     {
         _quotationService = quotationService;
         _customerService = customerService;
@@ -53,6 +55,7 @@ public class QuotationController : Controller
         _duplicationService = duplicationService;
         _softDeleteService = softDeleteService;
         _productRepository = productRepository;
+        _acceptanceService = acceptanceService;
     }
 
     [HttpGet]
@@ -61,6 +64,28 @@ public class QuotationController : Controller
         var pagedQuotations = await _quotationService.GetQuotationsPagedAsync(status, customer, dateFrom, dateTo, search, page);
         var customers = await _customerService.GetCustomersAsync(null, true);
         var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+
+        // Load acceptance status for quotations that have active shares
+        var quotationIds = pagedQuotations.Items.Select(q => q.Id).ToList();
+        var activeShares = new Dictionary<int, int>(); // quotationId → shareId
+        foreach (var quotationId in quotationIds)
+        {
+            var share = await _proposalService.GetActiveShareByQuotationIdAsync(quotationId);
+            if (share != null)
+                activeShares[quotationId] = share.Id;
+        }
+
+        if (activeShares.Count > 0)
+        {
+            var acceptedShareIds = await _acceptanceService.GetAcceptedShareIdsAsync(activeShares.Values);
+            foreach (var item in pagedQuotations.Items)
+            {
+                if (activeShares.TryGetValue(item.Id, out var shareId))
+                {
+                    item.AcceptanceStatus = acceptedShareIds.Contains(shareId) ? "accepted" : "awaiting";
+                }
+            }
+        }
 
         var viewModel = new QuotationListViewModel
         {
@@ -260,6 +285,26 @@ public class QuotationController : Controller
             IsExpired = _quotationService.IsExpired(quotation),
             AvailableTransitions = availableTransitions
         };
+
+        // Acceptance status
+        var activeShare = await _proposalService.GetActiveShareByQuotationIdAsync(id);
+        if (activeShare != null)
+        {
+            var acceptance = await _acceptanceService.GetByProposalShareIdAsync(activeShare.Id);
+            if (acceptance != null)
+            {
+                ViewBag.AcceptanceStatus = "accepted";
+                ViewBag.AcceptedAtUtc = acceptance.AcceptedAtUtc;
+            }
+            else
+            {
+                ViewBag.AcceptanceStatus = "awaiting";
+            }
+        }
+        else
+        {
+            ViewBag.AcceptanceStatus = null;
+        }
 
         return View(viewModel);
     }
