@@ -39,7 +39,7 @@ public class ProposalSectionController : ControllerBase
 
         try
         {
-            await _sectionService.AddSectionAsync(request.QuotationId, request.Name, request.Description, request.ColumnConfiguration, request.SectionType, request.IsEmphasized, request.AccentColor, request.Label, request.IsTotalsTableShown);
+            await _sectionService.AddSectionAsync(request.QuotationId, request.Name, request.Description, request.ColumnConfiguration, request.SectionType, request.IsEmphasized, request.AccentColor, request.Label, request.IsTotalsTableShown, request.IsHalfWidth);
             var sections = await _sectionService.GetByQuotationIdAsync(request.QuotationId);
             return Ok(new { success = true, sections });
         }
@@ -157,7 +157,7 @@ public class ProposalSectionController : ControllerBase
 
         try
         {
-            await _sectionService.UpdateSectionAsync(request.SectionId, request.Name, request.Description, request.Notes, request.ColumnConfiguration, request.SectionType, request.IsEmphasized, request.AccentColor, request.Label, request.IsTotalsTableShown);
+            await _sectionService.UpdateSectionAsync(request.SectionId, request.Name, request.Description, request.Notes, request.ColumnConfiguration, request.SectionType, request.IsEmphasized, request.AccentColor, request.Label, request.IsTotalsTableShown, request.IsHalfWidth);
             return Ok(new { success = true });
         }
         catch (ArgumentException ex)
@@ -182,6 +182,7 @@ public class AddSectionRequest
     public string? AccentColor { get; set; }
     public string? Label { get; set; }
     public bool IsTotalsTableShown { get; set; }
+    public bool IsHalfWidth { get; set; }
 }
 
 public class RemoveSectionRequest
@@ -219,4 +220,5 @@ public class UpdateSectionRequest
     public string? AccentColor { get; set; }
     public string? Label { get; set; }
     public bool? IsTotalsTableShown { get; set; }
+    public bool? IsHalfWidth { get; set; }
 }

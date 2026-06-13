@@ -129,7 +129,15 @@
      * Inserts an error element adjacent to the line card with a dismiss button.
      */
     function showError(lineCard, message) {
-        if (!lineCard) return;
+        if (!lineCard) {
+            // Fallback for Add Line forms (no parent .line-card)
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ title: 'Error', text: message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+            } else {
+                window.alert(message);
+            }
+            return;
+        }
 
         clearError(lineCard);
 

@@ -16,6 +16,7 @@ public class QuotationService : IQuotationService
     private readonly QuotationLineRepository _quotationLineRepository;
     private readonly AuditLogRepository _auditLogRepository;
     private readonly CustomerRepository _customerRepository;
+    private readonly ProposalSectionRepository _sectionRepository;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly ILineItemCatalogService _lineItemCatalogService;
     private readonly IProductService _productService;
@@ -44,6 +45,7 @@ public class QuotationService : IQuotationService
         QuotationLineRepository quotationLineRepository,
         AuditLogRepository auditLogRepository,
         CustomerRepository customerRepository,
+        ProposalSectionRepository sectionRepository,
         ICurrentTenantService currentTenantService,
         ILineItemCatalogService lineItemCatalogService,
         IProductService productService,
@@ -54,6 +56,7 @@ public class QuotationService : IQuotationService
         _quotationLineRepository = quotationLineRepository;
         _auditLogRepository = auditLogRepository;
         _customerRepository = customerRepository;
+        _sectionRepository = sectionRepository;
         _currentTenantService = currentTenantService;
         _lineItemCatalogService = lineItemCatalogService;
         _productService = productService;
@@ -159,7 +162,8 @@ public class QuotationService : IQuotationService
         }
 
         var sequentialNumber = await _quotationRepository.GetNextSequentialNumberAsync(businessId);
-        var reference = $"QUO-{businessId}-{sequentialNumber:D5}";
+        var now = DateTime.UtcNow;
+        var reference = $"QUO-{now.Year}-{now.Month:D2}-{sequentialNumber:D5}";
 
         var quotation = new Quotation
         {
@@ -283,7 +287,7 @@ public class QuotationService : IQuotationService
         }
     }
 
-    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null, bool isReverseCharge = false)
+    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null, bool isReverseCharge = false, int? proposalSectionId = null)
     {
         if (isReverseCharge && vatRate > 0)
         {
@@ -329,7 +333,8 @@ public class QuotationService : IQuotationService
             ReferenceUrl = referenceUrl,
             Subtitle = subtitle,
             ProductCode = productCode,
-            IsReverseCharge = isReverseCharge
+            IsReverseCharge = isReverseCharge,
+            ProposalSectionId = proposalSectionId
         };
 
         await _quotationLineRepository.InsertAsync(line);
@@ -441,9 +446,28 @@ public class QuotationService : IQuotationService
     private async Task RecalculateQuotationTotalsAsync(Quotation quotation)
     {
         var lines = await _quotationLineRepository.GetByQuotationIdAsync(quotation.Id);
+        var sections = await _sectionRepository.GetByQuotationIdAsync(quotation.Id);
 
-        quotation.Subtotal = lines.Sum(l => l.LineTotal);
-        quotation.TaxAmount = Math.Round(lines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
+        // Build a lookup of subscription section IDs
+        var subscriptionSectionIds = new HashSet<int>(
+            sections.Where(s => s.ColumnConfiguration == "Subscription").Select(s => s.Id));
+
+        // Calculate totals — annualize subscription lines (×12)
+        decimal subtotal = 0;
+        decimal taxAmount = 0;
+
+        foreach (var line in lines)
+        {
+            var multiplier = (line.ProposalSectionId.HasValue && subscriptionSectionIds.Contains(line.ProposalSectionId.Value))
+                ? 12m
+                : 1m;
+
+            subtotal += line.LineTotal * multiplier;
+            taxAmount += line.LineTotal * multiplier * line.VatRate / 100m;
+        }
+
+        quotation.Subtotal = Math.Round(subtotal, 2);
+        quotation.TaxAmount = Math.Round(taxAmount, 2);
         quotation.TotalAmount = quotation.Subtotal + quotation.TaxAmount;
         quotation.UpdatedAtUtc = DateTime.UtcNow;
 

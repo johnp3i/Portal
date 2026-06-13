@@ -49,18 +49,18 @@
 
         @if (Model.AvailableTransitions.Contains(2))
         {
-            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;" id="sendQuotationForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="newStatusId" value="2" />
-                <button type="submit" class="btn btn-primary">Send Quotation</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSendQuotation()">Send Quotation</button>
             </form>
         }
         @if (Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
         {
-            <form method="post" asp-action="ConvertToInvoice" asp-controller="Quotation" style="display:inline;">
+            <form method="post" asp-action="ConvertToInvoice" asp-controller="Quotation" style="display:inline;" id="convertToInvoiceForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="quotationId" value="@Model.Quotation.Id" />
-                <button type="submit" class="btn btn-green">Convert to Invoice</button>
+                <button type="button" class="btn btn-green" onclick="confirmConvertToInvoice()">Convert to Invoice</button>
             </form>
         }
         <button type="button" class="btn btn-secondary" onclick="duplicateQuotation(@Model.Quotation.Id)">Duplicate</button>
@@ -141,35 +141,95 @@
     <div style="margin-top:18px;">
         @if (Model.Lines != null && Model.Lines.Count > 0)
         {
-            <table>
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th>Qty</th>
-                        <th>Unit Price</th>
-                        <th>VAT %</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var line in Model.Lines)
-                    {
+            var sections = ViewBag.Sections as List<Portal.Infrastructure.Entities.ProposalSection> ?? new List<Portal.Infrastructure.Entities.ProposalSection>();
+            var subscriptionSectionIds = new HashSet<int>(sections.Where(s => s.ColumnConfiguration == "Subscription").Select(s => s.Id));
+            var subscriptionLines = Model.Lines.Where(l => l.ProposalSectionId.HasValue && subscriptionSectionIds.Contains(l.ProposalSectionId.Value)).ToList();
+            var oneTimeLines = Model.Lines.Where(l => !l.ProposalSectionId.HasValue || !subscriptionSectionIds.Contains(l.ProposalSectionId.Value)).ToList();
+
+            @if (subscriptionLines.Count > 0)
+            {
+                <div class="label" style="margin-bottom:8px;font-size:11px;color:var(--muted);">Subscription Items (Monthly)</div>
+                <table style="table-layout:fixed;">
+                    <colgroup>
+                        <col style="width:40%;" />
+                        <col style="width:12%;" />
+                        <col style="width:18%;" />
+                        <col style="width:12%;" />
+                        <col style="width:18%;" />
+                    </colgroup>
+                    <thead>
                         <tr>
-                            <td>
-                                <strong>@line.Description</strong>
-                                @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
-                                {
-                                    <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">â†— ref</a>
-                                }
-                            </td>
-                            <td>@line.Quantity.ToString("N2")</td>
-                            <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
-                            <td>@line.VatRate.ToString("N2")%</td>
-                            <td><strong>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")</strong></td>
+                            <th>Description</th>
+                            <th>Months</th>
+                            <th>Monthly Price</th>
+                            <th>VAT %</th>
+                            <th>Annual Total</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in subscriptionLines)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@line.Description</strong>
+                                    @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
+                                    {
+                                        <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&#x2197; ref</a>
+                                    }
+                                </td>
+                                <td>12</td>
+                                <td>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")/mo</td>
+                                <td>@line.VatRate.ToString("G29")%</td>
+                                <td><strong>@(ViewBag.CurrencySymbol)@((line.LineTotal * 12).ToString("N2"))</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @if (oneTimeLines.Count > 0)
+            {
+                if (subscriptionLines.Count > 0)
+                {
+                    <div class="label" style="margin-top:24px;margin-bottom:8px;font-size:11px;color:var(--muted);">One-Time Items</div>
+                }
+                <table style="table-layout:fixed;">
+                    <colgroup>
+                        <col style="width:40%;" />
+                        <col style="width:12%;" />
+                        <col style="width:18%;" />
+                        <col style="width:12%;" />
+                        <col style="width:18%;" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>VAT %</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in oneTimeLines)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@line.Description</strong>
+                                    @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
+                                    {
+                                        <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&#x2197; ref</a>
+                                    }
+                                </td>
+                                <td>@line.Quantity.ToString("G29")</td>
+                                <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
+                                <td>@line.VatRate.ToString("G29")%</td>
+                                <td><strong>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
         }
         else
         {
@@ -223,7 +283,7 @@
                     @foreach (var logo in logos)
                     {
                         <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;transition:border-color .2s;">
-                            <input type="checkbox" name="HeroLogoIds" value="@logo.Id" style="width:16px;height:16px;" />
+                            <input type="checkbox" name="HeroLogoIds" value="@logo.Id" style="width:16px;height:16px;" @(logo.IsPrimary ? "checked" : "") />
                             <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:36px;max-width:72px;object-fit:contain;" />
                             <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
                             @if (logo.IsPrimary)
@@ -240,13 +300,13 @@
                 <p class="muted" style="font-size:13px;margin-bottom:12px;">Small logo displayed next to the business name in the proposal header.</p>
                 <div style="display:flex;gap:16px;flex-wrap:wrap;">
                     <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
-                        <input type="radio" name="MetaLogoId" value="" checked style="width:16px;height:16px;" />
+                        <input type="radio" name="MetaLogoId" value="" @(!logos.Any(l => l.IsPrimary) ? "checked" : "") style="width:16px;height:16px;" />
                         <span style="font-size:13px;font-weight:600;color:#5E7385;">None</span>
                     </label>
                     @foreach (var logo in logos)
                     {
                         <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
-                            <input type="radio" name="MetaLogoId" value="@logo.Id" style="width:16px;height:16px;" />
+                            <input type="radio" name="MetaLogoId" value="@logo.Id" @(logo.IsPrimary ? "checked" : "") style="width:16px;height:16px;" />
                             <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:28px;max-width:56px;object-fit:contain;" />
                             <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
                         </label>
@@ -263,7 +323,7 @@
 
         <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);display:flex;gap:12px;">
             <button type="button" id="btnShareProposal" class="btn btn-primary">Share Proposal</button>
-            <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview First</a>
+            <button type="button" id="btnPreviewProposal" class="btn btn-secondary">Preview First</button>
         </div>
     </form>
 </section>
@@ -297,6 +357,40 @@
 
 @section Scripts {
     <script>
+        async function confirmSendQuotation() {
+            var result = await Swal.fire({
+                title: 'Mark as Sent?',
+                html: '<div style="text-align:left;font-size:14px;line-height:1.8;color:#334155;">' +
+                      '<p style="margin-bottom:12px;">This marks the quotation as <strong>Sent</strong> in your system for tracking purposes.</p>' +
+                      '<p style="margin-bottom:12px;color:#5a6a7a;">This does <strong>not</strong> send an email to the customer.</p>' +
+                      '<p style="margin-bottom:0;"><strong>To share with your customer:</strong> use the <em>Share Proposal</em> section below to generate a branded link and send it via email.</p>' +
+                      '</div>',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Mark as Sent',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#0D5EA6'
+            });
+            if (result.isConfirmed) {
+                document.getElementById('sendQuotationForm').submit();
+            }
+        }
+
+        async function confirmConvertToInvoice() {
+            var result = await Swal.fire({
+                title: 'Convert to Invoice?',
+                text: 'This will create an invoice from this quotation. The quotation status will change to Converted.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, convert it',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#129867'
+            });
+            if (result.isConfirmed) {
+                document.getElementById('convertToInvoiceForm').submit();
+            }
+        }
+
         async function duplicateQuotation(quotationId) {
             var result = await Swal.fire({
                 title: 'Duplicate Quotation',
@@ -404,6 +498,19 @@
 
         document.getElementById('btnShareProposal').addEventListener('click', async function() {
             var btn = this;
+
+            var confirmation = await Swal.fire({
+                title: 'Share this proposal?',
+                text: 'The proposal will be sent to the recipient. This will generate a secure link.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, share it',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#0D5EA6'
+            });
+
+            if (!confirmation.isConfirmed) return;
+
             btn.disabled = true;
             BlockUI.show('Sharing proposal...');
 
@@ -432,6 +539,7 @@
                         confirmButtonColor: '#0D5EA6',
                         confirmButtonText: 'Done'
                     });
+                    window.location.reload();
                 } else {
                     Swal.fire({
                         title: 'Sharing Failed',
@@ -451,6 +559,52 @@
             } finally {
                 btn.disabled = false;
             }
+        });
+
+        document.getElementById('btnPreviewProposal').addEventListener('click', function() {
+            var form = document.getElementById('shareProposalForm');
+            var formData = new FormData(form);
+
+            // Build a hidden form that submits to Preview in a new tab
+            var previewForm = document.createElement('form');
+            previewForm.method = 'POST';
+            previewForm.action = '@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })';
+            previewForm.target = '_blank';
+            previewForm.style.display = 'none';
+
+            // Add antiforgery token
+            var token = form.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                var tokenClone = document.createElement('input');
+                tokenClone.type = 'hidden';
+                tokenClone.name = '__RequestVerificationToken';
+                tokenClone.value = token.value;
+                previewForm.appendChild(tokenClone);
+            }
+
+            // Add selected HeroLogoIds
+            var heroCheckboxes = form.querySelectorAll('input[name="HeroLogoIds"]:checked');
+            heroCheckboxes.forEach(function(cb) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'HeroLogoIds';
+                input.value = cb.value;
+                previewForm.appendChild(input);
+            });
+
+            // Add MetaLogoId
+            var metaRadio = form.querySelector('input[name="MetaLogoId"]:checked');
+            if (metaRadio && metaRadio.value) {
+                var metaInput = document.createElement('input');
+                metaInput.type = 'hidden';
+                metaInput.name = 'MetaLogoId';
+                metaInput.value = metaRadio.value;
+                previewForm.appendChild(metaInput);
+            }
+
+            document.body.appendChild(previewForm);
+            previewForm.submit();
+            document.body.removeChild(previewForm);
         });
     </script>
 }

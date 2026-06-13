@@ -58,13 +58,14 @@ public class CustomerService : ICustomerService
     {
         ValidateName(customer.Name);
         ValidateEmail(customer.Email);
+        await ValidateUniqueNameAsync(customer.Name, _currentTenantService.CurrentBusinessId);
 
         customer.BusinessId = _currentTenantService.CurrentBusinessId;
         customer.IsActive = true;
         customer.CreatedAtUtc = DateTime.UtcNow;
         customer.UpdatedAtUtc = DateTime.UtcNow;
 
-        await _customerRepository.InsertAsync(customer);
+        customer.Id = await _customerRepository.InsertAsync(customer);
 
         return customer;
     }
@@ -107,6 +108,15 @@ public class CustomerService : ICustomerService
         if (!string.IsNullOrEmpty(email) && !EmailRegex.IsMatch(email))
         {
             throw new ArgumentException("Email address is not in a valid format");
+        }
+    }
+
+    private async Task ValidateUniqueNameAsync(string name, int businessId)
+    {
+        var existing = await _customerRepository.GetAllByBusinessIdAsync(businessId);
+        if (existing.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && c.IsActive))
+        {
+            throw new ArgumentException("A customer with this name already exists");
         }
     }
 }

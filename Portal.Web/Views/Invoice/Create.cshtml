@@ -26,13 +26,16 @@
         <div class="form-grid">
             <div class="field">
                 <label for="customerId">Customer *</label>
-                <select name="customerId" id="customerId" required>
-                    <option value="">-- Select Customer --</option>
-                    @foreach (var customer in customers)
-                    {
-                        <option value="@customer.Id">@customer.Name</option>
-                    }
-                </select>
+                <div style="display:flex;gap:10px;align-items:flex-end;">
+                    <select name="customerId" id="customerId" required style="flex:1;">
+                        <option value="">-- Select Customer --</option>
+                        @foreach (var customer in customers)
+                        {
+                            <option value="@customer.Id">@customer.Name</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-secondary" onclick="openCustomerModal('customerId')">+ Add New</button>
+                </div>
             </div>
             <div class="field">
                 <label for="invoiceDate">Invoice Date *</label>
@@ -92,7 +95,10 @@
     </form>
 </section>
 
+@await Html.PartialAsync("_CustomerModal")
+
 @section Scripts {
+    <script src="~/js/customer-modal.js"></script>
     <script>
         var lineIndex = 0;
         var sectionIndex = 0;

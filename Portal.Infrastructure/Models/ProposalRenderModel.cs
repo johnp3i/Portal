@@ -55,6 +55,7 @@ public class ProposalSectionRenderModel
     public string? AccentColor { get; set; }
     public string? Label { get; set; }
     public bool IsTotalsTableShown { get; set; }
+    public bool IsHalfWidth { get; set; }
     public List<ProposalLineRenderModel> Lines { get; set; } = new();
 }
 

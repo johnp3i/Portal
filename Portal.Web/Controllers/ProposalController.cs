@@ -40,12 +40,9 @@ public class ProposalController : Controller
 
         // Inject acceptance UI into the HTML snapshot
         var html = share.SnapshotHtml;
-        var pageDiv = html.IndexOf("<div class=\"page\">");
-        if (pageDiv >= 0)
+        var pageWrap = html.IndexOf("<div class=\"page-wrap\">");
+        if (pageWrap >= 0)
         {
-            // Find the closing </div> of the page div to append acceptance UI after the content
-            var insertPos = html.IndexOf(">", pageDiv) + 1;
-
             // Check if an acceptance already exists for this share
             var acceptance = await _acceptanceService.GetByProposalShareIdAsync(share.Id);
             string acceptanceHtml;
@@ -53,7 +50,7 @@ public class ProposalController : Controller
             if (acceptance != null)
             {
                 // Read-only accepted message
-                acceptanceHtml = $@"<div class=""no-print"" style=""text-align:center;margin-bottom:20px;"">
+                acceptanceHtml = $@"<div class=""no-print"" style=""text-align:center;margin-top:20px;margin-bottom:20px;"">
                     <div style=""display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#e6f7f1;border:1px solid #129867;border-radius:12px;color:#129867;font-size:14px;font-weight:700;font-family:inherit;"">
                         &#x2713; Accepted on <span>{acceptance.AcceptedAtUtc:dd MMM yyyy}</span>
                     </div>
@@ -62,7 +59,7 @@ public class ProposalController : Controller
             else
             {
                 // Acceptance form with checkbox and button
-                acceptanceHtml = $@"<div class=""no-print"" id=""acceptance-section"" style=""text-align:center;margin-bottom:20px;"">
+                acceptanceHtml = $@"<div class=""no-print"" id=""acceptance-section"" style=""text-align:center;margin-top:20px;margin-bottom:20px;"">
                     <div style=""display:inline-block;padding:20px 32px;background:#f8fbff;border:1px solid #d8e4ef;border-radius:14px;"">
                         <label style=""display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;color:#2d3748;font-family:inherit;margin-bottom:14px;"">
                             <input type=""checkbox"" id=""acceptTermsCheckbox"" style=""width:18px;height:18px;cursor:pointer;"" />
@@ -107,7 +104,7 @@ public class ProposalController : Controller
                 </div>";
             }
 
-            html = html.Insert(insertPos, acceptanceHtml);
+            html = html.Insert(pageWrap, acceptanceHtml);
         }
 
         return Content(html, "text/html");

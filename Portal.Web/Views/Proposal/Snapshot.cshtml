@@ -9,6 +9,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon" />
     <title>Proposal — @Model.Reference</title>
     <style>
         @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
@@ -232,6 +233,11 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 24px;
+            align-items: stretch;
+        }
+        .grid-2 > .section-card {
+            margin-top: 0;
+            height: 100%;
         }
 
         /* Tables */
@@ -265,13 +271,16 @@
         tbody tr + tr td { border-top: 1px solid rgba(13,94,166,.06); }
         .money { font-weight: 800; color: #162A3D; white-space: nowrap; }
         .line-title { font-weight: 700; color: #0B1B28; }
-        .line-title a { color: var(--blue); text-decoration: none; font-weight: 700; }
-        .line-title a:hover { text-decoration: underline; }
+        .line-title a { color: var(--blue); text-decoration: underline; text-decoration-color: rgba(13,94,166,.3); text-underline-offset: 3px; font-weight: 700; }
+        .line-title a:hover { text-decoration-color: var(--blue); }
+        .line-title a::after { content: " \2197"; font-size: 0.8em; opacity: 0.6; }
         .line-desc { margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.6; }
         .line-subtitle { margin-top: 4px; font-size: 13px; color: var(--muted); line-height: 1.5; }
 
         /* Narrative section */
         .narrative-body { margin-top: 18px; font-size: 15px; line-height: 1.8; color: var(--muted); }
+        .half-width-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .section-card.half-width { break-inside: avoid; }
 
         /* Total box */
         .total-box {
@@ -539,16 +548,124 @@
                         && string.IsNullOrWhiteSpace(orderedSections[0].Description)
                         && string.IsNullOrWhiteSpace(orderedSections[0].Notes);
                     var lineItemSections = orderedSections.Where(s => s.SectionType != "Narrative").ToList();
-                    var narrativeSections = orderedSections.Where(s => s.SectionType == "Narrative").ToList();
                 }
-                @foreach (var section in lineItemSections)
+                @for (var si = 0; si < orderedSections.Count; si++)
                 {
+                    var section = orderedSections[si];
                     var accentStyle = section.IsEmphasized
                         ? $"border-left: 4px solid {(string.IsNullOrWhiteSpace(section.AccentColor) ? "#0D5EA6" : section.AccentColor)};"
                         : "";
 
+                    if (section.SectionType == "Narrative" && section.IsHalfWidth)
+                    {
+                        // Collect consecutive half-width narrative sections by index
+                        var groupStart = si;
+                        while (si < orderedSections.Count
+                            && orderedSections[si].SectionType == "Narrative"
+                            && orderedSections[si].IsHalfWidth)
+                        {
+                            si++;
+                        }
+                        si--; // back up since the for loop will increment
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch;margin-top:24px;">
+                        @for (var gi = groupStart; gi <= si; gi++)
+                        {
+                            var gs = orderedSections[gi];
+                            var ga = gs.IsEmphasized
+                                ? $"border-left: 4px solid {(string.IsNullOrWhiteSpace(gs.AccentColor) ? "#0D5EA6" : gs.AccentColor)};"
+                                : "";
+                            <div class="section-card" style="margin-top:0;height:100%;@ga">
+                                @if (!isDefaultOnly)
+                                {
+                                    <div class="label">@(string.IsNullOrWhiteSpace(gs.Label) ? "Content" : gs.Label)</div>
+                                    <h2 class="section-title">@(gs.Name)</h2>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(gs.Description))
+                                {
+                                    <div class="narrative-body">
+                                    @if (gs.Description.Contains("<"))
+                                    {
+                                        @Html.Raw(gs.Description)
+                                    }
+                                    else
+                                    {
+                                        var descLines = gs.Description.Split('\n', StringSplitOptions.None);
+                                        @foreach (var dLine in descLines)
+                                        {
+                                            var trimmed = dLine.Trim();
+                                            if (string.IsNullOrWhiteSpace(trimmed))
+                                            {
+                                                <br />
+                                            }
+                                            else if (trimmed.StartsWith("•") || trimmed.StartsWith("-") || trimmed.StartsWith("*"))
+                                            {
+                                                var bulletText = trimmed.TrimStart('•', '-', '*').Trim();
+                                                <div style="display:flex;gap:8px;align-items:baseline;margin-top:4px;padding-left:24px;">
+                                                    <span style="color:var(--blue);font-weight:700;">•</span>
+                                                    <span>@bulletText</span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <p style="margin:8px 0;">@trimmed</p>
+                                            }
+                                        }
+                                    }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    }
+                    else if (section.SectionType == "Narrative")
+                    {
                     <div class="section-card" style="@accentStyle">
-                            @if (!isDefaultOnly)
+                        @if (!isDefaultOnly)
+                        {
+                            <div class="label">@(string.IsNullOrWhiteSpace(section.Label) ? "Content" : section.Label)</div>
+                            <h2 class="section-title">@(section.Name)</h2>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(section.Description))
+                        {
+                            <div class="narrative-body">
+                            @if (section.Description.Contains("<"))
+                            {
+                                @Html.Raw(section.Description)
+                            }
+                            else
+                            {
+                                var descLines = section.Description.Split('\n', StringSplitOptions.None);
+                                @foreach (var dLine in descLines)
+                                {
+                                    var trimmed = dLine.Trim();
+                                    if (string.IsNullOrWhiteSpace(trimmed))
+                                    {
+                                        <br />
+                                    }
+                                    else if (trimmed.StartsWith("•") || trimmed.StartsWith("-") || trimmed.StartsWith("*"))
+                                    {
+                                        var bulletText = trimmed.TrimStart('•', '-', '*').Trim();
+                                        <div style="display:flex;gap:8px;align-items:baseline;margin-top:4px;padding-left:24px;">
+                                            <span style="color:var(--blue);font-weight:700;">•</span>
+                                            <span>@bulletText</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p style="margin:8px 0;">@trimmed</p>
+                                    }
+                                }
+                            }
+                            </div>
+                        }
+                    </div>
+                    }
+                    else
+                    {
+                    <div class="section-card" style="@accentStyle">
+                            @if (!isDefaultOnly && section.Name != "General")
                             {
                                 <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
                                     <div>
@@ -619,12 +736,24 @@
                                                 }
                                                 else
                                                 {
-                                                    <td>@line.Quantity</td>
-                                                    <td class="money">@fmt(line.UnitPrice)</td>
+                                                    var isComplimentary = line.Discount == 100 && line.DiscountType == "Percentage";
+                                                    <td>@line.Quantity.ToString("G29")</td>
+                                                    @if (isComplimentary)
+                                                    {
+                                                        <td class="money" style="text-decoration:line-through;color:var(--muted);opacity:0.6;">@fmt(line.UnitPrice)</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td class="money">@fmt(line.UnitPrice)</td>
+                                                    }
                                                     @if (sectionHasDiscount)
                                                     {
                                                         <td class="money" style="color:#129867;">
-                                                            @if (line.Discount > 0)
+                                                            @if (isComplimentary)
+                                                            {
+                                                                @:—
+                                                            }
+                                                            else if (line.Discount > 0)
                                                             {
                                                                 @if (line.DiscountType == "Fixed")
                                                                 {
@@ -632,7 +761,7 @@
                                                                 }
                                                                 else
                                                                 {
-                                                                    @:@line.Discount.ToString("G")%
+                                                                    @:@line.Discount.ToString("G29")%
                                                                 }
                                                             }
                                                             else
@@ -641,7 +770,14 @@
                                                             }
                                                         </td>
                                                     }
-                                                    <td class="money">@fmt(line.LineTotal)</td>
+                                                    @if (isComplimentary)
+                                                    {
+                                                        <td class="money" style="color:#129867;font-weight:800;font-size:12px;letter-spacing:0.03em;">Complimentary</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td class="money">@fmt(line.LineTotal)</td>
+                                                    }
                                                 }
                                             </tr>
                                         }
@@ -667,6 +803,9 @@
                                 var sectionMonthlyTotal = section.Lines.Sum(l => l.LineTotal);
                                 var sectionDailyCost = Math.Round(sectionMonthlyTotal / 30, 2);
                                 var sectionAnnualTotal = sectionMonthlyTotal * 12;
+                                var sectionMonthlyVat = section.Lines.Sum(l => l.LineTotal * l.VatRate / 100m);
+                                var sectionAnnualVat = Math.Round(sectionMonthlyVat * 12, 2);
+                                var sectionAnnualWithVat = sectionAnnualTotal + sectionAnnualVat;
 
                                 <div class="section-total-box">
                                     <div class="total-row">
@@ -681,6 +820,17 @@
                                         <span class="total-label">Total Annual</span>
                                         <span class="total-value">@fmt(sectionAnnualTotal)</span>
                                     </div>
+                                    @if (sectionMonthlyVat > 0)
+                                    {
+                                        <div class="total-row">
+                                            <span class="total-label">VAT (Annual)</span>
+                                            <span class="total-value">@fmt(sectionAnnualVat)</span>
+                                        </div>
+                                        <div class="total-row">
+                                            <span class="total-label">Annual Total incl. VAT</span>
+                                            <span class="total-value">@fmt(Math.Round(sectionAnnualWithVat, 2))</span>
+                                        </div>
+                                    }
                                 </div>
                             }
                             else if (section.IsTotalsTableShown)
@@ -721,15 +871,29 @@
                             else
                             {
                                 var sectionSubtotal = section.Lines.Sum(l => l.LineTotal);
+                                var sectionVat = section.Lines.Sum(l => l.LineTotal * l.VatRate / 100m);
+                                var sectionTotal = sectionSubtotal + sectionVat;
 
                                 <div class="section-total-box">
                                     <div class="total-row">
                                         <span class="total-label">Section Subtotal</span>
                                         <span class="total-value">@fmt(sectionSubtotal)</span>
                                     </div>
+                                    @if (sectionVat > 0)
+                                    {
+                                        <div class="total-row">
+                                            <span class="total-label">VAT</span>
+                                            <span class="total-value">@fmt(Math.Round(sectionVat, 2))</span>
+                                        </div>
+                                        <div class="total-row">
+                                            <span class="total-label">Section Total</span>
+                                            <span class="total-value">@fmt(Math.Round(sectionTotal, 2))</span>
+                                        </div>
+                                    }
                                 </div>
                             }
                     </div>
+                    }
                 }
 
                 <!-- TOTAL BOX -->
@@ -801,56 +965,6 @@
                             <span class="total-label">Total</span>
                             <span class="total-value">@fmt(Model.TotalAmount)</span>
                         </div>
-                    </div>
-                }
-
-                <!-- NARRATIVE SECTIONS -->
-                @foreach (var section in narrativeSections)
-                {
-                    var accentStyle = section.IsEmphasized
-                        ? $"border-left: 4px solid {(string.IsNullOrWhiteSpace(section.AccentColor) ? "#0D5EA6" : section.AccentColor)};"
-                        : "";
-
-                    <div class="section-card" style="@accentStyle">
-                        @if (!isDefaultOnly)
-                        {
-                            <div class="label">@(string.IsNullOrWhiteSpace(section.Label) ? "Content" : section.Label)</div>
-                            <h2 class="section-title">@(section.Name)</h2>
-                        }
-
-                        @if (!string.IsNullOrWhiteSpace(section.Description))
-                        {
-                            <div class="narrative-body">
-                            @if (section.Description.Contains("<"))
-                            {
-                                @Html.Raw(section.Description)
-                            }
-                            else
-                            {
-                                var descLines = section.Description.Split('\n', StringSplitOptions.None);
-                                @foreach (var dLine in descLines)
-                                {
-                                    var trimmed = dLine.Trim();
-                                    if (string.IsNullOrWhiteSpace(trimmed))
-                                    {
-                                        <br />
-                                    }
-                                    else if (trimmed.StartsWith("•") || trimmed.StartsWith("-") || trimmed.StartsWith("*"))
-                                    {
-                                        var bulletText = trimmed.TrimStart('•', '-', '*').Trim();
-                                        <div style="display:flex;gap:8px;align-items:baseline;margin-top:4px;padding-left:24px;">
-                                            <span style="color:var(--blue);font-weight:700;">•</span>
-                                            <span>@bulletText</span>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <p style="margin:8px 0;">@trimmed</p>
-                                    }
-                                }
-                            }
-                            </div>
-                        }
                     </div>
                 }
 

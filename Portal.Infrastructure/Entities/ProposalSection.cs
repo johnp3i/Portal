@@ -30,6 +30,8 @@ public class ProposalSection
 
     public bool IsTotalsTableShown { get; set; }
 
+    public bool IsHalfWidth { get; set; }
+
     // Navigation properties
     public Quotation Quotation { get; set; } = null!;
 

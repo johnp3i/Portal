@@ -35,13 +35,16 @@
             </div>
             <div class="field">
                 <label for="customerId">Customer *</label>
-                <select name="customerId" id="customerId" required>
-                    <option value="">-- Select Customer --</option>
-                    @foreach (var customer in customers)
-                    {
-                        <option value="@customer.Id" selected="@(customer.Id == Model.CustomerId ? "selected" : null)">@customer.Name</option>
-                    }
-                </select>
+                <div style="display:flex;gap:10px;align-items:flex-end;">
+                    <select name="customerId" id="customerId" required style="flex:1;">
+                        <option value="">-- Select Customer --</option>
+                        @foreach (var customer in customers)
+                        {
+                            <option value="@customer.Id" selected="@(customer.Id == Model.CustomerId ? "selected" : null)">@customer.Name</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-secondary" onclick="openCustomerModal('customerId')">+ Add New</button>
+                </div>
             </div>
             <div class="field">
                 <label for="invoiceDate">Invoice Date *</label>
@@ -317,7 +320,10 @@
     <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>
 </div>
 
+@await Html.PartialAsync("_CustomerModal")
+
 @section Scripts {
+    <script src="~/js/customer-modal.js"></script>
     <script>
         var invoiceId = @Model.Id;
 

@@ -25,7 +25,8 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
                 FROM [customer].[Customer]
                 WHERE [BusinessId] = @BusinessId";
 
-            return await ExecuteStoredProcedure(query, new SqlParameter("@BusinessId", businessId));
+            var results = await ExecuteStoredProcedure(query, new SqlParameter("@BusinessId", businessId));
+            return results.OrderBy(c => c.Name).ToList();
         }
         catch (Exception ex)
         {
@@ -54,7 +55,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
         }
     }
 
-    public async Task InsertAsync(Customer entity)
+    public async Task<int> InsertAsync(Customer entity)
     {
         try
         {
@@ -66,24 +67,38 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
                 VALUES
                     (@BusinessId, @Name, @ContactPerson, @Email, @TelephoneNumber, @MobileNumber,
                      @AddressLine1, @AddressLine2, @City, @PostalCode, @Country,
-                     @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
+                     @IsActive, @CreatedAtUtc, @UpdatedAtUtc);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-            await _context.Database.ExecuteSqlRawAsync(query,
-                new SqlParameter("@BusinessId", entity.BusinessId),
-                new SqlParameter("@Name", entity.Name ?? (object)DBNull.Value),
-                new SqlParameter("@ContactPerson", entity.ContactPerson ?? (object)DBNull.Value),
-                new SqlParameter("@Email", entity.Email ?? (object)DBNull.Value),
-                new SqlParameter("@TelephoneNumber", entity.TelephoneNumber ?? (object)DBNull.Value),
-                new SqlParameter("@MobileNumber", entity.MobileNumber ?? (object)DBNull.Value),
-                new SqlParameter("@AddressLine1", entity.AddressLine1 ?? (object)DBNull.Value),
-                new SqlParameter("@AddressLine2", entity.AddressLine2 ?? (object)DBNull.Value),
-                new SqlParameter("@City", entity.City ?? (object)DBNull.Value),
-                new SqlParameter("@PostalCode", entity.PostalCode ?? (object)DBNull.Value),
-                new SqlParameter("@Country", entity.Country ?? (object)DBNull.Value),
-                new SqlParameter("@IsActive", entity.IsActive),
-                new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc),
-                new SqlParameter("@UpdatedAtUtc", entity.UpdatedAtUtc)
-            );
+            var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+                await connection.OpenAsync();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = query;
+
+            var transaction = _context.Database.CurrentTransaction;
+            if (transaction != null)
+                command.Transaction = transaction.GetDbTransaction();
+
+            command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
+            command.Parameters.Add(new SqlParameter("@Name", entity.Name ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@ContactPerson", entity.ContactPerson ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Email", entity.Email ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@TelephoneNumber", entity.TelephoneNumber ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@MobileNumber", entity.MobileNumber ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@AddressLine1", entity.AddressLine1 ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@AddressLine2", entity.AddressLine2 ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@City", entity.City ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@PostalCode", entity.PostalCode ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Country", entity.Country ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
+            command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
+            command.Parameters.Add(new SqlParameter("@UpdatedAtUtc", entity.UpdatedAtUtc));
+
+            var result = await command.ExecuteScalarAsync();
+            return (int)result!;
         }
         catch (Exception)
         {

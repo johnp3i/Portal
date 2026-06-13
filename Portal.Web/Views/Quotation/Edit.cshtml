@@ -32,13 +32,16 @@
             </div>
             <div class="field">
                 <label asp-for="CustomerId">Customer *</label>
-                <select asp-for="CustomerId">
-                    <option value="">-- Select Customer --</option>
-                    @foreach (var customer in Model.Customers)
-                    {
-                        <option value="@customer.Id">@customer.Name</option>
-                    }
-                </select>
+                <div style="display:flex;gap:10px;align-items:flex-end;">
+                    <select asp-for="CustomerId" style="flex:1;">
+                        <option value="">-- Select Customer --</option>
+                        @foreach (var customer in Model.Customers)
+                        {
+                            <option value="@customer.Id">@customer.Name</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-secondary" onclick="openCustomerModal('CustomerId')">+ Add New</button>
+                </div>
                 <span asp-validation-for="CustomerId" class="field-validation-error"></span>
             </div>
             <div class="field">
@@ -115,6 +118,8 @@
     <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
 </div>
 
+@await Html.PartialAsync("_CustomerModal")
+
 @section Scripts {
 <link rel="stylesheet" href="~/css/quotation-line-save.css" />
 <style>
@@ -187,9 +192,10 @@ async function addSection() {
     const accentColor = document.getElementById('newSectionAccentColor').value.trim() || null;
     const label = document.getElementById('newSectionLabel').value.trim() || null;
     const isTotalsTableShown = document.getElementById('newSectionIsTotalsTableShown').checked;
+    const isHalfWidth = document.getElementById('newSectionIsHalfWidth').checked;
     if (!name) { Swal.fire({ title: 'Validation', text: 'Section name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' }); return; }
     try {
-        const r = await fetch('/api/sections/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quotationId,name,description:desc||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown}) });
+        const r = await fetch('/api/sections/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quotationId,name,description:desc||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown,isHalfWidth}) });
         const d = await r.json();
         if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to add section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
     } catch(e) { Swal.fire({ title: 'Error', text: 'Error adding section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
@@ -247,7 +253,7 @@ async function reorderLine(lineId, direction, sectionId) {
         if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to reorder lines.', icon: 'error', confirmButtonColor: '#0D5EA6' });
     } catch(e) { Swal.fire({ title: 'Error', text: 'Error reordering lines.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
-function showEditSectionModal(id, name, desc, notes, columnConfig, sectionType, isEmphasized, accentColor, label, isTotalsTableShown) {
+function showEditSectionModal(id, name, desc, notes, columnConfig, sectionType, isEmphasized, accentColor, label, isTotalsTableShown, isHalfWidth) {
     document.getElementById('editSectionId').value = id;
     document.getElementById('editSectionName').value = name;
     document.getElementById('editSectionDescription').value = desc;
@@ -258,6 +264,7 @@ function showEditSectionModal(id, name, desc, notes, columnConfig, sectionType, 
     document.getElementById('editSectionAccentColor').value = accentColor || '';
     document.getElementById('editSectionLabel').value = label || '';
     document.getElementById('editSectionIsTotalsTableShown').checked = isTotalsTableShown === true;
+    document.getElementById('editSectionIsHalfWidth').checked = isHalfWidth === true;
     toggleColumnConfigVisibility('editSectionType', 'editSectionColumnConfig');
     document.getElementById('editSectionModal').style.display = 'flex';
     document.getElementById('editSectionName').focus();
@@ -273,7 +280,8 @@ function showEditSectionModalFromData(btn) {
     var accentColor = btn.dataset.accentColor;
     var label = btn.dataset.label;
     var isTotalsTableShown = btn.dataset.isTotalsTableShown === 'true';
-    showEditSectionModal(parseInt(id), name, desc, notes, columnConfig, sectionType, isEmphasized, accentColor, label, isTotalsTableShown);
+    var isHalfWidth = btn.dataset.isHalfWidth === 'true';
+    showEditSectionModal(parseInt(id), name, desc, notes, columnConfig, sectionType, isEmphasized, accentColor, label, isTotalsTableShown, isHalfWidth);
 }
 function hideEditSectionModal() { document.getElementById('editSectionModal').style.display = 'none'; }
 async function updateSection() {
@@ -287,9 +295,10 @@ async function updateSection() {
     const accentColor = document.getElementById('editSectionAccentColor').value.trim() || null;
     const label = document.getElementById('editSectionLabel').value.trim() || null;
     const isTotalsTableShown = document.getElementById('editSectionIsTotalsTableShown').checked;
+    const isHalfWidth = document.getElementById('editSectionIsHalfWidth').checked;
     if (!name) { Swal.fire({ title: 'Validation', text: 'Section name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' }); return; }
     try {
-        const r = await fetch('/api/sections/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId:id,name,description:desc||null,notes:notes||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown}) });
+        const r = await fetch('/api/sections/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId:id,name,description:desc||null,notes:notes||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown,isHalfWidth}) });
         const d = await r.json();
         if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to update section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
     } catch(e) { Swal.fire({ title: 'Error', text: 'Error updating section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
@@ -504,4 +513,5 @@ function toggleReverseCharge(checkbox) {
 })();
 </script>
 <script src="~/js/quotation-line-save.js"></script>
+<script src="~/js/customer-modal.js"></script>
 }

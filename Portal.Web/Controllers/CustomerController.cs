@@ -150,6 +150,46 @@ public class CustomerController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [ModuleAccess(PortalModules.Customer, AccessLevels.Full)]
+    public async Task<IActionResult> CreateInline(CustomerFormViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var firstError = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault() ?? "Invalid data provided.";
+
+            return Json(new { success = false, message = firstError });
+        }
+
+        try
+        {
+            var customer = new Customer
+            {
+                Name = model.Name,
+                ContactPerson = model.ContactPerson,
+                Email = model.Email,
+                TelephoneNumber = model.TelephoneNumber,
+                MobileNumber = model.MobileNumber,
+                AddressLine1 = model.AddressLine1,
+                AddressLine2 = model.AddressLine2,
+                City = model.City,
+                PostalCode = model.PostalCode,
+                Country = model.Country
+            };
+
+            await _customerService.CreateCustomerAsync(customer);
+            return Json(new { success = true, id = customer.Id, name = customer.Name });
+        }
+        catch (ArgumentException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.Customer, AccessLevels.Full)]
     public async Task<IActionResult> Deactivate(int id)
     {
         await _customerService.DeactivateCustomerAsync(id);

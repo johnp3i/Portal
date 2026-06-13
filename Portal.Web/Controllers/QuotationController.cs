@@ -268,7 +268,9 @@ public class QuotationController : Controller
 
         // Share dialog data
         var logos = await _logoService.GetByBusinessIdAsync(_tenantService.CurrentBusinessId);
+        var sections = await _sectionService.GetByQuotationIdAsync(id);
         ViewBag.Logos = logos;
+        ViewBag.Sections = sections;
         ViewBag.QuotationId = id;
         ViewBag.DefaultExpiration = DateTimeOffset.UtcNow.AddDays(3);
         ViewBag.CustomerEmail = customer?.Email ?? "";
@@ -387,7 +389,7 @@ public class QuotationController : Controller
 
         try
         {
-            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, productCode: model.ProductCode, isReverseCharge: model.IsReverseCharge);
+            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, productCode: model.ProductCode, isReverseCharge: model.IsReverseCharge, proposalSectionId: model.ProposalSectionId);
         }
         catch (ArgumentException ex)
         {
@@ -469,16 +471,34 @@ public class QuotationController : Controller
         return RedirectToAction(nameof(Edit), new { id = quotationId });
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.Quotation, AccessLevels.Full)]
+    public async Task<IActionResult> Preview(int id, List<int> heroLogoIds, int? metaLogoId)
+    {
+        try
+        {
+            // POST: use form-selected logos
+            var html = await _proposalService.PreviewAsync(id, heroLogoIds ?? new List<int>(), metaLogoId);
+            return Content(html, "text/html");
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+    }
+
     [HttpGet]
     [ModuleAccess(PortalModules.Quotation, AccessLevels.Full)]
     public async Task<IActionResult> Preview(int id)
     {
         try
         {
-            // Use primary logo as meta, all logos as hero for preview
+            // GET: default to primary logo as hero and meta
             var logos = await _logoService.GetByBusinessIdAsync(_tenantService.CurrentBusinessId);
-            var heroLogoIds = logos.Select(l => l.Id).ToList();
             var primaryLogo = logos.FirstOrDefault(l => l.IsPrimary);
+            var heroLogoIds = primaryLogo != null ? new List<int> { primaryLogo.Id } : new List<int>();
 
             var html = await _proposalService.PreviewAsync(id, heroLogoIds, primaryLogo?.Id);
             return Content(html, "text/html");

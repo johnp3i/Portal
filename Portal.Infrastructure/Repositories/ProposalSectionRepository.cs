@@ -17,7 +17,7 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown]
+                SELECT [Id], [QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown], [IsHalfWidth]
                 FROM [quotation].[ProposalSection]
                 WHERE [QuotationId] = @QuotationId
                 ORDER BY [SortOrder]";
@@ -38,7 +38,7 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown]
+                SELECT [Id], [QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown], [IsHalfWidth]
                 FROM [quotation].[ProposalSection]
                 WHERE [quotation].[ProposalSection].[Id] = @Id";
 
@@ -56,9 +56,9 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
         {
             const string query = @"
                 INSERT INTO [quotation].[ProposalSection]
-                    ([QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown])
+                    ([QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown], [IsHalfWidth])
                 VALUES
-                    (@QuotationId, @Name, @SortOrder, @ColumnConfiguration, @Description, @Notes, @SectionType, @IsEmphasized, @AccentColor, @Label, @IsTotalsTableShown)";
+                    (@QuotationId, @Name, @SortOrder, @ColumnConfiguration, @Description, @Notes, @SectionType, @IsEmphasized, @AccentColor, @Label, @IsTotalsTableShown, @IsHalfWidth)";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@QuotationId", entity.QuotationId),
@@ -71,7 +71,8 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
                 new SqlParameter("@IsEmphasized", entity.IsEmphasized),
                 new SqlParameter("@AccentColor", entity.AccentColor ?? (object)DBNull.Value),
                 new SqlParameter("@Label", entity.Label ?? (object)DBNull.Value),
-                new SqlParameter("@IsTotalsTableShown", entity.IsTotalsTableShown)
+                new SqlParameter("@IsTotalsTableShown", entity.IsTotalsTableShown),
+                new SqlParameter("@IsHalfWidth", entity.IsHalfWidth)
             );
         }
         catch (Exception)
@@ -86,10 +87,10 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
         {
             const string query = @"
                 INSERT INTO [quotation].[ProposalSection]
-                    ([QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown])
+                    ([QuotationId], [Name], [SortOrder], [ColumnConfiguration], [Description], [Notes], [SectionType], [IsEmphasized], [AccentColor], [Label], [IsTotalsTableShown], [IsHalfWidth])
                 OUTPUT INSERTED.Id
                 VALUES
-                    (@QuotationId, @Name, @SortOrder, @ColumnConfiguration, @Description, @Notes, @SectionType, @IsEmphasized, @AccentColor, @Label, @IsTotalsTableShown)";
+                    (@QuotationId, @Name, @SortOrder, @ColumnConfiguration, @Description, @Notes, @SectionType, @IsEmphasized, @AccentColor, @Label, @IsTotalsTableShown, @IsHalfWidth)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -116,6 +117,7 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
                 command.Parameters.Add(new SqlParameter("@AccentColor", entity.AccentColor ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@Label", entity.Label ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@IsTotalsTableShown", entity.IsTotalsTableShown));
+                command.Parameters.Add(new SqlParameter("@IsHalfWidth", entity.IsHalfWidth));
 
                 var result = await command.ExecuteScalarAsync();
                 return (int)result!;
@@ -148,7 +150,8 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
                     [IsEmphasized] = @IsEmphasized,
                     [AccentColor] = @AccentColor,
                     [Label] = @Label,
-                    [IsTotalsTableShown] = @IsTotalsTableShown
+                    [IsTotalsTableShown] = @IsTotalsTableShown,
+                    [IsHalfWidth] = @IsHalfWidth
                 WHERE [Id] = @Id";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -162,7 +165,8 @@ public class ProposalSectionRepository : GenericStoredProcedureRepository<Propos
                 new SqlParameter("@IsEmphasized", entity.IsEmphasized),
                 new SqlParameter("@AccentColor", entity.AccentColor ?? (object)DBNull.Value),
                 new SqlParameter("@Label", entity.Label ?? (object)DBNull.Value),
-                new SqlParameter("@IsTotalsTableShown", entity.IsTotalsTableShown)
+                new SqlParameter("@IsTotalsTableShown", entity.IsTotalsTableShown),
+                new SqlParameter("@IsHalfWidth", entity.IsHalfWidth)
             );
         }
         catch (Exception)

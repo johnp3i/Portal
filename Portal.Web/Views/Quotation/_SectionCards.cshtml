@@ -15,174 +15,6 @@
     </button>
 </div>
 
-<!-- Default Section Card (lines with no section) -->
-<div class="glass card-pad section-card" data-section-id="" style="margin-bottom:20px;background:rgba(13,94,166,.04);border:2px dashed rgba(13,94,166,.25);box-shadow:0 4px 16px rgba(13,94,166,.08);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <h3 style="font-size:18px;font-weight:700;color:var(--muted2);">General</h3>
-    </div>
-
-    <div style="display:grid;gap:16px;">
-        @if (defaultDisplayLines.Count > 0)
-        {
-            @foreach (var displayLine in defaultDisplayLines)
-            {
-                var line = displayLine.Line;
-                <div class="line-card" data-line-id="@line.Id" data-section-id="" style="padding:16px;border:1px solid rgba(13,94,166,.08);border-radius:14px;position:relative;">
-                    <form method="post" asp-action="UpdateLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="ProductCode" value="@(line.ProductCode ?? "")" />
-                        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-                            <div class="field">
-                                <label>Description</label>
-                                <input type="text" name="Description" value="@line.Description" required />
-                            </div>
-                            <div class="field">
-                                <label>Subtitle</label>
-                                <input type="text" name="Subtitle" value="@line.Subtitle" placeholder="Optional" />
-                            </div>
-                            <div class="field">
-                                <label>Reference URL</label>
-                                <input type="url" name="ReferenceUrl" value="@line.ReferenceUrl" placeholder="https://..." />
-                            </div>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 80px 1fr auto;gap:12px;align-items:end;">
-                            <div class="field">
-                                <label>Qty</label>
-                                <input type="number" name="Quantity" value="@line.Quantity.ToString("G")" step="0.0001" min="0.0001" required />
-                            </div>
-                            <div class="field">
-                                <label>Unit Price</label>
-                                <input type="number" name="UnitPrice" value="@line.UnitPrice.ToString("G")" step="0.01" min="0" required />
-                            </div>
-                            <div class="field">
-                                <label>VAT %</label>
-                                <input type="number" name="VatRate" value="@line.VatRate.ToString("G")" step="0.01" min="0" max="100" required @(line.IsReverseCharge ? "readonly" : "") style="@(line.IsReverseCharge ? "opacity:0.6;" : "")" />
-                            </div>
-                            <div class="field">
-                                <label>Discount</label>
-                                <input type="number" name="Discount" value="@line.Discount.ToString("G")" step="0.01" min="0" />
-                            </div>
-                            <div class="field">
-                                <label>Type</label>
-                                <select name="DiscountType">
-                                    <option value="Percentage" selected="@(line.DiscountType == "Percentage" ? "selected" : null)">%</option>
-                                    <option value="Fixed" selected="@(line.DiscountType == "Fixed" ? "selected" : null)">Fixed</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Cost Price</label>
-                                <input type="number" name="CostPrice" value="@(line.CostPrice?.ToString("G") ?? "")" step="0.01" min="0" placeholder="Optional" />
-                            </div>
-                            <button type="submit" class="btn btn-primary" style="padding:12px 24px;font-size:13px;font-weight:700;">Save</button>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
-                            <div class="field" style="display:flex;align-items:center;gap:6px;margin:0;">
-                                <input type="checkbox" name="IsReverseCharge" value="true"
-                                       checked="@(line.IsReverseCharge ? "checked" : null)"
-                                       onchange="toggleReverseCharge(this)" />
-                                <label style="margin:0;font-size:12px;">Reverse Charge</label>
-                            </div>
-                            @if (!string.IsNullOrEmpty(displayLine.ProductTypeName))
-                            {
-                                <span class="product-type-badge" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:rgba(13,94,166,.06);padding:3px 8px;border-radius:6px;">@displayLine.ProductTypeName</span>
-                            }
-                        </div>
-                    </form>
-                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-                        <button type="button" class="btn btn-secondary" onclick="reorderLine(@line.Id, 'up', null)" style="padding:6px 10px;font-size:11px;" title="Move up">&#8593;</button>
-                        <button type="button" class="btn btn-secondary" onclick="reorderLine(@line.Id, 'down', null)" style="padding:6px 10px;font-size:11px;" title="Move down">&#8595;</button>
-                        <form method="post" asp-action="RemoveLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id" style="display:inline;">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-secondary" style="padding:6px 12px;font-size:11px;color:var(--red);">Remove</button>
-                        </form>
-                        @if (sectionList.Count > 0)
-                        {
-                            <select onchange="moveLineToSection(@line.Id, this.value)" style="padding:6px 10px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font-size:11px;font-weight:700;color:var(--blue);">
-                                <option value="">Move to section...</option>
-                                @foreach (var s in sectionList)
-                                {
-                                    <option value="@s.Id">@s.Name</option>
-                                }
-                            </select>
-                        }
-                    </div>
-                    @if (line.CostPrice != null)
-                    {
-                        var unitMargin = line.UnitPrice - line.CostPrice.Value;
-                        var lineMargin = line.LineTotal - (line.CostPrice.Value * line.Quantity);
-                        <div style="margin-top:10px;padding:8px 12px;background:rgba(13,94,166,.03);border-radius:8px;display:flex;gap:24px;align-items:center;">
-                            <span style="font-size:12px;color:var(--muted);font-weight:600;">Unit Margin: <span style="color:var(--blue);font-weight:700;">@unitMargin.ToString("N2")</span></span>
-                            <span style="font-size:12px;color:var(--muted);font-weight:600;">Line Margin: <span style="color:var(--blue);font-weight:700;">@lineMargin.ToString("N2")</span></span>
-                        </div>
-                    }
-                </div>
-            }
-        }
-        else
-        {
-            <p class="muted" style="font-size:14px;">No unassigned line items.</p>
-        }
-    </div>
-
-    <!-- Add Line Form for Default Section -->
-    <div style="margin-top:18px;padding:18px;border:1px solid rgba(18,152,103,.2);background:rgba(18,152,103,.04);border-radius:14px;">
-        <div class="label" style="margin-bottom:12px;">Add Line Item</div>
-        <form method="post" asp-action="AddLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="ProductCode" value="" />
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-                <div class="field">
-                    <label>Description</label>
-                    <input type="text" name="Description" placeholder="Item description" required />
-                </div>
-                <div class="field">
-                    <label>Subtitle</label>
-                    <input type="text" name="Subtitle" placeholder="Optional" />
-                </div>
-                <div class="field">
-                    <label>Reference URL</label>
-                    <input type="url" name="ReferenceUrl" placeholder="https://..." />
-                </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 80px 1fr auto;gap:12px;align-items:end;">
-                <div class="field">
-                    <label>Qty</label>
-                    <input type="number" name="Quantity" placeholder="1" step="0.0001" min="0.0001" required />
-                </div>
-                <div class="field">
-                    <label>Unit Price</label>
-                    <input type="number" name="UnitPrice" placeholder="0.00" step="0.01" min="0" required />
-                </div>
-                <div class="field">
-                    <label>VAT %</label>
-                    <input type="number" name="VatRate" placeholder="0" step="0.01" min="0" max="100" required />
-                </div>
-                <div class="field">
-                    <label>Discount</label>
-                    <input type="number" name="Discount" placeholder="0" step="0.01" min="0" value="0" />
-                </div>
-                <div class="field">
-                    <label>Type</label>
-                    <select name="DiscountType">
-                        <option value="Percentage">%</option>
-                        <option value="Fixed">Fixed</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Cost Price</label>
-                    <input type="number" name="CostPrice" placeholder="Optional" step="0.01" min="0" />
-                </div>
-                <button type="submit" class="btn btn-green" style="padding:12px 24px;font-size:13px;font-weight:700;">Add Line</button>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:12px;">
-                <input type="checkbox" name="IsReverseCharge" value="true"
-                       onchange="toggleReverseCharge(this)" />
-                <label style="margin:0;font-size:12px;">Reverse Charge</label>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Named Section Cards -->
 @for (var i = 0; i < sectionList.Count; i++)
 {
@@ -208,7 +40,7 @@
                 {
                     <button type="button" class="btn btn-secondary" onclick="reorderSection(@sect.Id, 'down')" style="padding:6px 10px;font-size:11px;" title="Move down">&#8595;</button>
                 }
-                <button type="button" class="btn btn-secondary" data-section-id="@sect.Id" data-name="@sect.Name" data-description="@(sect.Description ?? "")" data-notes="@(sect.Notes ?? "")" data-column-config="@sect.ColumnConfiguration" data-section-type="@sect.SectionType" data-is-emphasized="@(sect.IsEmphasized ? "true" : "false")" data-accent-color="@(sect.AccentColor ?? "")" data-label="@(sect.Label ?? "")" data-is-totals-table-shown="@(sect.IsTotalsTableShown ? "true" : "false")" onclick="showEditSectionModalFromData(this)" style="padding:6px 10px;font-size:11px;">Edit</button>
+                <button type="button" class="btn btn-secondary" data-section-id="@sect.Id" data-name="@sect.Name" data-description="@(sect.Description ?? "")" data-notes="@(sect.Notes ?? "")" data-column-config="@sect.ColumnConfiguration" data-section-type="@sect.SectionType" data-is-emphasized="@(sect.IsEmphasized ? "true" : "false")" data-accent-color="@(sect.AccentColor ?? "")" data-label="@(sect.Label ?? "")" data-is-totals-table-shown="@(sect.IsTotalsTableShown ? "true" : "false")" data-is-half-width="@(sect.IsHalfWidth ? "true" : "false")" onclick="showEditSectionModalFromData(this)" style="padding:6px 10px;font-size:11px;">Edit</button>
                 <button type="button" class="btn btn-secondary" onclick="removeSection(@sect.Id)" style="padding:6px 10px;font-size:11px;color:var(--red);">Remove</button>
             </div>
         </div>
@@ -421,9 +253,177 @@
     </div>
 }
 
+<!-- Default Section Card (lines with no section) -->
+<div class="glass card-pad section-card" data-section-id="" style="margin-bottom:20px;background:rgba(13,94,166,.04);border:2px dashed rgba(13,94,166,.25);box-shadow:0 4px 16px rgba(13,94,166,.08);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="font-size:18px;font-weight:700;color:var(--muted2);">General</h3>
+    </div>
+
+    <div style="display:grid;gap:16px;">
+        @if (defaultDisplayLines.Count > 0)
+        {
+            @foreach (var displayLine in defaultDisplayLines)
+            {
+                var line = displayLine.Line;
+                <div class="line-card" data-line-id="@line.Id" data-section-id="" style="padding:16px;border:1px solid rgba(13,94,166,.08);border-radius:14px;position:relative;">
+                    <form method="post" asp-action="UpdateLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ProductCode" value="@(line.ProductCode ?? "")" />
+                        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+                            <div class="field">
+                                <label>Description</label>
+                                <input type="text" name="Description" value="@line.Description" required />
+                            </div>
+                            <div class="field">
+                                <label>Subtitle</label>
+                                <input type="text" name="Subtitle" value="@line.Subtitle" placeholder="Optional" />
+                            </div>
+                            <div class="field">
+                                <label>Reference URL</label>
+                                <input type="url" name="ReferenceUrl" value="@line.ReferenceUrl" placeholder="https://..." />
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 80px 1fr auto;gap:12px;align-items:end;">
+                            <div class="field">
+                                <label>Qty</label>
+                                <input type="number" name="Quantity" value="@line.Quantity.ToString("G")" step="0.0001" min="0.0001" required />
+                            </div>
+                            <div class="field">
+                                <label>Unit Price</label>
+                                <input type="number" name="UnitPrice" value="@line.UnitPrice.ToString("G")" step="0.01" min="0" required />
+                            </div>
+                            <div class="field">
+                                <label>VAT %</label>
+                                <input type="number" name="VatRate" value="@line.VatRate.ToString("G")" step="0.01" min="0" max="100" required @(line.IsReverseCharge ? "readonly" : "") style="@(line.IsReverseCharge ? "opacity:0.6;" : "")" />
+                            </div>
+                            <div class="field">
+                                <label>Discount</label>
+                                <input type="number" name="Discount" value="@line.Discount.ToString("G")" step="0.01" min="0" />
+                            </div>
+                            <div class="field">
+                                <label>Type</label>
+                                <select name="DiscountType">
+                                    <option value="Percentage" selected="@(line.DiscountType == "Percentage" ? "selected" : null)">%</option>
+                                    <option value="Fixed" selected="@(line.DiscountType == "Fixed" ? "selected" : null)">Fixed</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Cost Price</label>
+                                <input type="number" name="CostPrice" value="@(line.CostPrice?.ToString("G") ?? "")" step="0.01" min="0" placeholder="Optional" />
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="padding:12px 24px;font-size:13px;font-weight:700;">Save</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+                            <div class="field" style="display:flex;align-items:center;gap:6px;margin:0;">
+                                <input type="checkbox" name="IsReverseCharge" value="true"
+                                       checked="@(line.IsReverseCharge ? "checked" : null)"
+                                       onchange="toggleReverseCharge(this)" />
+                                <label style="margin:0;font-size:12px;">Reverse Charge</label>
+                            </div>
+                            @if (!string.IsNullOrEmpty(displayLine.ProductTypeName))
+                            {
+                                <span class="product-type-badge" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:rgba(13,94,166,.06);padding:3px 8px;border-radius:6px;">@displayLine.ProductTypeName</span>
+                            }
+                        </div>
+                    </form>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                        <button type="button" class="btn btn-secondary" onclick="reorderLine(@line.Id, 'up', null)" style="padding:6px 10px;font-size:11px;" title="Move up">&#8593;</button>
+                        <button type="button" class="btn btn-secondary" onclick="reorderLine(@line.Id, 'down', null)" style="padding:6px 10px;font-size:11px;" title="Move down">&#8595;</button>
+                        <form method="post" asp-action="RemoveLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id" asp-route-lineId="@line.Id" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-secondary" style="padding:6px 12px;font-size:11px;color:var(--red);">Remove</button>
+                        </form>
+                        @if (sectionList.Count > 0)
+                        {
+                            <select onchange="moveLineToSection(@line.Id, this.value)" style="padding:6px 10px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font-size:11px;font-weight:700;color:var(--blue);">
+                                <option value="">Move to section...</option>
+                                @foreach (var s in sectionList)
+                                {
+                                    <option value="@s.Id">@s.Name</option>
+                                }
+                            </select>
+                        }
+                    </div>
+                    @if (line.CostPrice != null)
+                    {
+                        var unitMargin = line.UnitPrice - line.CostPrice.Value;
+                        var lineMargin = line.LineTotal - (line.CostPrice.Value * line.Quantity);
+                        <div style="margin-top:10px;padding:8px 12px;background:rgba(13,94,166,.03);border-radius:8px;display:flex;gap:24px;align-items:center;">
+                            <span style="font-size:12px;color:var(--muted);font-weight:600;">Unit Margin: <span style="color:var(--blue);font-weight:700;">@unitMargin.ToString("N2")</span></span>
+                            <span style="font-size:12px;color:var(--muted);font-weight:600;">Line Margin: <span style="color:var(--blue);font-weight:700;">@lineMargin.ToString("N2")</span></span>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <p class="muted" style="font-size:14px;">No unassigned line items.</p>
+        }
+    </div>
+
+    <!-- Add Line Form for Default Section -->
+    <div style="margin-top:18px;padding:18px;border:1px solid rgba(18,152,103,.2);background:rgba(18,152,103,.04);border-radius:14px;">
+        <div class="label" style="margin-bottom:12px;">Add Line Item</div>
+        <form method="post" asp-action="AddLine" asp-controller="Quotation" asp-route-quotationId="@Model.Id">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ProductCode" value="" />
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div class="field">
+                    <label>Description</label>
+                    <input type="text" name="Description" placeholder="Item description" required />
+                </div>
+                <div class="field">
+                    <label>Subtitle</label>
+                    <input type="text" name="Subtitle" placeholder="Optional" />
+                </div>
+                <div class="field">
+                    <label>Reference URL</label>
+                    <input type="url" name="ReferenceUrl" placeholder="https://..." />
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 80px 1fr auto;gap:12px;align-items:end;">
+                <div class="field">
+                    <label>Qty</label>
+                    <input type="number" name="Quantity" placeholder="1" step="0.0001" min="0.0001" required />
+                </div>
+                <div class="field">
+                    <label>Unit Price</label>
+                    <input type="number" name="UnitPrice" placeholder="0.00" step="0.01" min="0" required />
+                </div>
+                <div class="field">
+                    <label>VAT %</label>
+                    <input type="number" name="VatRate" placeholder="0" step="0.01" min="0" max="100" required />
+                </div>
+                <div class="field">
+                    <label>Discount</label>
+                    <input type="number" name="Discount" placeholder="0" step="0.01" min="0" value="0" />
+                </div>
+                <div class="field">
+                    <label>Type</label>
+                    <select name="DiscountType">
+                        <option value="Percentage">%</option>
+                        <option value="Fixed">Fixed</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Cost Price</label>
+                    <input type="number" name="CostPrice" placeholder="Optional" step="0.01" min="0" />
+                </div>
+                <button type="submit" class="btn btn-green" style="padding:12px 24px;font-size:13px;font-weight:700;">Add Line</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:12px;">
+                <input type="checkbox" name="IsReverseCharge" value="true"
+                       onchange="toggleReverseCharge(this)" />
+                <label style="margin:0;font-size:12px;">Reverse Charge</label>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Add Section Modal -->
-<div id="addSectionModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);align-items:center;justify-content:center;">
-    <div class="glass card-pad" style="width:100%;max-width:480px;margin:24px;">
+<div id="addSectionModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+    <div class="glass card-pad" style="width:100%;max-width:480px;margin:24px auto;flex-shrink:0;">
         <h3 style="font-size:20px;font-weight:700;margin-bottom:18px;">Add Section</h3>
         <div class="field" style="margin-bottom:14px;">
             <label for="newSectionName">Section Name *</label>
@@ -464,6 +464,12 @@
             </label>
         </div>
         <div class="field" style="margin-bottom:14px;">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="newSectionIsHalfWidth" style="margin:3px 0 0 0;flex-shrink:0;" />
+                <span>Half-width layout (narrative sections sit side by side)</span>
+            </label>
+        </div>
+        <div class="field" style="margin-bottom:14px;">
             <label for="newSectionAccentColor">Accent Color (optional)</label>
             <input type="text" id="newSectionAccentColor" placeholder="#0D5EA6" maxlength="20" />
         </div>
@@ -475,8 +481,8 @@
 </div>
 
 <!-- Edit Section Modal -->
-<div id="editSectionModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);align-items:center;justify-content:center;">
-    <div class="glass card-pad" style="width:100%;max-width:480px;margin:24px;">
+<div id="editSectionModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+    <div class="glass card-pad" style="width:100%;max-width:480px;margin:24px auto;flex-shrink:0;">
         <h3 style="font-size:20px;font-weight:700;margin-bottom:18px;">Edit Section</h3>
         <input type="hidden" id="editSectionId" />
         <div class="field" style="margin-bottom:14px;">
@@ -519,6 +525,12 @@
             <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
                 <input type="checkbox" id="editSectionIsTotalsTableShown" style="margin:3px 0 0 0;flex-shrink:0;" />
                 <span>Show totals breakdown (subtotal, discount, VAT, total)</span>
+            </label>
+        </div>
+        <div class="field" style="margin-bottom:14px;">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="editSectionIsHalfWidth" style="margin:3px 0 0 0;flex-shrink:0;" />
+                <span>Half-width layout (narrative sections sit side by side)</span>
             </label>
         </div>
         <div class="field" style="margin-bottom:14px;">

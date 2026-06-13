@@ -1,0 +1,99 @@
+@*
+    Customer Creation Modal — Inline customer creation overlay for Quotation and Invoice forms.
+    Renders a modal with all 10 customer fields, submitted via AJAX by customer-modal.js.
+    Usage: @await Html.PartialAsync("_CustomerModal")
+*@
+
+<div id="customerModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+    <div style="background:#fff;border-radius:24px;padding:32px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(13,94,166,.18);margin:16px auto;flex-shrink:0;">
+
+        <h2 style="font-family:'Manrope',sans-serif;font-weight:700;font-size:22px;margin:0 0 24px 0;letter-spacing:-0.3px;color:#1a2b3c;">
+            Create New Customer
+        </h2>
+
+        <form id="customerModalForm" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+                <!-- Name (required, full width) -->
+                <div class="field" style="grid-column:1 / -1;">
+                    <label for="modalCustomerName">Name *</label>
+                    <input type="text" id="modalCustomerName" name="Name" placeholder="Customer name" maxlength="200" required />
+                    <div class="modal-validation-msg" id="validationName" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Contact Person -->
+                <div class="field">
+                    <label for="modalCustomerContactPerson">Contact Person</label>
+                    <input type="text" id="modalCustomerContactPerson" name="ContactPerson" placeholder="Contact person" maxlength="200" />
+                    <div class="modal-validation-msg" id="validationContactPerson" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Email -->
+                <div class="field">
+                    <label for="modalCustomerEmail">Email</label>
+                    <input type="email" id="modalCustomerEmail" name="Email" placeholder="Email address" maxlength="200" />
+                    <div class="modal-validation-msg" id="validationEmail" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Telephone -->
+                <div class="field">
+                    <label for="modalCustomerTelephoneNumber">Telephone</label>
+                    <input type="tel" id="modalCustomerTelephoneNumber" name="TelephoneNumber" placeholder="Telephone number" maxlength="30" />
+                    <div class="modal-validation-msg" id="validationTelephoneNumber" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Mobile -->
+                <div class="field">
+                    <label for="modalCustomerMobileNumber">Mobile</label>
+                    <input type="tel" id="modalCustomerMobileNumber" name="MobileNumber" placeholder="Mobile number" maxlength="30" />
+                    <div class="modal-validation-msg" id="validationMobileNumber" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Address Line 1 -->
+                <div class="field">
+                    <label for="modalCustomerAddressLine1">Address Line 1</label>
+                    <input type="text" id="modalCustomerAddressLine1" name="AddressLine1" placeholder="Address line 1" maxlength="200" />
+                    <div class="modal-validation-msg" id="validationAddressLine1" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Address Line 2 -->
+                <div class="field">
+                    <label for="modalCustomerAddressLine2">Address Line 2</label>
+                    <input type="text" id="modalCustomerAddressLine2" name="AddressLine2" placeholder="Address line 2" maxlength="200" />
+                    <div class="modal-validation-msg" id="validationAddressLine2" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- City -->
+                <div class="field">
+                    <label for="modalCustomerCity">City</label>
+                    <input type="text" id="modalCustomerCity" name="City" placeholder="City" maxlength="100" />
+                    <div class="modal-validation-msg" id="validationCity" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Postal Code -->
+                <div class="field">
+                    <label for="modalCustomerPostalCode">Postal Code</label>
+                    <input type="text" id="modalCustomerPostalCode" name="PostalCode" placeholder="Postal code" maxlength="20" />
+                    <div class="modal-validation-msg" id="validationPostalCode" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- Country -->
+                <div class="field">
+                    <label for="modalCustomerCountry">Country</label>
+                    <input type="text" id="modalCustomerCountry" name="Country" placeholder="Country" maxlength="100" />
+                    <div class="modal-validation-msg" id="validationCountry" style="color:#C24A4A;font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="margin-top:24px;display:flex;gap:12px;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeCustomerModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitCustomerModal()">Save</button>
+            </div>
+        </form>
+
+    </div>
+</div>

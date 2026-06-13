@@ -16,7 +16,7 @@ public interface IProposalSectionService
     /// <summary>
     /// Creates a new proposal section with the next available SortOrder.
     /// </summary>
-    Task AddSectionAsync(int quotationId, string name, string? description, string columnConfiguration = "OneTime", string sectionType = "LineItems", bool isEmphasized = false, string? accentColor = null, string? label = null, bool isTotalsTableShown = false);
+    Task AddSectionAsync(int quotationId, string name, string? description, string columnConfiguration = "OneTime", string sectionType = "LineItems", bool isEmphasized = false, string? accentColor = null, string? label = null, bool isTotalsTableShown = false, bool isHalfWidth = false);
 
     /// <summary>
     /// Deletes a proposal section and reassigns all its lines to the Default section (ProposalSectionId = NULL).
@@ -41,5 +41,5 @@ public interface IProposalSectionService
     /// <summary>
     /// Updates the Name, Description, Notes, and ColumnConfiguration fields of an existing proposal section.
     /// </summary>
-    Task UpdateSectionAsync(int sectionId, string name, string? description, string? notes, string? columnConfiguration = null, string? sectionType = null, bool? isEmphasized = null, string? accentColor = null, string? label = null, bool? isTotalsTableShown = null);
+    Task UpdateSectionAsync(int sectionId, string name, string? description, string? notes, string? columnConfiguration = null, string? sectionType = null, bool? isEmphasized = null, string? accentColor = null, string? label = null, bool? isTotalsTableShown = null, bool? isHalfWidth = null);
 }

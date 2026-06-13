@@ -18,13 +18,16 @@
         <div class="form-grid">
             <div class="field">
                 <label asp-for="CustomerId">Customer *</label>
-                <select asp-for="CustomerId">
-                    <option value="">-- Select Customer --</option>
-                    @foreach (var customer in Model.Customers)
-                    {
-                        <option value="@customer.Id">@customer.Name</option>
-                    }
-                </select>
+                <div style="display:flex;gap:10px;align-items:flex-end;">
+                    <select asp-for="CustomerId" style="flex:1;">
+                        <option value="">-- Select Customer --</option>
+                        @foreach (var customer in Model.Customers)
+                        {
+                            <option value="@customer.Id">@customer.Name</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-secondary" onclick="openCustomerModal('CustomerId')">+ Add New</button>
+                </div>
                 <span asp-validation-for="CustomerId" class="field-validation-error"></span>
             </div>
             <div class="field">
@@ -45,3 +48,9 @@
         </div>
     </form>
 </section>
+
+@await Html.PartialAsync("_CustomerModal")
+
+@section Scripts {
+    <script src="~/js/customer-modal.js"></script>
+}

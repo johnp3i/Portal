@@ -20,7 +20,7 @@ public class QuotationLineFormViewModel
     [Range(0, 100, ErrorMessage = "VAT rate must be between 0 and 100")]
     public decimal VatRate { get; set; }
 
-    [Range(0, 100, ErrorMessage = "Discount must be between 0 and 100")]
+    [Range(0, double.MaxValue, ErrorMessage = "Discount must be zero or greater")]
     public decimal Discount { get; set; }
 
     public string DiscountType { get; set; } = "Percentage";
@@ -39,4 +39,6 @@ public class QuotationLineFormViewModel
     public string? ProductCode { get; set; }
 
     public bool IsReverseCharge { get; set; }
+
+    public int? ProposalSectionId { get; set; }
 }

@@ -243,6 +243,7 @@ public class ProposalService : IProposalService
                     AccentColor = section.AccentColor,
                     Label = section.Label,
                     IsTotalsTableShown = section.IsTotalsTableShown,
+                    IsHalfWidth = section.IsHalfWidth,
                     Lines = sectionLines
                 });
             }

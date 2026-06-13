@@ -79,6 +79,7 @@ public class ReverseChargeQuotationLinePropertyTests
             lineRepoMock.Object,
             auditLogRepoMock.Object,
             customerRepoMock.Object,
+            new Mock<ProposalSectionRepository>(MockBehavior.Loose, new object[] { null }).Object,
             tenantMock.Object,
             lineItemCatalogServiceMock.Object,
             productServiceMock.Object,

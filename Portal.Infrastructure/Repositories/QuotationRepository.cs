@@ -201,7 +201,7 @@ public class QuotationRepository : GenericStoredProcedureRepository<Quotation>
         try
         {
             const string query = @"
-                SELECT ISNULL(MAX([Id]), 0) + 1
+                SELECT COUNT(*) + 1
                 FROM [quotation].[Quotation]
                 WHERE [BusinessId] = @BusinessId";
 

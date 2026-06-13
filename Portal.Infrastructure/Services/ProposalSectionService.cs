@@ -42,7 +42,7 @@ public class ProposalSectionService : IProposalSectionService
     /// Creates a new proposal section with the next available SortOrder.
     /// Validates that the name is non-empty/whitespace.
     /// </summary>
-    public async Task AddSectionAsync(int quotationId, string name, string? description, string columnConfiguration = "OneTime", string sectionType = "LineItems", bool isEmphasized = false, string? accentColor = null, string? label = null, bool isTotalsTableShown = false)
+    public async Task AddSectionAsync(int quotationId, string name, string? description, string columnConfiguration = "OneTime", string sectionType = "LineItems", bool isEmphasized = false, string? accentColor = null, string? label = null, bool isTotalsTableShown = false, bool isHalfWidth = false)
     {
         try
         {
@@ -73,7 +73,8 @@ public class ProposalSectionService : IProposalSectionService
                 IsEmphasized = isEmphasized,
                 AccentColor = accentColor,
                 Label = label,
-                IsTotalsTableShown = isTotalsTableShown
+                IsTotalsTableShown = isTotalsTableShown,
+                IsHalfWidth = isHalfWidth
             };
 
             await _sectionRepository.InsertAsync(section);
@@ -187,7 +188,7 @@ public class ProposalSectionService : IProposalSectionService
     /// Updates the Name, Description, and Notes fields of an existing proposal section.
     /// Validates that the name is non-empty/whitespace.
     /// </summary>
-    public async Task UpdateSectionAsync(int sectionId, string name, string? description, string? notes, string? columnConfiguration = null, string? sectionType = null, bool? isEmphasized = null, string? accentColor = null, string? label = null, bool? isTotalsTableShown = null)
+    public async Task UpdateSectionAsync(int sectionId, string name, string? description, string? notes, string? columnConfiguration = null, string? sectionType = null, bool? isEmphasized = null, string? accentColor = null, string? label = null, bool? isTotalsTableShown = null, bool? isHalfWidth = null)
     {
         try
         {
@@ -241,6 +242,11 @@ public class ProposalSectionService : IProposalSectionService
             if (isTotalsTableShown.HasValue)
             {
                 section.IsTotalsTableShown = isTotalsTableShown.Value;
+            }
+
+            if (isHalfWidth.HasValue)
+            {
+                section.IsHalfWidth = isHalfWidth.Value;
             }
 
             await _sectionRepository.UpdateAsync(section);
