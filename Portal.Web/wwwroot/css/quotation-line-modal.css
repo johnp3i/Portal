@@ -1,0 +1,350 @@
+/* ==========================================================================
+   Quotation Line Modal — Modal overlay, table, and section card styles
+   For the Quotation Edit view's line item management redesign
+   ========================================================================== */
+
+/* Modal Overlay
+   Fixed full-viewport semi-transparent backdrop with centered modal card.
+   ========================================================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Modal Card
+   Centered card container for the line item form.
+   ========================================================================== */
+.modal-card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+    max-width: 720px;
+    width: 95%;
+    padding: 32px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modal-enter 0.2s ease-out;
+}
+
+@keyframes modal-enter {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Modal Header
+   Title and subtitle styling.
+   ========================================================================== */
+.modal-header {
+    margin-bottom: 24px;
+}
+
+.modal-header h3 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #1a2b3c;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+}
+
+.modal-header .muted {
+    font-size: 0.875rem;
+    color: #6b7a8a;
+    margin: 0;
+}
+
+/* Modal Footer
+   Button layout for Save/Cancel actions.
+   ========================================================================== */
+.modal-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #e8eef3;
+}
+
+.modal-footer .btn-primary {
+    background-color: #0D5EA6;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: #0a4e8c;
+}
+
+.modal-footer .btn-success {
+    background-color: #129867;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.modal-footer .btn-success:hover {
+    background-color: #0e7a53;
+}
+
+.modal-footer .btn-secondary {
+    background-color: transparent;
+    color: #5a6a7a;
+    border: 1px solid #d4dde5;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.modal-footer .btn-secondary:hover {
+    border-color: #a0b0c0;
+    color: #3a4a5a;
+}
+
+/* Line Item Table
+   Compact table within section cards for line item display.
+   ========================================================================== */
+.line-item-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.line-item-table thead th {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e8eef3;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.line-item-table tbody tr {
+    border-bottom: 1px solid #f0f4f7;
+    transition: background-color 0.1s ease;
+}
+
+.line-item-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.line-item-table tbody tr:hover {
+    background-color: #f7fafc;
+}
+
+.line-item-table tbody td {
+    padding: 10px 10px;
+    vertical-align: middle;
+    color: #2a3a4a;
+}
+
+/* Row number column — muted, narrow */
+.line-item-table .col-row-num {
+    width: 36px;
+    color: #9aa8b5;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+/* Description column — wide */
+.line-item-table .col-description {
+    min-width: 180px;
+}
+
+.line-item-table .col-description .line-desc {
+    font-weight: 600;
+    color: #1a2b3c;
+    display: block;
+}
+
+.line-item-table .col-description .line-subtitle {
+    font-size: 0.75rem;
+    color: #7a8a9a;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Right-aligned numeric columns */
+.line-item-table .col-qty,
+.line-item-table .col-unit-price,
+.line-item-table .col-discount,
+.line-item-table .col-total {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Total column — bold */
+.line-item-table .col-total {
+    font-weight: 700;
+    color: #1a2b3c;
+}
+
+/* Actions column — narrow */
+.line-item-table .col-actions {
+    width: 100px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.line-item-table .col-actions .btn-edit,
+.line-item-table .col-actions .btn-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.line-item-table .col-actions .btn-edit {
+    color: #0D5EA6;
+}
+
+.line-item-table .col-actions .btn-edit:hover {
+    background-color: rgba(13, 94, 166, 0.08);
+}
+
+.line-item-table .col-actions .btn-remove {
+    color: #C24A4A;
+}
+
+.line-item-table .col-actions .btn-remove:hover {
+    background-color: rgba(194, 74, 74, 0.08);
+}
+
+/* Right-align numeric header columns */
+.line-item-table thead .col-qty,
+.line-item-table thead .col-unit-price,
+.line-item-table thead .col-discount,
+.line-item-table thead .col-total {
+    text-align: right;
+}
+
+/* Section Header
+   Contains section name, summary text, and action buttons.
+   ========================================================================== */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.section-header h3 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #1a2b3c;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+/* Section Summary
+   Item count and subtotal display below section name.
+   ========================================================================== */
+.section-summary {
+    font-size: 0.8125rem;
+    color: #6b7a8a;
+    margin-top: 2px;
+}
+
+/* Info Banner
+   Informational message for the General section.
+   ========================================================================== */
+.info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    background-color: #EEF4F8;
+    border: 1px solid #d4e4ef;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 0.8125rem;
+    color: #4a6278;
+    line-height: 1.5;
+}
+
+.info-banner svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    color: #57B8E8;
+}
+
+/* General Section Card
+   Dashed border and muted background to distinguish from named sections.
+   ========================================================================== */
+.section-card--general {
+    background: rgba(13, 94, 166, 0.04);
+    border: 2px dashed rgba(13, 94, 166, 0.25);
+}
+
+/* Discount Green
+   Green text for discount amounts displayed in the table.
+   ========================================================================== */
+.discount-green {
+    color: #129867;
+    font-weight: 600;
+}
+
+/* Add Line Item Button
+   Positioned below the table within each section card.
+   ========================================================================== */
+.btn-add-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 8px 14px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0D5EA6;
+    background: transparent;
+    border: 1px dashed rgba(13, 94, 166, 0.35);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-add-line:hover {
+    background-color: rgba(13, 94, 166, 0.05);
+    border-color: rgba(13, 94, 166, 0.55);
+}

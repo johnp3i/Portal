@@ -1,0 +1,97 @@
+@model Portal.Web.Models.QuotationEditViewModel
+@{
+    var sectionList = Model.Sections.OrderBy(s => s.SortOrder).ToList();
+}
+
+<div id="lineItemModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="lineModalTitle">Edit Line Item</h3>
+            <p id="lineModalSubtitle" class="muted">Update the details for this line item.</p>
+        </div>
+        <form id="lineItemForm" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="lineModalLineId" name="lineId" />
+            <input type="hidden" id="lineModalSectionId" name="ProposalSectionId" />
+            <input type="hidden" id="lineModalProductCode" name="ProductCode" />
+
+            <!-- Row 1: Description (full width) -->
+            <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px;">
+                <div class="field" style="position:relative;">
+                    <label for="lineModalDescription">Description *</label>
+                    <input type="text" id="lineModalDescription" name="Description" required placeholder="Item description" />
+                    <div class="catalog-autocomplete"></div>
+                </div>
+            </div>
+
+            <!-- Row 2: Subtitle + Reference URL (2-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="lineModalSubtitleField">Subtitle</label>
+                    <input type="text" id="lineModalSubtitleField" name="Subtitle" placeholder="Optional subtitle" />
+                </div>
+                <div class="field">
+                    <label for="lineModalReferenceUrl">Reference URL</label>
+                    <input type="url" id="lineModalReferenceUrl" name="ReferenceUrl" placeholder="https://..." />
+                </div>
+            </div>
+
+            <!-- Row 3: Quantity, Unit Price, VAT%, Cost Price (4-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="lineModalQuantity">Quantity *</label>
+                    <input type="number" id="lineModalQuantity" name="Quantity" step="0.0001" min="0.0001" required placeholder="1" />
+                </div>
+                <div class="field">
+                    <label for="lineModalUnitPrice">Unit Price *</label>
+                    <input type="number" id="lineModalUnitPrice" name="UnitPrice" step="0.01" min="0" required placeholder="0.00" />
+                </div>
+                <div class="field">
+                    <label for="lineModalVatRate">VAT %</label>
+                    <input type="number" id="lineModalVatRate" name="VatRate" step="0.01" min="0" max="100" required placeholder="0" />
+                </div>
+                <div class="field">
+                    <label for="lineModalCostPrice">Cost Price</label>
+                    <input type="number" id="lineModalCostPrice" name="CostPrice" step="0.01" min="0" placeholder="Optional" />
+                </div>
+            </div>
+
+            <!-- Row 4: Discount, Discount Type, Move to Section (3-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="lineModalDiscount">Discount</label>
+                    <input type="number" id="lineModalDiscount" name="Discount" step="0.01" min="0" placeholder="0" />
+                </div>
+                <div class="field">
+                    <label for="lineModalDiscountType">Discount Type</label>
+                    <select id="lineModalDiscountType" name="DiscountType">
+                        <option value="Percentage">%</option>
+                        <option value="Fixed">Fixed</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="lineModalMoveToSection">Move to Section</label>
+                    <select id="lineModalMoveToSection" name="MoveToSectionId">
+                        <option value="">General</option>
+                        @foreach (var sect in sectionList)
+                        {
+                            <option value="@sect.Id">@sect.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Advanced: Reverse Charge -->
+            <div style="margin-top:8px;margin-bottom:8px;padding:12px;background:rgba(13,94,166,.03);border-radius:10px;">
+                <div class="field" style="display:flex;align-items:center;gap:8px;margin:0;">
+                    <input type="checkbox" id="lineModalReverseCharge" name="IsReverseCharge" value="true" style="margin:0;flex-shrink:0;" />
+                    <label for="lineModalReverseCharge" style="margin:0;font-size:13px;cursor:pointer;">Reverse Charge (VAT accounted by buyer)</label>
+                </div>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button id="lineModalSubmitBtn" type="button" class="btn btn-primary">Save Changes</button>
+            <button type="button" class="btn btn-secondary" onclick="hideLineItemModal()">Cancel</button>
+        </div>
+    </div>
+</div>

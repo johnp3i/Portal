@@ -1,0 +1,89 @@
+@model Portal.Infrastructure.Entities.Invoice
+
+<div id="invoiceLineItemModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="invoiceLineModalTitle">Edit Line Item</h3>
+            <p id="invoiceLineModalSubtitle" class="muted">Update the details for this line item.</p>
+        </div>
+        <form id="invoiceLineItemForm" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="invoiceLineModalLineId" name="lineId" />
+            <input type="hidden" id="invoiceLineModalInvoiceId" name="invoiceId" value="@Model.Id" />
+            <input type="hidden" id="invoiceLineModalProductCode" name="productCode" />
+
+            <!-- Row 1: Description (full width, required) -->
+            <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px;">
+                <div class="field" style="position:relative;">
+                    <label for="invoiceLineModalDescription">Description *</label>
+                    <input type="text" id="invoiceLineModalDescription" name="description" required placeholder="Item description" />
+                    <div class="catalog-autocomplete"></div>
+                </div>
+            </div>
+
+            <!-- Row 2: Subtitle + Reference URL (2-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="invoiceLineModalSubtitleField">Subtitle</label>
+                    <input type="text" id="invoiceLineModalSubtitleField" name="subtitle" placeholder="Optional subtitle" />
+                </div>
+                <div class="field">
+                    <label for="invoiceLineModalReferenceUrl">Reference URL</label>
+                    <input type="url" id="invoiceLineModalReferenceUrl" name="referenceUrl" placeholder="https://..." />
+                </div>
+            </div>
+
+            <!-- Row 3: Quantity, Unit Price, VAT%, Cost Price (4-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="invoiceLineModalQuantity">Quantity *</label>
+                    <input type="number" id="invoiceLineModalQuantity" name="quantity" step="0.0001" min="0.0001" required placeholder="1" />
+                </div>
+                <div class="field">
+                    <label for="invoiceLineModalUnitPrice">Unit Price *</label>
+                    <input type="number" id="invoiceLineModalUnitPrice" name="unitPrice" step="0.01" min="0" required placeholder="0.00" />
+                </div>
+                <div class="field">
+                    <label for="invoiceLineModalVatRate">VAT %</label>
+                    <input type="number" id="invoiceLineModalVatRate" name="vatRate" step="0.01" min="0" max="100" required placeholder="0" />
+                </div>
+                <div class="field">
+                    <label for="invoiceLineModalCostPrice">Cost Price</label>
+                    <input type="number" id="invoiceLineModalCostPrice" name="costPrice" step="0.01" min="0" placeholder="Optional" />
+                </div>
+            </div>
+
+            <!-- Row 4: Discount + Discount Type (2-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="invoiceLineModalDiscount">Discount</label>
+                    <input type="number" id="invoiceLineModalDiscount" name="discount" step="0.01" min="0" placeholder="0" />
+                </div>
+                <div class="field">
+                    <label for="invoiceLineModalDiscountType">Discount Type</label>
+                    <select id="invoiceLineModalDiscountType" name="discountType">
+                        <option value="Percentage">%</option>
+                        <option value="Fixed">Fixed</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Advanced: Reverse Charge (collapsed by default) -->
+            <div class="modal-advanced-section">
+                <button type="button" class="advanced-toggle" onclick="toggleAdvancedSection()">
+                    <span class="toggle-icon">▶</span> Advanced
+                </button>
+                <div id="invoiceLineAdvancedContent" style="display:none;">
+                    <label class="checkbox-label" style="display:flex;align-items:center;gap:8px;margin:12px 0 0 0;cursor:pointer;">
+                        <input type="checkbox" id="invoiceLineModalReverseCharge" name="isReverseCharge" value="true" style="width:16px;height:16px;margin:0;flex-shrink:0;" />
+                        Reverse Charge (VAT accounted by buyer)
+                    </label>
+                </div>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button id="invoiceLineModalSubmitBtn" type="button" class="btn btn-primary">Save Changes</button>
+            <button type="button" class="btn btn-secondary" onclick="hideInvoiceLineItemModal()">Cancel</button>
+        </div>
+    </div>
+</div>

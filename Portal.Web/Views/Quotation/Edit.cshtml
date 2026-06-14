@@ -103,6 +103,9 @@
     @await Html.PartialAsync("_SectionCards", Model)
 </div>
 
+<!-- Line Item Modal -->
+@await Html.PartialAsync("_LineItemModal", Model)
+
 <!-- Totals -->
 <div class="glass card-pad" style="margin-top:24px;">
     <div class="surface card-pad totals">
@@ -122,6 +125,7 @@
 
 @section Scripts {
 <link rel="stylesheet" href="~/css/quotation-line-save.css" />
+<link rel="stylesheet" href="~/css/quotation-line-modal.css" />
 <style>
 .section-card .line-card:nth-child(even) {
     background: rgba(13,94,166,.1);
@@ -400,6 +404,11 @@ function toggleReverseCharge(checkbox) {
         if (discountTypeEl && entry.discountType) {
             discountTypeEl.value = entry.discountType;
         }
+        // Populate ProductCode for catalog items
+        var productCodeEl = form.querySelector('[name="ProductCode"]');
+        if (productCodeEl && entry.productCode) {
+            productCodeEl.value = entry.productCode;
+        }
     }
 
     function escapeHtml(str) {
@@ -455,28 +464,32 @@ function toggleReverseCharge(checkbox) {
         }
     }
 
-    function isLineItemForm(textarea) {
-        var form = textarea.closest('form');
+    function isLineItemForm(field) {
+        var form = field.closest('form');
         if (!form) return false;
         var action = form.getAttribute('action') || '';
-        return action.includes('AddLine') || action.includes('UpdateLine');
+        // Support modal form (has id='lineItemForm') and old inline forms
+        return form.id === 'lineItemForm' || action.includes('AddLine') || action.includes('UpdateLine');
     }
 
     // Debounced input handler
     document.addEventListener('input', function(e) {
-        if (e.target.tagName === 'TEXTAREA' && e.target.name === 'Description' && isLineItemForm(e.target)) {
+        var isDescField = (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')
+                          && e.target.name === 'Description'
+                          && isLineItemForm(e.target);
+        if (isDescField) {
             clearTimeout(debounceTimer);
-            var textarea = e.target;
-            var query = textarea.value.trim();
+            var field = e.target;
+            var query = field.value.trim();
             debounceTimer = setTimeout(function() {
-                fetchCatalog(query, textarea);
+                fetchCatalog(query, field);
             }, 300);
         }
     });
 
     // Hide dropdown on blur (with delay for mousedown to fire first)
     document.addEventListener('focusout', function(e) {
-        if (e.target.tagName === 'TEXTAREA' && e.target.name === 'Description') {
+        if ((e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') && e.target.name === 'Description') {
             var target = e.target;
             setTimeout(function() {
                 var dropdown = target.parentElement.querySelector('.catalog-autocomplete');
@@ -488,7 +501,7 @@ function toggleReverseCharge(checkbox) {
     // Keyboard navigation
     document.addEventListener('keydown', function(e) {
         if (!activeDropdown || !activeDropdown.classList.contains('active')) return;
-        if (e.target.tagName !== 'TEXTAREA' || e.target.name !== 'Description') return;
+        if ((e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') || e.target.name !== 'Description') return;
 
         var items = activeDropdown.querySelectorAll('.catalog-autocomplete-item');
         if (items.length === 0) return;
@@ -512,6 +525,7 @@ function toggleReverseCharge(checkbox) {
     });
 })();
 </script>
+<script src="~/js/quotation-line-modal.js"></script>
 <script src="~/js/quotation-line-save.js"></script>
 <script src="~/js/customer-modal.js"></script>
 }

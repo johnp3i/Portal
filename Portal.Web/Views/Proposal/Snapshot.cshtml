@@ -379,13 +379,79 @@
         .btn-download:hover { background: var(--blue-dark); }
 
         /* Print styles */
+        @@page {
+            size: A4;
+            margin: 10mm;
+        }
+
         @@media print {
-            body { background: #fff; }
-            .page-wrap { max-width: none; padding: 0; }
-            .sheet { box-shadow: none; border-radius: 0; border: 0; }
+            body { background: #fff; margin: 0; padding: 0; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page-wrap { max-width: none; padding: 0; margin: 0; }
+            .sheet { box-shadow: none; border-radius: 0; border: 0; padding: 0; }
             .download-bar { display: none !important; }
-            .hero { padding: 28px; }
-            .main { padding: 20px 28px 28px; }
+            .no-print { display: none !important; }
+
+            /* Compress hero */
+            .hero { padding: 12px 0; }
+            .hero h1 { font-size: 22px; margin-bottom: 4px; }
+            .hero .subtitle { font-size: 11px; margin-top: 4px; }
+            .hero-logos img { max-height: 30px; }
+            .hero-grid { gap: 16px; }
+
+            /* Compress main content */
+            .main { padding: 8px 0; }
+
+            /* Compress section cards */
+            .section-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ddd;
+                border-radius: 10px;
+                padding: 16px;
+                margin-top: 10px;
+            }
+            .section-card:first-child { margin-top: 0; }
+            .section-title { font-size: 16px; }
+
+            /* Compress grids */
+            .grid-2 {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                gap: 12px;
+            }
+            .grid-2 > .section-card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                padding: 12px;
+                margin-top: 0;
+                height: auto;
+            }
+
+            /* Compress tables */
+            table { break-inside: avoid; page-break-inside: avoid; font-size: 11px; }
+            .table-wrap { overflow: visible; margin-top: 10px; }
+            th, td { padding: 6px 8px; }
+
+            /* Compress totals */
+            .total-box, .section-total-box { break-inside: avoid; page-break-inside: avoid; padding: 10px 14px; }
+            .total-row { padding: 3px 0; }
+
+            /* Compress narrative */
+            .narrative-body { font-size: 12px; line-height: 1.6; margin-top: 8px; }
+
+            /* Compress footer */
+            .footer-line { margin: 14px 0; }
+            .footer-name { font-size: 13px; }
+            .footer-role, .footer-motto { font-size: 11px; }
+
+            /* Labels and headings */
+            .label { font-size: 9px; margin-bottom: 4px; }
+            h1 { font-size: 22px; }
+            h2 { font-size: 16px; }
+
+            /* Half-width grid in print */
+            .section-card[style*="margin-top:0;height:100%"] { padding: 12px; }
         }
 
         @@media (max-width: 860px) {

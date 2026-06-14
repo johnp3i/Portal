@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup — Quotation Edit: Modal Line Items</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
+
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --red: #C24A4A;
+            --warning: #C8912E;
+            --muted: #5a6a7a;
+            --bg: #F7FAFC;
+            --surface: #EEF4F8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #0B1B28;
+            padding: 40px;
+            line-height: 1.5;
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,.99) 0%, rgba(244,249,253,.98) 100%);
+            border: 1px solid rgba(13,94,166,.08);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(13,94,166,.06);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .section-summary {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Line item table */
+        .lines-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .lines-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            background: rgba(13,94,166,.03);
+            border-bottom: 1px solid rgba(13,94,166,.08);
+        }
+
+        .lines-table th:first-child { border-radius: 10px 0 0 0; }
+        .lines-table th:last-child { border-radius: 0 10px 0 0; }
+
+        .lines-table td {
+            padding: 14px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(13,94,166,.05);
+            vertical-align: middle;
+        }
+
+        .lines-table tr:hover td {
+            background: rgba(13,94,166,.02);
+        }
+
+        .lines-table .name { font-weight: 700; }
+        .lines-table .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+        .lines-table .money { font-weight: 700; white-space: nowrap; }
+        .lines-table .discount { color: var(--green); font-weight: 700; font-size: 13px; }
+        .lines-table .actions { white-space: nowrap; }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: opacity .2s;
+        }
+
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-green { background: var(--green); color: #fff; }
+        .btn-secondary { background: #fff; color: var(--muted); border: 1px solid rgba(13,94,166,.12); }
+        .btn-ghost { background: transparent; color: var(--blue); font-size: 12px; padding: 6px 10px; }
+        .btn-danger { background: transparent; color: var(--red); font-size: 11px; padding: 4px 8px; }
+
+        .btn-icon {
+            padding: 6px 10px;
+            font-size: 11px;
+            border: 1px solid rgba(13,94,166,.12);
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .add-line-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border: 2px dashed rgba(18,152,103,.25);
+            border-radius: 14px;
+            background: rgba(18,152,103,.03);
+            cursor: pointer;
+            margin-top: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--green);
+            width: fit-content;
+        }
+
+        .add-line-btn:hover { background: rgba(18,152,103,.06); }
+
+        /* General banner */
+        .general-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(13,94,166,.03);
+            border: 1px solid rgba(13,94,166,.08);
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(0,0,0,.4);
+            backdrop-filter: blur(2px);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 40px 0;
+        }
+
+        .modal-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 36px;
+            max-width: 620px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(13,94,166,.18);
+            margin: auto;
+        }
+
+        .modal-title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 28px;
+        }
+
+        .form-row {
+            display: grid;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .form-row-2 { grid-template-columns: 1fr 1fr; }
+        .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .form-row-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .form-row-full { grid-template-columns: 1fr; }
+
+        .field label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .field input, .field select, .field textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid rgba(13,94,166,.12);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #FBFDFF;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .field-hint {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(13,94,166,.08);
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(13,94,166,.06);
+            margin: 20px 0;
+        }
+
+        .advanced-section {
+            padding: 16px;
+            background: rgba(13,94,166,.02);
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+
+        .advanced-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px;">Quotation Edit — Modal Approach</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:32px;">Line items show as a clean table. Click "Edit" or "+ Add" to open a modal with the full form.</p>
+
+    <!-- NAMED SECTION -->
+    <div class="card">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Setup and configuration</div>
+                <div class="section-summary">1 item · Subtotal €180.00</div>
+            </div>
+            <div class="section-actions">
+                <button class="btn-icon">↑</button>
+                <button class="btn-icon">↓</button>
+                <button class="btn btn-secondary" style="font-size:11px;">Edit Section</button>
+                <button class="btn-danger">Remove</button>
+            </div>
+        </div>
+
+        <table class="lines-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Discount</th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>
+                        <div class="name">Setup and configuration</div>
+                        <div class="subtitle">Initial platform setup, operational preparation, and onboarding</div>
+                    </td>
+                    <td>1</td>
+                    <td class="money">€200.00</td>
+                    <td class="discount">-€20.00</td>
+                    <td class="money">€180.00</td>
+                    <td class="actions">
+                        <button class="btn-ghost" onclick="document.getElementById('editModal').style.display='flex'">Edit</button>
+                        <button class="btn-danger">×</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="add-line-btn" onclick="document.getElementById('addModal').style.display='flex'">+ Add Line Item</div>
+    </div>
+
+    <!-- GENERAL SECTION -->
+    <div class="card" style="background:rgba(13,94,166,.03);border:2px dashed rgba(13,94,166,.2);">
+        <div class="section-header">
+            <div>
+                <div class="section-title" style="color:var(--muted);">General</div>
+                <div class="section-summary">4 items · Subtotal €875.00</div>
+            </div>
+        </div>
+
+        <div class="general-banner">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            The General section always appears at the bottom. Create a named section and move items to reorder.
+        </div>
+
+        <table class="lines-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Discount</th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>
+                        <div class="name">HP RP9 G1 Retail System</div>
+                        <div class="subtitle">CPUT: i3 6100 · Silver 18" · 8GB · 120GB SSD</div>
+                    </td>
+                    <td>1</td>
+                    <td class="money">€640.00</td>
+                    <td class="discount">-€120.00</td>
+                    <td class="money">€520.00</td>
+                    <td class="actions">
+                        <button class="btn-ghost" onclick="document.getElementById('editModal').style.display='flex'">Edit</button>
+                        <button class="btn-danger">×</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>
+                        <div class="name">Customer Display: XPOS 2 Line, USB VFD</div>
+                        <div class="subtitle">1 year warranty - Optional</div>
+                    </td>
+                    <td>1</td>
+                    <td class="money">€95.00</td>
+                    <td>—</td>
+                    <td class="money">€95.00</td>
+                    <td class="actions">
+                        <button class="btn-ghost">Edit</button>
+                        <button class="btn-danger">×</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>
+                        <div class="name">Cash Drawer - Metallic Black</div>
+                        <div class="subtitle">1 year warranty</div>
+                    </td>
+                    <td>1</td>
+                    <td class="money">€85.00</td>
+                    <td>—</td>
+                    <td class="money">€85.00</td>
+                    <td class="actions">
+                        <button class="btn-ghost">Edit</button>
+                        <button class="btn-danger">×</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>
+                        <div class="name">Thermal Printer: XPrinter XP-T80Q</div>
+                        <div class="subtitle">2 year warranty</div>
+                    </td>
+                    <td>1</td>
+                    <td class="money">€175.00</td>
+                    <td>—</td>
+                    <td class="money">€175.00</td>
+                    <td class="actions">
+                        <button class="btn-ghost">Edit</button>
+                        <button class="btn-danger">×</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="add-line-btn" onclick="document.getElementById('addModal').style.display='flex'">+ Add Line Item</div>
+    </div>
+
+    <!-- EDIT LINE MODAL -->
+    <div class="modal-overlay" id="editModal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal-card">
+            <div class="modal-title">Edit Line Item</div>
+            <div class="modal-subtitle">Update the details for this line item.</div>
+
+            <div class="form-row form-row-full">
+                <div class="field">
+                    <label>Description *</label>
+                    <input type="text" value="HP RP9 G1 Retail System" />
+                </div>
+            </div>
+
+            <div class="form-row form-row-2">
+                <div class="field">
+                    <label>Subtitle</label>
+                    <input type="text" value="CPUT: i3 6100 Color: Silver 18&quot; Screen RAM: 8GB" />
+                </div>
+                <div class="field">
+                    <label>Reference URL</label>
+                    <input type="url" value="https://support.hp.com/..." />
+                    <div class="field-hint">Link shown to customer in proposal</div>
+                </div>
+            </div>
+
+            <hr class="divider" />
+
+            <div class="form-row form-row-4">
+                <div class="field">
+                    <label>Quantity</label>
+                    <input type="number" value="1" step="0.0001" />
+                </div>
+                <div class="field">
+                    <label>Unit Price</label>
+                    <input type="number" value="640.00" step="0.01" />
+                </div>
+                <div class="field">
+                    <label>VAT %</label>
+                    <input type="number" value="19" />
+                </div>
+                <div class="field">
+                    <label>Cost Price</label>
+                    <input type="number" value="" placeholder="Optional" />
+                    <div class="field-hint">Internal — not shown to customer</div>
+                </div>
+            </div>
+
+            <div class="form-row form-row-3">
+                <div class="field">
+                    <label>Discount</label>
+                    <input type="number" value="120" />
+                </div>
+                <div class="field">
+                    <label>Discount Type</label>
+                    <select>
+                        <option>Percentage</option>
+                        <option selected>Fixed</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Move to Section</label>
+                    <select>
+                        <option>General</option>
+                        <option>Setup and configuration</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="advanced-section">
+                <div class="advanced-label">Advanced</div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="rc" />
+                    <label for="rc" style="font-size:13px;margin:0;text-transform:none;letter-spacing:normal;color:#0B1B28;">Reverse Charge (VAT accounted by buyer)</label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
+                <button class="btn btn-primary" onclick="document.getElementById('editModal').style.display='none'">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD LINE MODAL -->
+    <div class="modal-overlay" id="addModal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal-card">
+            <div class="modal-title">Add Line Item</div>
+            <div class="modal-subtitle">Add a new item to this section.</div>
+
+            <div class="form-row form-row-full">
+                <div class="field">
+                    <label>Description *</label>
+                    <input type="text" placeholder="Item description" />
+                </div>
+            </div>
+
+            <div class="form-row form-row-2">
+                <div class="field">
+                    <label>Subtitle</label>
+                    <input type="text" placeholder="Optional details" />
+                </div>
+                <div class="field">
+                    <label>Reference URL</label>
+                    <input type="url" placeholder="https://..." />
+                </div>
+            </div>
+
+            <hr class="divider" />
+
+            <div class="form-row form-row-4">
+                <div class="field">
+                    <label>Quantity *</label>
+                    <input type="number" value="1" step="0.0001" />
+                </div>
+                <div class="field">
+                    <label>Unit Price *</label>
+                    <input type="number" placeholder="0.00" step="0.01" />
+                </div>
+                <div class="field">
+                    <label>VAT %</label>
+                    <input type="number" value="19" />
+                </div>
+                <div class="field">
+                    <label>Cost Price</label>
+                    <input type="number" placeholder="Optional" />
+                </div>
+            </div>
+
+            <div class="form-row form-row-2">
+                <div class="field">
+                    <label>Discount</label>
+                    <input type="number" value="0" />
+                </div>
+                <div class="field">
+                    <label>Discount Type</label>
+                    <select>
+                        <option selected>Percentage</option>
+                        <option>Fixed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="advanced-section">
+                <div class="advanced-label">Advanced</div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="rc2" />
+                    <label for="rc2" style="font-size:13px;margin:0;text-transform:none;letter-spacing:normal;color:#0B1B28;">Reverse Charge (VAT accounted by buyer)</label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="document.getElementById('addModal').style.display='none'">Cancel</button>
+                <button class="btn btn-green" onclick="document.getElementById('addModal').style.display='none'">Add Line</button>
+            </div>
+        </div>
+    </div>
+
+    <p style="margin-top:32px;font-size:13px;color:var(--muted);text-align:center;">
+        <strong>Key differences from Approach 1:</strong> The page is a clean table. All editing happens in a centered modal. No inline form expansion. Faster scanning of items.
+    </p>
+
+</body>
+</html>

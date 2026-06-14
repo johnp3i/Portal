@@ -85,179 +85,82 @@
             <div class="label">Line Items</div>
             <h2 style="margin-top:8px;font-size:24px;">Invoice lines</h2>
         </div>
-        <button type="button" class="btn btn-primary" onclick="showAddLineForm()">+ Add Line</button>
     </div>
 
-    <!-- Add Line Form (hidden by default) -->
-    <div id="addLineForm" style="display:none;margin-top:18px;" class="surface card-pad">
-        <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">New Line Item</h3>
-        <input type="hidden" id="newLine_productCode" />
-        <div class="form-grid">
-            <div class="field" style="grid-column:1 / -1;">
-                <label>Description *</label>
-                <input type="text" id="newLine_description" placeholder="Line item description" />
-            </div>
-            <div class="field">
-                <label>Quantity *</label>
-                <input type="number" id="newLine_quantity" step="0.01" min="0.01" value="1" />
-            </div>
-            <div class="field">
-                <label>Unit Price *</label>
-                <input type="number" id="newLine_unitPrice" step="0.01" min="0" value="0" />
-            </div>
-            <div style="grid-column:1 / -1;display:flex;align-items:center;gap:8px;padding:8px 0;">
-                <input type="checkbox" id="newLine_isReverseCharge"
-                       onchange="toggleInvoiceReverseCharge(this, 'newLine_vatRate')" style="width:16px;height:16px;" />
-                <label for="newLine_isReverseCharge" style="margin:0;font-size:13px;font-weight:600;">Reverse Charge</label>
-                <span style="font-size:12px;color:#5a6a7a;margin-left:4px;">— VAT is accounted for by the buyer (B2B EU cross-border services)</span>
-            </div>
-            <div class="field">
-                <label>VAT Rate (%)</label>
-                <input type="number" id="newLine_vatRate" step="0.01" min="0" max="100" value="0" />
-            </div>
-            <div class="field">
-                <label>Discount</label>
-                <input type="number" id="newLine_discount" step="0.01" min="0" value="0" />
-            </div>
-            <div class="field">
-                <label>Discount Type</label>
-                <select id="newLine_discountType">
-                    <option value="Percentage">Percentage</option>
-                    <option value="Fixed">Fixed</option>
-                </select>
-            </div>
-            <div class="field">
-                <label>Cost Price</label>
-                <input type="number" id="newLine_costPrice" step="0.01" min="0" placeholder="Optional" />
-            </div>
-            <div class="field">
-                <label>Subtitle</label>
-                <input type="text" id="newLine_subtitle" placeholder="Optional subtitle" />
-            </div>
-        </div>
-        <div style="margin-top:16px;display:flex;gap:12px;">
-            <button type="button" class="btn btn-primary" onclick="addLine()">Add</button>
-            <button type="button" class="btn btn-secondary" onclick="hideAddLineForm()">Cancel</button>
-        </div>
-    </div>
+    @if (lines.Any())
+    {
+        <table class="line-item-table" style="margin-top:18px;">
+            <thead>
+                <tr>
+                    <th class="col-row-num">#</th>
+                    <th class="col-description">Description</th>
+                    <th class="col-qty">Qty</th>
+                    <th class="col-unit-price">Unit Price</th>
+                    <th class="col-discount">Discount</th>
+                    <th class="col-total">Total</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var rowNum = 0; }
+                @foreach (var line in lines.OrderBy(l => l.SortOrder))
+                {
+                    rowNum++;
+                    var discountAmount = line.DiscountType == "Percentage"
+                        ? (line.Quantity * line.UnitPrice * line.Discount / 100m)
+                        : line.Discount;
 
-    <!-- Existing Lines -->
-    <div id="linesContainer" style="margin-top:18px;">
-        @if (lines.Any())
-        {
-            <table>
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th>Qty</th>
-                        <th>Unit Price</th>
-                        <th>VAT %</th>
-                        <th>Discount</th>
-                        <th>Total</th>
-                        <th>Actions</th>
+                    <tr data-line-id="@line.Id"
+                        data-description="@line.Description"
+                        data-subtitle="@(line.Subtitle ?? "")"
+                        data-reference-url="@(line.ReferenceUrl ?? "")"
+                        data-quantity="@line.Quantity.ToString("G")"
+                        data-unit-price="@line.UnitPrice.ToString("G")"
+                        data-vat-rate="@line.VatRate.ToString("G")"
+                        data-discount="@line.Discount.ToString("G")"
+                        data-discount-type="@line.DiscountType"
+                        data-cost-price="@(line.CostPrice?.ToString("G") ?? "")"
+                        data-is-reverse-charge="@(line.IsReverseCharge ? "true" : "false")"
+                        data-product-code="@(line.ProductCode ?? "")">
+                        <td class="col-row-num"><span class="muted">@rowNum</span></td>
+                        <td class="col-description">
+                            <span class="line-desc">@line.Description</span>
+                            @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                            {
+                                <span class="line-subtitle">@line.Subtitle</span>
+                            }
+                        </td>
+                        <td class="col-qty">@line.Quantity.ToString("N2")</td>
+                        <td class="col-unit-price">€@line.UnitPrice.ToString("N2")</td>
+                        <td class="col-discount">
+                            @if (line.Discount > 0)
+                            {
+                                <span class="discount-green">-€@discountAmount.ToString("N2")</span>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                        <td class="col-total"><strong>€@line.LineTotal.ToString("N2")</strong></td>
+                        <td class="col-actions">
+                            <button type="button" class="btn-edit" onclick="showEditInvoiceLineModal(@line.Id)">Edit</button>
+                            <button type="button" class="btn-remove" onclick="confirmRemoveInvoiceLine(@line.Id)">×</button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach (var line in lines.OrderBy(l => l.SortOrder))
-                    {
-                        <tr id="line-row-@line.Id">
-                            <td>
-                                <strong>@line.Description</strong>
-                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
-                                {
-                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">@line.Subtitle</div>
-                                }
-                            </td>
-                            <td>@line.Quantity.ToString("N2")</td>
-                            <td>@line.UnitPrice.ToString("N2")</td>
-                            <td>@line.VatRate.ToString("N2")%</td>
-                            <td>
-                                @if (line.Discount > 0)
-                                {
-                                    @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : line.Discount.ToString("N2"))
-                                }
-                                else
-                                {
-                                    <span class="muted">—</span>
-                                }
-                            </td>
-                            <td><strong>@line.LineTotal.ToString("N2")</strong></td>
-                            <td style="white-space:nowrap;">
-                                <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="showEditLineForm(@line.Id)">Edit</button>
-                                <button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="removeLine(@line.Id)">Remove</button>
-                            </td>
-                        </tr>
-                        <tr id="edit-row-@line.Id" style="display:none;">
-                            <td colspan="7">
-                                <div class="surface card-pad" style="margin:8px 0;">
-                                    <div class="form-grid">
-                                        <div class="field" style="grid-column:1 / -1;">
-                                            <label>Description *</label>
-                                            <input type="text" id="editLine_description_@line.Id" value="@line.Description" />
-                                        </div>
-                                        <div class="field">
-                                            <label>Quantity *</label>
-                                            <input type="number" id="editLine_quantity_@line.Id" step="0.01" min="0.01" value="@line.Quantity" />
-                                        </div>
-                                        <div class="field">
-                                            <label>Unit Price *</label>
-                                            <input type="number" id="editLine_unitPrice_@line.Id" step="0.01" min="0" value="@line.UnitPrice" />
-                                        </div>
-                                        <div style="grid-column:1 / -1;display:flex;align-items:center;gap:8px;padding:8px 0;">
-                                            <input type="checkbox" id="editLine_isReverseCharge_@line.Id"
-                                                   @(line.IsReverseCharge ? "checked" : "")
-                                                   onchange="toggleInvoiceReverseCharge(this, 'editLine_vatRate_@line.Id')" style="width:16px;height:16px;" />
-                                            <label for="editLine_isReverseCharge_@line.Id" style="margin:0;font-size:13px;font-weight:600;">Reverse Charge</label>
-                                            <span style="font-size:12px;color:#5a6a7a;margin-left:4px;">— VAT is accounted for by the buyer (B2B EU cross-border services)</span>
-                                        </div>
-                                        <div class="field">
-                                            <label>VAT Rate (%)</label>
-                                            <input type="number" id="editLine_vatRate_@line.Id" step="0.01" min="0" max="100" value="@line.VatRate" @(line.IsReverseCharge ? "readonly style=\"opacity:0.6;\"" : "") />
-                                        </div>
-                                        <div class="field">
-                                            <label>Discount</label>
-                                            <input type="number" id="editLine_discount_@line.Id" step="0.01" min="0" value="@line.Discount" />
-                                        </div>
-                                        <div class="field">
-                                            <label>Discount Type</label>
-                                            <select id="editLine_discountType_@line.Id">
-                                                @if (line.DiscountType == "Percentage")
-                                                {
-                                                    <option value="Percentage" selected>Percentage</option>
-                                                    <option value="Fixed">Fixed</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="Percentage">Percentage</option>
-                                                    <option value="Fixed" selected>Fixed</option>
-                                                }
-                                            </select>
-                                        </div>
-                                        <div class="field">
-                                            <label>Cost Price</label>
-                                            <input type="number" id="editLine_costPrice_@line.Id" step="0.01" min="0" value="@(line.CostPrice?.ToString() ?? "")" placeholder="Optional" />
-                                        </div>
-                                        <div class="field">
-                                            <label>Subtitle</label>
-                                            <input type="text" id="editLine_subtitle_@line.Id" value="@(line.Subtitle ?? "")" placeholder="Optional subtitle" />
-                                        </div>
-                                    </div>
-                                    <div style="margin-top:12px;display:flex;gap:12px;">
-                                        <button type="button" class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="updateLine(@line.Id)">Save</button>
-                                        <button type="button" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="hideEditLineForm(@line.Id)">Cancel</button>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p class="muted">No line items yet. Add your first line above.</p>
-        }
-    </div>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="line-items-empty-state" style="margin-top:18px;">
+            <p class="muted">No line items yet. Click below to add your first line item.</p>
+        </div>
+    }
+
+    <!-- + Add Line button -->
+    <button type="button" class="btn-add-line" onclick="showAddInvoiceLineModal()">+ Add Line</button>
 
     <div class="surface card-pad totals" style="margin-top:18px;">
         <div class="row"><span class="muted">Subtotal</span><strong id="totals-subtotal">@Model.Subtotal.ToString("N2")</strong></div>
@@ -321,143 +224,57 @@
 </div>
 
 @await Html.PartialAsync("_CustomerModal")
+@await Html.PartialAsync("_InvoiceLineItemModal", Model)
 
 @section Scripts {
+    <link rel="stylesheet" href="~/css/invoice-line-modal.css" />
+    <style>
+        .catalog-autocomplete {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            max-height: 240px;
+            overflow-y: auto;
+            background: rgba(255,255,255,.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(13,94,166,.12);
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(13,94,166,.10);
+            margin-top: 4px;
+            display: none;
+        }
+        .catalog-autocomplete.active { display: block; }
+        .catalog-autocomplete-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(13,94,166,.06);
+            transition: background .15s;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .catalog-autocomplete-item:last-child { border-bottom: none; }
+        .catalog-autocomplete-item:hover,
+        .catalog-autocomplete-item.selected {
+            background: rgba(13,94,166,.06);
+        }
+        .catalog-autocomplete-item .catalog-desc {
+            font-weight: 600;
+            color: #1a2b3c;
+        }
+        .catalog-autocomplete-item .catalog-meta {
+            font-size: 11px;
+            color: var(--muted2, #6b7c8d);
+            margin-top: 2px;
+        }
+    </style>
     <script src="~/js/customer-modal.js"></script>
+    <script src="~/js/invoice-line-modal.js"></script>
     <script>
         var invoiceId = @Model.Id;
-
-        function toggleInvoiceReverseCharge(checkbox, vatInputId) {
-            var vatInput = document.getElementById(vatInputId);
-            if (checkbox.checked) {
-                vatInput.dataset.previousVatRate = vatInput.value;
-                vatInput.value = '0';
-                vatInput.readOnly = true;
-                vatInput.style.opacity = '0.6';
-            } else {
-                var previousRate = vatInput.dataset.previousVatRate || '0';
-                vatInput.value = previousRate;
-                vatInput.readOnly = false;
-                vatInput.style.opacity = '1';
-            }
-        }
         var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-
-        function showAddLineForm() {
-            document.getElementById('addLineForm').style.display = 'block';
-        }
-
-        function hideAddLineForm() {
-            document.getElementById('addLineForm').style.display = 'none';
-        }
-
-        function showEditLineForm(lineId) {
-            document.getElementById('edit-row-' + lineId).style.display = 'table-row';
-            document.getElementById('line-row-' + lineId).style.display = 'none';
-        }
-
-        function hideEditLineForm(lineId) {
-            document.getElementById('edit-row-' + lineId).style.display = 'none';
-            document.getElementById('line-row-' + lineId).style.display = 'table-row';
-        }
-
-        function addLine() {
-            var data = 'invoiceId=' + invoiceId
-                + '&description=' + encodeURIComponent(document.getElementById('newLine_description').value)
-                + '&quantity=' + document.getElementById('newLine_quantity').value
-                + '&unitPrice=' + document.getElementById('newLine_unitPrice').value
-                + '&vatRate=' + document.getElementById('newLine_vatRate').value
-                + '&discount=' + document.getElementById('newLine_discount').value
-                + '&discountType=' + document.getElementById('newLine_discountType').value
-                + '&costPrice=' + (document.getElementById('newLine_costPrice').value || '')
-                + '&subtitle=' + encodeURIComponent(document.getElementById('newLine_subtitle').value || '')
-                + '&productCode=' + encodeURIComponent(document.getElementById('newLine_productCode').value || '')
-                + '&isReverseCharge=' + document.getElementById('newLine_isReverseCharge').checked;
-
-            fetch('/Invoice/AddLine', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': antiForgeryToken
-                },
-                body: data
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(result) {
-                if (result.success) {
-                    window.location.reload();
-                } else {
-                    alert(result.message || 'Failed to add line.');
-                }
-            })
-            .catch(function() { alert('An error occurred.'); });
-        }
-
-        function updateLine(lineId) {
-            var data = 'lineId=' + lineId
-                + '&description=' + encodeURIComponent(document.getElementById('editLine_description_' + lineId).value)
-                + '&quantity=' + document.getElementById('editLine_quantity_' + lineId).value
-                + '&unitPrice=' + document.getElementById('editLine_unitPrice_' + lineId).value
-                + '&vatRate=' + document.getElementById('editLine_vatRate_' + lineId).value
-                + '&discount=' + document.getElementById('editLine_discount_' + lineId).value
-                + '&discountType=' + document.getElementById('editLine_discountType_' + lineId).value
-                + '&costPrice=' + (document.getElementById('editLine_costPrice_' + lineId).value || '')
-                + '&subtitle=' + encodeURIComponent(document.getElementById('editLine_subtitle_' + lineId).value || '')
-                + '&isReverseCharge=' + document.getElementById('editLine_isReverseCharge_' + lineId).checked;
-
-            fetch('/Invoice/UpdateLine', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': antiForgeryToken
-                },
-                body: data
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(result) {
-                if (result.success) {
-                    window.location.reload();
-                } else {
-                    alert(result.message || 'Failed to update line.');
-                }
-            })
-            .catch(function() { alert('An error occurred.'); });
-        }
-
-        function removeLine(lineId) {
-            Swal.fire({
-                title: 'Remove this line item?',
-                text: 'This action cannot be undone.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#C24A4A',
-                cancelButtonColor: '#6B7F8E',
-                confirmButtonText: 'Yes, remove it',
-                cancelButtonText: 'Cancel'
-            }).then(function(result) {
-                if (!result.isConfirmed) return;
-
-                BlockUI.show('Removing line...');
-                fetch('/Invoice/RemoveLine', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': antiForgeryToken
-                    },
-                    body: 'lineId=' + lineId
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    BlockUI.hide();
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        Swal.fire({ title: 'Error', text: data.message || 'Failed to remove line.', icon: 'error', confirmButtonColor: '#0D5EA6' });
-                    }
-                })
-                .catch(function() { BlockUI.hide(); Swal.fire({ title: 'Error', text: 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' }); });
-            });
-        }
 
         function showEditSectionForm(sectionId) {
             document.getElementById('edit-section-' + sectionId).style.display = 'block';
@@ -528,6 +345,152 @@
                 .catch(function() { BlockUI.hide(); Swal.fire({ title: 'Error', text: 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' }); });
             });
         }
+    </script>
+    <script>
+        // --- Catalog Autocomplete for Invoice Line Item Modal ---
+        (function() {
+            var debounceTimer = null;
+            var activeDropdown = null;
+            var activeInput = null;
+            var selectedIndex = -1;
+
+            function createDropdown(input) {
+                var existing = input.parentElement.querySelector('.catalog-autocomplete');
+                if (existing) return existing;
+                var dropdown = document.createElement('div');
+                dropdown.className = 'catalog-autocomplete';
+                input.parentElement.appendChild(dropdown);
+                return dropdown;
+            }
+
+            function hideDropdown(dropdown) {
+                if (dropdown) {
+                    dropdown.classList.remove('active');
+                    dropdown.innerHTML = '';
+                }
+                selectedIndex = -1;
+                activeDropdown = null;
+                activeInput = null;
+            }
+
+            function fillFormFields(form, entry) {
+                var fields = { 'unitPrice': entry.unitPrice, 'vatRate': entry.vatRate, 'costPrice': entry.costPrice || '' };
+                Object.keys(fields).forEach(function(name) {
+                    var el = form.querySelector('[name="' + name + '"]');
+                    if (el) el.value = fields[name];
+                });
+                var productCodeEl = form.querySelector('[name="productCode"]');
+                if (productCodeEl && entry.productCode) {
+                    productCodeEl.value = entry.productCode;
+                }
+            }
+
+            function escapeHtml(str) {
+                var div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function renderDropdown(dropdown, results, input) {
+                dropdown.innerHTML = '';
+                if (results.length === 0) { hideDropdown(dropdown); return; }
+                results.forEach(function(entry, index) {
+                    var item = document.createElement('div');
+                    item.className = 'catalog-autocomplete-item';
+                    item.dataset.index = index;
+                    var discount = entry.discount > 0
+                        ? ' | Discount: ' + entry.discount + (entry.discountType === 'Percentage' ? '%' : ' Fixed')
+                        : '';
+                    item.innerHTML = '<div class="catalog-desc">' + escapeHtml(entry.description) + '</div>'
+                        + '<div class="catalog-meta">Price: ' + entry.unitPrice.toFixed(2) + ' | VAT: ' + entry.vatRate + '%' + discount + '</div>';
+                    item.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        var form = input.closest('form');
+                        input.value = entry.description;
+                        fillFormFields(form, entry);
+                        hideDropdown(dropdown);
+                    });
+                    dropdown.appendChild(item);
+                });
+                dropdown.classList.add('active');
+                activeDropdown = dropdown;
+                activeInput = input;
+                selectedIndex = -1;
+            }
+
+            async function fetchCatalog(query, input) {
+                if (query.length < 2) {
+                    var dropdown = input.parentElement.querySelector('.catalog-autocomplete');
+                    if (dropdown) hideDropdown(dropdown);
+                    return;
+                }
+                try {
+                    var response = await fetch('/api/catalog/search?q=' + encodeURIComponent(query));
+                    if (!response.ok) return;
+                    var results = await response.json();
+                    var dropdown = createDropdown(input);
+                    renderDropdown(dropdown, results, input);
+                } catch (e) {
+                    // Silently fail — autocomplete is supplementary
+                }
+            }
+
+            function isInvoiceLineForm(field) {
+                var form = field.closest('form');
+                if (!form) return false;
+                return form.id === 'invoiceLineItemForm';
+            }
+
+            // Debounced input handler
+            document.addEventListener('input', function(e) {
+                var isDescField = (e.target.tagName === 'INPUT')
+                                  && e.target.name === 'description'
+                                  && isInvoiceLineForm(e.target);
+                if (isDescField) {
+                    clearTimeout(debounceTimer);
+                    var field = e.target;
+                    var query = field.value.trim();
+                    debounceTimer = setTimeout(function() { fetchCatalog(query, field); }, 300);
+                }
+            });
+
+            // Hide dropdown on blur (with delay for mousedown to fire first)
+            document.addEventListener('focusout', function(e) {
+                if (e.target.tagName === 'INPUT' && e.target.name === 'description' && isInvoiceLineForm(e.target)) {
+                    var target = e.target;
+                    setTimeout(function() {
+                        var dropdown = target.parentElement.querySelector('.catalog-autocomplete');
+                        if (dropdown) hideDropdown(dropdown);
+                    }, 200);
+                }
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (!activeDropdown || !activeDropdown.classList.contains('active')) return;
+                if (e.target.tagName !== 'INPUT' || e.target.name !== 'description') return;
+
+                var items = activeDropdown.querySelectorAll('.catalog-autocomplete-item');
+                if (items.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                    items.forEach(function(it, i) { it.classList.toggle('selected', i === selectedIndex); });
+                    items[selectedIndex].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = Math.max(selectedIndex - 1, 0);
+                    items.forEach(function(it, i) { it.classList.toggle('selected', i === selectedIndex); });
+                    items[selectedIndex].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                    e.preventDefault();
+                    items[selectedIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                } else if (e.key === 'Escape') {
+                    hideDropdown(activeDropdown);
+                }
+            });
+        })();
     </script>
     @Html.AntiForgeryToken()
 }
