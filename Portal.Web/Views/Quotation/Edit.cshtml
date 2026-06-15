@@ -173,7 +173,7 @@
 .field { position: relative; }
 </style>
 <script>
-const quotationId = @Model.Id;
+var quotationId = @Model.Id;
 function showAddSectionModal() {
     document.getElementById('addSectionModal').style.display = 'flex';
     document.getElementById('newSectionName').value = '';
@@ -198,11 +198,13 @@ async function addSection() {
     const isTotalsTableShown = document.getElementById('newSectionIsTotalsTableShown').checked;
     const isHalfWidth = document.getElementById('newSectionIsHalfWidth').checked;
     if (!name) { Swal.fire({ title: 'Validation', text: 'Section name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' }); return; }
+    BlockUI.show('Adding section...');
     try {
         const r = await fetch('/api/sections/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quotationId,name,description:desc||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown,isHalfWidth}) });
         const d = await r.json();
+        BlockUI.hide();
         if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to add section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
-    } catch(e) { Swal.fire({ title: 'Error', text: 'Error adding section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
+    } catch(e) { BlockUI.hide(); Swal.fire({ title: 'Error', text: 'Error adding section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 async function removeSection(sectionId) {
     const result = await Swal.fire({
@@ -301,11 +303,13 @@ async function updateSection() {
     const isTotalsTableShown = document.getElementById('editSectionIsTotalsTableShown').checked;
     const isHalfWidth = document.getElementById('editSectionIsHalfWidth').checked;
     if (!name) { Swal.fire({ title: 'Validation', text: 'Section name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' }); return; }
+    BlockUI.show('Saving section...');
     try {
         const r = await fetch('/api/sections/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sectionId:id,name,description:desc||null,notes:notes||null,columnConfiguration,sectionType,isEmphasized,accentColor,label,isTotalsTableShown,isHalfWidth}) });
         const d = await r.json();
+        BlockUI.hide();
         if (d.success) location.reload(); else Swal.fire({ title: 'Error', text: d.message||'Failed to update section.', icon: 'error', confirmButtonColor: '#0D5EA6' });
-    } catch(e) { Swal.fire({ title: 'Error', text: 'Error updating section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
+    } catch(e) { BlockUI.hide(); Swal.fire({ title: 'Error', text: 'Error updating section.', icon: 'error', confirmButtonColor: '#0D5EA6' }); }
 }
 document.getElementById('addSectionModal').addEventListener('click', function(e){ if(e.target===this) hideAddSectionModal(); });
 document.getElementById('editSectionModal').addEventListener('click', function(e){ if(e.target===this) hideEditSectionModal(); });

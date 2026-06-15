@@ -64,12 +64,23 @@ public class DemoInvitationService : IDemoInvitationService
                 throw new ValidationException("A valid email address is required.");
             }
 
-            // Reject invitations to existing registered users
+            // Reject invitations to existing registered users (but allow for demo-only users)
+            var normalizedEmail = request.RecipientEmail.Trim().ToUpperInvariant();
             var existingUser = await _membershipDbContext.Users
-                .AnyAsync(u => u.NormalizedEmail == request.RecipientEmail.Trim().ToUpperInvariant());
-            if (existingUser)
+                .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+            if (existingUser != null)
             {
-                throw new ValidationException("This email belongs to an existing user. Demo invitations can only be sent to new prospects.");
+                var roles = await _membershipDbContext.UserRoles
+                    .Where(ur => ur.UserId == existingUser.Id)
+                    .Join(_membershipDbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                    .ToListAsync();
+
+                // Allow if user only has the DemoUser role (or no roles at all) — they're a previous demo recipient
+                var isOnlyDemoUser = roles.Count == 0 || (roles.Count == 1 && roles[0] == "DemoUser");
+                if (!isOnlyDemoUser)
+                {
+                    throw new ValidationException("This email belongs to an existing user. Demo invitations can only be sent to new prospects.");
+                }
             }
 
             // Validate business is a demo account

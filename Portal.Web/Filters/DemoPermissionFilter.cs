@@ -46,10 +46,27 @@ public class DemoPermissionFilter : IAsyncAuthorizationFilter
 
         var invitationId = int.Parse(demoInvitationIdClaim.Value);
         var controllerName = context.RouteData.Values["controller"]?.ToString();
+        var actionName = context.RouteData.Values["action"]?.ToString();
 
         if (string.IsNullOrEmpty(controllerName))
             return;
 
+        // Block all email-sending actions for demo users (regardless of access level)
+        if (IsEmailSendingAction(controllerName, actionName))
+        {
+            var isAjax = context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                      || context.HttpContext.Request.ContentType?.Contains("application/json") == true;
+
+            if (isAjax)
+            {
+                context.Result = new JsonResult(new { success = false, message = "Email sending is disabled in demo mode." });
+            }
+            else
+            {
+                context.Result = new ViewResult { ViewName = "DemoAccessRestricted" };
+            }
+            return;
+        }
         // Resolve the module from the controller name
         var module = ModuleControllers
             .FirstOrDefault(kv => kv.Value.Contains(controllerName, StringComparer.OrdinalIgnoreCase))
@@ -72,6 +89,14 @@ public class DemoPermissionFilter : IAsyncAuthorizationFilter
         // Block non-GET requests for readonly modules
         if (accessLevel == AccessLevels.ReadOnly && context.HttpContext.Request.Method != "GET")
         {
+            // Allow AJAX data-fetching POST endpoints (action names starting with "Get") for readonly access
+            if (actionName != null && actionName.StartsWith("Get", StringComparison.OrdinalIgnoreCase))
+            {
+                // Data retrieval action — allow even for readonly
+                context.HttpContext.Items["DemoReadOnly"] = true;
+                return;
+            }
+
             // Check if this is an AJAX request
             var isAjax = context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest"
                       || context.HttpContext.Request.ContentType?.Contains("application/json") == true
@@ -97,5 +122,29 @@ public class DemoPermissionFilter : IAsyncAuthorizationFilter
         {
             context.HttpContext.Items["DemoReadOnly"] = true;
         }
+    }
+
+    /// <summary>
+    /// Determines if the action is one that sends emails. Demo users are blocked from all email operations.
+    /// </summary>
+    private static bool IsEmailSendingAction(string? controllerName, string? actionName)
+    {
+        if (string.IsNullOrEmpty(actionName) || string.IsNullOrEmpty(controllerName))
+            return false;
+
+        // Block sharing actions (these send emails to customers)
+        if (actionName.Equals("Share", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Block statement email sending
+        if (actionName.Equals("EmailStatement", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Block any action containing "SendEmail" or "ResendEmail"
+        if (actionName.Contains("SendEmail", StringComparison.OrdinalIgnoreCase)
+            || actionName.Contains("ResendEmail", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
     }
 }

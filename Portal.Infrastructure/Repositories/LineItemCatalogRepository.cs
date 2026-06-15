@@ -24,7 +24,8 @@ public class LineItemCatalogRepository : GenericStoredProcedureRepository<LineIt
                 FROM [quotation].[LineItemCatalog]
                 WHERE [quotation].[LineItemCatalog].[BusinessId] = @BusinessId
                   AND [quotation].[LineItemCatalog].[Description] LIKE @Query
-                ORDER BY [quotation].[LineItemCatalog].[UpdatedAtUtc] DESC";
+                ORDER BY [quotation].[LineItemCatalog].[UpdatedAtUtc] DESC
+                OFFSET 0 ROWS";
 
             return await ExecuteStoredProcedure(sql,
                 new SqlParameter("@BusinessId", businessId),
@@ -100,7 +101,8 @@ public class LineItemCatalogRepository : GenericStoredProcedureRepository<LineIt
                 SELECT [Id], [BusinessId], [Description], [UnitPrice], [VatRate], [ReferenceUrl], [Discount], [DiscountType], [UpdatedAtUtc]
                 FROM [quotation].[LineItemCatalog]
                 WHERE [quotation].[LineItemCatalog].[BusinessId] = @BusinessId
-                ORDER BY [quotation].[LineItemCatalog].[UpdatedAtUtc] DESC";
+                ORDER BY [quotation].[LineItemCatalog].[UpdatedAtUtc] DESC
+                OFFSET 0 ROWS";
 
             return await ExecuteStoredProcedure(sql, new SqlParameter("@BusinessId", businessId));
         }

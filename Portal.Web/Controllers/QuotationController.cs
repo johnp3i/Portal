@@ -374,7 +374,7 @@ public class QuotationController : Controller
         return RedirectToAction(nameof(Edit), new { id = quotationId });
     }
 
-    [HttpPost]
+    [HttpPost("Quotation/AddLine/{quotationId}")]
     [ValidateAntiForgeryToken]
     [ModuleAccess(PortalModules.Quotation, AccessLevels.Full)]
     public async Task<IActionResult> AddLine(int quotationId, QuotationLineFormViewModel model)
@@ -414,7 +414,7 @@ public class QuotationController : Controller
         return RedirectToAction(nameof(Edit), new { id = quotationId });
     }
 
-    [HttpPost]
+    [HttpPost("Quotation/UpdateLine/{quotationId}/{lineId}")]
     [ValidateAntiForgeryToken]
     [ModuleAccess(PortalModules.Quotation, AccessLevels.Full)]
     public async Task<IActionResult> UpdateLine(int quotationId, int lineId, QuotationLineFormViewModel model)
@@ -454,7 +454,7 @@ public class QuotationController : Controller
         return RedirectToAction(nameof(Edit), new { id = quotationId });
     }
 
-    [HttpPost]
+    [HttpPost("Quotation/RemoveLine/{quotationId}/{lineId}")]
     [ValidateAntiForgeryToken]
     [ModuleAccess(PortalModules.Quotation, AccessLevels.Full)]
     public async Task<IActionResult> RemoveLine(int quotationId, int lineId)

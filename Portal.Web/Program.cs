@@ -290,12 +290,17 @@ builder.Services.AddScoped<DemoInvitationRepository>(sp =>
 builder.Services.AddScoped<IDemoInvitationService, DemoInvitationService>();
 
 // --- MVC ---
-builder.Services.AddControllersWithViews(options =>
+var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<Portal.Web.Filters.SetupWizardRedirectFilter>();
     options.Filters.Add<Portal.Web.Filters.SubscriptionWarningResultFilter>();
     options.Filters.Add<Portal.Web.Filters.DemoPermissionFilter>();
 });
+
+if (builder.Environment.IsDevelopment())
+{
+    mvcBuilder.AddRazorRuntimeCompilation();
+}
 
 // --- Serilog SelfLog (must be before any Serilog configuration to capture config errors) ---
 Serilog.Debugging.SelfLog.Enable(msg =>

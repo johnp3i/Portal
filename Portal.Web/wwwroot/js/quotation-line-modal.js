@@ -145,10 +145,10 @@
         document.getElementById('lineModalReferenceUrl').value = '';
         document.getElementById('lineModalCostPrice').value = '';
 
-        // Pre-fill defaults: Quantity=1, Discount=0, VAT%=18 (business default)
+        // Pre-fill defaults: Quantity=1, Discount=0, VAT%=19 (Cyprus standard rate)
         document.getElementById('lineModalQuantity').value = '1';
         document.getElementById('lineModalUnitPrice').value = '';
-        document.getElementById('lineModalVatRate').value = '18';
+        document.getElementById('lineModalVatRate').value = '19';
         document.getElementById('lineModalDiscount').value = '0';
         document.getElementById('lineModalDiscountType').value = 'Percentage';
 

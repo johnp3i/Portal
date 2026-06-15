@@ -934,30 +934,6 @@
                                     </div>
                                 </div>
                             }
-                            else
-                            {
-                                var sectionSubtotal = section.Lines.Sum(l => l.LineTotal);
-                                var sectionVat = section.Lines.Sum(l => l.LineTotal * l.VatRate / 100m);
-                                var sectionTotal = sectionSubtotal + sectionVat;
-
-                                <div class="section-total-box">
-                                    <div class="total-row">
-                                        <span class="total-label">Section Subtotal</span>
-                                        <span class="total-value">@fmt(sectionSubtotal)</span>
-                                    </div>
-                                    @if (sectionVat > 0)
-                                    {
-                                        <div class="total-row">
-                                            <span class="total-label">VAT</span>
-                                            <span class="total-value">@fmt(Math.Round(sectionVat, 2))</span>
-                                        </div>
-                                        <div class="total-row">
-                                            <span class="total-label">Section Total</span>
-                                            <span class="total-value">@fmt(Math.Round(sectionTotal, 2))</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
                     </div>
                     }
                 }
