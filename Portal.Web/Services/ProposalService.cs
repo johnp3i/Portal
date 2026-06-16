@@ -155,8 +155,18 @@ public class ProposalService : IProposalService
 
     public async Task<string> PreviewAsync(int quotationId, List<int> heroLogoIds, int? metaLogoId)
     {
-        var businessId = _tenantService.CurrentBusinessId;
+        var renderModel = await GetRenderModelAsync(quotationId, heroLogoIds, metaLogoId);
+        return await _renderer.RenderAsync(renderModel);
+    }
 
+    public async Task<ProposalRenderModel> GetRenderModelAsync(int quotationId, List<int> heroLogoIds, int? metaLogoId)
+    {
+        var businessId = _tenantService.CurrentBusinessId;
+        return await GetRenderModelAsync(quotationId, businessId, heroLogoIds, metaLogoId);
+    }
+
+    public async Task<ProposalRenderModel> GetRenderModelAsync(int quotationId, int businessId, List<int> heroLogoIds, int? metaLogoId)
+    {
         var quotation = await _quotationRepository.GetByIdAndBusinessIdAsync(quotationId, businessId);
         if (quotation == null)
             throw new InvalidOperationException("Quotation not found.");
@@ -178,10 +188,8 @@ public class ProposalService : IProposalService
         var heroLogos = allLogos.Where(l => heroLogoIds.Contains(l.Id)).ToList();
         var metaLogo = metaLogoId.HasValue ? allLogos.FirstOrDefault(l => l.Id == metaLogoId.Value) : null;
 
-        var renderModel = BuildRenderModel(quotation, customer, business, lines, sections, heroLogos, metaLogo,
+        return BuildRenderModel(quotation, customer, business, lines, sections, heroLogos, metaLogo,
             quotation.QuotationContactId.HasValue ? await _contactRepository.GetByIdAsync(quotation.QuotationContactId.Value) : null);
-
-        return await _renderer.RenderAsync(renderModel);
     }
 
     public async Task<ProposalShare?> GetByTokenAsync(string token)

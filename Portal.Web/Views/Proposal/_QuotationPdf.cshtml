@@ -1,0 +1,668 @@
+@model Portal.Infrastructure.Models.ProposalRenderModel
+@{
+    Layout = null;
+    var cs = Model.CurrencySymbol;
+    Func<decimal, string> fmt = (v) => $"{cs}{v:N2}";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quotation @Model.Reference</title>
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --border: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background: #fff;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+        .page {
+            max-width: 100%;
+            margin: 0;
+            background: #fff;
+            padding: 56px 48px;
+        }
+        h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        h2 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+        h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+
+        /* Logo + Business Info Header */
+        .logo-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 24px;
+            margin-bottom: 28px;
+            border-bottom: 1px solid var(--border);
+        }
+        .logo-section img {
+            max-height: 60px;
+            max-width: 200px;
+        }
+        .business-info {
+            text-align: right;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text);
+        }
+        .business-info .name { font-weight: 700; font-size: 14px; }
+        .business-info .vat { color: var(--muted); font-size: 12px; }
+
+        /* Header: QUOTATION + Customer */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid var(--blue);
+        }
+        .header-left h1 { color: var(--blue); }
+        .header-right { text-align: right; }
+        .header-right .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .header-right .value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .header-right .detail {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Meta Grid */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .meta-item .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .meta-item .value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* Prepared By */
+        .prepared-by {
+            margin-bottom: 28px;
+            padding: 14px 18px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            line-height: 1.6;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .prepared-by .pb-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .prepared-by .pb-name { font-weight: 600; }
+        .prepared-by .pb-detail { color: var(--muted); }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        th.right { text-align: right; }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        td.right { text-align: right; }
+        .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+        /* Section styling */
+        .section-header {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            break-after: avoid;
+            page-break-after: avoid;
+        }
+        .section-label {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--blue);
+            margin-left: 8px;
+        }
+        .section-desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+
+        /* Section block — each section starts on a fresh page if it won't fit */
+        .section-block {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-top: 28px;
+        }
+        .section-block + .section-block {
+            page-break-before: always;
+            break-before: always;
+        }
+
+        /* Narrative sections */
+        .narrative-card {
+            margin: 28px 0;
+            padding: 24px 28px;
+            border-left: 4px solid var(--blue);
+            background: var(--bg);
+            border-radius: 12px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .narrative-card p { margin-bottom: 8px; }
+        .narrative-card ul, .narrative-card ol { margin: 12px 0; padding-left: 24px; }
+        .narrative-card li { margin-bottom: 4px; line-height: 1.7; }
+
+        /* Totals */
+        .totals-card {
+            margin-left: auto;
+            max-width: 320px;
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: var(--bg);
+            border-radius: 12px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-top: 1px solid var(--border);
+        }
+        .totals-row:first-child { border-top: none; padding-top: 0; }
+        .totals-row .label { color: var(--muted); font-size: 13px; }
+        .totals-row .value { font-weight: 700; font-size: 14px; }
+        .grand-total .value {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        /* Validity notice */
+        .validity-notice {
+            margin-top: 24px;
+            padding: 12px 18px;
+            background: #FFFDF5;
+            border: 1px solid #F5DFA0;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #7A5C00;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /* Notes */
+        .notes {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .notes .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .notes p { font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+
+        /* Signature */
+        .signature-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            margin-top: 0;
+            padding: 24px 28px;
+            background: #F8FAFC;
+            border: 1px solid rgba(13,94,166,.10);
+            border-radius: 12px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .signature-block { padding-top: 60px; }
+        .signature-block .sig-label {
+            font-size: 13px;
+            color: var(--muted);
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+        .signature-block .sig-line {
+            border-bottom: 2px solid #0D5EA6;
+            width: 220px;
+        }
+
+        /* Footer */
+        .footer-powered {
+            margin-top: 24px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(13,94,166,.08);
+            font-size: 9px;
+            color: #b0bec5;
+            text-align: center;
+            letter-spacing: 0.03em;
+        }
+
+        @@media print {
+            body { padding: 0; }
+            .page { padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Logo + Business Info -->
+    <div class="logo-section">
+        <div>
+            @if (Model.HeroLogos.Any())
+            {
+                <img src="@Model.HeroLogos.First().PublicUrl" alt="@Model.BusinessName" />
+            }
+        </div>
+        <div class="business-info">
+            <div class="name">@Model.BusinessName</div>
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessAddress))
+            {
+                <div>@Model.BusinessAddress</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.VatRegistrationNumber))
+            {
+                <div class="vat">VAT: @Model.VatRegistrationNumber</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyRegistrationNumber))
+            {
+                <div class="vat">Reg: @Model.CompanyRegistrationNumber</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessPhone))
+            {
+                <div>@Model.BusinessPhone</div>
+            }
+            else if (!string.IsNullOrWhiteSpace(Model.BusinessMobile))
+            {
+                <div>@Model.BusinessMobile</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessEmail))
+            {
+                <div>@Model.BusinessEmail</div>
+            }
+        </div>
+    </div>
+
+    <!-- Header: QUOTATION + Customer -->
+    <div class="header">
+        <div class="header-left">
+            <h1>QUOTATION</h1>
+            <div style="margin-top:8px;font-size:16px;font-weight:700;">@Model.Reference</div>
+        </div>
+        <div class="header-right">
+            <div class="label">Prepared For</div>
+            <div class="value">@(Model.CustomerContactPerson ?? Model.CustomerName)</div>
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerContactPerson))
+            {
+                <div class="detail">@Model.CustomerName</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerAddress))
+            {
+                <div class="detail">@Model.CustomerAddress</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+            {
+                <div class="detail">@Model.CustomerEmail</div>
+            }
+        </div>
+    </div>
+
+    <!-- Meta Grid -->
+    <div class="meta-grid">
+        <div class="meta-item">
+            <div class="label">Date</div>
+            <div class="value">@DateTime.UtcNow.ToString("dd MMM yyyy")</div>
+        </div>
+        @if (Model.ValidUntil.HasValue)
+        {
+            <div class="meta-item">
+                <div class="label">Valid Until</div>
+                <div class="value">@Model.ValidUntil.Value.ToString("dd MMM yyyy")</div>
+            </div>
+        }
+        <div class="meta-item">
+            <div class="label">Reference</div>
+            <div class="value">@Model.Reference</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Currency</div>
+            <div class="value">@Model.CurrencySymbol</div>
+        </div>
+    </div>
+
+    <!-- Prepared By (if contact person specified) -->
+    @if (!string.IsNullOrWhiteSpace(Model.PreparedByName))
+    {
+        <div class="prepared-by">
+            <div class="pb-label">Prepared By</div>
+            <div class="pb-name">@Model.PreparedByName</div>
+            @{
+                var contactDetails = new List<string>();
+                if (!string.IsNullOrWhiteSpace(Model.PreparedByPhone)) { contactDetails.Add(Model.PreparedByPhone); }
+                if (!string.IsNullOrWhiteSpace(Model.PreparedByEmail)) { contactDetails.Add(Model.PreparedByEmail); }
+            }
+            @if (contactDetails.Any())
+            {
+                <div class="pb-detail">@string.Join(" · ", contactDetails)</div>
+            }
+        </div>
+    }
+
+    <!-- Sections -->
+    @{
+        var orderedSections = Model.Sections.OrderBy(s => s.SortOrder).ToList();
+        var lineItemSections = orderedSections.Where(s => s.SectionType != "Narrative").ToList();
+        var narrativeSections = orderedSections.Where(s => s.SectionType == "Narrative").ToList();
+        var isDefaultOnly = lineItemSections.Count == 1 && lineItemSections[0].Name == "Items"
+            && string.IsNullOrWhiteSpace(lineItemSections[0].Label);
+    }
+
+    @foreach (var sec in lineItemSections)
+    {
+        var emphasisStyle = sec.IsEmphasized ? $"border-left:4px solid {sec.AccentColor ?? "var(--blue)"};" : "";
+
+        <div class="section-block" style="@emphasisStyle">
+        <div class="section-header">
+            @if (!isDefaultOnly && sec.Name != "General")
+            {
+                <h3>
+                    @sec.Name
+                    @if (!string.IsNullOrWhiteSpace(sec.Label))
+                    {
+                        <span class="section-label">@sec.Label</span>
+                    }
+                </h3>
+            }
+            @if (!string.IsNullOrWhiteSpace(sec.Description))
+            {
+                <div class="section-desc">@sec.Description</div>
+            }
+        </div>
+
+        @if (sec.Lines.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Unit Price</th>
+                        <th class="right">VAT %</th>
+                        <th class="right">Discount</th>
+                        <th class="right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in sec.Lines.OrderBy(l => l.SortOrder))
+                    {
+                        <tr>
+                            <td>
+                                <strong>@line.Description</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                {
+                                    <div class="subtitle">@line.Subtitle</div>
+                                }
+                            </td>
+                            <td class="right">@line.Quantity.ToString("N2")</td>
+                            <td class="right">@fmt(line.UnitPrice)</td>
+                            <td class="right">@line.VatRate.ToString("N2")%</td>
+                            <td class="right">
+                                @if (line.Discount > 0)
+                                {
+                                    @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : fmt(line.Discount))
+                                }
+                                else
+                                {
+                                    <span style="color:var(--muted);">—</span>
+                                }
+                            </td>
+                            <td class="right"><strong>@fmt(line.LineTotal)</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (sec.IsTotalsTableShown)
+            {
+                var secSubtotal = sec.Lines.Sum(l => l.LineTotal);
+                var secVat = sec.Lines.Sum(l => l.LineTotal * l.VatRate / 100);
+                var secTotal = secSubtotal + secVat;
+
+                <div class="totals-card">
+                    <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@fmt(secSubtotal)</span></div>
+                    <div class="totals-row"><span class="label">Section VAT</span><span class="value">@fmt(secVat)</span></div>
+                    <div class="totals-row"><span class="label">Section Total</span><span class="value">@fmt(secTotal)</span></div>
+                </div>
+            }
+        }
+        else
+        {
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">No line items in this section.</p>
+        }
+        </div>
+    }
+
+    <!-- Narrative Sections -->
+    @foreach (var sec in narrativeSections)
+    {
+        <div class="narrative-card" @(!string.IsNullOrWhiteSpace(sec.AccentColor) ? $"style=\"border-left-color:{sec.AccentColor};\"" : "")>
+            @if (!string.IsNullOrWhiteSpace(sec.Label))
+            {
+                <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">@sec.Label</div>
+            }
+            <h3 style="font-size:18px;font-weight:800;margin-bottom:12px;">@sec.Name</h3>
+            @if (!string.IsNullOrWhiteSpace(sec.Description))
+            {
+                <div style="font-size:14px;color:var(--text);line-height:1.7;">
+                    @if (sec.Description.Contains("<"))
+                    {
+                        @Html.Raw(sec.Description)
+                    }
+                    else
+                    {
+                        var descLines = sec.Description.Split('\n', StringSplitOptions.None);
+                        @foreach (var dLine in descLines)
+                        {
+                            var trimmed = dLine.Trim();
+                            if (string.IsNullOrWhiteSpace(trimmed))
+                            {
+                                <br />
+                            }
+                            else if (trimmed.StartsWith("•") || trimmed.StartsWith("-") || trimmed.StartsWith("*"))
+                            {
+                                var bulletText = trimmed.TrimStart('•', '-', '*').Trim();
+                                <div style="display:flex;gap:8px;align-items:baseline;margin-top:4px;padding-left:16px;">
+                                    <span style="color:var(--blue);font-weight:700;">•</span>
+                                    <span>@bulletText</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <p style="margin:6px 0;">@trimmed</p>
+                            }
+                        }
+                    }
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sec.Notes))
+            {
+                <div style="margin-top:16px;font-size:14px;font-weight:700;color:var(--text);line-height:1.7;">@Html.Raw(sec.Notes)</div>
+            }
+        </div>
+    }
+
+    <!-- Document Summary (grand totals + validity + notes + signature) -->
+    <div style="page-break-before:always;break-before:always;">
+
+    <!-- Summary Table (per-section breakdown) -->
+    @if (Model.IsGrandTotalShown)
+    {
+        var sectionsWithLines = lineItemSections.Where(s => s.Lines.Any()).ToList();
+        var totalDiscount = Model.Sections.SelectMany(s => s.Lines)
+            .Where(l => l.Discount > 0)
+            .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
+
+        @if (sectionsWithLines.Count > 1)
+        {
+            <div class="section-header" style="margin-top:0;">
+                <h3>Summary</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th class="right">Subtotal</th>
+                        <th class="right">Discount</th>
+                        <th class="right">VAT</th>
+                        <th class="right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sec in sectionsWithLines)
+                    {
+                        var secGross = sec.Lines.Sum(l => l.Quantity * l.UnitPrice);
+                        var secDisc = sec.Lines
+                            .Where(l => l.Discount > 0)
+                            .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
+                        var secNet = sec.Lines.Sum(l => l.LineTotal);
+                        var secVat = sec.Lines.Sum(l => l.LineTotal * (l.VatRate / 100));
+                        var secTotal = secNet + secVat;
+
+                        <tr>
+                            <td><strong>@sec.Name</strong></td>
+                            <td class="right">@fmt(secGross)</td>
+                            <td class="right" style="color:#129867;">@(secDisc > 0 ? $"-{fmt(secDisc)}" : "—")</td>
+                            <td class="right">@fmt(secVat)</td>
+                            <td class="right"><strong>@fmt(secTotal)</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <!-- Grand Totals -->
+        <div class="totals-card" style="margin-top:32px;">
+            <div class="totals-row"><span class="label">Subtotal</span><span class="value">@fmt(Model.Subtotal)</span></div>
+            @if (totalDiscount > 0)
+            {
+                <div class="totals-row"><span class="label" style="color:#129867;">Discount</span><span class="value" style="color:#129867;">-@fmt(totalDiscount)</span></div>
+            }
+            <div class="totals-row"><span class="label">Tax</span><span class="value">@fmt(Model.TaxAmount)</span></div>
+            <div class="totals-row grand-total"><span class="label">Total</span><span class="value">@fmt(Model.TotalAmount)</span></div>
+        </div>
+    }
+
+    <!-- Validity Notice -->
+    @if (Model.ValidUntil.HasValue)
+    {
+        <div class="validity-notice">
+            This quotation is valid until @Model.ValidUntil.Value.ToString("dd MMM yyyy"). After this date, pricing may be subject to change.
+        </div>
+    }
+
+    <!-- Notes -->
+    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    {
+        <div class="notes">
+            <div class="label">Notes</div>
+            <p>@Model.Notes</p>
+        </div>
+    }
+
+    <!-- Signature -->
+    <div style="margin-top:32px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#0D5EA6;margin-bottom:12px;">Signature</div>
+    <div class="signature-section">
+        <div class="signature-block">
+            <div class="sig-label">Issued by</div>
+            <div class="sig-line"></div>
+        </div>
+        <div class="signature-block">
+            <div class="sig-label">Accepted by</div>
+            <div class="sig-line"></div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-powered">
+        Powered by 3 Inventors — Operational Intelligence
+    </div>
+    </div>
+
+</div>
+</body>
+</html>

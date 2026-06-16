@@ -48,7 +48,7 @@ This plan implements the Credit Note module following the established Controller
     - All entities follow existing patterns with navigation properties as defined in design
     - _Requirements: 1.6, 1.11, 3.1, 4.1_
 
-  - [-] 2.2 Add DbSet declarations and EF Core configuration to PortalDbContext
+  - [ ] 2.2 Add DbSet declarations and EF Core configuration to PortalDbContext
     - Add `DbSet<CreditNoteStatusType>`, `DbSet<CreditNote>`, `DbSet<CreditNoteLine>`, `DbSet<CreditNoteApplication>` to PortalDbContext
     - Add `ConfigureCreditNoteStatusType`, `ConfigureCreditNote`, `ConfigureCreditNoteLine`, `ConfigureCreditNoteApplication` methods
     - Call configuration methods from `OnModelCreating`
@@ -56,7 +56,7 @@ This plan implements the Credit Note module following the established Controller
     - _Requirements: 1.12, 2.4, 3.1_
 
 - [ ] 3. DTO models
-  - [-] 3.1 Create DTO classes for the credit note module
+  - [ ] 3.1 Create DTO classes for the credit note module
     - Create `Portal.Infrastructure/Models/CreditNote/CreateCreditNoteDto.cs`
     - Create `Portal.Infrastructure/Models/CreditNote/UpdateCreditNoteDto.cs`
     - Create `Portal.Infrastructure/Models/CreditNote/CreateCreditNoteLineDto.cs`
@@ -361,7 +361,7 @@ This plan implements the Credit Note module following the established Controller
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
 - [ ] 15. Unit tests
-  - [-] 15.1 Write unit tests for CreditNoteService (creation, lifecycle, validation)
+  - [ ] 15.1 Write unit tests for CreditNoteService (creation, lifecycle, validation)
     - Test number generation: first of year → CN-YYYY-0001, sequential increment, 9999 limit rejection
     - Test number generation retry on uniqueness conflict (mock DbUpdateException)
     - Test validation pipeline: empty reason, zero lines, >50 lines, invalid quantity/price/VAT ranges, exceeding balance
@@ -369,14 +369,14 @@ This plan implements the Credit Note module following the established Controller
     - Test Draft-only editing: edit succeeds for Draft, rejected for Issued/Applied/Voided
     - _Requirements: 1.3, 1.4, 1.5, 1.10, 1.13, 2.1, 2.3, 2.5, 2.6, 3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9_
 
-  - [-] 15.2 Write unit tests for KPI computation and eligible invoices
+  - [ ] 15.2 Write unit tests for KPI computation and eligible invoices
     - Test KPI with known data: verify counts and sums match expected values
     - Test KPI with no data: verify zeros returned
     - Test eligible invoices: only Issued invoices with outstanding > 0 returned
     - Test VAT period dropdown: only unsubmitted periods returned, default to latest
     - _Requirements: 9.2, 9.3, 9.4, 9.5, 6.4_
 
-  - [-] 15.3 Write unit tests for Apply and Void operations
+  - [ ] 15.3 Write unit tests for Apply and Void operations
     - Test apply: verify application record created, status transitions to Applied, financial status recalculated
     - Test apply rejection: non-Issued status, Paid/WrittenOff invoice, exceeding balance
     - Test void of Draft/Issued: no financial reversal, status → Voided
@@ -384,7 +384,7 @@ This plan implements the Credit Note module following the established Controller
     - Test void rejection: VAT period submitted (non-Draft)
     - _Requirements: 4.1, 4.2, 4.7, 4.9, 5.2, 5.3, 5.5, 5.7, 5.9, 6.6_
 
-- [~] 16. Final checkpoint - Ensure all tests pass
+- [ ] 16. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

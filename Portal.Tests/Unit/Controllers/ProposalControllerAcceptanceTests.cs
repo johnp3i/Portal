@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -26,7 +28,10 @@ public class ProposalControllerAcceptanceTests
 
         _controller = new ProposalController(
             _proposalServiceMock.Object,
-            _acceptanceServiceMock.Object);
+            _acceptanceServiceMock.Object,
+            Mock.Of<IWebHostEnvironment>(),
+            Mock.Of<ILogoService>(),
+            Mock.Of<ILogger<ProposalController>>());
 
         // Set up default HttpContext for all tests
         var httpContext = new DefaultHttpContext();

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Repositories;
@@ -29,6 +30,8 @@ public class InvoiceControllerAcceptanceStatusTests
     private readonly Mock<IDocumentDuplicationService> _duplicationServiceMock;
     private readonly Mock<IDocumentSoftDeleteService> _softDeleteServiceMock;
     private readonly Mock<IViewRenderService> _viewRenderServiceMock;
+    private readonly Mock<IInvoicePdfService> _invoicePdfServiceMock;
+    private readonly Mock<ILogger<InvoiceController>> _loggerMock;
     private readonly InvoiceController _controller;
 
     public InvoiceControllerAcceptanceStatusTests()
@@ -44,6 +47,8 @@ public class InvoiceControllerAcceptanceStatusTests
         _duplicationServiceMock = new Mock<IDocumentDuplicationService>();
         _softDeleteServiceMock = new Mock<IDocumentSoftDeleteService>();
         _viewRenderServiceMock = new Mock<IViewRenderService>();
+        _invoicePdfServiceMock = new Mock<IInvoicePdfService>();
+        _loggerMock = new Mock<ILogger<InvoiceController>>();
 
         // Concrete repositories need a DbContext — use a mock DbContext
         var dbContextOptions = new DbContextOptionsBuilder<DbContext>()
@@ -74,7 +79,9 @@ public class InvoiceControllerAcceptanceStatusTests
             _duplicationServiceMock.Object,
             _softDeleteServiceMock.Object,
             vatPeriodRepository,
-            _viewRenderServiceMock.Object);
+            _viewRenderServiceMock.Object,
+            _invoicePdfServiceMock.Object,
+            _loggerMock.Object);
 
         // Set up TempData to avoid null reference exceptions
         _controller.TempData = new TempDataDictionary(

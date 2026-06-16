@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quotation PDF Mockup — QUO-2025-00042</title>
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --text: #1A2B3C;
+            --muted: #6B7F8E;
+            --bg: #F7FAFC;
+            --border: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4; margin: 20mm 18mm; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+        .page {
+            max-width: 860px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 8px 40px rgba(13,94,166,.08);
+            padding: 56px 48px;
+        }
+        h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        h2 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+        h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        /* Logo + Business Info Header */
+        .logo-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 24px;
+            margin-bottom: 28px;
+            border-bottom: 1px solid var(--border);
+        }
+        .logo-section img {
+            max-height: 60px;
+            max-width: 200px;
+        }
+        .business-info {
+            text-align: right;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text);
+        }
+        .business-info .name { font-weight: 700; font-size: 14px; }
+        .business-info .vat { color: var(--muted); font-size: 12px; }
+
+        /* Header: QUOTATION + Bill To */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid var(--blue);
+        }
+        .header-left h1 { color: var(--blue); }
+        .header-right { text-align: right; }
+        .header-right .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .header-right .value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .header-right .detail {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Meta Grid */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .meta-item .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .meta-item .value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* Prepared By section */
+        .prepared-by {
+            margin-bottom: 28px;
+            padding: 14px 18px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .prepared-by .pb-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .prepared-by .pb-name { font-weight: 600; }
+        .prepared-by .pb-detail { color: var(--muted); }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        th.right { text-align: right; }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        td.right { text-align: right; }
+        .subtitle {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Section styling */
+        .section-header {
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+            break-after: avoid;
+            page-break-after: avoid;
+        }
+        .section-label {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--blue);
+            margin-left: 8px;
+        }
+        .section-desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        /* Narrative sections */
+        .narrative-card {
+            margin: 28px 0;
+            padding: 24px 28px;
+            border-left: 4px solid var(--blue);
+            background: var(--bg);
+            border-radius: 12px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .narrative-card p { margin-bottom: 8px; }
+        .narrative-card ul, .narrative-card ol { margin: 12px 0; padding-left: 24px; }
+        .narrative-card li { margin-bottom: 4px; line-height: 1.7; }
+
+        /* Totals */
+        .totals-card {
+            margin-left: auto;
+            max-width: 320px;
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: var(--bg);
+            border-radius: 12px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-top: 1px solid var(--border);
+        }
+        .totals-row:first-child { border-top: none; padding-top: 0; }
+        .totals-row .label { color: var(--muted); font-size: 13px; }
+        .totals-row .value { font-weight: 700; font-size: 14px; }
+        .grand-total .value {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        /* Notes */
+        .notes {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .notes .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .notes p {
+            font-size: 13px;
+            color: var(--muted);
+            white-space: pre-wrap;
+        }
+
+        /* Validity notice */
+        .validity-notice {
+            margin-top: 24px;
+            padding: 12px 18px;
+            background: #FFFDF5;
+            border: 1px solid #F5DFA0;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #7A5C00;
+        }
+
+        /* Signature */
+        .signature-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            margin-top: 48px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .signature-block .sig-label {
+            font-size: 13px;
+            color: var(--muted);
+            font-style: italic;
+            margin-bottom: 40px;
+        }
+        .signature-block .sig-line {
+            border-bottom: 1px solid var(--muted);
+            width: 200px;
+        }
+
+        /* Footer */
+        .footer-powered {
+            margin-top: 24px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(13,94,166,.08);
+            font-size: 9px;
+            color: #b0bec5;
+            text-align: center;
+            letter-spacing: 0.03em;
+        }
+
+        @media print {
+            body { background: #fff; padding: 0; }
+            .page { box-shadow: none; border-radius: 0; padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Logo + Business Info -->
+    <div class="logo-section">
+        <div>
+            <!-- Logo placeholder -->
+            <svg width="150" height="48" viewBox="0 0 150 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="150" height="48" rx="8" fill="#EEF4F8"/>
+                <text x="75" y="28" text-anchor="middle" font-family="Manrope, sans-serif" font-size="12" font-weight="700" fill="#0D5EA6">COMPANY LOGO</text>
+            </svg>
+        </div>
+        <div class="business-info">
+            <div class="name">Acme Solutions Ltd</div>
+            <div>14 Technology Park, Suite 200</div>
+            <div>Dublin, D02 XY45</div>
+            <div class="vat">VAT: IE9876543A</div>
+            <div>+353 1 234 5678</div>
+            <div>info@acmesolutions.ie</div>
+        </div>
+    </div>
+
+    <!-- Header: QUOTATION + Customer -->
+    <div class="header">
+        <div class="header-left">
+            <h1>QUOTATION</h1>
+            <div style="margin-top:8px;font-size:16px;font-weight:700;">QUO-2025-00042</div>
+        </div>
+        <div class="header-right">
+            <div class="label">Prepared For</div>
+            <div class="value">John Murphy</div>
+            <div class="detail">Murphy & Associates</div>
+            <div class="detail">john@murphyassociates.ie</div>
+        </div>
+    </div>
+
+    <!-- Meta Grid -->
+    <div class="meta-grid">
+        <div class="meta-item">
+            <div class="label">Date</div>
+            <div class="value">16 Jun 2026</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Valid Until</div>
+            <div class="value">16 Jul 2026</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Reference</div>
+            <div class="value">QUO-2025-00042</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Currency</div>
+            <div class="value">EUR (€)</div>
+        </div>
+    </div>
+
+    <!-- Prepared By (contact person) -->
+    <div class="prepared-by">
+        <div class="pb-label">Prepared By</div>
+        <div class="pb-name">Sarah O'Brien</div>
+        <div class="pb-detail">+353 87 123 4567 · sarah@acmesolutions.ie</div>
+    </div>
+
+    <!-- Section: Network Infrastructure -->
+    <div class="section-header">
+        <h3>
+            Network Infrastructure
+            <span class="section-label">Phase 1</span>
+        </h3>
+        <div class="section-desc">Core networking equipment and installation services for the Dublin office.</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="right">Qty</th>
+                <th class="right">Unit Price</th>
+                <th class="right">VAT %</th>
+                <th class="right">Discount</th>
+                <th class="right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <strong>Cisco Catalyst 9300 Switch</strong>
+                    <div class="subtitle">48-port PoE+ managed switch with DNA license</div>
+                </td>
+                <td class="right">2.00</td>
+                <td class="right">€3,450.00</td>
+                <td class="right">23.00%</td>
+                <td class="right">5.00%</td>
+                <td class="right"><strong>€6,555.00</strong></td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Ubiquiti UniFi AP Pro</strong>
+                    <div class="subtitle">WiFi 6 access point with mounting bracket</div>
+                </td>
+                <td class="right">8.00</td>
+                <td class="right">€289.00</td>
+                <td class="right">23.00%</td>
+                <td class="right"><span style="color:var(--muted);">—</span></td>
+                <td class="right"><strong>€2,312.00</strong></td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Network Installation & Configuration</strong>
+                    <div class="subtitle">On-site installation, cabling, and configuration (2 engineers, 3 days)</div>
+                </td>
+                <td class="right">1.00</td>
+                <td class="right">€2,800.00</td>
+                <td class="right">23.00%</td>
+                <td class="right"><span style="color:var(--muted);">—</span></td>
+                <td class="right"><strong>€2,800.00</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="totals-card">
+        <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">€11,667.00</span></div>
+        <div class="totals-row"><span class="label">Section VAT</span><span class="value">€2,683.41</span></div>
+        <div class="totals-row"><span class="label">Section Total</span><span class="value">€14,350.41</span></div>
+    </div>
+
+    <!-- Section: Support & Maintenance -->
+    <div class="section-header" style="margin-top:36px;">
+        <h3>
+            Support & Maintenance
+            <span class="section-label">Annual</span>
+        </h3>
+        <div class="section-desc">Ongoing support and maintenance contracts.</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="right">Qty</th>
+                <th class="right">Unit Price</th>
+                <th class="right">VAT %</th>
+                <th class="right">Discount</th>
+                <th class="right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <strong>Premium Support Contract</strong>
+                    <div class="subtitle">24/7 remote support with 4-hour SLA, 12-month term</div>
+                </td>
+                <td class="right">1.00</td>
+                <td class="right">€4,200.00</td>
+                <td class="right">23.00%</td>
+                <td class="right">10.00%</td>
+                <td class="right"><strong>€3,780.00</strong></td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Quarterly Health Check</strong>
+                    <div class="subtitle">On-site network assessment and optimisation report</div>
+                </td>
+                <td class="right">4.00</td>
+                <td class="right">€450.00</td>
+                <td class="right">23.00%</td>
+                <td class="right"><span style="color:var(--muted);">—</span></td>
+                <td class="right"><strong>€1,800.00</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="totals-card">
+        <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">€5,580.00</span></div>
+        <div class="totals-row"><span class="label">Section VAT</span><span class="value">€1,283.40</span></div>
+        <div class="totals-row"><span class="label">Section Total</span><span class="value">€6,863.40</span></div>
+    </div>
+
+    <!-- Narrative Section: Terms & Conditions -->
+    <div class="narrative-card">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">Terms</div>
+        <h3 style="font-size:18px;font-weight:800;margin-bottom:12px;">Terms & Conditions</h3>
+        <div style="font-size:14px;color:var(--text);line-height:1.7;">
+            <p>Payment terms: 50% deposit upon acceptance, balance due on completion.</p>
+            <p>Equipment warranty: Standard manufacturer warranty applies (3 years for Cisco, 2 years for Ubiquiti).</p>
+            <ul>
+                <li>Prices exclude delivery charges (estimated €45 for Dublin metro area)</li>
+                <li>Installation dates subject to equipment availability</li>
+                <li>Additional site visits beyond scope will be quoted separately</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Grand Totals -->
+    <div class="totals-card" style="margin-top:32px;">
+        <div class="totals-row"><span class="label">Subtotal</span><span class="value">€17,247.00</span></div>
+        <div class="totals-row"><span class="label">Tax (23%)</span><span class="value">€3,966.81</span></div>
+        <div class="totals-row grand-total"><span class="label">Total</span><span class="value">€21,213.81</span></div>
+    </div>
+
+    <!-- Validity Notice -->
+    <div class="validity-notice">
+        This quotation is valid until 16 Jul 2026. After this date, pricing may be subject to change.
+    </div>
+
+    <!-- Notes -->
+    <div class="notes">
+        <div class="label">Notes</div>
+        <p>Thank you for considering Acme Solutions for your networking needs. We look forward to working with you on this project. Please don't hesitate to reach out with any questions.</p>
+    </div>
+
+    <!-- Signature Lines -->
+    <div class="signature-section">
+        <div class="signature-block">
+            <div class="sig-label">Issued by</div>
+            <div class="sig-line"></div>
+        </div>
+        <div class="signature-block">
+            <div class="sig-label">Accepted by</div>
+            <div class="sig-line"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-powered">
+        Powered by 3 Inventors — Operational Intelligence
+    </div>
+
+</div>
+</body>
+</html>

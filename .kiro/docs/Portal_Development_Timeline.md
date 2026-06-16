@@ -1,7 +1,7 @@
 # Portal Development Timeline
 
 ## Status: Phase 1 — Core Platform
-Last Updated: 2025-07-29
+Last Updated: 2026-06-16
 
 ---
 
@@ -28,6 +28,7 @@ Last Updated: 2025-07-29
 | ✅ | Invoice Line Product Type & Reverse Charge — ProductType lookup table (Services/Goods), ProductTypeId on Product with derivation on quotation lines, immutable snapshot on invoice lines, IsReverseCharge flag with VatRate=0% enforcement, quotation-to-invoice conversion preservation, property-based tests (7 properties) | 2025-07-28 |
 | ✅ | Subscription Plans — Plan/PlanFeature/BusinessPlan schema in [dbo], EF Core entities and DbContext config, PlanRepository/PlanFeatureRepository/BusinessPlanRepository, InvitationService user limit enforcement, seed data (Business plan + 9 modules), property-based tests (7 properties, 34 test cases), unit tests (7 scenarios) | 2025-07-29 |
 | ✅ | Identity Pages — Registration, Confirm Account, Forgot Password, Reset Password pages with Identity Page Design Guide styling (frosted glass card, particle background, responsive layout), PendingRegistration entity, PlanService, RegistrationService, IdentityEmailService, full accessibility (ARIA attributes, focus indicators, WCAG AA contrast), SEO meta tags, invitation flow coexistence verified | 2025-07-29 |
+| ✅ | Subscription & Self-Service Onboarding — Stripe Checkout integration, webhook handler (5 events), auto-provisioning (Business + User + BusinessPlan + module permissions), setup wizard, module access middleware (plan-level gating), grace period + lockout, Stripe Customer Portal, admin Subscriptions view (tenants, plans, MRR), property-based tests | 2026-06-09 |
 
 ---
 
@@ -248,17 +249,17 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [x] | 10.1 | Design and build public landing page (hero, features, pricing cards, CTA) | Module 0 | 2025-07-28 |
 | [x] | 10.2 | Create subscription schema: `[dbo].[Plan]`, `[dbo].[PlanFeature]`, `[dbo].[BusinessPlan]` with EF Core entities, repositories, and user limit enforcement in InvitationService | Module 0 | 2025-07-29 |
 | [x] | 10.3 | Seed Plan data (Business plan with 9 module mappings); Starter and Enterprise to be added as data inserts when needed | 10.2 | 2025-07-29 |
-| [ ] | 10.4 | Integrate Stripe: create Checkout Session on plan selection | 10.2 | |
-| [ ] | 10.5 | Implement Stripe webhook handler (`checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`) | 10.4 | |
-| [ ] | 10.6 | Auto-provision tenant on successful payment: create Business, first User (owner), assign modules per plan | 10.5 | |
-| [ ] | 10.7 | Build post-signup setup wizard (business name, VAT number, address, logo, currency) | 10.6 | |
-| [ ] | 10.8 | Update module access middleware: check subscription plan includes module before checking user-level permission | 10.2, Module 7 | |
+| [x] | 10.4 | Integrate Stripe: create Checkout Session on plan selection | 10.2 | 2026-06-09 |
+| [x] | 10.5 | Implement Stripe webhook handler (`checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`) | 10.4 | 2026-06-09 |
+| [x] | 10.6 | Auto-provision tenant on successful payment: create Business, first User (owner), assign modules per plan | 10.5 | 2026-06-09 |
+| [x] | 10.7 | Build post-signup setup wizard (business name, VAT number, address, logo, currency) | 10.6 | 2026-06-09 |
+| [x] | 10.8 | Update module access middleware: check subscription plan includes module before checking user-level permission | 10.2, Module 7 | 2026-06-09 |
 | [x] | 10.9 | Build subscription status indicator in sidebar/topbar (plan name, days remaining) | 10.8 | 2025-07-29 |
-| [ ] | 10.10 | Implement grace period and "billing required" lockout screen for lapsed subscriptions | 10.5 | |
-| [ ] | 10.11 | Integrate Stripe Customer Portal for self-service billing management (plan changes, payment methods, invoice history) | 10.4 | |
-| [ ] | 10.12 | Build super admin "Subscriptions" view (all tenants, plans, payment status, MRR) | 10.2 | |
+| [x] | 10.10 | Implement grace period and "billing required" lockout screen for lapsed subscriptions | 10.5 | 2026-06-09 |
+| [x] | 10.11 | Integrate Stripe Customer Portal for self-service billing management (plan changes, payment methods, invoice history) | 10.4 | 2026-06-09 |
+| [x] | 10.12 | Build super admin "Subscriptions" view (all tenants, plans, payment status, MRR) | 10.2 | 2026-06-09 |
 | [x] | 10.13 | Routing: unauthenticated `/` → landing page; authenticated `/` → redirect to Dashboard | 10.1 | 2025-07-28 |
-| [ ] | 10.14 | Property-based tests (plan-module mapping, provisioning atomicity, webhook idempotency, access gating) | 10.8 | |
+| [x] | 10.14 | Property-based tests (plan-module mapping, provisioning atomicity, webhook idempotency, access gating) | 10.8 | 2026-06-09 |
 
 ---
 
@@ -283,6 +284,8 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 
 | Done | Module | Description | Prerequisite | Completed |
 |------|--------|-------------|-------------|-----------|
+| [ ] | **Mobile Responsive Layout** | Hamburger menu, collapsible sidebar, mobile-friendly topbar, touch-optimized tables, dedicated mobile CSS stylesheet | Module 0 | |
+| [ ] | **Reminder Workflow** | Automated overdue payment notifications via email, configurable schedules, reminder templates, escalation rules | Module 4 | |
 | [ ] | Inventory Management | Stock tracking from purchases, stock levels, reorder points, warehouse locations | Module 5, Module 10 | |
 | [ ] | Bill of Materials (BOM) | Product composition, cost roll-up, multi-level BOM, production cost estimation | Inventory, Product Catalog | |
 | [ ] | Production Planning | Work orders, BOM-to-production flow, scheduling, completion tracking | BOM, Inventory | |
@@ -292,7 +295,6 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [ ] | Plan Upgrade/Downgrade Flow | In-app plan switching with prorated billing via Stripe, module access adjustment | Module 10 | |
 | [ ] | Customer Account Credits | Standalone credit notes (no invoice reference), running credit balance, apply to future invoices | Module 4, Credit Notes | |
 | [ ] | Bank Feed Integration | Automated payment matching from bank statements | Module 4 | |
-| [ ] | Reminder Workflow | Automated overdue notifications via email, configurable schedules | Module 4 | |
 
 ---
 
@@ -307,7 +309,6 @@ Modules 5 and 6 can run in parallel with Module 4 since they share no direct dep
 | [ ] | COM Pipeline | Canonical Operational Model ingestion | All Phase 2 modules | |
 | [ ] | API Access & Webhooks | RESTful API for external integrations, webhook notifications for events | Module 10 (Enterprise tier) | |
 | [ ] | Multi-Currency Support | Per-invoice currency, exchange rate management, multi-currency reporting | Modules 3-4 | |
-| [ ] | Mobile Responsive Layout | Hamburger menu, collapsible sidebar, mobile-friendly topbar, touch-optimized tables | Module 0 | |
 | [ ] | White-Label / Custom Branding | Per-tenant branding (logo, colors, custom domain CNAME) | Module 10 (Enterprise tier) | |
 | [ ] | Marketplace & Add-Ons | Optional paid add-on modules, third-party integrations marketplace | Module 10 | |
 | [ ] | Custom Integrations | Tenant-specific integration configurations, custom field mapping | API Access | |

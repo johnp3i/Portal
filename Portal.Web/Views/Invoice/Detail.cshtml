@@ -21,6 +21,7 @@
             <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
         }
         <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
+        <button type="button" class="btn btn-secondary" onclick="downloadInvoicePdf(@invoice.Id)">Download PDF</button>
         <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
         <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
         @if (invoice.InvoiceStatusTypeId == 1)
@@ -625,6 +626,42 @@
                 } else {
                     Swal.fire({ title: 'Error', text: data.message || 'Failed to send email.', icon: 'error', confirmButtonColor: '#0D5EA6' });
                 }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function downloadInvoicePdf(invoiceId) {
+            BlockUI.show('Generating PDF...');
+            try {
+                var response = await fetch('/Invoice/AxGetDownloadPdf/' + invoiceId);
+
+                if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) {
+                    var data = await response.json();
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to generate PDF.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                var blob = await response.blob();
+                var contentDisposition = response.headers.get('content-disposition');
+                var filename = 'invoice.pdf';
+                if (contentDisposition) {
+                    var match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (match && match[1]) {
+                        filename = match[1].replace(/['"]/g, '');
+                    }
+                }
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                BlockUI.hide();
             } catch (e) {
                 BlockUI.hide();
                 Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -75,7 +76,9 @@ public class QuotationControllerAcceptanceStatusTests
             _duplicationServiceMock.Object,
             _softDeleteServiceMock.Object,
             productRepository,
-            _acceptanceServiceMock.Object);
+            _acceptanceServiceMock.Object,
+            Mock.Of<IProposalPdfService>(),
+            Mock.Of<ILogger<QuotationController>>());
 
         // Set up TempData to avoid null reference exceptions
         _controller.TempData = new TempDataDictionary(

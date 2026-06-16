@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mobile Layout Mockup — Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --blue3: #0B4E89;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --red: #C24A4A;
+            --line: rgba(13,94,166,.10);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            max-width: 420px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ===== MOBILE TOPBAR ===== */
+        .mobile-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255,255,255,.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--line);
+        }
+        .mobile-topbar .hamburger {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #fff;
+            cursor: pointer;
+        }
+        .mobile-topbar .logo img {
+            height: 28px;
+            width: auto;
+        }
+        .mobile-topbar .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #1A6BB8, #0D5EA6);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ===== SLIDE-IN SIDEBAR ===== */
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.4);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s;
+        }
+        .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .mobile-sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 280px;
+            height: 100vh;
+            background: #fff;
+            z-index: 300;
+            padding: 24px 18px;
+            overflow-y: auto;
+            transition: left .3s cubic-bezier(.4,0,.2,1);
+            box-shadow: 4px 0 24px rgba(0,0,0,.12);
+        }
+        .mobile-sidebar.active { left: 0; }
+        .mobile-sidebar .brand { margin-bottom: 24px; }
+        .mobile-sidebar .brand img { height: 32px; }
+        .mobile-sidebar .close-btn {
+            position: absolute;
+            top: 18px;
+            right: 16px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #fff;
+            cursor: pointer;
+        }
+        .nav-title {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 0 10px 10px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            color: var(--muted);
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 4px;
+        }
+        .nav-item.active {
+            background: linear-gradient(180deg, #1A6BB8, #0D5EA6);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(13,94,166,.2);
+        }
+        .nav-item:not(.active):hover { background: rgba(13,94,166,.04); }
+
+        /* ===== PAGE CONTENT ===== */
+        .page-content { padding: 16px; }
+
+        .page-heading {
+            font-family: Manrope, sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            margin-bottom: 4px;
+        }
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+
+        /* ===== KPI CARDS (2x2 grid on mobile) ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .kpi-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .kpi-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .kpi-value {
+            font-family: Manrope, sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--blue);
+        }
+
+        /* ===== GLASS CARD ===== */
+        .glass-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 4px 16px rgba(13,94,166,.06);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        /* ===== TABLE (scrollable) ===== */
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -16px;
+            padding: 0 16px;
+        }
+        .table-scroll table {
+            min-width: 600px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-scroll th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            white-space: nowrap;
+        }
+        .table-scroll td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(13,94,166,.04);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .scroll-hint {
+            font-size: 11px;
+            color: var(--muted);
+            text-align: right;
+            margin-bottom: 6px;
+        }
+
+        /* ===== FILTER BAR (stacked on mobile) ===== */
+        .filter-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .filter-bar select,
+        .filter-bar input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+        }
+        .filter-bar .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-bar .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .filter-bar .btn-primary { background: var(--blue); color: #fff; }
+        .filter-bar .btn-secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--line); }
+
+        /* ===== STATUS PILLS ===== */
+        .pill { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .pill-green { background: rgba(18,152,103,.1); color: var(--green); }
+        .pill-blue { background: rgba(13,94,166,.08); color: var(--blue); }
+        .pill-gold { background: rgba(200,145,46,.1); color: #8D5D07; }
+
+        /* ===== FULL-WIDTH BUTTON ===== */
+        .btn-full {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 14px;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            background: linear-gradient(180deg, #1A6BB8, #0D5EA6);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(13,94,166,.2);
+            margin-top: 12px;
+        }
+
+        /* ===== BOTTOM TAB BAR (optional quick actions) ===== */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 420px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 16px 14px;
+            background: rgba(255,255,255,.97);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--line);
+            z-index: 50;
+        }
+        .bottom-bar a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--muted);
+            text-decoration: none;
+        }
+        .bottom-bar a.active { color: var(--blue); }
+    </style>
+</head>
+<body>
+
+    <!-- MOBILE TOPBAR -->
+    <div class="mobile-topbar">
+        <div class="hamburger" onclick="document.querySelector('.mobile-sidebar').classList.add('active');document.querySelector('.sidebar-overlay').classList.add('active');">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </div>
+        <div class="logo">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='28' viewBox='0 0 120 28'%3E%3Ctext x='0' y='22' font-family='Manrope' font-size='16' font-weight='800' fill='%230D5EA6'%3E3 Inventors%3C/text%3E%3C/svg%3E" alt="3 Inventors" />
+        </div>
+        <div class="avatar">JP</div>
+    </div>
+
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" onclick="document.querySelector('.mobile-sidebar').classList.remove('active');this.classList.remove('active');"></div>
+
+    <!-- SLIDE-IN SIDEBAR -->
+    <nav class="mobile-sidebar">
+        <div class="close-btn" onclick="this.parentElement.classList.remove('active');document.querySelector('.sidebar-overlay').classList.remove('active');">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </div>
+        <div class="brand">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='32' viewBox='0 0 140 32'%3E%3Ctext x='0' y='24' font-family='Manrope' font-size='18' font-weight='800' fill='%230D5EA6'%3E3 Inventors%3C/text%3E%3C/svg%3E" alt="3 Inventors" />
+        </div>
+        <div class="nav-title">Workspace</div>
+        <a class="nav-item active" href="#">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
+            Dashboard
+        </a>
+        <a class="nav-item" href="#">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            My Business
+        </a>
+        <div class="nav-title" style="margin-top:16px;">Modules</div>
+        <a class="nav-item" href="#">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+            Quotations
+        </a>
+        <a class="nav-item" href="#">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M2 9h20"/></svg>
+            Invoices
+        </a>
+        <a class="nav-item" href="#">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20m5-5l-5 5-5-5"/></svg>
+            Revenue
+        </a>
+        <a class="nav-item" href="#">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+            Purchases
+        </a>
+        <a class="nav-item" href="#">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            VAT
+        </a>
+    </nav>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content" style="padding-bottom:72px;">
+
+        <!-- Page Header -->
+        <h1 class="page-heading">Quotations</h1>
+        <p class="page-subtitle">Manage your proposals and quotations</p>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total</div>
+                <div class="kpi-value">24</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Sent</div>
+                <div class="kpi-value">8</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Accepted</div>
+                <div class="kpi-value" style="color:var(--green);">5</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">This Month</div>
+                <div class="kpi-value">€12,450</div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="glass-card">
+            <div class="filter-bar">
+                <select>
+                    <option>All Statuses</option>
+                    <option>Draft</option>
+                    <option>Sent</option>
+                    <option>Accepted</option>
+                </select>
+                <select>
+                    <option>All Customers</option>
+                    <option>Orestis Craft Center</option>
+                    <option>Golden Moments</option>
+                </select>
+                <div class="btn-row">
+                    <button class="btn btn-primary">Filter</button>
+                    <button class="btn btn-secondary">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table with horizontal scroll -->
+        <div class="glass-card">
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Valid Until</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight:700;">QUO-2026-06-00003</td>
+                            <td>Orestis Craft Center</td>
+                            <td><span class="pill pill-blue">Sent</span></td>
+                            <td>30/06/2026</td>
+                            <td style="font-weight:700;">€3,088.05</td>
+                            <td><a href="#" style="color:var(--blue);font-weight:600;font-size:12px;">View</a></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;">QUO-2026-06-00002</td>
+                            <td>Golden Moments</td>
+                            <td><span class="pill pill-green">Accepted</span></td>
+                            <td>25/06/2026</td>
+                            <td style="font-weight:700;">€1,250.00</td>
+                            <td><a href="#" style="color:var(--blue);font-weight:600;font-size:12px;">View</a></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;">QUO-2026-06-00001</td>
+                            <td>Hatlo Trading Ltd</td>
+                            <td><span class="pill pill-gold">Draft</span></td>
+                            <td>28/06/2026</td>
+                            <td style="font-weight:700;">€890.00</td>
+                            <td><a href="#" style="color:var(--blue);font-weight:600;font-size:12px;">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Full-width action button -->
+        <button class="btn-full">+ New Quotation</button>
+
+    </div>
+
+    <!-- BOTTOM TAB BAR -->
+    <div class="bottom-bar">
+        <a href="#" class="active">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
+            Home
+        </a>
+        <a href="#">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+            Quotes
+        </a>
+        <a href="#">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M2 9h20"/></svg>
+            Invoices
+        </a>
+        <a href="#">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20m5-5l-5 5-5-5"/></svg>
+            Revenue
+        </a>
+    </div>
+
+</body>
+</html>

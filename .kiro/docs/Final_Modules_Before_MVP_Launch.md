@@ -26,28 +26,28 @@ The subscription plan mechanism is complete (Plan, PlanFeature, BusinessPlan sch
 - [x] Reset Password page (new password form with token validation)
 - [x] Apply Identity Page Design Guide styling (frosted glass card, particle background)
 
-### 2. Stripe Integration (Module 10.4–10.5)
+### 2. Stripe Integration (Module 10.4–10.5) ✅ Completed 2026-06-09
 
-- [ ] Create Stripe Checkout Session when user selects a plan on the registration/pricing page
-- [ ] Implement Stripe webhook handler for payment events:
+- [x] Create Stripe Checkout Session when user selects a plan on the registration/pricing page
+- [x] Implement Stripe webhook handler for payment events:
   - `checkout.session.completed` — payment successful, trigger provisioning
   - `invoice.paid` — recurring payment confirmed
   - `invoice.payment_failed` — payment failed, notify user
   - `customer.subscription.updated` — plan change detected
   - `customer.subscription.deleted` — subscription cancelled
 
-### 3. Tenant Auto-Provisioning (Module 10.6)
+### 3. Tenant Auto-Provisioning (Module 10.6) ✅ Completed 2026-06-09
 
-- [ ] On successful Stripe payment (`checkout.session.completed`):
+- [x] On successful Stripe payment (`checkout.session.completed`):
   - Create Business record (tenant)
   - Create first User with owner role
   - Create BusinessPlan association (link tenant to selected plan)
   - Assign module permissions per plan (from PlanFeature records)
   - Send confirmation email
 
-### 4. Post-Signup Setup Wizard (Module 10.7)
+### 4. Post-Signup Setup Wizard (Module 10.7) ✅ Completed 2026-06-09
 
-- [ ] First-login experience for the new business owner:
+- [x] First-login experience for the new business owner:
   - Business name
   - VAT registration number
   - Business address
@@ -55,22 +55,22 @@ The subscription plan mechanism is complete (Plan, PlanFeature, BusinessPlan sch
   - Currency selection
   - Redirect to dashboard on completion
 
-### 5. Module Access Middleware (Module 10.8)
+### 5. Module Access Middleware (Module 10.8) ✅ Completed 2026-06-09
 
-- [ ] Gate each module by checking the business's active plan includes that module (via PlanFeature table)
-- [ ] Check plan-level access BEFORE checking user-level permissions
-- [ ] Show "upgrade required" message when accessing a module not included in the current plan
+- [x] Gate each module by checking the business's active plan includes that module (via PlanFeature table)
+- [x] Check plan-level access BEFORE checking user-level permissions
+- [x] Show "upgrade required" message when accessing a module not included in the current plan
 
-### 6. Subscription Lifecycle (Module 10.9–10.11)
+### 6. Subscription Lifecycle (Module 10.9–10.11) ✅ Completed 2026-06-09
 
 - [x] Sidebar/topbar indicator showing plan name and subscription status (Completed 2025-07-29)
-- [ ] Grace period handling for lapsed subscriptions (e.g., 7-day grace before lockout)
-- [ ] "Billing required" lockout screen when subscription lapses
-- [ ] Stripe Customer Portal link for self-service billing management (upgrade/downgrade, payment methods, invoice history)
+- [x] Grace period handling for lapsed subscriptions (e.g., 7-day grace before lockout)
+- [x] "Billing required" lockout screen when subscription lapses
+- [x] Stripe Customer Portal link for self-service billing management (upgrade/downgrade, payment methods, invoice history)
 
-### 7. Admin Visibility (Module 10.12)
+### 7. Admin Visibility (Module 10.12) ✅ Completed 2026-06-09
 
-- [ ] Super admin "Subscriptions" view showing:
+- [x] Super admin "Subscriptions" view showing:
   - All tenants with their active plans
   - Payment status per tenant
   - Monthly Recurring Revenue (MRR) summary

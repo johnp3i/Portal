@@ -196,6 +196,8 @@ builder.Services.AddScoped<IInvoiceSectionService, InvoiceSectionService>();
 builder.Services.AddScoped<InvoiceShareRepository>(sp =>
     new InvoiceShareRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IInvoiceRenderer, InvoiceRenderer>();
+builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+builder.Services.AddScoped<IProposalPdfService, ProposalPdfService>();
 builder.Services.AddScoped<IInvoiceSharingService, InvoiceSharingService>();
 builder.Services.AddScoped<InvoiceAcceptanceRepository>(sp =>
     new InvoiceAcceptanceRepository(sp.GetRequiredService<PortalDbContext>()));

@@ -466,11 +466,68 @@
 
     <!-- Download bar (visible to customer, hidden in print) -->
     <div class="download-bar">
-        <button class="btn-download" onclick="window.print()">
+        <button class="btn-download" onclick="downloadQuotationPdf()">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
             Download PDF
         </button>
     </div>
+
+    <!-- Block UI overlay for PDF generation -->
+    <div id="pdfBlockOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.85);backdrop-filter:blur(4px);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" style="animation:spin 1s linear infinite;">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#EEF4F8" stroke-width="4"/>
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#0D5EA6" stroke-width="4" stroke-dasharray="80" stroke-dashoffset="60" stroke-linecap="round"/>
+        </svg>
+        <div style="font-family:Inter,sans-serif;font-size:15px;font-weight:600;color:#1A2B3C;">Generating PDF...</div>
+    </div>
+    <style>@@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
+
+    <script>
+        function showPdfOverlay() {
+            var el = document.getElementById('pdfBlockOverlay');
+            el.style.display = 'flex';
+        }
+        function hidePdfOverlay() {
+            var el = document.getElementById('pdfBlockOverlay');
+            el.style.display = 'none';
+        }
+
+        async function downloadQuotationPdf() {
+            var pathParts = window.location.pathname.split('/');
+            var quotationId = pathParts[pathParts.length - 1];
+            if (!quotationId || isNaN(quotationId)) { return; }
+
+            showPdfOverlay();
+
+            try {
+                var response = await fetch('/Quotation/AxGetDownloadPdf/' + quotationId);
+                if (response.ok && response.headers.get('content-type')?.includes('application/pdf')) {
+                    var blob = await response.blob();
+                    var disposition = response.headers.get('content-disposition');
+                    var filename = 'quotation.pdf';
+                    if (disposition) {
+                        var match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match && match[1]) { filename = match[1].replace(/['"]/g, ''); }
+                    }
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    var data = await response.json().catch(function() { return { message: 'Failed to generate PDF.' }; });
+                    alert(data.message || 'Failed to generate PDF.');
+                }
+            } catch (e) {
+                alert('Could not complete download due to a connection problem.');
+            } finally {
+                hidePdfOverlay();
+            }
+        }
+    </script>
 
     <div class="page-wrap">
         <article class="sheet">

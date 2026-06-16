@@ -27,8 +27,8 @@
             --border: rgba(13,94,166,.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: var(--bg); font-size: 14px; line-height: 1.6; padding: 40px 20px; }
-        .page { max-width: 860px; margin: 0 auto; background: #fff; border-radius: 24px; box-shadow: 0 8px 40px rgba(13,94,166,.08); padding: 56px 48px; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: #fff; font-size: 14px; line-height: 1.6; padding: 0; margin: 0; }
+        .page { max-width: 100%; margin: 0; background: #fff; padding: 56px 48px; min-height: 100vh; display: flex; flex-direction: column; }
         h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
         h2 { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; }
         h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
@@ -51,9 +51,11 @@
         td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
         td.right { text-align: right; }
         .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
-        .section-header { margin-top: 28px; margin-bottom: 8px; padding-bottom: 4px; }
+        .section-header { margin-bottom: 16px; padding: 12px 16px; background: var(--bg); border-radius: 8px; }
         .section-label { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--blue); margin-left: 8px; }
-        .section-desc { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+        .section-desc { font-size: 13px; color: var(--muted); margin-top: 6px; }
+        .section-block { margin-top: 28px; page-break-inside: avoid; break-inside: avoid; }
+        .section-block + .section-block { page-break-before: always; break-before: always; }
         .narrative-card { margin: 28px 0; padding: 24px 28px; border-left: 4px solid var(--blue); background: var(--bg); border-radius: 12px; }
         .narrative-card ul, .narrative-card ol { margin: 12px 0; padding-left: 24px; }
         .narrative-card li { margin-bottom: 4px; line-height: 1.7; }
@@ -67,17 +69,18 @@
         .notes { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
         .notes .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
         .notes p { font-size: 13px; color: var(--muted); white-space: pre-wrap; }
-        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border); }
-        .signature-block .sig-label { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 40px; }
-        .signature-block .sig-line { border-bottom: 1px solid var(--muted); width: 200px; }
-        .payment-section { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 0; padding: 24px 28px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; break-inside: avoid; page-break-inside: avoid; }
+        .signature-block { padding-top: 60px; }
+        .signature-block .sig-label { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 8px; }
+        .signature-block .sig-line { border-bottom: 2px solid var(--text); width: 220px; }
+        .payment-section { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); break-inside: avoid; page-break-inside: avoid; }
         .payment-section .section-title { font-size: 13px; font-weight: 700; color: var(--muted); text-decoration: underline; margin-bottom: 12px; }
         .payment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; }
         .payment-item { font-size: 13px; line-height: 1.6; color: var(--text); }
         .payment-item .bank-name { font-weight: 600; }
         .payment-item .iban { font-family: monospace; font-size: 12px; }
         .payment-item .payee { font-style: italic; color: var(--muted); }
-        @@media print { body { background: #fff; padding: 0; } .page { box-shadow: none; border-radius: 0; padding: 24px; } }
+        @@media print { body { padding: 0; } .page { padding: 24px; } }
     </style>
 </head>
 <body>
@@ -161,7 +164,10 @@
 
     @if (unsectionedLines.Any())
     {
-        <h2>General</h2>
+        <div class="section-block">
+        <div class="section-header">
+            <h3>General</h3>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -199,14 +205,17 @@
             </tbody>
         </table>
 
-        var genSubtotal = unsectionedLines.Sum(l => l.LineTotal);
-        var genVat = unsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
-        var genTotal = genSubtotal + genVat;
+        @{
+            var genSubtotal = unsectionedLines.Sum(l => l.LineTotal);
+            var genVat = unsectionedLines.Sum(l => l.LineTotal * l.VatRate / 100);
+            var genTotal = genSubtotal + genVat;
+        }
 
         <div class="totals-card">
             <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@currencySymbol@genSubtotal.ToString("N2")</span></div>
             <div class="totals-row"><span class="label">Section VAT</span><span class="value">@currencySymbol@genVat.ToString("N2")</span></div>
             <div class="totals-row"><span class="label">Section Total</span><span class="value">@currencySymbol@genTotal.ToString("N2")</span></div>
+        </div>
         </div>
     }
 
@@ -218,9 +227,10 @@
     @foreach (var invSec in lineItemSections)
     {
         var secLines = sectionedLineGroups.ContainsKey(invSec.Id) ? sectionedLineGroups[invSec.Id] : new List<Portal.Infrastructure.Entities.InvoiceLine>();
-        var emphasisStyle = invSec.IsEmphasized ? $"border-left:4px solid {invSec.AccentColor ?? "var(--blue)"};padding-left:16px;" : "";
+        var emphasisStyle = invSec.IsEmphasized ? $"border-left:4px solid {invSec.AccentColor ?? "var(--blue)"};" : "";
 
-        <div class="section-header" style="@emphasisStyle">
+        <div class="section-block" style="@emphasisStyle">
+        <div class="section-header">
             <h3>
                 @invSec.Name
                 @if (!string.IsNullOrWhiteSpace(invSec.Label))
@@ -234,7 +244,7 @@
             }
         </div>
 
-        if (secLines.Any())
+        @if (secLines.Any())
         {
             <table>
                 <thead>
@@ -273,7 +283,7 @@
                 </tbody>
             </table>
 
-            if (invSec.IsTotalsTableShown)
+            @if (invSec.IsTotalsTableShown)
             {
                 var secSubtotal = secLines.Sum(l => l.LineTotal);
                 var secVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
@@ -290,6 +300,7 @@
         {
             <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">No line items in this section.</p>
         }
+        </div>
     }
 
     <!-- Summary Table (per-section breakdown) -->
@@ -384,7 +395,10 @@
         </div>
     }
 
-    <!-- Signature Lines -->
+    <!-- Document Footer (signature + payment + branding — kept together, pushed to bottom) -->
+    <div style="break-inside:avoid;page-break-inside:avoid;margin-top:auto;padding-top:32px;">
+    <!-- Signature -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:12px;">Signature</div>
     <div class="signature-section">
         <div class="signature-block">
             <div class="sig-label">Issued by</div>
@@ -417,6 +431,7 @@
     <!-- Platform Branding Footer -->
     <div style="margin-top:24px;padding-top:12px;border-top:1px solid rgba(13,94,166,.08);font-size:9px;color:#b0bec5;text-align:center;letter-spacing:0.03em;">
         Powered by 3 Inventors — Operational Intelligence
+    </div>
     </div>
 </div>
 </body>

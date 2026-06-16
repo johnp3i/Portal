@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Repositories;
@@ -27,6 +28,8 @@ public class QuotationController : Controller
     private readonly IDocumentSoftDeleteService _softDeleteService;
     private readonly ProductRepository _productRepository;
     private readonly IProposalAcceptanceService _acceptanceService;
+    private readonly IProposalPdfService _proposalPdfService;
+    private readonly ILogger<QuotationController> _logger;
 
     public QuotationController(
         IQuotationService quotationService,
@@ -41,7 +44,9 @@ public class QuotationController : Controller
         IDocumentDuplicationService duplicationService,
         IDocumentSoftDeleteService softDeleteService,
         ProductRepository productRepository,
-        IProposalAcceptanceService acceptanceService)
+        IProposalAcceptanceService acceptanceService,
+        IProposalPdfService proposalPdfService,
+        ILogger<QuotationController> logger)
     {
         _quotationService = quotationService;
         _customerService = customerService;
@@ -56,6 +61,8 @@ public class QuotationController : Controller
         _softDeleteService = softDeleteService;
         _productRepository = productRepository;
         _acceptanceService = acceptanceService;
+        _proposalPdfService = proposalPdfService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -646,6 +653,51 @@ public class QuotationController : Controller
         return displayLines;
     }
 
+    [HttpGet]
+    public async Task<IActionResult> AxGetDownloadPdf(int id)
+    {
+        var quotation = await _quotationService.GetQuotationByIdAsync(id);
+        if (quotation == null || quotation.BusinessId != _tenantService.CurrentBusinessId)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            var logos = await _logoService.GetByBusinessIdAsync(_tenantService.CurrentBusinessId);
+            var primaryLogo = logos.FirstOrDefault(l => l.IsPrimary);
+            var heroLogoIds = primaryLogo != null ? new List<int> { primaryLogo.Id } : new List<int>();
+            int? metaLogoId = primaryLogo?.Id;
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var pdfBytes = await _proposalPdfService.GenerateAsync(id, heroLogoIds, metaLogoId, cts.Token);
+            var filename = GenerateProposalPdfFilename(quotation.Reference);
+            return File(pdfBytes, "application/pdf", filename);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogError("PDF generation timed out for quotation {QuotationId}", id);
+            return StatusCode(500, new { success = false, message = "PDF generation timed out. Please try again." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate PDF for quotation {QuotationId}", id);
+            return StatusCode(500, new { success = false, message = "Failed to generate PDF. Please try again." });
+        }
+    }
+
     private bool IsAjaxRequest()
         => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+    private static string GenerateProposalPdfFilename(string reference)
+    {
+        var invalidChars = new[] { '<', '>', ':', '"', '/', '\\', '|', '?', '*' };
+        var sanitized = new string(reference
+            .Where(c => !invalidChars.Contains(c) && c > '\u001F')
+            .ToArray());
+        sanitized = sanitized.Trim().Trim('.');
+        if (string.IsNullOrWhiteSpace(sanitized))
+            return "QUO-download.pdf";
+        return $"QUO-{sanitized}.pdf";
+    }
 }

@@ -63,6 +63,7 @@
                 <button type="button" class="btn btn-green" onclick="confirmConvertToInvoice()">Convert to Invoice</button>
             </form>
         }
+        <button type="button" class="btn btn-secondary" onclick="downloadQuotationPdf(@Model.Quotation.Id)">Download PDF</button>
         <button type="button" class="btn btn-secondary" onclick="duplicateQuotation(@Model.Quotation.Id)">Duplicate</button>
         @if (Model.Quotation.QuotationStatusTypeId == 1)
         {
@@ -560,6 +561,42 @@
                 btn.disabled = false;
             }
         });
+
+        async function downloadQuotationPdf(quotationId) {
+            BlockUI.show('Generating PDF...');
+            try {
+                var response = await fetch('/Quotation/AxGetDownloadPdf/' + quotationId);
+
+                if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) {
+                    var data = await response.json();
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to generate PDF.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                var blob = await response.blob();
+                var contentDisposition = response.headers.get('content-disposition');
+                var filename = 'quotation.pdf';
+                if (contentDisposition) {
+                    var match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (match && match[1]) {
+                        filename = match[1].replace(/['"]/g, '');
+                    }
+                }
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                BlockUI.hide();
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'Could not complete download due to a connection problem.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
 
         document.getElementById('btnPreviewProposal').addEventListener('click', function() {
             var form = document.getElementById('shareProposalForm');

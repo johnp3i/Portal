@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -32,6 +33,8 @@ public class InvoiceController : Controller
     private readonly IDocumentSoftDeleteService _softDeleteService;
     private readonly VatSubmissionPeriodRepository _vatPeriodRepository;
     private readonly IViewRenderService _viewRenderService;
+    private readonly IInvoicePdfService _invoicePdfService;
+    private readonly ILogger<InvoiceController> _logger;
 
     public InvoiceController(
         IInvoiceService invoiceService,
@@ -46,7 +49,9 @@ public class InvoiceController : Controller
         IDocumentDuplicationService duplicationService,
         IDocumentSoftDeleteService softDeleteService,
         VatSubmissionPeriodRepository vatPeriodRepository,
-        IViewRenderService viewRenderService)
+        IViewRenderService viewRenderService,
+        IInvoicePdfService invoicePdfService,
+        ILogger<InvoiceController> logger)
     {
         _invoiceService = invoiceService;
         _sectionService = sectionService;
@@ -61,6 +66,8 @@ public class InvoiceController : Controller
         _softDeleteService = softDeleteService;
         _vatPeriodRepository = vatPeriodRepository;
         _viewRenderService = viewRenderService;
+        _invoicePdfService = invoicePdfService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -629,5 +636,42 @@ public class InvoiceController : Controller
     {
         var periods = await _invoiceService.GetUnsubmittedPeriodsAsync(invoiceId);
         return Json(periods);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetDownloadPdf(int id)
+    {
+        var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
+        if (invoice == null || invoice.BusinessId != _tenantService.CurrentBusinessId)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var pdfBytes = await _invoicePdfService.GenerateAsync(id, cts.Token);
+            var filename = GenerateInvoicePdfFilename(invoice.InvoiceNumber);
+            return File(pdfBytes, "application/pdf", filename);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogError("PDF generation timed out for invoice {InvoiceId}", id);
+            return StatusCode(500, new { success = false, message = "PDF generation timed out. Please try again." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate PDF for invoice {InvoiceId}", id);
+            return StatusCode(500, new { success = false, message = "Failed to generate PDF. Please try again." });
+        }
+    }
+
+    private static string GenerateInvoicePdfFilename(string invoiceNumber)
+    {
+        var invalidChars = new[] { '<', '>', ':', '"', '/', '\\', '|', '?', '*' };
+        var sanitized = new string(invoiceNumber.Where(c => !invalidChars.Contains(c)).ToArray());
+        if (string.IsNullOrWhiteSpace(sanitized))
+            return "INV-download.pdf";
+        return $"INV-{sanitized}.pdf";
     }
 }

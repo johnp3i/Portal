@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -17,16 +19,25 @@ public class InvoiceViewControllerAcceptanceTests
 {
     private readonly Mock<IInvoiceSharingService> _sharingServiceMock;
     private readonly Mock<IInvoiceAcceptanceService> _acceptanceServiceMock;
+    private readonly Mock<IWebHostEnvironment> _environmentMock;
+    private readonly Mock<ILogoService> _logoServiceMock;
+    private readonly Mock<ILogger<InvoiceViewController>> _loggerMock;
     private readonly InvoiceViewController _controller;
 
     public InvoiceViewControllerAcceptanceTests()
     {
         _sharingServiceMock = new Mock<IInvoiceSharingService>();
         _acceptanceServiceMock = new Mock<IInvoiceAcceptanceService>();
+        _environmentMock = new Mock<IWebHostEnvironment>();
+        _logoServiceMock = new Mock<ILogoService>();
+        _loggerMock = new Mock<ILogger<InvoiceViewController>>();
 
         _controller = new InvoiceViewController(
             _sharingServiceMock.Object,
-            _acceptanceServiceMock.Object);
+            _acceptanceServiceMock.Object,
+            _environmentMock.Object,
+            _logoServiceMock.Object,
+            _loggerMock.Object);
 
         // Set up default HttpContext for all tests
         var httpContext = new DefaultHttpContext();
