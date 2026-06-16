@@ -16,12 +16,12 @@
 
 <section class="glass card-pad">
     <form method="get" asp-action="Index" asp-controller="Quotation">
-        <div class="form-grid">
-            <div class="field">
+        <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:180px;">
                 <label>Search</label>
                 <input type="text" name="search" value="@Model.SearchTerm" placeholder="Search by reference or customer..." />
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>Status</label>
                 <select name="statusFilter">
                     <option value="">All Statuses</option>
@@ -31,7 +31,7 @@
                     }
                 </select>
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>Customer</label>
                 <select name="customerFilter">
                     <option value="">All Customers</option>
@@ -41,92 +41,95 @@
                     }
                 </select>
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>From</label>
                 <input type="date" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>To</label>
                 <input type="date" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
             </div>
-        </div>
-        <div style="margin-top:16px;">
-            <button type="submit" class="btn btn-primary">Filter</button>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
         </div>
     </form>
 
     <div style="margin-top:18px;">
         @if (Model.PagedQuotations.Items != null && Model.PagedQuotations.Items.Count > 0)
         {
-            <table>
-                <thead>
-                    <tr>
-                        <th>Reference</th>
-                        <th>Customer</th>
-                        <th>Status</th>
-                        <th>Valid Until</th>
-                        <th>Total</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var quotation in Model.PagedQuotations.Items)
-                    {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
                         <tr>
-                            <td>
-                                <strong>@quotation.Reference</strong>
-                                @if (quotation.AcceptanceStatus == "accepted")
-                                {
-                                    <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>
-                                }
-                                else if (quotation.AcceptanceStatus == "awaiting")
-                                {
-                                    <div style="font-size:11px;color:#C8912E;font-weight:600;margin-top:3px;">⏳ Awaiting acceptance</div>
-                                }
-                            </td>
-                            <td>@quotation.CustomerName</td>
-                            <td>
-                                @{
-                                    var pillClass = quotation.QuotationStatusTypeId switch
-                                    {
-                                        1 => "pill-gold",
-                                        2 => "pill-blue",
-                                        3 => "pill-green",
-                                        4 => "pill-blue",
-                                        5 => "pill-red",
-                                        _ => "pill-gold"
-                                    };
-                                }
-                                <span class="pill @pillClass">@quotation.StatusName</span>
-                            </td>
-                            <td>
-                                @if (quotation.ValidUntil.HasValue)
-                                {
-                                    if (quotation.IsExpired)
-                                    {
-                                        <span class="expired-date">@quotation.ValidUntil.Value.ToString("yyyy-MM-dd")</span>
-                                    }
-                                    else
-                                    {
-                                        @quotation.ValidUntil.Value.ToString("yyyy-MM-dd")
-                                    }
-                                }
-                            </td>
-                            <td>@(ViewBag.CurrencySymbol)@quotation.TotalAmount.ToString("N2")</td>
-                            <td style="white-space:nowrap;">
-                                <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Detail</a>
-                                <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Edit</a>
-                                <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>
-                                <a href="javascript:void(0)" onclick="downloadQuotationPdf(@quotation.Id)" class="tbl-action tbl-action--secondary">PDF</a>
-                                @if (quotation.QuotationStatusTypeId == 1)
-                                {
-                                    <a href="javascript:void(0)" onclick="deleteQuotation(@quotation.Id, '@Html.Raw(quotation.Reference)')" class="tbl-action tbl-action--danger">Delete</a>
-                                }
-                            </td>
+                            <th>Reference</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Valid Until</th>
+                            <th>Total</th>
+                            <th>Actions</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var quotation in Model.PagedQuotations.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@quotation.Reference</strong>
+                                    @if (quotation.AcceptanceStatus == "accepted")
+                                    {
+                                        <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>
+                                    }
+                                    else if (quotation.AcceptanceStatus == "awaiting")
+                                    {
+                                        <div style="font-size:11px;color:#C8912E;font-weight:600;margin-top:3px;">⏳ Awaiting acceptance</div>
+                                    }
+                                </td>
+                                <td>@quotation.CustomerName</td>
+                                <td>
+                                    @{
+                                        var pillClass = quotation.QuotationStatusTypeId switch
+                                        {
+                                            1 => "pill-gold",
+                                            2 => "pill-blue",
+                                            3 => "pill-green",
+                                            4 => "pill-blue",
+                                            5 => "pill-red",
+                                            _ => "pill-gold"
+                                        };
+                                    }
+                                    <span class="pill @pillClass">@quotation.StatusName</span>
+                                </td>
+                                <td>
+                                    @if (quotation.ValidUntil.HasValue)
+                                    {
+                                        if (quotation.IsExpired)
+                                        {
+                                            <span class="expired-date">@quotation.ValidUntil.Value.ToString("yyyy-MM-dd")</span>
+                                        }
+                                        else
+                                        {
+                                            @quotation.ValidUntil.Value.ToString("yyyy-MM-dd")
+                                        }
+                                    }
+                                </td>
+                                <td>@(ViewBag.CurrencySymbol)@quotation.TotalAmount.ToString("N2")</td>
+                                <td style="white-space:nowrap;">
+                                    <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Detail</a>
+                                    <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                    <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>
+                                    <a href="javascript:void(0)" onclick="downloadQuotationPdf(@quotation.Id)" class="tbl-action tbl-action--secondary">PDF</a>
+                                    @if (quotation.QuotationStatusTypeId == 1)
+                                    {
+                                        <a href="javascript:void(0)" onclick="deleteQuotation(@quotation.Id, '@Html.Raw(quotation.Reference)')" class="tbl-action tbl-action--danger">Delete</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
         else
         {

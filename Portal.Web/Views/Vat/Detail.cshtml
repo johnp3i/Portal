@@ -47,7 +47,7 @@
         </a>
     </div>
 
-    <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+    <div class="grid-3" style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
         <!-- Output VAT -->
         <div class="card-pad" style="border-radius:20px;background:#EEF4F8;border:0;">
             <div class="label">Output VAT (Sales)</div>
@@ -224,7 +224,7 @@
                 return;
             }
 
-            var html = '<table><thead><tr>'
+            var html = '<div class="scroll-hint">← Scroll horizontally →</div><div class="table-responsive"><table><thead><tr>'
                 + '<th>Invoice</th>'
                 + '<th>Customer</th>'
                 + '<th>Invoice Date</th>'
@@ -247,7 +247,7 @@
                     + '</tr>';
             });
 
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
 
             var from = (data.page - 1) * data.pageSize + 1;
             var to = Math.min(data.page * data.pageSize, data.totalCount);
@@ -291,7 +291,7 @@
                 return;
             }
 
-            var html = '<table><thead><tr>'
+            var html = '<div class="scroll-hint">← Scroll horizontally →</div><div class="table-responsive"><table><thead><tr>'
                 + '<th>Reference</th>'
                 + '<th>Supplier</th>'
                 + '<th>Purchase Date</th>'
@@ -323,7 +323,7 @@
                     + '</tr>';
             });
 
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
 
             var from = (data.page - 1) * data.pageSize + 1;
             var to = Math.min(data.page * data.pageSize, data.totalCount);

@@ -16,12 +16,12 @@
 
 <section class="glass card-pad">
     <form method="get" asp-action="Index" asp-controller="Customer">
-        <div class="form-grid">
-            <div class="field">
+        <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:180px;">
                 <label>Search</label>
                 <input type="text" name="searchTerm" value="@Model.SearchTerm" placeholder="Search by name..." />
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>Status</label>
                 <select name="isActive">
                     <option value="">All</option>
@@ -29,15 +29,17 @@
                     <option value="false" selected="@(Model.IsActiveFilter == false ? "selected" : null)">Inactive</option>
                 </select>
             </div>
-        </div>
-        <div style="margin-top:16px;">
-            <button type="submit" class="btn btn-primary">Search</button>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
         </div>
     </form>
 
     <div style="margin-top:18px;">
         @if (Model.Customers != null && Model.Customers.Count > 0)
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -82,6 +84,7 @@
                     }
                 </tbody>
             </table>
+            </div>
 
             @if (Model.TotalPages > 1)
             {

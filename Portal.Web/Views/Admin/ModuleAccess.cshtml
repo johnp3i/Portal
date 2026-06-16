@@ -41,52 +41,55 @@
         </div>
     </div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Module</th>
-                <th>Access Level</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var module in modules)
-            {
-                var perm = permMap.ContainsKey(module) ? permMap[module] : null;
-                var currentLevel = perm?.AccessLevel ?? "none";
-                var isActive = perm?.IsActive ?? false;
-                var isSelf = false; // We compare by UserId not UserBusinessId — disable if same user
-                var displayName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(module);
-
+    <div class="scroll-hint">← Scroll horizontally →</div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td><strong>@displayName</strong></td>
-                    <td>
-                        <div class="segmented-control" data-module="@module" data-current-level="@currentLevel"
-                             style="display:inline-flex;border:1px solid #d0dce8;border-radius:8px;overflow:hidden;">
-                            @foreach (var level in new[] { "full", "readonly", "none" })
-                            {
-                                var isSelected = currentLevel == level;
-                                var levelLabel = level == "readonly" ? "Read Only" : System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(level);
-                                <button type="button"
-                                        class="seg-btn @(isSelected ? "seg-btn--active" : "")"
-                                        data-module="@module"
-                                        data-level="@level"
-                                        onclick="updatePermission(@userBusinessId, '@module', '@level', '@displayName')"
-                                        style="padding:6px 14px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:@(isSelected ? "#0D5EA6" : "#fff");color:@(isSelected ? "#fff" : "#5a6b7c");transition:background 0.15s,color 0.15s;">
-                                    @levelLabel
-                                </button>
-                            }
-                        </div>
-                    </td>
-                    <td>
-                        <span id="status-badge-@module" class="badge @(isActive ? "badge--insert" : "badge--delete")">
-                            @(isActive ? "Active" : "Inactive")
-                        </span>
-                    </td>
+                    <th>Module</th>
+                    <th>Access Level</th>
+                    <th>Status</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var module in modules)
+                {
+                    var perm = permMap.ContainsKey(module) ? permMap[module] : null;
+                    var currentLevel = perm?.AccessLevel ?? "none";
+                    var isActive = perm?.IsActive ?? false;
+                    var isSelf = false; // We compare by UserId not UserBusinessId — disable if same user
+                    var displayName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(module);
+
+                    <tr>
+                        <td><strong>@displayName</strong></td>
+                        <td>
+                            <div class="segmented-control" data-module="@module" data-current-level="@currentLevel"
+                                 style="display:inline-flex;border:1px solid #d0dce8;border-radius:8px;overflow:hidden;">
+                                @foreach (var level in new[] { "full", "readonly", "none" })
+                                {
+                                    var isSelected = currentLevel == level;
+                                    var levelLabel = level == "readonly" ? "Read Only" : System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(level);
+                                    <button type="button"
+                                            class="seg-btn @(isSelected ? "seg-btn--active" : "")"
+                                            data-module="@module"
+                                            data-level="@level"
+                                            onclick="updatePermission(@userBusinessId, '@module', '@level', '@displayName')"
+                                            style="padding:6px 14px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:@(isSelected ? "#0D5EA6" : "#fff");color:@(isSelected ? "#fff" : "#5a6b7c");transition:background 0.15s,color 0.15s;">
+                                        @levelLabel
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                        <td>
+                            <span id="status-badge-@module" class="badge @(isActive ? "badge--insert" : "badge--delete")">
+                                @(isActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </section>
 
 @Html.AntiForgeryToken()

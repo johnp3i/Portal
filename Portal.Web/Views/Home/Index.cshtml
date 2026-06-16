@@ -28,7 +28,7 @@
 @if (Model.HasAnyKpiSection)
 {
 <!-- Quick Actions -->
-<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+<div class="filter-panel" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
     @if (Model.ShowQuotation)
     {
         <a asp-controller="Quotation" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Quotation</a>
@@ -154,7 +154,7 @@
         <h3 style="margin-bottom:16px;">Monthly Revenue vs Expenses</h3>
         @if (Model.RevenueVsExpenses.Any())
         {
-            <div style="position:relative;height:220px;">
+            <div style="position:relative;height:220px;max-width:100%;">
                 <canvas id="revenueVsExpensesChart"></canvas>
             </div>
         }
@@ -169,7 +169,7 @@
         <h3 style="margin-bottom:16px;">Invoice Status Breakdown</h3>
         @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
         {
-            <div style="position:relative;height:220px;">
+            <div style="position:relative;height:220px;max-width:100%;">
                 <canvas id="invoiceStatusChart"></canvas>
             </div>
         }
@@ -189,7 +189,7 @@ else if (Model.ShowRevenue)
         <h3 style="margin-bottom:16px;">Monthly Revenue vs Expenses</h3>
         @if (Model.RevenueVsExpenses.Any())
         {
-            <div style="position:relative;height:220px;">
+            <div style="position:relative;height:220px;max-width:100%;">
                 <canvas id="revenueVsExpensesChart"></canvas>
             </div>
         }
@@ -209,7 +209,7 @@ else if (Model.ShowInvoice)
         <h3 style="margin-bottom:16px;">Invoice Status Breakdown</h3>
         @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
         {
-            <div style="position:relative;height:220px;">
+            <div style="position:relative;height:220px;max-width:100%;">
                 <canvas id="invoiceStatusChart"></canvas>
             </div>
         }
@@ -234,6 +234,8 @@ else if (Model.ShowInvoice)
         </div>
         @if (Model.RecentInvoices.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -263,6 +265,7 @@ else if (Model.ShowInvoice)
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {
@@ -279,6 +282,8 @@ else if (Model.ShowInvoice)
         </div>
         @if (Model.OverdueInvoices.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -300,6 +305,7 @@ else if (Model.ShowInvoice)
                     }
                 </tbody>
             </table>
+            </div>
             <div style="margin-top:14px;padding:12px 16px;background:#FFF8F8;border-radius:10px;border:1px solid #FDEAEA;">
                 <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">⚠️ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
             </div>
@@ -323,6 +329,8 @@ else if (Model.ShowInvoice)
         </div>
         @if (Model.RecentInvoices.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -352,6 +360,7 @@ else if (Model.ShowInvoice)
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {
@@ -372,6 +381,8 @@ else if (Model.ShowRevenue)
         </div>
         @if (Model.OverdueInvoices.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -393,6 +404,7 @@ else if (Model.ShowRevenue)
                     }
                 </tbody>
             </table>
+            </div>
             <div style="margin-top:14px;padding:12px 16px;background:#FFF8F8;border-radius:10px;border:1px solid #FDEAEA;">
                 <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">⚠️ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
             </div>
@@ -418,6 +430,8 @@ else if (Model.ShowRevenue)
         </div>
         @if (Model.RecentPayments.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -447,6 +461,7 @@ else if (Model.ShowRevenue)
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {
@@ -463,6 +478,8 @@ else if (Model.ShowRevenue)
         </div>
         @if (Model.RecentQuotations.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -493,6 +510,7 @@ else if (Model.ShowRevenue)
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {
@@ -513,6 +531,8 @@ else if (Model.ShowRevenue)
         </div>
         @if (Model.RecentPayments.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -542,6 +562,7 @@ else if (Model.ShowRevenue)
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {
@@ -562,6 +583,8 @@ else if (Model.ShowQuotation)
         </div>
         @if (Model.RecentQuotations.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -592,6 +615,7 @@ else if (Model.ShowQuotation)
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {
@@ -611,6 +635,8 @@ else if (Model.ShowQuotation)
         <h3 style="margin-bottom:16px;">Top Customers <span style="font-size:12px;font-weight:400;color:var(--muted);">(Last 12 Months)</span></h3>
         @if (Model.TopCustomers.Any())
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -630,6 +656,7 @@ else if (Model.ShowQuotation)
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {
@@ -642,7 +669,7 @@ else if (Model.ShowQuotation)
         <h3 style="margin-bottom:16px;">Revenue by Customer</h3>
         @if (Model.TopCustomers.Any())
         {
-            <div style="position:relative;height:220px;">
+            <div style="position:relative;height:220px;max-width:100%;">
                 <canvas id="topCustomersChart"></canvas>
             </div>
         }

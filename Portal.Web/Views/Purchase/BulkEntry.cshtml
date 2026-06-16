@@ -55,12 +55,14 @@
 </section>
 
 <!-- Grid -->
-<section class="glass card-pad" style="overflow-x:auto;">
+<section class="glass card-pad">
     <div style="display:flex;gap:12px;margin-bottom:16px;">
         <button type="button" class="btn btn-primary" onclick="addRows(1)">Add Row</button>
         <button type="button" class="btn btn-secondary" onclick="addRows(5)">Add 5 Rows</button>
     </div>
 
+    <div class="scroll-hint">← Scroll horizontally →</div>
+    <div class="table-responsive">
     <table id="bulkGrid">
         <thead>
             <tr>
@@ -81,6 +83,7 @@
         <tbody id="bulkGridBody">
         </tbody>
     </table>
+    </div>
 </section>
 
 @Html.AntiForgeryToken()

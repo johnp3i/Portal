@@ -168,6 +168,8 @@
     <div style="margin-top:18px;">
         @if (lines.Count > 0)
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -215,6 +217,7 @@
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {

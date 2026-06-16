@@ -150,42 +150,45 @@
             @if (subscriptionLines.Count > 0)
             {
                 <div class="label" style="margin-bottom:8px;font-size:11px;color:var(--muted);">Subscription Items (Monthly)</div>
-                <table style="table-layout:fixed;">
-                    <colgroup>
-                        <col style="width:40%;" />
-                        <col style="width:12%;" />
-                        <col style="width:18%;" />
-                        <col style="width:12%;" />
-                        <col style="width:18%;" />
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Months</th>
-                            <th>Monthly Price</th>
-                            <th>VAT %</th>
-                            <th>Annual Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var line in subscriptionLines)
-                        {
+                <div class="scroll-hint">← Scroll horizontally →</div>
+                <div class="table-responsive">
+                    <table style="table-layout:fixed;">
+                        <colgroup>
+                            <col style="width:40%;" />
+                            <col style="width:12%;" />
+                            <col style="width:18%;" />
+                            <col style="width:12%;" />
+                            <col style="width:18%;" />
+                        </colgroup>
+                        <thead>
                             <tr>
-                                <td>
-                                    <strong>@line.Description</strong>
-                                    @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
-                                    {
-                                        <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&#x2197; ref</a>
-                                    }
-                                </td>
-                                <td>12</td>
-                                <td>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")/mo</td>
-                                <td>@line.VatRate.ToString("G29")%</td>
-                                <td><strong>@(ViewBag.CurrencySymbol)@((line.LineTotal * 12).ToString("N2"))</strong></td>
+                                <th>Description</th>
+                                <th>Months</th>
+                                <th>Monthly Price</th>
+                                <th>VAT %</th>
+                                <th>Annual Total</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in subscriptionLines)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@line.Description</strong>
+                                        @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
+                                        {
+                                            <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&#x2197; ref</a>
+                                        }
+                                    </td>
+                                    <td>12</td>
+                                    <td>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")/mo</td>
+                                    <td>@line.VatRate.ToString("G29")%</td>
+                                    <td><strong>@(ViewBag.CurrencySymbol)@((line.LineTotal * 12).ToString("N2"))</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
 
             @if (oneTimeLines.Count > 0)
@@ -194,42 +197,45 @@
                 {
                     <div class="label" style="margin-top:24px;margin-bottom:8px;font-size:11px;color:var(--muted);">One-Time Items</div>
                 }
-                <table style="table-layout:fixed;">
-                    <colgroup>
-                        <col style="width:40%;" />
-                        <col style="width:12%;" />
-                        <col style="width:18%;" />
-                        <col style="width:12%;" />
-                        <col style="width:18%;" />
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Qty</th>
-                            <th>Unit Price</th>
-                            <th>VAT %</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var line in oneTimeLines)
-                        {
+                <div class="scroll-hint">← Scroll horizontally →</div>
+                <div class="table-responsive">
+                    <table style="table-layout:fixed;">
+                        <colgroup>
+                            <col style="width:40%;" />
+                            <col style="width:12%;" />
+                            <col style="width:18%;" />
+                            <col style="width:12%;" />
+                            <col style="width:18%;" />
+                        </colgroup>
+                        <thead>
                             <tr>
-                                <td>
-                                    <strong>@line.Description</strong>
-                                    @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
-                                    {
-                                        <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&#x2197; ref</a>
-                                    }
-                                </td>
-                                <td>@line.Quantity.ToString("G29")</td>
-                                <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
-                                <td>@line.VatRate.ToString("G29")%</td>
-                                <td><strong>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")</strong></td>
+                                <th>Description</th>
+                                <th>Qty</th>
+                                <th>Unit Price</th>
+                                <th>VAT %</th>
+                                <th>Total</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in oneTimeLines)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@line.Description</strong>
+                                        @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
+                                        {
+                                            <a href="@line.ReferenceUrl" target="_blank" style="margin-left:8px;font-size:11px;color:var(--blue);">&#x2197; ref</a>
+                                        }
+                                    </td>
+                                    <td>@line.Quantity.ToString("G29")</td>
+                                    <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
+                                    <td>@line.VatRate.ToString("G29")%</td>
+                                    <td><strong>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
         }
         else

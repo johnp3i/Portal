@@ -26,12 +26,12 @@
 
 <section class="glass card-pad">
     <form method="get" asp-action="Index" asp-controller="Invoice">
-        <div class="form-grid">
-            <div class="field">
+        <div class="filter-panel" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+            <div class="field" style="min-width:180px;">
                 <label>Search</label>
                 <input type="text" name="search" placeholder="Search by invoice number or customer..." value="@ViewBag.SearchTerm" />
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>Status</label>
                 <select name="status">
                     <option value="">All Statuses</option>
@@ -41,7 +41,7 @@
                     }
                 </select>
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>Financial Status</label>
                 <select name="financialStatus">
                     <option value="">All Financial Statuses</option>
@@ -51,7 +51,7 @@
                     }
                 </select>
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>Customer</label>
                 <select name="customer">
                     <option value="">All Customers</option>
@@ -61,7 +61,7 @@
                     }
                 </select>
             </div>
-            <div class="field">
+            <div class="field" style="min-width:180px;">
                 <label>VAT Period</label>
                 <select name="vatPeriodId">
                     <option value="">All Periods</option>
@@ -73,15 +73,17 @@
                     }
                 </select>
             </div>
-        </div>
-        <div style="margin-top:16px;">
-            <button type="submit" class="btn btn-primary">Filter</button>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
         </div>
     </form>
 
     <div style="margin-top:18px;">
         @if (Model != null && Model.Count > 0)
         {
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -157,6 +159,7 @@
                     }
                 </tbody>
             </table>
+            </div>
         }
         else
         {

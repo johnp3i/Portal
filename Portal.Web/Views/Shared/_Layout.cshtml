@@ -18,12 +18,45 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/site.css" />
     <link rel="stylesheet" href="/css/product-autocomplete.css" />
+    <link rel="stylesheet" href="/css/mobile.css?v=8" />
     <style>.swal2-container{z-index:99999 !important}</style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/js/block-ui.js"></script>
 </head>
 <body>
     <div class="app" id="appShell">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <header class="mobile-topbar">
+                <button class="mobile-topbar__hamburger" aria-label="Open navigation">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+                <a class="mobile-topbar__logo" href="/">
+                    <img src="/images/logo_blue_web_toolbar_oi.png" alt="3 Inventors" style="height:28px;width:auto;" />
+                </a>
+                <button class="mobile-topbar__avatar" aria-label="Account menu">
+                    @{
+                        var userName = User.Identity?.Name ?? "";
+                        var initials = userName.Length > 0 ? userName.Substring(0, 1).ToUpper() : "?";
+                    }
+                    <span>@initials</span>
+                </button>
+            </header>
+            <div class="mobile-account-dropdown" id="mobileAccountDropdown" style="display:none;">
+                <div style="padding:14px 18px;border-bottom:1px solid rgba(13,94,166,.06);">
+                    <div style="font-size:12px;color:#5E7385;font-weight:600;">Signed in as</div>
+                    <div style="font-size:13px;font-weight:700;color:#0B1B28;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@User.Identity?.Name</div>
+                </div>
+                @if (User.HasClaim("IsOwner", "true"))
+                {
+                    <a href="/Account/Billing" style="display:block;padding:12px 18px;font-size:13px;font-weight:600;color:#334155;text-decoration:none;border-bottom:1px solid rgba(13,94,166,.06);">Billing</a>
+                }
+                <form method="post" asp-controller="Account" asp-action="Logout" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" style="width:100%;text-align:left;padding:12px 18px;background:none;border:none;font-size:13px;font-weight:600;color:#C24A4A;cursor:pointer;font-family:inherit;">Sign Out</button>
+                </form>
+            </div>
+        }
         <aside class="sidebar">
             <div class="brand">
                 <img src="/images/logo_blue_web_toolbar_oi.png" alt="3 Inventors" style="width:180px;height:auto;" />
@@ -60,6 +93,7 @@
             }
             @await Component.InvokeAsync("SubscriptionStatusIndicator")
         </aside>
+        <div class="mobile-backdrop" aria-hidden="true"></div>
         <main class="content" style="position:relative;">
             @if (User.Identity?.IsAuthenticated == true)
             {
@@ -103,6 +137,24 @@
             }
             @RenderBody()
         </main>
+        <nav class="bottom-tab-bar" aria-label="Quick navigation">
+            <a href="/" class="bottom-tab-bar__item @(currentController == "Home" ? "active" : "")">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="/Quotation" class="bottom-tab-bar__item @(currentController == "Quotation" ? "active" : "")">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8m8 4H8m2-8H8"/></svg>
+                <span>Quotes</span>
+            </a>
+            <a href="/Invoice" class="bottom-tab-bar__item @(currentController == "Invoice" ? "active" : "")">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                <span>Invoices</span>
+            </a>
+            <a href="/Revenue" class="bottom-tab-bar__item @(currentController == "Revenue" ? "active" : "")">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20m5-17H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7"/></svg>
+                <span>Revenue</span>
+            </a>
+        </nav>
     </div>
     <script src="/js/product-autocomplete.js"></script>
     <script>
@@ -119,5 +171,6 @@
     </script>
     @RenderSection("Scripts", required: false)
     @await Html.PartialAsync("_GraceAccessModal")
+    <script src="/js/mobile-nav.js?v=2"></script>
 </body>
 </html>

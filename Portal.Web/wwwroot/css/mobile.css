@@ -1,0 +1,489 @@
+/* ==========================================================================
+   mobile.css — Responsive layout overrides for the Portal platform
+   
+   Loaded after site.css. Contains all responsive rules for Phone (≤768px)
+   and Tablet (769px–1100px) viewports. Desktop layout (>1100px) is never
+   affected — all rules are scoped inside media queries.
+   
+   Reuses existing CSS custom properties from site.css:
+   --bg, --bg2, --text, --muted, --muted2, --blue, --blue3, --cyan,
+   --green, --red, --gold, --line, --shadow, --greenSoft, --redSoft, --goldSoft
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   DEFAULT — Hide mobile-only elements on desktop (>1100px)
+   -------------------------------------------------------------------------- */
+.mobile-topbar {
+    display: none;
+}
+
+.mobile-backdrop {
+    display: none;
+}
+
+.bottom-tab-bar {
+    display: none;
+}
+
+.mobile-account-dropdown {
+    display: none;
+}
+
+.scroll-hint {
+    display: none;
+}
+
+/* --------------------------------------------------------------------------
+   SHARED — Rules that apply to BOTH Phone and Tablet (≤1100px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+
+    /* Prevent horizontal overflow on mobile */
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+    }
+
+    /* Mobile Topbar */
+    .mobile-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+    }
+
+    .mobile-topbar__hamburger {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: transparent;
+        cursor: pointer;
+        color: var(--text);
+    }
+
+    .mobile-topbar__logo img {
+        height: 28px;
+        width: auto;
+    }
+
+    .mobile-topbar__avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(180deg, #1A6BB8 0%, #0D5EA6 100%);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    /* Off-Canvas Drawer */
+    .app {
+        grid-template-columns: 1fr !important;
+        display: block !important;
+    }
+
+    .sidebar {
+        display: block !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 280px !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        z-index: 300 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        background: #fff !important;
+        border-right: none !important;
+        padding: 24px 18px !important;
+        transform: translateX(-100%);
+        transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+        visibility: visible !important;
+    }
+
+    .drawer-open .sidebar {
+        transform: translateX(0) !important;
+    }
+
+    /* Hide sidebar toggle on mobile */
+    .sidebar-toggle {
+        display: none !important;
+    }
+
+    /* Backdrop */
+    .mobile-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.4);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .25s;
+    }
+
+    .drawer-open .mobile-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Horizontally scrollable tables */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -14px;
+        padding: 0 14px;
+    }
+
+    .table-responsive table {
+        min-width: 600px;
+    }
+
+    .scroll-hint {
+        display: block;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        padding: 4px 0;
+    }
+
+    /* Hide desktop account menu */
+    #accountMenu {
+        display: none !important;
+    }
+
+    /* Mobile account dropdown positioning */
+    .mobile-account-dropdown {
+        position: absolute;
+        top: 56px;
+        right: 16px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(13, 94, 166, 0.12);
+        min-width: 200px;
+        z-index: 150;
+        overflow: hidden;
+    }
+
+}
+
+/* --------------------------------------------------------------------------
+   PHONE — Max width 768px
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Phone-specific overrides: bottom tab bar, 1-column grids, 
+       full-width buttons, stacked filters, content padding 16px */
+
+    .content {
+        padding: 12px;
+        padding-bottom: 76px; /* account for bottom tab bar */
+    }
+
+    /* Compact cards — tighter spacing, smaller radius for app-like feel */
+    .glass {
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(13, 94, 166, 0.06);
+    }
+
+    .card-pad {
+        padding: 14px;
+    }
+
+    .surface {
+        border-radius: 14px;
+    }
+
+    /* Compact topbar area */
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .topbar-heading {
+        font-size: 22px;
+        margin-top: 4px;
+    }
+
+    .topbar-subtitle {
+        font-size: 13px;
+        line-height: 1.5;
+        margin-top: 2px;
+    }
+
+    .eyebrow {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+
+    /* Tighter card spacing between sections */
+    .glass + .glass,
+    section + section {
+        margin-top: 14px !important;
+    }
+
+    [style*="margin-top:24px"] {
+        margin-top: 14px !important;
+    }
+
+    [style*="margin-bottom:22px"] {
+        margin-bottom: 12px !important;
+    }
+
+    /* Compact table styling */
+    table th, table td {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    table th {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    /* Compact scroll hint */
+    .scroll-hint {
+        font-size: 10px;
+        padding: 3px 0;
+        opacity: 0.7;
+    }
+
+    /* Compact gauge/KPI cards */
+    .gauge-row {
+        gap: 10px;
+    }
+
+    .gauge-item {
+        padding: 12px;
+    }
+
+    /* Compact section headings inside cards */
+    .label {
+        font-size: 10px;
+    }
+
+    h2 {
+        font-size: 18px !important;
+    }
+
+    h3 {
+        font-size: 15px !important;
+    }
+
+    /* Quotation stats strip — wrap and compact on phone */
+    .quotation-strip {
+        flex-wrap: wrap !important;
+        gap: 10px 16px !important;
+        padding: 10px 14px !important;
+        font-size: 12px !important;
+    }
+
+    .qs-vat {
+        margin-left: 0 !important;
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 6px !important;
+    }
+
+    /* Smaller pills */
+    .pill {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+
+    /* Tighter form fields */
+    .field label {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+        padding: 10px 12px;
+        font-size: 14px;
+        border-radius: 10px;
+    }
+
+    /* Compact buttons */
+    .btn {
+        padding: 10px 14px;
+        font-size: 13px;
+        border-radius: 12px;
+    }
+
+    /* Dashboard quick action buttons — app-like grid tiles */
+    .filter-panel a[style*="border-radius:24px"] {
+        padding: 12px 14px !important;
+        border-radius: 12px !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        text-align: center !important;
+        background: #fff !important;
+        border: 1px solid rgba(13, 94, 166, 0.12) !important;
+        color: var(--text) !important;
+        box-shadow: 0 2px 8px rgba(13, 94, 166, 0.06);
+        flex: 1 1 calc(50% - 5px) !important;
+        min-width: 0 !important;
+        justify-content: center;
+    }
+
+    .filter-panel a[style*="border-radius:24px"]:hover {
+        background: var(--blue) !important;
+        color: #fff !important;
+        border-color: var(--blue) !important;
+    }
+
+    /* Make the quick actions a 2-col grid instead of stacked */
+    .filter-panel[style*="display:flex"][style*="flex-wrap"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    .bottom-tab-bar {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        height: 60px;
+        padding: 8px 0;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid var(--line);
+    }
+
+    .bottom-tab-bar__item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 4px 0;
+    }
+
+    .bottom-tab-bar__item.active {
+        color: var(--blue);
+    }
+
+    /* Responsive grid collapse — single column */
+    .grid-4, .grid-3, .grid-2, .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Reset grid-column spans that exceed single column */
+    .grid-4 > [style*="grid-column"],
+    .grid-3 > [style*="grid-column"],
+    .grid-2 > [style*="grid-column"] {
+        grid-column: auto !important;
+    }
+
+    .gauge-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Stacked filters */
+    .filter-panel,
+    [style*="display:flex"][style*="flex-wrap"] {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .filter-panel .field,
+    .filter-panel > div {
+        width: 100% !important;
+        min-width: unset !important;
+    }
+
+    .filter-panel .btn,
+    .filter-panel button {
+        width: 100%;
+    }
+
+    /* Full-width action buttons */
+    .content .btn-primary,
+    .content .btn-green,
+    .content .btn-danger,
+    .btn-add-line {
+        width: 100%;
+        display: block;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   TABLET — Between 769px and 1100px
+   -------------------------------------------------------------------------- */
+@media (min-width: 769px) and (max-width: 1100px) {
+    /* Tablet-specific overrides: 2-column grids, content padding 18px,
+       side-by-side filter fields */
+
+    .content {
+        padding: 18px;
+    }
+
+    /* Responsive grid collapse — two columns */
+    .grid-4, .grid-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .grid-2, .form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .gauge-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Filters wrap into rows with 2 side-by-side */
+    .filter-panel .field {
+        min-width: calc(50% - 7px) !important;
+        flex: 1 1 calc(50% - 7px);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   REDUCED MOTION — Respect user accessibility preferences
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   DESKTOP PRESERVATION NOTE
+   All rules above are scoped to media queries (max-width: 1100px or less).
+   Desktop layout (>1100px) renders with the original grid-template-columns: 280px 1fr
+   from site.css. Mobile-only elements are hidden via display: none defaults.
+   -------------------------------------------------------------------------- */

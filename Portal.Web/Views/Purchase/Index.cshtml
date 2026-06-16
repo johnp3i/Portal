@@ -20,7 +20,7 @@
 
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <form method="get" asp-action="Index" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+    <form method="get" asp-action="Index" class="filter-panel" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
         <div class="field" style="flex:1;min-width:200px;">
             <label for="searchTerm">Search</label>
             <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" placeholder="Description, invoice #, or supplier..." />
@@ -153,6 +153,8 @@
 <section class="glass card-pad">
     @if (Model.Purchases != null && Model.Purchases.Count > 0)
     {
+        <div class="scroll-hint">← Scroll horizontally →</div>
+        <div class="table-responsive">
         <table id="purchaseTable">
             <thead>
                 <tr>
@@ -231,6 +233,7 @@
                 }
             </tbody>
         </table>
+        </div>
 
         <!-- Pagination Controls -->
         <div id="paginationContainer" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">

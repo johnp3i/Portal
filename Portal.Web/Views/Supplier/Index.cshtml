@@ -16,7 +16,7 @@
 
 <section class="glass card-pad" style="margin-bottom:22px;">
     <form method="get" action="/Supplier">
-        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
             <div class="field" style="min-width:360px;">
                 <label for="search">Supplier Name</label>
                 <input type="text" id="search" name="search"
@@ -35,6 +35,8 @@
 <section class="glass card-pad">
     @if (Model.Items.Any())
     {
+        <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
+        <div class="table-responsive">
         <table>
             <thead>
                 <tr>
@@ -72,6 +74,7 @@
                 }
             </tbody>
         </table>
+        </div>
         @await Html.PartialAsync("_PagingControl")
     }
     else

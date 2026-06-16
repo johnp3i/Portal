@@ -13,7 +13,7 @@
 </div>
 
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+    <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:180px;">
             <label for="tableName">Table Name</label>
             <select id="tableName">
@@ -59,25 +59,28 @@
 </section>
 
 <section class="glass card-pad">
-    <table class="data-table" id="auditTable">
-        <thead>
-            <tr>
-                <th style="width:40px;"></th>
-                <th>Timestamp</th>
-                <th>User</th>
-                <th>Action</th>
-                <th>Table</th>
-                <th>Record ID</th>
-            </tr>
-        </thead>
-        <tbody id="auditTableBody">
-            <tr>
-                <td colspan="6" style="text-align:center;padding:32px;color:#5a6b7c;">
-                    Loading audit records...
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="scroll-hint">← Scroll horizontally →</div>
+    <div class="table-responsive">
+        <table class="data-table" id="auditTable">
+            <thead>
+                <tr>
+                    <th style="width:40px;"></th>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Table</th>
+                    <th>Record ID</th>
+                </tr>
+            </thead>
+            <tbody id="auditTableBody">
+                <tr>
+                    <td colspan="6" style="text-align:center;padding:32px;color:#5a6b7c;">
+                        Loading audit records...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
         <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>

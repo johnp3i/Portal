@@ -91,6 +91,8 @@
                 <button type="button" class="btn btn-primary" id="addLineBtn" onclick="addLineRow()">+ Add Line</button>
             </div>
 
+            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="table-responsive">
             <table id="linesTable">
                 <thead>
                     <tr>
@@ -138,6 +140,7 @@
                     }
                 </tbody>
             </table>
+            </div>
 
             <div id="noLinesMessage" style="display:@(Model.Lines.Count == 0 ? "block" : "none");padding:16px;text-align:center;color:#5a6a7a;">
                 No line items. Click "+ Add Line" to add a line item.

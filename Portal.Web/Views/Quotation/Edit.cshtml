@@ -80,7 +80,7 @@
     <p class="muted" style="margin-top:4px;font-size:13px;">Add a new person to the "Prepared By" directory for future use.</p>
     <form method="post" asp-action="CreateContact" asp-controller="Quotation" asp-route-quotationId="@Model.Id" style="margin-top:14px;">
         @Html.AntiForgeryToken()
-        <div class="line-item">
+        <div class="form-grid">
             <div class="field">
                 <label>Name *</label>
                 <input type="text" name="contactName" placeholder="Full name" required />
@@ -93,7 +93,9 @@
                 <label>Phone</label>
                 <input type="text" name="contactPhone" placeholder="+357 ..." />
             </div>
-            <button type="submit" class="btn btn-secondary" style="align-self:end;padding:10px 14px;font-size:12px;">Add Contact</button>
+        </div>
+        <div style="margin-top:14px;">
+            <button type="submit" class="btn btn-primary" style="padding:10px 14px;font-size:12px;">Add Contact</button>
         </div>
     </form>
 </section>

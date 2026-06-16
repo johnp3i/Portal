@@ -83,68 +83,71 @@
 
             @if (sectionLines.Count > 0)
             {
-                <table class="line-item-table">
-                    <thead>
-                        <tr>
-                            <th class="col-row-num">#</th>
-                            <th class="col-description">Description</th>
-                            <th class="col-qty">Qty</th>
-                            <th class="col-unit-price">Unit Price</th>
-                            <th class="col-discount">Discount</th>
-                            <th class="col-total">Total</th>
-                            <th class="col-actions">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (var j = 0; j < sectionLines.Count; j++)
-                        {
-                            var displayLine = sectionLines[j];
-                            var line = displayLine.Line;
-                            var discountAmount = line.DiscountType == "Percentage"
-                                ? line.UnitPrice * line.Quantity * (line.Discount / 100)
-                                : line.Discount;
-                            <tr data-line-id="@line.Id"
-                                data-description="@line.Description"
-                                data-subtitle="@(line.Subtitle ?? "")"
-                                data-reference-url="@(line.ReferenceUrl ?? "")"
-                                data-quantity="@line.Quantity.ToString("G")"
-                                data-unit-price="@line.UnitPrice.ToString("G")"
-                                data-vat-rate="@line.VatRate.ToString("G")"
-                                data-discount="@line.Discount.ToString("G")"
-                                data-discount-type="@line.DiscountType"
-                                data-cost-price="@(line.CostPrice?.ToString("G") ?? "")"
-                                data-is-reverse-charge="@(line.IsReverseCharge ? "true" : "false")"
-                                data-product-code="@(line.ProductCode ?? "")"
-                                data-section-id="@(line.ProposalSectionId?.ToString() ?? "")">
-                                <td class="col-row-num">@(j + 1)</td>
-                                <td class="col-description">
-                                    <span class="line-desc">@line.Description</span>
-                                    @if (!string.IsNullOrWhiteSpace(line.Subtitle))
-                                    {
-                                        <span class="line-subtitle">@line.Subtitle</span>
-                                    }
-                                </td>
-                                <td class="col-qty">@line.Quantity.ToString("G")</td>
-                                <td class="col-unit-price">€@line.UnitPrice.ToString("N2")</td>
-                                <td class="col-discount">
-                                    @if (discountAmount == 0)
-                                    {
-                                        <span>-</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="discount-green">-€@discountAmount.ToString("N2")</span>
-                                    }
-                                </td>
-                                <td class="col-total">€@line.LineTotal.ToString("N2")</td>
-                                <td class="col-actions">
-                                    <button type="button" class="btn-edit" onclick="showEditLineModal(@line.Id, @(line.ProposalSectionId?.ToString() ?? "null"))">Edit</button>
-                                    <button type="button" class="btn-remove" onclick="confirmRemoveLine(@Model.Id, @line.Id)">×</button>
-                                </td>
+                <div class="scroll-hint">← Scroll horizontally →</div>
+                <div class="table-responsive">
+                    <table class="line-item-table">
+                        <thead>
+                            <tr>
+                                <th class="col-row-num">#</th>
+                                <th class="col-description">Description</th>
+                                <th class="col-qty">Qty</th>
+                                <th class="col-unit-price">Unit Price</th>
+                                <th class="col-discount">Discount</th>
+                                <th class="col-total">Total</th>
+                                <th class="col-actions">Actions</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @for (var j = 0; j < sectionLines.Count; j++)
+                            {
+                                var displayLine = sectionLines[j];
+                                var line = displayLine.Line;
+                                var discountAmount = line.DiscountType == "Percentage"
+                                    ? line.UnitPrice * line.Quantity * (line.Discount / 100)
+                                    : line.Discount;
+                                <tr data-line-id="@line.Id"
+                                    data-description="@line.Description"
+                                    data-subtitle="@(line.Subtitle ?? "")"
+                                    data-reference-url="@(line.ReferenceUrl ?? "")"
+                                    data-quantity="@line.Quantity.ToString("G")"
+                                    data-unit-price="@line.UnitPrice.ToString("G")"
+                                    data-vat-rate="@line.VatRate.ToString("G")"
+                                    data-discount="@line.Discount.ToString("G")"
+                                    data-discount-type="@line.DiscountType"
+                                    data-cost-price="@(line.CostPrice?.ToString("G") ?? "")"
+                                    data-is-reverse-charge="@(line.IsReverseCharge ? "true" : "false")"
+                                    data-product-code="@(line.ProductCode ?? "")"
+                                    data-section-id="@(line.ProposalSectionId?.ToString() ?? "")">
+                                    <td class="col-row-num">@(j + 1)</td>
+                                    <td class="col-description">
+                                        <span class="line-desc">@line.Description</span>
+                                        @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                        {
+                                            <span class="line-subtitle">@line.Subtitle</span>
+                                        }
+                                    </td>
+                                    <td class="col-qty">@line.Quantity.ToString("G")</td>
+                                    <td class="col-unit-price">€@line.UnitPrice.ToString("N2")</td>
+                                    <td class="col-discount">
+                                        @if (discountAmount == 0)
+                                        {
+                                            <span>-</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="discount-green">-€@discountAmount.ToString("N2")</span>
+                                        }
+                                    </td>
+                                    <td class="col-total">€@line.LineTotal.ToString("N2")</td>
+                                    <td class="col-actions">
+                                        <button type="button" class="btn-edit" onclick="showEditLineModal(@line.Id, @(line.ProposalSectionId?.ToString() ?? "null"))">Edit</button>
+                                        <button type="button" class="btn-remove" onclick="confirmRemoveLine(@Model.Id, @line.Id)">×</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
             else
             {
@@ -187,68 +190,71 @@
 
     @if (defaultDisplayLines.Count > 0)
     {
-        <table class="line-item-table">
-            <thead>
-                <tr>
-                    <th class="col-row-num">#</th>
-                    <th class="col-description">Description</th>
-                    <th class="col-qty">Qty</th>
-                    <th class="col-unit-price">Unit Price</th>
-                    <th class="col-discount">Discount</th>
-                    <th class="col-total">Total</th>
-                    <th class="col-actions">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (var j = 0; j < defaultDisplayLines.Count; j++)
-                {
-                    var displayLine = defaultDisplayLines[j];
-                    var line = displayLine.Line;
-                    var discountAmount = line.DiscountType == "Percentage"
-                        ? line.UnitPrice * line.Quantity * (line.Discount / 100)
-                        : line.Discount;
-                    <tr data-line-id="@line.Id"
-                        data-description="@line.Description"
-                        data-subtitle="@(line.Subtitle ?? "")"
-                        data-reference-url="@(line.ReferenceUrl ?? "")"
-                        data-quantity="@line.Quantity.ToString("G")"
-                        data-unit-price="@line.UnitPrice.ToString("G")"
-                        data-vat-rate="@line.VatRate.ToString("G")"
-                        data-discount="@line.Discount.ToString("G")"
-                        data-discount-type="@line.DiscountType"
-                        data-cost-price="@(line.CostPrice?.ToString("G") ?? "")"
-                        data-is-reverse-charge="@(line.IsReverseCharge ? "true" : "false")"
-                        data-product-code="@(line.ProductCode ?? "")"
-                        data-section-id="">
-                        <td class="col-row-num">@(j + 1)</td>
-                        <td class="col-description">
-                            <span class="line-desc">@line.Description</span>
-                            @if (!string.IsNullOrWhiteSpace(line.Subtitle))
-                            {
-                                <span class="line-subtitle">@line.Subtitle</span>
-                            }
-                        </td>
-                        <td class="col-qty">@line.Quantity.ToString("G")</td>
-                        <td class="col-unit-price">€@line.UnitPrice.ToString("N2")</td>
-                        <td class="col-discount">
-                            @if (discountAmount == 0)
-                            {
-                                <span>-</span>
-                            }
-                            else
-                            {
-                                <span class="discount-green">-€@discountAmount.ToString("N2")</span>
-                            }
-                        </td>
-                        <td class="col-total">€@line.LineTotal.ToString("N2")</td>
-                        <td class="col-actions">
-                            <button type="button" class="btn-edit" onclick="showEditLineModal(@line.Id, null)">Edit</button>
-                            <button type="button" class="btn-remove" onclick="confirmRemoveLine(@Model.Id, @line.Id)">×</button>
-                        </td>
+        <div class="scroll-hint">← Scroll horizontally →</div>
+        <div class="table-responsive">
+            <table class="line-item-table">
+                <thead>
+                    <tr>
+                        <th class="col-row-num">#</th>
+                        <th class="col-description">Description</th>
+                        <th class="col-qty">Qty</th>
+                        <th class="col-unit-price">Unit Price</th>
+                        <th class="col-discount">Discount</th>
+                        <th class="col-total">Total</th>
+                        <th class="col-actions">Actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @for (var j = 0; j < defaultDisplayLines.Count; j++)
+                    {
+                        var displayLine = defaultDisplayLines[j];
+                        var line = displayLine.Line;
+                        var discountAmount = line.DiscountType == "Percentage"
+                            ? line.UnitPrice * line.Quantity * (line.Discount / 100)
+                            : line.Discount;
+                        <tr data-line-id="@line.Id"
+                            data-description="@line.Description"
+                            data-subtitle="@(line.Subtitle ?? "")"
+                            data-reference-url="@(line.ReferenceUrl ?? "")"
+                            data-quantity="@line.Quantity.ToString("G")"
+                            data-unit-price="@line.UnitPrice.ToString("G")"
+                            data-vat-rate="@line.VatRate.ToString("G")"
+                            data-discount="@line.Discount.ToString("G")"
+                            data-discount-type="@line.DiscountType"
+                            data-cost-price="@(line.CostPrice?.ToString("G") ?? "")"
+                            data-is-reverse-charge="@(line.IsReverseCharge ? "true" : "false")"
+                            data-product-code="@(line.ProductCode ?? "")"
+                            data-section-id="">
+                            <td class="col-row-num">@(j + 1)</td>
+                            <td class="col-description">
+                                <span class="line-desc">@line.Description</span>
+                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                {
+                                    <span class="line-subtitle">@line.Subtitle</span>
+                                }
+                            </td>
+                            <td class="col-qty">@line.Quantity.ToString("G")</td>
+                            <td class="col-unit-price">€@line.UnitPrice.ToString("N2")</td>
+                            <td class="col-discount">
+                                @if (discountAmount == 0)
+                                {
+                                    <span>-</span>
+                                }
+                                else
+                                {
+                                    <span class="discount-green">-€@discountAmount.ToString("N2")</span>
+                                }
+                            </td>
+                            <td class="col-total">€@line.LineTotal.ToString("N2")</td>
+                            <td class="col-actions">
+                                <button type="button" class="btn-edit" onclick="showEditLineModal(@line.Id, null)">Edit</button>
+                                <button type="button" class="btn-remove" onclick="confirmRemoveLine(@Model.Id, @line.Id)">×</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
     else
     {

@@ -16,7 +16,7 @@
 
 <section class="glass card-pad" style="margin-bottom:22px;">
     <form method="get" action="/Admin/Users">
-        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
             <div class="field" style="min-width:240px;">
                 <label for="searchTerm">Search</label>
                 <input type="text" id="searchTerm" name="searchTerm" value="@searchTerm" placeholder="Name or email..." maxlength="200" />
@@ -44,64 +44,67 @@
 <section class="glass card-pad">
     @if (Model.Items.Any())
     {
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Last Login</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in Model.Items)
-                {
-                    var isSelf = user.UserId == currentUserId;
-                    <tr style="cursor:pointer;" onclick="window.location.href='/Admin/Users/ModuleAccess/@user.UserBusinessId'">
-                        <td><strong>@user.FullName</strong></td>
-                        <td>@user.Email</td>
-                        <td>@user.Role</td>
-                        <td>
-                            @if (user.IsActive)
-                            {
-                                <span class="badge badge--insert">Active</span>
-                            }
-                            else
-                            {
-                                <span class="badge badge--delete">Inactive</span>
-                            }
-                        </td>
-                        <td>
-                            @(user.LastLoginUtc.HasValue
-                                ? user.LastLoginUtc.Value.ToString("dd MMM yyyy HH:mm")
-                                : "Never")
-                        </td>
-                        <td onclick="event.stopPropagation();">
-                            @if (isSelf)
-                            {
-                                <span style="color:#5a6b7c;font-size:13px;" title="You cannot modify your own account.">—</span>
-                            }
-                            else if (user.IsActive)
-                            {
-                                <button type="button" class="tbl-action tbl-action--danger"
-                                        onclick="deactivateUser(@user.UserBusinessId, '@Html.Raw(user.FullName.Replace("'", "\\'"))')">
-                                    Deactivate
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-primary" style="font-size:12px;padding:6px 12px;"
-                                        onclick="reactivateUser(@user.UserBusinessId, '@Html.Raw(user.FullName.Replace("'", "\\'"))')">
-                                    Reactivate
-                                </button>
-                            }
-                        </td>
+        <div class="scroll-hint">← Scroll horizontally →</div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Items)
+                    {
+                        var isSelf = user.UserId == currentUserId;
+                        <tr style="cursor:pointer;" onclick="window.location.href='/Admin/Users/ModuleAccess/@user.UserBusinessId'">
+                            <td><strong>@user.FullName</strong></td>
+                            <td>@user.Email</td>
+                            <td>@user.Role</td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge badge--insert">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge--delete">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @(user.LastLoginUtc.HasValue
+                                    ? user.LastLoginUtc.Value.ToString("dd MMM yyyy HH:mm")
+                                    : "Never")
+                            </td>
+                            <td onclick="event.stopPropagation();">
+                                @if (isSelf)
+                                {
+                                    <span style="color:#5a6b7c;font-size:13px;" title="You cannot modify your own account.">—</span>
+                                }
+                                else if (user.IsActive)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--danger"
+                                            onclick="deactivateUser(@user.UserBusinessId, '@Html.Raw(user.FullName.Replace("'", "\\'"))')">
+                                        Deactivate
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-primary" style="font-size:12px;padding:6px 12px;"
+                                            onclick="reactivateUser(@user.UserBusinessId, '@Html.Raw(user.FullName.Replace("'", "\\'"))')">
+                                        Reactivate
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
         @* Pagination *@
         @if (Model.TotalPages > 1)

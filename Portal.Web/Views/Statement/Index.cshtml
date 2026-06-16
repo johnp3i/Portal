@@ -18,7 +18,7 @@
 
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+    <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:180px;">
             <label>Customer</label>
             <select id="customerSelect" onchange="onCustomerChanged()">
@@ -98,6 +98,8 @@
                 </button>
             </div>
         </div>
+        <div class="scroll-hint">← Scroll horizontally →</div>
+        <div class="table-responsive">
         <table>
             <thead>
                 <tr>
@@ -114,6 +116,7 @@
             <tfoot id="transactionTableFooter">
             </tfoot>
         </table>
+        </div>
     </section>
 </div>
 

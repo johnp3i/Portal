@@ -21,7 +21,7 @@
 
 <!-- KPI Cards -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
+    <div class="grid-3" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
         <!-- Total Issued -->
         <div id="kpiTotalIssued" style="padding:18px;border-radius:14px;background:rgba(13,94,166,0.04);border:1px solid rgba(13,94,166,0.08);border-left:4px solid #0D5EA6;">
             <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Total Issued</div>
@@ -51,7 +51,7 @@
 
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+    <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:180px;">
             <label for="filterStatus">Status</label>
             <select id="filterStatus">
@@ -93,6 +93,8 @@
 
 <!-- Data Table -->
 <section class="glass card-pad">
+    <div class="scroll-hint">← Scroll horizontally →</div>
+    <div class="table-responsive">
     <table id="creditNoteTable">
         <thead>
             <tr>
@@ -110,6 +112,7 @@
             <!-- Populated via JavaScript (task 11.1) -->
         </tbody>
     </table>
+    </div>
 
     <!-- Empty State -->
     <div id="creditNoteEmptyState" class="empty-state" style="display:none;">

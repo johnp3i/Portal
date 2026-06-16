@@ -37,7 +37,7 @@
 </div>
 
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+    <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:180px;">
             <label for="logLevel">Log Level</label>
             <select id="logLevel">
@@ -93,27 +93,30 @@
     </div>
 </section>
 
-<section class="glass card-pad" style="overflow-x:auto;">
-    <table class="data-table" id="logsTable" style="table-layout:fixed;width:100%;">
-        <thead>
-            <tr>
-                <th style="width:36px;"></th>
-                <th style="width:145px;">TimeStamp</th>
-                <th style="width:110px;">Level</th>
-                <th style="width:32%;">Message</th>
-                <th style="width:14%;">User</th>
-                <th style="width:16%;">Source Context</th>
-                <th style="width:14%;">Correlation ID</th>
-            </tr>
-        </thead>
-        <tbody id="logsTableBody">
-            <tr>
-                <td colspan="7" style="text-align:center;padding:32px;color:#5a6b7c;">
-                    Loading log entries...
-                </td>
-            </tr>
-        </tbody>
-    </table>
+<section class="glass card-pad">
+    <div class="scroll-hint">← Scroll horizontally →</div>
+    <div class="table-responsive">
+        <table class="data-table" id="logsTable" style="table-layout:fixed;width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:36px;"></th>
+                    <th style="width:145px;">TimeStamp</th>
+                    <th style="width:110px;">Level</th>
+                    <th style="width:32%;">Message</th>
+                    <th style="width:14%;">User</th>
+                    <th style="width:16%;">Source Context</th>
+                    <th style="width:14%;">Correlation ID</th>
+                </tr>
+            </thead>
+            <tbody id="logsTableBody">
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:32px;color:#5a6b7c;">
+                        Loading log entries...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
         <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>

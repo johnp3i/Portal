@@ -28,7 +28,7 @@
 </div>
 
 <!-- Row 1: KPI Cards -->
-<section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+<section class="gauge-row" style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
     <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
         <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Outstanding Receivables</p>
         <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">@currency@kpi.OutstandingReceivables.ToString("N2")</h2>
@@ -55,13 +55,13 @@
 <section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
     <div class="glass card-pad" style="flex:2;min-width:300px;">
         <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Revenue Collected (Last 12 Months)</h3>
-        <div style="position:relative;height:220px;">
+        <div style="position:relative;height:220px;max-width:100%;">
             <canvas id="revenueLineChart"></canvas>
         </div>
     </div>
     <div class="glass card-pad" style="flex:2;min-width:300px;">
         <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Invoiced vs Collected</h3>
-        <div style="position:relative;height:220px;">
+        <div style="position:relative;height:220px;max-width:100%;">
             <canvas id="invoicedVsCollectedChart"></canvas>
         </div>
     </div>
@@ -76,7 +76,7 @@
 </section>
 
 <!-- Row 3: VAT Section — Dark Scoreboard (left) + VAT Liability chart (right) -->
-<section style="display:grid;grid-template-columns:240px 1fr;gap:22px;margin-bottom:22px;">
+<section class="grid-2" style="display:grid;grid-template-columns:240px 1fr;gap:22px;margin-bottom:22px;">
     <!-- Left: Dark Scoreboard Panel -->
     <div style="background:linear-gradient(180deg,#0D5EA6 0%,#094A85 100%);border-radius:16px;padding:22px 20px;color:#fff;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;opacity:0.7;margin-bottom:18px;">VAT Summary · @vatSummary.PeriodLabel</div>
@@ -111,7 +111,7 @@
     <!-- Right: VAT Liability by Period chart -->
     <div class="glass card-pad">
         <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">VAT Liability by Period</h3>
-        <div style="position:relative;height:260px;">
+        <div style="position:relative;height:260px;max-width:100%;">
             <canvas id="vatLiabilityChart"></canvas>
         </div>
     </div>
@@ -121,11 +121,13 @@
 <section class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h3 style="font-size:16px;color:var(--red);margin:0;">⚠ Overdue Invoices</h3>
-        <div style="display:flex;gap:12px;align-items:flex-end;">
+        <div class="filter-panel" style="display:flex;gap:12px;align-items:flex-end;">
             <input type="text" id="overdueSearch" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
             <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;" onclick="searchOverdueInvoices()">Search</button>
         </div>
     </div>
+    <div class="scroll-hint">← Scroll horizontally →</div>
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -151,6 +153,7 @@
             }
         </tbody>
     </table>
+    </div>
     <!-- Pagination -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
         <div id="overduePaginationInfo" style="font-size:14px;color:var(--muted);">
@@ -168,11 +171,13 @@
 <section class="glass card-pad">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h3 style="font-size:16px;color:var(--green);margin:0;">✓ Recent Payments</h3>
-        <div style="display:flex;gap:12px;align-items:flex-end;">
+        <div class="filter-panel" style="display:flex;gap:12px;align-items:flex-end;">
             <input type="text" id="paymentsSearch" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
             <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;" onclick="searchRecentPayments()">Search</button>
         </div>
     </div>
+    <div class="scroll-hint">← Scroll horizontally →</div>
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -207,6 +212,7 @@
             }
         </tbody>
     </table>
+    </div>
     <!-- Pagination -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
         <div id="paymentsPaginationInfo" style="font-size:14px;color:var(--muted);">

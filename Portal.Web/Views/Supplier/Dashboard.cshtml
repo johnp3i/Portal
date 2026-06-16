@@ -24,7 +24,7 @@
 </div>
 
 <!-- Period Filter + KPI Cards (single row) -->
-<section style="display:flex;gap:22px;margin-bottom:22px;align-items:stretch;flex-wrap:wrap;">
+<section class="grid-2" style="display:flex;gap:22px;margin-bottom:22px;align-items:stretch;flex-wrap:wrap;">
     <!-- Period Filter -->
     <div class="glass card-pad" style="display:flex;align-items:flex-end;">
         <form method="get" action="/Supplier/Dashboard/@Model.SupplierId" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0;">
@@ -64,32 +64,33 @@
 </section>
 
 <!-- Charts Section -->
-<section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+<section class="grid-2" style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
     <!-- Spend Share Donut -->
-    <div class="glass card-pad" style="flex:1;min-width:280px;max-width:25%;">
+    <div class="glass card-pad" style="flex:1;min-width:280px;max-width:100%;">
         <h3 id="spendShareTitle" style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Spend Share</h3>
-        <canvas id="spendShareCanvas"></canvas>
+        <canvas id="spendShareCanvas" style="max-width:100%;"></canvas>
         <div class="chart-fallback" style="display:none;">Charts unavailable</div>
     </div>
 
     <!-- Monthly Spend Bar Chart -->
-    <div class="glass card-pad" style="flex:1;min-width:280px;">
+    <div class="glass card-pad" style="flex:1;min-width:280px;max-width:100%;">
         <h3 id="monthlySpendTitle" style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Monthly Spend</h3>
-        <canvas id="monthlySpendCanvas"></canvas>
+        <canvas id="monthlySpendCanvas" style="max-width:100%;"></canvas>
         <div class="chart-fallback" style="display:none;">Charts unavailable</div>
     </div>
 
     <!-- Period Spend Bar Chart -->
-    <div class="glass card-pad" style="flex:1;min-width:280px;">
+    <div class="glass card-pad" style="flex:1;min-width:280px;max-width:100%;">
         <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px 0;color:#1a2b3c;">Period Spend</h3>
-        <canvas id="periodSpendCanvas"></canvas>
+        <canvas id="periodSpendCanvas" style="max-width:100%;"></canvas>
         <div class="chart-fallback" style="display:none;">Charts unavailable</div>
     </div>
 </section>
 
 <!-- Purchase Filters -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <form method="get" action="/Supplier/Dashboard/@Model.SupplierId" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0;">
+    <form method="get" action="/Supplier/Dashboard/@Model.SupplierId">
+        <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0;">
         @if (Model.SelectedPeriodId.HasValue)
         {
             <input type="hidden" name="periodId" value="@Model.SelectedPeriodId" />
@@ -120,6 +121,7 @@
             <button type="submit" class="btn btn-primary">Filter</button>
             <a href="/Supplier/Dashboard/@Model.SupplierId@(Model.SelectedPeriodId.HasValue ? "?periodId=" + Model.SelectedPeriodId : "")" class="btn btn-secondary">Clear</a>
         </div>
+        </div>
     </form>
 </section>
 
@@ -146,6 +148,8 @@
     }
     @if (Model.Purchases.Any())
     {
+        <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
+        <div class="table-responsive">
         <table style="width:100%;border-collapse:collapse;">
             <thead>
                 <tr style="border-bottom:2px solid #e2e8f0;">
@@ -171,6 +175,7 @@
                 }
             </tbody>
         </table>
+        </div>
 
         <!-- Pagination -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">

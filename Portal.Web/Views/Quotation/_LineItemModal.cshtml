@@ -16,8 +16,8 @@
             <input type="hidden" id="lineModalProductCode" name="ProductCode" />
 
             <!-- Row 1: Description (full width) -->
-            <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px;">
-                <div class="field" style="position:relative;">
+            <div class="form-grid" style="margin-bottom:14px;">
+                <div class="field" style="position:relative;grid-column:1 / -1;">
                     <label for="lineModalDescription">Description *</label>
                     <input type="text" id="lineModalDescription" name="Description" required placeholder="Item description" />
                     <div class="catalog-autocomplete"></div>
@@ -25,7 +25,7 @@
             </div>
 
             <!-- Row 2: Subtitle + Reference URL (2-column) -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div class="form-grid" style="margin-bottom:14px;">
                 <div class="field">
                     <label for="lineModalSubtitleField">Subtitle</label>
                     <input type="text" id="lineModalSubtitleField" name="Subtitle" placeholder="Optional subtitle" />
@@ -37,7 +37,7 @@
             </div>
 
             <!-- Row 3: Quantity, Unit Price, VAT%, Cost Price (4-column) -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div class="form-grid" style="margin-bottom:14px;">
                 <div class="field">
                     <label for="lineModalQuantity">Quantity *</label>
                     <input type="number" id="lineModalQuantity" name="Quantity" step="0.0001" min="0.0001" required placeholder="1" />
@@ -57,7 +57,7 @@
             </div>
 
             <!-- Row 4: Discount, Discount Type, Move to Section (3-column) -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div class="form-grid" style="margin-bottom:14px;">
                 <div class="field">
                     <label for="lineModalDiscount">Discount</label>
                     <input type="number" id="lineModalDiscount" name="Discount" step="0.01" min="0" placeholder="0" />
