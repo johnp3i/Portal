@@ -34,13 +34,12 @@
     <!-- Periods Table -->
     <section class="glass card-pad">
         <div class="scroll-hint">← Scroll horizontally →</div>
-        <div class="table-responsive">
+        <div class="table-responsive index-table">
         <table id="vatPeriodsTable">
             <thead>
                 <tr>
                     <th>Period</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
+                    <th>Dates</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -49,10 +48,9 @@
                 @foreach (var period in Model.Periods)
                 {
                     <tr data-status="@period.Status">
-                        <td><strong>@period.PeriodLabel</strong></td>
-                        <td>@period.PeriodStartDate.ToString("dd MMM yyyy")</td>
-                        <td>@period.PeriodEndDate.ToString("dd MMM yyyy")</td>
-                        <td>
+                        <td><a asp-action="Detail" asp-route-periodId="@period.PeriodId" style="color:inherit;text-decoration:none;"><strong>@period.PeriodLabel</strong></a></td>
+                        <td data-mobile="hide">@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy")</td>
+                        <td data-mobile="status">
                             @if (period.Status == "Submitted")
                             {
                                 <span class="pill pill-green">Submitted</span>
@@ -70,7 +68,7 @@
                                 <span class="pill pill-grey">Not Started</span>
                             }
                         </td>
-                        <td>
+                        <td data-mobile="hide">
                             <a asp-action="Detail" asp-route-periodId="@period.PeriodId" class="tbl-action tbl-action--primary">View Details</a>
                         </td>
                     </tr>

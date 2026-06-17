@@ -16,7 +16,11 @@
 
 <section class="glass card-pad" style="margin-bottom:22px;">
     <form method="get" action="/Admin/Users">
-        <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="usersFilterPanel">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            Filters
+        </button>
+        <div class="filter-panel" id="usersFilterPanel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
             <div class="field" style="min-width:240px;">
                 <label for="searchTerm">Search</label>
                 <input type="text" id="searchTerm" name="searchTerm" value="@searchTerm" placeholder="Name or email..." maxlength="200" />

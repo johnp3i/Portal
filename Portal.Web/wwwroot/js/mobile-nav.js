@@ -77,4 +77,30 @@
             }
         }
     });
+
+    // --- Filter panel toggle (Layer 9) ---
+
+    var filterToggles = document.querySelectorAll('.filter-toggle');
+    filterToggles.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var panel = btn.closest('.glass, section, .card-pad')
+                            .querySelector('.filter-panel');
+            if (panel) {
+                var isExpanded = panel.classList.contains('expanded');
+                panel.classList.toggle('expanded');
+                btn.classList.toggle('active');
+                btn.setAttribute('aria-expanded', !isExpanded);
+            }
+        });
+    });
+
+    // --- Index table row tap — navigate to detail on phone ---
+
+    document.querySelectorAll('.index-table tbody tr[data-href]').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+            // Don't navigate if user clicked an actual link or button inside the row
+            if (e.target.closest('a, button')) return;
+            window.location.href = row.getAttribute('data-href');
+        });
+    });
 })();

@@ -93,47 +93,50 @@
 </section>
 
 <!-- Invoice Line Items -->
-<section class="glass card-pad" style="margin-bottom:22px;">
+<section class="glass card-pad invoice-lines-section" style="margin-bottom:22px;">
     <h3 style="font-size:16px;margin-bottom:16px;">Invoice Lines</h3>
     @if (lines.Count > 0)
     {
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Description</th>
-                    <th style="text-align:right;">Qty</th>
-                    <th style="text-align:right;">Unit Price</th>
-                    <th style="text-align:right;">Line Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var line in lines.OrderBy(l => l.SortOrder))
-                {
+        <div class="scroll-hint">← Scroll horizontally →</div>
+        <div class="table-responsive">
+            <table>
+                <thead>
                     <tr>
-                        <td>@line.SortOrder</td>
-                        <td><strong>@line.Description</strong></td>
-                        <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
-                        <td style="text-align:right;">@(currencySymbol)@line.UnitPrice.ToString("N2")</td>
-                        <td style="text-align:right;font-weight:700;">@(currencySymbol)@line.LineTotal.ToString("N2")</td>
+                        <th>#</th>
+                        <th>Description</th>
+                        <th style="text-align:right;">Qty</th>
+                        <th style="text-align:right;">Unit Price</th>
+                        <th style="text-align:right;">Line Total</th>
                     </tr>
-                }
-            </tbody>
-            <tfoot>
-                <tr style="border-top:2px solid #e2e8f0;">
-                    <td colspan="4" style="text-align:right;font-weight:700;padding-top:12px;">Subtotal</td>
-                    <td style="text-align:right;font-weight:700;padding-top:12px;">@(currencySymbol)@invoice.Subtotal.ToString("N2")</td>
-                </tr>
-                <tr>
-                    <td colspan="4" style="text-align:right;color:var(--muted);">VAT</td>
-                    <td style="text-align:right;color:var(--muted);">@(currencySymbol)@invoice.TaxAmount.ToString("N2")</td>
-                </tr>
-                <tr>
-                    <td colspan="4" style="text-align:right;font-weight:700;font-size:16px;">Total</td>
-                    <td style="text-align:right;font-weight:700;font-size:16px;color:var(--blue);">@(currencySymbol)@invoice.TotalAmount.ToString("N2")</td>
-                </tr>
-            </tfoot>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var line in lines.OrderBy(l => l.SortOrder))
+                    {
+                        <tr>
+                            <td>@line.SortOrder</td>
+                            <td><strong>@line.Description</strong></td>
+                            <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
+                            <td style="text-align:right;">@(currencySymbol)@line.UnitPrice.ToString("N2")</td>
+                            <td style="text-align:right;font-weight:700;">@(currencySymbol)@line.LineTotal.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="border-top:2px solid #e2e8f0;">
+                        <td colspan="4" style="text-align:right;font-weight:700;padding-top:12px;">Subtotal</td>
+                        <td style="text-align:right;font-weight:700;padding-top:12px;">@(currencySymbol)@invoice.Subtotal.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="text-align:right;color:var(--muted);">VAT</td>
+                        <td style="text-align:right;color:var(--muted);">@(currencySymbol)@invoice.TaxAmount.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="text-align:right;font-weight:700;font-size:16px;">Total</td>
+                        <td style="text-align:right;font-weight:700;font-size:16px;color:var(--blue);">@(currencySymbol)@invoice.TotalAmount.ToString("N2")</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     }
     else
     {

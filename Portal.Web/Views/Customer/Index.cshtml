@@ -16,7 +16,11 @@
 
 <section class="glass card-pad">
     <form method="get" asp-action="Index" asp-controller="Customer">
-        <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="customerFilterPanel">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            Filters
+        </button>
+        <div class="filter-panel" id="customerFilterPanel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
             <div class="field" style="min-width:180px;">
                 <label>Search</label>
                 <input type="text" name="searchTerm" value="@Model.SearchTerm" placeholder="Search by name..." />
@@ -38,8 +42,8 @@
     <div style="margin-top:18px;">
         @if (Model.Customers != null && Model.Customers.Count > 0)
         {
+            <div class="table-responsive index-table">
             <div class="scroll-hint">← Scroll horizontally →</div>
-            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -56,10 +60,10 @@
                     {
                         <tr>
                             <td><strong>@customer.Name</strong></td>
-                            <td>@customer.Email</td>
-                            <td>@customer.TelephoneNumber</td>
-                            <td>@customer.City</td>
-                            <td>
+                            <td>@(customer.Email ?? customer.TelephoneNumber)</td>
+                            <td data-mobile="hide">@customer.TelephoneNumber</td>
+                            <td data-mobile="hide">@customer.City</td>
+                            <td data-mobile="status">
                                 @if (customer.IsActive)
                                 {
                                     <span class="pill pill-green">Active</span>
@@ -69,7 +73,7 @@
                                     <span class="pill pill-red">Inactive</span>
                                 }
                             </td>
-                            <td style="white-space:nowrap;">
+                            <td data-mobile="hide" style="white-space:nowrap;">
                                 <a asp-action="Edit" asp-controller="Customer" asp-route-id="@customer.Id" class="tbl-action tbl-action--primary">Edit</a>
                                 <a href="/Statement?customerId=@customer.Id" class="tbl-action tbl-action--primary">Statement</a>
                                 @if (customer.IsActive)

@@ -21,7 +21,7 @@
 
 <!-- KPI Cards -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div class="grid-3" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
+    <div class="grid-3 gauge-row" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
         <!-- Total Issued -->
         <div id="kpiTotalIssued" style="padding:18px;border-radius:14px;background:rgba(13,94,166,0.04);border:1px solid rgba(13,94,166,0.08);border-left:4px solid #0D5EA6;">
             <div style="font-size:13px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Total Issued</div>
@@ -92,7 +92,7 @@
 </section>
 
 <!-- Data Table -->
-<section class="glass card-pad">
+<section class="glass card-pad index-table">
     <div class="scroll-hint">← Scroll horizontally →</div>
     <div class="table-responsive">
     <table id="creditNoteTable">
@@ -219,12 +219,12 @@
             html += '<tr>';
             html += '<td><a href="/CreditNote/Detail/' + item.id + '" style="color:#0D5EA6;font-weight:600;text-decoration:none;">' + escHtml(item.creditNoteNumber) + '</a></td>';
             html += '<td>' + escHtml(item.customerName) + '</td>';
-            html += '<td>' + escHtml(item.invoiceNumber) + '</td>';
-            html += '<td>' + formatDate(item.issueDate) + '</td>';
-            html += '<td style="text-align:right;font-weight:600;">' + formatCurrency(item.totalAmount) + '</td>';
-            html += '<td>' + getStatusPill(item.creditNoteStatusTypeId) + '</td>';
-            html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escHtml(item.reason) + '">' + escHtml(item.reason) + '</td>';
-            html += '<td><a href="/CreditNote/Detail/' + item.id + '" class="tbl-action tbl-action--primary">View</a></td>';
+            html += '<td data-mobile="hide">' + escHtml(item.invoiceNumber) + '</td>';
+            html += '<td data-mobile="hide">' + formatDate(item.issueDate) + '</td>';
+            html += '<td data-mobile="amount" style="text-align:right;font-weight:600;">' + formatCurrency(item.totalAmount) + '</td>';
+            html += '<td data-mobile="status">' + getStatusPill(item.creditNoteStatusTypeId) + '</td>';
+            html += '<td data-mobile="hide" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escHtml(item.reason) + '">' + escHtml(item.reason) + '</td>';
+            html += '<td data-mobile="hide"><a href="/CreditNote/Detail/' + item.id + '" class="tbl-action tbl-action--primary">View</a></td>';
             html += '</tr>';
         });
 

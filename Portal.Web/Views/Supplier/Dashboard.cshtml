@@ -23,45 +23,44 @@
     </div>
 </div>
 
-<!-- Period Filter + KPI Cards (single row) -->
-<section class="grid-2" style="display:flex;gap:22px;margin-bottom:22px;align-items:stretch;flex-wrap:wrap;">
-    <!-- Period Filter -->
-    <div class="glass card-pad" style="display:flex;align-items:flex-end;">
-        <form method="get" action="/Supplier/Dashboard/@Model.SupplierId" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0;">
-            <div class="field" style="min-width:180px;">
-                <label for="periodId">VAT Period</label>
-                <select id="periodId" name="periodId">
-                    <option value="">All Time</option>
-                    @foreach (var period in Model.Periods)
-                    {
-                        <option value="@period.Id" selected="@(Model.SelectedPeriodId == period.Id)">@period.Label</option>
-                    }
-                </select>
-            </div>
-            <div style="padding-bottom:2px;">
-                <button type="submit" class="btn btn-primary">Filter</button>
-                <a href="/Supplier/Dashboard/@Model.SupplierId" class="btn btn-secondary">Clear</a>
-            </div>
-        </form>
-    </div>
+<!-- Period Filter -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" action="/Supplier/Dashboard/@Model.SupplierId" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0;">
+        <div class="field" style="min-width:180px;">
+            <label for="periodId">VAT Period</label>
+            <select id="periodId" name="periodId">
+                <option value="">All Time</option>
+                @foreach (var period in Model.Periods)
+                {
+                    <option value="@period.Id" selected="@(Model.SelectedPeriodId == period.Id)">@period.Label</option>
+                }
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="/Supplier/Dashboard/@Model.SupplierId" class="btn btn-secondary">Clear</a>
+        </div>
+    </form>
+</section>
 
-    <!-- KPI Cards -->
-    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
+<!-- KPI Cards -->
+<div class="gauge-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:22px;">
+    <div class="glass card-pad gauge-item" style="border-left:4px solid #0D5EA6;">
         <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Total Spend (Excl. VAT)</p>
         <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">@Model.CurrencySymbol@Model.TotalSpend.ToString("N2")</h2>
         <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Across all periods</p>
     </div>
-    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
+    <div class="glass card-pad gauge-item" style="border-left:4px solid #0D5EA6;">
         <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Total Purchases</p>
         <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">@Model.TotalPurchases</h2>
         <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Since @Model.CollaborationSince.ToString("MMM yyyy")</p>
     </div>
-    <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
+    <div class="glass card-pad gauge-item" style="border-left:4px solid #0D5EA6;">
         <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Avg Monthly Spend</p>
         <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">@Model.CurrencySymbol@Model.AverageMonthlySpend.ToString("N2")</h2>
         <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Over @Model.TotalPurchases months</p>
     </div>
-</section>
+</div>
 
 <!-- Charts Section -->
 <section class="grid-2" style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">

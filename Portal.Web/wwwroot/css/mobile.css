@@ -40,23 +40,31 @@
 
     /* Prevent horizontal overflow on mobile */
     html, body {
-        overflow-x: hidden;
+        overflow-x: clip;
         width: 100%;
     }
 
-    /* Mobile Topbar */
+    /* Mobile Topbar — fixed at top, always visible */
     .mobile-topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        position: sticky;
+        position: fixed;
         top: 0;
+        left: 0;
+        right: 0;
         z-index: 100;
         padding: 10px 14px;
-        background: rgba(255, 255, 255, 0.92);
+        height: 56px;
+        background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--line);
+    }
+
+    /* Push content below fixed topbar */
+    .content {
+        padding-top: 68px;
     }
 
     .mobile-topbar__hamburger {
@@ -172,7 +180,7 @@
 
     /* Mobile account dropdown positioning */
     .mobile-account-dropdown {
-        position: absolute;
+        position: fixed;
         top: 56px;
         right: 16px;
         background: #fff;
@@ -195,6 +203,7 @@
 
     .content {
         padding: 12px;
+        padding-top: 68px; /* account for fixed topbar */
         padding-bottom: 76px; /* account for bottom tab bar */
     }
 
@@ -212,30 +221,6 @@
         border-radius: 14px;
     }
 
-    /* Compact topbar area */
-    .topbar {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-
-    .topbar-heading {
-        font-size: 22px;
-        margin-top: 4px;
-    }
-
-    .topbar-subtitle {
-        font-size: 13px;
-        line-height: 1.5;
-        margin-top: 2px;
-    }
-
-    .eyebrow {
-        padding: 6px 10px;
-        font-size: 10px;
-    }
-
     /* Tighter card spacing between sections */
     .glass + .glass,
     section + section {
@@ -248,18 +233,6 @@
 
     [style*="margin-bottom:22px"] {
         margin-bottom: 12px !important;
-    }
-
-    /* Compact table styling */
-    table th, table td {
-        padding: 8px 10px;
-        font-size: 13px;
-    }
-
-    table th {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
     }
 
     /* Compact scroll hint */
@@ -291,39 +264,91 @@
         font-size: 15px !important;
     }
 
-    /* Quotation stats strip — wrap and compact on phone */
+    /* Quotation stats strip — structured grid on phone */
     .quotation-strip {
         flex-wrap: wrap !important;
-        gap: 10px 16px !important;
-        padding: 10px 14px !important;
-        font-size: 12px !important;
+        flex-direction: column !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .quotation-strip > .qs-label:first-child {
+        display: none;
+    }
+
+    .quotation-strip .qs-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 10px 14px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-bottom: none;
+        font-size: 13px;
+        gap: 6px;
+    }
+
+    .quotation-strip .qs-item:first-of-type {
+        border-radius: 12px 12px 0 0;
+    }
+
+    .quotation-strip .qs-item:last-of-type {
+        border-bottom: 1px solid var(--line);
+        border-radius: 0 0 12px 12px;
+    }
+
+    .quotation-strip .qs-item .qs-value {
+        font-family: 'Manrope', sans-serif;
+        font-size: 16px;
+        font-weight: 800;
+        order: -1;
+    }
+
+    .quotation-strip .qs-item .qs-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        /* No margin-left: auto — keep close to value */
+    }
+
+    .quotation-strip .qs-item .qs-sub {
+        font-size: 11px;
+        color: var(--muted);
     }
 
     .qs-vat {
         margin-left: 0 !important;
+        margin-top: 10px;
         width: 100%;
+        display: flex !important;
         flex-wrap: wrap;
-        gap: 6px !important;
+        gap: 8px !important;
+        padding: 12px 14px !important;
+        border-radius: 12px !important;
+        font-size: 12px;
+        background: #EEF4F8 !important;
+        border: 1px solid var(--line) !important;
+    }
+
+    .qs-vat .qs-label {
+        width: 100%;
+        font-size: 10px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+
+    .qs-vat-item {
+        font-size: 13px !important;
     }
 
     /* Smaller pills */
     .pill {
         padding: 4px 8px;
         font-size: 10px;
-    }
-
-    /* Tighter form fields */
-    .field label {
-        font-size: 12px;
-        margin-bottom: 4px;
-    }
-
-    .field input,
-    .field select,
-    .field textarea {
-        padding: 10px 12px;
-        font-size: 14px;
-        border-radius: 10px;
     }
 
     /* Compact buttons */
@@ -334,7 +359,8 @@
     }
 
     /* Dashboard quick action buttons — app-like grid tiles */
-    .filter-panel a[style*="border-radius:24px"] {
+    .filter-panel a[style*="border-radius:24px"],
+    .quick-actions a {
         padding: 12px 14px !important;
         border-radius: 12px !important;
         font-size: 13px !important;
@@ -349,7 +375,8 @@
         justify-content: center;
     }
 
-    .filter-panel a[style*="border-radius:24px"]:hover {
+    .filter-panel a[style*="border-radius:24px"]:hover,
+    .quick-actions a:hover {
         background: var(--blue) !important;
         color: #fff !important;
         border-color: var(--blue) !important;
@@ -360,6 +387,20 @@
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    /* Quick Actions — exempt from Layer 9 collapsible filter behavior */
+    .quick-actions {
+        max-height: none !important;
+        overflow: visible !important;
+        opacity: 1 !important;
+        padding-top: unset !important;
+        padding-bottom: unset !important;
+        margin-top: unset !important;
+        margin-bottom: 14px !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
         gap: 10px !important;
     }
 
@@ -434,9 +475,24 @@
     .content .btn-primary,
     .content .btn-green,
     .content .btn-danger,
-    .btn-add-line {
+    .btn-add-line,
+    .btn-add-section {
         width: 100%;
         display: block;
+    }
+
+    /* Section management controls — stack vertically so Add Section is full-width */
+    .section-controls {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    /* Per-section headers — stack vertically on phone */
+    .section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
     }
 }
 
@@ -449,6 +505,7 @@
 
     .content {
         padding: 18px;
+        padding-top: 68px; /* account for fixed topbar */
     }
 
     /* Responsive grid collapse — two columns */
@@ -478,6 +535,1241 @@
     * {
         transition: none !important;
         animation: none !important;
+    }
+}
+
+/* ==========================================================================
+   DESIGN POLICY LAYERS — Mobile App Polish
+   
+   These layers define reusable design policies that automatically apply to
+   all views using the matching component patterns. Each layer targets a
+   specific component type to create a native mobile app feel.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   LAYER 1: TABLES — Compact, touch-friendly, horizontally scrollable
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* All tables get a scrollable wrapper treatment */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -14px;
+        padding: 0 14px;
+        scrollbar-width: thin;
+    }
+
+    .table-responsive table {
+        min-width: 600px;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    /* Table header — compact, uppercase, sticky */
+    .table-responsive table thead th,
+    table thead th {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        padding: 10px 12px;
+        border-bottom: 1.5px solid var(--line);
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 2;
+    }
+
+    /* Table cells — touch-friendly row height */
+    .table-responsive table tbody td,
+    table tbody td {
+        padding: 12px;
+        font-size: 13px;
+        white-space: nowrap;
+        border-bottom: 1px solid rgba(13, 94, 166, 0.04);
+        vertical-align: middle;
+    }
+
+    /* Touch-friendly row hover */
+    .table-responsive table tbody tr:active,
+    table tbody tr:active {
+        background: rgba(13, 94, 166, 0.03);
+    }
+
+    /* Alternating row background for readability */
+    .table-responsive table tbody tr:nth-child(even),
+    table tbody tr:nth-child(even) {
+        background: rgba(247, 250, 252, 0.5);
+    }
+
+    /* Scroll hint styling */
+    .scroll-hint {
+        display: block;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--muted);
+        padding: 6px 0;
+        letter-spacing: 0.02em;
+        opacity: 0.8;
+    }
+
+    /* Action links/buttons inside table cells */
+    table tbody td a,
+    table tbody td .btn {
+        font-size: 12px;
+        padding: 6px 10px;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Phone: even tighter table cells */
+    .table-responsive table tbody td,
+    table tbody td {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    .table-responsive table thead th,
+    table thead th {
+        padding: 8px;
+        font-size: 9px;
+    }
+
+    /* Sticky first column for key identifier columns */
+    .table-responsive table thead th:first-child,
+    .table-responsive table tbody td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        background: #fff;
+        border-right: 1px solid var(--line);
+    }
+
+    .table-responsive table tbody tr:nth-child(even) td:first-child {
+        background: rgba(247, 250, 252, 1);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 2: FORMS — Full-width, large touch targets, clear grouping
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* Form containers — proper spacing */
+    .form-grid,
+    .grid-2 {
+        gap: 14px;
+    }
+
+    /* All form inputs — consistent sizing and touch targets */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="password"],
+    input[type="date"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+        width: 100%;
+        min-height: 44px; /* iOS touch target minimum */
+        padding: 12px 14px;
+        font-size: 16px; /* prevents iOS zoom on focus */
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        font-family: inherit;
+        background: #fff;
+        transition: border-color 0.15s;
+    }
+
+    /* File inputs — full-width with touch-friendly sizing */
+    input[type="file"] {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        border-color: var(--blue);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.08);
+    }
+
+    /* Labels — clear and readable */
+    .field label,
+    label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 6px;
+    }
+
+    /* Field groups — vertical stacking with spacing */
+    .field {
+        margin-bottom: 14px;
+    }
+
+    /* Textarea — decent height for mobile */
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    /* Inline form actions */
+    .form-actions,
+    .field-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Phone: full-width everything, single column */
+    .field,
+    .form-grid > *,
+    .grid-2 > * {
+        width: 100% !important;
+        min-width: unset !important;
+    }
+
+    /* Tighter field spacing on phone */
+    .field {
+        margin-bottom: 12px;
+    }
+
+    /* Form section headings */
+    .form-section-title,
+    .card-pad > h3,
+    .card-pad > h2 {
+        font-size: 16px;
+        margin-bottom: 12px;
+    }
+
+    /* Inline edit fields in detail views */
+    [style*="display:flex"][style*="gap"] .field {
+        flex: 1 1 100% !important;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    /* Tablet: 2-column form layout */
+    .form-grid,
+    .grid-2 {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    /* Full-span fields (like description, notes) */
+    .field-full,
+    .field[style*="grid-column: span"] {
+        grid-column: 1 / -1;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 3: KPI / STAT CARDS — Proper grid, padding, font sizing
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* KPI card containers */
+    .gauge-row,
+    .kpi-grid,
+    [style*="display:grid"][style*="grid-template-columns: repeat(4"],
+    [style*="display:grid"][style*="grid-template-columns:repeat(4"] {
+        display: grid !important;
+        gap: 10px;
+    }
+
+    /* Individual KPI cards — app-like styling */
+    .gauge-item,
+    .kpi-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* KPI label */
+    .gauge-item .label,
+    .kpi-label {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+    }
+
+    /* KPI value */
+    .gauge-item .value,
+    .kpi-value {
+        font-family: Manrope, sans-serif;
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    /* KPI subtitle/description */
+    .gauge-item .desc,
+    .kpi-desc {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.4;
+    }
+
+    /* Color accent bars on cards (left border indicators) */
+    .gauge-item[style*="border-left"],
+    [style*="border-left: 3px"],
+    [style*="border-left:3px"],
+    [style*="border-left:4px"],
+    [style*="border-left: 4px"] {
+        border-left-width: 4px !important;
+        border-radius: 14px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Phone: 2-column KPI grid */
+    .gauge-row,
+    .kpi-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* Reset min-width on gauge-row children to prevent overflow from inline styles */
+    .gauge-row > * {
+        min-width: 0 !important;
+    }
+
+    /* Reduce gauge-row container padding for phone viewport */
+    .gauge-row {
+        padding: 10px !important;
+    }
+
+    /* Slightly smaller values on phone */
+    .gauge-item .value,
+    .gauge-value,
+    .kpi-value {
+        font-size: 14px;
+    }
+
+    .gauge-item,
+    .kpi-card {
+        padding: 12px 14px;
+    }
+
+    /* Ensure gauge header wraps if label + value exceed cell width */
+    .gauge-header {
+        flex-wrap: wrap;
+        gap: 2px 6px;
+    }
+
+    /* Ensure progress bar track stays within the grid cell */
+    .gauge-track {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Gauge sub-text stays readable and doesn't overflow */
+    .gauge-sub {
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Gauge label compact on phone */
+    .gauge-label {
+        font-size: 10px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    /* Tablet: 2-column KPI grid (can fit more) */
+    .gauge-row,
+    .kpi-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .gauge-item .value,
+    .kpi-value {
+        font-size: 22px;
+    }
+}
+
+/* Revenue Dashboard KPI cards — full-width stacked on phone, 2-column on tablet */
+@media (max-width: 768px) {
+    .revenue-kpi-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    .revenue-kpi-row > .glass.card-pad {
+        border-left-width: 4px !important;
+        border-radius: 14px !important;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    .revenue-kpi-row {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 4: METRIC ROWS — Label/value pairs alignment
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* Metric rows (e.g., VAT Summary, Revenue Insights) */
+    .metric-row,
+    [style*="display:flex"][style*="justify-content:space-between"] {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(13, 94, 166, 0.06);
+    }
+
+    .metric-row:last-child,
+    [style*="display:flex"][style*="justify-content:space-between"]:last-child {
+        border-bottom: none;
+    }
+
+    /* Metric label */
+    .metric-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    /* Metric value */
+    .metric-value {
+        font-family: Manrope, sans-serif;
+        font-size: 15px;
+        font-weight: 800;
+        text-align: right;
+    }
+
+    /* Dark surface metric rows (e.g., VAT Summary on dark card) */
+    .surface-dark .metric-row,
+    [style*="background"][style*="linear-gradient"] [style*="display:flex"] {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+@media (max-width: 768px) {
+    .metric-label {
+        font-size: 12px;
+    }
+
+    .metric-value {
+        font-size: 14px;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 5: CHART CONTAINERS — Responsive sizing
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* Chart wrappers — fill available width */
+    canvas,
+    .chart-container,
+    [style*="height:"] canvas {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .chart-container,
+    [class*="chart"] {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Side-by-side chart + summary panels — stack vertically */
+    [style*="display:grid"][style*="1fr 1fr"] > .glass,
+    [style*="display:grid"][style*="1fr 1fr"] > .card-pad,
+    [style*="display:grid"][style*="1fr 1fr"] > section {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Phone: charts get minimum height to remain readable */
+    canvas {
+        min-height: 180px;
+        height: auto !important;
+    }
+
+    /* Chart wrapper div — override inline height:220px so canvas can size naturally */
+    .chart-container {
+        height: auto !important;
+        min-height: 180px;
+    }
+
+    /* Chart section headers */
+    .chart-container h3,
+    .chart-container .label {
+        font-size: 13px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    /* Tablet: charts can be slightly taller */
+    canvas {
+        min-height: 220px;
+        height: auto !important;
+    }
+
+    /* Chart wrapper div — override inline height on tablet too */
+    .chart-container {
+        height: auto !important;
+        min-height: 220px;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 6: ACTION BUTTON GROUPS — Stacked, full-width, consistent spacing
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* Button groups — flex column with gap */
+    .btn-group,
+    .action-buttons,
+    [style*="display:flex"][style*="gap"] > .btn,
+    [style*="display:flex"][style*="gap"] > a.btn {
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Phone: all button groups stack vertically, full-width */
+    .topbar [style*="display:flex"][style*="gap"],
+    .card-pad > [style*="display:flex"][style*="gap"]:has(.btn) {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .topbar [style*="display:flex"][style*="gap"] .btn,
+    .topbar [style*="display:flex"][style*="gap"] a.btn,
+    .topbar [style*="display:flex"][style*="gap"] button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+
+    /* Primary CTA — elevated appearance */
+    .topbar .btn-primary,
+    .content .btn-primary {
+        padding: 14px 20px;
+        font-size: 14px;
+        border-radius: 14px;
+        box-shadow: 0 6px 16px rgba(13, 94, 166, 0.15);
+    }
+
+    /* Destructive buttons — clear red intent */
+    .topbar .btn-danger,
+    .content .btn-danger {
+        background: var(--red);
+        color: #fff;
+        border: none;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    /* Tablet: buttons wrap but don't go full-width */
+    .topbar [style*="display:flex"][style*="gap"] {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 7: PAGE HEADER / TOPBAR — Compact spacing, full-width CTA
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* Page topbar section */
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .topbar-heading {
+        font-size: 24px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+    }
+
+    .topbar-subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+    }
+
+    .eyebrow {
+        font-size: 10px;
+        padding: 5px 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .topbar {
+        margin-bottom: 14px;
+        gap: 6px;
+    }
+
+    .topbar-heading {
+        font-size: 20px;
+        margin-top: 2px;
+    }
+
+    .topbar-subtitle {
+        font-size: 12px;
+        margin-top: 0;
+    }
+
+    /* Full-width CTA buttons below page headers */
+    .topbar .btn-primary,
+    .topbar .btn-green {
+        width: 100%;
+        display: block;
+        text-align: center;
+        margin-top: 8px;
+    }
+
+    /* Full-width secondary/back buttons in page headers (Admin, Detail views) */
+    .topbar .btn-secondary,
+    .topbar .btn {
+        width: 100%;
+        display: block;
+        text-align: center;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 7b: DETAIL VIEW META FIELDS — Stack vertically on phone
+   Targets: Invoice Detail, Quotation Detail, Credit Note Detail
+   The meta fields (Customer, Invoice Number, Date, Due Date, etc.)
+   sit in inline flex containers with gap:32px.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    [style*="display:flex"][style*="gap:32px"],
+    [style*="display:flex"][style*="gap: 32px"],
+    [style*="display: flex"][style*="gap:32px"],
+    [style*="display: flex"][style*="gap: 32px"] {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 7c: VAT DETAIL META GRID — Stack vertically on phone
+   Targets: VAT Detail page .grid-3 with inline grid-template-columns:1fr 1fr 1fr.
+   Overrides the inline style to collapse to single-column on phone.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .grid-3[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .grid-3[style*="grid-template-columns"] > [style*="grid-column"] {
+        grid-column: auto !important;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    .grid-3[style*="grid-template-columns"] {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 14px !important;
+    }
+
+    .grid-3[style*="grid-template-columns"] > [style*="grid-column"] {
+        grid-column: auto !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 6b: SECTION HEADER ACTION BUTTONS — Stack heading + button on phone
+   Targets flex containers with justify-content:space-between that hold a heading
+   and an action button (e.g., Payment History "+ Add Payment", Invoice Create "+ Add Line").
+   Uses descendant selector to catch both direct children and nested containers (inside forms).
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .card-pad [style*="display:flex"][style*="justify-content:space-between"]:has(.btn) {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .card-pad [style*="display:flex"][style*="justify-content:space-between"]:has(.btn) .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 8: DASHBOARD MINI-TABLES — Card list on phone
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Dashboard card tables: transform into card-list layout */
+    .dashboard-card .scroll-hint {
+        display: none;
+    }
+
+    .dashboard-card .table-responsive {
+        overflow-x: visible;
+        margin: 0;
+        padding: 0;
+    }
+
+    .dashboard-card table {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .dashboard-card table thead {
+        display: none;
+    }
+
+    .dashboard-card table tbody {
+        display: block;
+    }
+
+    .dashboard-card table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 2px 8px;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+        background: transparent !important;
+    }
+
+    .dashboard-card table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    /* First cell: identifier (Invoice #, Reference, Date) — top left */
+    .dashboard-card table tbody td:nth-child(1) {
+        grid-row: 1;
+        grid-column: 1;
+        padding: 0;
+        font-weight: 700;
+        font-size: 13px;
+        border: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Second cell: customer/name — bottom left */
+    .dashboard-card table tbody td:nth-child(2) {
+        grid-row: 2;
+        grid-column: 1;
+        padding: 0;
+        font-size: 12px;
+        color: var(--muted);
+        border: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Third cell: status/method — top right */
+    .dashboard-card table tbody td:nth-child(3) {
+        grid-row: 1;
+        grid-column: 2;
+        padding: 0;
+        text-align: right;
+        border: none;
+    }
+
+    /* Fourth/last cell: amount — bottom right */
+    .dashboard-card table tbody td:nth-child(4),
+    .dashboard-card table tbody td:last-child {
+        grid-row: 2;
+        grid-column: 2;
+        padding: 0;
+        text-align: right;
+        font-weight: 700;
+        font-size: 13px;
+        border: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 9: COLLAPSIBLE FILTER PANELS — Collapsed by default on phone
+   -------------------------------------------------------------------------- */
+
+/* Filter toggle button — hidden on desktop/tablet, shown on phone */
+.filter-toggle {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .filter-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .filter-toggle.active {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+    }
+
+    /* Filter panel — collapsed by default on phone */
+    .filter-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.25s ease;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        opacity: 0;
+    }
+
+    .filter-panel.expanded {
+        max-height: 600px;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        margin-top: 12px !important;
+        opacity: 1;
+    }
+
+    /* Compact inputs inside filter when expanded */
+    .filter-panel.expanded input,
+    .filter-panel.expanded select {
+        min-height: 38px;
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 10px;
+    }
+
+    /* Labels hidden in filter panels — use placeholder */
+    .filter-panel .field label {
+        display: none;
+    }
+
+    /* 2-column filter grid when expanded */
+    .filter-panel.expanded {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-direction: row !important;
+        gap: 8px !important;
+    }
+
+    .filter-panel.expanded > .field {
+        flex: 1 1 calc(50% - 4px) !important;
+        min-width: calc(50% - 4px) !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Search field — always full width */
+    .filter-panel.expanded > .field:has(input[type="text"]),
+    .filter-panel.expanded > .field:has(input[type="search"]),
+    .filter-panel.expanded > .field:first-child {
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+    }
+
+    /* Filter action buttons — side by side */
+    .filter-panel.expanded > div:last-child {
+        flex: 1 1 100% !important;
+        display: flex;
+        gap: 8px;
+    }
+
+    .filter-panel.expanded > div:last-child .btn {
+        flex: 1;
+        text-align: center;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 10: COMPACT ACTION BUTTON ROW — Primary full-width, secondary inline
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Action bar in topbar — column layout with primary first */
+    .topbar-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .topbar-actions .btn,
+    .topbar-actions a.btn {
+        width: 100%;
+        text-align: center;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .topbar-actions .btn-primary,
+    .topbar-actions .btn-green {
+        order: -1;
+    }
+
+    /* Secondary buttons — compact inline row */
+    .topbar-actions-secondary {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .topbar-actions-secondary .btn,
+    .topbar-actions-secondary a {
+        flex: 1;
+        text-align: center;
+        padding: 8px 12px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LAYER 11: INDEX PAGE TABLES — Card list on phone
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Index page tables: transform into row-card layout */
+    .index-table .scroll-hint {
+        display: none;
+    }
+
+    .index-table .table-responsive,
+    .index-table.table-responsive {
+        overflow-x: visible;
+        margin: 0;
+        padding: 0;
+    }
+
+    .index-table table {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .index-table table thead {
+        display: none;
+    }
+
+    .index-table table tbody {
+        display: block;
+    }
+
+    .index-table table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 3px 10px;
+        align-items: center;
+        padding: 14px 4px;
+        border-bottom: 1px solid var(--line);
+        background: transparent !important;
+        cursor: pointer;
+    }
+
+    .index-table table tbody tr:active {
+        background: rgba(13, 94, 166, 0.02) !important;
+    }
+
+    .index-table table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    /* All cells reset */
+    .index-table table tbody td {
+        padding: 0;
+        border: none;
+        white-space: normal;
+        font-size: 13px;
+    }
+
+    /* Cell mapping for invoice/quotation tables:
+       td 1 = Reference (top-left, bold)
+       td 2 = Customer (bottom-left, muted)
+       td 5 = Total/Amount (bottom-right, bold)
+       td 6 = Status pill (top-right)
+       td 3,4,7,8 = hidden (date, financial status, actions) */
+
+    .index-table table tbody td:nth-child(1) {
+        grid-row: 1;
+        grid-column: 1;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .index-table table tbody td:nth-child(2) {
+        grid-row: 2;
+        grid-column: 1;
+        font-size: 12px;
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Amount/Total column */
+    .index-table table tbody td[data-mobile="amount"] {
+        grid-row: 2;
+        grid-column: 2;
+        font-weight: 700;
+        font-size: 13px;
+        text-align: right;
+    }
+
+    /* Status pill column */
+    .index-table table tbody td[data-mobile="status"] {
+        grid-row: 1;
+        grid-column: 2;
+        text-align: right;
+    }
+
+    /* Hidden columns on phone */
+    .index-table table tbody td[data-mobile="hide"] {
+        display: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LINE ITEM ENTRY TABLE — Stacked card layout on phone
+   Targets: Invoice Edit, Quotation Edit line item tables (.line-item-table)
+   On phone, each row becomes a stacked card showing all fields vertically
+   so users don't need to scroll horizontally to manage line items.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Hide scroll hint above line-item-table on phone */
+    .line-item-table ~ .scroll-hint,
+    .table-responsive:has(.line-item-table) ~ .scroll-hint {
+        display: none;
+    }
+
+    /* Remove table-responsive scroll behavior for line-item-table */
+    .table-responsive:has(.line-item-table) {
+        overflow-x: visible;
+        margin: 0;
+        padding: 0;
+    }
+
+    .line-item-table {
+        min-width: unset !important;
+        width: 100%;
+    }
+
+    /* Hide table header */
+    .line-item-table thead {
+        display: none;
+    }
+
+    .line-item-table tbody {
+        display: block;
+    }
+
+    /* Each row becomes a stacked card */
+    .line-item-table tbody tr {
+        display: block;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+        position: relative;
+    }
+
+    .line-item-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    /* All cells stack vertically */
+    .line-item-table tbody td {
+        display: block;
+        width: 100%;
+        padding: 4px 0;
+        text-align: left !important;
+        white-space: normal;
+        border: none;
+    }
+
+    /* Row number — inline muted badge */
+    .line-item-table tbody td.col-row-num {
+        position: absolute;
+        top: 14px;
+        right: 0;
+        width: auto;
+        font-size: 11px;
+        color: var(--muted);
+        opacity: 0.7;
+    }
+
+    /* Description — prominent, full width */
+    .line-item-table tbody td.col-description {
+        font-size: 14px;
+        font-weight: 600;
+        padding-bottom: 8px;
+        padding-right: 30px; /* room for row number badge */
+    }
+
+    .line-item-table tbody td.col-description .line-desc {
+        font-size: 14px;
+    }
+
+    .line-item-table tbody td.col-description .line-subtitle {
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    /* Numeric fields — display as labeled inline pairs */
+    .line-item-table tbody td.col-qty::before {
+        content: "Qty: ";
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+    }
+
+    .line-item-table tbody td.col-unit-price::before {
+        content: "Unit Price: ";
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+    }
+
+    .line-item-table tbody td.col-discount::before {
+        content: "Discount: ";
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+    }
+
+    .line-item-table tbody td.col-total::before {
+        content: "Total: ";
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+    }
+
+    .line-item-table tbody td.col-total {
+        font-size: 15px;
+        font-weight: 800;
+        padding-top: 8px;
+        margin-top: 4px;
+        border-top: 1px solid rgba(13, 94, 166, 0.06);
+    }
+
+    /* Actions — full-width row of buttons */
+    .line-item-table tbody td.col-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 10px;
+        width: 100%;
+    }
+
+    .line-item-table tbody td.col-actions .btn-edit,
+    .line-item-table tbody td.col-actions .btn-remove {
+        flex: 1;
+        text-align: center;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        min-height: 36px;
+    }
+
+    .line-item-table tbody td.col-actions .btn-edit {
+        background: rgba(13, 94, 166, 0.06);
+        border: 1px solid rgba(13, 94, 166, 0.12);
+    }
+
+    .line-item-table tbody td.col-actions .btn-remove {
+        background: rgba(194, 74, 74, 0.06);
+        border: 1px solid rgba(194, 74, 74, 0.12);
+    }
+
+    /* Hide the scroll hint that precedes line-item-table's table-responsive wrapper.
+       Since CSS can't select a previous sibling, we target the parent container. */
+    section:has(.line-item-table) > .scroll-hint,
+    div:has(.line-item-table) > .scroll-hint,
+    .card-pad:has(.line-item-table) .scroll-hint {
+        display: none !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   INVOICE DETAIL — Totals section full-width on phone
+   On phone, the tfoot inside .table-responsive would require scrolling.
+   Pull it out visually and render as full-width label/value rows.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .invoice-lines-section .table-responsive table tfoot {
+        display: block;
+        width: 100%;
+    }
+
+    .invoice-lines-section .table-responsive table tfoot tr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border: none;
+        background: transparent !important;
+    }
+
+    .invoice-lines-section .table-responsive table tfoot tr:first-child {
+        border-top: 2px solid #e2e8f0;
+        padding-top: 12px;
+        margin-top: 8px;
+    }
+
+    .invoice-lines-section .table-responsive table tfoot td {
+        padding: 0 !important;
+        border: none !important;
+        white-space: nowrap;
+        position: static !important;
+        background: transparent !important;
+    }
+
+    .invoice-lines-section .table-responsive table tfoot td[colspan] {
+        text-align: left !important;
+        width: auto;
+        flex: 1;
+    }
+
+    .invoice-lines-section .table-responsive table tfoot td:last-child {
+        text-align: right !important;
+        width: auto;
+        flex-shrink: 0;
     }
 }
 

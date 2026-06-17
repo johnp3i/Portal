@@ -70,6 +70,8 @@
 <section class="glass card-pad">
     @if (Model != null && Model.Count > 0)
     {
+        <div class="table-responsive index-table">
+        <div class="scroll-hint">← Scroll horizontally →</div>
         <table>
             <thead>
                 <tr>
@@ -90,12 +92,12 @@
                     <tr>
                         <td><strong>@item.InvoiceNumber</strong></td>
                         <td>@item.CustomerName</td>
-                        <td>@item.InvoiceDate.ToString("dd MMM yyyy")</td>
-                        <td>@item.DueDate.ToString("dd MMM yyyy")</td>
-                        <td style="text-align:right;font-weight:600;">@currencySymbol@item.TotalAmount.ToString("N2")</td>
-                        <td style="text-align:right;">@currencySymbol@item.TotalPaid.ToString("N2")</td>
-                        <td style="text-align:right;font-weight:700;">@currencySymbol@item.OutstandingBalance.ToString("N2")</td>
-                        <td>
+                        <td data-mobile="hide">@item.InvoiceDate.ToString("dd MMM yyyy")</td>
+                        <td data-mobile="hide">@item.DueDate.ToString("dd MMM yyyy")</td>
+                        <td data-mobile="hide" style="text-align:right;font-weight:600;">@currencySymbol@item.TotalAmount.ToString("N2")</td>
+                        <td data-mobile="hide" style="text-align:right;">@currencySymbol@item.TotalPaid.ToString("N2")</td>
+                        <td data-mobile="amount" style="text-align:right;font-weight:700;">@currencySymbol@item.OutstandingBalance.ToString("N2")</td>
+                        <td data-mobile="status">
                             @{
                                 var pillClass = item.InvoiceFinancialStatusTypeId switch
                                 {
@@ -109,7 +111,7 @@
                             }
                             <span class="pill @pillClass">@item.FinancialStatusName</span>
                         </td>
-                        <td style="white-space:nowrap;">
+                        <td data-mobile="hide" style="white-space:nowrap;">
                             <a asp-action="InvoiceDetail" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">View</a>
                             @if (item.HasOutstandingBalance)
                             {
@@ -122,6 +124,7 @@
                 }
             </tbody>
         </table>
+        </div>
 
         @await Html.PartialAsync("_PagingControl", null, new ViewDataDictionary(ViewData) {
             { "CurrentPage", pagedResult.CurrentPage },

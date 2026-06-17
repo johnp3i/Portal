@@ -18,10 +18,14 @@
 
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+    <button type="button" class="filter-toggle active" aria-expanded="true" aria-controls="statementFilterPanel">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+        Filters
+    </button>
+    <div class="filter-panel expanded" id="statementFilterPanel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:180px;">
             <label>Customer</label>
-            <select id="customerSelect" onchange="onCustomerChanged()">
+            <select id="customerSelect" onchange="onCustomerChanged()" aria-label="Customer">
                 <option value="">Select a customer...</option>
                 @foreach (var customer in customers)
                 {
@@ -31,11 +35,11 @@
         </div>
         <div class="field" style="min-width:180px;">
             <label>From Date</label>
-            <input type="date" id="fromDate" />
+            <input type="date" id="fromDate" placeholder="From date" aria-label="From Date" />
         </div>
         <div class="field" style="min-width:180px;">
             <label>To Date</label>
-            <input type="date" id="toDate" />
+            <input type="date" id="toDate" placeholder="To date" aria-label="To Date" />
         </div>
         <div style="padding-bottom:2px;">
             <button class="btn btn-primary" onclick="generateStatement()">Generate</button>
@@ -62,7 +66,7 @@
     </section>
 
     <!-- KPI Cards -->
-    <section style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+    <section class="gauge-row" style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
         <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
             <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Opening Balance</p>
             <h2 id="openingBalance" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">€0.00</h2>
@@ -420,7 +424,9 @@
                 var container = document.getElementById('emailHistoryContent');
 
                 if (data.success && data.records && data.records.length > 0) {
-                    var html = '<table><thead><tr>' +
+                    var html = '<div class="scroll-hint">\u2190 Scroll horizontally \u2192</div>' +
+                        '<div class="table-responsive">' +
+                        '<table><thead><tr>' +
                         '<th>Date Sent</th>' +
                         '<th>Statement Period</th>' +
                         '<th>Recipient Email</th>' +
@@ -431,14 +437,14 @@
                     data.records.forEach(function (record) {
                         html += '<tr>' +
                             '<td>' + formatDateTime(record.sentAtUtc) + '</td>' +
-                            '<td>' + record.fromDate + ' – ' + record.toDate + '</td>' +
+                            '<td>' + record.fromDate + ' \u2013 ' + record.toDate + '</td>' +
                             '<td>' + escapeHtml(record.recipientEmail) + '</td>' +
                             '<td>' + escapeHtml(record.sentByDisplayName) + '</td>' +
                             '<td><a href="javascript:void(0)" onclick="viewHistoryStatement(\'' + record.fromDate + '\', \'' + record.toDate + '\')" style="color:var(--blue);font-weight:700;font-size:13px;">View</a></td>' +
                             '</tr>';
                     });
 
-                    html += '</tbody></table>';
+                    html += '</tbody></table></div>';
                     container.innerHTML = html;
                 } else if (data.success) {
                     container.innerHTML = '<p style="font-size:14px;color:#5a6a7a;">No statements have been emailed for this customer.</p>';

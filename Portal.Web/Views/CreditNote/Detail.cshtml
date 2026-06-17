@@ -13,7 +13,7 @@
         <h1 class="topbar-heading">@cn.CreditNoteNumber &middot; @cn.CustomerName</h1>
         <p class="topbar-subtitle">Review credit note details, line items, and application history.</p>
     </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
         @if (cn.CreditNoteStatusTypeId == 1)
         {
             <button type="button" class="btn btn-primary" id="btnIssueCreditNote" data-id="@cn.Id">Issue Credit Note</button>

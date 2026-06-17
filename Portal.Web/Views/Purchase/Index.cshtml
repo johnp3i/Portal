@@ -20,76 +20,82 @@
 
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <form method="get" asp-action="Index" class="filter-panel" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
-        <div class="field" style="flex:1;min-width:200px;">
-            <label for="searchTerm">Search</label>
-            <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" placeholder="Description, invoice #, or supplier..." />
-        </div>
-        <div class="field" style="flex:1;min-width:180px;">
-            <label for="supplierId">Supplier</label>
-            <select id="supplierId" name="supplierId">
-                <option value="">All Suppliers</option>
-                @foreach (var supplier in Model.Suppliers)
-                {
-                    <option value="@supplier.Id" selected="@(Model.SupplierId == supplier.Id)">@supplier.Name</option>
-                }
-            </select>
-        </div>
-        <div class="field" style="flex:1;min-width:180px;">
-            <label for="expenseCategoryId">Expense Category</label>
-            <select id="expenseCategoryId" name="expenseCategoryId">
-                <option value="">All Categories</option>
-                @foreach (var category in Model.ExpenseCategories)
-                {
-                    <option value="@category.Id" selected="@(Model.ExpenseCategoryId == category.Id)">@category.Name</option>
-                }
-            </select>
-        </div>
-        <div class="field" style="flex:1;min-width:160px;">
-            <label for="purchaseOriginTypeId">Origin Type</label>
-            <select id="purchaseOriginTypeId" name="purchaseOriginTypeId">
-                <option value="">All Origins</option>
-                @foreach (var originType in Model.OriginTypes)
-                {
-                    <option value="@originType.Id" selected="@(Model.PurchaseOriginTypeId == originType.Id)">
-                        @(originType.Id == 2 ? "EU Reverse Charge" : originType.Id == 3 ? "Non-EU" : originType.Id == 4 ? "EU Paid" : originType.Name)
-                    </option>
-                }
-            </select>
-        </div>
-        <div class="field" style="flex:1;min-width:160px;">
-            <label for="purchaseTypeId">Purchase Type</label>
-            <select id="purchaseTypeId" name="purchaseTypeId">
-                <option value="">All Types</option>
-                @foreach (var purchaseType in Model.PurchaseTypes)
-                {
-                    <option value="@purchaseType.Id" selected="@(Model.PurchaseTypeId == purchaseType.Id)">@purchaseType.Name</option>
-                }
-            </select>
-        </div>
-        <div class="field" style="flex:1;min-width:180px;">
-            <label for="vatPeriodId">VAT Period</label>
-            <select id="vatPeriodId" name="vatPeriodId">
-                <option value="">All Periods</option>
-                @foreach (var period in Model.VatPeriods)
-                {
-                    <option value="@period.Id" selected="@(Model.VatPeriodId == period.Id)">
-                        @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
-                    </option>
-                }
-            </select>
-        </div>
-        <div class="field" style="flex:1;min-width:160px;">
-            <label for="dateFrom">Date From</label>
-            <input type="date" id="dateFrom" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
-        </div>
-        <div class="field" style="flex:1;min-width:160px;">
-            <label for="dateTo">Date To</label>
-            <input type="date" id="dateTo" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
-        </div>
-        <div style="display:flex;gap:10px;padding-bottom:2px;">
-            <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
-            <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+    <form method="get" asp-action="Index">
+        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="purchaseFilterPanel">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            Filters
+        </button>
+        <div class="filter-panel" id="purchaseFilterPanel" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+            <div class="field" style="flex:1;min-width:200px;">
+                <label for="searchTerm">Search</label>
+                <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" placeholder="Description, invoice #, or supplier..." />
+            </div>
+            <div class="field" style="flex:1;min-width:180px;">
+                <label for="supplierId">Supplier</label>
+                <select id="supplierId" name="supplierId">
+                    <option value="">All Suppliers</option>
+                    @foreach (var supplier in Model.Suppliers)
+                    {
+                        <option value="@supplier.Id" selected="@(Model.SupplierId == supplier.Id)">@supplier.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="flex:1;min-width:180px;">
+                <label for="expenseCategoryId">Expense Category</label>
+                <select id="expenseCategoryId" name="expenseCategoryId">
+                    <option value="">All Categories</option>
+                    @foreach (var category in Model.ExpenseCategories)
+                    {
+                        <option value="@category.Id" selected="@(Model.ExpenseCategoryId == category.Id)">@category.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="flex:1;min-width:160px;">
+                <label for="purchaseOriginTypeId">Origin Type</label>
+                <select id="purchaseOriginTypeId" name="purchaseOriginTypeId">
+                    <option value="">All Origins</option>
+                    @foreach (var originType in Model.OriginTypes)
+                    {
+                        <option value="@originType.Id" selected="@(Model.PurchaseOriginTypeId == originType.Id)">
+                            @(originType.Id == 2 ? "EU Reverse Charge" : originType.Id == 3 ? "Non-EU" : originType.Id == 4 ? "EU Paid" : originType.Name)
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="flex:1;min-width:160px;">
+                <label for="purchaseTypeId">Purchase Type</label>
+                <select id="purchaseTypeId" name="purchaseTypeId">
+                    <option value="">All Types</option>
+                    @foreach (var purchaseType in Model.PurchaseTypes)
+                    {
+                        <option value="@purchaseType.Id" selected="@(Model.PurchaseTypeId == purchaseType.Id)">@purchaseType.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="flex:1;min-width:180px;">
+                <label for="vatPeriodId">VAT Period</label>
+                <select id="vatPeriodId" name="vatPeriodId">
+                    <option value="">All Periods</option>
+                    @foreach (var period in Model.VatPeriods)
+                    {
+                        <option value="@period.Id" selected="@(Model.VatPeriodId == period.Id)">
+                            @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="flex:1;min-width:160px;">
+                <label for="dateFrom">Date From</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="field" style="flex:1;min-width:160px;">
+                <label for="dateTo">Date To</label>
+                <input type="date" id="dateTo" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div style="display:flex;gap:10px;padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+                <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+            </div>
         </div>
     </form>
 </section>
@@ -153,15 +159,15 @@
 <section class="glass card-pad">
     @if (Model.Purchases != null && Model.Purchases.Count > 0)
     {
+        <div class="table-responsive index-table">
         <div class="scroll-hint">← Scroll horizontally →</div>
-        <div class="table-responsive">
         <table id="purchaseTable">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Supplier</th>
-                    <th>Category</th>
                     <th>Description</th>
+                    <th>Supplier</th>
+                    <th>Date</th>
+                    <th>Category</th>
                     <th style="text-align:right;">Excl. VAT</th>
                     <th style="text-align:right;">VAT</th>
                     <th style="text-align:right;">Total</th>
@@ -175,14 +181,47 @@
                 @foreach (var purchase in Model.Purchases)
                 {
                     <tr>
-                        <td>@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
-                        <td><strong>@purchase.Supplier?.Name</strong></td>
-                        <td>@purchase.ExpenseCategory?.Name</td>
-                        <td>@purchase.Description</td>
-                        <td style="text-align:right;font-weight:600;">@Model.CurrencySymbol@purchase.AmountExcludingVat.ToString("N2")</td>
-                        <td style="text-align:right;">@Model.CurrencySymbol@purchase.VatAmount.ToString("N2")</td>
-                        <td style="text-align:right;font-weight:700;">@Model.CurrencySymbol@purchase.TotalAmount.ToString("N2")</td>
                         <td>
+                            <strong>@(string.IsNullOrWhiteSpace(purchase.Description) ? purchase.ExpenseCategory?.Name ?? "Purchase" : purchase.Description)</strong>
+                            <div style="font-size:11px;color:#5a6a7a;margin-top:2px;">@purchase.InvoiceDate.ToString("dd MMM yyyy")</div>
+                        </td>
+                        <td>@purchase.Supplier?.Name</td>
+                        <td data-mobile="hide">@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
+                        <td data-mobile="hide">@purchase.ExpenseCategory?.Name</td>
+                        <td data-mobile="hide" style="text-align:right;font-weight:600;">@Model.CurrencySymbol@purchase.AmountExcludingVat.ToString("N2")</td>
+                        <td data-mobile="hide" style="text-align:right;">@Model.CurrencySymbol@purchase.VatAmount.ToString("N2")</td>
+                        <td data-mobile="amount" style="text-align:right;font-weight:700;">@Model.CurrencySymbol@purchase.TotalAmount.ToString("N2")</td>
+                        <td data-mobile="status">
+                            @if (purchase.IsCancelled)
+                            {
+                                <span class="pill pill-red">Cancelled</span>
+                            }
+                            else if (purchase.PurchaseOriginTypeId == 2)
+                            {
+                                <span class="pill pill-blue">EU RC</span>
+                            }
+                            else if (purchase.PurchaseOriginTypeId == 3)
+                            {
+                                <span class="pill pill-gold">Non-EU</span>
+                            }
+                            else if (purchase.PurchaseOriginTypeId == 4)
+                            {
+                                <span class="pill pill-cyan">EU Paid</span>
+                            }
+                            else if (purchase.PurchaseTypeId == 1)
+                            {
+                                <span class="pill pill-blue">Asset</span>
+                            }
+                            else if (purchase.PurchaseTypeId == 2)
+                            {
+                                <span class="pill pill-green">Stock</span>
+                            }
+                            else if (purchase.PurchaseTypeId == 3)
+                            {
+                                <span class="pill pill-grey">Expense</span>
+                            }
+                        </td>
+                        <td data-mobile="hide">
                             @if (purchase.PurchaseOriginTypeId == 2)
                             {
                                 <span class="pill pill-blue">EU RC</span>
@@ -196,25 +235,7 @@
                                 <span class="pill pill-cyan">EU Paid</span>
                             }
                         </td>
-                        <td>
-                            @if (purchase.PurchaseTypeId == 1)
-                            {
-                                <span class="pill pill-blue">Asset</span>
-                            }
-                            else if (purchase.PurchaseTypeId == 2)
-                            {
-                                <span class="pill pill-green">Stock</span>
-                            }
-                            else if (purchase.PurchaseTypeId == 3)
-                            {
-                                <span class="pill pill-grey">Expense</span>
-                            }
-                        </td>
-                        <td>
-                            @if (purchase.IsCancelled)
-                            {
-                                <span class="pill pill-red">Cancelled</span>
-                            }
+                        <td data-mobile="hide">
                             @if (purchase.VatSubmissionPeriod != null
                                 && (purchase.InvoiceDate < purchase.VatSubmissionPeriod.PeriodStartDate
                                     || purchase.InvoiceDate > purchase.VatSubmissionPeriod.PeriodEndDate))
@@ -222,7 +243,7 @@
                                 <span class="pill pill-red" title="This purchase was reported in a different VAT period than its invoice date">Outdated — @purchase.VatSubmissionPeriod.PeriodLabel</span>
                             }
                         </td>
-                        <td style="white-space:nowrap;">
+                        <td data-mobile="hide" style="white-space:nowrap;">
                             <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
                             @if (!purchase.IsCancelled)
                             {

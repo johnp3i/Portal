@@ -10,10 +10,12 @@
         <h1 class="topbar-heading">Invoice List</h1>
         <p class="topbar-subtitle">Filter, review, and manage invoices with full financial traceability.</p>
     </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
         <a class="btn btn-primary" asp-action="Create" asp-controller="Invoice">Create Invoice</a>
-        <a class="btn btn-secondary" href="/Invoice/ExportCsv?status=@ViewBag.StatusFilter&financialStatus=@ViewBag.FinancialStatusFilter&customer=@ViewBag.CustomerFilter&search=@ViewBag.SearchTerm&vatPeriodId=@ViewBag.VatPeriodFilter">Export CSV</a>
-        <a class="btn btn-secondary" href="/Invoice/ExportPdf?status=@ViewBag.StatusFilter&financialStatus=@ViewBag.FinancialStatusFilter&customer=@ViewBag.CustomerFilter&search=@ViewBag.SearchTerm&vatPeriodId=@ViewBag.VatPeriodFilter">Export PDF</a>
+        <div class="topbar-actions-secondary" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="btn btn-secondary" href="/Invoice/ExportCsv?status=@ViewBag.StatusFilter&financialStatus=@ViewBag.FinancialStatusFilter&customer=@ViewBag.CustomerFilter&search=@ViewBag.SearchTerm&vatPeriodId=@ViewBag.VatPeriodFilter">Export CSV</a>
+            <a class="btn btn-secondary" href="/Invoice/ExportPdf?status=@ViewBag.StatusFilter&financialStatus=@ViewBag.FinancialStatusFilter&customer=@ViewBag.CustomerFilter&search=@ViewBag.SearchTerm&vatPeriodId=@ViewBag.VatPeriodFilter">Export PDF</a>
+        </div>
     </div>
 </div>
 
@@ -26,7 +28,11 @@
 
 <section class="glass card-pad">
     <form method="get" asp-action="Index" asp-controller="Invoice">
-        <div class="filter-panel" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="invoiceFilterPanel">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            Filters
+        </button>
+        <div class="filter-panel" id="invoiceFilterPanel" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
             <div class="field" style="min-width:180px;">
                 <label>Search</label>
                 <input type="text" name="search" placeholder="Search by invoice number or customer..." value="@ViewBag.SearchTerm" />
@@ -82,8 +88,8 @@
     <div style="margin-top:18px;">
         @if (Model != null && Model.Count > 0)
         {
+            <div class="table-responsive index-table">
             <div class="scroll-hint">← Scroll horizontally →</div>
-            <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -100,9 +106,9 @@
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        <tr>
+                        <tr data-href="@Url.Action("Detail", "Invoice", new { id = item.Id })">
                             <td>
-                                <strong>@item.InvoiceNumber</strong>
+                                <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" style="color:inherit;text-decoration:none;"><strong>@item.InvoiceNumber</strong></a>
                                 @if (item.AcceptanceStatus == "accepted")
                                 {
                                     <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>
@@ -113,10 +119,10 @@
                                 }
                             </td>
                             <td>@item.CustomerName</td>
-                            <td>@item.InvoiceDate.ToString("yyyy-MM-dd")</td>
-                            <td>@item.DueDate.ToString("yyyy-MM-dd")</td>
-                            <td>@(ViewBag.CurrencySymbol)@item.TotalAmount.ToString("N2")</td>
-                            <td>
+                            <td data-mobile="hide">@item.InvoiceDate.ToString("yyyy-MM-dd")</td>
+                            <td data-mobile="hide">@item.DueDate.ToString("yyyy-MM-dd")</td>
+                            <td data-mobile="amount">@(ViewBag.CurrencySymbol)@item.TotalAmount.ToString("N2")</td>
+                            <td data-mobile="status">
                                 @{
                                     var statusPillClass = item.InvoiceStatusTypeId switch
                                     {
@@ -128,7 +134,7 @@
                                 }
                                 <span class="pill @statusPillClass">@item.StatusName</span>
                             </td>
-                            <td>
+                            <td data-mobile="hide">
                                 @{
                                     var financialPillClass = item.InvoiceFinancialStatusTypeId switch
                                     {
@@ -142,7 +148,7 @@
                                 }
                                 <span class="pill @financialPillClass">@item.FinancialStatusName</span>
                             </td>
-                            <td style="white-space:nowrap;">
+                            <td data-mobile="hide" style="white-space:nowrap;">
                                 <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Detail</a>
                                 @if (item.InvoiceStatusTypeId == 1)
                                 {

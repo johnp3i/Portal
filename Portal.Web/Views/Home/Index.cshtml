@@ -1,4 +1,4 @@
-@model Portal.Infrastructure.Models.DashboardViewModel
+﻿@model Portal.Infrastructure.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
 }
@@ -28,7 +28,7 @@
 @if (Model.HasAnyKpiSection)
 {
 <!-- Quick Actions -->
-<div class="filter-panel" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+<div class="filter-panel quick-actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
     @if (Model.ShowQuotation)
     {
         <a asp-controller="Quotation" asp-action="Create" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d0d9e2;transition:all 0.15s;" onmouseover="this.style.background='var(--blue)';this.style.color='#fff';this.style.borderColor='var(--blue)';" onmouseout="this.style.background='#fff';this.style.color='var(--text)';this.style.borderColor='#d0d9e2';">New Quotation</a>
@@ -102,7 +102,7 @@
         <div class="gauge-track">
             <div class="gauge-fill" style="width:@(expensesPct)%;background:#0D5EA6;"></div>
         </div>
-        <div class="gauge-sub">@expensesPct% of revenue · @Model.ExpensesPurchaseCount purchases</div>
+        <div class="gauge-sub">@expensesPct% of revenue Â· @Model.ExpensesPurchaseCount purchases</div>
     </div>
     }
 </div>
@@ -154,7 +154,7 @@
         <h3 style="margin-bottom:16px;">Monthly Revenue vs Expenses</h3>
         @if (Model.RevenueVsExpenses.Any())
         {
-            <div style="position:relative;height:220px;max-width:100%;">
+            <div class="chart-container" style="position:relative;height:220px;max-width:100%;">
                 <canvas id="revenueVsExpensesChart"></canvas>
             </div>
         }
@@ -169,7 +169,7 @@
         <h3 style="margin-bottom:16px;">Invoice Status Breakdown</h3>
         @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
         {
-            <div style="position:relative;height:220px;max-width:100%;">
+            <div class="chart-container" style="position:relative;height:220px;max-width:100%;">
                 <canvas id="invoiceStatusChart"></canvas>
             </div>
         }
@@ -189,7 +189,7 @@ else if (Model.ShowRevenue)
         <h3 style="margin-bottom:16px;">Monthly Revenue vs Expenses</h3>
         @if (Model.RevenueVsExpenses.Any())
         {
-            <div style="position:relative;height:220px;max-width:100%;">
+            <div class="chart-container" style="position:relative;height:220px;max-width:100%;">
                 <canvas id="revenueVsExpensesChart"></canvas>
             </div>
         }
@@ -209,7 +209,7 @@ else if (Model.ShowInvoice)
         <h3 style="margin-bottom:16px;">Invoice Status Breakdown</h3>
         @if (Model.InvoiceStatusBreakdown.TotalCount > 0)
         {
-            <div style="position:relative;height:220px;max-width:100%;">
+            <div class="chart-container" style="position:relative;height:220px;max-width:100%;">
                 <canvas id="invoiceStatusChart"></canvas>
             </div>
         }
@@ -227,14 +227,14 @@ else if (Model.ShowInvoice)
 @if (Model.ShowInvoice && Model.ShowRevenue)
 {
 <div class="grid-2" style="margin-top:24px;">
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Recent Invoices</h3>
-            <a asp-controller="Invoice" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+            <a asp-controller="Invoice" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All â†’</a>
         </div>
         @if (Model.RecentInvoices.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -275,14 +275,14 @@ else if (Model.ShowInvoice)
         }
     </section>
 
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Overdue Invoices</h3>
-            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:#C24A4A;text-decoration:none;">View All →</a>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:#C24A4A;text-decoration:none;">View All â†’</a>
         </div>
         @if (Model.OverdueInvoices.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -307,7 +307,7 @@ else if (Model.ShowInvoice)
             </table>
             </div>
             <div style="margin-top:14px;padding:12px 16px;background:#FFF8F8;border-radius:10px;border:1px solid #FDEAEA;">
-                <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">⚠️ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
+                <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">âš ï¸ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
             </div>
         }
         else
@@ -322,14 +322,14 @@ else if (Model.ShowInvoice)
 else if (Model.ShowInvoice)
 {
 <div style="margin-top:24px;">
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Recent Invoices</h3>
-            <a asp-controller="Invoice" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+            <a asp-controller="Invoice" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All â†’</a>
         </div>
         @if (Model.RecentInvoices.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -374,14 +374,14 @@ else if (Model.ShowInvoice)
 else if (Model.ShowRevenue)
 {
 <div style="margin-top:24px;">
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Overdue Invoices</h3>
-            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:#C24A4A;text-decoration:none;">View All →</a>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:#C24A4A;text-decoration:none;">View All â†’</a>
         </div>
         @if (Model.OverdueInvoices.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -406,7 +406,7 @@ else if (Model.ShowRevenue)
             </table>
             </div>
             <div style="margin-top:14px;padding:12px 16px;background:#FFF8F8;border-radius:10px;border:1px solid #FDEAEA;">
-                <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">⚠️ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
+                <p style="font-size:13px;color:#C24A4A;font-weight:600;margin:0;">âš ï¸ @Model.TotalOverdueCount invoices are overdue totalling @Model.CurrencySymbol@Model.TotalOverdueAmount.ToString("N2")</p>
             </div>
         }
         else
@@ -423,14 +423,14 @@ else if (Model.ShowRevenue)
 @if (Model.ShowRevenue && Model.ShowQuotation)
 {
 <div class="grid-2" style="margin-top:24px;">
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Recent Payments</h3>
-            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">Revenue →</a>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">Revenue â†’</a>
         </div>
         @if (Model.RecentPayments.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -471,14 +471,14 @@ else if (Model.ShowRevenue)
         }
     </section>
 
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Recent Quotations</h3>
-            <a asp-controller="Quotation" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+            <a asp-controller="Quotation" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All â†’</a>
         </div>
         @if (Model.RecentQuotations.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -524,14 +524,14 @@ else if (Model.ShowRevenue)
 else if (Model.ShowRevenue)
 {
 <div style="margin-top:24px;">
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Recent Payments</h3>
-            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">Revenue →</a>
+            <a asp-controller="Revenue" asp-action="Dashboard" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">Revenue â†’</a>
         </div>
         @if (Model.RecentPayments.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -576,14 +576,14 @@ else if (Model.ShowRevenue)
 else if (Model.ShowQuotation)
 {
 <div style="margin-top:24px;">
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3>Recent Quotations</h3>
-            <a asp-controller="Quotation" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All →</a>
+            <a asp-controller="Quotation" asp-action="Index" style="font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;">View All â†’</a>
         </div>
         @if (Model.RecentQuotations.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -631,11 +631,11 @@ else if (Model.ShowQuotation)
 @if (Model.ShowRevenue)
 {
 <div class="grid-2" style="margin-top:24px;">
-    <section class="glass card-pad">
+    <section class="glass card-pad dashboard-card">
         <h3 style="margin-bottom:16px;">Top Customers <span style="font-size:12px;font-weight:400;color:var(--muted);">(Last 12 Months)</span></h3>
         @if (Model.TopCustomers.Any())
         {
-            <div class="scroll-hint">← Scroll horizontally →</div>
+            <div class="scroll-hint">â† Scroll horizontally â†’</div>
             <div class="table-responsive">
             <table>
                 <thead>
@@ -669,7 +669,7 @@ else if (Model.ShowQuotation)
         <h3 style="margin-bottom:16px;">Revenue by Customer</h3>
         @if (Model.TopCustomers.Any())
         {
-            <div style="position:relative;height:220px;max-width:100%;">
+            <div class="chart-container" style="position:relative;height:220px;max-width:100%;">
                 <canvas id="topCustomersChart"></canvas>
             </div>
         }

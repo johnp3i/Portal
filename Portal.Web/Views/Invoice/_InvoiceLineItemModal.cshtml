@@ -37,19 +37,19 @@
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
                 <div class="field">
                     <label for="invoiceLineModalQuantity">Quantity *</label>
-                    <input type="number" id="invoiceLineModalQuantity" name="quantity" step="0.0001" min="0.0001" required placeholder="1" />
+                    <input type="number" id="invoiceLineModalQuantity" name="quantity" step="0.0001" min="0.0001" required placeholder="1" inputmode="decimal" />
                 </div>
                 <div class="field">
                     <label for="invoiceLineModalUnitPrice">Unit Price *</label>
-                    <input type="number" id="invoiceLineModalUnitPrice" name="unitPrice" step="0.01" min="0" required placeholder="0.00" />
+                    <input type="number" id="invoiceLineModalUnitPrice" name="unitPrice" step="0.01" min="0" required placeholder="0.00" inputmode="decimal" />
                 </div>
                 <div class="field">
                     <label for="invoiceLineModalVatRate">VAT %</label>
-                    <input type="number" id="invoiceLineModalVatRate" name="vatRate" step="0.01" min="0" max="100" required placeholder="0" />
+                    <input type="number" id="invoiceLineModalVatRate" name="vatRate" step="0.01" min="0" max="100" required placeholder="0" inputmode="decimal" />
                 </div>
                 <div class="field">
                     <label for="invoiceLineModalCostPrice">Cost Price</label>
-                    <input type="number" id="invoiceLineModalCostPrice" name="costPrice" step="0.01" min="0" placeholder="Optional" />
+                    <input type="number" id="invoiceLineModalCostPrice" name="costPrice" step="0.01" min="0" placeholder="Optional" inputmode="decimal" />
                 </div>
             </div>
 
@@ -57,7 +57,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
                 <div class="field">
                     <label for="invoiceLineModalDiscount">Discount</label>
-                    <input type="number" id="invoiceLineModalDiscount" name="discount" step="0.01" min="0" placeholder="0" />
+                    <input type="number" id="invoiceLineModalDiscount" name="discount" step="0.01" min="0" placeholder="0" inputmode="decimal" />
                 </div>
                 <div class="field">
                     <label for="invoiceLineModalDiscountType">Discount Type</label>

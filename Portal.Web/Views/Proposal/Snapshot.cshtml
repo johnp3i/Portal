@@ -377,6 +377,21 @@
             text-decoration: none;
         }
         .btn-download:hover { background: var(--blue-dark); }
+        .btn-print {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #fff;
+            color: var(--blue);
+            font-size: 14px;
+            font-weight: 700;
+            border: 1.5px solid var(--blue);
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-print:hover { background: #f0f7ff; }
 
         /* Print styles */
         @@page {
@@ -466,6 +481,10 @@
 
     <!-- Download bar (visible to customer, hidden in print) -->
     <div class="download-bar">
+        <button class="btn-print" onclick="printPage()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print
+        </button>
         <button class="btn-download" onclick="downloadQuotationPdf()">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
             Download PDF
@@ -483,6 +502,10 @@
     <style>@@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
 
     <script>
+        function printPage() {
+            window.print();
+        }
+
         function showPdfOverlay() {
             var el = document.getElementById('pdfBlockOverlay');
             el.style.display = 'flex';

@@ -35,45 +35,45 @@
 <section class="glass card-pad">
     @if (Model.Items.Any())
     {
-        <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
-        <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var supplier in Model.Items)
-                {
-                    <tr id="supplier-row-@supplier.Id">
-                        <td><strong>@supplier.Name</strong></td>
-                        <td>
-                            @if (supplier.IsActive)
-                            {
-                                <span class="pill pill-green">Active</span>
-                            }
-                            else
-                            {
-                                <span class="pill pill-red">Inactive</span>
-                            }
-                        </td>
-                        <td>@supplier.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
-                        <td style="white-space:nowrap;">
-                            <button type="button" class="tbl-action tbl-action--primary" onclick="openEditModal(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Edit</button>
-                            @if (supplier.IsActive)
-                            {
-                                <a href="/Supplier/Dashboard/@supplier.Id" target="_blank" class="tbl-action tbl-action--primary">Dashboard</a>
-                                <button type="button" class="tbl-action tbl-action--danger" onclick="confirmDeactivate(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Deactivate</button>
-                            }
-                        </td>
+        <div class="table-responsive index-table">
+            <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var supplier in Model.Items)
+                    {
+                        <tr id="supplier-row-@supplier.Id">
+                            <td><strong>@supplier.Name</strong></td>
+                            <td data-mobile="status">
+                                @if (supplier.IsActive)
+                                {
+                                    <span class="pill pill-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-red">Inactive</span>
+                                }
+                            </td>
+                            <td data-mobile="hide">@supplier.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                            <td data-mobile="hide" style="white-space:nowrap;">
+                                <button type="button" class="tbl-action tbl-action--primary" onclick="openEditModal(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Edit</button>
+                                @if (supplier.IsActive)
+                                {
+                                    <a href="/Supplier/Dashboard/@supplier.Id" target="_blank" class="tbl-action tbl-action--primary">Dashboard</a>
+                                    <button type="button" class="tbl-action tbl-action--danger" onclick="confirmDeactivate(@supplier.Id, '@supplier.Name.Replace("'", "\\'")')">Deactivate</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
         @await Html.PartialAsync("_PagingControl")
     }

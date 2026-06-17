@@ -20,7 +20,7 @@
         <h1 class="topbar-heading">Revenue Dashboard</h1>
         <p class="topbar-subtitle">Track outstanding receivables, overdue invoices, and payment activity.</p>
     </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
         <a class="btn btn-outline" asp-action="Receivables" asp-controller="Revenue">View Receivables</a>
         <a class="btn btn-outline" asp-action="Index" asp-controller="Statement">Customer Statement</a>
         <a href="javascript:void(0)" class="btn btn-primary" onclick="openPaymentModalWithSelector()">Record Payment</a>
@@ -28,7 +28,7 @@
 </div>
 
 <!-- Row 1: KPI Cards -->
-<section class="gauge-row" style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
+<section class="gauge-row revenue-kpi-row" style="display:flex;gap:22px;margin-bottom:22px;flex-wrap:wrap;">
     <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #0D5EA6;">
         <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Outstanding Receivables</p>
         <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#0D5EA6;margin:0 0 4px 0;">@currency@kpi.OutstandingReceivables.ToString("N2")</h2>

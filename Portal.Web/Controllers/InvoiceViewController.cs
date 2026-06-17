@@ -64,8 +64,11 @@ public class InvoiceViewController : Controller
             html = html.Insert(headClose, dependencyScripts);
         }
 
-        // Inject Download PDF button with download script
-        var downloadButton = $@"<div class=""no-print"" style=""text-align:right;margin-bottom:16px;"">
+        // Inject Download PDF and Print buttons with download script
+        var downloadButton = $@"<div class=""no-print"" style=""display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px;"">
+            <button onclick=""window.print()"" style=""display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;color:#0D5EA6;border:1.5px solid #0D5EA6;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;"">
+                &#x1F5B6; Print
+            </button>
             <button onclick=""downloadInvoicePdf()"" style=""display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(180deg,#1A6BB8 0%, #0D5EA6 100%);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;"">
                 &#x2B73; Download PDF
             </button>
