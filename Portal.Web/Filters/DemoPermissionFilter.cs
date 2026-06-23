@@ -15,23 +15,6 @@ public class DemoPermissionFilter : IAsyncAuthorizationFilter
 {
     private readonly IDemoInvitationService _demoService;
 
-    /// <summary>
-    /// Maps module names to the controller names that belong to each module.
-    /// Used to resolve which module a given controller belongs to.
-    /// </summary>
-    private static readonly Dictionary<string, string[]> ModuleControllers = new()
-    {
-        [PortalModules.Customer] = new[] { "Customer", "Customers" },
-        [PortalModules.Quotation] = new[] { "Quotation", "Quotations", "Proposal" },
-        [PortalModules.Invoice] = new[] { "Invoice", "Invoices" },
-        [PortalModules.Revenue] = new[] { "Payment", "Payments", "Revenue" },
-        [PortalModules.Purchase] = new[] { "Purchase", "Purchases", "Supplier", "Expense" },
-        [PortalModules.Vat] = new[] { "Vat", "VatSubmission" },
-        [PortalModules.Credit] = new[] { "CreditNote", "CreditNotes" },
-        [PortalModules.Audit] = new[] { "AuditLog", "Audit" },
-        [PortalModules.Products] = new[] { "Product", "Products" }
-    };
-
     public DemoPermissionFilter(IDemoInvitationService demoService)
     {
         _demoService = demoService;
@@ -68,9 +51,7 @@ public class DemoPermissionFilter : IAsyncAuthorizationFilter
             return;
         }
         // Resolve the module from the controller name
-        var module = ModuleControllers
-            .FirstOrDefault(kv => kv.Value.Contains(controllerName, StringComparer.OrdinalIgnoreCase))
-            .Key;
+        var module = ModuleControllerMap.ResolveModule(controllerName);
 
         // Not a module controller (Home, Account, Demo, etc.) — allow through
         if (module == null)

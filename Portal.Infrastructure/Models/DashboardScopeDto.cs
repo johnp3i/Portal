@@ -14,6 +14,7 @@ public class DashboardScopeDto
     public bool ShowPurchase { get; set; }
     public bool ShowVat { get; set; }
     public bool ShowCustomer { get; set; }
+    public bool ShowPnlTeaser { get; set; }
 
     /// <summary>
     /// Returns true if at least one KPI-bearing module is visible.
@@ -31,7 +32,8 @@ public class DashboardScopeDto
         ShowQuotation = true,
         ShowPurchase = true,
         ShowVat = true,
-        ShowCustomer = true
+        ShowCustomer = true,
+        ShowPnlTeaser = false
     };
 
     /// <summary>
@@ -51,7 +53,8 @@ public class DashboardScopeDto
             ShowQuotation = isVisible(PortalModules.Quotation),
             ShowPurchase = isVisible(PortalModules.Purchase),
             ShowVat = isVisible(PortalModules.Vat),
-            ShowCustomer = isVisible(PortalModules.Customer)
+            ShowCustomer = isVisible(PortalModules.Customer),
+            ShowPnlTeaser = !isVisible(PortalModules.Pnl)
         };
     }
 }

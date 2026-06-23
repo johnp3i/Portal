@@ -185,6 +185,7 @@ builder.Services.AddScoped<IQuotationService, QuotationService>();
 builder.Services.AddScoped<IInvitationService, InvitationService>();
 builder.Services.AddScoped<IEmailService, PortalEmailService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IPlanCheckService, PlanCheckService>();
 builder.Services.AddScoped<ILogoService, LogoService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddScoped<IProposalRenderer, ProposalRenderer>();
@@ -225,6 +226,13 @@ builder.Services.AddScoped<VatSubmissionRepository>(sp =>
     new VatSubmissionRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IVatPeriodGenerationService, VatPeriodGenerationService>();
 builder.Services.AddScoped<IVatSubmissionService, VatSubmissionService>();
+
+// P&L services
+builder.Services.AddScoped<IPnlService, PnlService>();
+builder.Services.AddScoped<IPnlPdfService, PnlPdfService>();
+
+// Expense Insights
+builder.Services.AddScoped<IExpenseInsightsService, ExpenseInsightsService>();
 
 // --- reCAPTCHA ---
 builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();
@@ -297,6 +305,8 @@ var mvcBuilder = builder.Services.AddControllersWithViews(options =>
     options.Filters.Add<Portal.Web.Filters.SetupWizardRedirectFilter>();
     options.Filters.Add<Portal.Web.Filters.SubscriptionWarningResultFilter>();
     options.Filters.Add<Portal.Web.Filters.DemoPermissionFilter>();
+    options.Filters.Add<Portal.Web.Filters.PlanPermissionFilter>();
+    options.Filters.Add<Portal.Web.Filters.UserPermissionFilter>();
 });
 
 if (builder.Environment.IsDevelopment())

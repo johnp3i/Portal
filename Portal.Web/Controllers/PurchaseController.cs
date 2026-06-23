@@ -24,6 +24,7 @@ public class PurchaseController : Controller
     private readonly ICurrentTenantService _currentTenantService;
     private readonly PortalDbContext _dbContext;
     private readonly IViewRenderService _viewRenderService;
+    private readonly IPlanCheckService _planCheckService;
 
     public PurchaseController(
         IPurchaseService purchaseService,
@@ -31,7 +32,8 @@ public class PurchaseController : Controller
         IExpenseCategoryService expenseCategoryService,
         ICurrentTenantService currentTenantService,
         PortalDbContext dbContext,
-        IViewRenderService viewRenderService)
+        IViewRenderService viewRenderService,
+        IPlanCheckService planCheckService)
     {
         _purchaseService = purchaseService;
         _supplierService = supplierService;
@@ -39,6 +41,7 @@ public class PurchaseController : Controller
         _currentTenantService = currentTenantService;
         _dbContext = dbContext;
         _viewRenderService = viewRenderService;
+        _planCheckService = planCheckService;
     }
 
     [HttpGet]
@@ -70,6 +73,23 @@ public class PurchaseController : Controller
             .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
         var currencySymbol = profile?.CurrencySymbol ?? "€";
 
+        // Determine if Expense Insights teaser should be shown (Starter plan users only)
+        var showExpenseInsightsTeaser = false;
+        try
+        {
+            var hasActiveSubscription = await _planCheckService.HasActiveSubscriptionAsync();
+            if (hasActiveSubscription)
+            {
+                var hasExpenseInsights = await _planCheckService.IsModuleInPlanAsync(PortalModules.ExpenseInsights);
+                showExpenseInsightsTeaser = !hasExpenseInsights;
+            }
+        }
+        catch (Exception ex)
+        {
+            // If plan check fails, do not show teaser
+            showExpenseInsightsTeaser = false;
+        }
+
         var model = new PurchaseListViewModel
         {
             Purchases = purchases,
@@ -86,7 +106,8 @@ public class PurchaseController : Controller
             VatPeriodId = vatPeriodId,
             DateFrom = dateFrom,
             DateTo = dateTo,
-            SearchTerm = searchTerm
+            SearchTerm = searchTerm,
+            ShowExpenseInsightsTeaser = showExpenseInsightsTeaser
         };
 
         return View(model);

@@ -1,0 +1,747 @@
+@using Portal.Infrastructure.Models
+@model PnlViewModel
+@{
+    ViewData["Title"] = "Profit & Loss";
+}
+
+<style>
+    /* ===== PERIOD SELECTOR ===== */
+    .period-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .period-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .period-btn {
+        padding: 8px 18px;
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1.5px solid #0D5EA6;
+        background: transparent;
+        color: #0D5EA6;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+    .period-btn:hover {
+        background: rgba(13,94,166,.06);
+    }
+    .period-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+    .custom-range {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .custom-range.visible {
+        display: flex;
+    }
+    .custom-range label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #5a6a7a;
+    }
+    .custom-range input[type="date"] {
+        padding: 7px 12px;
+        border: 1.5px solid #d0dbe5;
+        border-radius: 10px;
+        font-size: 13px;
+        font-family: Inter, sans-serif;
+        color: #0B1B28;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .custom-range input[type="date"]:focus {
+        border-color: #0D5EA6;
+    }
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1.5px solid #0D5EA6;
+        background: transparent;
+        color: #0D5EA6;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+    .btn-export:hover {
+        background: rgba(13,94,166,.06);
+    }
+    .btn-export svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    /* ===== SUMMARY CARDS ===== */
+    .pnl-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .pnl-summary-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(13,94,166,.07);
+        border: 1px solid rgba(13,94,166,.08);
+        padding: 20px 18px;
+        border-left: 4px solid transparent;
+        position: relative;
+    }
+    .pnl-summary-card.blue-accent { border-left-color: #0D5EA6; }
+    .pnl-summary-card.green-accent { border-left-color: #129867; }
+    .pnl-summary-card.amber-accent { border-left-color: #C8912E; }
+
+    .pnl-summary-card .label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #5a6a7a;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 8px;
+    }
+    .pnl-summary-card .amount {
+        font-family: Manrope, sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: #0B1B28;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+    }
+    .pnl-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 50px;
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+    .pnl-badge.green {
+        background: rgba(18,152,103,.10);
+        color: #129867;
+    }
+    .pnl-badge.red {
+        background: rgba(194,74,74,.10);
+        color: #C24A4A;
+    }
+    .pnl-badge.neutral {
+        background: rgba(90,106,122,.08);
+        color: #5a6a7a;
+    }
+
+    /* ===== BREAKDOWN TABLE ===== */
+    .pnl-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    .pnl-table thead th {
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #5a6a7a;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 2px solid rgba(13,94,166,.08);
+    }
+    .pnl-table thead th:nth-child(3),
+    .pnl-table thead th:nth-child(4) {
+        text-align: right;
+    }
+    .pnl-table tbody td {
+        padding: 11px 14px;
+        border-bottom: 1px solid rgba(13,94,166,.05);
+        vertical-align: middle;
+    }
+    .pnl-table tbody td:nth-child(3),
+    .pnl-table tbody td:nth-child(4) {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    .pnl-table .section-header td {
+        padding-top: 18px;
+        padding-bottom: 8px;
+        font-weight: 700;
+        font-size: 13px;
+        color: #0D5EA6;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid rgba(13,94,166,.12);
+        background: transparent;
+    }
+    .pnl-table .subtotal td {
+        font-weight: 700;
+        background: #EEF4F8;
+        border-bottom: 1px solid rgba(13,94,166,.10);
+    }
+    .pnl-table .grand-total td {
+        font-weight: 800;
+        font-size: 15px;
+        background: rgba(13,94,166,.04);
+        border-top: 2px solid rgba(13,94,166,.15);
+        border-bottom: none;
+    }
+    .type-pill {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #EEF4F8;
+        color: #5a6a7a;
+    }
+
+    /* ===== TREND COMPARISON ===== */
+    .trend-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    .trend-table thead th {
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #5a6a7a;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 2px solid rgba(13,94,166,.08);
+    }
+    .trend-table thead th:nth-child(2),
+    .trend-table thead th:nth-child(3),
+    .trend-table thead th:nth-child(4) {
+        text-align: right;
+    }
+    .trend-table tbody td {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(13,94,166,.05);
+    }
+    .trend-table tbody td:nth-child(2),
+    .trend-table tbody td:nth-child(3),
+    .trend-table tbody td:nth-child(4) {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    .trend-table tbody tr:last-child td {
+        border-bottom: none;
+        font-weight: 700;
+    }
+    .change-up {
+        font-weight: 600;
+    }
+    .change-down {
+        font-weight: 600;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .pnl-empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #5a6a7a;
+        font-size: 15px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 1100px) {
+        .pnl-summary-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    @@media (max-width: 768px) {
+        .pnl-summary-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        .period-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .period-tabs {
+            justify-content: center;
+        }
+        .btn-export {
+            align-self: flex-end;
+        }
+        .pnl-table, .trend-table {
+            min-width: 560px;
+        }
+    }
+    @@media (max-width: 480px) {
+        .pnl-summary-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Financial Reports</div>
+        <h1 class="topbar-heading">Profit &amp; Loss</h1>
+        <p class="topbar-subtitle">Understand your revenue, costs, and profitability at a glance.</p>
+    </div>
+</div>
+
+<!-- Period Selector Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="period-row">
+        <div class="period-tabs">
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.CurrentMonth ? "active" : "")" data-period="CurrentMonth">Current Month</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.PreviousMonth ? "active" : "")" data-period="PreviousMonth">Previous Month</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.CurrentQuarter ? "active" : "")" data-period="CurrentQuarter">Current Quarter</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.CurrentYear ? "active" : "")" data-period="CurrentYear">Current Year</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.Custom ? "active" : "")" data-period="Custom" id="customBtn">Custom</button>
+        </div>
+        <button type="button" class="btn-export" id="btnExportPdf">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export PDF
+        </button>
+    </div>
+    <div class="custom-range @(Model.SelectedPeriod == PnlPeriodType.Custom ? "visible" : "")" id="customRange">
+        <label>From</label>
+        <input type="date" id="pnlStartDate" value="@(Model.CustomStartDate ?? "")" />
+        <label>To</label>
+        <input type="date" id="pnlEndDate" value="@(Model.CustomEndDate ?? "")" />
+        <button type="button" class="btn btn-primary" id="btnApplyCustomRange" style="padding:7px 16px;font-size:13px;">Apply</button>
+    </div>
+</section>
+
+@if (!Model.Summary.HasData)
+{
+    <!-- Empty State -->
+    <section class="glass card-pad">
+        <div class="pnl-empty-state">
+            <p>No financial data exists for this period.</p>
+        </div>
+    </section>
+}
+else
+{
+    <!-- Summary Cards Grid -->
+    <div class="pnl-summary-grid">
+        <!-- Revenue -->
+        <div class="pnl-summary-card blue-accent">
+            <div class="label">Revenue</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.Revenue.ToString("N2")</div>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.RevenueChange.HasValue)
+            {
+                var revenueChange = Model.Summary.Trend.RevenueChange.Value;
+                var revenueIsUp = revenueChange >= 0;
+                <!-- Revenue up = good (green), down = bad (red) -->
+                <span class="pnl-badge @(revenueIsUp ? "green" : "red")">
+                    @(revenueIsUp ? "\u2191" : "\u2193") @Math.Abs(revenueChange).ToString("N1")% vs last year
+                </span>
+            }
+        </div>
+
+        <!-- COGS -->
+        <div class="pnl-summary-card amber-accent">
+            <div class="label">COGS</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.Cogs.ToString("N2")</div>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.CogsChange.HasValue)
+            {
+                var cogsChange = Model.Summary.Trend.CogsChange.Value;
+                var cogsIsUp = cogsChange >= 0;
+                <!-- COGS up = bad (red), down = good (green) -->
+                <span class="pnl-badge @(cogsIsUp ? "red" : "green")">
+                    @(cogsIsUp ? "\u2191" : "\u2193") @Math.Abs(cogsChange).ToString("N1")% vs last year
+                </span>
+            }
+        </div>
+
+        <!-- Gross Profit -->
+        <div class="pnl-summary-card green-accent">
+            <div class="label">Gross Profit</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.GrossProfit.ToString("N2")</div>
+            <span class="pnl-badge neutral">Margin: @Model.Summary.GrossMargin.ToString("N1")%</span>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.GrossProfitChange.HasValue)
+            {
+                var gpChange = Model.Summary.Trend.GrossProfitChange.Value;
+                var gpIsUp = gpChange >= 0;
+                <!-- Gross Profit up = good (green), down = bad (red) -->
+                <span class="pnl-badge @(gpIsUp ? "green" : "red")" style="margin-left:4px;">
+                    @(gpIsUp ? "\u2191" : "\u2193") @Math.Abs(gpChange).ToString("N1")%
+                </span>
+            }
+        </div>
+
+        <!-- Operating Expenses -->
+        <div class="pnl-summary-card amber-accent">
+            <div class="label">Operating Expenses</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.OperatingExpenses.ToString("N2")</div>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.OperatingExpensesChange.HasValue)
+            {
+                var opexChange = Model.Summary.Trend.OperatingExpensesChange.Value;
+                var opexIsUp = opexChange >= 0;
+                <!-- OpEx up = bad (red), down = good (green) -->
+                <span class="pnl-badge @(opexIsUp ? "red" : "green")">
+                    @(opexIsUp ? "\u2191" : "\u2193") @Math.Abs(opexChange).ToString("N1")% vs last year
+                </span>
+            }
+        </div>
+
+        <!-- Net Profit -->
+        <div class="pnl-summary-card green-accent">
+            <div class="label">Net Profit</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.NetProfit.ToString("N2")</div>
+            <span class="pnl-badge neutral">Margin: @Model.Summary.NetMargin.ToString("N1")%</span>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.NetProfitChange.HasValue)
+            {
+                var npChange = Model.Summary.Trend.NetProfitChange.Value;
+                var npIsUp = npChange >= 0;
+                <!-- Net Profit up = good (green), down = bad (red) -->
+                <span class="pnl-badge @(npIsUp ? "green" : "red")" style="margin-left:4px;">
+                    @(npIsUp ? "\u2191" : "\u2193") @Math.Abs(npChange).ToString("N1")%
+                </span>
+            }
+        </div>
+    </div>
+
+    <!-- Breakdown Table Card -->
+    <section class="glass card-pad">
+        <h3 style="font-size:17px;margin-bottom:18px;color:#0B1B28;font-family:Manrope,sans-serif;font-weight:700;">Expense Breakdown by Category</h3>
+        <table class="pnl-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>% of Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var cogsItems = Model.Summary.CategoryBreakdown.Where(c => c.PurchaseTypeId == 2).ToList();
+                    var opexItems = Model.Summary.CategoryBreakdown.Where(c => c.PurchaseTypeId == 3).ToList();
+                    var cogsSubtotal = cogsItems.Sum(c => c.TotalAmount);
+                    var opexSubtotal = opexItems.Sum(c => c.TotalAmount);
+                    var cogsPercentage = cogsItems.Sum(c => c.PercentageOfTotal);
+                    var opexPercentage = opexItems.Sum(c => c.PercentageOfTotal);
+                    var grandTotal = cogsSubtotal + opexSubtotal;
+                }
+
+                <!-- COGS Section -->
+                @if (cogsItems.Any())
+                {
+                    <tr class="section-header">
+                        <td colspan="4">Cost of Goods Sold</td>
+                    </tr>
+                    @foreach (var item in cogsItems)
+                    {
+                        <tr>
+                            <td>@item.CategoryName</td>
+                            <td><span class="type-pill">@item.ExpenseTypeName</span></td>
+                            <td>@Model.CurrencySymbol@item.TotalAmount.ToString("N2")</td>
+                            <td>@item.PercentageOfTotal.ToString("N1")%</td>
+                        </tr>
+                    }
+                    <tr class="subtotal">
+                        <td>COGS Subtotal</td>
+                        <td></td>
+                        <td>@Model.CurrencySymbol@cogsSubtotal.ToString("N2")</td>
+                        <td>@cogsPercentage.ToString("N1")%</td>
+                    </tr>
+                }
+
+                <!-- Operating Expenses Section -->
+                @if (opexItems.Any())
+                {
+                    <tr class="section-header">
+                        <td colspan="4">Operating Expenses</td>
+                    </tr>
+                    @foreach (var item in opexItems)
+                    {
+                        <tr>
+                            <td>@item.CategoryName</td>
+                            <td><span class="type-pill">@item.ExpenseTypeName</span></td>
+                            <td>@Model.CurrencySymbol@item.TotalAmount.ToString("N2")</td>
+                            <td>@item.PercentageOfTotal.ToString("N1")%</td>
+                        </tr>
+                    }
+                    <tr class="subtotal">
+                        <td>OpEx Subtotal</td>
+                        <td></td>
+                        <td>@Model.CurrencySymbol@opexSubtotal.ToString("N2")</td>
+                        <td>@opexPercentage.ToString("N1")%</td>
+                    </tr>
+                }
+
+                <!-- Grand Total -->
+                <tr class="grand-total">
+                    <td>Total Expenses</td>
+                    <td></td>
+                    <td>@Model.CurrencySymbol@grandTotal.ToString("N2")</td>
+                    <td>100%</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Trend Comparison Card -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <h3 style="font-size:17px;margin-bottom:18px;color:#0B1B28;font-family:Manrope,sans-serif;font-weight:700;">Year-over-Year Comparison</h3>
+        @if (Model.Summary.Trend == null)
+        {
+            <p style="color:#5a6a7a;font-size:14px;">No comparison data available for this period.</p>
+        }
+        else
+        {
+            <table class="trend-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>This Period</th>
+                        <th>Same Period Last Year</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Revenue -->
+                    <tr>
+                        <td>Revenue</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Revenue.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousRevenue.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.RevenueChange.HasValue)
+                            {
+                                var rc = Model.Summary.Trend.RevenueChange.Value;
+                                <!-- Revenue up = good (green), down = bad (red) -->
+                                <span class="change-up" style="color:@(rc >= 0 ? "#129867" : "#C24A4A")">
+                                    @(rc >= 0 ? "\u2191" : "\u2193") @Math.Abs(rc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- COGS -->
+                    <tr>
+                        <td>COGS</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Cogs.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousCogs.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.CogsChange.HasValue)
+                            {
+                                var cc = Model.Summary.Trend.CogsChange.Value;
+                                <!-- COGS up = bad (red), down = good (green) -->
+                                <span class="change-up" style="color:@(cc >= 0 ? "#C24A4A" : "#129867")">
+                                    @(cc >= 0 ? "\u2191" : "\u2193") @Math.Abs(cc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- Gross Profit -->
+                    <tr>
+                        <td>Gross Profit</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.GrossProfit.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousGrossProfit.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.GrossProfitChange.HasValue)
+                            {
+                                var gpc = Model.Summary.Trend.GrossProfitChange.Value;
+                                <!-- Gross Profit up = good (green), down = bad (red) -->
+                                <span class="change-up" style="color:@(gpc >= 0 ? "#129867" : "#C24A4A")">
+                                    @(gpc >= 0 ? "\u2191" : "\u2193") @Math.Abs(gpc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- Operating Expenses -->
+                    <tr>
+                        <td>Operating Expenses</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.OperatingExpenses.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousOperatingExpenses.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.OperatingExpensesChange.HasValue)
+                            {
+                                var oec = Model.Summary.Trend.OperatingExpensesChange.Value;
+                                <!-- OpEx up = bad (red), down = good (green) -->
+                                <span class="change-up" style="color:@(oec >= 0 ? "#C24A4A" : "#129867")">
+                                    @(oec >= 0 ? "\u2191" : "\u2193") @Math.Abs(oec).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- Net Profit -->
+                    <tr>
+                        <td>Net Profit</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.NetProfit.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousNetProfit.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.NetProfitChange.HasValue)
+                            {
+                                var npc = Model.Summary.Trend.NetProfitChange.Value;
+                                <!-- Net Profit up = good (green), down = bad (red) -->
+                                <span class="change-up" style="color:@(npc >= 0 ? "#129867" : "#C24A4A")">
+                                    @(npc >= 0 ? "\u2191" : "\u2193") @Math.Abs(npc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@section Scripts {
+<script>
+    (function () {
+        // --- Period Button Click: Navigate with query params ---
+        document.querySelectorAll('.period-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var period = btn.dataset.period;
+
+                // Update active state visually
+                document.querySelectorAll('.period-btn').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+
+                var customRange = document.getElementById('customRange');
+                if (period === 'Custom') {
+                    customRange.classList.add('visible');
+                    // Don't navigate yet — wait for Apply button
+                    return;
+                }
+
+                customRange.classList.remove('visible');
+
+                // Navigate to same page with period param
+                window.location.href = '/ProfitLoss?period=' + encodeURIComponent(period);
+            });
+        });
+
+        // --- Custom Date Range: Apply Button ---
+        var btnApply = document.getElementById('btnApplyCustomRange');
+        if (btnApply) {
+            btnApply.addEventListener('click', function () {
+                var startDate = document.getElementById('pnlStartDate').value;
+                var endDate = document.getElementById('pnlEndDate').value;
+
+                // Validate: both fields required
+                if (!startDate || !endDate) {
+                    Swal.fire({
+                        title: 'Missing Dates',
+                        text: 'Please select both a start date and an end date.',
+                        icon: 'warning',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    return;
+                }
+
+                // Validate: start must be <= end
+                if (startDate > endDate) {
+                    Swal.fire({
+                        title: 'Invalid Date Range',
+                        text: 'Start date must be before or equal to end date.',
+                        icon: 'warning',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    return;
+                }
+
+                // Navigate with custom period params
+                window.location.href = '/ProfitLoss?period=Custom&startDate=' + encodeURIComponent(startDate) + '&endDate=' + encodeURIComponent(endDate);
+            });
+        }
+
+        // --- PDF Export: BlockUI → Fetch Blob → Download → Unblock ---
+        var btnExport = document.getElementById('btnExportPdf');
+        if (btnExport) {
+            btnExport.addEventListener('click', async function () {
+                // Determine current period params from URL or active button
+                var urlParams = new URLSearchParams(window.location.search);
+                var period = urlParams.get('period') || 'CurrentMonth';
+                var startDate = urlParams.get('startDate') || '';
+                var endDate = urlParams.get('endDate') || '';
+
+                var exportUrl = '/ProfitLoss/ExportPdf?period=' + encodeURIComponent(period);
+                if (startDate) exportUrl += '&startDate=' + encodeURIComponent(startDate);
+                if (endDate) exportUrl += '&endDate=' + encodeURIComponent(endDate);
+
+                BlockUI.show('Generating PDF...');
+                try {
+                    var response = await fetch(exportUrl);
+
+                    if (!response.ok) {
+                        BlockUI.hide();
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Failed to generate PDF. Please try again.',
+                            icon: 'error',
+                            confirmButtonColor: '#0D5EA6'
+                        });
+                        return;
+                    }
+
+                    var blob = await response.blob();
+                    BlockUI.hide();
+
+                    // Extract filename from content-disposition header or use default
+                    var contentDisposition = response.headers.get('content-disposition');
+                    var filename = 'PnL_Report.pdf';
+                    if (contentDisposition) {
+                        var filenameMatch = contentDisposition.split('filename=')[1];
+                        if (filenameMatch) {
+                            filename = filenameMatch.replace(/"/g, '').trim();
+                        }
+                    }
+
+                    // Create temporary download link
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } catch (ex) {
+                    BlockUI.hide();
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Failed to generate PDF. Please try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            });
+        }
+    })();
+</script>
+}

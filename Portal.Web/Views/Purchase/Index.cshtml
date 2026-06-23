@@ -270,6 +270,28 @@
     }
 </section>
 
+<!-- Expense Insights Teaser (shown only for Starter plan users without expense_insights access) -->
+@if (Model.ShowExpenseInsightsTeaser)
+{
+<section class="glass card-pad" style="margin-top:24px;opacity:0.85;position:relative;overflow:hidden;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.85'">
+    <a href="/ExpenseInsight" style="text-decoration:none;display:block;">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:48px;height:48px;border-radius:12px;background:#EEF4F8;display:flex;align-items:center;justify-content:center;">
+                <svg width="22" height="22" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <div style="flex:1;">
+                <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;color:#1a2b3c;margin:0 0 4px;">Expense Insights</h3>
+                <p style="font-size:14px;color:#5a6a7a;margin:0;">Visualise spending patterns by category with charts, budget alerts, and trend analysis.</p>
+            </div>
+            <span class="btn btn-primary" style="min-width:120px;text-align:center;">Learn More</span>
+        </div>
+    </a>
+    <div style="position:absolute;top:12px;right:16px;">
+        <span style="font-size:11px;font-weight:600;color:#0D5EA6;background:rgba(13,94,166,.08);padding:3px 10px;border-radius:50px;">Upgrade</span>
+    </div>
+</section>
+}
+
 <style>
     .pill-red {
         background: #C24A4A;

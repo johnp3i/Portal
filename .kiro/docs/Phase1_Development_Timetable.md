@@ -1,0 +1,191 @@
+# Phase 1 — Development Timetable
+
+## Overview
+
+This timetable covers the implementation of all Phase 1 (Professional tier) features. Build order is optimised for dependency and complexity — quick wins first, external integrations last.
+
+---
+
+## Module 1: Profit & Loss Summary
+
+**Effort:** Low | **Dependencies:** None (uses existing invoice payments + purchases)
+
+- [ ] 1.1 Define P&L computation logic (Revenue = payments received, COGS = stock purchases, OpEx = expense purchases)
+- [ ] 1.2 Create P&L service with period-based calculations (month/quarter/year/custom)
+- [ ] 1.3 Create P&L controller and view (period selector, summary cards, breakdown table)
+- [ ] 1.4 Add trend comparison (vs previous period, vs same period last year)
+- [ ] 1.5 Add PDF export capability
+- [ ] 1.6 Add plan permission gate (`pnl` module key — Professional only)
+- [ ] 1.7 Add soft-gate teaser for Starter users on Dashboard
+- [ ] 1.8 Visual QA and mobile responsiveness check
+
+---
+
+## Module 2: Expense Categorisation Insights
+
+**Effort:** Low | **Dependencies:** None (uses existing purchases + expense categories)
+
+- [ ] 2.1 Create expense insights service (aggregation by category, period comparison)
+- [ ] 2.2 Create expense insights controller and view (charts, breakdown table)
+- [ ] 2.3 Add pie/bar chart: spend by category (current period)
+- [ ] 2.4 Add trend lines: category spend over last 6–12 months
+- [ ] 2.5 Create `ExpenseCategoryBudget` table and budget configuration UI
+- [ ] 2.6 Add budget threshold alerts (exceeded/approaching)
+- [ ] 2.7 Add top suppliers per category breakdown
+- [ ] 2.8 Add month-over-month variance highlighting
+- [ ] 2.9 Add CSV export for category breakdown
+- [ ] 2.10 Add plan permission gate (`expense_insights` module key — Professional only)
+- [ ] 2.11 Add soft-gate teaser for Starter users on Purchase list
+- [ ] 2.12 Visual QA and mobile responsiveness check
+
+---
+
+## Module 3: Automated Payment Reminders
+
+**Effort:** Medium | **Dependencies:** Email service (existing), background job infrastructure (new)
+
+- [ ] 3.1 Create `PaymentReminderSchedule` table (business-level config: days before/after due, frequency)
+- [ ] 3.2 Create `PaymentReminderLog` table (tracks each email sent per invoice)
+- [ ] 3.3 Create reminder schedule configuration UI (Settings → Payment Reminders)
+- [ ] 3.4 Design escalating email templates (friendly → firm → formal)
+- [ ] 3.5 Create reminder evaluation service (which invoices need reminders today?)
+- [ ] 3.6 Implement background job (daily execution — evaluate all overdue/approaching invoices)
+- [ ] 3.7 Implement reminder sending logic (respect opt-outs, skip disputed, skip partially-paid-recently)
+- [ ] 3.8 Add activity logging (reminder sent events)
+- [ ] 3.9 Add manual "Send Reminder" button on Invoice Detail (Starter: one-at-a-time)
+- [ ] 3.10 Add reminder history view on Invoice Detail (who was reminded, when)
+- [ ] 3.11 Add Dashboard summary widget ("X reminders sent this week, Y payments received after reminder")
+- [ ] 3.12 Add per-customer opt-out configuration
+- [ ] 3.13 Add plan permission gates (`payment_reminder_manual` for Starter, `payment_reminder_auto` for Professional)
+- [ ] 3.14 Add soft-gate teaser on Revenue Dashboard for Starter users
+- [ ] 3.15 Visual QA and mobile responsiveness check
+- [ ] 3.16 End-to-end testing: schedule → evaluate → send → log
+
+---
+
+## Module 4: Payment Requests (Stripe Connect)
+
+**Effort:** Medium | **Dependencies:** Stripe API, webhook endpoint, OAuth flow
+
+- [ ] 4.1 Create `BusinessPaymentGateway` table
+- [ ] 4.2 Create `InvoicePaymentLink` table
+- [ ] 4.3 Register Stripe Connect platform account (3 Inventors side)
+- [ ] 4.4 Implement OAuth connect flow (Settings → Payment Gateway → Connect Stripe)
+- [ ] 4.5 Implement OAuth disconnect flow
+- [ ] 4.6 Create payment gateway service (provider-agnostic interface)
+- [ ] 4.7 Implement Stripe provider: `CreatePaymentLinkAsync` (Checkout Session creation)
+- [ ] 4.8 Add "Generate Payment Link" button on Invoice Detail
+- [ ] 4.9 Display payment link status on Invoice Detail (pending/paid/expired)
+- [ ] 4.10 Implement webhook endpoint (`/api/stripe/webhook`)
+- [ ] 4.11 Implement webhook signature verification
+- [ ] 4.12 Implement auto-reconciliation (webhook → create Payment record → update invoice status)
+- [ ] 4.13 Add idempotency protection (reject duplicate webhook deliveries)
+- [ ] 4.14 Auto-generate payment links on invoice issue (Professional only)
+- [ ] 4.15 Include payment link in invoice share emails (Professional only)
+- [ ] 4.16 Add payment link to shared invoice page ("Pay Now" button)
+- [ ] 4.17 Add plan permission gates (`payment_link_manual` for Starter, `payment_link_auto` for Professional)
+- [ ] 4.18 Block payment gateway config for demo users
+- [ ] 4.19 Visual QA: payment gateway settings page, invoice detail link display
+- [ ] 4.20 End-to-end testing: connect → generate link → pay → webhook → auto-record
+
+---
+
+## Module 5: Cash Flow Forecasting
+
+**Effort:** Medium | **Dependencies:** Benefits from Modules 1–4 being complete (richer data)
+
+- [ ] 5.1 Create `CashFlowSettings` table (starting balance, alert threshold per business)
+- [ ] 5.2 Create cash flow projection service (inflows from outstanding invoices by due date, outflows from avg expenses)
+- [ ] 5.3 Implement confidence weighting (customer payment history → likelihood of on-time payment)
+- [ ] 5.4 Create cash flow controller and view (30/60/90-day chart with running balance line)
+- [ ] 5.5 Add starting balance configuration (Settings → Cash Flow)
+- [ ] 5.6 Add projected inflows breakdown (which invoices contribute to each period)
+- [ ] 5.7 Add projected outflows breakdown (average expense categories per month)
+- [ ] 5.8 Add alert threshold: notify when projected balance drops below configured minimum
+- [ ] 5.9 Add scenario modelling: "what if Invoice X doesn't pay on time?"
+- [ ] 5.10 Add Dashboard widget (mini cash flow projection)
+- [ ] 5.11 Add plan permission gate (`cashflow` module key — Professional only)
+- [ ] 5.12 Add soft-gate teaser for Starter users on Revenue Dashboard
+- [ ] 5.13 Visual QA and mobile responsiveness check
+
+---
+
+## Module 6: Permission Gating Infrastructure
+
+**Effort:** Medium | **Dependencies:** Must be built before or alongside Modules 1–5
+
+- [x] 6.1 Create `SubscriptionPlan` table with seed data (Starter, Professional, Enterprise)
+- [x] 6.2 Create `PlanModulePermission` table with seed data (module keys per plan)
+- [x] 6.3 Create `BusinessSubscription` table
+- [x] 6.4 Create `UserModulePermission` table
+- [x] 6.5 Create `PlanPermissionFilter` (global authorization filter — checks business plan)
+- [x] 6.6 Create `UserPermissionFilter` (checks user-level module access within plan)
+- [x] 6.7 Create plan check middleware/service (injectable, used by controllers and views)
+- [x] 6.8 Create "Feature not available on your plan" view (soft-gate page)
+- [x] 6.9 Create "Read-only access" view variant for user-level readonly
+- [x] 6.10 Add subscription management UI (Admin → Business Subscription)
+- [x] 6.11 Assign all existing businesses to Professional plan (migration)
+- [x] 6.12 Add user permission management UI (Business Settings → User Permissions)
+- [x] 6.13 Integration test: Starter user blocked from Professional features
+- [x] 6.14 Integration test: User with readonly access can view but not modify
+
+---
+
+## Build Order & Dependencies
+
+```
+Module 6 (Permission Infrastructure) ←── Must be first or parallel with Module 1
+    │
+    ├── Module 1 (P&L Summary) ←── No dependencies, quick win
+    │
+    ├── Module 2 (Expense Insights) ←── No dependencies, quick win
+    │
+    ├── Module 3 (Payment Reminders) ←── Needs background job setup
+    │
+    ├── Module 4 (Stripe Connect) ←── External integration
+    │
+    └── Module 5 (Cash Flow) ←── Benefits from 1–4 being complete
+```
+
+**Recommended parallel tracks:**
+- Track A: Module 6 (permissions) → Module 1 (P&L) → Module 2 (Expenses)
+- Track B: Module 3 (Reminders) → Module 4 (Stripe) → Module 5 (Cash Flow)
+
+Track A can start immediately. Track B can start once the background job infrastructure from 3.6 is in place.
+
+---
+
+## Completion Criteria
+
+Each module is considered complete when:
+- [ ] All sub-tasks checked off
+- [ ] Plan permission gating verified (Starter blocked, Professional allowed)
+- [ ] Soft-gate teasers visible to Starter users
+- [ ] Mobile responsive at 375px and 810px
+- [ ] No regressions in existing functionality
+- [ ] Documentation updated (design doc or spec if applicable)
+
+---
+
+## Post-Phase 1 Milestones
+
+- [ ] All 6 modules complete and verified
+- [ ] Landing page updated with new tier pricing (Starter €39/Professional €79/Enterprise €149)
+- [ ] Subscription management system live
+- [ ] Existing users migrated to Professional (grandfathered)
+- [ ] 14-day Professional trial flow implemented
+- [ ] Phase 2 planning begins (Client Portal, Document Attachments, Activity Timeline)
+
+---
+
+## Next Phase
+
+When Phase 1 is complete, proceed to:
+
+**→ Phase 2: Operational Completeness** (`.kiro/docs/Phase2_Development_Timetable.md`)
+- Client Portal (customer self-service)
+- Document Attachments (file uploads on purchases/invoices/quotations)
+- Activity Timeline & Notifications (real-time feed, email digests)
+- Audit Log Access (permission-gated access to existing audit infrastructure)
+
+Phase 2 delivers the Enterprise tier and positions the platform for growing teams with multi-user collaboration needs.

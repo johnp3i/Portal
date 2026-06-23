@@ -209,6 +209,8 @@ public class DemoPermissionFilterTests
         // Arrange
         var user = CreateDemoUser(TestInvitationId);
         var context = CreateFilterContext("Invoice", "POST", user);
+        // Set AJAX header so the filter returns JsonResult instead of ViewResult
+        context.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
 
         SetupPermissions(new Dictionary<string, string>
         {

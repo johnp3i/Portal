@@ -16,6 +16,7 @@
     var supplierIcon = "<svg width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>";
     var categoryIcon = "<svg width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z\"/></svg>";
     var productIcon = "<svg width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z\"/><path d=\"M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12\"/></svg>";
+    var pnlIcon = "<svg width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M18 20V10M12 20V4M6 20v-6\"/></svg>";
 
     // Access checks
     var hasCustomerAccess = Model.TryGetValue("customer", out var custAccess) && custAccess != "none";
@@ -27,10 +28,12 @@
     var hasProductAccess = Model.TryGetValue("products", out var prodAccess) && prodAccess != "none";
     var hasVatAccess = Model.TryGetValue("vat", out var vatAccess) && vatAccess != "none";
     var hasAuditAccess = Model.TryGetValue("audit", out var audAccess) && audAccess != "none";
+    var hasPnlAccess = Model.TryGetValue("pnl", out var pnlAccess) && pnlAccess != "none";
+    var hasExpenseInsightsAccess = Model.TryGetValue("expense_insights", out var eiAccess) && eiAccess != "none";
 
     var hasSalesSection = hasCustomerAccess || hasQuotationAccess || hasInvoiceAccess || hasCreditAccess;
-    var hasFinanceSection = hasRevenueAccess || hasVatAccess;
-    var hasPurchasingSection = hasPurchaseAccess;
+    var hasFinanceSection = hasRevenueAccess || hasVatAccess || hasPnlAccess;
+    var hasPurchasingSection = hasPurchaseAccess || hasExpenseInsightsAccess;
     var hasCatalogSection = hasProductAccess;
 }
 
@@ -108,6 +111,14 @@
                 <span class="nav-text">VAT</span>
             </a>
         }
+        @if (hasPnlAccess)
+        {
+            var isActive = currentController.Equals("ProfitLoss", StringComparison.OrdinalIgnoreCase);
+            <a class="nav-item @(isActive ? "active" : "")" href="/ProfitLoss">
+                <span class="nav-icon">@Html.Raw(pnlIcon)</span>
+                <span class="nav-text">Profit & Loss</span>
+            </a>
+        }
     </div>
 }
 
@@ -144,6 +155,14 @@
             <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
             <span class="nav-text">Spending Limits</span>
         </a>
+        @if (hasExpenseInsightsAccess)
+        {
+            var isExpenseInsightsActive = currentController.Equals("ExpenseInsight", StringComparison.OrdinalIgnoreCase);
+            <a class="nav-sub-item @(isExpenseInsightsActive ? "active" : "")" asp-controller="ExpenseInsight" asp-action="Index">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></span>
+                <span class="nav-text">Expense Insights</span>
+            </a>
+        }
     </div>
 }
 

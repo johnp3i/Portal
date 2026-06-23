@@ -13,6 +13,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon-180x180.png" />
+    <link rel="manifest" href="/site.webmanifest?v=2" />
     <meta name="msapplication-TileImage" content="/images/favicon/ms-icon-144x144.png" />
     <meta name="msapplication-TileColor" content="#0D5EA6" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -179,14 +180,87 @@
         }
 
         @@media (max-width: 960px) {
-            .canvas-panel { display: none; }
+            body {
+                flex-direction: column;
+            }
+
+            .canvas-panel {
+                flex: none;
+                min-height: unset;
+                padding: 32px 24px 24px;
+            }
+
+            .canvas-panel canvas {
+                display: none;
+            }
+
+            .canvas-brand img {
+                width: 56px;
+                margin-bottom: 12px;
+            }
+
+            .canvas-brand .tagline {
+                font-size: 11px;
+                letter-spacing: .14em;
+            }
+
+            .canvas-brand > div:last-child {
+                font-size: 14px;
+                margin-top: 8px;
+            }
+
             .form-panel {
                 width: 100%;
                 min-width: unset;
-                min-height: 100vh;
-                background:
-                    radial-gradient(circle at top left, rgba(13,94,166,.04), transparent 40%),
-                    #F7FAFC;
+                flex: 1;
+                padding: 32px 24px;
+                background: #fff;
+            }
+
+            .login-card {
+                max-width: 100%;
+            }
+        }
+
+        @@media (max-width: 480px) {
+            .canvas-panel {
+                padding: 24px 20px 20px;
+            }
+
+            .canvas-brand img {
+                width: 48px;
+                margin-bottom: 10px;
+            }
+
+            .canvas-brand .tagline {
+                font-size: 10px;
+            }
+
+            .canvas-brand > div:last-child {
+                font-size: 13px;
+            }
+
+            .form-panel {
+                padding: 28px 20px;
+            }
+
+            .login-card h1 {
+                font-size: 24px;
+            }
+
+            .login-card .subtitle {
+                font-size: 14px;
+                margin-bottom: 28px;
+            }
+
+            .form-group input {
+                padding: 12px 14px;
+                font-size: 16px;
+            }
+
+            .btn-login {
+                padding: 14px;
+                font-size: 15px;
             }
         }
     </style>

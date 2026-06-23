@@ -6,6 +6,7 @@ using Moq;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Services;
 using Portal.Web.Controllers;
+using Portal.Web.Services;
 using Xunit;
 
 namespace Portal.Tests.Unit.Controllers;
@@ -20,6 +21,7 @@ public class ProposalControllerDownloadPdfTests
     private readonly Mock<IProposalAcceptanceService> _acceptanceServiceMock;
     private readonly Mock<IWebHostEnvironment> _environmentMock;
     private readonly Mock<ILogoService> _logoServiceMock;
+    private readonly Mock<IViewRenderService> _viewRenderServiceMock;
     private readonly Mock<ILogger<ProposalController>> _loggerMock;
     private readonly ProposalController _controller;
 
@@ -29,6 +31,7 @@ public class ProposalControllerDownloadPdfTests
         _acceptanceServiceMock = new Mock<IProposalAcceptanceService>();
         _environmentMock = new Mock<IWebHostEnvironment>();
         _logoServiceMock = new Mock<ILogoService>();
+        _viewRenderServiceMock = new Mock<IViewRenderService>();
         _loggerMock = new Mock<ILogger<ProposalController>>();
 
         _controller = new ProposalController(
@@ -36,6 +39,7 @@ public class ProposalControllerDownloadPdfTests
             _acceptanceServiceMock.Object,
             _environmentMock.Object,
             _logoServiceMock.Object,
+            _viewRenderServiceMock.Object,
             _loggerMock.Object);
 
         // Set up default HttpContext

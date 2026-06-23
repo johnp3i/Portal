@@ -58,6 +58,7 @@ public class DashboardViewModel
     public bool ShowVat { get; set; } = true;
     public bool ShowCustomer { get; set; } = true;
     public bool HasAnyKpiSection { get; set; } = true;
+    public bool ShowPnlTeaser { get; set; }
 
     // Empty state
     public string? BusinessName { get; set; }

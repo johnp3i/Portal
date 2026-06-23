@@ -1,0 +1,39 @@
+@model Portal.Web.Models.SoftGateViewModel
+@{
+    ViewData["Title"] = "Access Not Granted";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Access</div>
+        <h1 class="topbar-heading">Access Not Granted</h1>
+        <p class="topbar-subtitle">You don't currently have permission to view this module.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="max-width:600px;">
+    <div style="text-align:center;padding:32px 16px;">
+        <div style="margin-bottom:24px;">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#7a8fa3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <line x1="12" y1="10" x2="12" y2="14"></line>
+                <circle cx="12" cy="17" r="0.5"></circle>
+            </svg>
+        </div>
+        <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:#0B1B28;margin-bottom:12px;">
+            You don't have access to @Model.ModuleDisplayName
+        </h2>
+        <p style="font-size:14px;color:#5a6a7a;line-height:1.6;margin-bottom:8px;">
+            Your account does not currently have permission to access the <strong style="color:#0B1B28;">@Model.ModuleDisplayName</strong> module.
+        </p>
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.6;margin-bottom:28px;">
+            Contact your business owner to request access to this module.
+        </p>
+        <a href="/"
+           style="display:inline-block;padding:12px 28px;border:2px solid #0D5EA6;color:#0D5EA6;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;transition:background 0.2s,color 0.2s;"
+           aria-label="Return to the dashboard">
+            Back to Dashboard
+        </a>
+    </div>
+</section>

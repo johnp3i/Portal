@@ -7,6 +7,7 @@ using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
 using Portal.Web.Controllers;
+using Portal.Web.Services;
 using Xunit;
 
 namespace Portal.Tests.Unit.Controllers;
@@ -31,6 +32,7 @@ public class ProposalControllerAcceptanceTests
             _acceptanceServiceMock.Object,
             Mock.Of<IWebHostEnvironment>(),
             Mock.Of<ILogoService>(),
+            Mock.Of<IViewRenderService>(),
             Mock.Of<ILogger<ProposalController>>());
 
         // Set up default HttpContext for all tests

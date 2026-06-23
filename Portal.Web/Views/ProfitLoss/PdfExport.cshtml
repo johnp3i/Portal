@@ -1,0 +1,470 @@
+@model Portal.Infrastructure.Models.PnlPdfModel
+@using Portal.Infrastructure.Models
+@{
+    Layout = null;
+    var cs = Model.CurrencySymbol;
+    var summary = Model.Summary;
+    var cogsItems = summary.CategoryBreakdown.Where(c => c.PurchaseTypeId == 2).ToList();
+    var opexItems = summary.CategoryBreakdown.Where(c => c.PurchaseTypeId == 3).ToList();
+
+    Func<decimal, string> fmtAmount = (v) => $"{cs}{v:N2}";
+    Func<decimal, string> fmtPct = (v) => $"{v:N1}%";
+    Func<decimal?, string> fmtChange = (v) => v.HasValue ? $"{(v.Value >= 0 ? "+" : "")}{v.Value:N1}%" : "N/A";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Profit &amp; Loss Statement - @Model.BusinessName</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #1a2b3c;
+            margin: 0;
+            padding: 30px 40px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #0D5EA6;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-logo img {
+            max-height: 50px;
+            display: block;
+        }
+
+        .header-title h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0D5EA6;
+            margin: 0;
+        }
+
+        .header-title .business-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a2b3c;
+            margin-top: 2px;
+        }
+
+        .header-right {
+            text-align: right;
+            font-size: 11px;
+            color: #5a6a7a;
+        }
+
+        .header-right .period-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5a6a7a;
+            margin-bottom: 2px;
+        }
+
+        .header-right .period-dates {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a2b3c;
+        }
+
+        /* Section Headers */
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0D5EA6;
+            margin-top: 28px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #d0dbe5;
+        }
+
+        /* P&L Statement Table */
+        .statement-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+
+        .statement-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e8edf2;
+            font-size: 12px;
+        }
+
+        .statement-table .row-label {
+            font-weight: 500;
+            color: #1a2b3c;
+            width: 60%;
+        }
+
+        .statement-table .row-value {
+            text-align: right;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            width: 25%;
+        }
+
+        .statement-table .row-pct {
+            text-align: right;
+            font-size: 11px;
+            color: #5a6a7a;
+            width: 15%;
+        }
+
+        .statement-table .row-highlight {
+            background: #eef4f8;
+            font-weight: 700;
+        }
+
+        .statement-table .row-highlight td {
+            border-top: 2px solid #0D5EA6;
+            border-bottom: 2px solid #0D5EA6;
+            padding: 10px;
+        }
+
+        .statement-table .row-subtotal td {
+            font-weight: 600;
+            background: #f7fafc;
+            border-bottom: 1px solid #d0dbe5;
+        }
+
+        .positive {
+            color: #129867;
+        }
+
+        .negative {
+            color: #C24A4A;
+        }
+
+        /* Breakdown Table */
+        .breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+
+        .breakdown-table thead th {
+            background: #0D5EA6;
+            color: #fff;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .breakdown-table thead th.text-right {
+            text-align: right;
+        }
+
+        .breakdown-table tbody td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #e8edf2;
+            font-size: 11px;
+        }
+
+        .breakdown-table tbody td.text-right {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .breakdown-table tr:nth-child(even) td {
+            background: #f7fafc;
+        }
+
+        .breakdown-table .section-row td {
+            padding-top: 14px;
+            padding-bottom: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            color: #0D5EA6;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #0D5EA6;
+            background: transparent !important;
+        }
+
+        .breakdown-table .subtotal-row td {
+            font-weight: 700;
+            background: #eef4f8 !important;
+            border-bottom: 1px solid #d0dbe5;
+        }
+
+        .breakdown-table .total-row td {
+            font-weight: 700;
+            font-size: 12px;
+            background: #e3eef7 !important;
+            border-top: 2px solid #0D5EA6;
+            border-bottom: none;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            background: #eef4f8;
+            color: #5a6a7a;
+        }
+
+        /* Trend Table */
+        .trend-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+
+        .trend-table thead th {
+            background: #0D5EA6;
+            color: #fff;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .trend-table thead th.text-right {
+            text-align: right;
+        }
+
+        .trend-table tbody td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e8edf2;
+            font-size: 11px;
+        }
+
+        .trend-table tbody td.text-right {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .trend-table tbody tr:last-child td {
+            font-weight: 700;
+            border-bottom: none;
+        }
+
+        .change-positive {
+            color: #129867;
+            font-weight: 600;
+        }
+
+        .change-negative {
+            color: #C24A4A;
+            font-weight: 600;
+        }
+
+        .change-na {
+            color: #5a6a7a;
+            font-style: italic;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding-top: 12px;
+            border-top: 1px solid #e8edf2;
+            font-size: 10px;
+            color: #5a6a7a;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="header-logo">
+                <img src="/uploads/logos/logo.png" style="max-height:50px;" />
+            </div>
+            <div class="header-title">
+                <h1>Profit &amp; Loss Statement</h1>
+                <div class="business-name">@Model.BusinessName</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="period-label">Reporting Period</div>
+            <div class="period-dates">@summary.PeriodStart.ToString("dd MMM yyyy") &mdash; @summary.PeriodEnd.ToString("dd MMM yyyy")</div>
+        </div>
+    </div>
+
+    <!-- P&L Statement Summary -->
+    <div class="section-title">Financial Summary</div>
+    <table class="statement-table">
+        <tr>
+            <td class="row-label">Revenue</td>
+            <td class="row-value">@fmtAmount(summary.Revenue)</td>
+            <td class="row-pct"></td>
+        </tr>
+        <tr>
+            <td class="row-label">Less: Cost of Goods Sold</td>
+            <td class="row-value">(@fmtAmount(summary.Cogs))</td>
+            <td class="row-pct"></td>
+        </tr>
+        <tr class="row-subtotal">
+            <td class="row-label">Gross Profit</td>
+            <td class="row-value @(summary.GrossProfit >= 0 ? "positive" : "negative")">@fmtAmount(summary.GrossProfit)</td>
+            <td class="row-pct">@fmtPct(summary.GrossMargin)</td>
+        </tr>
+        <tr>
+            <td class="row-label">Less: Operating Expenses</td>
+            <td class="row-value">(@fmtAmount(summary.OperatingExpenses))</td>
+            <td class="row-pct"></td>
+        </tr>
+        <tr class="row-highlight">
+            <td class="row-label">Net Profit</td>
+            <td class="row-value @(summary.NetProfit >= 0 ? "positive" : "negative")">@fmtAmount(summary.NetProfit)</td>
+            <td class="row-pct">@fmtPct(summary.NetMargin)</td>
+        </tr>
+    </table>
+
+    <!-- Expense Category Breakdown -->
+    @if (summary.CategoryBreakdown.Any())
+    {
+        <div class="section-title">Expense Breakdown by Category</div>
+        <table class="breakdown-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th class="text-right">Amount</th>
+                    <th class="text-right">% of Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (cogsItems.Any())
+                {
+                    <tr class="section-row">
+                        <td colspan="4">Cost of Goods Sold</td>
+                    </tr>
+                    @foreach (var item in cogsItems)
+                    {
+                        <tr>
+                            <td>@item.CategoryName</td>
+                            <td><span class="type-badge">@item.ExpenseTypeName</span></td>
+                            <td class="text-right">@fmtAmount(item.TotalAmount)</td>
+                            <td class="text-right">@fmtPct(item.PercentageOfTotal)</td>
+                        </tr>
+                    }
+                    <tr class="subtotal-row">
+                        <td>COGS Subtotal</td>
+                        <td></td>
+                        <td class="text-right">@fmtAmount(summary.Cogs)</td>
+                        <td class="text-right">@fmtPct(cogsItems.Sum(c => c.PercentageOfTotal))</td>
+                    </tr>
+                }
+
+                @if (opexItems.Any())
+                {
+                    <tr class="section-row">
+                        <td colspan="4">Operating Expenses</td>
+                    </tr>
+                    @foreach (var item in opexItems)
+                    {
+                        <tr>
+                            <td>@item.CategoryName</td>
+                            <td><span class="type-badge">@item.ExpenseTypeName</span></td>
+                            <td class="text-right">@fmtAmount(item.TotalAmount)</td>
+                            <td class="text-right">@fmtPct(item.PercentageOfTotal)</td>
+                        </tr>
+                    }
+                    <tr class="subtotal-row">
+                        <td>OpEx Subtotal</td>
+                        <td></td>
+                        <td class="text-right">@fmtAmount(summary.OperatingExpenses)</td>
+                        <td class="text-right">@fmtPct(opexItems.Sum(c => c.PercentageOfTotal))</td>
+                    </tr>
+                }
+
+                <tr class="total-row">
+                    <td>Total Expenses</td>
+                    <td></td>
+                    <td class="text-right">@fmtAmount(summary.Cogs + summary.OperatingExpenses)</td>
+                    <td class="text-right">100.0%</td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+    <!-- Trend Comparison -->
+    @if (summary.Trend != null)
+    {
+        <div class="section-title">Year-over-Year Comparison</div>
+        <table class="trend-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th class="text-right">This Period</th>
+                    <th class="text-right">Same Period Last Year</th>
+                    <th class="text-right">Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Revenue</td>
+                    <td class="text-right">@fmtAmount(summary.Revenue)</td>
+                    <td class="text-right">@fmtAmount(summary.Trend.PreviousRevenue)</td>
+                    <td class="text-right @(summary.Trend.RevenueChange.HasValue ? (summary.Trend.RevenueChange.Value >= 0 ? "change-positive" : "change-negative") : "change-na")">@fmtChange(summary.Trend.RevenueChange)</td>
+                </tr>
+                <tr>
+                    <td>Cost of Goods Sold</td>
+                    <td class="text-right">@fmtAmount(summary.Cogs)</td>
+                    <td class="text-right">@fmtAmount(summary.Trend.PreviousCogs)</td>
+                    <td class="text-right @(summary.Trend.CogsChange.HasValue ? (summary.Trend.CogsChange.Value >= 0 ? "change-negative" : "change-positive") : "change-na")">@fmtChange(summary.Trend.CogsChange)</td>
+                </tr>
+                <tr>
+                    <td>Gross Profit</td>
+                    <td class="text-right">@fmtAmount(summary.GrossProfit)</td>
+                    <td class="text-right">@fmtAmount(summary.Trend.PreviousGrossProfit)</td>
+                    <td class="text-right @(summary.Trend.GrossProfitChange.HasValue ? (summary.Trend.GrossProfitChange.Value >= 0 ? "change-positive" : "change-negative") : "change-na")">@fmtChange(summary.Trend.GrossProfitChange)</td>
+                </tr>
+                <tr>
+                    <td>Operating Expenses</td>
+                    <td class="text-right">@fmtAmount(summary.OperatingExpenses)</td>
+                    <td class="text-right">@fmtAmount(summary.Trend.PreviousOperatingExpenses)</td>
+                    <td class="text-right @(summary.Trend.OperatingExpensesChange.HasValue ? (summary.Trend.OperatingExpensesChange.Value >= 0 ? "change-negative" : "change-positive") : "change-na")">@fmtChange(summary.Trend.OperatingExpensesChange)</td>
+                </tr>
+                <tr>
+                    <td>Net Profit</td>
+                    <td class="text-right">@fmtAmount(summary.NetProfit)</td>
+                    <td class="text-right">@fmtAmount(summary.Trend.PreviousNetProfit)</td>
+                    <td class="text-right @(summary.Trend.NetProfitChange.HasValue ? (summary.Trend.NetProfitChange.Value >= 0 ? "change-positive" : "change-negative") : "change-na")">@fmtChange(summary.Trend.NetProfitChange)</td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+    <!-- Footer -->
+    <div class="footer">
+        Generated on @DateTime.UtcNow.ToString("dd MMM yyyy HH:mm") UTC &bull; @Model.BusinessName
+    </div>
+
+</body>
+</html>

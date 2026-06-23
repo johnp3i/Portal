@@ -1563,6 +1563,7 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.ModuleName).IsRequired().HasMaxLength(50);
             entity.Property(e => e.IsIncluded).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.AccessLevel).IsRequired().HasMaxLength(20).HasDefaultValueSql("'full'");
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
 
             entity.HasOne(e => e.Plan)
@@ -1587,6 +1588,7 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.StartDateUtc).IsRequired();
             entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValueSql("'active'");
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
 
             entity.HasOne(e => e.Business)

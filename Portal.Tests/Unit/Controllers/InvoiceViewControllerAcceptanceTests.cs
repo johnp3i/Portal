@@ -19,6 +19,7 @@ public class InvoiceViewControllerAcceptanceTests
 {
     private readonly Mock<IInvoiceSharingService> _sharingServiceMock;
     private readonly Mock<IInvoiceAcceptanceService> _acceptanceServiceMock;
+    private readonly Mock<IInvoiceRenderer> _invoiceRendererMock;
     private readonly Mock<IWebHostEnvironment> _environmentMock;
     private readonly Mock<ILogoService> _logoServiceMock;
     private readonly Mock<ILogger<InvoiceViewController>> _loggerMock;
@@ -28,6 +29,7 @@ public class InvoiceViewControllerAcceptanceTests
     {
         _sharingServiceMock = new Mock<IInvoiceSharingService>();
         _acceptanceServiceMock = new Mock<IInvoiceAcceptanceService>();
+        _invoiceRendererMock = new Mock<IInvoiceRenderer>();
         _environmentMock = new Mock<IWebHostEnvironment>();
         _logoServiceMock = new Mock<ILogoService>();
         _loggerMock = new Mock<ILogger<InvoiceViewController>>();
@@ -35,6 +37,7 @@ public class InvoiceViewControllerAcceptanceTests
         _controller = new InvoiceViewController(
             _sharingServiceMock.Object,
             _acceptanceServiceMock.Object,
+            _invoiceRendererMock.Object,
             _environmentMock.Object,
             _logoServiceMock.Object,
             _loggerMock.Object);

@@ -70,6 +70,7 @@ public class MembershipDbContext : IdentityDbContext<ApplicationUser, IdentityRo
             entity.HasIndex(e => new { e.UserBusinessId, e.Module }).IsUnique();
             entity.Property(e => e.Module).HasMaxLength(50).IsRequired();
             entity.Property(e => e.AccessLevel).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.GrantedByUserId).HasMaxLength(450).IsRequired(false);
             entity.HasOne(e => e.UserBusiness)
                   .WithMany()
                   .HasForeignKey(e => e.UserBusinessId)

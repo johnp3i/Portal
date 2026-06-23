@@ -1,0 +1,630 @@
+@using Portal.Infrastructure.Models
+@using Portal.Infrastructure.Models.ExpenseInsights
+@model Portal.Web.Models.ExpenseInsightsViewModel
+@{
+    ViewData["Title"] = "Expense Insights";
+}
+
+<style>
+    /* ===== PERIOD SELECTOR ===== */
+    .period-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .period-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .period-btn {
+        padding: 8px 18px;
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1.5px solid #0D5EA6;
+        background: transparent;
+        color: #0D5EA6;
+        cursor: pointer;
+        transition: all .15s ease;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .period-btn:hover {
+        background: rgba(13,94,166,.06);
+    }
+    .period-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+    .custom-range {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+    .custom-range.visible {
+        display: flex;
+    }
+    .custom-range label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #5a6a7a;
+    }
+    .custom-range input[type="date"] {
+        padding: 7px 12px;
+        border: 1.5px solid #d0dbe5;
+        border-radius: 10px;
+        font-size: 13px;
+        font-family: Inter, sans-serif;
+        color: #0B1B28;
+        outline: none;
+        transition: border-color .15s;
+        min-height: 44px;
+    }
+    .custom-range input[type="date"]:focus {
+        border-color: #0D5EA6;
+    }
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1.5px solid #0D5EA6;
+        background: transparent;
+        color: #0D5EA6;
+        cursor: pointer;
+        transition: all .15s ease;
+        min-height: 44px;
+    }
+    .btn-export:hover {
+        background: rgba(13,94,166,.06);
+    }
+    .btn-export svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    /* ===== BUDGET ALERTS BANNER ===== */
+    .budget-alerts-banner {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+    }
+    .budget-alert-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .budget-alert-item.danger {
+        background: rgba(194,74,74,.08);
+        color: #C24A4A;
+        border: 1px solid rgba(194,74,74,.2);
+    }
+    .budget-alert-item.warning {
+        background: rgba(200,145,46,.08);
+        color: #C8912E;
+        border: 1px solid rgba(200,145,46,.2);
+    }
+
+    /* ===== SUMMARY CARDS ===== */
+    .insights-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .insights-summary-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(13,94,166,.07);
+        border: 1px solid rgba(13,94,166,.08);
+        padding: 20px 18px;
+        border-left: 4px solid transparent;
+    }
+    .insights-summary-card.blue-accent { border-left-color: #0D5EA6; }
+    .insights-summary-card.cyan-accent { border-left-color: #57B8E8; }
+    .insights-summary-card.green-accent { border-left-color: #129867; }
+    .insights-summary-card.amber-accent { border-left-color: #C8912E; }
+    .insights-summary-card .label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #5a6a7a;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 8px;
+    }
+    .insights-summary-card .amount {
+        font-family: Manrope, sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: #0B1B28;
+        letter-spacing: -0.02em;
+    }
+
+    /* ===== CHARTS GRID ===== */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+        margin-bottom: 24px;
+    }
+    .chart-container {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(13,94,166,.07);
+        border: 1px solid rgba(13,94,166,.08);
+        padding: 20px;
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+    }
+    .chart-container h4 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0B1B28;
+        font-family: Manrope, sans-serif;
+        margin-bottom: 14px;
+    }
+    .chart-container canvas {
+        flex: 1;
+        max-height: 280px;
+    }
+
+    /* ===== BREAKDOWN TABLE ===== */
+    .insights-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .insights-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        min-width: 700px;
+    }
+    .insights-table thead th {
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #5a6a7a;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 2px solid rgba(13,94,166,.08);
+    }
+    .insights-table thead th.text-right {
+        text-align: right;
+    }
+    .insights-table tbody td {
+        padding: 11px 14px;
+        border-bottom: 1px solid rgba(13,94,166,.05);
+        vertical-align: middle;
+    }
+    .insights-table tbody td.text-right {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    .insights-table .category-row {
+        cursor: pointer;
+        transition: background .1s;
+    }
+    .insights-table .category-row:hover {
+        background: rgba(13,94,166,.02);
+    }
+    .insights-table .supplier-row {
+        display: none;
+    }
+    .insights-table .supplier-row.visible {
+        display: table-row;
+    }
+    .insights-table .supplier-row td {
+        padding-left: 42px;
+        font-size: 13px;
+        color: #5a6a7a;
+        background: #fafcfe;
+    }
+    .chevron-icon {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        transition: transform .2s ease;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+    .chevron-icon.expanded {
+        transform: rotate(90deg);
+    }
+
+    /* ===== STATUS BADGES ===== */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 50px;
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+    .status-badge.exceeded {
+        background: rgba(194,74,74,.10);
+        color: #C24A4A;
+    }
+    .status-badge.approaching {
+        background: rgba(200,145,46,.10);
+        color: #C8912E;
+    }
+    .status-badge.within-limit {
+        background: rgba(18,152,103,.10);
+        color: #129867;
+    }
+    .status-badge.no-limit {
+        background: rgba(90,106,122,.08);
+        color: #5a6a7a;
+    }
+    .variance-up {
+        color: #C8912E;
+        font-weight: 600;
+    }
+    .variance-down {
+        color: #129867;
+        font-weight: 600;
+    }
+    .variance-neutral {
+        color: #5a6a7a;
+    }
+    .type-pill {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #EEF4F8;
+        color: #5a6a7a;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .insights-empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #5a6a7a;
+        font-size: 15px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 1100px) {
+        .insights-summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @@media (max-width: 768px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+        .insights-summary-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        .period-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .period-tabs {
+            justify-content: center;
+        }
+        .btn-export {
+            align-self: flex-end;
+        }
+        .insights-table {
+            min-width: 700px;
+        }
+    }
+    @@media (max-width: 480px) {
+        .insights-summary-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<!-- Antiforgery token for POST requests -->
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchasing Analytics</div>
+        <h1 class="topbar-heading">Expense Insights</h1>
+        <p class="topbar-subtitle">Analyse spend by category, track budgets, and identify trends.</p>
+    </div>
+</div>
+
+<!-- Period Selector Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="period-row">
+        <div class="period-tabs">
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.CurrentMonth ? "active" : "")" data-period="CurrentMonth">Current Month</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.PreviousMonth ? "active" : "")" data-period="PreviousMonth">Previous Month</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.CurrentQuarter ? "active" : "")" data-period="CurrentQuarter">Current Quarter</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.CurrentYear ? "active" : "")" data-period="CurrentYear">Current Year</button>
+            <button type="button" class="period-btn @(Model.SelectedPeriod == PnlPeriodType.Custom ? "active" : "")" data-period="Custom" id="customBtn">Custom</button>
+        </div>
+        <button type="button" class="btn-export" id="btnExportCsv" data-url="/ExpenseInsight/ExportCsv">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+        </button>
+    </div>
+    <div class="custom-range @(Model.SelectedPeriod == PnlPeriodType.Custom ? "visible" : "")" id="customRange">
+        <label>From</label>
+        <input type="date" id="insightsStartDate" />
+        <label>To</label>
+        <input type="date" id="insightsEndDate" />
+        <button type="button" class="btn btn-primary" id="btnApplyCustomRange" style="padding:7px 16px;font-size:13px;min-height:44px;">Apply</button>
+    </div>
+</section>
+
+<!-- Content area: controlled by JS for AJAX updates -->
+<div id="insightsContent" data-has-data="@Model.InsightsData.HasData.ToString().ToLower()" data-currency="@Model.CurrencySymbol">
+
+<!-- Empty State (shown/hidden via JS) -->
+<div id="emptyState" style="@(Model.InsightsData.HasData ? "display:none;" : "")">
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div class="insights-empty-state" data-empty-state>
+            <p>No expense data exists for the selected period.</p>
+            <p style="margin-top:8px;font-size:13px;color:#8a9aaa;">Try selecting a different time range or add purchases to see insights.</p>
+        </div>
+    </section>
+</div>
+
+<!-- Data Content (shown/hidden via JS) -->
+<div id="dataContent" style="@(!Model.InsightsData.HasData ? "display:none;" : "")">
+
+    <!-- Budget Alerts Banner -->
+    <div class="budget-alerts-banner" data-budget-alerts style="@(Model.InsightsData.BudgetExceededCount == 0 && Model.InsightsData.BudgetApproachingCount == 0 ? "display:none;" : "")">
+        @if (Model.InsightsData.BudgetExceededCount > 0)
+        {
+            <div class="budget-alert-item danger">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span data-exceeded-count>@Model.InsightsData.BudgetExceededCount</span> @(Model.InsightsData.BudgetExceededCount == 1 ? "category" : "categories") exceeded budget
+            </div>
+        }
+        @if (Model.InsightsData.BudgetApproachingCount > 0)
+        {
+            <div class="budget-alert-item warning">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span data-approaching-count>@Model.InsightsData.BudgetApproachingCount</span> @(Model.InsightsData.BudgetApproachingCount == 1 ? "category" : "categories") approaching limit
+            </div>
+        }
+    </div>
+
+    <!-- Summary Cards Grid -->
+    <div class="insights-summary-grid" data-summary-cards>
+        <div class="insights-summary-card blue-accent">
+            <div class="label">Total Spend</div>
+            <div class="amount" data-total-spend>@Model.CurrencySymbol@Model.InsightsData.Summary.TotalSpend.ToString("N2")</div>
+        </div>
+        <div class="insights-summary-card cyan-accent">
+            <div class="label">Categories Active</div>
+            <div class="amount" data-categories-count>@Model.InsightsData.Summary.CategoriesWithSpend</div>
+        </div>
+        <div class="insights-summary-card green-accent">
+            <div class="label">Top Category</div>
+            <div class="amount" data-top-category style="font-size:18px;">@(Model.InsightsData.Summary.TopCategoryName ?? "—")</div>
+        </div>
+        <div class="insights-summary-card amber-accent">
+            <div class="label">Avg Per Category</div>
+            <div class="amount" data-avg-per-category>@Model.CurrencySymbol@Model.InsightsData.Summary.AveragePerCategory.ToString("N2")</div>
+        </div>
+    </div>
+
+    <!-- Charts Grid: Pie + Bar -->
+    <div class="charts-grid" data-charts-section>
+        <div class="chart-container" data-pie-container>
+            <h4>Spend by Category</h4>
+            <canvas id="pieChart" data-chart="pie"></canvas>
+        </div>
+        <div class="chart-container" data-bar-container>
+            <h4>Category Spend Comparison</h4>
+            <canvas id="barChart" data-chart="bar"></canvas>
+        </div>
+    </div>
+
+    <!-- Category Breakdown Table -->
+    <section class="glass card-pad" style="margin-bottom:24px;">
+        <h3 style="font-size:17px;margin-bottom:18px;color:#0B1B28;font-family:Manrope,sans-serif;font-weight:700;">Category Breakdown</h3>
+        <div class="insights-table-wrapper">
+            <table class="insights-table" data-breakdown-table>
+                <thead>
+                    <tr>
+                        <th style="width:30px;"></th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th class="text-right">Spend</th>
+                        <th class="text-right">% of Total</th>
+                        <th class="text-right">MoM Variance</th>
+                        <th class="text-right">Budget</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody data-breakdown-body>
+                    @foreach (var category in Model.InsightsData.Categories)
+                    {
+                        <tr class="category-row" data-category-id="@category.ExpenseCategoryId">
+                            <td>
+                                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </td>
+                            <td><strong>@category.CategoryName</strong></td>
+                            <td><span class="type-pill">@category.ExpenseTypeName</span></td>
+                            <td class="text-right">@Model.CurrencySymbol@category.TotalSpend.ToString("N2")</td>
+                            <td class="text-right">@category.PercentageOfTotal.ToString("N1")%</td>
+                            <td class="text-right">
+                                @{
+                                    var varianceClass = "variance-neutral";
+                                    var varianceArrow = "";
+                                    if (category.VarianceValue.HasValue)
+                                    {
+                                        if (category.VarianceValue.Value > 0)
+                                        {
+                                            varianceClass = "variance-up";
+                                            varianceArrow = "\u2191 ";
+                                        }
+                                        else if (category.VarianceValue.Value < 0)
+                                        {
+                                            varianceClass = "variance-down";
+                                            varianceArrow = "\u2193 ";
+                                        }
+                                    }
+                                }
+                                <span class="@varianceClass">@varianceArrow@category.Variance@(category.VarianceValue.HasValue && category.Variance != "New" && category.Variance != "N/A" && category.Variance != "\u2014" ? "%" : "")</span>
+                            </td>
+                            <td class="text-right">
+                                @if (category.BudgetLimit.HasValue)
+                                {
+                                    @($"{Model.CurrencySymbol}{category.BudgetLimit.Value:N2}")
+                                }
+                                else
+                                {
+                                    <span style="color:#8a9aaa;">—</span>
+                                }
+                            </td>
+                            <td>
+                                @{
+                                    var statusClass = category.BudgetStatus switch
+                                    {
+                                        "Exceeded" => "exceeded",
+                                        "Approaching" => "approaching",
+                                        "Within Limit" => "within-limit",
+                                        _ => "no-limit"
+                                    };
+                                }
+                                <span class="status-badge @statusClass">@category.BudgetStatus</span>
+                            </td>
+                        </tr>
+                        <!-- Supplier sub-rows (hidden by default) -->
+                        @if (category.TopSuppliers.Any())
+                        {
+                            @foreach (var supplier in category.TopSuppliers)
+                            {
+                                <tr class="supplier-row" data-parent-category="@category.ExpenseCategoryId">
+                                    <td></td>
+                                    <td colspan="2">@supplier.SupplierName</td>
+                                    <td class="text-right">@Model.CurrencySymbol@supplier.TotalSpend.ToString("N2")</td>
+                                    <td class="text-right">@supplier.PercentageOfCategory.ToString("N1")%</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr class="supplier-row" data-parent-category="@category.ExpenseCategoryId">
+                                <td></td>
+                                <td colspan="7" style="font-style:italic;color:#8a9aaa;">No supplier data available for this category.</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Trend Line Chart -->
+    <section class="glass card-pad" style="margin-bottom:24px;" data-trend-section>
+        <h3 style="font-size:17px;margin-bottom:18px;color:#0B1B28;font-family:Manrope,sans-serif;font-weight:700;">Spending Trends (12 Months)</h3>
+        <p style="color:#5a6a7a;font-size:14px;@(Model.TrendData.HasSufficientData ? "display:none;" : "")" data-trend-insufficient>Insufficient data for trend analysis. At least 2 months of purchase data are required.</p>
+        @if (Model.TrendData.HasSufficientData)
+        {
+            <div style="max-height:350px;">
+                <canvas id="trendChart" data-chart="trend"></canvas>
+            </div>
+        }
+        else
+        {
+            <div style="max-height:350px;display:none;">
+                <canvas id="trendChart" data-chart="trend"></canvas>
+            </div>
+        }
+    </section>
+
+</div><!-- /dataContent -->
+
+<!-- Budget Limits Section (read-only analysis) -->
+<section class="glass card-pad" data-budget-config-section>
+    <h3 style="font-size:17px;margin-bottom:18px;color:#0B1B28;font-family:Manrope,sans-serif;font-weight:700;">Budget Limits</h3>
+    @{
+        var categoriesWithLimits = Model.BudgetConfig.Where(b => b.CurrentLimit.HasValue).ToList();
+    }
+    @if (categoriesWithLimits.Any())
+    {
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+                <tr style="border-bottom:2px solid rgba(13,94,166,.08);">
+                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Category</th>
+                    <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Current Limit</th>
+                    <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">This Month Spend</th>
+                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;width:140px;">Usage %</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var budget in categoriesWithLimits)
+                {
+                    var usagePercent = budget.CurrentLimit.Value > 0 
+                        ? Math.Round((budget.CurrentSpend / budget.CurrentLimit.Value) * 100m, 1) 
+                        : 0m;
+                    var barWidth = Math.Min((double)usagePercent, 100.0);
+                    var barColor = usagePercent >= 100 ? "#C24A4A" : usagePercent >= 80 ? "#C8912E" : "#129867";
+                    
+                    <tr style="border-bottom:1px solid rgba(13,94,166,.05);">
+                        <td style="padding:14px;color:#0B1B28;font-weight:500;">@budget.CategoryName</td>
+                        <td style="padding:14px;text-align:center;">
+                            <span style="display:inline-block;padding:5px 16px;border:1.5px solid #d0dbe5;border-radius:20px;font-size:13px;color:#0B1B28;font-weight:500;background:#fff;">@Model.CurrencySymbol@budget.CurrentLimit.Value.ToString("N0")</span>
+                        </td>
+                        <td style="padding:14px;text-align:right;font-weight:600;color:#0B1B28;">@Model.CurrencySymbol@budget.CurrentSpend.ToString("N2")</td>
+                        <td style="padding:14px;">
+                            <div style="position:relative;">
+                                <div style="height:8px;background:#e8eef3;border-radius:4px;overflow:hidden;">
+                                    <div style="height:100%;width:@(barWidth)%;background:@barColor;border-radius:4px;transition:width .3s ease;"></div>
+                                </div>
+                                <span style="display:block;margin-top:4px;font-size:11px;font-weight:600;color:@barColor;">@usagePercent.ToString("F1")%</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p style="color:#5a6a7a;font-size:14px;">No budget limits configured. <a href="/ExpenseCategoryLimit" style="color:#0D5EA6;font-weight:600;text-decoration:none;">Set limits in Spending Limits</a> to track usage here.</p>
+    }
+</section>
+
+</div><!-- /insightsContent -->
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/expense-insights.js"></script>
+    <script>
+        // Pass server-rendered data to JavaScript for initial chart rendering
+        window.ExpenseInsightsData = {
+            categories: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.InsightsData.Categories)),
+            trendData: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendData)),
+            currencySymbol: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CurrencySymbol)),
+            selectedPeriod: '@Model.SelectedPeriod',
+            hasData: @Model.InsightsData.HasData.ToString().ToLower()
+        };
+    </script>
+}

@@ -1,0 +1,45 @@
+{
+  "pbtResults": {
+    "4.4 Write property test for effective access level computation (Property 7)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782209957099
+    },
+    "4.5 Write property test for module key validation (Property 8)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782209979699
+    },
+    "5.3 Write property test for non-module controller bypass (Property 2)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210226228
+    },
+    "5.2 Write property test for plan filter module inclusion (Property 1)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210228195
+    },
+    "5.4 Write property test for demo session bypass (Property 3)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210302025
+    },
+    "6.2 Write property test for user filter access (Property 4)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210378826
+    },
+    "6.3 Write property test for readonly blocks non-GET (Property 5)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210379651
+    },
+    "6.4 Write property test for owner bypass (Property 6)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210380359
+    },
+    "9.5 Write property test for soft-gate view content (Property 10)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210658074
+    },
+    "11.3 Write property test for permission grant bounded by plan (Property 9)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782210907793
+    }
+  },
+  "executionHistory": {}
+}

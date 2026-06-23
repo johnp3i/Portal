@@ -14,6 +14,8 @@ public class PlanFeature
 
     public bool IsIncluded { get; set; }
 
+    public string AccessLevel { get; set; } = "full";
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties

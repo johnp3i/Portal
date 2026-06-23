@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profit & Loss Summary — Portal Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5a6a7a;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --line: rgba(13,94,166,.08);
+            --shadow: 0 2px 12px rgba(13,94,166,.07);
+            --radius: 20px;
+            --card-radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: Manrope, sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        /* ===== LAYOUT ===== */
+        .page-wrapper {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 28px;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            margin-bottom: 28px;
+        }
+        .topbar .eyebrow {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--blue);
+            margin-bottom: 4px;
+        }
+        .topbar h1 {
+            font-size: 42px;
+            line-height: 1.1;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        /* ===== GLASS CARD ===== */
+        .glass {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--line);
+        }
+        .card-pad {
+            padding: 24px 28px;
+        }
+
+        /* ===== PERIOD SELECTOR ===== */
+        .period-card {
+            margin-bottom: 22px;
+        }
+        .period-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .period-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .period-btn {
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1.5px solid var(--blue);
+            background: transparent;
+            color: var(--blue);
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+        .period-btn:hover {
+            background: rgba(13,94,166,.06);
+        }
+        .period-btn.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+        .custom-range {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .custom-range.visible {
+            display: flex;
+        }
+        .custom-range label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--muted);
+        }
+        .custom-range input[type="date"] {
+            padding: 7px 12px;
+            border: 1.5px solid #d0dbe5;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: Inter, sans-serif;
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+        }
+        .custom-range input[type="date"]:focus {
+            border-color: var(--blue);
+        }
+        .btn-export {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1.5px solid var(--blue);
+            background: transparent;
+            color: var(--blue);
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+        .btn-export:hover {
+            background: rgba(13,94,166,.06);
+        }
+        .btn-export svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        /* ===== SUMMARY CARDS ===== */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--line);
+            padding: 20px 18px;
+            border-left: 4px solid transparent;
+            position: relative;
+        }
+        .summary-card.blue-accent { border-left-color: var(--blue); }
+        .summary-card.green-accent { border-left-color: var(--green); }
+        .summary-card.amber-accent { border-left-color: var(--amber); }
+
+        .summary-card .label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 8px;
+        }
+        .summary-card .amount {
+            font-family: Manrope, sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 50px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+        .badge.green {
+            background: rgba(18,152,103,.10);
+            color: var(--green);
+        }
+        .badge.red {
+            background: rgba(194,74,74,.10);
+            color: var(--red);
+        }
+        .badge.neutral {
+            background: rgba(90,106,122,.08);
+            color: var(--muted);
+        }
+
+        /* ===== BREAKDOWN TABLE ===== */
+        .table-card {
+            margin-top: 0;
+        }
+        .table-card h3 {
+            font-size: 17px;
+            margin-bottom: 18px;
+            color: var(--text);
+        }
+        .pnl-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .pnl-table thead th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 2px solid var(--line);
+        }
+        .pnl-table thead th:nth-child(3),
+        .pnl-table thead th:nth-child(4) {
+            text-align: right;
+        }
+        .pnl-table tbody td {
+            padding: 11px 14px;
+            border-bottom: 1px solid rgba(13,94,166,.05);
+            vertical-align: middle;
+        }
+        .pnl-table tbody td:nth-child(3),
+        .pnl-table tbody td:nth-child(4) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .pnl-table .section-header td {
+            padding-top: 18px;
+            padding-bottom: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid rgba(13,94,166,.12);
+            background: transparent;
+        }
+        .pnl-table .subtotal td {
+            font-weight: 700;
+            background: var(--bg2);
+            border-bottom: 1px solid rgba(13,94,166,.10);
+        }
+        .pnl-table .grand-total td {
+            font-weight: 800;
+            font-size: 15px;
+            background: rgba(13,94,166,.04);
+            border-top: 2px solid rgba(13,94,166,.15);
+            border-bottom: none;
+        }
+        .type-pill {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--bg2);
+            color: var(--muted);
+        }
+
+        /* ===== TREND COMPARISON ===== */
+        .trend-card {
+            margin-top: 24px;
+        }
+        .trend-card h3 {
+            font-size: 17px;
+            margin-bottom: 18px;
+            color: var(--text);
+        }
+        .trend-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .trend-table thead th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 2px solid var(--line);
+        }
+        .trend-table thead th:nth-child(2),
+        .trend-table thead th:nth-child(3),
+        .trend-table thead th:nth-child(4) {
+            text-align: right;
+        }
+        .trend-table tbody td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(13,94,166,.05);
+        }
+        .trend-table tbody td:nth-child(2),
+        .trend-table tbody td:nth-child(3),
+        .trend-table tbody td:nth-child(4) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .trend-table tbody tr:last-child td {
+            border-bottom: none;
+            font-weight: 700;
+        }
+        .change-up {
+            color: var(--green);
+            font-weight: 600;
+        }
+        .change-down {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1100px) {
+            .summary-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .page-wrapper {
+                padding: 20px 14px;
+            }
+            .topbar h1 {
+                font-size: 30px;
+            }
+            .summary-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .period-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .period-tabs {
+                justify-content: center;
+            }
+            .btn-export {
+                align-self: flex-end;
+            }
+            .table-card, .trend-card {
+                overflow-x: auto;
+            }
+            .pnl-table, .trend-table {
+                min-width: 560px;
+            }
+        }
+        @media (max-width: 480px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            .card-pad {
+                padding: 18px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+    <!-- ===== TOPBAR ===== -->
+    <div class="topbar">
+        <div class="eyebrow">Financial Reports</div>
+        <h1>Profit &amp; Loss</h1>
+        <p class="subtitle">Understand your revenue, costs, and profitability at a glance.</p>
+    </div>
+
+    <!-- ===== PERIOD SELECTOR ===== -->
+    <section class="glass card-pad period-card">
+        <div class="period-row">
+            <div class="period-tabs">
+                <button class="period-btn active" onclick="selectPeriod(this)">Current Month</button>
+                <button class="period-btn" onclick="selectPeriod(this)">Previous Month</button>
+                <button class="period-btn" onclick="selectPeriod(this)">Current Quarter</button>
+                <button class="period-btn" onclick="selectPeriod(this)">Current Year</button>
+                <button class="period-btn" id="customBtn" onclick="selectPeriod(this)">Custom</button>
+            </div>
+            <button class="btn-export">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export PDF
+            </button>
+        </div>
+        <div class="custom-range" id="customRange">
+            <label>From</label>
+            <input type="date" value="2025-01-01" />
+            <label>To</label>
+            <input type="date" value="2025-01-31" />
+        </div>
+    </section>
+
+    <!-- ===== SUMMARY CARDS ===== -->
+    <div class="summary-grid">
+        <div class="summary-card blue-accent">
+            <div class="label">Revenue</div>
+            <div class="amount">&euro;12,450.00</div>
+            <span class="badge green">&#8593; 18% vs last year</span>
+        </div>
+        <div class="summary-card amber-accent">
+            <div class="label">COGS</div>
+            <div class="amount">&euro;3,200.00</div>
+            <span class="badge red">&#8593; 5% vs last year</span>
+        </div>
+        <div class="summary-card green-accent">
+            <div class="label">Gross Profit</div>
+            <div class="amount">&euro;9,250.00</div>
+            <span class="badge neutral">Margin: 74.3%</span>
+        </div>
+        <div class="summary-card amber-accent">
+            <div class="label">Operating Expenses</div>
+            <div class="amount">&euro;4,800.00</div>
+            <span class="badge green">&#8595; 12% vs last year</span>
+        </div>
+        <div class="summary-card green-accent">
+            <div class="label">Net Profit</div>
+            <div class="amount">&euro;4,450.00</div>
+            <span class="badge neutral">Margin: 35.7%</span>
+        </div>
+    </div>
+
+    <!-- ===== BREAKDOWN TABLE ===== -->
+    <section class="glass card-pad table-card">
+        <h3>Expense Breakdown by Category</h3>
+        <table class="pnl-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>% of Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- COGS Section -->
+                <tr class="section-header">
+                    <td colspan="4">Cost of Goods Sold</td>
+                </tr>
+                <tr>
+                    <td>Raw Materials</td>
+                    <td><span class="type-pill">Goods</span></td>
+                    <td>&euro;2,100.00</td>
+                    <td>26.3%</td>
+                </tr>
+                <tr>
+                    <td>Packaging</td>
+                    <td><span class="type-pill">Goods</span></td>
+                    <td>&euro;1,100.00</td>
+                    <td>13.8%</td>
+                </tr>
+                <tr class="subtotal">
+                    <td>COGS Subtotal</td>
+                    <td></td>
+                    <td>&euro;3,200.00</td>
+                    <td>40.0%</td>
+                </tr>
+
+                <!-- Operating Expenses Section -->
+                <tr class="section-header">
+                    <td colspan="4">Operating Expenses</td>
+                </tr>
+                <tr>
+                    <td>Office Rent</td>
+                    <td><span class="type-pill">Services</span></td>
+                    <td>&euro;1,500.00</td>
+                    <td>18.8%</td>
+                </tr>
+                <tr>
+                    <td>Software Subscriptions</td>
+                    <td><span class="type-pill">Services</span></td>
+                    <td>&euro;890.00</td>
+                    <td>11.1%</td>
+                </tr>
+                <tr>
+                    <td>Marketing</td>
+                    <td><span class="type-pill">Services</span></td>
+                    <td>&euro;780.00</td>
+                    <td>9.8%</td>
+                </tr>
+                <tr>
+                    <td>Utilities</td>
+                    <td><span class="type-pill">Services</span></td>
+                    <td>&euro;650.00</td>
+                    <td>8.1%</td>
+                </tr>
+                <tr>
+                    <td>Professional Fees</td>
+                    <td><span class="type-pill">Services</span></td>
+                    <td>&euro;580.00</td>
+                    <td>7.3%</td>
+                </tr>
+                <tr>
+                    <td>Miscellaneous</td>
+                    <td><span class="type-pill">Services</span></td>
+                    <td>&euro;400.00</td>
+                    <td>5.0%</td>
+                </tr>
+                <tr class="subtotal">
+                    <td>OpEx Subtotal</td>
+                    <td></td>
+                    <td>&euro;4,800.00</td>
+                    <td>60.0%</td>
+                </tr>
+
+                <!-- Grand Total -->
+                <tr class="grand-total">
+                    <td>Total Expenses</td>
+                    <td></td>
+                    <td>&euro;8,000.00</td>
+                    <td>100%</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ===== TREND COMPARISON ===== -->
+    <section class="glass card-pad trend-card">
+        <h3>Year-over-Year Comparison</h3>
+        <table class="trend-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>This Period</th>
+                    <th>Same Period Last Year</th>
+                    <th>Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Revenue</td>
+                    <td>&euro;12,450</td>
+                    <td>&euro;10,550</td>
+                    <td><span class="change-up">&#8593; 18.0%</span></td>
+                </tr>
+                <tr>
+                    <td>COGS</td>
+                    <td>&euro;3,200</td>
+                    <td>&euro;3,050</td>
+                    <td><span class="change-up">&#8593; 4.9%</span></td>
+                </tr>
+                <tr>
+                    <td>Gross Profit</td>
+                    <td>&euro;9,250</td>
+                    <td>&euro;7,500</td>
+                    <td><span class="change-up">&#8593; 23.3%</span></td>
+                </tr>
+                <tr>
+                    <td>Operating Expenses</td>
+                    <td>&euro;4,800</td>
+                    <td>&euro;5,450</td>
+                    <td><span class="change-down">&#8595; 11.9%</span></td>
+                </tr>
+                <tr>
+                    <td>Net Profit</td>
+                    <td>&euro;4,450</td>
+                    <td>&euro;2,050</td>
+                    <td><span class="change-up">&#8593; 117.1%</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+</div>
+
+<script>
+    function selectPeriod(btn) {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        var customRange = document.getElementById('customRange');
+        if (btn.id === 'customBtn') {
+            customRange.classList.add('visible');
+        } else {
+            customRange.classList.remove('visible');
+        }
+    }
+</script>
+
+</body>
+</html>

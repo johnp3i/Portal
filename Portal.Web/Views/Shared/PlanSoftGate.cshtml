@@ -1,0 +1,55 @@
+@model Portal.Web.Models.SoftGateViewModel
+@{
+    ViewData["Title"] = "Feature Upgrade Required";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Subscription</div>
+        <h1 class="topbar-heading">Feature Upgrade</h1>
+        <p class="topbar-subtitle">This feature is available on a higher plan.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="max-width:620px;">
+    <div style="text-align:center;padding:36px 20px;">
+        <!-- Upgrade icon in accent cyan -->
+        <div style="margin-bottom:24px;">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                <path d="M2 17l10 5 10-5"></path>
+                <path d="M2 12l10 5 10-5"></path>
+            </svg>
+        </div>
+
+        <!-- Module display name as heading -->
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#0B1B28;margin-bottom:10px;">
+            @Model.ModuleDisplayName
+        </h2>
+
+        <!-- Description of what the module does -->
+        <p style="font-size:14px;color:#5a6a7a;line-height:1.7;margin-bottom:16px;">
+            @Model.ModuleDescription
+        </p>
+
+        <!-- Available in [PlanName] plan message -->
+        <div style="display:inline-block;padding:8px 18px;background:#EEF4F8;border-radius:12px;margin-bottom:28px;">
+            <span style="font-size:13px;color:#0B1B28;font-weight:600;">
+                Available in the <span style="color:#0D5EA6;">@Model.RequiredPlanName</span> plan
+            </span>
+        </div>
+
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.6;margin-bottom:28px;">
+            Your current plan is <strong style="color:#0B1B28;">@Model.CurrentPlanName</strong>.
+            Upgrade to unlock this feature and get access to additional tools that help you manage your business more effectively.
+        </p>
+
+        <!-- Upgrade CTA button -->
+        <a href="/Account/Billing"
+           style="display:inline-block;padding:12px 32px;background:#0D5EA6;color:#ffffff;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;transition:background 0.2s;"
+           aria-label="Go to billing page to upgrade your plan">
+            Go to Billing
+        </a>
+    </div>
+</section>

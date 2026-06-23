@@ -198,7 +198,8 @@ public class HomeController : Controller
             ShowPurchase = scope.ShowPurchase,
             ShowVat = scope.ShowVat,
             ShowCustomer = scope.ShowCustomer,
-            HasAnyKpiSection = scope.HasAnyKpiSection
+            HasAnyKpiSection = scope.HasAnyKpiSection,
+            ShowPnlTeaser = scope.ShowPnlTeaser
         };
 
         return View(model);

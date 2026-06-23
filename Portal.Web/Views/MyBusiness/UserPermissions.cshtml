@@ -1,0 +1,213 @@
+@using Portal.Infrastructure.Entities.Identity
+@using Portal.Infrastructure.Constants
+@{
+    ViewData["Title"] = "User Permissions";
+    var userBusinesses = ViewBag.UserBusinesses as List<UserBusiness> ?? new List<UserBusiness>();
+    var permissions = ViewBag.Permissions as List<UserBusinessPermission> ?? new List<UserBusinessPermission>();
+    var planModules = ViewBag.PlanModules as List<string> ?? new List<string>();
+    var isReadOnly = (bool)(ViewBag.IsReadOnly ?? false);
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Business Settings</div>
+        <h1 class="topbar-heading">User Permissions</h1>
+        <p class="topbar-subtitle">Manage module access for your team members.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="overflow:hidden;">
+    <div class="label">Access Grid</div>
+    <h2 style="margin-top:8px;font-size:24px;">Module permissions by user</h2>
+
+    @if (!userBusinesses.Any())
+    {
+        <div class="empty-state" style="margin-top:18px;">
+            <p class="muted" style="font-size:14px;">No team members found.</p>
+        </div>
+    }
+    else
+    {
+        <div style="margin-top:18px;overflow-x:auto;max-width:100%;">
+            <table style="width:100%;border-collapse:collapse;min-width:600px;">
+                <thead>
+                    <tr style="border-bottom:2px solid rgba(13,94,166,.08);">
+                        <th style="text-align:left;padding:12px 14px;font-size:13px;font-weight:700;color:#334155;white-space:nowrap;">
+                            Team Member
+                        </th>
+                        @foreach (var module in planModules)
+                        {
+                            <th style="text-align:center;padding:12px 10px;font-size:12px;font-weight:700;color:#334155;white-space:nowrap;">
+                                @FormatModuleName(module)
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ub in userBusinesses.OrderByDescending(u => u.IsOwner).ThenBy(u => u.User.FirstName))
+                    {
+                        var isOwner = ub.IsOwner;
+                        var rowStyle = isOwner
+                            ? "background:rgba(13,94,166,.04);border-bottom:1px solid rgba(13,94,166,.08);"
+                            : "border-bottom:1px solid rgba(13,94,166,.06);";
+
+                        <tr style="@rowStyle">
+                            <td style="padding:12px 14px;white-space:nowrap;">
+                                <div style="font-weight:700;font-size:14px;color:#1E293B;">
+                                    @ub.User.FirstName @ub.User.LastName
+                                    @if (isOwner)
+                                    {
+                                        <span style="display:inline-block;margin-left:8px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:#0D5EA6;color:#fff;border-radius:4px;">Owner</span>
+                                    }
+                                </div>
+                                <div style="font-size:12px;color:#5a6a7a;">@ub.User.Email</div>
+                            </td>
+                            @foreach (var module in planModules)
+                            {
+                                <td style="text-align:center;padding:10px 8px;">
+                                    @if (isOwner)
+                                    {
+                                        <span style="display:inline-block;padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;background:rgba(18,152,103,.12);color:#129867;">
+                                            Full
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        var perm = permissions.FirstOrDefault(p => p.UserBusinessId == ub.Id && p.Module == module && p.IsActive);
+                                        var currentLevel = perm?.AccessLevel ?? "none";
+
+                                        if (isReadOnly)
+                                        {
+                                            @RenderBadge(currentLevel)
+                                        }
+                                        else
+                                        {
+                                            <select class="permission-select"
+                                                    data-user-id="@ub.UserId"
+                                                    data-module="@module"
+                                                    onchange="updatePermission(this)"
+                                                    style="padding:4px 8px;font-size:12px;font-weight:600;border-radius:6px;border:1px solid rgba(13,94,166,.15);background:#fff;cursor:pointer;min-width:90px;">
+                                                @if (currentLevel == "none")
+                                                {
+                                                    <option value="none" selected>None</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="none">None</option>
+                                                }
+                                                @if (currentLevel == "readonly")
+                                                {
+                                                    <option value="readonly" selected>Read Only</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="readonly">Read Only</option>
+                                                }
+                                                @if (currentLevel == "full")
+                                                {
+                                                    <option value="full" selected>Full</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="full">Full</option>
+                                                }
+                                            </select>
+                                        }
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function updatePermission(selectElement) {
+        var userId = selectElement.getAttribute('data-user-id');
+        var module = selectElement.getAttribute('data-module');
+        var accessLevel = selectElement.value;
+
+        if (accessLevel === 'none') {
+            // Revoke
+            BlockUI.show('Revoking access...');
+            try {
+                var response = await fetch('/MyBusiness/AxPostRevokePermission', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ userId: userId, module: module })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        } else {
+            // Grant
+            BlockUI.show('Granting access...');
+            try {
+                var response = await fetch('/MyBusiness/AxPostGrantPermission', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ userId: userId, module: module, accessLevel: accessLevel })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    }
+</script>
+}
+
+@functions {
+    string FormatModuleName(string moduleKey)
+    {
+        if (string.IsNullOrEmpty(moduleKey)) return moduleKey;
+        // Capitalize and replace underscores with spaces
+        var formatted = moduleKey.Replace("_", " ");
+        return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(formatted);
+    }
+
+    Microsoft.AspNetCore.Html.IHtmlContent RenderBadge(string level)
+    {
+        var (label, bg, color) = level switch
+        {
+            "full" => ("Full", "rgba(18,152,103,.12)", "#129867"),
+            "readonly" => ("Read Only", "rgba(13,94,166,.12)", "#0D5EA6"),
+            _ => ("None", "rgba(94,115,133,.10)", "#5E7385")
+        };
+
+        var html = $"<span style=\"display:inline-block;padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;background:{bg};color:{color};\">{label}</span>";
+        return new Microsoft.AspNetCore.Html.HtmlString(html);
+    }
+}

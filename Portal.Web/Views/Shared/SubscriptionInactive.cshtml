@@ -1,0 +1,64 @@
+@model Portal.Web.Models.SoftGateViewModel
+@{
+    ViewData["Title"] = "Subscription Inactive";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Subscription</div>
+        <h1 class="topbar-heading">Subscription Inactive</h1>
+        <p class="topbar-subtitle">Your subscription is currently paused or expired.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="max-width:620px;">
+    <div style="text-align:center;padding:36px 20px;">
+        <!-- Clock/pause icon in warning amber -->
+        <div style="margin-bottom:24px;">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        </div>
+
+        <!-- Heading -->
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#0B1B28;margin-bottom:10px;">
+            Subscription Inactive
+        </h2>
+
+        <!-- Informational message -->
+        <p style="font-size:14px;color:#5a6a7a;line-height:1.7;margin-bottom:16px;">
+            Your subscription is currently inactive. Renew your plan to continue using
+            <strong style="color:#0B1B28;">@Model.ModuleDisplayName</strong> and all your business tools.
+        </p>
+
+        <!-- Status badge in warm amber tone -->
+        <div style="display:inline-block;padding:8px 18px;background:#FEF7EC;border-radius:12px;margin-bottom:28px;">
+            <span style="font-size:13px;color:#C8912E;font-weight:600;">
+                Subscription status: Inactive
+            </span>
+        </div>
+
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.6;margin-bottom:28px;">
+            Renewing your subscription will restore full access to all the modules included in your plan.
+            If you believe this is an error, please contact support.
+        </p>
+
+        <!-- Primary CTA: Renew Subscription -->
+        <a href="/Account/Billing"
+           style="display:inline-block;padding:12px 32px;background:#0D5EA6;color:#ffffff;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;transition:background 0.2s;margin-bottom:14px;"
+           aria-label="Go to billing page to renew your subscription">
+            Renew Subscription
+        </a>
+
+        <br />
+
+        <!-- Secondary link: Go to Dashboard -->
+        <a href="/"
+           style="display:inline-block;padding:10px 24px;color:#5a6a7a;text-decoration:none;font-weight:600;font-size:13px;transition:color 0.2s;"
+           aria-label="Return to the dashboard">
+            Go to Dashboard
+        </a>
+    </div>
+</section>

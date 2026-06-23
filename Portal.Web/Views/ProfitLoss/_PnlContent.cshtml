@@ -1,0 +1,298 @@
+@using Portal.Infrastructure.Models
+@model Portal.Web.Models.PnlViewModel
+
+@if (!Model.Summary.HasData)
+{
+    <!-- Empty State -->
+    <section class="glass card-pad">
+        <div class="pnl-empty-state">
+            <p>No financial data exists for this period.</p>
+        </div>
+    </section>
+}
+else
+{
+    <!-- Summary Cards Grid -->
+    <div class="pnl-summary-grid">
+        <!-- Revenue -->
+        <div class="pnl-summary-card blue-accent">
+            <div class="label">Revenue</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.Revenue.ToString("N2")</div>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.RevenueChange.HasValue)
+            {
+                var revenueChange = Model.Summary.Trend.RevenueChange.Value;
+                var revenueIsUp = revenueChange >= 0;
+                <!-- Revenue up = good (green), down = bad (red) -->
+                <span class="pnl-badge @(revenueIsUp ? "green" : "red")">
+                    @(revenueIsUp ? "\u2191" : "\u2193") @Math.Abs(revenueChange).ToString("N1")% vs last year
+                </span>
+            }
+        </div>
+
+        <!-- COGS -->
+        <div class="pnl-summary-card amber-accent">
+            <div class="label">COGS</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.Cogs.ToString("N2")</div>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.CogsChange.HasValue)
+            {
+                var cogsChange = Model.Summary.Trend.CogsChange.Value;
+                var cogsIsUp = cogsChange >= 0;
+                <!-- COGS up = bad (red), down = good (green) -->
+                <span class="pnl-badge @(cogsIsUp ? "red" : "green")">
+                    @(cogsIsUp ? "\u2191" : "\u2193") @Math.Abs(cogsChange).ToString("N1")% vs last year
+                </span>
+            }
+        </div>
+
+        <!-- Gross Profit -->
+        <div class="pnl-summary-card green-accent">
+            <div class="label">Gross Profit</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.GrossProfit.ToString("N2")</div>
+            <span class="pnl-badge neutral">Margin: @Model.Summary.GrossMargin.ToString("N1")%</span>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.GrossProfitChange.HasValue)
+            {
+                var gpChange = Model.Summary.Trend.GrossProfitChange.Value;
+                var gpIsUp = gpChange >= 0;
+                <!-- Gross Profit up = good (green), down = bad (red) -->
+                <span class="pnl-badge @(gpIsUp ? "green" : "red")" style="margin-left:4px;">
+                    @(gpIsUp ? "\u2191" : "\u2193") @Math.Abs(gpChange).ToString("N1")%
+                </span>
+            }
+        </div>
+
+        <!-- Operating Expenses -->
+        <div class="pnl-summary-card amber-accent">
+            <div class="label">Operating Expenses</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.OperatingExpenses.ToString("N2")</div>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.OperatingExpensesChange.HasValue)
+            {
+                var opexChange = Model.Summary.Trend.OperatingExpensesChange.Value;
+                var opexIsUp = opexChange >= 0;
+                <!-- OpEx up = bad (red), down = good (green) -->
+                <span class="pnl-badge @(opexIsUp ? "red" : "green")">
+                    @(opexIsUp ? "\u2191" : "\u2193") @Math.Abs(opexChange).ToString("N1")% vs last year
+                </span>
+            }
+        </div>
+
+        <!-- Net Profit -->
+        <div class="pnl-summary-card green-accent">
+            <div class="label">Net Profit</div>
+            <div class="amount">@Model.CurrencySymbol@Model.Summary.NetProfit.ToString("N2")</div>
+            <span class="pnl-badge neutral">Margin: @Model.Summary.NetMargin.ToString("N1")%</span>
+            @if (Model.Summary.Trend != null && Model.Summary.Trend.NetProfitChange.HasValue)
+            {
+                var npChange = Model.Summary.Trend.NetProfitChange.Value;
+                var npIsUp = npChange >= 0;
+                <!-- Net Profit up = good (green), down = bad (red) -->
+                <span class="pnl-badge @(npIsUp ? "green" : "red")" style="margin-left:4px;">
+                    @(npIsUp ? "\u2191" : "\u2193") @Math.Abs(npChange).ToString("N1")%
+                </span>
+            }
+        </div>
+    </div>
+
+    <!-- Breakdown Table Card -->
+    <section class="glass card-pad">
+        <h3 style="font-size:17px;margin-bottom:18px;color:#0B1B28;font-family:Manrope,sans-serif;font-weight:700;">Expense Breakdown by Category</h3>
+        <table class="pnl-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>% of Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var cogsItems = Model.Summary.CategoryBreakdown.Where(c => c.PurchaseTypeId == 2).ToList();
+                    var opexItems = Model.Summary.CategoryBreakdown.Where(c => c.PurchaseTypeId == 3).ToList();
+                    var cogsSubtotal = cogsItems.Sum(c => c.TotalAmount);
+                    var opexSubtotal = opexItems.Sum(c => c.TotalAmount);
+                    var cogsPercentage = cogsItems.Sum(c => c.PercentageOfTotal);
+                    var opexPercentage = opexItems.Sum(c => c.PercentageOfTotal);
+                    var grandTotal = cogsSubtotal + opexSubtotal;
+                }
+
+                <!-- COGS Section -->
+                @if (cogsItems.Any())
+                {
+                    <tr class="section-header">
+                        <td colspan="4">Cost of Goods Sold</td>
+                    </tr>
+                    @foreach (var item in cogsItems)
+                    {
+                        <tr>
+                            <td>@item.CategoryName</td>
+                            <td><span class="type-pill">@item.ExpenseTypeName</span></td>
+                            <td>@Model.CurrencySymbol@item.TotalAmount.ToString("N2")</td>
+                            <td>@item.PercentageOfTotal.ToString("N1")%</td>
+                        </tr>
+                    }
+                    <tr class="subtotal">
+                        <td>COGS Subtotal</td>
+                        <td></td>
+                        <td>@Model.CurrencySymbol@cogsSubtotal.ToString("N2")</td>
+                        <td>@cogsPercentage.ToString("N1")%</td>
+                    </tr>
+                }
+
+                <!-- Operating Expenses Section -->
+                @if (opexItems.Any())
+                {
+                    <tr class="section-header">
+                        <td colspan="4">Operating Expenses</td>
+                    </tr>
+                    @foreach (var item in opexItems)
+                    {
+                        <tr>
+                            <td>@item.CategoryName</td>
+                            <td><span class="type-pill">@item.ExpenseTypeName</span></td>
+                            <td>@Model.CurrencySymbol@item.TotalAmount.ToString("N2")</td>
+                            <td>@item.PercentageOfTotal.ToString("N1")%</td>
+                        </tr>
+                    }
+                    <tr class="subtotal">
+                        <td>OpEx Subtotal</td>
+                        <td></td>
+                        <td>@Model.CurrencySymbol@opexSubtotal.ToString("N2")</td>
+                        <td>@opexPercentage.ToString("N1")%</td>
+                    </tr>
+                }
+
+                <!-- Grand Total -->
+                <tr class="grand-total">
+                    <td>Total Expenses</td>
+                    <td></td>
+                    <td>@Model.CurrencySymbol@grandTotal.ToString("N2")</td>
+                    <td>100%</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Trend Comparison Card -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <h3 style="font-size:17px;margin-bottom:18px;color:#0B1B28;font-family:Manrope,sans-serif;font-weight:700;">Year-over-Year Comparison</h3>
+        @if (Model.Summary.Trend == null)
+        {
+            <p style="color:#5a6a7a;font-size:14px;">No comparison data available for this period.</p>
+        }
+        else
+        {
+            <table class="trend-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>This Period</th>
+                        <th>Same Period Last Year</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Revenue -->
+                    <tr>
+                        <td>Revenue</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Revenue.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousRevenue.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.RevenueChange.HasValue)
+                            {
+                                var rc = Model.Summary.Trend.RevenueChange.Value;
+                                <!-- Revenue up = good (green), down = bad (red) -->
+                                <span class="change-up" style="color:@(rc >= 0 ? "#129867" : "#C24A4A")">
+                                    @(rc >= 0 ? "\u2191" : "\u2193") @Math.Abs(rc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- COGS -->
+                    <tr>
+                        <td>COGS</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Cogs.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousCogs.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.CogsChange.HasValue)
+                            {
+                                var cc = Model.Summary.Trend.CogsChange.Value;
+                                <!-- COGS up = bad (red), down = good (green) -->
+                                <span class="change-up" style="color:@(cc >= 0 ? "#C24A4A" : "#129867")">
+                                    @(cc >= 0 ? "\u2191" : "\u2193") @Math.Abs(cc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- Gross Profit -->
+                    <tr>
+                        <td>Gross Profit</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.GrossProfit.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousGrossProfit.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.GrossProfitChange.HasValue)
+                            {
+                                var gpc = Model.Summary.Trend.GrossProfitChange.Value;
+                                <!-- Gross Profit up = good (green), down = bad (red) -->
+                                <span class="change-up" style="color:@(gpc >= 0 ? "#129867" : "#C24A4A")">
+                                    @(gpc >= 0 ? "\u2191" : "\u2193") @Math.Abs(gpc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- Operating Expenses -->
+                    <tr>
+                        <td>Operating Expenses</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.OperatingExpenses.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousOperatingExpenses.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.OperatingExpensesChange.HasValue)
+                            {
+                                var oec = Model.Summary.Trend.OperatingExpensesChange.Value;
+                                <!-- OpEx up = bad (red), down = good (green) -->
+                                <span class="change-up" style="color:@(oec >= 0 ? "#C24A4A" : "#129867")">
+                                    @(oec >= 0 ? "\u2191" : "\u2193") @Math.Abs(oec).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                    <!-- Net Profit -->
+                    <tr>
+                        <td>Net Profit</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.NetProfit.ToString("N2")</td>
+                        <td>@Model.CurrencySymbol@Model.Summary.Trend.PreviousNetProfit.ToString("N2")</td>
+                        <td>
+                            @if (Model.Summary.Trend.NetProfitChange.HasValue)
+                            {
+                                var npc = Model.Summary.Trend.NetProfitChange.Value;
+                                <!-- Net Profit up = good (green), down = bad (red) -->
+                                <span class="change-up" style="color:@(npc >= 0 ? "#129867" : "#C24A4A")">
+                                    @(npc >= 0 ? "\u2191" : "\u2193") @Math.Abs(npc).ToString("N1")%
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#5a6a7a;">—</span>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    </section>
+}

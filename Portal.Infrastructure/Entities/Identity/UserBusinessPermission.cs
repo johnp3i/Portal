@@ -8,6 +8,8 @@ public class UserBusinessPermission
     public string AccessLevel { get; set; } = null!;
     public bool IsActive { get; set; } = true;
     public DateTime? DeactivatedAtUtc { get; set; }
+    public string? GrantedByUserId { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     // Navigation

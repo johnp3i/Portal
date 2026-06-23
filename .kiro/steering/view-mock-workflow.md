@@ -16,7 +16,8 @@ Ask:
 
 ## Behaviour
 
-- If the user says **yes**: create a standalone `.html` file in `.kiro/mocks/{feature-name}/` with the full visual mock (inline CSS, no external dependencies, self-contained). Then proceed with the spec.
+- If the user says **yes**: create a standalone `.html` file in `.kiro/docs/mockups/` with a descriptive filename (e.g., `pnl-summary.html`, `shared-schedule-themes.html`). Then proceed with the spec.
 - If the user says **no**: proceed directly with the spec workflow.
 - The mock should follow the MyChair Design System (colours, typography, spacing, card patterns).
 - Mocks are reference-only — they are not deployed or included in the build.
+- All mockups live in `.kiro/docs/mockups/` — never in `wwwroot` or any build-deployed directory.

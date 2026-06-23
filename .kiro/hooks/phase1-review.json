@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Phase 1 Timetable Review",
+      "trigger": "PostTaskExec",
+      "action": {
+        "type": "agent",
+        "prompt": "A spec task has just been completed. Please review the Phase 1 Development Timetable at .kiro/docs/Phase1_Development_Timetable.md. Read the file and report: (1) Which module is currently being worked on, (2) Which sub-tasks in that module are still unchecked, (3) Whether the permission gating task for this module has been completed, (4) Whether the mobile responsiveness check has been done. Provide a brief status summary."
+      }
+    }
+  ]
+}

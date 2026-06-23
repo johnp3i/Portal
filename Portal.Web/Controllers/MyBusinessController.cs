@@ -1,8 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Portal.Infrastructure.Constants;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Web.Models;
 using System.Security.Claims;
 
 namespace Portal.Web.Controllers;
@@ -19,14 +24,19 @@ public class MyBusinessController : Controller
     private readonly ILogoService _logoService;
     private readonly ICurrentTenantService _tenantService;
     private readonly BusinessPaymentDetailRepository _paymentDetailRepository;
+    private readonly IPlanCheckService _planCheckService;
+    private readonly MembershipDbContext _membershipDbContext;
 
     public MyBusinessController(IBusinessService businessService, ILogoService logoService,
-        ICurrentTenantService tenantService, BusinessPaymentDetailRepository paymentDetailRepository)
+        ICurrentTenantService tenantService, BusinessPaymentDetailRepository paymentDetailRepository,
+        IPlanCheckService planCheckService, MembershipDbContext membershipDbContext)
     {
         _businessService = businessService;
         _logoService = logoService;
         _tenantService = tenantService;
         _paymentDetailRepository = paymentDetailRepository;
+        _planCheckService = planCheckService;
+        _membershipDbContext = membershipDbContext;
     }
 
     private bool CanEdit()
@@ -278,5 +288,175 @@ public class MyBusinessController : Controller
             label.Trim(), bankName.Trim(), iban.Trim(), payeeName.Trim());
         TempData["Success"] = "Payment detail updated.";
         return RedirectToAction(nameof(Index), new { tab = "payment" });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> UserPermissions()
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            // Get all UserBusiness records for the current business
+            var userBusinesses = await _membershipDbContext.UserBusinesses
+                .Include(ub => ub.User)
+                .Where(ub => ub.BusinessId == businessId && ub.IsActive)
+                .ToListAsync();
+
+            // Get all permissions for these UserBusiness records
+            var userBusinessIds = userBusinesses.Select(ub => ub.Id).ToList();
+            var permissions = await _membershipDbContext.UserBusinessPermissions
+                .Where(p => userBusinessIds.Contains(p.UserBusinessId))
+                .ToListAsync();
+
+            // Get plan modules
+            var planModules = await _planCheckService.GetPlanModulesAsync();
+
+            ViewBag.UserBusinesses = userBusinesses;
+            ViewBag.Permissions = permissions;
+            ViewBag.PlanModules = planModules;
+            ViewBag.IsReadOnly = !CanEdit();
+
+            return View();
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Failed to load user permissions.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostGrantPermission([FromBody] GrantPermissionRequest request)
+    {
+        try
+        {
+            if (!CanEdit())
+            {
+                return Json(new { success = false, message = "You do not have permission to manage user access." });
+            }
+
+            // Validate module is valid
+            if (!PortalModules.IsValid(request.Module))
+            {
+                return Json(new { success = false, message = "Invalid module specified." });
+            }
+
+            // Validate access level is valid
+            if (!AccessLevels.IsValid(request.AccessLevel))
+            {
+                return Json(new { success = false, message = "Invalid access level specified." });
+            }
+
+            // Validate module is in plan
+            var isInPlan = await _planCheckService.IsModuleInPlanAsync(request.Module);
+            if (!isInPlan)
+            {
+                return Json(new { success = false, message = "This module is not included in your current subscription plan." });
+            }
+
+            var businessId = _tenantService.CurrentBusinessId;
+
+            // Check if target user is the owner — owners cannot have permissions modified
+            var targetUserBusiness = await _membershipDbContext.UserBusinesses
+                .FirstOrDefaultAsync(ub => ub.UserId == request.UserId && ub.BusinessId == businessId && ub.IsActive);
+
+            if (targetUserBusiness == null)
+            {
+                return Json(new { success = false, message = "User not found in this business." });
+            }
+
+            if (targetUserBusiness.IsOwner)
+            {
+                return Json(new { success = false, message = "Cannot modify permissions for the business owner." });
+            }
+
+            // Find or create UserBusinessPermission
+            var permission = await _membershipDbContext.UserBusinessPermissions
+                .FirstOrDefaultAsync(p => p.UserBusinessId == targetUserBusiness.Id && p.Module == request.Module);
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (permission == null)
+            {
+                permission = new UserBusinessPermission
+                {
+                    UserBusinessId = targetUserBusiness.Id,
+                    Module = request.Module,
+                    AccessLevel = request.AccessLevel,
+                    GrantedByUserId = currentUserId,
+                    IsActive = true,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                _membershipDbContext.UserBusinessPermissions.Add(permission);
+            }
+            else
+            {
+                permission.AccessLevel = request.AccessLevel;
+                permission.GrantedByUserId = currentUserId;
+                permission.IsActive = true;
+                permission.DeactivatedAtUtc = null;
+            }
+
+            await _membershipDbContext.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Permission granted successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An error occurred while granting permission." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRevokePermission([FromBody] RevokePermissionRequest request)
+    {
+        try
+        {
+            if (!CanEdit())
+            {
+                return Json(new { success = false, message = "You do not have permission to manage user access." });
+            }
+
+            var businessId = _tenantService.CurrentBusinessId;
+
+            // Check if target user is the owner — owners cannot have permissions modified
+            var targetUserBusiness = await _membershipDbContext.UserBusinesses
+                .FirstOrDefaultAsync(ub => ub.UserId == request.UserId && ub.BusinessId == businessId && ub.IsActive);
+
+            if (targetUserBusiness == null)
+            {
+                return Json(new { success = false, message = "User not found in this business." });
+            }
+
+            if (targetUserBusiness.IsOwner)
+            {
+                return Json(new { success = false, message = "Cannot modify permissions for the business owner." });
+            }
+
+            // Find the permission record
+            var permission = await _membershipDbContext.UserBusinessPermissions
+                .FirstOrDefaultAsync(p => p.UserBusinessId == targetUserBusiness.Id && p.Module == request.Module);
+
+            if (permission == null)
+            {
+                return Json(new { success = false, message = "Permission record not found." });
+            }
+
+            // Set access to none and deactivate
+            permission.AccessLevel = AccessLevels.None;
+            permission.IsActive = false;
+            permission.DeactivatedAtUtc = DateTime.UtcNow;
+
+            await _membershipDbContext.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Permission revoked successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An error occurred while revoking permission." });
+        }
     }
 }

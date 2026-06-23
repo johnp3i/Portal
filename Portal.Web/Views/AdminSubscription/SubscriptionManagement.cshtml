@@ -1,0 +1,269 @@
+@using Portal.Web.Controllers
+@model SubscriptionManagementViewModel
+@{
+    ViewData["Title"] = "Subscription Management";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Subscription Management</h1>
+        <p class="topbar-subtitle">View and manage business subscription plans and statuses.</p>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:240px;">
+            <label for="searchInput">Search</label>
+            <input type="text" id="searchInput" placeholder="Business name..." maxlength="200" oninput="filterTable()" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-secondary" onclick="clearFilter()">Clear</button>
+        </div>
+    </div>
+</section>
+
+<section class="glass card-pad">
+    @if (Model.Businesses.Any())
+    {
+        <div class="scroll-hint">← Scroll horizontally →</div>
+        <div class="table-responsive">
+            <table class="data-table" id="subscriptionTable">
+                <thead>
+                    <tr>
+                        <th>Business Name</th>
+                        <th>Current Plan</th>
+                        <th>Status</th>
+                        <th>Started</th>
+                        <th>Expires</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var business in Model.Businesses)
+                    {
+                        var statusColor = business.Status switch
+                        {
+                            "active" => "#129867",
+                            "trial" => "#0D5EA6",
+                            "cancelled" => "#5a6a7a",
+                            "expired" => "#C8912E",
+                            _ => "#5a6a7a"
+                        };
+                        var statusLabel = business.Status != null
+                            ? System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(business.Status)
+                            : "No Plan";
+
+                        <tr data-business-name="@business.BusinessName.ToLowerInvariant()">
+                            <td>
+                                <strong>@business.BusinessName</strong>
+                                @if (!business.IsActive)
+                                {
+                                    <span style="font-size:11px;color:#C24A4A;margin-left:6px;">(Inactive)</span>
+                                }
+                            </td>
+                            <td>
+                                <select id="plan-@business.BusinessId" class="form-select"
+                                        style="min-width:140px;padding:6px 10px;border-radius:8px;border:1px solid #d0dce8;font-size:13px;font-weight:600;">
+                                    @foreach (var plan in Model.AvailablePlans)
+                                    {
+                                        var isSelected = business.PlanName == plan.PlanName;
+                                        if (isSelected)
+                                        {
+                                            <option value="@plan.PlanId" selected>@plan.PlanName</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@plan.PlanId">@plan.PlanName</option>
+                                        }
+                                    }
+                                    @if (business.PlanName == null)
+                                    {
+                                        <option value="" disabled selected>No Plan</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <select id="status-@business.BusinessPlanId" class="form-select"
+                                        style="min-width:130px;padding:6px 10px;border-radius:8px;border:1px solid #d0dce8;font-size:13px;font-weight:600;color:@statusColor;"
+                                        @(business.BusinessPlanId == null ? "disabled" : "")>
+                                    @foreach (var status in new[] { "active", "trial", "cancelled", "expired" })
+                                    {
+                                        var isSelected = business.Status == status;
+                                        var label = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(status);
+                                        if (isSelected)
+                                        {
+                                            <option value="@status" selected>@label</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@status">@label</option>
+                                        }
+                                    }
+                                    @if (business.Status == null)
+                                    {
+                                        <option value="" disabled selected>—</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                @(business.StartedAtUtc.HasValue
+                                    ? business.StartedAtUtc.Value.ToString("dd MMM yyyy")
+                                    : "—")
+                            </td>
+                            <td>
+                                @(business.ExpiresAtUtc.HasValue
+                                    ? business.ExpiresAtUtc.Value.ToString("dd MMM yyyy")
+                                    : "—")
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                    <button type="button" class="btn btn-primary" style="font-size:12px;padding:6px 12px;"
+                                            onclick="changePlan(@business.BusinessId)"
+                                            @(business.BusinessPlanId == null ? "disabled" : "")>
+                                        Change Plan
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;"
+                                            onclick="changeStatus(@business.BusinessPlanId)"
+                                            @(business.BusinessPlanId == null ? "disabled" : "")>
+                                        Change Status
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No businesses found.</p>
+        </div>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    function filterTable() {
+        var input = document.getElementById('searchInput').value.toLowerCase();
+        var rows = document.querySelectorAll('#subscriptionTable tbody tr');
+        rows.forEach(function (row) {
+            var name = row.getAttribute('data-business-name') || '';
+            row.style.display = name.includes(input) ? '' : 'none';
+        });
+    }
+
+    function clearFilter() {
+        document.getElementById('searchInput').value = '';
+        filterTable();
+    }
+
+    async function changePlan(businessId) {
+        var planSelect = document.getElementById('plan-' + businessId);
+        var planId = planSelect.value;
+
+        if (!planId) {
+            Swal.fire({ icon: 'warning', title: 'No Plan Selected', text: 'Please select a plan first.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var planName = planSelect.options[planSelect.selectedIndex].text;
+
+        var confirm = await Swal.fire({
+            title: 'Change Plan',
+            text: 'Change this business to the ' + planName + ' plan?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Confirm'
+        });
+
+        if (!confirm.isConfirmed) return;
+
+        BlockUI.show('Changing plan...');
+        try {
+            var response = await fetch('/Admin/Subscriptions/ChangePlan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ businessId: businessId, planId: parseInt(planId) })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function changeStatus(businessPlanId) {
+        var statusSelect = document.getElementById('status-' + businessPlanId);
+        if (!statusSelect) {
+            Swal.fire({ icon: 'warning', title: 'No Subscription', text: 'This business has no active subscription record.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var status = statusSelect.value;
+        if (!status) {
+            Swal.fire({ icon: 'warning', title: 'No Status Selected', text: 'Please select a status first.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var statusLabel = statusSelect.options[statusSelect.selectedIndex].text;
+        var confirmColor = (status === 'cancelled' || status === 'expired') ? '#C24A4A' : '#0D5EA6';
+
+        var confirm = await Swal.fire({
+            title: 'Change Status',
+            text: 'Change subscription status to ' + statusLabel + '?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: confirmColor,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Confirm'
+        });
+
+        if (!confirm.isConfirmed) return;
+
+        BlockUI.show('Changing status...');
+        try {
+            var response = await fetch('/Admin/Subscriptions/ChangeStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ businessPlanId: parseInt(businessPlanId), status: status })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
+}

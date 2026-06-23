@@ -21,4 +21,7 @@ public class PurchaseListViewModel
     public DateOnly? DateFrom { get; set; }
     public DateOnly? DateTo { get; set; }
     public string? SearchTerm { get; set; }
+
+    // Soft-gate teaser visibility
+    public bool ShowExpenseInsightsTeaser { get; set; }
 }

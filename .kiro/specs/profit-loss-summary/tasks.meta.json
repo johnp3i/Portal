@@ -1,0 +1,57 @@
+{
+  "pbtResults": {
+    "2.4 Write property test: Arithmetic invariants (Property 3)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223150372
+    },
+    "2.2 Write property test: Revenue computation (Property 1)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223151078
+    },
+    "2.5 Write property test: Margin formulas (Property 4)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223155283
+    },
+    "2.3 Write property test: Purchase classification (Property 2)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223170822
+    },
+    "2.6 Write property test: Period resolution (Property 5)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223172410
+    },
+    "2.7 Write property test: Custom date validation (Property 6)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223274975
+    },
+    "2.9 Write property test: Trend percentage change (Property 8)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223299162
+    },
+    "2.10 Write property test: Expense breakdown percentages (Property 9)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223307167
+    },
+    "2.8 Write property test: Comparison period shift (Property 7)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223309216
+    },
+    "2.11 Write property test: Expense breakdown ordering (Property 10)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223309511
+    },
+    "2.12 Write property test: Breakdown completeness (Property 11)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223513392
+    },
+    "4.2 Write property test: PDF filename format (Property 13)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223748080
+    },
+    "5.2 Write property test: PDF content completeness (Property 12)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782223790439
+    }
+  },
+  "executionHistory": {}
+}

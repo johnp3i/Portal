@@ -18,6 +18,10 @@ public class BusinessPlan
 
     public bool IsActive { get; set; }
 
+    public string Status { get; set; } = "active";
+
+    public DateTime? TrialEndsAtUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties

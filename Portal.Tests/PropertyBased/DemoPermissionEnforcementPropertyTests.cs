@@ -28,8 +28,17 @@ public class DemoPermissionEnforcementPropertyTests
 
     /// <summary>
     /// All module names from PortalModules that the filter recognizes.
+    /// Only modules that have controller mappings in ModuleControllerMap are testable here.
     /// </summary>
-    private static readonly string[] AllModules = PortalModules.All;
+    private static readonly string[] AllModules = new[]
+    {
+        PortalModules.Customer, PortalModules.Quotation, PortalModules.Invoice,
+        PortalModules.Revenue, PortalModules.Purchase, PortalModules.Vat,
+        PortalModules.Credit, PortalModules.Audit, PortalModules.Products,
+        PortalModules.Cashflow, PortalModules.Pnl, PortalModules.ExpenseInsights,
+        PortalModules.Attachments, PortalModules.ClientPortal, PortalModules.ActivityTimeline,
+        PortalModules.Api, PortalModules.Webhooks, PortalModules.MultiCurrency
+    };
 
     /// <summary>
     /// Maps each module to one representative controller name that belongs to it.
@@ -44,8 +53,17 @@ public class DemoPermissionEnforcementPropertyTests
         [PortalModules.Purchase] = "Purchase",
         [PortalModules.Vat] = "Vat",
         [PortalModules.Credit] = "CreditNote",
-        [PortalModules.Audit] = "AuditLog",
-        [PortalModules.Products] = "Product"
+        [PortalModules.Audit] = "Audit",
+        [PortalModules.Products] = "Product",
+        [PortalModules.Cashflow] = "Cashflow",
+        [PortalModules.Pnl] = "ProfitLoss",
+        [PortalModules.ExpenseInsights] = "ExpenseInsight",
+        [PortalModules.Attachments] = "Attachment",
+        [PortalModules.ClientPortal] = "ClientPortal",
+        [PortalModules.ActivityTimeline] = "ActivityTimeline",
+        [PortalModules.Api] = "Api",
+        [PortalModules.Webhooks] = "Webhook",
+        [PortalModules.MultiCurrency] = "MultiCurrency"
     };
 
     /// <summary>
@@ -266,6 +284,8 @@ public class DemoPermissionEnforcementPropertyTests
 
                 var filter = CreateFilter(invitationId, permissions);
                 var context = CreateFilterContext(invitationId, controllerName, httpMethod);
+                // Set AJAX header so the filter returns JsonResult instead of ViewResult
+                context.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
 
                 // Act
                 filter.OnAuthorizationAsync(context).GetAwaiter().GetResult();

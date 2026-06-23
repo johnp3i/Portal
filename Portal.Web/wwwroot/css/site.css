@@ -49,7 +49,7 @@ a{text-decoration:none;color:inherit}
 .app.sidebar-collapsed .sidebar-toggle svg{transform:rotate(180deg)}
 
 /* ===== CONTENT ===== */
-.content{padding:24px}
+.content{padding:24px;overflow-x:hidden}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:5px}
 .topbar-heading{margin-top:10px;font-size:30px}
 .topbar-subtitle{margin-top:0;font-size:15px;line-height:1.8;color:var(--muted)}

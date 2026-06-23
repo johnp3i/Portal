@@ -103,16 +103,18 @@ public class PlanFeatureModuleNamePropertyTests
 
     #endregion
 
-    #region Property 4e: The valid set contains exactly 9 modules
+    #region Property 4e: The valid set contains all modules
 
     /// <summary>
-    /// Property 4e: The PortalModules.All set SHALL contain exactly 9 defined modules.
+    /// Property 4e: The PortalModules.All set SHALL contain all 23 defined modules.
     /// **Validates: Requirements 2.3**
     /// </summary>
     [Fact]
-    public void ValidModuleSet_ContainsExactlyNineModules()
+    public void ValidModuleSet_ContainsAllModules()
     {
-        Assert.Equal(9, PortalModules.All.Length);
+        Assert.Equal(23, PortalModules.All.Length);
+
+        // Original 9 modules
         Assert.Contains("customer", PortalModules.All);
         Assert.Contains("quotation", PortalModules.All);
         Assert.Contains("invoice", PortalModules.All);
@@ -122,6 +124,22 @@ public class PlanFeatureModuleNamePropertyTests
         Assert.Contains("credit", PortalModules.All);
         Assert.Contains("audit", PortalModules.All);
         Assert.Contains("products", PortalModules.All);
+
+        // 14 new module keys
+        Assert.Contains("payment_link_manual", PortalModules.All);
+        Assert.Contains("payment_reminder_manual", PortalModules.All);
+        Assert.Contains("payment_link_auto", PortalModules.All);
+        Assert.Contains("payment_reminder_auto", PortalModules.All);
+        Assert.Contains("cashflow", PortalModules.All);
+        Assert.Contains("pnl", PortalModules.All);
+        Assert.Contains("expense_insights", PortalModules.All);
+        Assert.Contains("attachments", PortalModules.All);
+        Assert.Contains("client_portal", PortalModules.All);
+        Assert.Contains("activity_timeline", PortalModules.All);
+        Assert.Contains("audit_log", PortalModules.All);
+        Assert.Contains("api", PortalModules.All);
+        Assert.Contains("webhooks", PortalModules.All);
+        Assert.Contains("multi_currency", PortalModules.All);
     }
 
     #endregion

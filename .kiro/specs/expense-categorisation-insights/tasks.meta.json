@@ -1,0 +1,613 @@
+{
+  "pbtResults": {
+    "2.4 Write property test for custom range validation (Property 4)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782245745726
+    },
+    "2.3 Write property test for period resolution (Property 3)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782245756400
+    },
+    "2.7 Write property test for percentage invariant (Property 2)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782246116771
+    },
+    "2.6 Write property test for category aggregation (Property 1)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782246161542
+    },
+    "3.2 Write property test for MoM variance (Property 7)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782246355403
+    },
+    "3.6 Write property test for top suppliers ranking (Property 6)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782246444890
+    },
+    "3.4 Write property test for budget threshold classification (Property 5)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782247540941
+    },
+    "4.3 Write property test for CSV export round-trip (Property 8)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782247774292
+    },
+    "4.4 Write property test for tenant isolation (Property 9)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782247784484
+    }
+  },
+  "executionHistory": {
+    "1.1 Create request/response DTOs in Portal.Infrastructure/Models/ExpenseInsights/": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245107131
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245124113
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245280203
+      }
+    ],
+    "1.2 Create view model in Portal.Web/Models/": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245107973
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245124728
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245280950
+      }
+    ],
+    "2.1 Create IExpenseInsightsService interface in Portal.Infrastructure/Services/": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108063
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245297273
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245373599
+      }
+    ],
+    "2.2 Implement ExpenseInsightsService — period resolution and validation": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108142
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245378471
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245585638
+      }
+    ],
+    "2.3 Write property test for period resolution (Property 3)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108245
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245595167
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245820600
+      }
+    ],
+    "2.4 Write property test for custom range validation (Property 4)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108309
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245595832
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245821385
+      }
+    ],
+    "2.5 Implement ExpenseInsightsService — category aggregation (GetInsightsDataAsync)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108365
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245379249
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245586274
+      }
+    ],
+    "2.6 Write property test for category aggregation (Property 1)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108443
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245833216
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246180219
+      }
+    ],
+    "2.7 Write property test for percentage invariant (Property 2)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108553
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245833988
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246181086
+      }
+    ],
+    "3.1 Implement Month-Over-Month variance computation": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108616
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245596592
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245822268
+      }
+    ],
+    "3.2 Write property test for MoM variance (Property 7)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108678
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246190171
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247556062
+      }
+    ],
+    "3.3 Implement budget status computation and UpsertBudgetLimitAsync": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108732
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245597374
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245822962
+      }
+    ],
+    "3.4 Write property test for budget threshold classification (Property 5)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108793
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246190909
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247556664
+      }
+    ],
+    "3.5 Implement top suppliers per category": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108858
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245598080
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245823748
+      }
+    ],
+    "3.6 Write property test for top suppliers ranking (Property 6)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108909
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246191712
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247557691
+      }
+    ],
+    "4.1 Implement GetTrendDataAsync": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245108968
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246192431
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247558382
+      }
+    ],
+    "4.2 Implement ExportCsvAsync": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109031
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246193208
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247558974
+      }
+    ],
+    "4.3 Write property test for CSV export round-trip (Property 8)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109094
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247565429
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247799437
+      }
+    ],
+    "4.4 Write property test for tenant isolation (Property 9)": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109160
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247566229
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247800147
+      }
+    ],
+    "5. Checkpoint — Ensure all service-layer tests pass": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109245
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247811366
+      }
+    ],
+    "6.1 Create ExpenseInsightController with [ModuleAccess(PortalModules.ExpenseInsights)]": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109343
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247816319
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248025301
+      }
+    ],
+    "6.2 Implement AxGetInsightsData endpoint": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109398
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247817013
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248026100
+      }
+    ],
+    "6.3 Implement AxGetTrendData endpoint": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109464
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247817799
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248026871
+      }
+    ],
+    "6.4 Implement ExportCsv endpoint": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109541
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247818643
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248027531
+      }
+    ],
+    "6.5 Implement AxPostUpdateBudget endpoint": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109601
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247819307
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248028259
+      }
+    ],
+    "7.1 Create Index.cshtml for Expense Insights": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109663
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248034924
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248407815
+      }
+    ],
+    "7.2 Implement client-side JavaScript for Expense Insights": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109729
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248035660
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248406898
+      }
+    ],
+    "8.1 Register IExpenseInsightsService in Program.cs": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109782
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248036395
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248408687
+      }
+    ],
+    "8.2 Add sidebar navigation link for Expense Insights": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109853
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248037062
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248409411
+      }
+    ],
+    "8.3 Add Purchase list soft-gate teaser for Starter plan users": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109911
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248037905
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248410375
+      }
+    ],
+    "9. Final checkpoint — Ensure all tests pass": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245109981
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248419097
+      },
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248652002
+      }
+    ],
+    "1. Create DTOs and Models": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782245281045
+      }
+    ],
+    "2. Implement IExpenseInsightsService interface and core service": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782246181176
+      }
+    ],
+    "3. Implement variance, budget, and supplier logic": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247557780
+      }
+    ],
+    "4. Implement trend data and CSV export": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782247800337
+      }
+    ],
+    "6. Implement ExpenseInsightController": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248028332
+      }
+    ],
+    "7. Implement Views and JavaScript": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248407918
+      }
+    ],
+    "8. DI Registration and Navigation": [
+      {
+        "executionId": "895cdf50-2528-44a5-8e48-5b1f8e9d589e",
+        "chatSessionId": "sess_9bf3ee23-48af-4c36-80e5-1a272f41f4a8",
+        "timestamp": 1782248410494
+      }
+    ]
+  }
+}
