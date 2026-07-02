@@ -10,14 +10,14 @@ This timetable covers the implementation of all Phase 1 (Professional tier) feat
 
 **Effort:** Low | **Dependencies:** None (uses existing invoice payments + purchases)
 
-- [ ] 1.1 Define P&L computation logic (Revenue = payments received, COGS = stock purchases, OpEx = expense purchases)
-- [ ] 1.2 Create P&L service with period-based calculations (month/quarter/year/custom)
-- [ ] 1.3 Create P&L controller and view (period selector, summary cards, breakdown table)
-- [ ] 1.4 Add trend comparison (vs previous period, vs same period last year)
-- [ ] 1.5 Add PDF export capability
-- [ ] 1.6 Add plan permission gate (`pnl` module key — Professional only)
-- [ ] 1.7 Add soft-gate teaser for Starter users on Dashboard
-- [ ] 1.8 Visual QA and mobile responsiveness check
+- [x] 1.1 Define P&L computation logic (Revenue = payments received, COGS = stock purchases, OpEx = expense purchases)
+- [x] 1.2 Create P&L service with period-based calculations (month/quarter/year/custom)
+- [x] 1.3 Create P&L controller and view (period selector, summary cards, breakdown table)
+- [x] 1.4 Add trend comparison (vs previous period, vs same period last year)
+- [x] 1.5 Add PDF export capability
+- [x] 1.6 Add plan permission gate (`pnl` module key — Professional only)
+- [x] 1.7 Add soft-gate teaser for Starter users on Dashboard
+- [x] 1.8 Visual QA and mobile responsiveness check
 
 ---
 
@@ -25,18 +25,18 @@ This timetable covers the implementation of all Phase 1 (Professional tier) feat
 
 **Effort:** Low | **Dependencies:** None (uses existing purchases + expense categories)
 
-- [ ] 2.1 Create expense insights service (aggregation by category, period comparison)
-- [ ] 2.2 Create expense insights controller and view (charts, breakdown table)
-- [ ] 2.3 Add pie/bar chart: spend by category (current period)
-- [ ] 2.4 Add trend lines: category spend over last 6–12 months
-- [ ] 2.5 Create `ExpenseCategoryBudget` table and budget configuration UI
-- [ ] 2.6 Add budget threshold alerts (exceeded/approaching)
-- [ ] 2.7 Add top suppliers per category breakdown
-- [ ] 2.8 Add month-over-month variance highlighting
-- [ ] 2.9 Add CSV export for category breakdown
-- [ ] 2.10 Add plan permission gate (`expense_insights` module key — Professional only)
-- [ ] 2.11 Add soft-gate teaser for Starter users on Purchase list
-- [ ] 2.12 Visual QA and mobile responsiveness check
+- [x] 2.1 Create expense insights service (aggregation by category, period comparison)
+- [x] 2.2 Create expense insights controller and view (charts, breakdown table)
+- [x] 2.3 Add pie/bar chart: spend by category (current period)
+- [x] 2.4 Add trend lines: category spend over last 6–12 months
+- [x] 2.5 Create `ExpenseCategoryBudget` table and budget configuration UI
+- [x] 2.6 Add budget threshold alerts (exceeded/approaching)
+- [x] 2.7 Add top suppliers per category breakdown
+- [x] 2.8 Add month-over-month variance highlighting
+- [x] 2.9 Add CSV export for category breakdown
+- [x] 2.10 Add plan permission gate (`expense_insights` module key — Professional only)
+- [x] 2.11 Add soft-gate teaser for Starter users on Purchase list
+- [x] 2.12 Visual QA and mobile responsiveness check
 
 ---
 

@@ -387,6 +387,205 @@ public class PortalEmailService : IEmailService
 </html>";
     }
 
+    public async Task SendPaymentReminderEmailAsync(
+        string toEmail, string customerName, string invoiceNumber,
+        decimal outstandingAmount, DateOnly dueDate, string businessName,
+        string escalationTier, string? invoiceShareToken, string baseUrl,
+        string? trackingToken = null, bool isTestSend = false)
+    {
+        try
+        {
+            var subject = escalationTier switch
+            {
+                "Friendly" => $"Invoice approaching due date — {invoiceNumber}",
+                "Firm" => $"Invoice overdue — action required — {invoiceNumber}",
+                "Formal" => $"Final payment notice — {invoiceNumber}",
+                _ => $"Payment reminder — {invoiceNumber}"
+            };
+
+            // Prefix subject with [TEST] for test sends
+            if (isTestSend)
+            {
+                subject = "[TEST] " + subject;
+            }
+
+            var htmlBody = BuildPaymentReminderHtml(
+                customerName, invoiceNumber, outstandingAmount, dueDate,
+                businessName, escalationTier, invoiceShareToken, baseUrl);
+
+            // Inject tracking pixel before closing </body> tag
+            if (!string.IsNullOrEmpty(trackingToken))
+            {
+                var pixelHtml = $"<img src=\"{baseUrl}/PaymentReminder/Track/{trackingToken}\" width=\"1\" height=\"1\" style=\"display:block\" alt=\"\" />";
+                htmlBody = htmlBody.Replace("</body>", pixelHtml + "</body>");
+            }
+
+            await _emailSender.SendEmailAsync(toEmail, subject, htmlBody, EmailDepartmentEnum.PaymentReminder);
+
+            _logger.LogInformation(
+                "Payment reminder ({Tier}) sent to {Email} for invoice {InvoiceNumber}",
+                escalationTier, toEmail, invoiceNumber);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send payment reminder to {Email} for invoice {InvoiceNumber}", toEmail, invoiceNumber);
+            throw;
+        }
+    }
+
+    private static string BuildPaymentReminderHtml(
+        string customerName, string invoiceNumber, decimal outstandingAmount,
+        DateOnly dueDate, string businessName, string escalationTier,
+        string? invoiceShareToken, string baseUrl)
+    {
+        var encodedCustomerName = System.Net.WebUtility.HtmlEncode(customerName);
+        var encodedInvoiceNumber = System.Net.WebUtility.HtmlEncode(invoiceNumber);
+        var encodedBusinessName = System.Net.WebUtility.HtmlEncode(businessName);
+        var amountFormatted = $"\u20ac{outstandingAmount:N2}";
+        var dueDateFormatted = dueDate.ToString("dd MMMM yyyy");
+
+        // Tier-specific values
+        string accentColor, badgeBg, badgeText, badgeLabel, heading, ctaLabel;
+        string bodyContent, footerNote;
+
+        switch (escalationTier)
+        {
+            case "Firm":
+                accentColor = "#C8912E";
+                badgeBg = "#FFF6E8";
+                badgeText = "#C8912E";
+                badgeLabel = "PAYMENT OVERDUE";
+                heading = "Invoice overdue — action required";
+                ctaLabel = "Pay Now";
+                bodyContent = $@"
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                Dear {encodedCustomerName},
+                            </p>
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                We would like to draw your attention to invoice <strong>{encodedInvoiceNumber}</strong> for <strong>{amountFormatted}</strong> which was due on <strong>{dueDateFormatted}</strong> and remains unpaid. Please arrange payment at your earliest convenience.
+                            </p>";
+                footerNote = "If you have already made this payment, please allow 2-3 business days for processing.";
+                break;
+
+            case "Formal":
+                accentColor = "#C24A4A";
+                badgeBg = "#FDEAEA";
+                badgeText = "#C24A4A";
+                badgeLabel = "FINAL NOTICE";
+                heading = "Final payment notice";
+                ctaLabel = "Settle Invoice";
+                bodyContent = $@"
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                Dear {encodedCustomerName},
+                            </p>
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                Despite previous correspondence, invoice <strong>{encodedInvoiceNumber}</strong> for <strong>{amountFormatted}</strong> (due <strong>{dueDateFormatted}</strong>) remains outstanding. This is a formal notice that we require immediate payment.
+                            </p>
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                If payment is not received within 7 days, we may need to consider further action. Please contact us if you wish to discuss payment arrangements.
+                            </p>";
+                footerNote = "If you believe this notice was sent in error, please contact us immediately.";
+                break;
+
+            default: // Friendly
+                accentColor = "#0D5EA6";
+                badgeBg = "#EBF5FF";
+                badgeText = "#0D5EA6";
+                badgeLabel = "PAYMENT REMINDER";
+                heading = "Invoice approaching due date";
+                ctaLabel = "View Invoice";
+                bodyContent = $@"
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                Dear {encodedCustomerName},
+                            </p>
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                This is a friendly reminder that invoice <strong>{encodedInvoiceNumber}</strong> for <strong>{amountFormatted}</strong> is due on <strong>{dueDateFormatted}</strong>. We would appreciate your prompt attention to this matter.
+                            </p>
+                            <p style=""margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                If payment has already been made, please disregard this message.
+                            </p>";
+                footerNote = $"This is an automated reminder from {encodedBusinessName}.";
+                break;
+        }
+
+        // Build CTA button — only include href if share token is provided
+        string ctaButton;
+        if (!string.IsNullOrEmpty(invoiceShareToken))
+        {
+            var invoiceUrl = $"{baseUrl}/invoice/{System.Net.WebUtility.UrlEncode(invoiceShareToken)}";
+            ctaButton = $@"
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin:28px 0 0 0;"">
+                                <tr>
+                                    <td align=""center"">
+                                        <!--[if mso]><v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" href=""{System.Net.WebUtility.HtmlEncode(invoiceUrl)}"" style=""height:48px;v-text-anchor:middle;width:240px;"" arcsize=""10%"" strokecolor=""{accentColor}"" fillcolor=""{accentColor}""><w:anchorlock/><center style=""color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;"">{ctaLabel}</center></v:roundrect><![endif]-->
+                                        <!--[if !mso]><!--><a href=""{System.Net.WebUtility.HtmlEncode(invoiceUrl)}"" target=""_blank"" style=""display:inline-block;padding:14px 48px;background-color:{accentColor};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;font-family:'Segoe UI',sans-serif;"">{ctaLabel}</a><!--<![endif]-->
+                                    </td>
+                                </tr>
+                            </table>";
+        }
+        else
+        {
+            ctaButton = $@"
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin:28px 0 0 0;"">
+                                <tr>
+                                    <td align=""center"">
+                                        <span style=""display:inline-block;padding:14px 48px;background-color:{accentColor};color:#ffffff;font-size:15px;font-weight:700;border-radius:6px;letter-spacing:0.3px;font-family:'Segoe UI',sans-serif;"">{ctaLabel}</span>
+                                    </td>
+                                </tr>
+                            </table>";
+        }
+
+        return $@"<!DOCTYPE html>
+<html lang=""en"">
+<head><meta charset=""UTF-8"" /><meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" /></head>
+<body style=""margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#F2F6FA;"">
+    <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color:#F2F6FA;"">
+        <tr>
+            <td align=""center"" style=""padding:40px 16px;"">
+                <table role=""presentation"" width=""600"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""max-width:600px;width:100%;background-color:#FFFFFF;border-radius:16px;overflow:hidden;"">
+                    <!-- Header -->
+                    <tr>
+                        <td style=""background-color:#F7FAFC;padding:32px 40px;text-align:center;border-bottom:1px solid #E2EBF3;"">
+                            <img src=""https://www.3inventors.com/img/logo_blue_web_toolbar_oi.png"" alt=""3 Inventors"" width=""220"" style=""display:block;margin:0 auto;max-width:220px;height:auto;"" />
+                        </td>
+                    </tr>
+                    <!-- Accent line -->
+                    <tr><td style=""height:4px;background-color:{accentColor};""></td></tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style=""padding:40px;"">
+                            <!-- Badge -->
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+                                <tr>
+                                    <td style=""background-color:{badgeBg};border-radius:20px;padding:6px 16px;"">
+                                        <span style=""font-size:12px;font-weight:700;color:{badgeText};letter-spacing:0.06em;text-transform:uppercase;"">{badgeLabel}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Heading -->
+                            <h1 style=""margin:24px 0 0 0;font-size:24px;font-weight:700;color:#0B1B28;line-height:1.3;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">{heading}</h1>
+                            <!-- Body text -->{bodyContent}
+                            <!-- CTA Button -->{ctaButton}
+                            <p style=""margin:24px 0 0 0;font-size:13px;color:#5E7385;line-height:1.6;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;"">
+                                {footerNote}
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style=""background-color:#0B1B28;padding:28px 40px;text-align:center;"">
+                            <p style=""margin:0 0 8px 0;font-size:14px;font-weight:700;color:#FFFFFF;font-family:'Segoe UI',sans-serif;"">{encodedBusinessName}</p>
+                            <p style=""margin:0;font-size:11px;color:#5E6D7A;letter-spacing:0.08em;font-family:'Segoe UI',sans-serif;"">Powered by 3 Inventors</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
     private static string BuildDemoInvitationHtml(string magicLink, string businessName, DateTime expiresAtUtc)
     {
         var expiryFormatted = expiresAtUtc.ToString("dd MMMM yyyy 'at' HH:mm 'UTC'");

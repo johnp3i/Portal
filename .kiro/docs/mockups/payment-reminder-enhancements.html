@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Reminders — Enhancements Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --line: #E2EBF3;
+            --card-radius: 20px;
+            --input-radius: 10px;
+            --btn-radius: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 40px 24px 80px;
+        }
+
+        /* Topbar */
+        .topbar {
+            margin-bottom: 32px;
+        }
+        .topbar .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+        .topbar h1 {
+            font-family: Manrope, sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* Glass cards */
+        .glass {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+        }
+        .card-pad {
+            padding: 32px;
+        }
+
+        /* Section dividers */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 48px 0 32px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead th {
+            font-size: 11px;
+            font-weight: 600;
+            color: #5a6a7a;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1.5px solid var(--line);
+        }
+        tbody td {
+            padding: 14px 12px;
+            font-size: 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(13, 94, 166, 0.06);
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-green {
+            background: #E6F7EF;
+            color: #129867;
+        }
+        .badge-amber {
+            background: #FEF3DC;
+            color: #C8912E;
+        }
+        .badge-red {
+            background: #FDEAEA;
+            color: #C24A4A;
+        }
+        .badge-blue {
+            background: #E8F1FB;
+            color: #0D5EA6;
+        }
+        .badge-purple {
+            background: #F0E6FF;
+            color: #7C3AED;
+        }
+        .badge-muted {
+            background: #EEF4F8;
+            color: #5E7385;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            display: inline-block;
+            padding: 10px 22px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--btn-radius);
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-secondary {
+            display: inline-block;
+            padding: 10px 22px;
+            background: transparent;
+            border: 1.5px solid #d0dbe5;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: var(--btn-radius);
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .btn-secondary:hover {
+            border-color: var(--blue);
+        }
+
+        /* Form elements */
+        select {
+            border: 1.5px solid #d0dbe5;
+            border-radius: var(--input-radius);
+            padding: 9px 14px;
+            font-size: 14px;
+            font-family: Inter, sans-serif;
+            color: var(--text);
+            background: #fff;
+            appearance: auto;
+            min-width: 160px;
+            transition: border-color 0.15s;
+        }
+        select:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        input[type="email"],
+        input[type="text"] {
+            border: 1.5px solid #d0dbe5;
+            border-radius: var(--input-radius);
+            padding: 9px 14px;
+            font-size: 14px;
+            font-family: Inter, sans-serif;
+            color: var(--text);
+            width: 100%;
+            transition: border-color 0.15s;
+        }
+        input[type="email"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        /* Filter row */
+        .filter-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .field {
+            min-width: 180px;
+        }
+        .field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5a6a7a;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+
+        /* Summary text */
+        .summary-text {
+            font-size: 14px;
+            color: var(--muted);
+            margin-top: 18px;
+        }
+
+        /* Card heading */
+        .card-heading {
+            font-family: Manrope, sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 18px;
+        }
+
+        /* Opened status styles */
+        .opened-text {
+            font-size: 12px;
+        }
+        .opened-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #E6F7EF;
+            color: #129867;
+        }
+        .not-opened {
+            font-style: italic;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .opened-time {
+            font-size: 11px;
+            color: var(--muted);
+            margin-left: 6px;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            background: rgba(11, 27, 40, 0.35);
+            border-radius: var(--card-radius);
+            padding: 48px 24px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .modal-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 8px 40px rgba(13, 94, 166, 0.15);
+            max-width: 440px;
+            width: 100%;
+            padding: 28px 28px 24px;
+        }
+        .modal-card h3 {
+            font-family: Manrope, sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .modal-card .modal-subtitle {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+        .modal-divider {
+            height: 1px;
+            background: var(--line);
+            margin: 16px 0;
+        }
+        .modal-field {
+            margin-bottom: 16px;
+        }
+        .modal-field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5a6a7a;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+        .modal-field .readonly-value {
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 500;
+            padding: 9px 0;
+        }
+        .modal-field .quick-link {
+            font-size: 13px;
+            color: var(--blue);
+            text-decoration: none;
+            margin-top: 6px;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .modal-field .quick-link:hover {
+            text-decoration: underline;
+        }
+        .info-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: #F0F6FB;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+        }
+        .info-note .info-icon {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            margin-top: 1px;
+        }
+        .info-note p {
+            font-size: 13px;
+            color: #3D4F5F;
+            line-height: 1.5;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 16px 60px;
+            }
+            .topbar h1 {
+                font-size: 28px;
+            }
+            .glass.card-pad {
+                padding: 20px;
+            }
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 1: Upcoming Reminders Page                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="eyebrow">Payment Reminders</div>
+        <h1>Upcoming Reminders</h1>
+        <p class="subtitle">Preview which reminders are scheduled to be sent in the coming days.</p>
+    </div>
+
+    <!-- Filter Card -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div class="filter-row">
+            <div class="field">
+                <label>Period</label>
+                <select>
+                    <option>Next 7 days</option>
+                    <option selected>Next 14 days</option>
+                    <option>Next 30 days</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Tier</label>
+                <select>
+                    <option selected>All Tiers</option>
+                    <option>Friendly</option>
+                    <option>Firm</option>
+                    <option>Formal</option>
+                </select>
+            </div>
+            <div style="padding-bottom:2px;">
+                <button class="btn-primary">Filter</button>
+                <button class="btn-secondary" style="margin-left:8px;">Clear</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Card: Upcoming Reminders Table -->
+    <section class="glass card-pad">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Invoice</th>
+                    <th>Amount Due</th>
+                    <th>Tier</th>
+                    <th>Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>05 Jul 2026</td>
+                    <td>Acme Solutions Ltd</td>
+                    <td>INV-2026-0089</td>
+                    <td>&euro;3,200.00</td>
+                    <td><span class="badge badge-green">Friendly</span></td>
+                    <td>08 Jul 2026</td>
+                </tr>
+                <tr>
+                    <td>07 Jul 2026</td>
+                    <td>Harbour Marine Co</td>
+                    <td>INV-2026-0076</td>
+                    <td>&euro;1,875.50</td>
+                    <td><span class="badge badge-amber">Firm</span></td>
+                    <td>30 Jun 2026</td>
+                </tr>
+                <tr>
+                    <td>08 Jul 2026</td>
+                    <td>Malta Digital Agency</td>
+                    <td>INV-2026-0092</td>
+                    <td>&euro;950.00</td>
+                    <td><span class="badge badge-green">Friendly</span></td>
+                    <td>11 Jul 2026</td>
+                </tr>
+                <tr>
+                    <td>10 Jul 2026</td>
+                    <td>Greenfield Consulting</td>
+                    <td>INV-2026-0071</td>
+                    <td>&euro;4,500.00</td>
+                    <td><span class="badge badge-red">Formal</span></td>
+                    <td>19 Jun 2026</td>
+                </tr>
+                <tr>
+                    <td>11 Jul 2026</td>
+                    <td>Sunrise Hospitality</td>
+                    <td>INV-2026-0095</td>
+                    <td>&euro;2,100.00</td>
+                    <td><span class="badge badge-green">Friendly</span></td>
+                    <td>14 Jul 2026</td>
+                </tr>
+                <tr>
+                    <td>12 Jul 2026</td>
+                    <td>TechVault Systems</td>
+                    <td>INV-2026-0088</td>
+                    <td>&euro;6,780.00</td>
+                    <td><span class="badge badge-amber">Firm</span></td>
+                    <td>05 Jul 2026</td>
+                </tr>
+                <tr>
+                    <td>14 Jul 2026</td>
+                    <td>Blue Ocean Imports</td>
+                    <td>INV-2026-0083</td>
+                    <td>&euro;1,340.00</td>
+                    <td><span class="badge badge-amber">Firm</span></td>
+                    <td>07 Jul 2026</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="summary-text">7 reminders projected in the next 14 days</p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 2: Enhanced Reminder History Panel                           -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <div class="section-divider">Enhanced History Panel (shown on Invoice Detail page)</div>
+
+    <section class="glass card-pad">
+        <div class="card-heading">Reminder History</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tier</th>
+                    <th>Sent To</th>
+                    <th>Date &amp; Time</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Opened</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge badge-green">Friendly</span></td>
+                    <td>john@acme.com</td>
+                    <td>28 Jun 2026 09:00</td>
+                    <td><span class="badge badge-muted">Auto</span></td>
+                    <td><span class="badge badge-green">Sent</span></td>
+                    <td>
+                        <span class="opened-badge">Opened (2&times;)</span>
+                        <span class="opened-time">28 Jun 10:15</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Friendly</span></td>
+                    <td>admin@mybiz.com</td>
+                    <td>27 Jun 2026 15:30</td>
+                    <td><span class="badge badge-purple">Test</span></td>
+                    <td><span class="badge badge-green">Sent</span></td>
+                    <td>
+                        <span class="opened-badge">Opened</span>
+                        <span class="opened-time">27 Jun 15:31</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-amber">Firm</span></td>
+                    <td>john@acme.com</td>
+                    <td>21 Jun 2026 09:00</td>
+                    <td><span class="badge badge-muted">Auto</span></td>
+                    <td><span class="badge badge-green">Sent</span></td>
+                    <td><span class="not-opened">Not opened</span></td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-amber">Firm</span></td>
+                    <td>sarah@mybiz.com</td>
+                    <td>20 Jun 2026 11:45</td>
+                    <td><span class="badge badge-purple">Test</span></td>
+                    <td><span class="badge badge-green">Sent</span></td>
+                    <td>
+                        <span class="opened-badge">Opened</span>
+                        <span class="opened-time">20 Jun 11:46</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red">Formal</span></td>
+                    <td>john@acme.com</td>
+                    <td>14 Jun 2026 09:00</td>
+                    <td><span class="badge badge-muted">Auto</span></td>
+                    <td><span class="badge badge-red">Failed</span></td>
+                    <td><span style="color:var(--muted);font-size:13px;">&mdash;</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 3: Test Send Modal                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <div class="section-divider">Test Send Reminder (Modal on Invoice Detail)</div>
+
+    <div class="modal-backdrop">
+        <div class="modal-card">
+            <h3>Send Test Reminder</h3>
+            <p class="modal-subtitle">Send a preview to verify email content before sending to the customer.</p>
+
+            <div class="modal-divider"></div>
+
+            <div class="modal-field">
+                <label>Invoice</label>
+                <div class="readonly-value">INV-2026-0089 &mdash; Acme Solutions Ltd (&euro;3,200.00)</div>
+            </div>
+
+            <div class="modal-field">
+                <label>Escalation Tier</label>
+                <select style="width:100%;">
+                    <option selected>Friendly</option>
+                    <option>Firm</option>
+                    <option>Formal</option>
+                </select>
+            </div>
+
+            <div class="modal-field">
+                <label>Send to email</label>
+                <input type="email" value="admin@mybusiness.com" placeholder="Enter test recipient email" />
+                <a class="quick-link">Send to my email (admin@mybusiness.com)</a>
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <div class="info-note">
+                <div class="info-icon">i</div>
+                <p>Test reminders are marked as <strong>[TEST]</strong> in the subject line and don't count toward reminder limits.</p>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary">Cancel</button>
+                <button class="btn-primary">Send Test</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

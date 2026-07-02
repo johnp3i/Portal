@@ -1,0 +1,244 @@
+@*
+    Test Send Reminder Modal — Partial View
+
+    Self-contained modal for sending a test reminder email to a custom address.
+    Included on the Invoice Detail page alongside the Reminder History Panel.
+
+    Usage: @await Html.PartialAsync("_TestSendModal")
+
+    The calling page must provide a data-user-email attribute on the container
+    (set via ViewBag or the User's email claim) so the "Send to my email" quick link works.
+
+    JavaScript API:
+      openTestSendModal(invoiceId, invoiceNumber, customerName, outstandingAmount)  — opens the modal
+      closeTestSendModal()                                                          — hides the modal
+      sendTestReminder()                                                            — posts form to endpoint
+      useMyEmail()                                                                  — fills email from data attribute
+
+    Requirements: 4.1, 4.6
+*@
+
+<div id="testSendModal"
+     data-user-email="@ViewBag.UserEmail"
+     style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(11,27,40,0.35);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:48px 24px;">
+
+    <div style="background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(13,94,166,0.15);max-width:440px;width:100%;padding:28px 28px 24px;margin:0 auto;flex-shrink:0;">
+
+        <!-- Header -->
+        <h3 style="font-family:Manrope,sans-serif;font-size:18px;font-weight:700;color:#0B1B28;margin:0 0 6px 0;">
+            Send Test Reminder
+        </h3>
+        <p style="font-size:14px;color:#5E7385;margin:0 0 18px 0;line-height:1.5;">
+            Send a preview to verify email content before sending to the customer.
+        </p>
+
+        <!-- Divider -->
+        <div style="height:1px;background:#E2EBF3;margin:0 0 16px 0;"></div>
+
+        <!-- Invoice (readonly) -->
+        <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">
+                Invoice
+            </label>
+            <div id="testSendInvoiceDisplay" style="font-size:14px;color:#0B1B28;font-weight:500;padding:9px 0;">
+                &mdash;
+            </div>
+        </div>
+
+        <!-- Escalation Tier -->
+        <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">
+                Escalation Tier
+            </label>
+            <select id="testSendTier"
+                    style="width:100%;border:1.5px solid #d0dbe5;border-radius:10px;padding:9px 14px;font-size:14px;font-family:Inter,sans-serif;color:#0B1B28;background:#fff;appearance:auto;transition:border-color 0.15s;">
+                <option value="Friendly" selected>Friendly</option>
+                <option value="Firm">Firm</option>
+                <option value="Formal">Formal</option>
+            </select>
+        </div>
+
+        <!-- Send To Email -->
+        <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">
+                Send to email
+            </label>
+            <input type="email"
+                   id="testSendEmail"
+                   placeholder="Enter test recipient email"
+                   style="width:100%;border:1.5px solid #d0dbe5;border-radius:10px;padding:9px 14px;font-size:14px;font-family:Inter,sans-serif;color:#0B1B28;transition:border-color 0.15s;" />
+            <a id="testSendUseMyEmail" onclick="useMyEmail()" style="font-size:13px;color:#0D5EA6;text-decoration:none;margin-top:6px;display:inline-block;cursor:pointer;">
+                Send to my email
+            </a>
+        </div>
+
+        <!-- Divider -->
+        <div style="height:1px;background:#E2EBF3;margin:16px 0;"></div>
+
+        <!-- Info Note -->
+        <div style="display:flex;align-items:flex-start;gap:10px;background:#F0F6FB;border-radius:10px;padding:12px 14px;margin-bottom:18px;">
+            <div style="flex-shrink:0;width:18px;height:18px;border-radius:50%;background:#0D5EA6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:1px;">i</div>
+            <p style="font-size:13px;color:#3D4F5F;line-height:1.5;margin:0;">
+                Test reminders are marked as <strong>[TEST]</strong> in the subject line and don't count toward reminder limits.
+            </p>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:8px;">
+            <button type="button" onclick="closeTestSendModal()"
+                    style="display:inline-block;padding:10px 22px;background:transparent;border:1.5px solid #d0dbe5;color:#0B1B28;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer;transition:border-color 0.15s;font-family:Inter,sans-serif;">
+                Cancel
+            </button>
+            <button type="button" onclick="sendTestReminder()"
+                    style="display:inline-block;padding:10px 22px;background:#0D5EA6;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:8px;cursor:pointer;transition:opacity 0.15s;font-family:Inter,sans-serif;">
+                Send Test
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Hidden field to store current invoice ID for test send -->
+<input type="hidden" id="testSendInvoiceId" value="" />
+
+<script>
+    (function () {
+
+        /**
+         * Opens the test send modal and populates it with invoice details.
+         *
+         * @@param {number} invoiceId         - The invoice ID to send a test reminder for
+         * @@param {string} invoiceNumber     - Display invoice number (e.g. "INV-2026-0089")
+         * @@param {string} customerName      - Customer name
+         * @@param {string} outstandingAmount - Formatted outstanding amount (e.g. "€3,200.00")
+         */
+        window.openTestSendModal = function (invoiceId, invoiceNumber, customerName, outstandingAmount) {
+            document.getElementById('testSendInvoiceId').value = invoiceId;
+            document.getElementById('testSendInvoiceDisplay').textContent =
+                invoiceNumber + ' \u2014 ' + customerName + ' (' + outstandingAmount + ')';
+
+            // Reset form fields
+            document.getElementById('testSendTier').value = 'Friendly';
+            document.getElementById('testSendEmail').value = '';
+
+            // Show the modal
+            var modal = document.getElementById('testSendModal');
+            modal.style.display = 'flex';
+        };
+
+        /**
+         * Closes the test send modal.
+         */
+        window.closeTestSendModal = function () {
+            document.getElementById('testSendModal').style.display = 'none';
+        };
+
+        /**
+         * Fills the email input with the current user's email address (from data attribute).
+         */
+        window.useMyEmail = function () {
+            var modal = document.getElementById('testSendModal');
+            var userEmail = modal.getAttribute('data-user-email') || '';
+            if (userEmail) {
+                document.getElementById('testSendEmail').value = userEmail;
+            }
+        };
+
+        /**
+         * Collects form data and sends a test reminder via AJAX.
+         * Follows the BlockUI → fetch → BlockUI.hide → Swal.fire pattern.
+         */
+        window.sendTestReminder = async function () {
+            var invoiceId = document.getElementById('testSendInvoiceId').value;
+            var escalationTier = document.getElementById('testSendTier').value;
+            var testRecipientEmail = document.getElementById('testSendEmail').value.trim();
+
+            // Client-side validation
+            if (!testRecipientEmail) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Email Required',
+                    text: 'Please enter a recipient email address.',
+                    confirmButtonColor: '#0D5EA6'
+                });
+                return;
+            }
+
+            // Basic email format check
+            if (testRecipientEmail.indexOf('@@') === -1 || testRecipientEmail.indexOf('.') === -1) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Email',
+                    text: 'Please enter a valid email address.',
+                    confirmButtonColor: '#0D5EA6'
+                });
+                return;
+            }
+
+            // Get antiforgery token
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            // Build form data
+            var formData = new URLSearchParams();
+            formData.append('invoiceId', invoiceId);
+            formData.append('escalationTier', escalationTier);
+            formData.append('testRecipientEmail', testRecipientEmail);
+
+            // 1. Block UI
+            BlockUI.show('Sending test reminder...');
+
+            try {
+                // 2. Fetch
+                var response = await fetch('/PaymentReminder/AxPostSendTestReminder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: formData.toString()
+                });
+
+                var result = await response.json();
+
+                // 3. Unblock
+                BlockUI.hide();
+
+                // 4. SweetAlert2
+                if (result.success) {
+                    closeTestSendModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Test Sent',
+                        text: result.message || 'Test reminder sent successfully.',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: result.message || 'Failed to send test reminder.',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            } catch (error) {
+                // 3. Unblock
+                BlockUI.hide();
+                // 4. SweetAlert2
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An unexpected error occurred while sending the test reminder.',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
+        };
+
+        // Close modal when clicking on backdrop (outside modal card)
+        document.getElementById('testSendModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeTestSendModal();
+            }
+        });
+
+    }());
+</script>

@@ -21,6 +21,7 @@ namespace Portal.Web.Services.Email
         Invoices,
         Proposals,
         PromoCode,
-        Demo
+        Demo,
+        PaymentReminder
     }
 }

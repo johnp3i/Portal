@@ -233,6 +233,17 @@
     </div>
 </section>
 
+<!-- Reminder History Panel -->
+<section class="glass card-pad" style="margin-top:24px;">
+    @await Html.PartialAsync("_ReminderHistoryPanel")
+    <div style="margin-top:16px;">
+        <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 16px;" onclick="openTestSendModal(@invoice.Id, '@invoice.InvoiceNumber', '@ViewBag.CustomerName', '€@invoice.TotalAmount.ToString("N2")')">Send Test Reminder</button>
+    </div>
+</section>
+
+<!-- Test Send Modal -->
+@await Html.PartialAsync("_TestSendModal")
+
 <!-- Back link -->
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
     <a asp-action="Index" asp-controller="Invoice" class="btn btn-outline">&larr; Back to Invoices</a>
@@ -241,6 +252,9 @@
 @section Scripts {
     <script>
         var invoiceId = @invoice.Id;
+
+        // Load reminder history on page load
+        loadReminderHistory(invoiceId);
 
         // Load unsubmitted periods on page load
         (async function loadPeriods() {

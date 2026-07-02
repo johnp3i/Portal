@@ -32,6 +32,8 @@ public class Customer
 
     public bool IsActive { get; set; }
 
+    public bool IsReminderOptedOut { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime UpdatedAtUtc { get; set; }

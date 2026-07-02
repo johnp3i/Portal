@@ -21,7 +21,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
             const string query = @"
                 SELECT [Id], [BusinessId], [Name], [ContactPerson], [Email], [TelephoneNumber], [MobileNumber],
                        [AddressLine1], [AddressLine2], [City], [PostalCode], [Country],
-                       [IsActive], [CreatedAtUtc], [UpdatedAtUtc]
+                       [IsActive], [IsReminderOptedOut], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [customer].[Customer]
                 WHERE [BusinessId] = @BusinessId";
 
@@ -41,7 +41,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
             const string query = @"
                 SELECT [Id], [BusinessId], [Name], [ContactPerson], [Email], [TelephoneNumber], [MobileNumber],
                        [AddressLine1], [AddressLine2], [City], [PostalCode], [Country],
-                       [IsActive], [CreatedAtUtc], [UpdatedAtUtc]
+                       [IsActive], [IsReminderOptedOut], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [customer].[Customer]
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 

@@ -44,6 +44,8 @@ public class Invoice
 
     public int? VatSubmissionPeriodId { get; set; }
 
+    public bool IsDisputed { get; set; }
+
     public bool IsDeleted { get; set; }
 
     public DateTime? DeletedAtUtc { get; set; }

@@ -1,0 +1,493 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create SQL migration to add tracking and test send columns to PaymentReminderLog": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013786479
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013799969
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013893014
+      }
+    ],
+    "1.2 Update PaymentReminderLog entity class with new properties": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013787572
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013898875
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013974294
+      }
+    ],
+    "1.3 Update EF Core DbContext configuration for new columns": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013787706
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013899587
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013975051
+      }
+    ],
+    "2.1 Create TrackingTokenGenerator static utility class": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013787878
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013980815
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014047567
+      }
+    ],
+    "2.2 Create TransparentPixel static constant class": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788027
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013981533
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014048410
+      }
+    ],
+    "3. Checkpoint": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788389
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014302696
+      }
+    ],
+    "4.1 Update PortalEmailService to inject tracking pixel and support test subject prefix": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788478
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014055272
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014191843
+      }
+    ],
+    "4.2 Implement RecordOpenEventAsync in PaymentReminderService": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788547
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014199699
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014292329
+      }
+    ],
+    "4.3 Add Track endpoint to PaymentReminderController": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788627
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014200524
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014293138
+      }
+    ],
+    "5.1 Add IsTestSend exclusion filters to EvaluateAndSendAsync": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788704
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014056194
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014192745
+      }
+    ],
+    "5.2 Add IsTestSend exclusion to dashboard widget calculations": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788774
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014057027
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014193544
+      }
+    ],
+    "5.3 Update log creation in EvaluateAndSendAsync and SendManualReminderAsync to generate tracking tokens": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788865
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014057860
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014194653
+      }
+    ],
+    "6. Checkpoint": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013788934
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014303378
+      }
+    ],
+    "7.1 Create TestReminderResult DTO": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013789758
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013982426
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014049273
+      }
+    ],
+    "7.2 Implement SendTestReminderAsync in PaymentReminderService": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013789845
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014307598
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014444883
+      }
+    ],
+    "7.3 Add AxPostSendTestReminder endpoint to PaymentReminderController": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013789911
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014450789
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014656646
+      }
+    ],
+    "7.4 Create _TestSendModal partial view and JavaScript": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013789979
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014451703
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014657578
+      }
+    ],
+    "8.1 Create UpcomingReminderDto model": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013790044
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013983157
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014049948
+      }
+    ],
+    "8.2 Implement GetUpcomingRemindersAsync with EvaluateForDateRange refactor": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013790110
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014452505
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014655805
+      }
+    ],
+    "8.3 Add AxGetUpcomingReminders endpoint to PaymentReminderController": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013790705
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014662674
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014826239
+      }
+    ],
+    "8.4 Create Upcoming.cshtml view page": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013790777
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014663437
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014826969
+      }
+    ],
+    "9. Checkpoint": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013790850
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014841690
+      }
+    ],
+    "10.1 Update PaymentReminderLogDto with open tracking and test send fields": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013790908
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014308515
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014445617
+      }
+    ],
+    "10.2 Update GetHistoryByInvoiceAsync to map new DTO fields": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013790987
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014453363
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014654665
+      }
+    ],
+    "10.3 Update _ReminderHistoryPanel partial view with Open Tracking and Test badge columns": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013791054
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014664301
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014828287
+      }
+    ],
+    "10.4 Add sidebar navigation link for Upcoming Reminders page": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013791228
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014665109
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014829083
+      }
+    ],
+    "11. Final checkpoint": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013791721
+      },
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014842421
+      }
+    ],
+    "1. Database migration and entity updates": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783013975143
+      }
+    ],
+    "2. Utilities and constants": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014048544
+      }
+    ],
+    "5. Update existing evaluation logic to exclude test sends": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014194748
+      }
+    ],
+    "4. Email service and open tracking": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014293225
+      }
+    ],
+    "7. Test reminder sending": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014657671
+      }
+    ],
+    "8. Upcoming reminders preview": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014827047
+      }
+    ],
+    "10. History panel and navigation updates": [
+      {
+        "executionId": "05b100e1-0e58-43c9-8468-9cc4673f4eff",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783014829162
+      }
+    ]
+  }
+}

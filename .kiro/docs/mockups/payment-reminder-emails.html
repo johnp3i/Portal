@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Reminder Email Templates</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            background: #eee;
+            min-height: 100vh;
+            padding: 40px 24px 80px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .page-title h1 {
+            font-family: Manrope, sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: #0B1B28;
+            margin-bottom: 8px;
+        }
+        .page-title p {
+            font-size: 15px;
+            color: #5E7385;
+        }
+
+        .email-grid {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .email-wrapper {
+            flex: 1;
+            min-width: 320px;
+            max-width: 600px;
+        }
+
+        .email-label {
+            font-family: Manrope, sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0B1B28;
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+        .email-label .tier-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .email-label .dot-green { background: #129867; }
+        .email-label .dot-amber { background: #C8912E; }
+        .email-label .dot-red { background: #C24A4A; }
+
+        /* Responsive stacking */
+        @media (max-width: 1024px) {
+            .email-grid {
+                flex-direction: column;
+                align-items: center;
+            }
+            .email-wrapper {
+                max-width: 600px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-title">
+        <h1>Payment Reminder Email Templates</h1>
+        <p>Preview of the three escalation tier emails sent to customers with overdue invoices.</p>
+    </div>
+
+    <div class="email-grid">
+
+        <!-- ============ FRIENDLY — Pre-Due ============ -->
+        <div class="email-wrapper">
+            <div class="email-label">
+                <span class="tier-dot dot-green"></span>Friendly — Pre-Due
+            </div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2F6FA;border-radius:12px;overflow:hidden;">
+                <tr>
+                    <td align="center" style="padding:24px 12px;">
+                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border-radius:16px;overflow:hidden;">
+                            <!-- Header -->
+                            <tr>
+                                <td style="background-color:#F7FAFC;padding:32px 40px;text-align:center;border-bottom:1px solid #E2EBF3;">
+                                    <img src="https://www.3inventors.com/img/logo_blue_web_toolbar_oi.png" alt="3 Inventors" width="220" style="display:block;margin:0 auto;max-width:220px;height:auto;" />
+                                </td>
+                            </tr>
+                            <!-- Accent line -->
+                            <tr><td style="height:4px;background-color:#0D5EA6;"></td></tr>
+                            <!-- Body -->
+                            <tr>
+                                <td style="padding:40px;">
+                                    <!-- Badge -->
+                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="background-color:#EBF5FF;border-radius:20px;padding:6px 16px;">
+                                                <span style="font-size:12px;font-weight:700;color:#0D5EA6;letter-spacing:0.06em;text-transform:uppercase;">Payment Reminder</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <!-- Heading -->
+                                    <h1 style="margin:24px 0 0 0;font-size:24px;font-weight:700;color:#0B1B28;line-height:1.3;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">Invoice approaching due date</h1>
+                                    <!-- Body text -->
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        Dear Alexis Papacosta,
+                                    </p>
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        This is a friendly reminder that invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> is due on <strong>15 July 2026</strong>. We would appreciate your prompt attention to this matter.
+                                    </p>
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        If payment has already been made, please disregard this message.
+                                    </p>
+                                    <!-- CTA Button -->
+                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0 0;">
+                                        <tr>
+                                            <td align="center">
+                                                <a href="#" style="display:inline-block;padding:14px 48px;background-color:#0D5EA6;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;font-family:'Segoe UI',sans-serif;">View Invoice</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p style="margin:24px 0 0 0;font-size:13px;color:#5E7385;line-height:1.6;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        This is an automated reminder from Le Paris Roasting Co. If you have any questions, please contact us directly.
+                                    </p>
+                                </td>
+                            </tr>
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color:#0B1B28;padding:28px 40px;text-align:center;">
+                                    <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#FFFFFF;font-family:'Segoe UI',sans-serif;">Le Paris Roasting Co.</p>
+                                    <p style="margin:0 0 4px 0;font-size:12px;color:#8899A6;font-family:'Segoe UI',sans-serif;">Nicosia, Cyprus</p>
+                                    <p style="margin:0;font-size:11px;color:#5E6D7A;letter-spacing:0.08em;font-family:'Segoe UI',sans-serif;">Powered by 3 Inventors</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ============ FIRM — Shortly Overdue ============ -->
+        <div class="email-wrapper">
+            <div class="email-label">
+                <span class="tier-dot dot-amber"></span>Firm — Shortly Overdue
+            </div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2F6FA;border-radius:12px;overflow:hidden;">
+                <tr>
+                    <td align="center" style="padding:24px 12px;">
+                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border-radius:16px;overflow:hidden;">
+                            <!-- Header -->
+                            <tr>
+                                <td style="background-color:#F7FAFC;padding:32px 40px;text-align:center;border-bottom:1px solid #E2EBF3;">
+                                    <img src="https://www.3inventors.com/img/logo_blue_web_toolbar_oi.png" alt="3 Inventors" width="220" style="display:block;margin:0 auto;max-width:220px;height:auto;" />
+                                </td>
+                            </tr>
+                            <!-- Accent line — amber for firm tier -->
+                            <tr><td style="height:4px;background-color:#C8912E;"></td></tr>
+                            <!-- Body -->
+                            <tr>
+                                <td style="padding:40px;">
+                                    <!-- Badge -->
+                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="background-color:#FFF6E8;border-radius:20px;padding:6px 16px;">
+                                                <span style="font-size:12px;font-weight:700;color:#C8912E;letter-spacing:0.06em;text-transform:uppercase;">Payment Overdue</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <!-- Heading -->
+                                    <h1 style="margin:24px 0 0 0;font-size:24px;font-weight:700;color:#0B1B28;line-height:1.3;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">Invoice overdue — action required</h1>
+                                    <!-- Body text -->
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        Dear Alexis Papacosta,
+                                    </p>
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        We would like to draw your attention to invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> which was due on <strong>15 July 2026</strong> and remains unpaid. Please arrange payment at your earliest convenience to avoid any disruption to services.
+                                    </p>
+                                    <!-- CTA Button -->
+                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0 0;">
+                                        <tr>
+                                            <td align="center">
+                                                <a href="#" style="display:inline-block;padding:14px 48px;background-color:#C8912E;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;font-family:'Segoe UI',sans-serif;">Pay Now</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p style="margin:24px 0 0 0;font-size:13px;color:#5E7385;line-height:1.6;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        If you have already made this payment, please allow 2-3 business days for processing and disregard this notice.
+                                    </p>
+                                </td>
+                            </tr>
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color:#0B1B28;padding:28px 40px;text-align:center;">
+                                    <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#FFFFFF;font-family:'Segoe UI',sans-serif;">Le Paris Roasting Co.</p>
+                                    <p style="margin:0 0 4px 0;font-size:12px;color:#8899A6;font-family:'Segoe UI',sans-serif;">Nicosia, Cyprus</p>
+                                    <p style="margin:0;font-size:11px;color:#5E6D7A;letter-spacing:0.08em;font-family:'Segoe UI',sans-serif;">Powered by 3 Inventors</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ============ FORMAL — Significantly Overdue ============ -->
+        <div class="email-wrapper">
+            <div class="email-label">
+                <span class="tier-dot dot-red"></span>Formal — Significantly Overdue
+            </div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2F6FA;border-radius:12px;overflow:hidden;">
+                <tr>
+                    <td align="center" style="padding:24px 12px;">
+                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border-radius:16px;overflow:hidden;">
+                            <!-- Header -->
+                            <tr>
+                                <td style="background-color:#F7FAFC;padding:32px 40px;text-align:center;border-bottom:1px solid #E2EBF3;">
+                                    <img src="https://www.3inventors.com/img/logo_blue_web_toolbar_oi.png" alt="3 Inventors" width="220" style="display:block;margin:0 auto;max-width:220px;height:auto;" />
+                                </td>
+                            </tr>
+                            <!-- Accent line — red for formal tier -->
+                            <tr><td style="height:4px;background-color:#C24A4A;"></td></tr>
+                            <!-- Body -->
+                            <tr>
+                                <td style="padding:40px;">
+                                    <!-- Badge -->
+                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="background-color:#FDEAEA;border-radius:20px;padding:6px 16px;">
+                                                <span style="font-size:12px;font-weight:700;color:#C24A4A;letter-spacing:0.06em;text-transform:uppercase;">Final Notice</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <!-- Heading -->
+                                    <h1 style="margin:24px 0 0 0;font-size:24px;font-weight:700;color:#0B1B28;line-height:1.3;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">Final payment notice</h1>
+                                    <!-- Body text -->
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        Dear Alexis Papacosta,
+                                    </p>
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        Despite previous correspondence, invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> (due <strong>15 July 2026</strong>) remains outstanding. This is a formal notice that we require immediate payment.
+                                    </p>
+                                    <p style="margin:16px 0 0 0;font-size:16px;line-height:1.7;color:#3D4F5F;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        If payment is not received within 7 days, we may need to consider further action. Please contact us if you wish to discuss payment arrangements.
+                                    </p>
+                                    <!-- CTA Button -->
+                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0 0;">
+                                        <tr>
+                                            <td align="center">
+                                                <a href="#" style="display:inline-block;padding:14px 48px;background-color:#C24A4A;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;font-family:'Segoe UI',sans-serif;">Settle Invoice</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p style="margin:24px 0 0 0;font-size:13px;color:#5E7385;line-height:1.6;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                                        If you believe this notice was sent in error or wish to discuss alternative arrangements, please contact us immediately.
+                                    </p>
+                                </td>
+                            </tr>
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color:#0B1B28;padding:28px 40px;text-align:center;">
+                                    <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#FFFFFF;font-family:'Segoe UI',sans-serif;">Le Paris Roasting Co.</p>
+                                    <p style="margin:0 0 4px 0;font-size:12px;color:#8899A6;font-family:'Segoe UI',sans-serif;">Nicosia, Cyprus</p>
+                                    <p style="margin:0;font-size:11px;color:#5E6D7A;letter-spacing:0.08em;font-family:'Segoe UI',sans-serif;">Powered by 3 Inventors</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</body>
+</html>

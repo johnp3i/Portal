@@ -1,0 +1,369 @@
+@model List<Portal.Infrastructure.Models.PaymentReminders.PaymentReminderScheduleDto>
+@{
+    ViewData["Title"] = "Payment Reminders — Settings";
+
+    var friendly = Model?.FirstOrDefault(t => t.EscalationTier == "Friendly");
+    var firm = Model?.FirstOrDefault(t => t.EscalationTier == "Firm");
+    var formal = Model?.FirstOrDefault(t => t.EscalationTier == "Formal");
+
+    // Friendly: negative offset means "before due date", positive means "after due date"
+    var friendlyAbsOffset = Math.Abs(friendly?.DaysOffset ?? 3);
+    var friendlyDirection = (friendly?.DaysOffset ?? -3) <= 0 ? "before" : "after";
+
+    var firmAbsOffset = Math.Abs(firm?.DaysOffset ?? 7);
+    var firmDirection = (firm?.DaysOffset ?? 7) <= 0 ? "before" : "after";
+
+    var formalAbsOffset = Math.Abs(formal?.DaysOffset ?? 21);
+    var formalDirection = (formal?.DaysOffset ?? 21) <= 0 ? "before" : "after";
+
+    // Suppression days — same for all tiers (stored per tier, read from Friendly or default 7)
+    var suppressionDays = friendly?.PartialPaymentSuppressionDays ?? 7;
+}
+
+@Html.AntiForgeryToken()
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Settings</div>
+        <h1 class="topbar-heading">Payment Reminders</h1>
+        <p class="topbar-subtitle">Configure when and how payment reminders are sent to customers.</p>
+    </div>
+</div>
+
+<!-- Card 1: Reminder Schedule -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;">Reminder Schedule</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:24px;">Define escalation tiers and timing for overdue invoice reminders.</p>
+
+    <div class="table-responsive">
+        <table id="scheduleTable" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);width:60px;">Active</th>
+                    <th style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Tier</th>
+                    <th style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Trigger</th>
+                    <th style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Max Reminders</th>
+                    <th style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Min Interval (days)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Friendly Row -->
+                <tr id="row-friendly" class="@(!(friendly?.IsEnabled ?? true) ? "tier-disabled" : "")">
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <label class="reminder-toggle reminder-toggle-sm" title="Enable Friendly reminders">
+                            <input type="checkbox" id="toggle-friendly" onchange="onTierToggle('friendly')" @((friendly?.IsEnabled ?? true) ? "checked" : "") />
+                            <span class="reminder-slider"></span>
+                        </label>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.03em;background:rgba(18,152,103,0.1);color:var(--green);">Friendly</span>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <input type="number" id="offset-friendly" class="reminder-number-input" value="@friendlyAbsOffset" min="1" max="90" style="width:64px;" />
+                            <select id="direction-friendly" class="reminder-direction-select" style="padding:8px 10px;border:1.5px solid #d0dbe5;border-radius:10px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;cursor:pointer;">
+                                @if (friendlyDirection == "before")
+                                {
+                                    <option value="before" selected>days before due date</option>
+                                    <option value="after">days after due date</option>
+                                }
+                                else
+                                {
+                                    <option value="before">days before due date</option>
+                                    <option value="after" selected>days after due date</option>
+                                }
+                            </select>
+                        </div>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <input type="number" id="max-friendly" class="reminder-number-input" value="@(friendly?.MaxRemindersPerTier ?? 1)" min="1" max="5" style="width:64px;" />
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <input type="number" id="interval-friendly" class="reminder-number-input" value="@(friendly?.MinIntervalDays ?? 3)" min="1" max="30" style="width:64px;" />
+                    </td>
+                </tr>
+
+                <!-- Firm Row -->
+                <tr id="row-firm" class="@(!(firm?.IsEnabled ?? false) ? "tier-disabled" : "")">
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <label class="reminder-toggle reminder-toggle-sm" title="Enable Firm reminders">
+                            <input type="checkbox" id="toggle-firm" onchange="onTierToggle('firm')" @((firm?.IsEnabled ?? false) ? "checked" : "") />
+                            <span class="reminder-slider"></span>
+                        </label>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.03em;background:rgba(200,145,46,0.1);color:var(--amber);">Firm</span>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <input type="number" id="offset-firm" class="reminder-number-input" value="@firmAbsOffset" min="1" max="90" style="width:64px;" />
+                            <select id="direction-firm" class="reminder-direction-select" style="padding:8px 10px;border:1.5px solid #d0dbe5;border-radius:10px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;cursor:pointer;">
+                                @if (firmDirection == "before")
+                                {
+                                    <option value="before" selected>days before due date</option>
+                                    <option value="after">days after due date</option>
+                                }
+                                else
+                                {
+                                    <option value="before">days before due date</option>
+                                    <option value="after" selected>days after due date</option>
+                                }
+                            </select>
+                        </div>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <input type="number" id="max-firm" class="reminder-number-input" value="@(firm?.MaxRemindersPerTier ?? 2)" min="1" max="5" style="width:64px;" />
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;border-bottom:1px solid #f0f4f7;">
+                        <input type="number" id="interval-firm" class="reminder-number-input" value="@(firm?.MinIntervalDays ?? 5)" min="1" max="30" style="width:64px;" />
+                    </td>
+                </tr>
+
+                <!-- Formal Row -->
+                <tr id="row-formal" class="@(!(formal?.IsEnabled ?? false) ? "tier-disabled" : "")">
+                    <td style="padding:16px 12px;vertical-align:middle;">
+                        <label class="reminder-toggle reminder-toggle-sm" title="Enable Formal reminders">
+                            <input type="checkbox" id="toggle-formal" onchange="onTierToggle('formal')" @((formal?.IsEnabled ?? false) ? "checked" : "") />
+                            <span class="reminder-slider"></span>
+                        </label>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;">
+                        <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.03em;background:rgba(194,74,74,0.1);color:var(--red);">Formal</span>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <input type="number" id="offset-formal" class="reminder-number-input" value="@formalAbsOffset" min="1" max="90" style="width:64px;" />
+                            <select id="direction-formal" class="reminder-direction-select" style="padding:8px 10px;border:1.5px solid #d0dbe5;border-radius:10px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;cursor:pointer;">
+                                @if (formalDirection == "before")
+                                {
+                                    <option value="before" selected>days before due date</option>
+                                    <option value="after">days after due date</option>
+                                }
+                                else
+                                {
+                                    <option value="before">days before due date</option>
+                                    <option value="after" selected>days after due date</option>
+                                }
+                            </select>
+                        </div>
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;">
+                        <input type="number" id="max-formal" class="reminder-number-input" value="@(formal?.MaxRemindersPerTier ?? 1)" min="1" max="5" style="width:64px;" />
+                    </td>
+                    <td style="padding:16px 12px;vertical-align:middle;">
+                        <input type="number" id="interval-formal" class="reminder-number-input" value="@(formal?.MinIntervalDays ?? 7)" min="1" max="30" style="width:64px;" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top:24px;display:flex;justify-content:flex-end;">
+        <button type="button" class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
+    </div>
+</section>
+
+<!-- Card 2: Suppression Rules -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;">Suppression Rules</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:24px;">Configure when reminders should be temporarily suppressed.</p>
+
+    <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+            <div style="font-size:14px;color:var(--text);font-weight:500;margin-bottom:4px;">Suppress after partial payment</div>
+            <p style="font-size:13px;color:var(--muted);">Don't send reminders for a set number of days after a partial payment is received.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <input type="number" id="suppression-days" class="reminder-number-input" value="@suppressionDays" min="1" max="30" style="width:72px;" />
+            <span style="font-size:13px;color:var(--muted);">days</span>
+        </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:14px;padding-top:20px;border-top:1px solid #f0f4f7;">
+        <div style="font-size:14px;font-weight:600;color:var(--text);">Reminder System</div>
+        <label class="reminder-toggle" title="Enable or disable the reminder system">
+            <input type="checkbox" id="system-toggle" checked onchange="onSystemToggle()" />
+            <span class="reminder-slider"></span>
+        </label>
+        <span id="system-toggle-label" style="font-size:13px;font-weight:600;color:var(--green);">Enabled</span>
+    </div>
+</section>
+
+<!-- Card 3: Email Preview -->
+<section class="glass card-pad">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;">Email Preview</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:20px;">Preview the opening of each reminder email tier.</p>
+
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:20px;">
+        <button type="button" id="tab-btn-friendly" class="reminder-tab-btn reminder-tab-btn--active" onclick="showEmailTab('friendly', this)">Friendly</button>
+        <button type="button" id="tab-btn-firm" class="reminder-tab-btn" onclick="showEmailTab('firm', this)">Firm</button>
+        <button type="button" id="tab-btn-formal" class="reminder-tab-btn" onclick="showEmailTab('formal', this)">Formal</button>
+    </div>
+
+    <!-- Friendly Preview -->
+    <div id="email-tab-friendly" class="reminder-email-preview reminder-email-preview--active" style="border-left:4px solid var(--blue);">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">From: noreply@yourbusiness.com</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">Invoice approaching due date</div>
+        <p style="font-size:14px;color:#3D4F5F;line-height:1.7;">
+            Dear [Customer Name],<br /><br />
+            This is a friendly reminder that invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> is due on <strong>15 July 2026</strong>.
+            We would appreciate your prompt attention to this matter.<br /><br />
+            If payment has already been made, please disregard this message.
+        </p>
+    </div>
+
+    <!-- Firm Preview -->
+    <div id="email-tab-firm" class="reminder-email-preview" style="border-left:4px solid var(--amber);">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">From: noreply@yourbusiness.com</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">Invoice overdue — action required</div>
+        <p style="font-size:14px;color:#3D4F5F;line-height:1.7;">
+            Dear [Customer Name],<br /><br />
+            We would like to draw your attention to invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> which was due on
+            <strong>15 July 2026</strong> and remains unpaid. Please arrange payment at your earliest convenience to avoid any disruption to services.
+        </p>
+    </div>
+
+    <!-- Formal Preview -->
+    <div id="email-tab-formal" class="reminder-email-preview" style="border-left:4px solid var(--red);">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">From: noreply@yourbusiness.com</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">Final payment notice</div>
+        <p style="font-size:14px;color:#3D4F5F;line-height:1.7;">
+            Dear [Customer Name],<br /><br />
+            Despite previous correspondence, invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> (due <strong>15 July 2026</strong>)
+            remains outstanding. This is a formal notice that we require immediate payment. If payment is not received within 7 days, we may need to consider
+            further action.
+        </p>
+    </div>
+</section>
+
+<style>
+    /* Toggle switch — scoped with .reminder- prefix to avoid conflicts */
+    .reminder-toggle {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 26px;
+        cursor: pointer;
+    }
+
+    .reminder-toggle-sm {
+        width: 40px;
+        height: 22px;
+    }
+
+    .reminder-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+    }
+
+    .reminder-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #d0dbe5;
+        border-radius: 13px;
+        transition: background 0.2s;
+    }
+
+    .reminder-slider::before {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        left: 3px;
+        bottom: 3px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .reminder-toggle-sm .reminder-slider::before {
+        width: 16px;
+        height: 16px;
+    }
+
+    .reminder-toggle input:checked + .reminder-slider {
+        background: var(--green, #129867);
+    }
+
+    .reminder-toggle input:checked + .reminder-slider::before {
+        transform: translateX(22px);
+    }
+
+    .reminder-toggle-sm input:checked + .reminder-slider::before {
+        transform: translateX(18px);
+    }
+
+    /* Disabled tier row — only non-first-column cells are dimmed */
+    .tier-disabled td:not(:first-child) {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    /* Number inputs */
+    .reminder-number-input {
+        border: 1.5px solid #d0dbe5;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 14px;
+        font-family: Inter, sans-serif;
+        color: var(--text, #0B1B28);
+        text-align: center;
+        transition: border-color 0.15s;
+        background: #fff;
+    }
+
+    .reminder-number-input:focus {
+        outline: none;
+        border-color: var(--blue, #0D5EA6);
+    }
+
+    /* Email preview tabs */
+    .reminder-tab-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 700;
+        background: none;
+        border: none;
+        color: var(--muted, #5E7385);
+        cursor: pointer;
+        position: relative;
+        transition: color 0.15s;
+        font-family: Inter, sans-serif;
+    }
+
+    .reminder-tab-btn--active {
+        color: var(--blue, #0D5EA6);
+    }
+
+    .reminder-tab-btn--active::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--blue, #0D5EA6);
+        border-radius: 2px;
+    }
+
+    /* Email preview panels */
+    .reminder-email-preview {
+        display: none;
+        padding: 20px;
+        background: #F7FAFC;
+        border-radius: 12px;
+    }
+
+    .reminder-email-preview--active {
+        display: block;
+    }
+</style>
+
+@section Scripts {
+    <script src="/js/payment-reminder-settings.js"></script>
+}

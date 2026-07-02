@@ -105,6 +105,10 @@ public class PortalDbContext : DbContext
     public DbSet<DemoInvitation> DemoInvitations { get; set; } = null!;
     public DbSet<DemoInvitationPermission> DemoInvitationPermissions { get; set; } = null!;
 
+    // Reminder schema
+    public DbSet<PaymentReminderSchedule> PaymentReminderSchedules { get; set; } = null!;
+    public DbSet<PaymentReminderLog> PaymentReminderLogs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -160,6 +164,8 @@ public class PortalDbContext : DbContext
         ConfigurePlatformConfig(modelBuilder);
         ConfigureDemoInvitation(modelBuilder);
         ConfigureDemoInvitationPermission(modelBuilder);
+        ConfigurePaymentReminderSchedule(modelBuilder);
+        ConfigurePaymentReminderLog(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -356,6 +362,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.IsReminderOptedOut)
+                .IsRequired()
+                .HasDefaultValue(false);
         });
     }
 
@@ -603,6 +613,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.IsDisputed)
+                .IsRequired()
+                .HasDefaultValue(false);
         });
     }
 
@@ -2117,6 +2131,135 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigurePaymentReminderSchedule(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentReminderSchedule>(entity =>
+        {
+            entity.ToTable("PaymentReminderSchedule", "reminder");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_PaymentReminderSchedule_BusinessId");
+
+            entity.Property(e => e.EscalationTier)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.MaxRemindersPerTier)
+                .IsRequired()
+                .HasDefaultValue(1);
+
+            entity.Property(e => e.MinIntervalDays)
+                .IsRequired()
+                .HasDefaultValue(3);
+
+            entity.Property(e => e.PartialPaymentSuppressionDays)
+                .IsRequired()
+                .HasDefaultValue(7);
+
+            entity.Property(e => e.IsEnabled)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.UpdatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigurePaymentReminderLog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentReminderLog>(entity =>
+        {
+            entity.ToTable("PaymentReminderLog", "reminder");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Invoice)
+                .WithMany()
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Customer)
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.BusinessId, e.InvoiceId })
+                .HasDatabaseName("IX_PaymentReminderLog_BusinessId_InvoiceId");
+
+            entity.HasIndex(e => new { e.BusinessId, e.SentAtUtc })
+                .HasDatabaseName("IX_PaymentReminderLog_BusinessId_SentAtUtc");
+
+            entity.Property(e => e.RecipientEmail)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.EscalationTier)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.ErrorMessage)
+                .HasMaxLength(1000);
+
+            entity.Property(e => e.IsManualTrigger)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.SentAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            // Open Tracking columns
+            entity.Property(e => e.TrackingToken)
+                .HasMaxLength(64);
+
+            entity.HasIndex(e => e.TrackingToken)
+                .IsUnique()
+                .HasFilter("[TrackingToken] IS NOT NULL")
+                .HasDatabaseName("UX_PaymentReminderLog_TrackingToken");
+
+            entity.Property(e => e.IsOpened)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.OpenedAtUtc);
+
+            entity.Property(e => e.OpenCount)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            entity.Property(e => e.LastOpenedAtUtc);
+
+            // Test Send flag
+            entity.Property(e => e.IsTestSend)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            // Filtered index for queries excluding test sends
+            entity.HasIndex(e => new { e.BusinessId, e.InvoiceId, e.EscalationTier })
+                .HasFilter("[IsTestSend] = 0")
+                .HasDatabaseName("IX_PaymentReminderLog_BusinessId_IsTestSend");
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -2175,6 +2318,12 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<Product>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<PaymentReminderSchedule>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<PaymentReminderLog>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

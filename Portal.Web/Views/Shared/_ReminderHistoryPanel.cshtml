@@ -1,0 +1,245 @@
+﻿@*
+    Reminder History Panel — Partial View
+    
+    Self-contained HTML snippet included on the Invoice Detail page.
+    Populated via AJAX from the AxGetReminderHistory endpoint (PaymentReminderController).
+    
+    JS inserts rows into #reminderHistoryBody and toggles visibility of
+    #reminderHistoryLoading, #reminderHistoryEmpty, and #reminderHistoryTable.
+    
+    Expected log row shape (JSON from controller):
+      {
+        escalationTier:    "Friendly" | "Firm" | "Formal",
+        recipientEmail:    string,
+        sentAtUtc:         ISO-8601 string (UTC),
+        isManualTrigger:   bool,
+        isSentSuccessfully: bool,
+        errorMessage:      string | null,
+        isOpened:          bool,
+        openedAtUtc:       ISO-8601 string (UTC) | null,
+        openCount:         int,
+        lastOpenedAtUtc:   ISO-8601 string (UTC) | null,
+        isTestSend:        bool
+      }
+*@
+
+<div id="reminderHistoryPanel" style="margin-top:24px;">
+
+    <h4 style="font-family:Manrope,sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin-bottom:16px;">
+        Reminder History
+    </h4>
+
+    <div id="reminderHistoryLoading" style="display:none;color:#5a6a7a;font-size:14px;">
+        Loading...
+    </div>
+
+    <div id="reminderHistoryEmpty" style="display:none;color:#5a6a7a;font-size:14px;font-style:italic;">
+        No reminders sent yet.
+    </div>
+
+    <table id="reminderHistoryTable" style="display:none;width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+            <tr style="border-bottom:2px solid rgba(13,94,166,.08);">
+                <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Tier</th>
+                <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Sent To</th>
+                <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Date &amp; Time</th>
+                <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Method</th>
+                <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Status</th>
+                <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;">Opened</th>
+            </tr>
+        </thead>
+        <tbody id="reminderHistoryBody"></tbody>
+    </table>
+
+</div>
+
+<script>
+    (function () {
+
+        /**
+         * Renders a tier badge.
+         * Friendly = green, Firm = amber, Formal = red
+         */
+        function tierBadge(tier) {
+            var styles = {
+                'Friendly': 'background:#E6F7EF;color:#129867;',
+                'Firm':     'background:#FEF3DC;color:#C8912E;',
+                'Formal':   'background:#FDEAEA;color:#C24A4A;'
+            };
+            var style = styles[tier] || 'background:#EEF4F8;color:#5a6a7a;';
+            return '<span style="' + style + 'display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.03em;">' + tier + '</span>';
+        }
+
+        /**
+         * Renders a method badge.
+         * Test = purple, Manual = blue, Auto = muted
+         */
+        function methodBadge(isManual, isTestSend) {
+            if (isTestSend) {
+                return '<span style="background:#F0E6FF;color:#7C3AED;display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.03em;">Test</span>';
+            }
+            if (isManual) {
+                return '<span style="background:#E8F1FB;color:#0D5EA6;display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.03em;">Manual</span>';
+            }
+            return '<span style="background:#EEF4F8;color:#5a6a7a;display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.03em;">Auto</span>';
+        }
+
+        /**
+         * Renders a status badge.
+         * Sent = green, Failed = red
+         */
+        function statusBadge(isSuccess, errorMessage) {
+            if (isSuccess) {
+                return '<span style="background:#E6F7EF;color:#129867;display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.03em;">Sent</span>';
+            }
+            var title = errorMessage ? ' title="' + escapeAttr(errorMessage) + '"' : '';
+            return '<span style="background:#FDEAEA;color:#C24A4A;display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.03em;cursor:default;"' + title + '>Failed</span>';
+        }
+
+        /**
+         * Renders the opened status cell content.
+         * - Em-dash for failed sends
+         * - "Not opened" italic muted text when not opened but sent successfully
+         * - "Opened (Nx)" green badge with timestamp when opened multiple times
+         * - "Opened" green badge with timestamp when opened once
+         */
+        function openedBadge(isOpened, openedAtUtc, openCount, isSentSuccessfully) {
+            if (!isSentSuccessfully) return '<span style="color:#5a6a7a;font-size:13px;">&mdash;</span>';
+            if (!isOpened) return '<span style="font-style:italic;color:#5a6a7a;font-size:12px;">Not opened</span>';
+
+            var timeStr = formatDate(openedAtUtc);
+            if (openCount > 1) {
+                return '<span style="background:#E6F7EF;color:#129867;display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Opened (' + openCount + '&times;)</span>'
+                    + '<span style="font-size:11px;color:#5a6a7a;margin-left:6px;">' + timeStr + '</span>';
+            }
+            return '<span style="background:#E6F7EF;color:#129867;display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Opened</span>'
+                + '<span style="font-size:11px;color:#5a6a7a;margin-left:6px;">' + timeStr + '</span>';
+        }
+
+        /**
+         * Formats a UTC ISO-8601 date string to local date + time.
+         * e.g. "15 Jan 2025 09:32"
+         */
+        function formatDate(utcString) {
+            if (!utcString) return '—';
+            var d = new Date(utcString);
+            if (isNaN(d.getTime())) return utcString;
+            var day   = String(d.getDate()).padStart(2, '0');
+            var month = d.toLocaleString('default', { month: 'short' });
+            var year  = d.getFullYear();
+            var hh    = String(d.getHours()).padStart(2, '0');
+            var mm    = String(d.getMinutes()).padStart(2, '0');
+            return day + ' ' + month + ' ' + year + ' ' + hh + ':' + mm;
+        }
+
+        /** Escape a string for use in an HTML attribute value. */
+        function escapeAttr(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        /** Escape a string for safe insertion as text content via innerHTML. */
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        /**
+         * Builds a single <tr> HTML string from a log entry.
+         *
+         * @@param {Object} log
+         * @@param {string}  log.escalationTier
+         * @@param {string}  log.recipientEmail
+         * @@param {string}  log.sentAtUtc
+         * @@param {boolean} log.isManualTrigger
+         * @@param {boolean} log.isSentSuccessfully
+         * @@param {string|null} log.errorMessage
+         * @@param {boolean} log.isOpened
+         * @@param {string|null} log.openedAtUtc
+         * @@param {number}  log.openCount
+         * @@param {string|null} log.lastOpenedAtUtc
+         * @@param {boolean} log.isTestSend
+         */
+        function buildRow(log) {
+            return '<tr style="border-bottom:1px solid rgba(13,94,166,.06);">'
+                + '<td style="padding:10px 12px;vertical-align:middle;">' + tierBadge(log.escalationTier) + '</td>'
+                + '<td style="padding:10px 12px;vertical-align:middle;color:#0B1B28;font-size:13px;">' + escapeHtml(log.recipientEmail || '—') + '</td>'
+                + '<td style="padding:10px 12px;vertical-align:middle;color:#5a6a7a;font-size:13px;white-space:nowrap;">' + formatDate(log.sentAtUtc) + '</td>'
+                + '<td style="padding:10px 12px;vertical-align:middle;">' + methodBadge(log.isManualTrigger, log.isTestSend) + '</td>'
+                + '<td style="padding:10px 12px;vertical-align:middle;">' + statusBadge(log.isSentSuccessfully, log.errorMessage) + '</td>'
+                + '<td style="padding:10px 12px;vertical-align:middle;">' + openedBadge(log.isOpened, log.openedAtUtc, log.openCount, log.isSentSuccessfully) + '</td>'
+                + '</tr>';
+        }
+
+        /**
+         * Loads reminder history for the given invoice and renders the panel.
+         * Called externally: loadReminderHistory(invoiceId)
+         *
+         * @@param {number} invoiceId
+         */
+        window.loadReminderHistory = function (invoiceId) {
+            var loading = document.getElementById('reminderHistoryLoading');
+            var empty   = document.getElementById('reminderHistoryEmpty');
+            var table   = document.getElementById('reminderHistoryTable');
+            var tbody   = document.getElementById('reminderHistoryBody');
+
+            // Reset state
+            loading.style.display = 'block';
+            empty.style.display   = 'none';
+            table.style.display   = 'none';
+            tbody.innerHTML       = '';
+
+            BlockUI.show('Loading reminder history...');
+
+            fetch('/PaymentReminder/AxGetReminderHistory?invoiceId=' + encodeURIComponent(invoiceId), {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                BlockUI.hide();
+                loading.style.display = 'none';
+
+                if (!data.success) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Failed to load reminder history.',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    return;
+                }
+
+                var logs = data.data || [];
+
+                if (logs.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                var rows = logs.map(buildRow).join('');
+                tbody.innerHTML     = rows;
+                table.style.display = 'table';
+            })
+            .catch(function () {
+                BlockUI.hide();
+                loading.style.display = 'none';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An unexpected error occurred while loading reminder history.',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            });
+        };
+
+    }());
+</script>

@@ -12,6 +12,7 @@ using Portal.Web.Security;
 using Portal.Web.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
+using Portal.Web.BackgroundServices;
 using Portal.Web.Middleware;
 using Portal.Web.Services.Billing;
 using Portal.Web.Services.Stripe;
@@ -233,6 +234,11 @@ builder.Services.AddScoped<IPnlPdfService, PnlPdfService>();
 
 // Expense Insights
 builder.Services.AddScoped<IExpenseInsightsService, ExpenseInsightsService>();
+
+// Payment Reminders
+builder.Services.AddScoped<IPaymentReminderScheduleService, PaymentReminderScheduleService>();
+builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
+builder.Services.AddHostedService<PaymentReminderBackgroundService>();
 
 // --- reCAPTCHA ---
 builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();

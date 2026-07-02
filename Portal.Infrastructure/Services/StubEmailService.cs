@@ -59,4 +59,13 @@ public class StubEmailService : IEmailService
 
         return Task.CompletedTask;
     }
+
+    public Task SendPaymentReminderEmailAsync(string toEmail, string customerName, string invoiceNumber, decimal outstandingAmount, DateOnly dueDate, string businessName, string escalationTier, string? invoiceShareToken, string baseUrl, string? trackingToken = null, bool isTestSend = false)
+    {
+        _logger.LogInformation(
+            "Payment reminder email stub: To={ToEmail}, Customer={CustomerName}, Invoice={InvoiceNumber}, Amount={Amount}, DueDate={DueDate}, Business={BusinessName}, Tier={Tier}, IsTestSend={IsTestSend}",
+            toEmail, customerName, invoiceNumber, outstandingAmount, dueDate, businessName, escalationTier, isTestSend);
+
+        return Task.CompletedTask;
+    }
 }

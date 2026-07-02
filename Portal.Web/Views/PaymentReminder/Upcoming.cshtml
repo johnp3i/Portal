@@ -1,0 +1,166 @@
+@{
+    ViewData["Title"] = "Payment Reminders — Upcoming";
+}
+
+@Html.AntiForgeryToken()
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payment Reminders</div>
+        <h1 class="topbar-heading">Upcoming Reminders</h1>
+        <p class="topbar-subtitle">Preview which reminders are scheduled to be sent in the coming days.</p>
+    </div>
+</div>
+
+<!-- Filter Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Period</label>
+            <select id="filterPeriod" style="width:100%;">
+                <option value="7">Next 7 days</option>
+                <option value="14" selected>Next 14 days</option>
+                <option value="30">Next 30 days</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Tier</label>
+            <select id="filterTier" style="width:100%;">
+                <option value="All" selected>All Tiers</option>
+                <option value="Friendly">Friendly</option>
+                <option value="Firm">Firm</option>
+                <option value="Formal">Formal</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="loadUpcoming()">Filter</button>
+            <button type="button" class="btn btn-secondary" style="margin-left:8px;" onclick="clearFilters()">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Data Table Card -->
+<section class="glass card-pad">
+    <table id="upcomingTable" style="width:100%;border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th style="font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Date</th>
+                <th style="font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Customer</th>
+                <th style="font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Invoice</th>
+                <th style="font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Amount Due</th>
+                <th style="font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Tier</th>
+                <th style="font-size:11px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--line);">Due Date</th>
+            </tr>
+        </thead>
+        <tbody id="upcomingTableBody">
+        </tbody>
+    </table>
+
+    <!-- Summary text -->
+    <p id="summaryText" style="font-size:14px;color:var(--muted);margin-top:18px;display:none;"></p>
+
+    <!-- Empty state -->
+    <div id="emptyState" style="display:none;text-align:center;padding:40px 20px;">
+        <p style="font-size:15px;color:var(--muted);font-style:italic;">No upcoming reminders projected.</p>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', loadUpcoming);
+
+        async function loadUpcoming() {
+            var daysAhead = document.getElementById('filterPeriod').value;
+            var tier = document.getElementById('filterTier').value;
+            var params = new URLSearchParams();
+            params.append('daysAhead', daysAhead);
+            if (tier && tier !== 'All') params.append('tier', tier);
+
+            BlockUI.show('Loading upcoming reminders...');
+            try {
+                var response = await fetch('/PaymentReminder/AxGetUpcomingReminders?' + params.toString());
+                var result = await response.json();
+                BlockUI.hide();
+
+                if (!result.success) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                renderTable(result.data, daysAhead);
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load upcoming reminders.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function renderTable(data, daysAhead) {
+            var tbody = document.getElementById('upcomingTableBody');
+            var summaryText = document.getElementById('summaryText');
+            var emptyState = document.getElementById('emptyState');
+
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                summaryText.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            summaryText.style.display = 'block';
+            summaryText.textContent = data.length + ' reminder' + (data.length !== 1 ? 's' : '') + ' projected in the next ' + daysAhead + ' days';
+
+            data.forEach(function (item) {
+                var row = document.createElement('tr');
+                row.innerHTML =
+                    '<td style="padding:14px 12px;font-size:14px;vertical-align:middle;border-bottom:1px solid rgba(13,94,166,0.06);">' + formatDate(item.scheduledDate) + '</td>' +
+                    '<td style="padding:14px 12px;font-size:14px;vertical-align:middle;border-bottom:1px solid rgba(13,94,166,0.06);">' + escapeHtml(item.customerName) + '</td>' +
+                    '<td style="padding:14px 12px;font-size:14px;vertical-align:middle;border-bottom:1px solid rgba(13,94,166,0.06);">' + escapeHtml(item.invoiceNumber) + '</td>' +
+                    '<td style="padding:14px 12px;font-size:14px;vertical-align:middle;border-bottom:1px solid rgba(13,94,166,0.06);">&euro;' + formatAmount(item.outstandingAmount) + '</td>' +
+                    '<td style="padding:14px 12px;font-size:14px;vertical-align:middle;border-bottom:1px solid rgba(13,94,166,0.06);">' + tierBadge(item.escalationTier) + '</td>' +
+                    '<td style="padding:14px 12px;font-size:14px;vertical-align:middle;border-bottom:1px solid rgba(13,94,166,0.06);">' + formatDate(item.dueDate) + '</td>';
+                tbody.appendChild(row);
+            });
+        }
+
+        function tierBadge(tier) {
+            var colors = {
+                'Friendly': { bg: 'rgba(18,152,103,0.1)', text: '#129867' },
+                'Firm': { bg: 'rgba(200,145,46,0.1)', text: '#C8912E' },
+                'Formal': { bg: 'rgba(194,74,74,0.1)', text: '#C24A4A' }
+            };
+            var c = colors[tier] || { bg: '#EEF4F8', text: '#5E7385' };
+            return '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:' + c.bg + ';color:' + c.text + ';">' + escapeHtml(tier) + '</span>';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            var date = new Date(dateStr);
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var day = String(date.getDate()).padStart(2, '0');
+            var month = months[date.getMonth()];
+            var year = date.getFullYear();
+            return day + ' ' + month + ' ' + year;
+        }
+
+        function formatAmount(amount) {
+            if (amount === null || amount === undefined) return '0.00';
+            return Number(amount).toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function clearFilters() {
+            document.getElementById('filterPeriod').value = '14';
+            document.getElementById('filterTier').value = 'All';
+            loadUpcoming();
+        }
+    </script>
+}

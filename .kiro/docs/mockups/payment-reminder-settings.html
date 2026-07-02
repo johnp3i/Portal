@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings — Payment Reminders</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --line: #E2EBF3;
+            --card-radius: 20px;
+            --input-radius: 10px;
+            --btn-radius: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 40px 24px 80px;
+        }
+
+        /* Topbar */
+        .topbar {
+            margin-bottom: 32px;
+        }
+        .topbar .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+        .topbar h1 {
+            font-family: Manrope, sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* Cards */
+        .card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+        .card h2 {
+            font-family: Manrope, sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .card .card-desc {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        /* Table */
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .schedule-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1.5px solid var(--line);
+        }
+        .schedule-table tbody td {
+            padding: 16px 12px;
+            font-size: 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f4f7;
+        }
+        .schedule-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+        .badge-green {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--green);
+        }
+        .badge-amber {
+            background: rgba(200, 145, 46, 0.1);
+            color: var(--amber);
+        }
+        .badge-red {
+            background: rgba(194, 74, 74, 0.1);
+            color: var(--red);
+        }
+
+        /* Trigger cell */
+        .trigger-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .trigger-cell input {
+            width: 56px;
+            text-align: center;
+        }
+        .trigger-cell span {
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        /* Inputs */
+        input[type="number"],
+        input[type="text"] {
+            border: 1.5px solid #d0dbe5;
+            border-radius: var(--input-radius);
+            padding: 8px 12px;
+            font-size: 14px;
+            font-family: Inter, sans-serif;
+            color: var(--text);
+            width: 72px;
+            text-align: center;
+            transition: border-color 0.15s;
+        }
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            display: inline-block;
+            padding: 12px 32px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--btn-radius);
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-row {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* Suppression section */
+        .suppression-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .suppression-row label {
+            font-size: 14px;
+            color: var(--text);
+            flex: 1;
+            min-width: 200px;
+        }
+        .suppression-row .helper {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* Toggle */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f4f7;
+        }
+        .toggle-row label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+        }
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #d0dbe5;
+            border-radius: 13px;
+            transition: background 0.2s;
+        }
+        .toggle .slider::before {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .toggle input:checked + .slider {
+            background: var(--green);
+        }
+        .toggle input:checked + .slider::before {
+            transform: translateX(22px);
+        }
+
+        /* Small toggle variant for table rows */
+        .toggle-sm {
+            width: 40px;
+            height: 22px;
+        }
+        .toggle-sm .slider {
+            border-radius: 11px;
+        }
+        .toggle-sm .slider::before {
+            width: 16px;
+            height: 16px;
+            left: 3px;
+            bottom: 3px;
+        }
+        .toggle-sm input:checked + .slider::before {
+            transform: translateX(18px);
+        }
+
+        /* Disabled row style */
+        .schedule-table tbody tr.tier-disabled td:not(:first-child) {
+            opacity: 0.5;
+        }
+
+        .status-label {
+            font-size: 13px;
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        /* Email Preview Tabs */
+        .tab-bar {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--line);
+            margin-bottom: 20px;
+        }
+        .tab-bar button {
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.15s;
+        }
+        .tab-bar button.active {
+            color: var(--blue);
+        }
+        .tab-bar button.active::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--blue);
+            border-radius: 2px;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: #F7FAFC;
+            border-radius: 12px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-content .email-from {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .tab-content .email-subject {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+        .tab-content .email-body {
+            font-size: 14px;
+            color: #3D4F5F;
+            line-height: 1.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 16px 60px;
+            }
+            .topbar h1 {
+                font-size: 28px;
+            }
+            .card {
+                padding: 20px;
+            }
+            .schedule-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="eyebrow">Settings</div>
+        <h1>Payment Reminders</h1>
+        <p class="subtitle">Configure when and how payment reminders are sent to customers.</p>
+    </div>
+
+    <!-- Card 1: Reminder Schedule -->
+    <div class="card">
+        <h2>Reminder Schedule</h2>
+        <p class="card-desc">Define escalation tiers and timing for overdue invoice reminders.</p>
+
+        <table class="schedule-table">
+            <thead>
+                <tr>
+                    <th style="width:60px;">Active</th>
+                    <th>Tier</th>
+                    <th>Trigger</th>
+                    <th>Max Reminders</th>
+                    <th>Min Interval (days)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="toggle toggle-sm">
+                            <input type="checkbox" checked />
+                            <span class="slider"></span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-green">Friendly</span></td>
+                    <td>
+                        <div class="trigger-cell">
+                            <input type="number" value="3" min="1" max="30" />
+                            <span>days before due date</span>
+                        </div>
+                    </td>
+                    <td><input type="number" value="1" min="1" max="5" /></td>
+                    <td><input type="number" value="3" min="1" max="30" /></td>
+                </tr>
+                <tr class="tier-disabled">
+                    <td>
+                        <div class="toggle toggle-sm">
+                            <input type="checkbox" />
+                            <span class="slider"></span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-amber">Firm</span></td>
+                    <td>
+                        <div class="trigger-cell">
+                            <input type="number" value="7" min="1" max="60" />
+                            <span>days after due date</span>
+                        </div>
+                    </td>
+                    <td><input type="number" value="2" min="1" max="5" /></td>
+                    <td><input type="number" value="5" min="1" max="30" /></td>
+                </tr>
+                <tr class="tier-disabled">
+                    <td>
+                        <div class="toggle toggle-sm">
+                            <input type="checkbox" />
+                            <span class="slider"></span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-red">Formal</span></td>
+                    <td>
+                        <div class="trigger-cell">
+                            <input type="number" value="21" min="1" max="90" />
+                            <span>days after due date</span>
+                        </div>
+                    </td>
+                    <td><input type="number" value="1" min="1" max="5" /></td>
+                    <td><input type="number" value="7" min="1" max="30" /></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="btn-row">
+            <button class="btn-primary">Save Schedule</button>
+        </div>
+    </div>
+
+    <!-- Card 2: Suppression Rules -->
+    <div class="card">
+        <h2>Suppression Rules</h2>
+        <p class="card-desc">Configure when reminders should be temporarily suppressed.</p>
+
+        <div class="suppression-row">
+            <div>
+                <label>Suppress after partial payment</label>
+                <p class="helper">Don't send reminders for a set number of days after a partial payment is received.</p>
+            </div>
+            <input type="number" value="7" min="1" max="30" style="width:72px;" />
+            <span style="font-size:13px;color:var(--muted);">days</span>
+        </div>
+
+        <div class="toggle-row">
+            <label>Reminder System</label>
+            <div class="toggle">
+                <input type="checkbox" id="reminderToggle" checked />
+                <span class="slider"></span>
+            </div>
+            <span class="status-label" id="toggleLabel">Enabled</span>
+        </div>
+    </div>
+
+    <!-- Card 3: Email Preview -->
+    <div class="card">
+        <h2>Email Preview</h2>
+        <p class="card-desc">Preview the opening of each reminder email tier.</p>
+
+        <div class="tab-bar">
+            <button class="active" onclick="showTab('friendly')">Friendly</button>
+            <button onclick="showTab('firm')">Firm</button>
+            <button onclick="showTab('formal')">Formal</button>
+        </div>
+
+        <div class="tab-content active" id="tab-friendly">
+            <div class="email-from">From: noreply@yourbusiness.com</div>
+            <div class="email-subject">Invoice approaching due date</div>
+            <p class="email-body">
+                Dear [Customer Name],<br><br>
+                This is a friendly reminder that invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> is due on <strong>15 July 2026</strong>. We would appreciate your prompt attention to this matter.<br><br>
+                If payment has already been made, please disregard this message.
+            </p>
+        </div>
+
+        <div class="tab-content" id="tab-firm">
+            <div class="email-from">From: noreply@yourbusiness.com</div>
+            <div class="email-subject">Invoice overdue — action required</div>
+            <p class="email-body">
+                Dear [Customer Name],<br><br>
+                We would like to draw your attention to invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> which was due on <strong>15 July 2026</strong> and remains unpaid. Please arrange payment at your earliest convenience to avoid any disruption to services.
+            </p>
+        </div>
+
+        <div class="tab-content" id="tab-formal">
+            <div class="email-from">From: noreply@yourbusiness.com</div>
+            <div class="email-subject">Final payment notice</div>
+            <p class="email-body">
+                Dear [Customer Name],<br><br>
+                Despite previous correspondence, invoice <strong>INV-2026-0045</strong> for <strong>&euro;1,500.00</strong> (due <strong>15 July 2026</strong>) remains outstanding. This is a formal notice that we require immediate payment. If payment is not received within 7 days, we may need to consider further action.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-bar button').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        document.getElementById('reminderToggle').addEventListener('change', function() {
+            document.getElementById('toggleLabel').textContent = this.checked ? 'Enabled' : 'Disabled';
+            document.getElementById('toggleLabel').style.color = this.checked ? 'var(--green)' : 'var(--muted)';
+        });
+    </script>
+
+</body>
+</html>
