@@ -46,6 +46,12 @@ public class Invoice
 
     public bool IsDisputed { get; set; }
 
+    /// <summary>
+    /// Per-invoice override for payment instructions visibility.
+    /// NULL = follow business default, 1 = force show, 0 = force hide.
+    /// </summary>
+    public byte? PaymentInstructionsOverride { get; set; }
+
     public bool IsDeleted { get; set; }
 
     public DateTime? DeletedAtUtc { get; set; }

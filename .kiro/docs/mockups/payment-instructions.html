@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Instructions — Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --line: #E2EBF3;
+            --card-radius: 20px;
+            --input-radius: 10px;
+            --btn-radius: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 40px 24px 80px;
+        }
+
+        h1, h2, h3 {
+            font-family: Manrope, sans-serif;
+        }
+
+        /* Section dividers */
+        .section-divider {
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            margin: 48px 0 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        /* Customer page wrapper */
+        .customer-page {
+            background: #E8EEF3;
+            border-radius: 16px;
+            padding: 40px 24px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Invoice card */
+        .invoice-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 4px 24px rgba(11, 27, 40, 0.08);
+            padding: 36px 32px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .invoice-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1.5px solid var(--line);
+        }
+        .invoice-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .logo-placeholder {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: var(--bg2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .invoice-summary {
+            margin-bottom: 24px;
+        }
+        .invoice-summary .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #f4f7fa;
+        }
+        .invoice-summary .row:last-child { border-bottom: none; }
+        .invoice-summary .row .label { color: var(--muted); }
+        .invoice-summary .row .value { font-weight: 600; }
+
+        .status-unpaid {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(194, 74, 74, 0.1);
+            color: var(--red);
+        }
+
+        /* Action buttons */
+        .action-btns {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn-outline {
+            padding: 10px 20px;
+            border: 1.5px solid var(--line);
+            border-radius: var(--btn-radius);
+            background: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: border-color 0.15s;
+        }
+        .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+        /* Acceptance section */
+        .acceptance-section {
+            border: 1.5px solid var(--line);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .acceptance-section input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--blue);
+        }
+        .acceptance-section label {
+            font-size: 14px;
+            color: var(--text);
+            flex: 1;
+        }
+        .btn-accept {
+            padding: 10px 20px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--btn-radius);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Pay by Bank Transfer button */
+        .btn-bank-transfer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 28px;
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-bank-transfer:hover { opacity: 0.9; }
+        .btn-bank-transfer svg { flex-shrink: 0; }
+
+        /* Modal */
+        .modal-overlay {
+            position: relative;
+            background: rgba(11, 27, 40, 0.35);
+            border-radius: 16px;
+            padding: 60px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            max-width: 700px;
+        }
+        .modal {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 12px 48px rgba(11, 27, 40, 0.18);
+            padding: 32px;
+            width: 100%;
+            max-width: 480px;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--bg2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--muted);
+        }
+        .modal-subtitle {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .modal-divider {
+            height: 1px;
+            background: var(--line);
+            margin: 20px 0;
+        }
+
+        /* Info card */
+        .info-card {
+            background: #F0F6FB;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .info-card .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        .info-card .info-row:first-child { padding-top: 0; }
+        .info-card .info-row:last-child { padding-bottom: 0; }
+        .info-card .info-label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .info-card .info-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-card .info-value.amount {
+            font-size: 18px;
+            color: var(--blue);
+        }
+
+        /* Bank details */
+        .bank-details .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f4f7fa;
+        }
+        .bank-details .detail-row:last-child { border-bottom: none; }
+        .bank-details .detail-label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .bank-details .detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: right;
+        }
+
+        /* Copy button */
+        .btn-copy {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid var(--line);
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, border-color 0.15s;
+            flex-shrink: 0;
+        }
+        .btn-copy:hover {
+            background: var(--bg2);
+            border-color: var(--blue);
+        }
+        .btn-copy svg { width: 14px; height: 14px; color: var(--muted); }
+
+        /* Warning note */
+        .warning-note {
+            background: rgba(200, 145, 46, 0.08);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--amber);
+            line-height: 1.5;
+        }
+
+        /* Modal payment button */
+        .btn-payment-done {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-payment-done:hover { opacity: 0.9; }
+
+        .modal-note {
+            font-size: 12px;
+            color: var(--muted);
+            font-style: italic;
+            text-align: center;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        /* Confirmation badge */
+        .status-badge-onboard {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            background: rgba(200, 145, 46, 0.1);
+            color: var(--amber);
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .confirm-note {
+            text-align: center;
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 12px;
+        }
+
+        /* Business owner card */
+        .glass {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+        }
+        .card-pad { padding: 32px; }
+
+        .status-pills {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .pill {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .pill-green {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--green);
+        }
+        .pill-amber {
+            background: rgba(200, 145, 46, 0.1);
+            color: var(--amber);
+        }
+
+        /* Info banner */
+        .info-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px 20px;
+            border-radius: 10px;
+            background: rgba(200, 145, 46, 0.06);
+            border-left: 4px solid var(--amber);
+        }
+        .info-banner .icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .info-banner .text {
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .btn-primary {
+            display: inline-block;
+            padding: 10px 24px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--btn-radius);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: opacity 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* Settings toggle */
+        .setting-card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .setting-card .desc {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 16px 0;
+            border-top: 1px solid #f0f4f7;
+        }
+        .toggle-row label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #d0dbe5;
+            border-radius: 13px;
+            transition: background 0.2s;
+        }
+        .toggle .slider::before {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .toggle input:checked + .slider {
+            background: var(--green);
+        }
+        .toggle input:checked + .slider::before {
+            transform: translateX(22px);
+        }
+        .toggle-note {
+            font-size: 13px;
+            color: var(--green);
+            margin-top: 12px;
+            padding-left: 2px;
+        }
+
+        /* Layout wrapper */
+        .mockup-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mockup-wrapper">
+
+    <!-- ==================== SECTION 1 ==================== -->
+    <div class="section-divider">Customer View — Shared Invoice Page</div>
+
+    <div class="customer-page">
+        <div class="invoice-card">
+            <div class="invoice-header">
+                <h2>Invoice INV-2026-0089</h2>
+                <div class="logo-placeholder">LOGO</div>
+            </div>
+
+            <div class="invoice-summary">
+                <div class="row">
+                    <span class="label">From</span>
+                    <span class="value">Acme Solutions Ltd</span>
+                </div>
+                <div class="row">
+                    <span class="label">To</span>
+                    <span class="value">Blue Ocean Imports</span>
+                </div>
+                <div class="row">
+                    <span class="label">Amount</span>
+                    <span class="value">&euro;3,200.00</span>
+                </div>
+                <div class="row">
+                    <span class="label">Due Date</span>
+                    <span class="value">15 July 2026</span>
+                </div>
+                <div class="row">
+                    <span class="label">Status</span>
+                    <span class="value"><span class="status-unpaid">Unpaid</span></span>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="action-btns">
+                <button class="btn-outline">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Print
+                </button>
+                <button class="btn-outline">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Download PDF
+                </button>
+            </div>
+
+            <!-- Acceptance section -->
+            <div class="acceptance-section">
+                <input type="checkbox" id="acceptInv" />
+                <label for="acceptInv">I accept this invoice and agree to the terms</label>
+                <button class="btn-accept">Accept Invoice</button>
+            </div>
+
+            <!-- NEW: Pay by Bank Transfer -->
+            <button class="btn-bank-transfer">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 10v11"/><path d="M12 10v11"/><path d="M16 10v11"/></svg>
+                Pay by Bank Transfer
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 2 ==================== -->
+    <div class="section-divider">Payment Instructions Modal (Opened State)</div>
+
+    <div class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Bank Transfer Details</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <p class="modal-subtitle">Please use the following details to make your payment.</p>
+
+            <div class="modal-divider"></div>
+
+            <!-- Info card -->
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">Amount Due</span>
+                    <span class="info-value amount">&euro;3,200.00</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Due Date</span>
+                    <span class="info-value">15 July 2026</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Reference</span>
+                    <span class="info-value">
+                        INV-2026-0089 — Acme Solutions Ltd
+                        <button class="btn-copy" title="Copy reference">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                    </span>
+                </div>
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <!-- Bank details -->
+            <div class="bank-details">
+                <div class="detail-row">
+                    <span class="detail-label">Bank Name</span>
+                    <span class="detail-value">Bank of Valletta</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Payee Name</span>
+                    <span class="detail-value">Acme Solutions Ltd</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">IBAN</span>
+                    <span class="detail-value">
+                        MT84VALL22013000000040023456789
+                        <button class="btn-copy" title="Copy IBAN">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">SWIFT/BIC</span>
+                    <span class="detail-value">VALLMTMT</span>
+                </div>
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <!-- Warning note -->
+            <div class="warning-note">
+                Please include the reference number in your transfer description to help the business identify your payment.
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <!-- Payment done button -->
+            <button class="btn-payment-done">I've made the payment</button>
+            <p class="modal-note">
+                This will notify the business that you've initiated a bank transfer. The payment will be confirmed once verified.
+            </p>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 3 ==================== -->
+    <div class="section-divider">Confirmation State (After "I've made the payment")</div>
+
+    <div class="customer-page">
+        <div class="invoice-card">
+            <div class="invoice-header">
+                <h2>Invoice INV-2026-0089</h2>
+                <div class="logo-placeholder">LOGO</div>
+            </div>
+
+            <div class="invoice-summary">
+                <div class="row">
+                    <span class="label">From</span>
+                    <span class="value">Acme Solutions Ltd</span>
+                </div>
+                <div class="row">
+                    <span class="label">To</span>
+                    <span class="value">Blue Ocean Imports</span>
+                </div>
+                <div class="row">
+                    <span class="label">Amount</span>
+                    <span class="value">&euro;3,200.00</span>
+                </div>
+                <div class="row">
+                    <span class="label">Due Date</span>
+                    <span class="value">15 July 2026</span>
+                </div>
+                <div class="row">
+                    <span class="label">Status</span>
+                    <span class="value"><span class="status-unpaid">Unpaid</span></span>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="action-btns">
+                <button class="btn-outline">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Print
+                </button>
+                <button class="btn-outline">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Download PDF
+                </button>
+            </div>
+
+            <!-- Acceptance section -->
+            <div class="acceptance-section">
+                <input type="checkbox" id="acceptInv2" checked disabled />
+                <label for="acceptInv2">I accept this invoice and agree to the terms</label>
+                <button class="btn-accept" disabled style="opacity:0.5;cursor:default;">Accepted</button>
+            </div>
+
+            <!-- Replaced: Status badge instead of Pay button -->
+            <div class="status-badge-onboard">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                Payment Onboard — Awaiting Verification
+            </div>
+            <p class="confirm-note">Thank you. The business has been notified of your payment.</p>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 4 ==================== -->
+    <div class="section-divider">Business Owner View (Invoice Detail page)</div>
+
+    <section class="glass card-pad" style="max-width:700px;margin:0 auto;">
+        <div class="status-pills">
+            <span class="pill pill-green">Issued</span>
+            <span class="pill pill-amber">Payment Onboard</span>
+        </div>
+
+        <div class="info-banner">
+            <span class="icon">&#9888;</span>
+            <div>
+                <p class="text">
+                    The customer has declared that payment was made via bank transfer. This is a customer declaration only — please verify receipt on your bank statement before marking as paid.
+                </p>
+                <button class="btn-primary">Record Payment</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SECTION 5 ==================== -->
+    <div class="section-divider">Business Settings</div>
+
+    <section class="glass card-pad setting-card" style="max-width:700px;margin:0 auto;">
+        <h3>Payment Instructions</h3>
+        <p class="desc">Control whether bank transfer details are shown to customers on shared invoice pages.</p>
+
+        <div class="toggle-row">
+            <label>Show bank transfer payment option on shared invoices</label>
+            <label class="toggle">
+                <input type="checkbox" checked />
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <p class="toggle-note">
+            &#10003; Customers viewing your shared invoices will see a "Pay by Bank Transfer" button with your bank details.
+        </p>
+    </section>
+
+</div><!-- /mockup-wrapper -->
+
+</body>
+</html>

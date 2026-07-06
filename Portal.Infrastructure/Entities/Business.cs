@@ -18,6 +18,8 @@ public class Business
 
     public DateTime UpdatedAtUtc { get; set; }
 
+    public bool IsPaymentInstructionsEnabled { get; set; }
+
     // Navigation properties
     public BusinessProfile? BusinessProfile { get; set; }
 

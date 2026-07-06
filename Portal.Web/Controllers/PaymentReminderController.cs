@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Services;
 using Portal.Web.Constants;
@@ -15,15 +16,18 @@ public class PaymentReminderController : Controller
     private readonly IPaymentReminderService _reminderService;
     private readonly IPaymentReminderScheduleService _scheduleService;
     private readonly ICurrentTenantService _currentTenantService;
+    private readonly IConfiguration _configuration;
 
     public PaymentReminderController(
         IPaymentReminderService reminderService,
         IPaymentReminderScheduleService scheduleService,
-        ICurrentTenantService currentTenantService)
+        ICurrentTenantService currentTenantService,
+        IConfiguration configuration)
     {
         _reminderService = reminderService;
         _scheduleService = scheduleService;
         _currentTenantService = currentTenantService;
+        _configuration = configuration;
     }
 
     // --- Page Actions ---
@@ -39,6 +43,7 @@ public class PaymentReminderController : Controller
         {
             var businessId = _currentTenantService.CurrentBusinessId;
             var schedule = await _scheduleService.GetScheduleAsync(businessId);
+            ViewBag.ScheduledTimeUtc = _configuration.GetValue<string>("PaymentReminders:ScheduledTimeUtc", "06:00");
             return View(schedule);
         }
         catch (Exception ex)
@@ -53,6 +58,16 @@ public class PaymentReminderController : Controller
     [HttpGet]
     [ModuleAccess(PortalModules.PaymentReminderAuto)]
     public IActionResult Upcoming()
+    {
+        ViewBag.ScheduledTimeUtc = _configuration.GetValue<string>("PaymentReminders:ScheduledTimeUtc", "06:00");
+        return View();
+    }
+
+    /// <summary>
+    /// Reminder History page — shows all reminders sent by the business.
+    /// </summary>
+    [HttpGet]
+    public IActionResult History()
     {
         return View();
     }
@@ -204,6 +219,34 @@ public class PaymentReminderController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to load upcoming reminders." });
+        }
+    }
+
+    /// <summary>
+    /// Returns paginated, filtered reminder history for the current business.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetAllReminderHistory(
+        string? tier = null,
+        string? status = null,
+        string? method = null,
+        DateTime? dateFrom = null,
+        DateTime? dateTo = null,
+        string? customer = null,
+        int page = 1,
+        int pageSize = 20)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+            var result = await _reminderService.GetAllReminderHistoryAsync(
+                businessId, tier, status, method, dateFrom, dateTo, customer, page, pageSize);
+
+            return Json(new { success = true, data = result.Items, totalCount = result.TotalCount, page, pageSize });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load reminder history." });
         }
     }
 }

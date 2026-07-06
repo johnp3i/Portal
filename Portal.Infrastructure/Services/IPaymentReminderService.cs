@@ -57,4 +57,19 @@ public interface IPaymentReminderService
     /// logic as EvaluateAndSendAsync but in dry-run mode (no sends, no log creation).
     /// </summary>
     Task<List<UpcomingReminderDto>> GetUpcomingRemindersAsync(int businessId, int daysAhead = 14, string? tierFilter = null);
+
+    /// <summary>
+    /// Gets paginated reminder history for the business with optional filters.
+    /// Returns a page of results and the total matching count for pagination metadata.
+    /// </summary>
+    Task<ReminderHistoryPageResult> GetAllReminderHistoryAsync(
+        int businessId,
+        string? tier = null,
+        string? status = null,
+        string? method = null,
+        DateTime? dateFrom = null,
+        DateTime? dateTo = null,
+        string? customer = null,
+        int page = 1,
+        int pageSize = 20);
 }

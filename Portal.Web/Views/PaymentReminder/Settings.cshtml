@@ -28,8 +28,43 @@
         <div class="eyebrow"><span class="dot"></span> Settings</div>
         <h1 class="topbar-heading">Payment Reminders</h1>
         <p class="topbar-subtitle">Configure when and how payment reminders are sent to customers.</p>
+        <div style="margin-top:12px;display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:#EEF4F8;border-radius:8px;">
+            <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style="font-size:13px;color:#3D4F5F;">Daily send time: <strong id="localScheduledTime">@ViewBag.ScheduledTimeUtc UTC</strong></span>
+        </div>
     </div>
 </div>
+
+<!-- Help Section -->
+<details style="margin-bottom:22px;background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(13,94,166,0.06);overflow:hidden;">
+    <summary style="padding:20px 32px;cursor:pointer;font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;color:#0D5EA6;list-style:none;display:flex;align-items:center;gap:10px;">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        How does the reminder schedule work?
+    </summary>
+    <div style="padding:0 32px 24px;font-size:14px;color:#3D4F5F;line-height:1.8;">
+        <p style="margin:0 0 12px;">Reminders are sent automatically based on the <strong>trigger date</strong> calculated for each invoice:</p>
+        <div style="background:#F7FAFC;border-radius:10px;padding:16px 20px;margin-bottom:14px;font-family:monospace;font-size:13px;color:#0B1B28;">
+            Trigger Date = Invoice Due Date + Days Offset
+        </div>
+        <ul style="margin:0 0 14px;padding-left:20px;">
+            <li><strong>Negative offset</strong> (e.g. -3 days) → reminder sent <em>before</em> the due date</li>
+            <li><strong>Positive offset</strong> (e.g. +7 days) → reminder sent <em>after</em> the due date</li>
+        </ul>
+        <p style="margin:0 0 12px;"><strong>Escalation tiers</strong> allow you to send progressively firmer reminders:</p>
+        <ul style="margin:0 0 14px;padding-left:20px;">
+            <li><span style="color:#129867;font-weight:700;">Friendly</span> — a gentle nudge before or around the due date</li>
+            <li><span style="color:#C8912E;font-weight:700;">Firm</span> — a follow-up after the invoice becomes overdue</li>
+            <li><span style="color:#C24A4A;font-weight:700;">Formal</span> — a final notice for significantly overdue invoices</li>
+        </ul>
+        <p style="margin:0 0 12px;"><strong>Suppression rules</strong> prevent unnecessary reminders:</p>
+        <ul style="margin:0 0 0;padding-left:20px;">
+            <li>Reminders are paused if a partial payment was received recently</li>
+            <li>Max reminders per tier caps repeated sends for the same invoice</li>
+            <li>Min interval ensures reminders aren't sent too close together</li>
+            <li>Opted-out customers and disputed invoices are always skipped</li>
+        </ul>
+    </div>
+</details>
 
 <!-- Card 1: Reminder Schedule -->
 <section class="glass card-pad" style="margin-bottom:22px;">
@@ -362,8 +397,36 @@
     .reminder-email-preview--active {
         display: block;
     }
+
+    /* Responsive adjustments for Payment Reminders */
+    @@media (max-width: 768px) {
+        .reminder-number-input {
+            width: 56px !important;
+        }
+        .reminder-direction-select {
+            min-width: 100%;
+        }
+    }
 </style>
 
 @section Scripts {
+    <script>
+        (function() {
+            var utcTimeStr = '@(ViewBag.ScheduledTimeUtc ?? "06:00")';
+            if (!utcTimeStr || utcTimeStr.indexOf(':') === -1) utcTimeStr = '06:00';
+            var parts = utcTimeStr.split(':');
+            var hours = parseInt(parts[0], 10);
+            var minutes = parseInt(parts[1], 10);
+            if (isNaN(hours)) hours = 6;
+            if (isNaN(minutes)) minutes = 0;
+            var now = new Date();
+            var utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hours, minutes));
+            var localHours = String(utcDate.getHours()).padStart(2, '0');
+            var localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
+            var tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            var el = document.getElementById('localScheduledTime');
+            if (el) el.textContent = localHours + ':' + localMinutes + ' (' + tzName + ')';
+        })();
+    </script>
     <script src="/js/payment-reminder-settings.js"></script>
 }

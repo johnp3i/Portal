@@ -98,6 +98,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[IsQuotationReferenceShown],
                        [invoice].[Invoice].[VatSubmissionPeriodId],
                        [invoice].[Invoice].[IsDisputed],
+                       [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
                        [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
                 FROM [invoice].[Invoice]
@@ -259,6 +260,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[IsQuotationReferenceShown],
                        [invoice].[Invoice].[VatSubmissionPeriodId],
                        [invoice].[Invoice].[IsDisputed],
+                       [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
                        [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
                 FROM [invoice].[Invoice]

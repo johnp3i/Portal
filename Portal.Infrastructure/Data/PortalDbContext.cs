@@ -200,6 +200,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.IsPaymentInstructionsEnabled)
+                .IsRequired()
+                .HasDefaultValue(false);
         });
     }
 
@@ -301,6 +305,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.PayeeName)
                 .IsRequired()
                 .HasMaxLength(200);
+
+            entity.Property(e => e.SwiftBic)
+                .HasMaxLength(11)
+                .IsRequired(false);
         });
     }
 
@@ -617,6 +625,9 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsDisputed)
                 .IsRequired()
                 .HasDefaultValue(false);
+
+            entity.Property(e => e.PaymentInstructionsOverride)
+                .IsRequired(false);
         });
     }
 

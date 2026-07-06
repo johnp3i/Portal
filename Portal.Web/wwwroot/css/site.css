@@ -118,6 +118,7 @@ a{text-decoration:none;color:inherit}
 .pill-green{background:var(--greenSoft);color:var(--green);border:1px solid rgba(18,152,103,.16)}
 .pill-gold{background:var(--goldSoft);color:#8D5D07;border:1px solid rgba(200,145,46,.18)}
 .pill-red{background:var(--redSoft);color:var(--red);border:1px solid rgba(194,74,74,.16)}
+.pill-amber{background:rgba(200,145,46,.08);color:#C8912E;border:1px solid rgba(200,145,46,.18)}
 .pill-cyan{background:#E8F8FD;color:#1A8AB5;border:1px solid rgba(87,184,232,.18)}
 .pill-grey{background:#F0F2F5;color:#5A6A7A;border:1px solid rgba(90,106,122,.12)}
 

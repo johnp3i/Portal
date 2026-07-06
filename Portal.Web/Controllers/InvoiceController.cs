@@ -2,8 +2,10 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Constants;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
@@ -34,6 +36,8 @@ public class InvoiceController : Controller
     private readonly VatSubmissionPeriodRepository _vatPeriodRepository;
     private readonly IViewRenderService _viewRenderService;
     private readonly IInvoicePdfService _invoicePdfService;
+    private readonly IPaymentInstructionsService _paymentInstructionsService;
+    private readonly PortalDbContext _dbContext;
     private readonly ILogger<InvoiceController> _logger;
 
     public InvoiceController(
@@ -51,6 +55,8 @@ public class InvoiceController : Controller
         VatSubmissionPeriodRepository vatPeriodRepository,
         IViewRenderService viewRenderService,
         IInvoicePdfService invoicePdfService,
+        IPaymentInstructionsService paymentInstructionsService,
+        PortalDbContext dbContext,
         ILogger<InvoiceController> logger)
     {
         _invoiceService = invoiceService;
@@ -67,6 +73,8 @@ public class InvoiceController : Controller
         _vatPeriodRepository = vatPeriodRepository;
         _viewRenderService = viewRenderService;
         _invoicePdfService = invoicePdfService;
+        _paymentInstructionsService = paymentInstructionsService;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -210,7 +218,7 @@ public class InvoiceController : Controller
         var financialStatusNames = new Dictionary<int, string>
         {
             { 1, "Unpaid" }, { 2, "PartiallyPaid" }, { 3, "Paid" },
-            { 4, "Overdue" }, { 5, "WrittenOff" }
+            { 4, "Overdue" }, { 5, "WrittenOff" }, { 6, "PaymentOnboard" }
         };
 
         ViewBag.Invoice = invoice;
@@ -252,6 +260,9 @@ public class InvoiceController : Controller
         {
             ViewBag.AcceptanceStatus = null;
         }
+
+        // Payment Instructions override state for per-invoice toggle
+        ViewBag.IsBusinessPaymentInstructionsEnabled = await _paymentInstructionsService.IsEnabledForBusinessAsync(_tenantService.CurrentBusinessId);
 
         return View(invoice);
     }
@@ -663,6 +674,34 @@ public class InvoiceController : Controller
         {
             _logger.LogError(ex, "Failed to generate PDF for invoice {InvoiceId}", id);
             return StatusCode(500, new { success = false, message = "Failed to generate PDF. Please try again." });
+        }
+    }
+
+    /// <summary>
+    /// Sets the per-invoice payment instructions override.
+    /// Value: null = follow business default, 1 = force show, 0 = force hide.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSetPaymentInstructionsOverride(int invoiceId, byte? overrideValue)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var invoice = await _dbContext.Invoices
+                .FirstOrDefaultAsync(i => i.Id == invoiceId && i.BusinessId == businessId);
+
+            if (invoice == null)
+                return Json(new { success = false, message = "Invoice not found." });
+
+            invoice.PaymentInstructionsOverride = overrideValue;
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Payment instructions setting updated." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to update setting." });
         }
     }
 

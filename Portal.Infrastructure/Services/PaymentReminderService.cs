@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Constants;
@@ -18,6 +19,7 @@ public class PaymentReminderService : IPaymentReminderService
     private readonly IPaymentReminderScheduleService _scheduleService;
     private readonly IEmailService _emailService;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IInvoiceSharingService _sharingService;
 
     // Financial status constants for eligible invoices
     private static readonly int[] EligibleFinancialStatuses = { 1, 2, 4 }; // Unpaid, PartiallyPaid, Overdue
@@ -26,12 +28,14 @@ public class PaymentReminderService : IPaymentReminderService
         PortalDbContext dbContext,
         IPaymentReminderScheduleService scheduleService,
         IEmailService emailService,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IInvoiceSharingService sharingService)
     {
         _dbContext = dbContext;
         _scheduleService = scheduleService;
         _emailService = emailService;
         _httpContextAccessor = httpContextAccessor;
+        _sharingService = sharingService;
     }
 
     /// <inheritdoc />
@@ -76,6 +80,13 @@ public class PaymentReminderService : IPaymentReminderService
             // 6. Get business name for email
             var businessName = await GetBusinessNameAsync(businessId);
             var baseUrl = GetBaseUrl();
+
+            // Pre-load active share tokens for eligible invoices
+            var activeShareTokens = await _dbContext.InvoiceShares
+                .Where(s => s.BusinessId == businessId && s.IsActive && s.ExpiresAtUtc > DateTimeOffset.UtcNow)
+                .GroupBy(s => s.InvoiceId)
+                .Select(g => new { InvoiceId = g.Key, ShareToken = g.OrderByDescending(s => s.CreatedAtUtc).First().ShareToken })
+                .ToDictionaryAsync(x => x.InvoiceId, x => x.ShareToken);
 
             // 7. For each invoice x enabled tier
             foreach (var invoice in invoices)
@@ -144,7 +155,7 @@ public class PaymentReminderService : IPaymentReminderService
                             invoice.DueDate,
                             businessName,
                             tier.EscalationTier,
-                            null,
+                            await GetShareTokenForEvaluationAsync(invoice.Id, businessId, activeShareTokens),
                             baseUrl);
 
                         // Log success
@@ -234,10 +245,13 @@ public class PaymentReminderService : IPaymentReminderService
             try
             {
                 var businessName = await GetBusinessNameAsync(businessId);
+
+                var (shareToken, shareWasCreated) = await GetOrCreateShareTokenAsync(invoiceId, businessId);
+
                 await _emailService.SendPaymentReminderEmailAsync(
                     invoice.Customer.Email, invoice.Customer.Name, invoice.InvoiceNumber,
                     outstandingAmount, invoice.DueDate,
-                    businessName, escalationTier, null, GetBaseUrl());
+                    businessName, escalationTier, shareToken, GetBaseUrl());
 
                 // Log success
                 _dbContext.PaymentReminderLogs.Add(new PaymentReminderLog
@@ -255,7 +269,10 @@ public class PaymentReminderService : IPaymentReminderService
                 });
                 await _dbContext.SaveChangesAsync();
 
-                return new ManualReminderResult { Success = true };
+                var message = shareWasCreated
+                    ? "Reminder sent successfully. A share link was automatically created for this invoice."
+                    : "Reminder sent successfully.";
+                return new ManualReminderResult { Success = true, ErrorMessage = message };
             }
             catch (Exception ex)
             {
@@ -451,6 +468,8 @@ public class PaymentReminderService : IPaymentReminderService
             var trackingToken = TrackingTokenGenerator.Generate();
             var businessName = await GetBusinessNameAsync(businessId);
 
+            var (invoiceShareToken, shareWasCreated) = await GetOrCreateShareTokenAsync(invoiceId, businessId);
+
             try
             {
                 await _emailService.SendPaymentReminderEmailAsync(
@@ -461,7 +480,7 @@ public class PaymentReminderService : IPaymentReminderService
                     invoice.DueDate,
                     businessName,
                     escalationTier,
-                    null,
+                    invoiceShareToken,
                     GetBaseUrl(),
                     trackingToken: trackingToken,
                     isTestSend: true);
@@ -482,7 +501,9 @@ public class PaymentReminderService : IPaymentReminderService
                 });
                 await _dbContext.SaveChangesAsync();
 
-                return new TestReminderResult { Success = true, Message = "Test reminder sent successfully." };
+                return new TestReminderResult { Success = true, Message = shareWasCreated
+                    ? "Test reminder sent successfully. A share link was automatically created for this invoice."
+                    : "Test reminder sent successfully." };
             }
             catch (Exception ex)
             {
@@ -615,6 +636,143 @@ public class PaymentReminderService : IPaymentReminderService
         {
             throw;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<ReminderHistoryPageResult> GetAllReminderHistoryAsync(
+        int businessId,
+        string? tier = null,
+        string? status = null,
+        string? method = null,
+        DateTime? dateFrom = null,
+        DateTime? dateTo = null,
+        string? customer = null,
+        int page = 1,
+        int pageSize = 20)
+    {
+        try
+        {
+            var query = _dbContext.PaymentReminderLogs
+                .Include(l => l.Customer)
+                .Include(l => l.Invoice)
+                .Where(l => l.BusinessId == businessId)
+                .AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(tier) && !tier.Equals("All", StringComparison.OrdinalIgnoreCase))
+                query = query.Where(l => l.EscalationTier == tier);
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status.Equals("Sent", StringComparison.OrdinalIgnoreCase))
+                    query = query.Where(l => l.IsSentSuccessfully == true);
+                else if (status.Equals("Failed", StringComparison.OrdinalIgnoreCase))
+                    query = query.Where(l => l.IsSentSuccessfully == false);
+            }
+
+            if (!string.IsNullOrEmpty(method))
+            {
+                if (method.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+                    query = query.Where(l => l.IsManualTrigger == false && l.IsTestSend == false);
+                else if (method.Equals("Manual", StringComparison.OrdinalIgnoreCase))
+                    query = query.Where(l => l.IsManualTrigger == true && l.IsTestSend == false);
+                else if (method.Equals("Test", StringComparison.OrdinalIgnoreCase))
+                    query = query.Where(l => l.IsTestSend == true);
+            }
+
+            if (dateFrom.HasValue)
+                query = query.Where(l => l.SentAtUtc >= dateFrom.Value);
+
+            if (dateTo.HasValue)
+            {
+                var endOfDay = dateTo.Value.Date.AddDays(1);
+                query = query.Where(l => l.SentAtUtc < endOfDay);
+            }
+
+            if (!string.IsNullOrEmpty(customer))
+                query = query.Where(l => l.Customer.Name.Contains(customer));
+
+            // Order by most recent first
+            var ordered = query.OrderByDescending(l => l.SentAtUtc);
+
+            // Count total matching
+            var totalCount = await ordered.CountAsync();
+
+            // Page slice
+            var items = await ordered
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(l => new ReminderHistoryItemDto
+                {
+                    Id = l.Id,
+                    SentAtUtc = l.SentAtUtc,
+                    InvoiceId = l.InvoiceId,
+                    InvoiceNumber = l.Invoice.InvoiceNumber,
+                    CustomerName = l.Customer.Name,
+                    EscalationTier = l.EscalationTier,
+                    RecipientEmail = l.RecipientEmail,
+                    IsManualTrigger = l.IsManualTrigger,
+                    IsTestSend = l.IsTestSend,
+                    IsSentSuccessfully = l.IsSentSuccessfully,
+                    IsOpened = l.IsOpened
+                })
+                .ToListAsync();
+
+            return new ReminderHistoryPageResult
+            {
+                Items = items,
+                TotalCount = totalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the active share token for an invoice, or creates a new one if none exists.
+    /// Returns a tuple of (shareToken, wasCreated).
+    /// </summary>
+    private async Task<(string? ShareToken, bool WasCreated)> GetOrCreateShareTokenAsync(int invoiceId, int businessId)
+    {
+        // Try to find existing active share
+        var existingToken = await _dbContext.InvoiceShares
+            .Where(s => s.InvoiceId == invoiceId && s.BusinessId == businessId && s.IsActive && s.ExpiresAtUtc > DateTimeOffset.UtcNow)
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .Select(s => s.ShareToken)
+            .FirstOrDefaultAsync();
+
+        if (!string.IsNullOrEmpty(existingToken))
+            return (existingToken, false);
+
+        // No active share — create one (expires in 30 days, no email sent)
+        try
+        {
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";
+            var expiresAt = DateTimeOffset.UtcNow.AddDays(30);
+            var share = await _sharingService.ShareAsync(invoiceId, expiresAt, sendEmail: false, userId);
+            return (share.ShareToken, true);
+        }
+        catch (Exception ex)
+        {
+            // If share creation fails, send reminder without link (graceful degradation)
+            return (null, false);
+        }
+    }
+
+    /// <summary>
+    /// Gets share token from pre-loaded dictionary, or creates one if missing (for background evaluation).
+    /// </summary>
+    private async Task<string?> GetShareTokenForEvaluationAsync(int invoiceId, int businessId, Dictionary<int, string> preloadedTokens)
+    {
+        if (preloadedTokens.TryGetValue(invoiceId, out var token))
+            return token;
+
+        var (newToken, _) = await GetOrCreateShareTokenAsync(invoiceId, businessId);
+        if (!string.IsNullOrEmpty(newToken))
+            preloadedTokens[invoiceId] = newToken;
+        return newToken;
     }
 
     /// <summary>

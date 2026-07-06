@@ -239,6 +239,7 @@ builder.Services.AddScoped<IExpenseInsightsService, ExpenseInsightsService>();
 builder.Services.AddScoped<IPaymentReminderScheduleService, PaymentReminderScheduleService>();
 builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
 builder.Services.AddHostedService<PaymentReminderBackgroundService>();
+builder.Services.AddScoped<IPaymentInstructionsService, PaymentInstructionsService>();
 
 // --- reCAPTCHA ---
 builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();

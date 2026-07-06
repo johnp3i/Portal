@@ -109,19 +109,24 @@
     // =========================================================================
     // Email Preview Tab Switching
     // =========================================================================
-    function showEmailTab(tier, event) {
-        document.querySelectorAll('.email-tab-content').forEach(function (el) {
-            el.style.display = 'none';
-        });
-        document.querySelectorAll('.email-tab-btn').forEach(function (el) {
-            el.classList.remove('active');
+    function showEmailTab(tier, btnElement) {
+        // Hide all preview panels
+        document.querySelectorAll('.reminder-email-preview').forEach(function (el) {
+            el.classList.remove('reminder-email-preview--active');
         });
 
-        var preview = document.getElementById('emailPreview-' + tier);
-        if (preview) preview.style.display = 'block';
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.reminder-tab-btn').forEach(function (el) {
+            el.classList.remove('reminder-tab-btn--active');
+        });
 
-        if (event && event.target) {
-            event.target.classList.add('active');
+        // Show the selected preview panel
+        var preview = document.getElementById('email-tab-' + tier);
+        if (preview) preview.classList.add('reminder-email-preview--active');
+
+        // Mark the clicked button as active
+        if (btnElement) {
+            btnElement.classList.add('reminder-tab-btn--active');
         }
     }
 
@@ -153,5 +158,35 @@
     // =========================================================================
     window.saveSchedule = saveSchedule;
     window.showEmailTab = showEmailTab;
+
+    // Tier toggle — called from inline onchange="onTierToggle('friendly')"
+    window.onTierToggle = function (tierName) {
+        var toggle = document.getElementById('toggle-' + tierName);
+        if (!toggle) return;
+
+        var row = document.getElementById('row-' + tierName);
+        if (!row) return;
+
+        if (toggle.checked) {
+            row.classList.remove('tier-disabled');
+        } else {
+            row.classList.add('tier-disabled');
+        }
+    };
+
+    // System toggle — called from inline onchange="onSystemToggle()"
+    window.onSystemToggle = function () {
+        var toggle = document.getElementById('system-toggle');
+        var label = document.getElementById('system-toggle-label');
+        if (!toggle || !label) return;
+
+        if (toggle.checked) {
+            label.textContent = 'Enabled';
+            label.style.color = '#129867';
+        } else {
+            label.textContent = 'Disabled';
+            label.style.color = '#5a6a7a';
+        }
+    };
 
 })();

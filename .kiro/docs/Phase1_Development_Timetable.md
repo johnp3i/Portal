@@ -44,49 +44,54 @@ This timetable covers the implementation of all Phase 1 (Professional tier) feat
 
 **Effort:** Medium | **Dependencies:** Email service (existing), background job infrastructure (new)
 
-- [ ] 3.1 Create `PaymentReminderSchedule` table (business-level config: days before/after due, frequency)
-- [ ] 3.2 Create `PaymentReminderLog` table (tracks each email sent per invoice)
-- [ ] 3.3 Create reminder schedule configuration UI (Settings → Payment Reminders)
-- [ ] 3.4 Design escalating email templates (friendly → firm → formal)
-- [ ] 3.5 Create reminder evaluation service (which invoices need reminders today?)
-- [ ] 3.6 Implement background job (daily execution — evaluate all overdue/approaching invoices)
-- [ ] 3.7 Implement reminder sending logic (respect opt-outs, skip disputed, skip partially-paid-recently)
-- [ ] 3.8 Add activity logging (reminder sent events)
-- [ ] 3.9 Add manual "Send Reminder" button on Invoice Detail (Starter: one-at-a-time)
-- [ ] 3.10 Add reminder history view on Invoice Detail (who was reminded, when)
-- [ ] 3.11 Add Dashboard summary widget ("X reminders sent this week, Y payments received after reminder")
-- [ ] 3.12 Add per-customer opt-out configuration
-- [ ] 3.13 Add plan permission gates (`payment_reminder_manual` for Starter, `payment_reminder_auto` for Professional)
-- [ ] 3.14 Add soft-gate teaser on Revenue Dashboard for Starter users
-- [ ] 3.15 Visual QA and mobile responsiveness check
+- [x] 3.1 Create `PaymentReminderSchedule` table (business-level config: days before/after due, frequency)
+- [x] 3.2 Create `PaymentReminderLog` table (tracks each email sent per invoice)
+- [x] 3.3 Create reminder schedule configuration UI (Settings → Payment Reminders)
+- [x] 3.4 Design escalating email templates (friendly → firm → formal)
+- [x] 3.5 Create reminder evaluation service (which invoices need reminders today?)
+- [x] 3.6 Implement background job (daily execution — evaluate all overdue/approaching invoices)
+- [x] 3.7 Implement reminder sending logic (respect opt-outs, skip disputed, skip partially-paid-recently)
+- [x] 3.8 Add activity logging (reminder sent events)
+- [x] 3.9 Add manual "Send Reminder" button on Invoice Detail (Starter: one-at-a-time)
+- [x] 3.10 Add reminder history view on Invoice Detail (who was reminded, when)
+- [x] 3.11 Add Dashboard summary widget ("X reminders sent this week, Y payments received after reminder")
+- [x] 3.12 Add per-customer opt-out configuration
+- [x] 3.13 Add plan permission gates (`payment_reminder_manual` for Starter, `payment_reminder_auto` for Professional)
+- [x] 3.14 Add soft-gate teaser on Revenue Dashboard for Starter users
+- [x] 3.15 Visual QA and mobile responsiveness check
 - [ ] 3.16 End-to-end testing: schedule → evaluate → send → log
 
 ---
 
-## Module 4: Payment Requests (Stripe Connect)
+## Module 4: Payment Instructions (Bank Transfer)
 
-**Effort:** Medium | **Dependencies:** Stripe API, webhook endpoint, OAuth flow
+**Effort:** Low–Medium | **Dependencies:** Shared Invoice infrastructure (existing)
 
-- [ ] 4.1 Create `BusinessPaymentGateway` table
-- [ ] 4.2 Create `InvoicePaymentLink` table
-- [ ] 4.3 Register Stripe Connect platform account (3 Inventors side)
-- [ ] 4.4 Implement OAuth connect flow (Settings → Payment Gateway → Connect Stripe)
-- [ ] 4.5 Implement OAuth disconnect flow
-- [ ] 4.6 Create payment gateway service (provider-agnostic interface)
-- [ ] 4.7 Implement Stripe provider: `CreatePaymentLinkAsync` (Checkout Session creation)
-- [ ] 4.8 Add "Generate Payment Link" button on Invoice Detail
-- [ ] 4.9 Display payment link status on Invoice Detail (pending/paid/expired)
-- [ ] 4.10 Implement webhook endpoint (`/api/stripe/webhook`)
-- [ ] 4.11 Implement webhook signature verification
-- [ ] 4.12 Implement auto-reconciliation (webhook → create Payment record → update invoice status)
-- [ ] 4.13 Add idempotency protection (reject duplicate webhook deliveries)
-- [ ] 4.14 Auto-generate payment links on invoice issue (Professional only)
-- [ ] 4.15 Include payment link in invoice share emails (Professional only)
-- [ ] 4.16 Add payment link to shared invoice page ("Pay Now" button)
-- [ ] 4.17 Add plan permission gates (`payment_link_manual` for Starter, `payment_link_auto` for Professional)
-- [ ] 4.18 Block payment gateway config for demo users
-- [ ] 4.19 Visual QA: payment gateway settings page, invoice detail link display
-- [ ] 4.20 End-to-end testing: connect → generate link → pay → webhook → auto-record
+- [x] 4.1 Add SwiftBic column to BusinessPaymentDetail
+- [x] 4.2 Add IsPaymentInstructionsEnabled column to Business
+- [x] 4.3 Seed PaymentOnboard (Id=6) financial status
+- [x] 4.4 Create PaymentInstructionsService (toggle, bank details query, declare payment, rate limit)
+- [x] 4.5 Add toggle endpoint (MyBusinessController)
+- [x] 4.6 Add payment-instructions GET endpoint (InvoiceViewController)
+- [x] 4.7 Add declare-payment POST endpoint (InvoiceViewController)
+- [x] 4.8 Inject "Pay by Bank Transfer" button and modal into shared invoice page
+- [x] 4.9 Add Payment Instructions toggle to Business Settings
+- [x] 4.10 Add SWIFT/BIC field to payment details form
+- [x] 4.11 Add PaymentOnboard info banner to Invoice Detail
+- [x] 4.12 Add PaymentOnboard to invoice list filters
+- [ ] 4.13 Visual QA and mobile responsiveness check
+- [ ] 4.14 End-to-end testing: toggle → share → pay button → declare → verify status
+
+### Option C: Stripe Connect (Future Upgrade)
+
+Bank transfer instructions can be supplemented (not replaced) with Stripe Connect for card payments and automatic reconciliation. This would require:
+- Stripe Connect platform registration
+- OAuth connect/disconnect flow
+- Webhook endpoint with signature verification
+- Auto-reconciliation (webhook → Payment record → invoice status update)
+- Database tables: BusinessPaymentGateway, InvoicePaymentLink
+
+Both payment methods would coexist on the shared invoice page — customers could choose "Pay by Card" or "Pay by Bank Transfer".
 
 ---
 

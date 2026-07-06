@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Update Changelog on Task Completion",
+      "trigger": "PostTaskExec",
+      "action": {
+        "type": "agent",
+        "prompt": "A spec task has just been completed. Read the CHANGELOG.md file at .kiro/docs/CHANGELOG.md. If the task that just completed introduces a new feature, fix, or notable change, append a brief entry under today's date section. If today's date section doesn't exist yet, create it at the top. Keep entries concise (one line per item). Do not duplicate existing entries. If the task is a minor internal step (like creating a DTO or migration file) that's already covered by a parent feature entry, skip the update."
+      }
+    }
+  ]
+}

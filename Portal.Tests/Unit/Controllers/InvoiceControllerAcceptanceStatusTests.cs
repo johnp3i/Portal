@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
@@ -66,6 +67,11 @@ public class InvoiceControllerAcceptanceStatusTests
             .Setup(s => s.GetBusinessProfileAsync(1))
             .ReturnsAsync(new BusinessProfile { Id = 1, BusinessId = 1, CurrencySymbol = "€" });
 
+        var portalOptions = new DbContextOptionsBuilder<PortalDbContext>()
+            .UseInMemoryDatabase(databaseName: $"Portal_InvCtrlAccept_{Guid.NewGuid()}")
+            .Options;
+        var portalDbContext = new PortalDbContext(portalOptions, _tenantServiceMock.Object);
+
         _controller = new InvoiceController(
             _invoiceServiceMock.Object,
             _sectionServiceMock.Object,
@@ -81,6 +87,8 @@ public class InvoiceControllerAcceptanceStatusTests
             vatPeriodRepository,
             _viewRenderServiceMock.Object,
             _invoicePdfServiceMock.Object,
+            Mock.Of<IPaymentInstructionsService>(),
+            portalDbContext,
             _loggerMock.Object);
 
         // Set up TempData to avoid null reference exceptions

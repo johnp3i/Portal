@@ -20,6 +20,7 @@ public class RevenueController : Controller
     private readonly ICustomerService _customerService;
     private readonly IInvoiceService _invoiceService;
     private readonly IBusinessService _businessService;
+    private readonly IPermissionService _permissionService;
 
     public RevenueController(
         IPaymentService paymentService,
@@ -29,7 +30,8 @@ public class RevenueController : Controller
         ICurrentTenantService tenantService,
         ICustomerService customerService,
         IInvoiceService invoiceService,
-        IBusinessService businessService)
+        IBusinessService businessService,
+        IPermissionService permissionService)
     {
         _paymentService = paymentService;
         _dashboardService = dashboardService;
@@ -39,6 +41,7 @@ public class RevenueController : Controller
         _customerService = customerService;
         _invoiceService = invoiceService;
         _businessService = businessService;
+        _permissionService = permissionService;
     }
 
     // === Page Actions (return Views) ===
@@ -75,6 +78,17 @@ public class RevenueController : Controller
         ViewBag.RecentPayments = recentPayments;
         ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
         ViewBag.PaymentMethods = await _paymentService.GetPaymentMethodTypesAsync();
+
+        // Payment Reminders teaser — show if user doesn't have payment_reminder_auto access
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var showReminderTeaser = false;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var permissions = await _permissionService.GetAllAccessLevelsAsync(userId, businessId);
+            var hasAutoAccess = permissions.TryGetValue("payment_reminder_auto", out var level) && level != "none";
+            showReminderTeaser = !hasAutoAccess;
+        }
+        ViewBag.ShowPaymentReminderTeaser = showReminderTeaser;
 
         return View();
     }

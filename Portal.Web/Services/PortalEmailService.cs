@@ -508,17 +508,17 @@ public class PortalEmailService : IEmailService
                 break;
         }
 
-        // Build CTA button — only include href if share token is provided
+        // Build CTA button — same pattern as proposal email with tier-specific colors
         string ctaButton;
         if (!string.IsNullOrEmpty(invoiceShareToken))
         {
-            var invoiceUrl = $"{baseUrl}/invoice/{System.Net.WebUtility.UrlEncode(invoiceShareToken)}";
+            var invoiceUrl = $"{baseUrl}/invoice-view/{System.Net.WebUtility.UrlEncode(invoiceShareToken)}";
             ctaButton = $@"
-                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin:28px 0 0 0;"">
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin:40px 0 0 0;"">
                                 <tr>
                                     <td align=""center"">
                                         <!--[if mso]><v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" href=""{System.Net.WebUtility.HtmlEncode(invoiceUrl)}"" style=""height:48px;v-text-anchor:middle;width:240px;"" arcsize=""10%"" strokecolor=""{accentColor}"" fillcolor=""{accentColor}""><w:anchorlock/><center style=""color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;"">{ctaLabel}</center></v:roundrect><![endif]-->
-                                        <!--[if !mso]><!--><a href=""{System.Net.WebUtility.HtmlEncode(invoiceUrl)}"" target=""_blank"" style=""display:inline-block;padding:14px 48px;background-color:{accentColor};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;font-family:'Segoe UI',sans-serif;"">{ctaLabel}</a><!--<![endif]-->
+                                        <!--[if !mso]><!--><a href=""{System.Net.WebUtility.HtmlEncode(invoiceUrl)}"" target=""_blank"" style=""display:inline-block;padding:14px 48px;background-color:{accentColor};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;"">{ctaLabel}</a><!--<![endif]-->
                                     </td>
                                 </tr>
                             </table>";
@@ -526,10 +526,10 @@ public class PortalEmailService : IEmailService
         else
         {
             ctaButton = $@"
-                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin:28px 0 0 0;"">
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin:40px 0 0 0;"">
                                 <tr>
                                     <td align=""center"">
-                                        <span style=""display:inline-block;padding:14px 48px;background-color:{accentColor};color:#ffffff;font-size:15px;font-weight:700;border-radius:6px;letter-spacing:0.3px;font-family:'Segoe UI',sans-serif;"">{ctaLabel}</span>
+                                        <span style=""display:inline-block;padding:14px 48px;background-color:{accentColor};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px;"">{ctaLabel}</span>
                                     </td>
                                 </tr>
                             </table>";

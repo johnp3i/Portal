@@ -140,6 +140,15 @@
                 <span class="nav-text">Upcoming Reminders</span>
             </a>
         }
+        @if (hasPaymentReminderAccess)
+        {
+            var isHistoryActive = currentController.Equals("PaymentReminder", StringComparison.OrdinalIgnoreCase)
+                && currentAction.Equals("History", StringComparison.OrdinalIgnoreCase);
+            <a class="nav-sub-item @(isHistoryActive ? "active" : "")" asp-controller="PaymentReminder" asp-action="History">
+                <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="12 8 12 12 14 14"/><circle cx="12" cy="12" r="10"/></svg></span>
+                <span class="nav-text">Reminder History</span>
+            </a>
+        }
     </div>
 }
 

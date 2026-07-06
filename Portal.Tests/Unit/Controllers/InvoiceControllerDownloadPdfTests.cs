@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
@@ -60,6 +61,11 @@ public class InvoiceControllerDownloadPdfTests
 
         _tenantServiceMock.Setup(t => t.CurrentBusinessId).Returns(1);
 
+        var portalOptions = new DbContextOptionsBuilder<PortalDbContext>()
+            .UseInMemoryDatabase(databaseName: $"Portal_InvCtrlPdf_{Guid.NewGuid()}")
+            .Options;
+        var portalDbContext = new PortalDbContext(portalOptions, _tenantServiceMock.Object);
+
         _controller = new InvoiceController(
             _invoiceServiceMock.Object,
             _sectionServiceMock.Object,
@@ -75,6 +81,8 @@ public class InvoiceControllerDownloadPdfTests
             vatPeriodRepository,
             _viewRenderServiceMock.Object,
             _invoicePdfServiceMock.Object,
+            Mock.Of<IPaymentInstructionsService>(),
+            portalDbContext,
             _loggerMock.Object);
 
         _controller.TempData = new TempDataDictionary(

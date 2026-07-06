@@ -18,6 +18,8 @@ public class BusinessPaymentDetail
 
     public string PayeeName { get; set; } = null!;
 
+    public string? SwiftBic { get; set; }
+
     public int SortOrder { get; set; }
 
     public bool IsActive { get; set; } = true;

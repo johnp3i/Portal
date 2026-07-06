@@ -26,10 +26,12 @@ public class MyBusinessController : Controller
     private readonly BusinessPaymentDetailRepository _paymentDetailRepository;
     private readonly IPlanCheckService _planCheckService;
     private readonly MembershipDbContext _membershipDbContext;
+    private readonly IPaymentInstructionsService _paymentInstructionsService;
 
     public MyBusinessController(IBusinessService businessService, ILogoService logoService,
         ICurrentTenantService tenantService, BusinessPaymentDetailRepository paymentDetailRepository,
-        IPlanCheckService planCheckService, MembershipDbContext membershipDbContext)
+        IPlanCheckService planCheckService, MembershipDbContext membershipDbContext,
+        IPaymentInstructionsService paymentInstructionsService)
     {
         _businessService = businessService;
         _logoService = logoService;
@@ -37,6 +39,7 @@ public class MyBusinessController : Controller
         _paymentDetailRepository = paymentDetailRepository;
         _planCheckService = planCheckService;
         _membershipDbContext = membershipDbContext;
+        _paymentInstructionsService = paymentInstructionsService;
     }
 
     private bool CanEdit()
@@ -58,6 +61,7 @@ public class MyBusinessController : Controller
         ViewBag.Logos = logos;
         ViewBag.PaymentDetails = paymentDetails;
         ViewBag.IsReadOnly = !CanEdit();
+        ViewBag.IsPaymentInstructionsEnabled = business?.IsPaymentInstructionsEnabled ?? false;
 
         if (profile == null)
         {
@@ -218,7 +222,7 @@ public class MyBusinessController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddPaymentDetail(string label, string bankName, string iban, string payeeName)
+    public async Task<IActionResult> AddPaymentDetail(string label, string bankName, string iban, string payeeName, string? swiftBic)
     {
         if (!CanEdit())
         {
@@ -243,6 +247,7 @@ public class MyBusinessController : Controller
             BankName = bankName.Trim(),
             Iban = iban.Trim(),
             PayeeName = payeeName.Trim(),
+            SwiftBic = swiftBic?.Trim(),
             SortOrder = existing.Count + 1
         };
 
@@ -269,7 +274,7 @@ public class MyBusinessController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdatePaymentDetail(int id, string label, string bankName, string iban, string payeeName)
+    public async Task<IActionResult> UpdatePaymentDetail(int id, string label, string bankName, string iban, string payeeName, string? swiftBic)
     {
         if (!CanEdit())
         {
@@ -285,7 +290,7 @@ public class MyBusinessController : Controller
         }
 
         await _paymentDetailRepository.UpdateAsync(id, _tenantService.CurrentBusinessId,
-            label.Trim(), bankName.Trim(), iban.Trim(), payeeName.Trim());
+            label.Trim(), bankName.Trim(), iban.Trim(), payeeName.Trim(), swiftBic?.Trim());
         TempData["Success"] = "Payment detail updated.";
         return RedirectToAction(nameof(Index), new { tab = "payment" });
     }
@@ -457,6 +462,22 @@ public class MyBusinessController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "An error occurred while revoking permission." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostTogglePaymentInstructions(bool enabled)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _paymentInstructionsService.SetPaymentInstructionsEnabledAsync(businessId, enabled);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to update payment instructions setting." });
         }
     }
 }

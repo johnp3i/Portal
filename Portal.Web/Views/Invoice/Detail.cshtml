@@ -86,6 +86,7 @@
                             3 => "pill-green",
                             4 => "pill-red",
                             5 => "pill-red",
+                            6 => "pill-amber",
                             _ => "pill-gold"
                         };
                     }
@@ -115,6 +116,17 @@
             <div style="margin-top:6px;font-size:14px;color:var(--muted);line-height:1.7;white-space:pre-wrap;">@invoice.Notes</div>
         </div>
     }
+
+    @if (invoice.InvoiceFinancialStatusTypeId == 6)
+    {
+        <div style="margin-top:18px;display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-radius:10px;background:rgba(200,145,46,0.06);border-left:4px solid #C8912E;">
+            <span style="font-size:18px;flex-shrink:0;margin-top:2px;">&#9888;</span>
+            <div>
+                <p style="font-size:14px;color:#0B1B28;line-height:1.6;margin:0;">The customer has declared that payment was made via bank transfer. This is a customer declaration only — please verify receipt on your bank statement before marking as paid.</p>
+                <a href="/Revenue/InvoiceDetail/@invoice.Id" class="btn btn-primary" style="margin-top:14px;font-size:13px;padding:8px 18px;">Record Payment</a>
+            </div>
+        </div>
+    }
 </section>
 
 @if (ViewBag.AcceptanceStatus != null)
@@ -137,6 +149,50 @@
         </div>
     </section>
 }
+
+<!-- Payment Instructions Override -->
+@{
+    var piOverride = invoice.PaymentInstructionsOverride;
+    var businessPIEnabled = ViewBag.IsBusinessPaymentInstructionsEnabled == true;
+
+    // Determine effective state
+    bool piEffectivelyShown;
+    if (piOverride == 1) piEffectivelyShown = true;
+    else if (piOverride == 0) piEffectivelyShown = false;
+    else piEffectivelyShown = businessPIEnabled;
+
+    string piMessage;
+    string piBgColor;
+    if (piEffectivelyShown)
+    {
+        piMessage = piOverride == 1
+            ? "Bank transfer details are enabled for this invoice (overriding business default)."
+            : "Bank transfer details will be shown on the shared invoice page.";
+        piBgColor = "rgba(18,152,103,0.06)";
+    }
+    else
+    {
+        piMessage = piOverride == 0
+            ? "Bank transfer details are hidden for this invoice (overriding business default)."
+            : "Bank transfer details are not shown on shared invoices. You can enable it for this invoice.";
+        piBgColor = "rgba(94,115,133,0.06)";
+    }
+}
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-radius:10px;background:@piBgColor;">
+        <div>
+            <div style="font-size:13px;font-weight:600;color:#0B1B28;">Payment Instructions</div>
+            <p style="font-size:13px;color:#5E7385;margin-top:4px;">@piMessage</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+                <input type="checkbox" id="piOverrideToggle" @(piEffectivelyShown ? "checked" : "") onchange="setPaymentInstructionsOverride(this.checked)" style="opacity:0;width:0;height:0;position:absolute;" />
+                <span style="position:absolute;cursor:pointer;inset:0;background:@(piEffectivelyShown ? "#129867" : "#d0dbe5");border-radius:12px;transition:background 0.2s;"></span>
+                <span style="position:absolute;top:2px;left:@(piEffectivelyShown ? "22px" : "2px");width:20px;height:20px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+            </label>
+        </div>
+    </div>
+</section>
 
 <!-- VAT Period Reassignment -->
 <section class="glass card-pad" style="margin-top:24px;">
@@ -657,6 +713,34 @@
                 printWindow.addEventListener('load', function () {
                     printWindow.print();
                 });
+            }
+        }
+
+        async function setPaymentInstructionsOverride(showPaymentInstructions) {
+            var overrideValue = showPaymentInstructions ? 1 : 0;
+            BlockUI.show('Updating...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/Invoice/AxPostSetPaymentInstructionsOverride', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: 'invoiceId=' + invoiceId + '&overrideValue=' + overrideValue
+                });
+                var data = await response.json();
+                BlockUI.hide();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    document.getElementById('piOverrideToggle').checked = !showPaymentInstructions;
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                document.getElementById('piOverrideToggle').checked = !showPaymentInstructions;
             }
         }
 

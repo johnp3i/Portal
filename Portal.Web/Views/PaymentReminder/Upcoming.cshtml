@@ -10,8 +10,39 @@
         <div class="eyebrow"><span class="dot"></span> Payment Reminders</div>
         <h1 class="topbar-heading">Upcoming Reminders</h1>
         <p class="topbar-subtitle">Preview which reminders are scheduled to be sent in the coming days.</p>
+        <div style="margin-top:12px;display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:#EEF4F8;border-radius:8px;">
+            <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style="font-size:13px;color:#3D4F5F;">Daily send time: <strong id="localScheduledTime">@ViewBag.ScheduledTimeUtc UTC</strong></span>
+        </div>
     </div>
 </div>
+
+<!-- Help Section -->
+<details style="margin-bottom:22px;background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(13,94,166,0.06);overflow:hidden;">
+    <summary style="padding:20px 32px;cursor:pointer;font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;color:#0D5EA6;list-style:none;display:flex;align-items:center;gap:10px;">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        How are upcoming reminders calculated?
+    </summary>
+    <div style="padding:0 32px 24px;font-size:14px;color:#3D4F5F;line-height:1.8;">
+        <p style="margin:0 0 12px;">This page shows a <strong>preview</strong> of which reminders will be sent in the coming days. No emails are sent from this page.</p>
+        <p style="margin:0 0 12px;">Each projection is calculated using:</p>
+        <div style="background:#F7FAFC;border-radius:10px;padding:16px 20px;margin-bottom:14px;font-family:monospace;font-size:13px;color:#0B1B28;">
+            Trigger Date = Invoice Due Date + Tier Days Offset
+        </div>
+        <p style="margin:0 0 12px;">An invoice appears here when <strong>all</strong> of these conditions are met:</p>
+        <ul style="margin:0 0 14px;padding-left:20px;">
+            <li>Invoice is <strong>unpaid, partially paid, or overdue</strong></li>
+            <li>Invoice is not deleted and not disputed</li>
+            <li>Customer has an email address on file</li>
+            <li>Customer has <strong>not</strong> opted out of reminders</li>
+            <li>The trigger date falls within the selected preview window</li>
+            <li>No partial payment received within the suppression window</li>
+            <li>Max reminders for that tier haven't been reached</li>
+            <li>Min interval since the last same-tier reminder has elapsed</li>
+        </ul>
+        <p style="margin:0;">The background service sends these reminders automatically at <strong>06:00 UTC daily</strong>. You can adjust the schedule in <a href="/PaymentReminder/Settings" style="color:#0D5EA6;font-weight:600;">Settings</a>.</p>
+    </div>
+</details>
 
 <!-- Filter Card -->
 <section class="glass card-pad" style="margin-bottom:22px;">
@@ -67,6 +98,30 @@
 </section>
 
 @section Scripts {
+    <script>
+        (function() {
+            var utcTimeStr = '@(ViewBag.ScheduledTimeUtc ?? "06:00")';
+            if (!utcTimeStr || utcTimeStr.indexOf(':') === -1) utcTimeStr = '06:00';
+            var parts = utcTimeStr.split(':');
+            var hours = parseInt(parts[0], 10);
+            var minutes = parseInt(parts[1], 10);
+            if (isNaN(hours)) hours = 6;
+            if (isNaN(minutes)) minutes = 0;
+            var now = new Date();
+            var utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hours, minutes));
+            var localHours = String(utcDate.getHours()).padStart(2, '0');
+            var localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
+            var tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            var el = document.getElementById('localScheduledTime');
+            if (el) el.textContent = localHours + ':' + localMinutes + ' (' + tzName + ')';
+        })();
+    </script>
+    <style>
+        @@media (max-width: 768px) {
+            #upcomingTable { display: block; overflow-x: auto; }
+            .topbar-heading { font-size: 28px !important; }
+        }
+    </style>
     <script>
         document.addEventListener('DOMContentLoaded', loadUpcoming);
 

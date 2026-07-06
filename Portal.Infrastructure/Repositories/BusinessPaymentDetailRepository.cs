@@ -17,14 +17,14 @@ public class BusinessPaymentDetailRepository : GenericStoredProcedureRepository<
         {
             const string query = @"
                 SELECT [Id], [BusinessId], [Label], [BankName], [Iban], [PayeeName],
-                       [SortOrder], [IsActive], [CreatedAtUtc]
+                       [SwiftBic], [SortOrder], [IsActive], [CreatedAtUtc]
                 FROM [portal].[BusinessPaymentDetail]
                 WHERE [BusinessId] = @BusinessId AND [IsActive] = 1
                 ORDER BY [SortOrder]";
 
             return await ExecuteStoredProcedure(query, new SqlParameter("@BusinessId", businessId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -36,9 +36,9 @@ public class BusinessPaymentDetailRepository : GenericStoredProcedureRepository<
         {
             const string query = @"
                 INSERT INTO [portal].[BusinessPaymentDetail]
-                    ([BusinessId], [Label], [BankName], [Iban], [PayeeName], [SortOrder], [IsActive], [CreatedAtUtc])
+                    ([BusinessId], [Label], [BankName], [Iban], [PayeeName], [SwiftBic], [SortOrder], [IsActive], [CreatedAtUtc])
                 VALUES
-                    (@BusinessId, @Label, @BankName, @Iban, @PayeeName, @SortOrder, 1, GETUTCDATE())";
+                    (@BusinessId, @Label, @BankName, @Iban, @PayeeName, @SwiftBic, @SortOrder, 1, GETUTCDATE())";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@BusinessId", entity.BusinessId),
@@ -46,10 +46,11 @@ public class BusinessPaymentDetailRepository : GenericStoredProcedureRepository<
                 new SqlParameter("@BankName", entity.BankName),
                 new SqlParameter("@Iban", entity.Iban),
                 new SqlParameter("@PayeeName", entity.PayeeName),
+                new SqlParameter("@SwiftBic", entity.SwiftBic ?? (object)DBNull.Value),
                 new SqlParameter("@SortOrder", entity.SortOrder)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -68,19 +69,19 @@ public class BusinessPaymentDetailRepository : GenericStoredProcedureRepository<
                 new SqlParameter("@BusinessId", businessId)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
     }
 
-    public async Task UpdateAsync(int id, int businessId, string label, string bankName, string iban, string payeeName)
+    public async Task UpdateAsync(int id, int businessId, string label, string bankName, string iban, string payeeName, string? swiftBic)
     {
         try
         {
             const string query = @"
                 UPDATE [portal].[BusinessPaymentDetail]
-                SET [Label] = @Label, [BankName] = @BankName, [Iban] = @Iban, [PayeeName] = @PayeeName
+                SET [Label] = @Label, [BankName] = @BankName, [Iban] = @Iban, [PayeeName] = @PayeeName, [SwiftBic] = @SwiftBic
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -89,10 +90,11 @@ public class BusinessPaymentDetailRepository : GenericStoredProcedureRepository<
                 new SqlParameter("@Label", label),
                 new SqlParameter("@BankName", bankName),
                 new SqlParameter("@Iban", iban),
-                new SqlParameter("@PayeeName", payeeName)
+                new SqlParameter("@PayeeName", payeeName),
+                new SqlParameter("@SwiftBic", swiftBic ?? (object)DBNull.Value)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }

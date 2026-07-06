@@ -212,6 +212,10 @@
                         text: result.message || 'Test reminder sent successfully.',
                         confirmButtonColor: '#0D5EA6'
                     });
+                    // Refresh the reminder history table
+                    if (typeof loadReminderHistory === 'function') {
+                        loadReminderHistory(invoiceId);
+                    }
                 } else {
                     Swal.fire({
                         icon: 'error',

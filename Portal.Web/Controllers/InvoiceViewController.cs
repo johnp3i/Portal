@@ -1,6 +1,8 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Services;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
@@ -18,6 +20,8 @@ public class InvoiceViewController : Controller
     private readonly IInvoiceRenderer _invoiceRenderer;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogoService _logoService;
+    private readonly IPaymentInstructionsService _paymentInstructionsService;
+    private readonly PortalDbContext _dbContext;
     private readonly ILogger<InvoiceViewController> _logger;
 
     public InvoiceViewController(
@@ -26,6 +30,8 @@ public class InvoiceViewController : Controller
         IInvoiceRenderer invoiceRenderer,
         IWebHostEnvironment environment,
         ILogoService logoService,
+        IPaymentInstructionsService paymentInstructionsService,
+        PortalDbContext dbContext,
         ILogger<InvoiceViewController> logger)
     {
         _sharingService = sharingService;
@@ -33,6 +39,8 @@ public class InvoiceViewController : Controller
         _invoiceRenderer = invoiceRenderer;
         _environment = environment;
         _logoService = logoService;
+        _paymentInstructionsService = paymentInstructionsService;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -178,6 +186,164 @@ public class InvoiceViewController : Controller
             // Insert acceptance HTML after the download button
             var acceptanceInsertPos = insertPos + downloadButton.Length;
             html = html.Insert(acceptanceInsertPos, acceptanceHtml);
+
+            // Payment Instructions — determine visibility using per-invoice override + business toggle
+            var paymentInstructionsHtml = "";
+            var invoiceForPI = await _dbContext.Invoices
+                .Where(i => i.Id == share.InvoiceId)
+                .Select(i => new { i.InvoiceFinancialStatusTypeId, i.PaymentInstructionsOverride })
+                .FirstOrDefaultAsync();
+
+            if (invoiceForPI != null)
+            {
+                var invoiceStatus = invoiceForPI.InvoiceFinancialStatusTypeId;
+                var piOverride = invoiceForPI.PaymentInstructionsOverride;
+
+                // Determine if payment instructions should be shown
+                bool showPaymentInstructions;
+                if (piOverride == 1)
+                    showPaymentInstructions = true;  // Force show
+                else if (piOverride == 0)
+                    showPaymentInstructions = false; // Force hide
+                else
+                    showPaymentInstructions = await _paymentInstructionsService.IsEnabledForBusinessAsync(share.BusinessId); // Follow business default
+
+                var eligibleStatuses = new[] { 1, 2, 4 }; // Unpaid, PartiallyPaid, Overdue
+
+                if (showPaymentInstructions && eligibleStatuses.Contains(invoiceStatus))
+                {
+                    // Show "Pay by Bank Transfer" button + hidden modal
+                    paymentInstructionsHtml = $@"
+            <div class=""no-print"" style=""margin-top:16px;margin-bottom:20px;text-align:center;"">
+                <button id=""payByBankTransferBtn"" onclick=""openPaymentInstructionsModal()"" style=""display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:400px;padding:14px 28px;background:#129867;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;"" onmouseover=""this.style.opacity='0.9'"" onmouseout=""this.style.opacity='1'"">
+                    <svg width=""20"" height=""20"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" viewBox=""0 0 24 24""><path d=""M3 21h18""/><path d=""M3 10h18""/><path d=""M5 6l7-3 7 3""/><path d=""M4 10v11""/><path d=""M20 10v11""/><path d=""M8 10v11""/><path d=""M12 10v11""/><path d=""M16 10v11""/></svg>
+                    Pay by Bank Transfer
+                </button>
+            </div>
+
+            <!-- Payment Instructions Modal (hidden) -->
+            <div id=""paymentInstructionsModal"" class=""no-print"" style=""display:none;position:fixed;inset:0;z-index:10000;background:rgba(11,27,40,0.4);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:24px;"">
+                <div style=""background:#fff;border-radius:20px;box-shadow:0 12px 48px rgba(11,27,40,0.18);padding:32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;"">
+                    <div style=""display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"">
+                        <h3 style=""font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;color:#0B1B28;margin:0;"">Bank Transfer Details</h3>
+                        <button onclick=""closePaymentInstructionsModal()"" style=""width:32px;height:32px;border-radius:8px;border:none;background:#EEF4F8;cursor:pointer;font-size:16px;color:#5E7385;display:flex;align-items:center;justify-content:center;"">&times;</button>
+                    </div>
+                    <p style=""font-size:14px;color:#5E7385;margin:0 0 20px;"">Please use the following details to make your payment.</p>
+                    <div style=""height:1px;background:#E2EBF3;margin-bottom:20px;""></div>
+                    <div id=""paymentInstructionsContent"" style=""text-align:center;color:#5E7385;font-size:14px;padding:20px 0;"">Loading...</div>
+                    <div style=""height:1px;background:#E2EBF3;margin:20px 0;""></div>
+                    <div style=""background:rgba(200,145,46,0.08);border-radius:10px;padding:12px 16px;font-size:13px;color:#C8912E;line-height:1.5;margin-bottom:20px;"">
+                        Please include the reference number in your transfer description to help the business identify your payment.
+                    </div>
+                    <button id=""declarePaymentBtn"" onclick=""declarePayment()"" style=""display:block;width:100%;padding:14px;background:#129867;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;"">I've made the payment</button>
+                    <p style=""font-size:12px;color:#5E7385;font-style:italic;text-align:center;margin-top:12px;line-height:1.5;"">This will notify the business that you've initiated a bank transfer. The payment will be confirmed once verified.</p>
+                </div>
+            </div>
+
+            <script>
+                function openPaymentInstructionsModal() {{
+                    var modal = document.getElementById('paymentInstructionsModal');
+                    modal.style.display = 'flex';
+                    loadPaymentInstructions();
+                }}
+
+                function closePaymentInstructionsModal() {{
+                    document.getElementById('paymentInstructionsModal').style.display = 'none';
+                }}
+
+                document.getElementById('paymentInstructionsModal').addEventListener('click', function(e) {{
+                    if (e.target === this) closePaymentInstructionsModal();
+                }});
+
+                async function loadPaymentInstructions() {{
+                    var content = document.getElementById('paymentInstructionsContent');
+                    content.innerHTML = '<div style=""text-align:center;color:#5E7385;padding:20px;"">Loading...</div>';
+                    try {{
+                        var response = await fetch('/invoice-view/{token}/payment-instructions');
+                        var result = await response.json();
+                        if (!result.success) {{
+                            content.innerHTML = '<div style=""color:#C24A4A;padding:20px;"">' + piEscapeHtml(result.message) + '</div>';
+                            return;
+                        }}
+                        var d = result.data;
+                        var swiftRow = d.swiftBic ? '<div style=""display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f4f7fa;""><span style=""color:#5E7385;font-size:13px;"">SWIFT/BIC</span><span style=""font-size:14px;font-weight:600;color:#0B1B28;"">' + piEscapeHtml(d.swiftBic) + '</span></div>' : '';
+                        content.innerHTML =
+                            '<div style=""background:#F0F6FB;border-radius:12px;padding:20px;margin-bottom:20px;text-align:left;"">' +
+                            '<div style=""display:flex;justify-content:space-between;padding:8px 0;""><span style=""color:#5E7385;font-size:13px;"">Amount Due</span><span style=""font-size:18px;font-weight:700;color:#0D5EA6;"">' + piEscapeHtml(d.currencySymbol) + d.outstandingAmount.toFixed(2) + '</span></div>' +
+                            '<div style=""display:flex;justify-content:space-between;padding:8px 0;""><span style=""color:#5E7385;font-size:13px;"">Due Date</span><span style=""font-size:14px;font-weight:700;color:#0B1B28;"">' + piEscapeHtml(d.dueDate) + '</span></div>' +
+                            '<div style=""display:flex;justify-content:space-between;align-items:center;padding:8px 0;""><span style=""color:#5E7385;font-size:13px;"">Reference</span><span style=""font-size:14px;font-weight:700;color:#0B1B28;display:flex;align-items:center;gap:8px;"">' + piEscapeHtml(d.transferReference) + ' <button onclick=""piCopyText(\'' + piEscapeAttr(d.transferReference) + '\')"" style=""border:1px solid #E2EBF3;background:#fff;border-radius:6px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"" title=""Copy Reference"">&#x1F4CB;</button></span></div>' +
+                            '</div>' +
+                            '<div style=""text-align:left;"">' +
+                            '<div style=""display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f4f7fa;""><span style=""color:#5E7385;font-size:13px;"">Bank Name</span><span style=""font-size:14px;font-weight:600;color:#0B1B28;"">' + piEscapeHtml(d.bankName) + '</span></div>' +
+                            '<div style=""display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f4f7fa;""><span style=""color:#5E7385;font-size:13px;"">Payee Name</span><span style=""font-size:14px;font-weight:600;color:#0B1B28;"">' + piEscapeHtml(d.payeeName) + '</span></div>' +
+                            '<div style=""display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f4f7fa;""><span style=""color:#5E7385;font-size:13px;"">IBAN</span><span style=""font-size:14px;font-weight:600;color:#0B1B28;display:flex;align-items:center;gap:8px;"">' + piEscapeHtml(d.iban) + ' <button onclick=""piCopyText(\'' + piEscapeAttr(d.iban) + '\')"" style=""border:1px solid #E2EBF3;background:#fff;border-radius:6px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"" title=""Copy IBAN"">&#x1F4CB;</button></span></div>' +
+                            swiftRow +
+                            '</div>';
+                    }} catch(e) {{
+                        content.innerHTML = '<div style=""color:#C24A4A;padding:20px;"">Failed to load payment instructions.</div>';
+                    }}
+                }}
+
+                async function declarePayment() {{
+                    BlockUI.show('Processing...');
+                    try {{
+                        var response = await fetch('/invoice-view/{token}/declare-payment', {{ method: 'POST' }});
+                        var result = await response.json();
+                        BlockUI.hide();
+                        if (result.success) {{
+                            closePaymentInstructionsModal();
+                            Swal.fire({{ title: 'Thank You', text: result.message, icon: 'success', confirmButtonColor: '#0D5EA6' }});
+                            var btn = document.getElementById('payByBankTransferBtn');
+                            if (btn) btn.parentElement.innerHTML = '<div style=""display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:12px;background:rgba(200,145,46,0.1);color:#C8912E;font-size:14px;font-weight:700;"">' +
+                                '<svg width=""16"" height=""16"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" viewBox=""0 0 24 24""><circle cx=""12"" cy=""12"" r=""10""/><polyline points=""12,6 12,12 16,14""/></svg>' +
+                                'Payment Onboard \u2014 Awaiting Verification</div><p style=""text-align:center;font-size:13px;color:#5E7385;margin-top:12px;"">Thank you. The business has been notified of your payment.</p>';
+                        }} else {{
+                            Swal.fire({{ title: 'Error', text: result.message, icon: 'error', confirmButtonColor: '#0D5EA6' }});
+                        }}
+                    }} catch(e) {{
+                        BlockUI.hide();
+                        Swal.fire({{ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' }});
+                    }}
+                }}
+
+                function piCopyText(text) {{
+                    navigator.clipboard.writeText(text).then(function() {{
+                        Swal.fire({{ title: 'Copied!', text: 'Copied to clipboard.', icon: 'success', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false }});
+                    }});
+                }}
+
+                function piEscapeHtml(str) {{
+                    if (!str) return '';
+                    var d = document.createElement('div');
+                    d.appendChild(document.createTextNode(str));
+                    return d.innerHTML;
+                }}
+
+                function piEscapeAttr(str) {{
+                    if (!str) return '';
+                    return str.replace(/\\/g, '\\\\').replace(/'/g, ""\\'"").replace(/""/g, '&quot;');
+                }}
+            </script>";
+                }
+                else if (invoiceStatus == 6) // PaymentOnboard
+                {
+                    paymentInstructionsHtml = @"
+            <div class=""no-print"" style=""margin-top:16px;margin-bottom:20px;text-align:center;"">
+                <div style=""display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;background:rgba(200,145,46,0.1);color:#C8912E;font-size:14px;font-weight:700;"">
+                    <svg width=""16"" height=""16"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" viewBox=""0 0 24 24""><circle cx=""12"" cy=""12"" r=""10""/><polyline points=""12,6 12,12 16,14""/></svg>
+                    Payment Onboard &#x2014; Awaiting Verification
+                </div>
+                <p style=""font-size:13px;color:#5E7385;margin-top:12px;"">Thank you. The business has been notified of your payment.</p>
+            </div>";
+                }
+            }
+
+            // Insert payment instructions after the acceptance section
+            if (!string.IsNullOrEmpty(paymentInstructionsHtml))
+            {
+                var piInsertPos = acceptanceInsertPos + acceptanceHtml.Length;
+                html = html.Insert(piInsertPos, paymentInstructionsHtml);
+            }
         }
 
         return Content(html, "text/html");
@@ -239,6 +405,47 @@ public class InvoiceViewController : Controller
         {
             _logger.LogError(ex, "Failed to generate PDF for shared invoice token {Token}", token);
             return StatusCode(500, new { success = false, message = "Failed to generate PDF. Please try again." });
+        }
+    }
+
+    [HttpGet("/invoice-view/{token}/payment-instructions")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPaymentInstructions(string token)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return Json(new { success = false, message = "Invalid token." });
+
+            var share = await _sharingService.GetByTokenAsync(token);
+            if (share == null || !share.IsActive || share.ExpiresAtUtc <= DateTimeOffset.UtcNow)
+                return Json(new { success = false, message = "This invoice link is no longer active." });
+
+            var data = await _paymentInstructionsService.GetPaymentInstructionsAsync(share.InvoiceId, share.BusinessId);
+            if (data == null)
+                return Json(new { success = false, message = "Payment instructions are not available for this invoice." });
+
+            return Json(new { success = true, data });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load payment instructions." });
+        }
+    }
+
+    [HttpPost("/invoice-view/{token}/declare-payment")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DeclarePayment(string token)
+    {
+        try
+        {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var result = await _paymentInstructionsService.DeclarePaymentAsync(token, ipAddress);
+            return Json(new { success = result.Success, message = result.Message, declaredAtUtc = result.DeclaredAtUtc });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred. Please try again." });
         }
     }
 

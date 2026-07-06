@@ -254,6 +254,10 @@ else if (activeTab == "payment")
                         <input type="text" id="iban" name="iban" placeholder="e.g. CY45 0050 0109 0001 0901 9832 7801" required />
                     </div>
                     <div class="field">
+                        <label for="swiftBic">SWIFT/BIC</label>
+                        <input type="text" id="swiftBic" name="swiftBic" placeholder="e.g. VALLMTMT" maxlength="11" />
+                    </div>
+                    <div class="field">
                         <label for="payeeName">Payee Name *</label>
                         <input type="text" id="payeeName" name="payeeName" placeholder="e.g. 3 Inventors Limited" required />
                     </div>
@@ -280,6 +284,10 @@ else if (activeTab == "payment")
                                     <div style="font-weight:700;font-size:14px;">@pd.Label</div>
                                     <div class="muted" style="font-size:13px;">@pd.BankName</div>
                                     <div style="font-size:12px;font-family:monospace;margin-top:4px;">@pd.Iban</div>
+                                    @if (!string.IsNullOrEmpty(pd.SwiftBic))
+                                    {
+                                        <div class="muted" style="font-size:12px;margin-top:2px;">SWIFT/BIC: @pd.SwiftBic</div>
+                                    }
                                     <div class="muted" style="font-size:12px;font-style:italic;margin-top:2px;">Payee: @pd.PayeeName</div>
                                 </div>
                                 @if (!isReadOnly)
@@ -313,6 +321,10 @@ else if (activeTab == "payment")
                                             <input type="text" name="iban" value="@pd.Iban" required />
                                         </div>
                                         <div class="field">
+                                            <label>SWIFT/BIC</label>
+                                            <input type="text" name="swiftBic" value="@(pd.SwiftBic)" maxlength="11" placeholder="e.g. VALLMTMT" />
+                                        </div>
+                                        <div class="field">
                                             <label>Payee Name *</label>
                                             <input type="text" name="payeeName" value="@pd.PayeeName" required />
                                         </div>
@@ -332,6 +344,51 @@ else if (activeTab == "payment")
                     <p class="muted" style="font-size:14px;">No payment details added yet. Add your bank accounts to display them on invoices.</p>
                 }
             </div>
+
+            <!-- Payment Instructions Toggle -->
+            <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f0f4f7;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+                <div>
+                    <div style="font-size:14px;font-weight:600;color:#0B1B28;">Show bank transfer payment option on shared invoices</div>
+                    <p style="font-size:13px;color:#5E7385;margin-top:4px;">When enabled, customers viewing shared invoices will see a "Pay by Bank Transfer" button.</p>
+                    @if (!paymentDetails.Any())
+                    {
+                        <p style="font-size:12px;color:#C8912E;margin-top:6px;">Add bank details in your payment details section before enabling this option.</p>
+                    }
+                </div>
+                <label class="reminder-toggle" style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
+                    <input type="checkbox" id="paymentInstructionsToggle" @(ViewBag.IsPaymentInstructionsEnabled == true ? "checked" : "") @(!paymentDetails.Any() ? "disabled" : "") onchange="togglePaymentInstructions(this.checked)" style="opacity:0;width:0;height:0;position:absolute;" />
+                    <span style="position:absolute;cursor:pointer;inset:0;background:@(ViewBag.IsPaymentInstructionsEnabled == true ? "#129867" : "#d0dbe5");border-radius:13px;transition:background 0.2s;"></span>
+                    <span style="position:absolute;top:3px;left:@(ViewBag.IsPaymentInstructionsEnabled == true ? "25px" : "3px");width:20px;height:20px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+                </label>
+            </div>
         </section>
     </div>
+}
+
+@section Scripts {
+    <script>
+        async function togglePaymentInstructions(enabled) {
+            BlockUI.show('Updating...');
+            try {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/MyBusiness/AxPostTogglePaymentInstructions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                    body: 'enabled=' + enabled
+                });
+                var result = await response.json();
+                BlockUI.hide();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
+                    document.getElementById('paymentInstructionsToggle').checked = !enabled;
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                document.getElementById('paymentInstructionsToggle').checked = !enabled;
+            }
+        }
+    </script>
 }

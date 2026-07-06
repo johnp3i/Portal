@@ -226,6 +226,28 @@
     </div>
 </section>
 
+<!-- Payment Reminder Teaser (shown for Starter users without payment_reminder_auto access) -->
+@if (ViewBag.ShowPaymentReminderTeaser == true)
+{
+<section class="glass card-pad" style="margin-top:24px;opacity:0.85;position:relative;overflow:hidden;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.85'">
+    <a href="/PaymentReminder/Settings" style="text-decoration:none;display:block;">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:48px;height:48px;border-radius:12px;background:#EEF4F8;display:flex;align-items:center;justify-content:center;">
+                <svg width="22" height="22" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <div style="flex:1;">
+                <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;color:#1a2b3c;margin:0 0 4px;">Automated Payment Reminders</h3>
+                <p style="font-size:14px;color:#5a6a7a;margin:0;">Automatically send escalating reminders for overdue invoices. Schedule friendly, firm, and formal follow-ups with full tracking.</p>
+            </div>
+            <span class="btn btn-primary" style="min-width:120px;text-align:center;">Learn More</span>
+        </div>
+    </a>
+    <div style="position:absolute;top:12px;right:16px;">
+        <span style="font-size:11px;font-weight:600;color:#0D5EA6;background:rgba(13,94,166,.08);padding:3px 10px;border-radius:50px;">Upgrade</span>
+    </div>
+</section>
+}
+
 <!-- Payment Modal Partial -->
 @await Html.PartialAsync("_PaymentModal")
 

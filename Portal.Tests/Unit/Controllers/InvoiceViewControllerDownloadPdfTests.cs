@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Services;
 using Portal.Web.Controllers;
@@ -33,12 +35,21 @@ public class InvoiceViewControllerDownloadPdfTests
         _logoServiceMock = new Mock<ILogoService>();
         _loggerMock = new Mock<ILogger<InvoiceViewController>>();
 
+        var tenantServiceMock = new Mock<ICurrentTenantService>();
+        tenantServiceMock.Setup(t => t.CurrentBusinessId).Returns(1);
+        var portalOptions = new DbContextOptionsBuilder<PortalDbContext>()
+            .UseInMemoryDatabase(databaseName: $"Portal_ViewCtrlPdf_{Guid.NewGuid()}")
+            .Options;
+        var portalDbContext = new PortalDbContext(portalOptions, tenantServiceMock.Object);
+
         _controller = new InvoiceViewController(
             _sharingServiceMock.Object,
             _acceptanceServiceMock.Object,
             _invoiceRendererMock.Object,
             _environmentMock.Object,
             _logoServiceMock.Object,
+            Mock.Of<IPaymentInstructionsService>(),
+            portalDbContext,
             _loggerMock.Object);
 
         // Set up default HttpContext

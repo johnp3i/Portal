@@ -1,0 +1,476 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create migration to add SwiftBic column to BusinessPaymentDetail": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342871283
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342891908
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343283586
+      }
+    ],
+    "1.2 Create migration to add IsPaymentInstructionsEnabled to Business": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342872579
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342892717
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343284156
+      }
+    ],
+    "1.3 Create migration to seed PaymentOnboard financial status": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342872752
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342893461
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343284955
+      }
+    ],
+    "2.1 Add SwiftBic property to BusinessPaymentDetail entity": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342872840
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343292603
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343411116
+      }
+    ],
+    "2.2 Add IsPaymentInstructionsEnabled property to Business entity": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342872908
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343293444
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343411917
+      }
+    ],
+    "3.1 Add SwiftBic to all repository queries": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342873035
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343418498
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343567429
+      }
+    ],
+    "4.1 Create service interface and data models": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342873125
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343419211
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343568144
+      }
+    ],
+    "5.1 Implement GetPaymentInstructionsAsync": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342873203
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343574536
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343776564
+      }
+    ],
+    "5.2 Implement DeclarePaymentAsync": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342873780
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343575251
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343777300
+      }
+    ],
+    "5.3 Implement SetPaymentInstructionsEnabledAsync": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342873856
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343576024
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343777970
+      }
+    ],
+    "5.4 Implement IsEnabledForBusinessAsync": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342873930
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343576801
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343778855
+      }
+    ],
+    "5.5 Write property tests for PaymentInstructionsService — toggle logic": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342874009
+      }
+    ],
+    "5.6 Write property tests for PaymentInstructionsService — payment instructions data": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342874129
+      }
+    ],
+    "5.7 Write property tests for PaymentInstructionsService — payment declaration": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875280
+      }
+    ],
+    "6. Checkpoint — Ensure all tests pass": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875375
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343779762
+      }
+    ],
+    "7.1 Implement AxPostTogglePaymentInstructions endpoint": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875478
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343787903
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343925422
+      }
+    ],
+    "8.1 Implement AxGetPaymentInstructions endpoint": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875568
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343926163
+      }
+    ],
+    "9.1 Implement declare-payment endpoint": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875648
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343926897
+      }
+    ],
+    "9.2 Write property tests for button visibility logic": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875716
+      }
+    ],
+    "10.1 Inject button HTML and modal into InvoiceViewController.ViewInvoice": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875854
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343928149
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345747898
+      }
+    ],
+    "11. Checkpoint — Ensure all tests pass": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342875912
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345748924
+      }
+    ],
+    "12.1 Add Payment Instructions toggle to settings view": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342876357
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345789715
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346017022
+      }
+    ],
+    "12.2 Add SWIFT/BIC input field to payment details section": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342878029
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345790617
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346015354
+      }
+    ],
+    "13.1 Add PaymentOnboard info banner to Invoice Detail view": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342878114
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345791410
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346017795
+      }
+    ],
+    "14.1 Add PaymentOnboard to invoice list filters and display": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342878195
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345792309
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346014576
+      }
+    ],
+    "14.2 Write property tests for PaymentOnboard status behaviour": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342878274
+      }
+    ],
+    "15.1 Replace Module 4 (Stripe Connect) with Payment Instructions tasks": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342878421
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345793716
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346016155
+      }
+    ],
+    "16. Final checkpoint — Ensure all tests pass": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783342878495
+      },
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346018558
+      }
+    ],
+    "1. Database migrations and schema changes": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343285043
+      }
+    ],
+    "2. Update entity classes and EF Core configuration": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343411987
+      }
+    ],
+    "3. Update BusinessPaymentDetailRepository": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343567568
+      }
+    ],
+    "4. Create IPaymentInstructionsService interface and DTOs": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343568218
+      }
+    ],
+    "7. Add toggle endpoint to MyBusinessController": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343925496
+      }
+    ],
+    "8. Add payment-instructions GET endpoint to InvoiceViewController": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783343926225
+      }
+    ],
+    "10. Inject \"Pay by Bank Transfer\" button and modal into shared invoice page": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783345748009
+      }
+    ],
+    "15. Update Phase 1 Development Timetable": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346016233
+      }
+    ],
+    "12. Add toggle UI to Business Settings page": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346017118
+      }
+    ],
+    "13. Update Invoice Detail page for PaymentOnboard status": [
+      {
+        "executionId": "b74b00b5-e3d5-41b7-9f96-0432b4543747",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783346017866
+      }
+    ]
+  }
+}
