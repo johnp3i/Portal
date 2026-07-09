@@ -4,6 +4,103 @@ All notable feature updates to the Portal platform are documented here. Organize
 
 ---
 
+## [2026-07-09] — Module 7: Payment Schedules (Instalment Plans)
+
+**Structured instalment plan management for invoice payments with auto-matching, status tracking, and VAT advisory.**
+
+### Added
+- Payment Schedule section on Invoice Detail pages (Revenue and Invoice views)
+- Create instalment plans per invoice with dynamic row addition/removal and real-time balance validation
+- Instalment status tracking: Pending, Due, Overdue, Paid, PartiallyPaid (computed at read time)
+- Auto-matching: recorded payments automatically allocated to next eligible instalment (priority: Due → Overdue → Pending)
+- Partial payment handling: warning + remainder instalment creation for shortfalls
+- Schedule modification with full audit history (field changed, old/new values, who/when)
+- VAT period warning: alerts when first instalment due date is after VAT submission deadline
+- Schedule deletion with SweetAlert2 confirmation (blocked if any payments matched)
+- Read-only view for users without `schedule_payments` permission
+- Permission constant `schedule_payments` added to PortalModules
+- 8 AJAX endpoints on RevenueController (AxPost/AxGet pattern)
+- PaymentService integration: match on record, revert on void
+- **Payment Schedules Overview page** at `/Revenue/PaymentSchedules` — bird's-eye view of all active instalment plans
+- Overview KPI cards: Total Scheduled, Collected, Due This Month, Overdue (colour-coded)
+- Monthly Payment Plan timeline with year selector and proportional bars
+- Active Schedules table with progress bars, status badges, and invoice links
+- Client-side filtering (Status, Invoice, Customer) and pagination (10/page)
+- Sidebar navigation link under Finance section (gated by `schedule_payments` permission)
+
+### Database Migrations
+- `106_CreatePaymentScheduleInstalmentStatusTypeTable.sql`
+- `107_CreatePaymentScheduleTable.sql`
+- `108_CreatePaymentScheduleInstalmentTable.sql`
+- `109_CreatePaymentScheduleHistoryTable.sql`
+
+---
+
+## [2026-07-08] — Permission Access Fixes (Bugfix)
+
+### Fixed
+- Invoice Detail page no longer shows error popup for Starter users (reminder partials conditionally rendered based on plan)
+- CreditNoteController attribute aligned with ModuleControllerMap (`credit` module, not `invoice`)
+- Added 7 missing controllers to ModuleControllerMap (ExpenseCategory, ExpenseCategoryLimit, Statement, Logo, LineItemCatalog, LineItemCatalogManagement, ProposalSection)
+- Created migration 105_AddAuditLogToProfessionalPlan.sql for consistent deployments
+- Removed [ModuleAccess] from SuperAdmin AuditController (SuperAdmins always access regardless of plan)
+
+---
+
+## [2026-07-08] — Activity Log (Phase 2: Audit Log Redesign)
+
+**Business-manager Activity Log replacing the admin-only Audit Log viewer with a timeline-style feed.**
+
+### Added
+- Activity Log page at `/Activity` — timeline-style feed with plain-English summaries
+- Quick stats row: changes this week, active team members, most active area, last activity
+- Business-friendly filters: "What changed", "Who made the change", "What type of change", date range
+- Expandable detail panels: before/after diff for edits, initial values for creates, deleted values for deletes
+- Colored timeline dots: green (created), blue (edited), red (deleted), amber (status changed)
+- User name resolution (batch-loaded from MembershipDbContext, "{FirstName} {LastInitial}." format)
+- Relative timestamps: "Just now", "2 min ago", "Yesterday at 14:32", "3 days ago"
+- Entity links: invoice numbers, customer names link to their detail pages
+- Sidebar navigation under Finance section (gated by `audit_log` module)
+- Plan permission gating: Professional + Enterprise plans (ReadOnly access level)
+- Mobile responsive layout (640px breakpoint)
+- Existing SuperAdmin Audit Log at /Admin/Audit preserved unchanged
+
+### No Database Migrations
+- Reuses existing `[audit].[AuditLog]` table and indexes — no schema changes needed
+
+---
+
+## [2026-07-07] — End-to-End Testing (Modules 3 & 4)
+
+### Added
+- Integration test suite for Payment Reminders: schedule → evaluate → send → log → idempotency (5 test cases, all passing)
+- Module 4 E2E marked complete (bank transfer informative flow verified; Stripe Connect deferred)
+
+---
+
+## [2026-07-07] — Module 5: Cash Flow Forecasting
+
+**Forward-looking cash position projection with confidence-weighted inflows and historical expense analysis.**
+
+### Added
+- Cash Flow Forecast page at `/CashFlow` with storytelling-first design (hero card, flow visualization, Chart.js projection)
+- 30/60/90-day projection horizon with period selector
+- Projected inflows from outstanding invoices with customer confidence weighting (DaysLateAverage)
+- Projected outflows from 6-month historical expense category averages
+- Running balance line chart with alert threshold danger zone (chartjs-plugin-annotation)
+- Scenario modelling: toggle invoices out of projection to see "what if" impact (session-only)
+- Configurable starting balance and alert threshold (Settings section inline on page)
+- Dashboard widget on Home Dashboard (compact 30-day projection summary)
+- Sidebar navigation link under Finance section (gated by `cashflow` module)
+- Soft-gate teaser on Revenue Dashboard for Starter users
+- Plan permission gating (`cashflow` module key — Professional plan only)
+- Mobile responsive layout (640px breakpoint)
+
+### Database Migrations
+- `104_CreateCashFlowSettingsTable.sql` (creates `[cashflow]` schema + CashFlowSettings table)
+
+---
+
 ## [2026-07-06] — Module 4: Payment Instructions (Bank Transfer)
 
 **Replaces original Module 4 (Stripe Connect) with a lightweight bank-transfer payment flow.**

@@ -241,6 +241,9 @@ builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
 builder.Services.AddHostedService<PaymentReminderBackgroundService>();
 builder.Services.AddScoped<IPaymentInstructionsService, PaymentInstructionsService>();
 
+// Cash Flow Forecasting
+builder.Services.AddScoped<ICashFlowService, CashFlowService>();
+
 // --- reCAPTCHA ---
 builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();
 
@@ -256,6 +259,22 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReceivablesQueryService, ReceivablesQueryService>();
 builder.Services.AddScoped<IVatIntegrationService, VatIntegrationService>();
+builder.Services.AddSingleton<IInstalmentStatusEngine>(sp =>
+    new InstalmentStatusEngine(TimeProvider.System));
+builder.Services.AddSingleton<IInstalmentMatchingEngine, InstalmentMatchingEngine>();
+builder.Services.AddScoped<IVatWarningService, VatWarningService>();
+builder.Services.AddScoped<PaymentScheduleRepository>(sp =>
+    new PaymentScheduleRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PaymentScheduleInstalmentRepository>(sp =>
+    new PaymentScheduleInstalmentRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PaymentScheduleHistoryRepository>(sp =>
+    new PaymentScheduleHistoryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IPaymentScheduleService, PaymentScheduleService>();
+
+// --- Payment Schedule Overview ---
+builder.Services.AddScoped<PaymentScheduleOverviewRepository>(sp =>
+    new PaymentScheduleOverviewRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IPaymentScheduleOverviewService, PaymentScheduleOverviewService>();
 
 // --- Credit Notes ---
 builder.Services.AddScoped<CreditNoteRepository>(sp =>
@@ -287,6 +306,8 @@ builder.Services.AddScoped<IProductAutocompleteService, ProductAutocompleteServi
 builder.Services.AddScoped<AuditLogQueryRepository>(sp =>
     new AuditLogQueryRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IAuditLogQueryService, AuditLogQueryService>();
+builder.Services.AddScoped<UserNameResolver>();
+builder.Services.AddScoped<IActivitySummaryService, ActivitySummaryService>();
 builder.Services.AddScoped<UserAdminRepository>(sp =>
     new UserAdminRepository(sp.GetRequiredService<MembershipDbContext>()));
 builder.Services.AddScoped<IUserAdminService, UserAdminService>();

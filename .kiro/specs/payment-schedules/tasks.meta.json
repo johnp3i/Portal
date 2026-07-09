@@ -1,0 +1,517 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create migration 106_CreatePaymentScheduleInstalmentStatusTypeTable.sql": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582163599
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582174279
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582262940
+      }
+    ],
+    "1.2 Create migration 107_CreatePaymentScheduleTable.sql": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164185
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582175095
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582263662
+      }
+    ],
+    "1.3 Create migration 108_CreatePaymentScheduleInstalmentTable.sql": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164284
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582280190
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582363052
+      }
+    ],
+    "1.4 Create migration 109_CreatePaymentScheduleHistoryTable.sql": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164371
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582281012
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582363808
+      }
+    ],
+    "2.1 Create entity classes in Portal.Infrastructure/Entities": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164419
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582373414
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582482644
+      }
+    ],
+    "2.2 Add DbSet properties and EF Core configuration to PortalDbContext": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164463
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582488482
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582628836
+      }
+    ],
+    "3.1 Create PaymentScheduleRepository": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164508
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582633924
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582793247
+      }
+    ],
+    "3.2 Create PaymentScheduleInstalmentRepository": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164552
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582634682
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582793948
+      }
+    ],
+    "3.3 Create PaymentScheduleHistoryRepository": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164607
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582635460
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582794775
+      }
+    ],
+    "4.1 Implement InstalmentStatusEngine": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164693
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582800018
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583032254
+      }
+    ],
+    "4.3 Implement InstalmentMatchingEngine": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164784
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582800775
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583032981
+      }
+    ],
+    "5. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164823
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583050123
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583314403
+      }
+    ],
+    "6.1 Create VatWarningService": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164859
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583050914
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583315122
+      }
+    ],
+    "6.3 Create IPaymentScheduleService interface and PaymentScheduleService implementation": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164945
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583336771
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583643574
+      }
+    ],
+    "7. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582164979
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583649882
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583823275
+      }
+    ],
+    "8.1 Create request and response DTO classes": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165016
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582801505
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583033844
+      }
+    ],
+    "8.2 Add SchedulePayments permission constant and ModuleControllerMap entry": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165056
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582802376
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583034851
+      }
+    ],
+    "9.1 Add payment schedule endpoints to RevenueController": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165096
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583648820
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583824160
+      }
+    ],
+    "10.1 Modify PaymentService to trigger instalment matching on payment record": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165140
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583829309
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584291907
+      }
+    ],
+    "10.2 Modify PaymentService to revert instalment match on payment void": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165180
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583830203
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584292703
+      }
+    ],
+    "11. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165226
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584293609
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584932401
+      }
+    ],
+    "12.1 Create _PaymentScheduleSection.cshtml partial view": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165270
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584294589
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584931484
+      }
+    ],
+    "12.2 Create payment-schedule.js JavaScript module": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165309
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584295600
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584930771
+      }
+    ],
+    "13.1 Integrate _PaymentScheduleSection into Revenue/InvoiceDetail.cshtml": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165360
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584937773
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783585182975
+      }
+    ],
+    "13.2 Integrate _PaymentScheduleSection into Invoice/Detail.cshtml": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165402
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584938706
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783585183772
+      }
+    ],
+    "15. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582165493
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783585188703
+      },
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783586232454
+      }
+    ],
+    "1. Database migrations and schema setup": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582363862
+      }
+    ],
+    "2. Entity classes and DbContext configuration": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582628945
+      }
+    ],
+    "3. Repository layer": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783582794881
+      }
+    ],
+    "4. Pure computation engines": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583033070
+      }
+    ],
+    "8. DTOs and permission constant": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583034901
+      }
+    ],
+    "6. Service layer implementation": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583643637
+      }
+    ],
+    "9. Controller endpoints": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783583824220
+      }
+    ],
+    "10. Integration with existing PaymentService": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584292750
+      }
+    ],
+    "12. Partial view and JavaScript module": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783584931541
+      }
+    ],
+    "13. Integration into invoice detail pages": [
+      {
+        "executionId": "0804f863-5e76-40f9-9c1c-5392bd0ca502",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783585183864
+      }
+    ]
+  }
+}

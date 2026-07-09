@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Log — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --line: #E2EBF3;
+            --card-radius: 20px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Manrope', sans-serif;
+        }
+
+        /* === Layout === */
+        .page-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 28px;
+        }
+
+        /* === Topbar === */
+        .topbar { margin-bottom: 32px; }
+        .topbar .eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--blue);
+            margin-bottom: 6px;
+        }
+        .topbar h1 {
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        /* === Glass Card === */
+        .glass.card-pad {
+            background: #fff;
+            border-radius: var(--card-radius);
+            padding: 28px 30px;
+            box-shadow: 0 8px 32px rgba(11,27,40,0.06);
+            border: 1px solid var(--line);
+        }
+
+        /* === Quick Stats Row === */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 16px rgba(11,27,40,0.04);
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stat-card.blue { border-left-color: var(--blue); }
+        .stat-card.green { border-left-color: var(--green); }
+        .stat-card.amber { border-left-color: var(--amber); }
+        .stat-card.muted-border { border-left-color: var(--muted); }
+        .stat-card .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .stat-value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        /* === Filter Panel === */
+        .filter-panel {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 180px;
+        }
+        .field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .field select,
+        .field input[type="date"] {
+            padding: 9px 14px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+        .field select:focus,
+        .field input[type="date"]:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        .btn {
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--blue);
+            color: #fff;
+        }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary {
+            background: var(--bg2);
+            color: var(--muted);
+            border: 1px solid var(--line);
+        }
+        .btn-secondary:hover { background: #dfe9f1; }
+
+        /* === Activity Feed === */
+        .activity-feed {
+            position: relative;
+        }
+        .activity-feed::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 24px;
+            bottom: 24px;
+            width: 2px;
+            background: var(--line);
+            border-radius: 2px;
+        }
+        .activity-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--line);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-radius: 10px;
+            padding-left: 4px;
+            padding-right: 12px;
+        }
+        .activity-row:hover {
+            background: var(--bg2);
+        }
+        .activity-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Dot indicator */
+        .activity-dot {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            margin-top: 2px;
+        }
+        .activity-dot.created { background: #e6f7f0; }
+        .activity-dot.created::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+        .activity-dot.edited { background: #e8f2fc; }
+        .activity-dot.edited::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--blue); }
+        .activity-dot.deleted { background: #fceaea; }
+        .activity-dot.deleted::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+        .activity-dot.status-changed { background: #fef5e6; }
+        .activity-dot.status-changed::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); }
+
+        /* Activity content */
+        .activity-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .activity-summary {
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+        .activity-summary .actor {
+            font-weight: 700;
+        }
+        .activity-summary .entity {
+            font-weight: 700;
+            color: var(--blue);
+        }
+        .activity-time {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        /* Expand button */
+        .activity-expand {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 2px;
+        }
+        .activity-expand:hover {
+            background: var(--bg2);
+            border-color: var(--blue);
+        }
+        .activity-expand svg {
+            width: 14px;
+            height: 14px;
+            color: var(--muted);
+            transition: transform 0.25s ease;
+        }
+        .activity-row.expanded .activity-expand svg {
+            transform: rotate(180deg);
+        }
+
+        /* Detail panel */
+        .activity-detail {
+            display: none;
+            margin-top: 12px;
+            margin-left: 48px;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 18px 20px;
+            animation: slideDown 0.2s ease;
+        }
+        .activity-row.expanded .activity-detail {
+            display: block;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .detail-heading {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .changes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .changes-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: var(--bg2);
+            font-weight: 600;
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            border-radius: 6px 6px 0 0;
+        }
+        .changes-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--line);
+            color: var(--text);
+        }
+        .changes-table tr:last-child td {
+            border-bottom: none;
+        }
+        .val-old {
+            color: var(--red);
+            text-decoration: line-through;
+            margin-right: 8px;
+        }
+        .val-new {
+            color: var(--green);
+            font-weight: 600;
+        }
+        .val-arrow {
+            color: var(--muted);
+            margin: 0 6px;
+        }
+
+        /* === Pagination === */
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .pagination-info {
+            font-size: 14px;
+            color: var(--muted);
+        }
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+        }
+        .page-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .page-btn:hover { background: var(--bg2); border-color: var(--blue); }
+        .page-btn.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+
+        /* === Empty State === */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        /* === Responsive === */
+        @media (max-width: 640px) {
+            .page-container { padding: 24px 16px; }
+            .topbar h1 { font-size: 28px; }
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .filter-panel {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .field { min-width: 100%; }
+            .activity-row { padding-left: 0; }
+            .activity-feed::before { display: none; }
+            .activity-detail { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="eyebrow">Business Operations</div>
+        <h1>Activity Log</h1>
+        <p class="subtitle">Everything that's happened in your business — who did what and when.</p>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="stats-row">
+        <div class="stat-card blue">
+            <span class="stat-label">Changes this week</span>
+            <span class="stat-value">47</span>
+        </div>
+        <div class="stat-card green">
+            <span class="stat-label">By team members</span>
+            <span class="stat-value">3 people</span>
+        </div>
+        <div class="stat-card amber">
+            <span class="stat-label">Most active area</span>
+            <span class="stat-value">Invoicing</span>
+        </div>
+        <div class="stat-card muted-border">
+            <span class="stat-label">Last activity</span>
+            <span class="stat-value">2 min ago</span>
+        </div>
+    </div>
+
+    <!-- Filter Panel -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div class="filter-panel">
+            <div class="field">
+                <label>What changed</label>
+                <select>
+                    <option>Everything</option>
+                    <option>Invoices</option>
+                    <option>Quotations</option>
+                    <option>Customers</option>
+                    <option>Purchases</option>
+                    <option>Payments</option>
+                    <option>Credit Notes</option>
+                    <option>Settings</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Who made the change</label>
+                <select>
+                    <option>Everyone</option>
+                    <option>John Papaioannou</option>
+                    <option>Maria Theodorou</option>
+                    <option>System</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>What type of change</label>
+                <select>
+                    <option>All changes</option>
+                    <option>Created</option>
+                    <option>Edited</option>
+                    <option>Deleted</option>
+                    <option>Status changed</option>
+                </select>
+            </div>
+            <div class="field" style="min-width:140px;">
+                <label>Date from</label>
+                <input type="date" value="2026-07-01">
+            </div>
+            <div class="field" style="min-width:140px;">
+                <label>Date to</label>
+                <input type="date" value="2026-07-08">
+            </div>
+            <div style="padding-bottom:2px;display:flex;gap:8px;">
+                <button class="btn btn-primary">Filter</button>
+                <button class="btn btn-secondary">Clear</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Activity Feed -->
+    <section class="glass card-pad">
+        <div class="activity-feed">
+
+            <!-- Row 1: Created Invoice -->
+            <div class="activity-row" onclick="toggleRow(this)">
+                <div class="activity-dot created"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">John P.</span> created <span class="entity">Invoice INV-2026-0095</span> for Sunrise Hospitality (€2,100.00)
+                    </div>
+                    <div class="activity-time">2 min ago</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">Created with values</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Value</th></tr>
+                            <tr><td>Customer</td><td>Sunrise Hospitality Ltd</td></tr>
+                            <tr><td>Amount</td><td>€2,100.00</td></tr>
+                            <tr><td>Status</td><td>Draft</td></tr>
+                            <tr><td>Due Date</td><td>08 Aug 2026</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <!-- Row 2: Edited Customer (expanded by default for demo) -->
+            <div class="activity-row expanded" onclick="toggleRow(this)">
+                <div class="activity-dot edited"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">Maria T.</span> edited <span class="entity">Customer Acme Solutions Ltd</span> — updated email address
+                    </div>
+                    <div class="activity-time">35 min ago</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">What changed</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Change</th></tr>
+                            <tr>
+                                <td>Email</td>
+                                <td><span class="val-old">info@old-acme.com</span><span class="val-arrow">→</span><span class="val-new">contact@acme-solutions.com</span></td>
+                            </tr>
+                            <tr>
+                                <td>Contact Person</td>
+                                <td><span class="val-old">John Smith</span><span class="val-arrow">→</span><span class="val-new">Jane Smith</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <!-- Row 3: Status Changed -->
+            <div class="activity-row" onclick="toggleRow(this)">
+                <div class="activity-dot status-changed"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">John P.</span> changed status of <span class="entity">Invoice INV-2026-0089</span> from Draft to Issued
+                    </div>
+                    <div class="activity-time">1 hour ago</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">Status change</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Change</th></tr>
+                            <tr>
+                                <td>Status</td>
+                                <td><span class="val-old">Draft</span><span class="val-arrow">→</span><span class="val-new">Issued</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <!-- Row 4: System Payment Reminder -->
+            <div class="activity-row" onclick="toggleRow(this)">
+                <div class="activity-dot created"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">System</span> sent <span class="entity">Payment Reminder</span> (Friendly) to Harbour Marine Co
+                    </div>
+                    <div class="activity-time">Today at 06:00</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">Reminder details</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Value</th></tr>
+                            <tr><td>Reminder Type</td><td>Friendly</td></tr>
+                            <tr><td>Customer</td><td>Harbour Marine Co</td></tr>
+                            <tr><td>Related Invoice</td><td>INV-2026-0071</td></tr>
+                            <tr><td>Outstanding</td><td>€4,500.00</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <!-- Row 5: Edited Quotation -->
+            <div class="activity-row" onclick="toggleRow(this)">
+                <div class="activity-dot edited"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">John P.</span> edited <span class="entity">Quotation QUO-2026-0012</span> — updated line item pricing
+                    </div>
+                    <div class="activity-time">Yesterday at 16:45</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">What changed</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Change</th></tr>
+                            <tr>
+                                <td>Line 2 — Unit Price</td>
+                                <td><span class="val-old">€85.00</span><span class="val-arrow">→</span><span class="val-new">€92.00</span></td>
+                            </tr>
+                            <tr>
+                                <td>Line 2 — Quantity</td>
+                                <td><span class="val-old">10</span><span class="val-arrow">→</span><span class="val-new">12</span></td>
+                            </tr>
+                            <tr>
+                                <td>Total (excl. VAT)</td>
+                                <td><span class="val-old">€1,650.00</span><span class="val-arrow">→</span><span class="val-new">€1,904.00</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <!-- Row 6: Deleted Purchase -->
+            <div class="activity-row" onclick="toggleRow(this)">
+                <div class="activity-dot deleted"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">John P.</span> deleted <span class="entity">Purchase PUR-2026-0034</span> (Office Supplies, €145.00)
+                    </div>
+                    <div class="activity-time">Yesterday at 11:20</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">Deleted record</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Value at deletion</th></tr>
+                            <tr><td>Supplier</td><td>PaperWorld Ltd</td></tr>
+                            <tr><td>Category</td><td>Office Supplies</td></tr>
+                            <tr><td>Amount</td><td>€145.00</td></tr>
+                            <tr><td>Date</td><td>02 Jul 2026</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <!-- Row 7: Created Customer -->
+            <div class="activity-row" onclick="toggleRow(this)">
+                <div class="activity-dot created"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">Maria T.</span> created <span class="entity">Customer TechVault Systems</span>
+                    </div>
+                    <div class="activity-time">2 days ago</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">Created with values</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Value</th></tr>
+                            <tr><td>Company Name</td><td>TechVault Systems</td></tr>
+                            <tr><td>Email</td><td>info@techvault.io</td></tr>
+                            <tr><td>Contact Person</td><td>Andreas Georgiou</td></tr>
+                            <tr><td>VAT Number</td><td>CY10298374X</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <!-- Row 8: Payment Recorded -->
+            <div class="activity-row" onclick="toggleRow(this)">
+                <div class="activity-dot status-changed"></div>
+                <div class="activity-content">
+                    <div class="activity-summary">
+                        <span class="actor">System</span> recorded <span class="entity">Payment</span> of €3,200.00 against Invoice INV-2026-0076
+                    </div>
+                    <div class="activity-time">3 days ago</div>
+                    <div class="activity-detail">
+                        <div class="detail-heading">Payment details</div>
+                        <table class="changes-table">
+                            <tr><th>Field</th><th>Value</th></tr>
+                            <tr><td>Amount</td><td>€3,200.00</td></tr>
+                            <tr><td>Invoice</td><td>INV-2026-0076</td></tr>
+                            <tr><td>Customer</td><td>Blue Ocean Imports</td></tr>
+                            <tr><td>Method</td><td>Bank Transfer</td></tr>
+                            <tr><td>Invoice Status</td><td><span class="val-old">Unpaid</span><span class="val-arrow">→</span><span class="val-new">Paid</span></td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="activity-expand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+        </div><!-- /.activity-feed -->
+
+        <!-- Pagination -->
+        <div class="pagination-bar">
+            <div class="pagination-info">Showing 1–8 of 47</div>
+            <div class="pagination-controls">
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn">4</button>
+                <button class="page-btn">5</button>
+                <button class="page-btn">6</button>
+            </div>
+        </div>
+    </section>
+
+</div><!-- /.page-container -->
+
+<script>
+    function toggleRow(row) {
+        row.classList.toggle('expanded');
+    }
+</script>
+
+</body>
+</html>

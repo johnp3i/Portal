@@ -705,6 +705,11 @@ else if (Model.ShowQuotation)
     </a>
 </div>
 }
+
+<!-- Cash Flow Widget (self-loading via AJAX) -->
+<div style="margin-top:24px;">
+    @await Html.PartialAsync("_CashFlowWidget")
+</div>
 }
 }
 else

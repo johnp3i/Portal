@@ -1,0 +1,326 @@
+@{
+    ViewData["Title"] = "Payment Schedules";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    /* ===== KPI STRIP ===== */
+    .kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .kpi-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 22px 24px;
+        border: 1px solid var(--line);
+        box-shadow: 0 2px 12px rgba(11, 27, 40, 0.04);
+        position: relative;
+        overflow: hidden;
+    }
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        border-radius: 4px 0 0 4px;
+    }
+    .kpi-card.blue::before { background: #0D5EA6; }
+    .kpi-card.green::before { background: #129867; }
+    .kpi-card.amber::before { background: #C8912E; }
+    .kpi-card.red::before { background: #C24A4A; }
+
+    .kpi-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #5E7385;
+        margin-bottom: 8px;
+    }
+    .kpi-value {
+        font-family: Manrope, sans-serif;
+        font-size: 26px;
+        font-weight: 800;
+        color: #0B1B28;
+    }
+    .kpi-card.blue .kpi-value { color: #0D5EA6; }
+    .kpi-card.green .kpi-value { color: #129867; }
+    .kpi-card.amber .kpi-value { color: #C8912E; }
+    .kpi-card.red .kpi-value { color: #C24A4A; }
+
+    /* ===== MONTHLY TIMELINE ===== */
+    .timeline-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .timeline-header h3 {
+        font-family: Manrope, sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #0B1B28;
+        margin: 0;
+    }
+    .year-selector {
+        display: flex;
+        gap: 6px;
+    }
+    .year-btn {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        border: 1px solid var(--line);
+        background: #EEF4F8;
+        color: #0B1B28;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .year-btn:hover {
+        background: #dce8f0;
+    }
+    .year-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+
+    .timeline-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 14px;
+    }
+    .timeline-month {
+        min-width: 150px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #0B1B28;
+    }
+    .timeline-month.overdue {
+        color: #C24A4A;
+    }
+    .timeline-month.no-date {
+        color: #5E7385;
+        font-style: italic;
+    }
+    .timeline-bar-wrap {
+        flex: 1;
+        height: 24px;
+        background: #EEF4F8;
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+    }
+    .timeline-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #0D5EA6, #57B8E8);
+        border-radius: 6px;
+        transition: width 0.3s ease;
+    }
+    .timeline-bar.overdue {
+        background: linear-gradient(90deg, #C24A4A, #e87070);
+    }
+    .timeline-bar.no-date {
+        opacity: 0.5;
+    }
+    .timeline-amount {
+        min-width: 90px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #0B1B28;
+        text-align: right;
+    }
+    .timeline-count {
+        min-width: 110px;
+        font-size: 13px;
+        color: #5E7385;
+    }
+
+    /* ===== PROGRESS BAR ===== */
+    .progress-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .progress-bar-mini {
+        width: 80px;
+        height: 8px;
+        background: #EEF4F8;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .progress-bar-mini .fill {
+        height: 100%;
+        background: #129867;
+        border-radius: 4px;
+    }
+    .progress-pct {
+        font-size: 13px;
+        font-weight: 600;
+        color: #5E7385;
+    }
+
+    /* ===== STATUS BADGES ===== */
+    .badge-green {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        background: #e6f9f0;
+        color: #129867;
+    }
+    .badge-red {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        background: #fdeaea;
+        color: #C24A4A;
+    }
+    .badge-grey {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        background: #EEF4F8;
+        color: #5E7385;
+    }
+
+    /* ===== PAGINATION ===== */
+    .page-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: #0B1B28;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .page-btn:hover {
+        background: #EEF4F8;
+    }
+    .page-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+        text-align: center;
+        padding: 48px 20px;
+        color: #5E7385;
+        font-size: 15px;
+    }
+
+    /* ===== INVOICE LINK ===== */
+    .invoice-link {
+        color: #0D5EA6;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .invoice-link:hover {
+        text-decoration: underline;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 768px) {
+        .kpi-strip {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .timeline-count {
+            display: none;
+        }
+        .timeline-month {
+            min-width: 100px;
+            font-size: 12px;
+        }
+        .timeline-amount {
+            min-width: 70px;
+            font-size: 13px;
+        }
+        .topbar-heading {
+            font-size: 32px !important;
+        }
+    }
+</style>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Revenue</div>
+        <h1 class="topbar-heading">Payment Schedules</h1>
+        <p class="topbar-subtitle">Monitor all instalment plans and expected payments across your invoices.</p>
+    </div>
+</div>
+
+<!-- KPI Strip -->
+<div id="kpiStrip" class="kpi-strip">
+    <!-- Rendered by JS -->
+</div>
+
+<!-- Monthly Payment Plan -->
+<section class="glass card-pad" id="timelineSection" style="margin-bottom:24px;">
+    <div id="timelineContainer">
+        <!-- Rendered by JS -->
+    </div>
+</section>
+
+<!-- Filter Section -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label>Status</label>
+            <select id="filterStatus">
+                <option value="All">All</option>
+                <option value="Has Overdue">Has Overdue</option>
+                <option value="On Track">On Track</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Invoice</label>
+            <input type="text" id="filterInvoice" placeholder="Search invoice..." />
+        </div>
+        <div class="field" style="min-width:220px;">
+            <label>Customer</label>
+            <input type="text" id="filterCustomer" placeholder="Search customer..." />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" id="btnFilter">Filter</button>
+            <button class="btn btn-secondary" id="btnClear" style="margin-left:6px;">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Active Schedules Table -->
+<section class="glass card-pad">
+    <div id="tableContainer">
+        <!-- Rendered by JS -->
+    </div>
+    <div id="paginationContainer" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+        <div id="paginationControls" style="display:flex;gap:4px;"></div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/payment-schedules-overview.js"></script>
+}

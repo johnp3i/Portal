@@ -1,0 +1,735 @@
+@{
+    ViewData["Title"] = "Activity Log";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    /* === Quick Stats Row === */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+    .stat-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 16px rgba(11,27,40,0.04);
+        border: 1px solid #E2EBF3;
+        border-left: 4px solid #E2EBF3;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .stat-card.blue { border-left-color: #0D5EA6; }
+    .stat-card.green { border-left-color: #129867; }
+    .stat-card.amber { border-left-color: #C8912E; }
+    .stat-card.muted-border { border-left-color: #5E7385; }
+    .stat-card .stat-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #5E7385;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stat-card .stat-value {
+        font-family: 'Manrope', sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: #0B1B28;
+    }
+
+    /* === Activity Feed === */
+    .activity-feed {
+        position: relative;
+    }
+    .activity-feed::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 24px;
+        bottom: 24px;
+        width: 2px;
+        background: #E2EBF3;
+        border-radius: 2px;
+    }
+    .activity-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid #E2EBF3;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.15s;
+        border-radius: 10px;
+        padding-left: 4px;
+        padding-right: 12px;
+    }
+    .activity-row:hover {
+        background: #EEF4F8;
+    }
+    .activity-row:last-child {
+        border-bottom: none;
+    }
+
+    /* Dot indicator */
+    .activity-dot {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        margin-top: 2px;
+    }
+    .activity-dot.created { background: #e6f7f0; }
+    .activity-dot.created::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #129867; }
+    .activity-dot.edited { background: #e8f2fc; }
+    .activity-dot.edited::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #0D5EA6; }
+    .activity-dot.deleted { background: #fceaea; }
+    .activity-dot.deleted::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #C24A4A; }
+    .activity-dot.status-changed { background: #fef5e6; }
+    .activity-dot.status-changed::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #C8912E; }
+
+    /* Activity content */
+    .activity-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .activity-summary {
+        font-size: 14px;
+        color: #0B1B28;
+        line-height: 1.5;
+    }
+    .activity-summary .actor {
+        font-weight: 700;
+    }
+    .activity-summary .entity {
+        font-weight: 700;
+        color: #0D5EA6;
+    }
+    a.entity {
+        text-decoration: none;
+    }
+    a.entity:hover {
+        text-decoration: underline;
+    }
+    .activity-time {
+        font-size: 12px;
+        color: #5E7385;
+        margin-top: 3px;
+    }
+
+    /* Expand button */
+    .activity-expand {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid #E2EBF3;
+        background: #fff;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 2px;
+    }
+    .activity-expand:hover {
+        background: #EEF4F8;
+        border-color: #0D5EA6;
+    }
+    .activity-expand svg {
+        width: 14px;
+        height: 14px;
+        color: #5E7385;
+        transition: transform 0.25s ease;
+    }
+    .activity-row.expanded .activity-expand svg {
+        transform: rotate(180deg);
+    }
+
+    /* Detail panel */
+    .activity-detail {
+        display: none;
+        margin-top: 12px;
+        background: #F7FAFC;
+        border: 1px solid #E2EBF3;
+        border-radius: 12px;
+        padding: 18px 20px;
+        animation: slideDown 0.2s ease;
+    }
+    .activity-row.expanded .activity-detail {
+        display: block;
+    }
+    @@keyframes slideDown {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .detail-heading {
+        font-size: 12px;
+        font-weight: 700;
+        color: #5E7385;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+    }
+
+    .changes-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .changes-table th {
+        text-align: left;
+        padding: 8px 12px;
+        background: #EEF4F8;
+        font-weight: 600;
+        color: #5E7385;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .changes-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #E2EBF3;
+        color: #0B1B28;
+    }
+    .changes-table tr:last-child td {
+        border-bottom: none;
+    }
+    .val-old {
+        color: #C24A4A;
+        text-decoration: line-through;
+        margin-right: 8px;
+    }
+    .val-new {
+        color: #129867;
+        font-weight: 600;
+    }
+    .val-arrow {
+        color: #5E7385;
+        margin: 0 6px;
+    }
+
+    /* === Pagination === */
+    .pagination-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 18px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .pagination-info {
+        font-size: 14px;
+        color: #5E7385;
+    }
+    .pagination-controls {
+        display: flex;
+        gap: 6px;
+    }
+    .page-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        border: 1px solid #E2EBF3;
+        background: #fff;
+        color: #0B1B28;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .page-btn:hover { background: #EEF4F8; border-color: #0D5EA6; }
+    .page-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+
+    /* === Empty State === */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #5E7385;
+        font-size: 15px;
+    }
+
+    /* === Responsive === */
+    @@media (max-width: 640px) {
+        .stats-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .filter-panel {
+            flex-direction: column;
+            gap: 12px;
+        }
+        .filter-panel .field { min-width: 100%; }
+        .activity-row { padding-left: 0; }
+        .activity-feed::before { display: none; }
+        .activity-detail { margin-left: 0; }
+    }
+</style>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Business Operations</div>
+        <h1 class="topbar-heading">Activity Log</h1>
+        <p class="topbar-subtitle">Everything that's happened in your business — who did what and when.</p>
+    </div>
+</div>
+
+<!-- Quick Stats Row -->
+<div class="stats-row">
+    <div class="stat-card blue">
+        <span class="stat-label">Changes this week</span>
+        <span class="stat-value" id="statChanges">—</span>
+    </div>
+    <div class="stat-card green">
+        <span class="stat-label">By team members</span>
+        <span class="stat-value" id="statTeam">—</span>
+    </div>
+    <div class="stat-card amber">
+        <span class="stat-label">Most active area</span>
+        <span class="stat-value" id="statArea">—</span>
+    </div>
+    <div class="stat-card muted-border">
+        <span class="stat-label">Last activity</span>
+        <span class="stat-value" id="statLast">—</span>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="filter-panel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label>What changed</label>
+            <select id="filterCategory">
+                <option value="">Everything</option>
+                <option value="Invoices">Invoices</option>
+                <option value="Quotations">Quotations</option>
+                <option value="Customers">Customers</option>
+                <option value="Purchases">Purchases</option>
+                <option value="Payments">Payments</option>
+                <option value="Credit Notes">Credit Notes</option>
+                <option value="Settings">Settings</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Who made the change</label>
+            <select id="filterUser">
+                <option value="">Everyone</option>
+                <option value="system">System</option>
+                @if (ViewBag.TeamMembers != null)
+                {
+                    foreach (dynamic member in ViewBag.TeamMembers)
+                    {
+                        <option value="@member["userId"]">@member["displayName"]</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>What type of change</label>
+            <select id="filterChangeType">
+                <option value="">All changes</option>
+                <option value="Created">Created</option>
+                <option value="Edited">Edited</option>
+                <option value="Deleted">Deleted</option>
+                <option value="Status changed">Status changed</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label>Date from</label>
+            <input type="date" id="filterDateFrom" />
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label>Date to</label>
+            <input type="date" id="filterDateTo" />
+        </div>
+        <div style="padding-bottom:2px;display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="loadActivity(1)">Filter</button>
+            <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Activity Feed -->
+<section class="glass card-pad">
+    <div class="activity-feed" id="activityFeed">
+        <div class="empty-state"><p>Loading activity...</p></div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" id="paginationBar" style="display:none;">
+        <div class="pagination-info" id="paginationInfo"></div>
+        <div class="pagination-controls" id="paginationControls"></div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+    // =========================================================================
+    // State
+    // =========================================================================
+    var currentPage = 1;
+    var pageSize = 8;
+
+    // =========================================================================
+    // Relative Timestamp Formatter (client-side)
+    // =========================================================================
+    function formatRelativeTime(isoTimestamp) {
+        if (!isoTimestamp) return '';
+        var now = new Date();
+        var ts = new Date(isoTimestamp);
+        var diffMs = now - ts;
+        var diffSec = Math.floor(diffMs / 1000);
+        var diffMin = Math.floor(diffSec / 60);
+        var diffHours = Math.floor(diffMin / 60);
+        var diffDays = Math.floor(diffHours / 24);
+
+        if (diffSec < 60) return 'Just now';
+        if (diffMin < 60) return diffMin + ' min ago';
+        if (diffHours === 1) return '1 hour ago';
+        if (diffHours < 24) return diffHours + ' hours ago';
+
+        // Check yesterday by calendar day
+        var yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (ts.toDateString() === yesterday.toDateString()) {
+            var hh = ts.getHours().toString().padStart(2, '0');
+            var mm = ts.getMinutes().toString().padStart(2, '0');
+            return 'Yesterday at ' + hh + ':' + mm;
+        }
+
+        if (diffDays >= 2 && diffDays <= 6) return diffDays + ' days ago';
+
+        // 7+ days: show full date
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var day = ts.getDate().toString().padStart(2, '0');
+        return day + ' ' + months[ts.getMonth()] + ' ' + ts.getFullYear();
+    }
+
+    // =========================================================================
+    // Entity Link Generation
+    // =========================================================================
+    var entityRoutes = {
+        'Invoice': '/Invoice/Details/',
+        'Customer': '/Customer/Details/',
+        'Quotation': '/Quotation/Details/',
+        'Purchase': '/Purchase/Details/'
+    };
+
+    function renderEntityLink(item) {
+        var displayText = item.entityDisplayRef || item.entityType + ' #' + item.entityId;
+        if (item.entityDetailUrl) {
+            return '<a href="' + escapeHtml(item.entityDetailUrl) + '" class="entity" onclick="event.stopPropagation();">' + escapeHtml(displayText) + '</a>';
+        }
+        return '<span class="entity">' + escapeHtml(displayText) + '</span>';
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // =========================================================================
+    // Load Stats
+    // =========================================================================
+    async function loadStats() {
+        try {
+            var response = await fetch('/Activity/AxGetStats');
+            var result = await response.json();
+            if (result.success) {
+                var d = result.data;
+                document.getElementById('statChanges').textContent = d.changesThisWeek;
+                document.getElementById('statTeam').textContent = d.activeTeamMembers + ' people';
+                document.getElementById('statArea').textContent = d.mostActiveArea;
+                document.getElementById('statLast').textContent = d.lastActivityUtc ? formatRelativeTime(d.lastActivityUtc) : 'No recent activity';
+            }
+        } catch (e) {
+            // Stats are non-critical, fail silently
+        }
+    }
+
+    // =========================================================================
+    // Load Activity
+    // =========================================================================
+    async function loadActivity(page) {
+        var category = document.getElementById('filterCategory').value;
+        var userId = document.getElementById('filterUser').value;
+        var changeType = document.getElementById('filterChangeType').value;
+        var dateFrom = document.getElementById('filterDateFrom').value;
+        var dateTo = document.getElementById('filterDateTo').value;
+
+        // Client-side date validation
+        if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+            Swal.fire({ title: 'Invalid Date Range', text: 'Date From cannot be greater than Date To.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Loading activity...');
+        try {
+            var params = new URLSearchParams();
+            if (category) params.set('whatChanged', category);
+            if (userId) params.set('whoChanged', userId);
+            if (changeType) params.set('changeType', changeType);
+            if (dateFrom) params.set('dateFrom', dateFrom);
+            if (dateTo) params.set('dateTo', dateTo);
+            params.set('page', page);
+            params.set('pageSize', pageSize);
+
+            var response = await fetch('/Activity/AxGetActivity?' + params.toString());
+            var result = await response.json();
+            BlockUI.hide();
+
+            if (result.success) {
+                currentPage = result.currentPage;
+                renderActivityFeed(result.data);
+                renderPagination(result.currentPage, result.totalPages, result.totalCount);
+            } else {
+                Swal.fire({ title: 'Error', text: result.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'Could not load activity data. Please try again.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    // =========================================================================
+    // Render Activity Feed
+    // =========================================================================
+    function renderActivityFeed(items) {
+        var feed = document.getElementById('activityFeed');
+        if (!items || items.length === 0) {
+            feed.innerHTML = '<div class="empty-state"><p>No activity found matching your filters.</p></div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var dotClass = getDotClass(item.actionType);
+            html += '<div class="activity-row" onclick="toggleRow(this)">';
+            html += '  <div class="activity-dot ' + dotClass + '"></div>';
+            html += '  <div class="activity-content">';
+            html += '    <div class="activity-summary">' + buildSummaryHtml(item) + '</div>';
+            html += '    <div class="activity-time">' + formatRelativeTime(item.timestampUtc) + '</div>';
+            html += '    <div class="activity-detail">' + buildDetailPanel(item) + '</div>';
+            html += '  </div>';
+            html += '  <div class="activity-expand">';
+            html += '    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+            html += '  </div>';
+            html += '</div>';
+        }
+        feed.innerHTML = html;
+    }
+
+    function getDotClass(actionType) {
+        switch (actionType) {
+            case 'Created': return 'created';
+            case 'Edited': return 'edited';
+            case 'Deleted': return 'deleted';
+            case 'StatusChanged': return 'status-changed';
+            default: return 'edited';
+        }
+    }
+
+    function toggleRow(row) {
+        // Collapse any other expanded row
+        var expanded = document.querySelector('.activity-row.expanded');
+        if (expanded && expanded !== row) {
+            expanded.classList.remove('expanded');
+        }
+        row.classList.toggle('expanded');
+    }
+
+    // =========================================================================
+    // Build Summary HTML
+    // =========================================================================
+    function buildSummaryHtml(item) {
+        var actor = '<span class="actor">' + escapeHtml(item.actorName) + '</span>';
+        var entity = renderEntityLink(item);
+
+        switch (item.actionType) {
+            case 'Created':
+                return actor + ' created ' + entity;
+            case 'Edited':
+                var editDetail = '';
+                if (item.changedFields && item.changedFields.length > 0) {
+                    var fieldNames = item.changedFields.slice(0, 2).map(function(f) { return f.fieldName; });
+                    editDetail = ' — updated ' + fieldNames.join(', ');
+                }
+                return actor + ' edited ' + entity + editDetail;
+            case 'Deleted':
+                return actor + ' deleted ' + entity;
+            case 'StatusChanged':
+                var statusDetail = '';
+                if (item.oldStatus && item.newStatus) {
+                    statusDetail = ' from ' + escapeHtml(item.oldStatus) + ' to ' + escapeHtml(item.newStatus);
+                }
+                return actor + ' changed status of ' + entity + statusDetail;
+            default:
+                return actor + ' modified ' + entity;
+        }
+    }
+
+    // =========================================================================
+    // Build Detail Panel
+    // =========================================================================
+    function buildDetailPanel(item) {
+        var fields = item.changedFields;
+
+        // If no parsed fields, try parsing from raw JSON
+        if (!fields || fields.length === 0) {
+            fields = parseFieldsFromJson(item);
+        }
+
+        if (!fields || fields.length === 0) {
+            return '<div class="detail-heading">No details available</div>';
+        }
+
+        var html = '';
+        switch (item.actionType) {
+            case 'Created':
+                html += '<div class="detail-heading">Created with values</div>';
+                html += '<table class="changes-table"><tr><th>Field</th><th>Value</th></tr>';
+                for (var i = 0; i < fields.length; i++) {
+                    html += '<tr><td>' + escapeHtml(fields[i].fieldName) + '</td><td>' + escapeHtml(fields[i].newValue || '') + '</td></tr>';
+                }
+                html += '</table>';
+                break;
+            case 'Deleted':
+                html += '<div class="detail-heading">Deleted record</div>';
+                html += '<table class="changes-table"><tr><th>Field</th><th>Value at deletion</th></tr>';
+                for (var i = 0; i < fields.length; i++) {
+                    html += '<tr><td>' + escapeHtml(fields[i].fieldName) + '</td><td>' + escapeHtml(fields[i].oldValue || '') + '</td></tr>';
+                }
+                html += '</table>';
+                break;
+            case 'StatusChanged':
+                html += '<div class="detail-heading">Status change</div>';
+                html += '<table class="changes-table"><tr><th>Field</th><th>Change</th></tr>';
+                for (var i = 0; i < fields.length; i++) {
+                    html += '<tr><td>' + escapeHtml(fields[i].fieldName) + '</td><td>';
+                    if (fields[i].oldValue) {
+                        html += '<span class="val-old">' + escapeHtml(fields[i].oldValue) + '</span>';
+                        html += '<span class="val-arrow">&rarr;</span>';
+                    }
+                    html += '<span class="val-new">' + escapeHtml(fields[i].newValue || '') + '</span>';
+                    html += '</td></tr>';
+                }
+                html += '</table>';
+                break;
+            default: // Edited
+                html += '<div class="detail-heading">What changed</div>';
+                html += '<table class="changes-table"><tr><th>Field</th><th>Change</th></tr>';
+                for (var i = 0; i < fields.length; i++) {
+                    html += '<tr><td>' + escapeHtml(fields[i].fieldName) + '</td><td>';
+                    if (fields[i].oldValue) {
+                        html += '<span class="val-old">' + escapeHtml(fields[i].oldValue) + '</span>';
+                        html += '<span class="val-arrow">&rarr;</span>';
+                    }
+                    html += '<span class="val-new">' + escapeHtml(fields[i].newValue || '') + '</span>';
+                    html += '</td></tr>';
+                }
+                html += '</table>';
+                break;
+        }
+        return html;
+    }
+
+    // =========================================================================
+    // Parse Fields from Raw JSON (fallback when ChangedFields is empty)
+    // =========================================================================
+    function parseFieldsFromJson(item) {
+        var fields = [];
+        try {
+            if (item.actionType === 'Created' && item.newValues) {
+                var newObj = JSON.parse(item.newValues);
+                for (var key in newObj) {
+                    if (newObj.hasOwnProperty(key)) {
+                        fields.push({ fieldName: key, oldValue: null, newValue: String(newObj[key] ?? '') });
+                    }
+                }
+            } else if (item.actionType === 'Deleted' && item.oldValues) {
+                var oldObj = JSON.parse(item.oldValues);
+                for (var key in oldObj) {
+                    if (oldObj.hasOwnProperty(key)) {
+                        fields.push({ fieldName: key, oldValue: String(oldObj[key] ?? ''), newValue: null });
+                    }
+                }
+            } else if ((item.actionType === 'Edited' || item.actionType === 'StatusChanged') && item.newValues) {
+                var newObj = JSON.parse(item.newValues);
+                var oldObj = item.oldValues ? JSON.parse(item.oldValues) : {};
+                for (var key in newObj) {
+                    if (newObj.hasOwnProperty(key)) {
+                        var oldVal = oldObj[key] !== undefined ? String(oldObj[key] ?? '') : '';
+                        var newVal = String(newObj[key] ?? '');
+                        if (oldVal !== newVal) {
+                            fields.push({ fieldName: key, oldValue: oldVal, newValue: newVal });
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            // JSON parsing failed, return empty
+        }
+        return fields;
+    }
+
+    // =========================================================================
+    // Render Pagination
+    // =========================================================================
+    function renderPagination(currentPg, totalPages, totalCount) {
+        var bar = document.getElementById('paginationBar');
+        var info = document.getElementById('paginationInfo');
+        var controls = document.getElementById('paginationControls');
+
+        if (totalCount === 0 || totalPages <= 0) {
+            bar.style.display = 'none';
+            return;
+        }
+
+        bar.style.display = 'flex';
+        var start = (currentPg - 1) * pageSize + 1;
+        var end = Math.min(currentPg * pageSize, totalCount);
+        info.textContent = 'Showing ' + start + '–' + end + ' of ' + totalCount;
+
+        var html = '';
+        for (var i = 1; i <= totalPages; i++) {
+            html += '<button class="page-btn' + (i === currentPg ? ' active' : '') + '" onclick="loadActivity(' + i + ')">' + i + '</button>';
+        }
+        controls.innerHTML = html;
+    }
+
+    // =========================================================================
+    // Clear Filters
+    // =========================================================================
+    function clearFilters() {
+        document.getElementById('filterCategory').selectedIndex = 0;
+        document.getElementById('filterUser').selectedIndex = 0;
+        document.getElementById('filterChangeType').selectedIndex = 0;
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        loadActivity(1);
+    }
+
+    // =========================================================================
+    // Init
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStats();
+        loadActivity(1);
+    });
+</script>
+}

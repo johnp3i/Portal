@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -88,12 +89,21 @@ public class InvoiceControllerAcceptanceStatusTests
             _viewRenderServiceMock.Object,
             _invoicePdfServiceMock.Object,
             Mock.Of<IPaymentInstructionsService>(),
+            Mock.Of<IPlanCheckService>(),
+            Mock.Of<IPermissionService>(),
             portalDbContext,
             _loggerMock.Object);
 
         // Set up TempData to avoid null reference exceptions
         _controller.TempData = new TempDataDictionary(
             new DefaultHttpContext(), Mock.Of<ITempDataProvider>());
+
+        // Set up ControllerContext with an authenticated user
+        var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "test-user-id") };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var user = new ClaimsPrincipal(identity);
+        var httpContext = new DefaultHttpContext { User = user };
+        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
     }
 
     private void SetupInvoiceDefaults(int invoiceId)

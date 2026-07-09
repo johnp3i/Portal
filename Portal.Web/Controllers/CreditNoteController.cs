@@ -13,7 +13,7 @@ using PuppeteerSharp.Media;
 namespace Portal.Web.Controllers;
 
 [Authorize]
-[ModuleAccess(PortalModules.Invoice)]
+[ModuleAccess(PortalModules.Credit)]
 public class CreditNoteController : Controller
 {
     private readonly ICreditNoteService _creditNoteService;

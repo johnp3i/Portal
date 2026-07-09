@@ -66,12 +66,12 @@ public class ModuleKeyValidationPropertyTests
     }
 
     /// <summary>
-    /// Property 8e: PortalModules.All SHALL contain exactly 23 modules.
+    /// Property 8e: PortalModules.All SHALL contain exactly 24 modules.
     /// **Validates: Requirements 8.2**
     /// </summary>
     [Fact]
     public void All_Contains_23_Modules()
     {
-        Assert.Equal(23, PortalModules.All.Length);
+        Assert.Equal(24, PortalModules.All.Length);
     }
 }

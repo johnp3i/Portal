@@ -59,7 +59,7 @@ This timetable covers the implementation of all Phase 1 (Professional tier) feat
 - [x] 3.13 Add plan permission gates (`payment_reminder_manual` for Starter, `payment_reminder_auto` for Professional)
 - [x] 3.14 Add soft-gate teaser on Revenue Dashboard for Starter users
 - [x] 3.15 Visual QA and mobile responsiveness check
-- [ ] 3.16 End-to-end testing: schedule → evaluate → send → log
+- [x] 3.16 End-to-end testing: schedule → evaluate → send → log
 
 ---
 
@@ -79,8 +79,8 @@ This timetable covers the implementation of all Phase 1 (Professional tier) feat
 - [x] 4.10 Add SWIFT/BIC field to payment details form
 - [x] 4.11 Add PaymentOnboard info banner to Invoice Detail
 - [x] 4.12 Add PaymentOnboard to invoice list filters
-- [ ] 4.13 Visual QA and mobile responsiveness check
-- [ ] 4.14 End-to-end testing: toggle → share → pay button → declare → verify status
+- [x] 4.13 Visual QA and mobile responsiveness check
+- [x] 4.14 End-to-end testing: toggle → share → pay button → declare → verify status *(bank transfer only — informative flow verified; Stripe Connect deferred to future)*
 
 ### Option C: Stripe Connect (Future Upgrade)
 
@@ -99,19 +99,19 @@ Both payment methods would coexist on the shared invoice page — customers coul
 
 **Effort:** Medium | **Dependencies:** Benefits from Modules 1–4 being complete (richer data)
 
-- [ ] 5.1 Create `CashFlowSettings` table (starting balance, alert threshold per business)
-- [ ] 5.2 Create cash flow projection service (inflows from outstanding invoices by due date, outflows from avg expenses)
-- [ ] 5.3 Implement confidence weighting (customer payment history → likelihood of on-time payment)
-- [ ] 5.4 Create cash flow controller and view (30/60/90-day chart with running balance line)
-- [ ] 5.5 Add starting balance configuration (Settings → Cash Flow)
-- [ ] 5.6 Add projected inflows breakdown (which invoices contribute to each period)
-- [ ] 5.7 Add projected outflows breakdown (average expense categories per month)
-- [ ] 5.8 Add alert threshold: notify when projected balance drops below configured minimum
-- [ ] 5.9 Add scenario modelling: "what if Invoice X doesn't pay on time?"
-- [ ] 5.10 Add Dashboard widget (mini cash flow projection)
-- [ ] 5.11 Add plan permission gate (`cashflow` module key — Professional only)
-- [ ] 5.12 Add soft-gate teaser for Starter users on Revenue Dashboard
-- [ ] 5.13 Visual QA and mobile responsiveness check
+- [x] 5.1 Create `CashFlowSettings` table (starting balance, alert threshold per business)
+- [x] 5.2 Create cash flow projection service (inflows from outstanding invoices by due date, outflows from avg expenses)
+- [x] 5.3 Implement confidence weighting (customer payment history → likelihood of on-time payment)
+- [x] 5.4 Create cash flow controller and view (30/60/90-day chart with running balance line)
+- [x] 5.5 Add starting balance configuration (Settings → Cash Flow)
+- [x] 5.6 Add projected inflows breakdown (which invoices contribute to each period)
+- [x] 5.7 Add projected outflows breakdown (average expense categories per month)
+- [x] 5.8 Add alert threshold: notify when projected balance drops below configured minimum
+- [x] 5.9 Add scenario modelling: "what if Invoice X doesn't pay on time?"
+- [x] 5.10 Add Dashboard widget (mini cash flow projection)
+- [x] 5.11 Add plan permission gate (`cashflow` module key — Professional only)
+- [x] 5.12 Add soft-gate teaser for Starter users on Revenue Dashboard
+- [x] 5.13 Visual QA and mobile responsiveness check
 
 ---
 
@@ -136,6 +136,34 @@ Both payment methods would coexist on the shared invoice page — customers coul
 
 ---
 
+## Module 7: Payment Schedules (Instalment Plans)
+
+**Effort:** Medium | **Dependencies:** Revenue module (existing), Payment recording (existing), VAT Submission Periods (existing)
+
+- [ ] 7.1 Create `PaymentSchedule` table (per-invoice instalment plan: InvoiceId, CreatedByUserId, CreatedAtUtc, Notes)
+- [ ] 7.2 Create `PaymentScheduleInstalment` table (individual instalment: ScheduleId, Amount, DueDate, Status, PaymentId nullable)
+- [ ] 7.3 Create `PaymentScheduleHistory` table (tracks modifications: who changed what and when)
+- [ ] 7.4 Create PaymentScheduleService (CRUD, auto-suggest remaining amount, match payments to instalments)
+- [ ] 7.5 Create payment schedule UI on Invoice Detail page (create/view/edit schedule with instalment rows)
+- [ ] 7.6 Create payment schedule UI on Revenue InvoiceDetail page (same functionality)
+- [ ] 7.7 Implement auto-suggestion: when creating schedule, suggest remaining balance for next instalment
+- [ ] 7.8 Implement payment-to-instalment matching (record payment → auto-match to next due instalment)
+- [ ] 7.9 Handle partial instalment payments (warning + create new instalment for remainder)
+- [ ] 7.10 Implement schedule modification with history tracking (adjustments logged with before/after)
+- [ ] 7.11 Add VAT period warning: notify user when first instalment is after the invoice's VAT period submission date
+- [ ] 7.12 Add VAT advisory: suggest first instalment should cover at least the VAT amount (€TaxAmount)
+- [ ] 7.13 Display instalment status indicators (Upcoming, Due, Overdue, Paid, Partially Paid)
+- [ ] 7.14 Add user permission gate (`schedule_payments` module key or use existing `revenue` module)
+- [ ] 7.15 Visual QA and mobile responsiveness check
+- [ ] 7.16 End-to-end testing: create schedule → record payments → verify matching → modify schedule
+
+### Future Sub-Tasks (Phase 2)
+- [ ] 7.17 Customer-facing payment schedule agreement via shared invoice link (business proposes schedule, customer accepts/negotiates)
+- [ ] 7.18 Per-instalment reminder integration with Payment Reminders module (send reminder N days before each instalment due date)
+- [ ] 7.19 Payment schedule impact on Cash Flow Forecasting (use instalment dates instead of invoice due date for projections)
+
+---
+
 ## Build Order & Dependencies
 
 ```
@@ -150,6 +178,8 @@ Module 6 (Permission Infrastructure) ←── Must be first or parallel with Mo
     ├── Module 4 (Stripe Connect) ←── External integration
     │
     └── Module 5 (Cash Flow) ←── Benefits from 1–4 being complete
+
+Module 7 (Payment Schedules) ←── Uses Revenue + Payments + VAT infrastructure
 ```
 
 **Recommended parallel tracks:**
@@ -174,7 +204,7 @@ Each module is considered complete when:
 
 ## Post-Phase 1 Milestones
 
-- [ ] All 6 modules complete and verified
+- [ ] All 7 modules complete and verified
 - [ ] Landing page updated with new tier pricing (Starter €39/Professional €79/Enterprise €149)
 - [ ] Subscription management system live
 - [ ] Existing users migrated to Professional (grandfathered)

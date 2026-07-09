@@ -289,16 +289,110 @@
     </div>
 </section>
 
-<!-- Reminder History Panel -->
-<section class="glass card-pad" style="margin-top:24px;">
-    @await Html.PartialAsync("_ReminderHistoryPanel")
-    <div style="margin-top:16px;">
-        <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 16px;" onclick="openTestSendModal(@invoice.Id, '@invoice.InvoiceNumber', '@ViewBag.CustomerName', '€@invoice.TotalAmount.ToString("N2")')">Send Test Reminder</button>
-    </div>
-</section>
+<!-- Payment Summary -->
+@if (invoice.InvoiceStatusTypeId == 2) @* Only show for Issued invoices *@
+{
+    var totalPaid = (decimal)(ViewBag.TotalPaid ?? 0m);
+    var outstandingBalance = (decimal)(ViewBag.OutstandingBalance ?? invoice.TotalAmount);
+    var progressPct = invoice.TotalAmount > 0 ? (int)((totalPaid / invoice.TotalAmount) * 100) : 0;
+    var cs = ViewBag.CurrencySymbol ?? "€";
 
-<!-- Test Send Modal -->
-@await Html.PartialAsync("_TestSendModal")
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h3 style="font-family:Manrope,sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin:0;">Payment Status</h3>
+            <span class="pill @(outstandingBalance <= 0 ? "pill-green" : totalPaid > 0 ? "pill-gold" : "pill-red")">
+                @ViewBag.FinancialStatusName
+            </span>
+        </div>
+
+        <!-- Progress bar -->
+        <div style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:#5E7385;margin-bottom:6px;">
+                <span>@cs@totalPaid.ToString("N2") paid</span>
+                <span>@cs@outstandingBalance.ToString("N2") outstanding</span>
+            </div>
+            <div style="height:6px;background:#E2EBF3;border-radius:3px;overflow:hidden;">
+                <div style="height:100%;background:#129867;border-radius:3px;width:@(progressPct)%;transition:width 0.4s;"></div>
+            </div>
+        </div>
+
+        <!-- Summary row -->
+        <div style="display:flex;gap:32px;font-size:14px;">
+            <div>
+                <span style="color:#5E7385;">Invoice Total:</span>
+                <strong style="margin-left:6px;">@cs@invoice.TotalAmount.ToString("N2")</strong>
+            </div>
+            <div>
+                <span style="color:#5E7385;">Paid:</span>
+                <strong style="margin-left:6px;color:#129867;">@cs@totalPaid.ToString("N2")</strong>
+            </div>
+            <div>
+                <span style="color:#5E7385;">Outstanding:</span>
+                <strong style="margin-left:6px;color:@(outstandingBalance > 0 ? "#C8912E" : "#129867");">@cs@outstandingBalance.ToString("N2")</strong>
+            </div>
+        </div>
+
+        @* Payment History Table *@
+        @{
+            var paymentHistory = ViewBag.PaymentHistory as List<Portal.Infrastructure.Models.PaymentHistoryDto> ?? new List<Portal.Infrastructure.Models.PaymentHistoryDto>();
+        }
+        @if (paymentHistory.Any())
+        {
+            <div style="margin-top:20px;border-top:1px solid #E2EBF3;padding-top:16px;">
+                <h4 style="font-family:Manrope,sans-serif;font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:12px;">Payment History</h4>
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;font-size:11px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #E2EBF3;">Date</th>
+                            <th style="text-align:left;font-size:11px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #E2EBF3;">Amount</th>
+                            <th style="text-align:left;font-size:11px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #E2EBF3;">Method</th>
+                            <th style="text-align:left;font-size:11px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #E2EBF3;">Reference</th>
+                            <th style="text-align:left;font-size:11px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #E2EBF3;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var payment in paymentHistory)
+                        {
+                            <tr style="@(payment.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
+                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;">@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
+                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;font-weight:600;">@(cs)@payment.Amount.ToString("N2")</td>
+                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;">@payment.PaymentMethodName</td>
+                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;color:#5E7385;">@(payment.Reference ?? "—")</td>
+                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;">
+                                    @if (payment.IsVoided)
+                                    {
+                                        <span style="display:inline-block;padding:2px 8px;background:#FDEAEA;color:#C24A4A;border-radius:4px;font-size:11px;font-weight:600;">Voided</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="display:inline-block;padding:2px 8px;background:#E6F7EF;color:#129867;border-radius:4px;font-size:11px;font-weight:600;">Received</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}
+
+<!-- Payment Schedule -->
+@await Html.PartialAsync("_PaymentScheduleSection")
+
+@if (ViewBag.HasPaymentReminderAccess == true)
+{
+    <!-- Reminder History Panel -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        @await Html.PartialAsync("_ReminderHistoryPanel")
+        <div style="margin-top:16px;">
+            <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 16px;" onclick="openTestSendModal(@invoice.Id, '@invoice.InvoiceNumber', '@ViewBag.CustomerName', '€@invoice.TotalAmount.ToString("N2")')">Send Test Reminder</button>
+        </div>
+    </section>
+
+    <!-- Test Send Modal -->
+    @await Html.PartialAsync("_TestSendModal")
+}
 
 <!-- Back link -->
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
@@ -309,8 +403,11 @@
     <script>
         var invoiceId = @invoice.Id;
 
-        // Load reminder history on page load
-        loadReminderHistory(invoiceId);
+        // Load reminder history on page load (only if payment reminder module is accessible)
+        @if (ViewBag.HasPaymentReminderAccess == true)
+        {
+            <text>loadReminderHistory(invoiceId);</text>
+        }
 
         // Load unsubmitted periods on page load
         (async function loadPeriods() {

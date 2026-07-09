@@ -1,0 +1,509 @@
+@*
+    Payment Schedule Section — Partial View
+
+    Self-contained section included on Invoice Detail pages (Revenue and Invoice).
+    Renders a container that is populated by /js/payment-schedule.js via AJAX
+    from the AxGetPaymentSchedule endpoint (RevenueController).
+
+    The JS module reads data-invoice-id and data-has-permission attributes
+    from #scheduleContainer and handles three states:
+      1. No schedule exists — empty state with "Create Payment Schedule" button (permission-gated)
+      2. Schedule exists — progress bar, instalment table, edit/delete controls, history accordion
+      3. Read-only mode — schedule data without edit controls (no permission)
+
+    ViewData expected:
+      ViewData["InvoiceId"]             — int, the invoice to load the schedule for
+      ViewData["HasSchedulePermission"] — bool, whether user can create/edit/delete schedules
+*@
+
+@{
+    var invoiceId = (int)ViewData["InvoiceId"]!;
+    var hasPermission = (bool)ViewData["HasSchedulePermission"]!;
+    var outstandingBalance = ViewData["OutstandingBalance"] != null ? (decimal)ViewData["OutstandingBalance"]! : 0m;
+    var invoiceNumber = ViewData["InvoiceNumber"] as string ?? "";
+    var currencySymbol = ViewData["ScheduleCurrencySymbol"] as string ?? "€";
+}
+
+<style>
+    /* Payment Schedule Form Styles */
+    .form-heading {
+        font-family: Manrope, sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: #0B1B28;
+        margin-bottom: 20px;
+    }
+
+    .invoice-info {
+        background: #EEF4F8;
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        color: #0B1B28;
+    }
+
+    .instalment-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border: 1px solid #E2EBF3;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        background: #fff;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .instalment-row:hover {
+        border-color: #57B8E8;
+        box-shadow: 0 2px 8px rgba(87, 184, 232, 0.1);
+    }
+
+    .instalment-num {
+        font-size: 13px;
+        font-weight: 700;
+        color: #5E7385;
+        min-width: 24px;
+    }
+
+    .instalment-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .instalment-field label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #5E7385;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .instalment-field input {
+        border: 1px solid #E2EBF3;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 14px;
+        font-family: Inter, sans-serif;
+        width: 150px;
+        outline: none;
+        transition: border-color 0.15s;
+        color: #0B1B28;
+    }
+
+    .instalment-field input:focus {
+        border-color: #0D5EA6;
+    }
+
+    .instalment-remove {
+        margin-left: auto;
+        background: transparent;
+        border: none;
+        color: #C24A4A;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        line-height: 1;
+    }
+
+    .instalment-remove:hover {
+        background: #FDEAEA;
+    }
+
+    .form-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 20px;
+        border-top: 1px solid #E2EBF3;
+    }
+
+    .btn-link {
+        background: transparent;
+        color: #0D5EA6;
+        padding: 6px 0;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-link:hover {
+        text-decoration: underline;
+    }
+
+    .validation-summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .validation-ok {
+        background: #E6F7EF;
+        color: #129867;
+    }
+
+    .validation-error {
+        background: #FDEAEA;
+        color: #C24A4A;
+    }
+
+    .validation-warning {
+        background: #FEF3DC;
+        color: #C8912E;
+    }
+
+    /* Warning banner for VAT */
+    .warning-banner {
+        background: #FEF3DC;
+        border-left: 4px solid #C8912E;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 20px 0;
+    }
+
+    .warning-banner-content {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .warning-banner-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .warning-banner-text {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #6B5300;
+    }
+
+    .warning-banner-note {
+        font-size: 13px;
+        color: #8B7020;
+        margin-top: 8px;
+    }
+
+    /* Active schedule styles */
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .card-header h3 {
+        font-family: Manrope, sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: #0B1B28;
+        margin: 0;
+    }
+
+    .card-header-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .progress-summary {
+        margin-bottom: 24px;
+    }
+
+    .progress-summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #5E7385;
+        margin-bottom: 8px;
+    }
+
+    .progress-track {
+        height: 6px;
+        background: #E2EBF3;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #129867;
+        border-radius: 3px;
+        transition: width 0.4s ease;
+    }
+
+    #paymentScheduleSection table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    #paymentScheduleSection thead th {
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        color: #5E7385;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 10px 12px;
+        border-bottom: 2px solid #E2EBF3;
+    }
+
+    #paymentScheduleSection tbody td {
+        padding: 12px;
+        font-size: 14px;
+        border-bottom: 1px solid #E2EBF3;
+        vertical-align: middle;
+    }
+
+    #paymentScheduleSection tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Status badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-paid { background: #E6F7EF; color: #129867; }
+    .badge-pending { background: #FEF3DC; color: #C8912E; }
+    .badge-due { background: #E8F1FB; color: #0D5EA6; }
+    .badge-overdue { background: #FDEAEA; color: #C24A4A; }
+    .badge-partial { background: #FEF3DC; color: #C8912E; }
+
+    .btn-danger-text {
+        background: transparent;
+        color: #C24A4A;
+        border: 1px solid #C24A4A;
+        padding: 6px 14px;
+        font-size: 13px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-danger-text:hover {
+        background: #FDEAEA;
+    }
+
+    .btn-sm {
+        padding: 6px 14px;
+        font-size: 13px;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+    }
+
+    .empty-state-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #EEF4F8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 28px;
+    }
+
+    .empty-state-title {
+        font-family: Manrope, sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: #0B1B28;
+        margin-bottom: 8px;
+    }
+
+    .empty-state-text {
+        font-size: 14px;
+        color: #5E7385;
+        margin-bottom: 24px;
+        max-width: 360px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Timeline styles */
+    .timeline {
+        position: relative;
+        padding-left: 28px;
+    }
+
+    .timeline::before {
+        content: "";
+        position: absolute;
+        left: 7px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        background: #E2EBF3;
+    }
+
+    .timeline-entry {
+        position: relative;
+        padding-bottom: 24px;
+    }
+
+    .timeline-entry:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-dot {
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .timeline-dot-blue { background: #0D5EA6; }
+    .timeline-dot-green { background: #129867; }
+
+    .timeline-text {
+        font-size: 14px;
+        line-height: 1.5;
+        color: #0B1B28;
+    }
+
+    .timeline-time {
+        font-size: 12px;
+        color: #5E7385;
+        margin-top: 4px;
+    }
+</style>
+
+<section class="glass card-pad" id="paymentScheduleSection" style="margin-top:24px;">
+    <div id="scheduleContainer"
+         data-invoice-id="@invoiceId"
+         data-has-permission="@hasPermission.ToString().ToLower()"
+         data-outstanding-balance="@outstandingBalance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+         data-invoice-number="@invoiceNumber"
+         data-currency-symbol="@currencySymbol">
+
+        <!-- Loading state (shown until JS populates content) -->
+        <div id="scheduleLoading" style="text-align:center;padding:24px 0;color:#5E7385;font-size:14px;">
+            Loading payment schedule...
+        </div>
+
+        <!-- Empty state (no schedule exists) — toggled by JS -->
+        <div id="scheduleEmpty" style="display:none;">
+            <div style="text-align:center;padding:48px 24px;">
+                <div style="width:72px;height:72px;border-radius:50%;background:#EEF4F8;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;">&#128197;</div>
+                <div style="font-family:Manrope,sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin-bottom:8px;">No payment schedule for this invoice</div>
+                <p style="font-size:14px;color:#5E7385;margin-bottom:24px;max-width:360px;margin-left:auto;margin-right:auto;">
+                    Create an instalment plan to track how this invoice will be paid over time.
+                </p>
+                @if (hasPermission)
+                {
+                    <button type="button" class="btn btn-primary" id="btnCreateSchedule">Create Payment Schedule</button>
+                }
+                else
+                {
+                    <!-- Upgrade teaser — compact version of PlanSoftGate -->
+                    <div style="margin-top:8px;">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                        <p style="font-size:13px;color:#5E7385;line-height:1.6;max-width:380px;margin:0 auto 16px;">
+                            Schedule instalment plans, auto-match payments, and track progress with VAT deadline warnings.
+                        </p>
+                        <div style="display:inline-block;padding:8px 16px;background:#EEF4F8;border-radius:10px;margin-bottom:16px;">
+                            <span style="font-size:12px;color:#0B1B28;font-weight:600;">Available in the <span style="color:#0D5EA6;">Professional</span> plan</span>
+                        </div>
+                        <br />
+                        <a href="/Account/Billing" style="display:inline-block;margin-top:8px;padding:10px 24px;background:#0D5EA6;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">
+                            Go to Billing
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Active schedule state — toggled by JS -->
+        <div id="scheduleActive" style="display:none;">
+
+            <!-- Header row with title and action buttons -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                <h3 style="font-family:Manrope,sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin:0;">Payment Schedule</h3>
+                @if (hasPermission)
+                {
+                    <div style="display:flex;gap:8px;" id="scheduleActions">
+                        <button type="button" class="btn btn-secondary" style="padding:6px 14px;font-size:13px;" id="btnEditSchedule">Edit</button>
+                        <button type="button" class="btn" style="background:transparent;color:#C24A4A;border:1px solid #C24A4A;padding:6px 14px;font-size:13px;border-radius:8px;font-weight:600;cursor:pointer;" id="btnDeleteSchedule">Delete</button>
+                    </div>
+                }
+            </div>
+
+            <!-- Progress summary -->
+            <div id="scheduleProgress" style="margin-bottom:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#5E7385;margin-bottom:8px;">
+                    <span id="progressCountText">0 of 0 instalments paid</span>
+                    <span id="progressAmountText">&euro;0 received of &euro;0 total</span>
+                </div>
+                <div style="height:6px;background:#E2EBF3;border-radius:3px;overflow:hidden;">
+                    <div id="progressBar" style="height:100%;background:#129867;border-radius:3px;transition:width 0.4s ease;width:0%;"></div>
+                </div>
+            </div>
+
+            <!-- Instalment table -->
+            <table style="width:100%;border-collapse:collapse;" id="instalmentTable">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.5px;padding:10px 12px;border-bottom:2px solid #E2EBF3;">#</th>
+                        <th style="text-align:left;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.5px;padding:10px 12px;border-bottom:2px solid #E2EBF3;">Amount</th>
+                        <th style="text-align:left;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.5px;padding:10px 12px;border-bottom:2px solid #E2EBF3;">Due Date</th>
+                        <th style="text-align:left;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.5px;padding:10px 12px;border-bottom:2px solid #E2EBF3;">Status</th>
+                        <th style="text-align:left;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:0.5px;padding:10px 12px;border-bottom:2px solid #E2EBF3;">Payment</th>
+                    </tr>
+                </thead>
+                <tbody id="instalmentTableBody">
+                    <!-- Rows rendered by payment-schedule.js -->
+                </tbody>
+            </table>
+
+            <!-- History accordion -->
+            <div id="scheduleHistorySection" style="margin-top:24px;">
+                <div style="cursor:pointer;display:flex;align-items:center;gap:8px;" id="historyToggle">
+                    <span style="font-family:Manrope,sans-serif;font-size:14px;font-weight:700;color:#0B1B28;">Schedule History</span>
+                    <span id="historyArrow" style="font-size:12px;color:#5E7385;transition:transform 0.2s;">&#9660;</span>
+                </div>
+                <div id="historyContent" style="display:none;margin-top:16px;">
+                    <div id="historyTimeline">
+                        <!-- Timeline entries rendered by payment-schedule.js -->
+                    </div>
+                    <div id="historyEmpty" style="display:none;font-size:13px;color:#5E7385;font-style:italic;">
+                        No modifications recorded.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+<script src="~/js/payment-schedule.js"></script>

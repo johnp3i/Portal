@@ -25,13 +25,14 @@ public static class PortalModules
     public const string Api = "api";
     public const string Webhooks = "webhooks";
     public const string MultiCurrency = "multi_currency";
+    public const string SchedulePayments = "schedule_payments";
 
     public static readonly string[] All =
     {
         Customer, Quotation, Invoice, Revenue, Purchase, Vat, Credit, Audit, Products,
         PaymentLinkManual, PaymentReminderManual, PaymentLinkAuto, PaymentReminderAuto,
         Cashflow, Pnl, ExpenseInsights, Attachments, ClientPortal,
-        ActivityTimeline, AuditLog, Api, Webhooks, MultiCurrency
+        ActivityTimeline, AuditLog, Api, Webhooks, MultiCurrency, SchedulePayments
     };
 
     public static bool IsValid(string module) => module is not null && All.Contains(module);

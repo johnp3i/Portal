@@ -48,6 +48,7 @@ public class VoidPaymentPropertyTests
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
             mockFinancialStatusEngine.Object,
+            new Mock<IPaymentScheduleService>().Object,
             null!);
 
         return (service, mockPaymentRepo);
@@ -178,6 +179,7 @@ public class VoidPaymentPropertyTests
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
             mockFinancialStatusEngine.Object,
+            new Mock<IPaymentScheduleService>().Object,
             null!);
 
         // Act

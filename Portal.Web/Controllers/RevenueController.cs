@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
+using Portal.Web.Models;
 using Portal.Web.Security;
 
 namespace Portal.Web.Controllers;
@@ -21,6 +22,9 @@ public class RevenueController : Controller
     private readonly IInvoiceService _invoiceService;
     private readonly IBusinessService _businessService;
     private readonly IPermissionService _permissionService;
+    private readonly IPlanCheckService _planCheckService;
+    private readonly IPaymentScheduleService _paymentScheduleService;
+    private readonly IPaymentScheduleOverviewService _paymentScheduleOverviewService;
 
     public RevenueController(
         IPaymentService paymentService,
@@ -31,7 +35,10 @@ public class RevenueController : Controller
         ICustomerService customerService,
         IInvoiceService invoiceService,
         IBusinessService businessService,
-        IPermissionService permissionService)
+        IPermissionService permissionService,
+        IPlanCheckService planCheckService,
+        IPaymentScheduleService paymentScheduleService,
+        IPaymentScheduleOverviewService paymentScheduleOverviewService)
     {
         _paymentService = paymentService;
         _dashboardService = dashboardService;
@@ -42,6 +49,9 @@ public class RevenueController : Controller
         _invoiceService = invoiceService;
         _businessService = businessService;
         _permissionService = permissionService;
+        _planCheckService = planCheckService;
+        _paymentScheduleService = paymentScheduleService;
+        _paymentScheduleOverviewService = paymentScheduleOverviewService;
     }
 
     // === Page Actions (return Views) ===
@@ -82,13 +92,18 @@ public class RevenueController : Controller
         // Payment Reminders teaser — show if user doesn't have payment_reminder_auto access
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         var showReminderTeaser = false;
+        var showCashFlowTeaser = false;
         if (!string.IsNullOrEmpty(userId))
         {
             var permissions = await _permissionService.GetAllAccessLevelsAsync(userId, businessId);
             var hasAutoAccess = permissions.TryGetValue("payment_reminder_auto", out var level) && level != "none";
             showReminderTeaser = !hasAutoAccess;
+
+            var hasCfAccess = permissions.TryGetValue("cashflow", out var cfLevel) && cfLevel != "none";
+            showCashFlowTeaser = !hasCfAccess;
         }
         ViewBag.ShowPaymentReminderTeaser = showReminderTeaser;
+        ViewBag.ShowCashFlowTeaser = showCashFlowTeaser;
 
         return View();
     }
@@ -162,7 +177,88 @@ public class RevenueController : Controller
         ViewBag.IsOverdue = isOverdue;
         ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
+        // Payment Schedule section data
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        var hasSchedulePermission = await HasSchedulePaymentsAccessAsync(userId, businessId);
+        ViewData["InvoiceId"] = id;
+        ViewData["HasSchedulePermission"] = hasSchedulePermission;
+        ViewData["OutstandingBalance"] = outstandingBalance;
+        ViewData["InvoiceNumber"] = invoice.InvoiceNumber;
+        ViewData["ScheduleCurrencySymbol"] = profile?.CurrencySymbol ?? "€";
+
         return View();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PaymentSchedules()
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            // Check plan-level access first
+            var isInPlan = await _planCheckService.IsModuleInPlanAsync(PortalModules.SchedulePayments);
+            if (!isInPlan)
+            {
+                var requiredPlan = await _planCheckService.GetRequiredPlanForModuleAsync(PortalModules.SchedulePayments) ?? "Professional";
+                return View("PlanSoftGate", new SoftGateViewModel
+                {
+                    ModuleName = PortalModules.SchedulePayments,
+                    ModuleDisplayName = "Payment Schedules",
+                    ModuleDescription = "Create instalment plans for your invoices, automatically match payments to scheduled instalments, track progress with visual timelines, and receive VAT deadline warnings — all in one place.",
+                    RequiredPlanName = requiredPlan,
+                    CurrentPlanName = "your current plan"
+                });
+            }
+
+            // Then check user-level permission
+            var accessLevel = await _permissionService.GetAccessLevelAsync(userId, PortalModules.SchedulePayments, businessId);
+            if (accessLevel == "none")
+            {
+                return View("PlanSoftGate", new SoftGateViewModel
+                {
+                    ModuleName = PortalModules.SchedulePayments,
+                    ModuleDisplayName = "Payment Schedules",
+                    ModuleDescription = "Create instalment plans for your invoices, automatically match payments to scheduled instalments, track progress with visual timelines, and receive VAT deadline warnings — all in one place.",
+                    RequiredPlanName = "Professional",
+                    CurrentPlanName = "your current plan"
+                });
+            }
+
+            return View();
+        }
+        catch (Exception ex)
+        {
+            return RedirectToAction(nameof(Dashboard));
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetPaymentSchedulesOverview()
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            // Check plan-level access
+            var isInPlan = await _planCheckService.IsModuleInPlanAsync(PortalModules.SchedulePayments);
+            if (!isInPlan)
+                return Json(new { success = false, message = "Payment Schedules is available in the Professional plan. Please upgrade to access this feature." });
+
+            // Check user-level permission
+            var accessLevel = await _permissionService.GetAccessLevelAsync(userId, PortalModules.SchedulePayments, businessId);
+            if (accessLevel == "none")
+                return Json(new { success = false, message = "You do not have permission to view payment schedules." });
+
+            var overview = await _paymentScheduleOverviewService.GetOverviewAsync(businessId);
+            return Json(new { success = true, data = overview });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred loading payment schedules." });
+        }
     }
 
     // === AJAX POST Actions ===
@@ -280,7 +376,173 @@ public class RevenueController : Controller
 
             return Json(new { success = true, data = invoicesWithBalance });
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    // === Payment Schedule AJAX Endpoints ===
+
+    private async Task<bool> HasSchedulePaymentsAccessAsync(string userId, int businessId)
+    {
+        var isInPlan = await _planCheckService.IsModuleInPlanAsync(PortalModules.SchedulePayments);
+        if (!isInPlan) return false;
+
+        var accessLevel = await _permissionService.GetAccessLevelAsync(userId, PortalModules.SchedulePayments, businessId);
+        return accessLevel != "none";
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostCreatePaymentSchedule([FromBody] CreatePaymentScheduleDto dto)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            if (!await HasSchedulePaymentsAccessAsync(userId, businessId))
+                return Json(new { success = false, message = "You do not have permission to manage payment schedules." });
+
+            var result = await _paymentScheduleService.CreateScheduleAsync(dto, businessId, userId);
+            return Json(new { success = result.Success, message = result.Success ? "Payment schedule created." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUpdateInstalment([FromBody] UpdateInstalmentDto dto)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            if (!await HasSchedulePaymentsAccessAsync(userId, businessId))
+                return Json(new { success = false, message = "You do not have permission to manage payment schedules." });
+
+            var result = await _paymentScheduleService.UpdateInstalmentAsync(dto, businessId, userId);
+            return Json(new { success = result.Success, message = result.Success ? "Instalment updated." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostAddInstalment([FromBody] AddInstalmentDto dto)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            if (!await HasSchedulePaymentsAccessAsync(userId, businessId))
+                return Json(new { success = false, message = "You do not have permission to manage payment schedules." });
+
+            var result = await _paymentScheduleService.AddInstalmentAsync(dto, businessId, userId);
+            return Json(new { success = result.Success, message = result.Success ? "Instalment added." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRemoveInstalment([FromBody] int instalmentId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            if (!await HasSchedulePaymentsAccessAsync(userId, businessId))
+                return Json(new { success = false, message = "You do not have permission to manage payment schedules." });
+
+            var result = await _paymentScheduleService.RemoveInstalmentAsync(instalmentId, businessId, userId);
+            return Json(new { success = result.Success, message = result.Success ? "Instalment removed." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostDeletePaymentSchedule([FromBody] int scheduleId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            if (!await HasSchedulePaymentsAccessAsync(userId, businessId))
+                return Json(new { success = false, message = "You do not have permission to manage payment schedules." });
+
+            var result = await _paymentScheduleService.DeleteScheduleAsync(scheduleId, businessId, userId);
+            return Json(new { success = result.Success, message = result.Success ? "Payment schedule deleted." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetPaymentSchedule(int invoiceId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var schedule = await _paymentScheduleService.GetScheduleByInvoiceIdAsync(invoiceId, businessId);
+            return Json(new { success = true, data = schedule });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetScheduleHistory(int scheduleId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var history = await _paymentScheduleService.GetScheduleHistoryAsync(scheduleId, businessId);
+            return Json(new { success = true, data = history });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetVatWarning(int invoiceId, string? firstDueDate, decimal firstAmount)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            DateOnly? parsedDueDate = null;
+            if (!string.IsNullOrWhiteSpace(firstDueDate))
+                parsedDueDate = DateOnly.Parse(firstDueDate);
+
+            var warning = await _paymentScheduleService.GetVatWarningAsync(invoiceId, parsedDueDate, firstAmount, businessId);
+            return Json(new { success = true, data = warning });
+        }
+        catch (Exception ex)
         {
             return Json(new { success = false, message = "An unexpected error occurred." });
         }

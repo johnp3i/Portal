@@ -82,6 +82,8 @@ public class InvoiceControllerDownloadPdfTests
             _viewRenderServiceMock.Object,
             _invoicePdfServiceMock.Object,
             Mock.Of<IPaymentInstructionsService>(),
+            Mock.Of<IPlanCheckService>(),
+            Mock.Of<IPermissionService>(),
             portalDbContext,
             _loggerMock.Object);
 

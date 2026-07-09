@@ -1,223 +1,209 @@
-# Implementation Plan: Audit & System Administration
+# Implementation Plan: Activity Log (Business Manager View)
 
 ## Overview
 
-This plan implements the Audit & System Administration module for the Portal platform. It adds automatic audit logging via an EF Core `SaveChangesInterceptor`, a SuperAdmin-only audit log viewer with filtered/paginated search, and a SuperAdmin-only user management interface with per-module permission controls. The implementation follows the established MVC + Service Layer pattern with Database-First EF Core, consistent with all existing Portal modules.
+This plan implements the business-facing Activity Log — a timeline-style activity feed that transforms raw audit data into plain-English summaries for business managers. The existing infrastructure (`[audit].[AuditLog]` table, `AuditLogQueryService`, `AuditLogQueryRepository`, `AuditInterceptor`) remains unchanged. The SuperAdmin audit viewer at `/Admin/Audit` is preserved. This feature builds a new presentation layer and controller at `/Activity` with business-friendly filters, relative timestamps, quick stats, and expandable detail panels.
 
 ## Tasks
 
-- [x] 1. Infrastructure — Data Layer
+- [x] 1. DTOs and Models
 
-  - [x] 1.1 SQL Migration — Audit Log Query Indexes
-    - Create `Portal.Database/Migrations/060_AddAuditLogQueryIndexes.sql`
-    - Add `IX_AuditLog_BusinessId_Timestamp` (BusinessId ASC, Timestamp DESC) on `[audit].[AuditLog]`
-    - Add `IX_AuditLog_BusinessId_Action` (BusinessId, Action) with INCLUDE (Timestamp, TableName, UserId, RecordId)
-    - Both `CREATE INDEX` statements wrapped in `IF NOT EXISTS` guards (idempotent)
-    - _Requirements: 2.1, 2.7_
+  - [x] 1.1 Create ActivityItemDto
+    - Create `Portal.Infrastructure/Models/ActivityItemDto.cs`
+    - Properties: `Id` (long), `Summary` (string — plain-English description), `ActorName` (string — resolved display name), `ActionType` (string — "Created", "Edited", "Deleted", "StatusChanged"), `EntityType` (string — business-friendly name like "Invoice", "Customer"), `EntityId` (string — RecordId), `EntityDisplayRef` (string? — human-readable identifier like INV-2026-0089), `EntityDetailUrl` (string? — link to detail page, null if deleted or no route), `RelativeTimestamp` (string — formatted relative time), `TimestampUtc` (DateTime), `OldValues` (string? — raw JSON), `NewValues` (string? — raw JSON), `ChangedFields` (List<FieldChangeDto>? — parsed field changes for detail panel)
+    - Create nested `FieldChangeDto`: `FieldName` (string), `OldValue` (string?), `NewValue` (string?)
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 6.6, 6.7, 6.8, 8.1–8.6_
 
-  - [x] 1.2 AuditLogFilter Model
-    - Create `Portal.Infrastructure/Models/AuditLogFilter.cs`
-    - Properties: `TableName` (string?), `Action` (string?), `UserId` (string?), `DateFrom` (DateTime?), `DateTo` (DateTime?), `PageNumber` (int, default 1), `PageSize` (int, default 20)
-    - No validation attributes — clamping is handled by the service layer
-    - _Requirements: 2.1, 2.5_
+  - [x] 1.2 Create ActivityStatsDto
+    - Create `Portal.Infrastructure/Models/ActivityStatsDto.cs`
+    - Properties: `ChangesThisWeek` (int), `ActiveTeamMembers` (int), `MostActiveArea` (string), `LastActivityRelative` (string)
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [x] 1.3 AuditLogQueryRepository
-    - Create `Portal.Infrastructure/Repositories/AuditLogQueryRepository.cs`
-    - Extends `GenericStoredProcedureRepository<AuditLog>`
-    - Implement `GetPagedAsync(int businessId, string? tableName, string? action, string? userId, DateTime? dateFrom, DateTime? dateTo, int skip, int take)` — EF Core LINQ, all non-null filters applied with AND logic, ordered by Timestamp DESC, returns `(List<AuditLog> Items, int TotalCount)`
-    - Implement `GetDistinctTableNamesAsync(int businessId)` — returns distinct TableName values alphabetically sorted
-    - All methods use `try/catch { throw; }` per repository standards
-    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.7_
-
-  - [x] 1.4 IAuditLogQueryService and AuditLogQueryService
-    - Create `Portal.Infrastructure/Services/IAuditLogQueryService.cs` and `AuditLogQueryService.cs`
-    - Interface: `Task<PagedResult<AuditLog>> GetAuditLogsAsync(AuditLogFilter filter)` and `Task<List<string>> GetDistinctTableNamesAsync()`
-    - Implementation: clamp PageSize to [1, 100] and PageNumber to minimum 1; scope all queries to `ICurrentTenantService.CurrentBusinessId`; return correctly populated `PagedResult<AuditLog>`
-    - When PageNumber exceeds TotalPages, Items is empty but TotalCount and TotalPages remain accurate
-    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9_
-
-  - [x] 1.5 AuditInterceptor
-    - Create `Portal.Infrastructure/Interceptors/AuditInterceptor.cs` (new `Interceptors/` folder)
-    - Extends `SaveChangesInterceptor`; constructor injects `ICurrentTenantService`, `IHttpContextAccessor`, `AuditLogRepository`
-    - Private `List<AuditEntry>? _pendingEntries` field (safe as scoped); private sealed `AuditEntry` inner class
-    - Phase 1 (`SavingChanges`/`SavingChangesAsync`): filter to Added/Modified/Deleted, skip AuditLog entities (recursion guard), build AuditEntry per entity; for Modified/Deleted read RecordId now; for Added leave RecordId empty; serialize only scalar non-shadow properties; for Modified include only IsModified==true properties in OldValues/NewValues
-    - Phase 2 (`SavedChanges`/`SavedChangesAsync`): fill identity PKs for Added entries from `entry.CurrentValues`; call `_auditLogRepository.InsertAsync` per entry; clear pending list; swallow and log InsertAsync failures (main save already succeeded — documented exception)
-    - UserId from `ClaimTypes.NameIdentifier`; null when HttpContext is null or claim absent — record still written
-    - Timestamp is `DateTime.UtcNow` captured at Phase 1
-    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14_
+  - [x] 1.3 Create ActivityFilterDto
+    - Create `Portal.Infrastructure/Models/ActivityFilterDto.cs`
+    - Properties: `WhatChanged` (string? — maps to TableName group), `WhoChanged` (string? — UserId or "system"), `ChangeType` (string? — "Created", "Edited", "Deleted", "StatusChanged"), `DateFrom` (DateTime?), `DateTo` (DateTime?), `PageNumber` (int, default 1), `PageSize` (int, default 8)
+    - _Requirements: 7.1, 7.2, 7.3, 7.5_
 
 
-- [x] 2. Infrastructure — User Admin Data Layer
+- [x] 2. Services — Activity Summary and Supporting Components
 
-  - [x] 2.1 UserAdminFilter, UserAdminDto, and UserModulePermissionDto Models
-    - Create `Portal.Infrastructure/Models/UserAdminFilter.cs`: `SearchTerm` (string?), `StatusFilter` (string?), `PageNumber` (int, default 1), `PageSize` (int, default 20)
-    - Create `Portal.Infrastructure/Models/UserAdminDto.cs`: `UserBusinessId` (int), `UserId` (string), `FullName` (string), `Email` (string), `Role` (string), `IsActive` (bool), `LastLoginUtc` (DateTime?)
-    - Create `Portal.Infrastructure/Models/UserModulePermissionDto.cs`: `PermissionId` (int?), `Module` (string), `AccessLevel` (string), `IsActive` (bool)
-    - _Requirements: 5.1, 5.2, 5.4, 6.1, 6.2_
+  - [x] 2.1 Create IActivitySummaryService interface
+    - Create `Portal.Infrastructure/Services/IActivitySummaryService.cs`
+    - Methods: `Task<List<ActivityItemDto>> TransformAsync(List<AuditLog> records)`, `Task<ActivityStatsDto> GetQuickStatsAsync()`
+    - _Requirements: 2.1, 5.1_
 
-  - [x] 2.2 UserAdminRepository
-    - Create `Portal.Infrastructure/Repositories/UserAdminRepository.cs`
-    - Extends `GenericStoredProcedureRepository<UserBusiness>`; constructor accepts `DbContext context`
-    - Implement `GetUsersPagedAsync(int businessId, string? searchTerm, bool? isActive, int skip, int take)` — EF Core LINQ with `.Include(ub => ub.User)`, case-insensitive contains on full name or email, returns `(List<UserBusiness> Items, int TotalCount)`
-    - Implement `GetByIdAsync(int userBusinessId)` — returns `UserBusiness?` with `.Include(ub => ub.User)`
-    - Implement `DeactivateAsync(int userBusinessId, DateTime deactivatedAtUtc)` — parameterized `ExecuteSqlRawAsync`, sets IsActive=false, DeactivatedAtUtc=@value
-    - Implement `ReactivateAsync(int userBusinessId)` — parameterized `ExecuteSqlRawAsync`, sets IsActive=true, DeactivatedAtUtc=NULL
-    - Implement `GetPermissionsAsync(int userBusinessId)` — returns `List<UserBusinessPermission>`
-    - Implement `UpsertPermissionAsync(int userBusinessId, string module, string accessLevel, bool isActive, DateTime? deactivatedAtUtc)` — checks for existing record, inserts or updates via `ExecuteSqlRawAsync`
-    - All methods use `try/catch { throw; }`; SQL uses full table names `[membership].[UserBusiness]`, `[membership].[UserBusinessPermission]`; all nullable SQL params use `?? (object)DBNull.Value`
-    - _Requirements: 5.1, 5.3, 5.5, 5.6, 6.1, 6.5, 6.6_
+  - [x] 2.2 Create UserNameResolver
+    - Create `Portal.Infrastructure/Services/UserNameResolver.cs`
+    - Inject `MembershipDbContext` and `ICurrentTenantService`
+    - Method: `Task<Dictionary<string, string>> ResolveNamesAsync(IEnumerable<string> userIds)` — single query to MembershipDbContext joining UserBusiness + AspNetUsers scoped to current BusinessId, returns dictionary of userId → "{FirstName} {LastInitial}." format
+    - When userId is null → return "System"
+    - When userId not found → return "Unknown User"
+    - Batch all unique userIds in one query to avoid N+1
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [x] 2.3 IUserAdminService and UserAdminService
-    - Create `Portal.Infrastructure/Services/IUserAdminService.cs` and `UserAdminService.cs`
-    - Interface: `GetUsersAsync`, `DeactivateUserAsync`, `ReactivateUserAsync`, `GetUserPermissionsAsync`, `UpdatePermissionAsync`
-    - `GetUsersAsync`: clamp pagination, map UserBusiness+User to UserAdminDto (FullName = FirstName + " " + LastName), scope to current tenant
-    - `GetUserPermissionsAsync`: return one UserModulePermissionDto per module in `PortalModules.All`, defaulting to AccessLevel="none", IsActive=false, PermissionId=null for modules with no existing record
-    - `UpdatePermissionAsync`: validate module (`PortalModules.IsValid`) and access level (`AccessLevels.IsValid`); upsert permission; set IsActive=false+DeactivatedAtUtc=UtcNow for "none", IsActive=true+DeactivatedAtUtc=null for "full"/"readonly"; write AuditLog entry (failures logged and swallowed)
-    - `DeactivateUserAsync`/`ReactivateUserAsync`: call repository, write AuditLog entry (failures logged and swallowed)
-    - Return `ServiceResult.Fail` for validation errors; `ServiceResult.Ok()` on success
-    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.8, 6.1, 6.5, 6.6, 6.8_
+  - [x] 2.3 Create RelativeTimestampFormatter
+    - Create `Portal.Infrastructure/Services/RelativeTimestampFormatter.cs`
+    - Static method: `string Format(DateTime timestampUtc, DateTime? nowUtc = null)` — accepts optional now for testability
+    - Rules: <60s → "Just now"; 1–59min → "{N} min ago"; 1–23h → "{N} hour ago" / "{N} hours ago"; yesterday → "Yesterday at {HH:mm}"; 2–6 days → "{N} days ago"; 7+ days → "dd MMM yyyy"
+    - All comparisons use UTC
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
 
-
-- [x] 3. Web — Audit Controller & View
-
-  - [x] 3.1 AuditController
-    - Create `Portal.Web/Controllers/AuditController.cs`
-    - Apply `[Authorize(Roles = "SuperAdmin")]`, `[ModuleAccess(PortalModules.Audit, AccessLevels.Full)]`, `[Route("Admin/Audit")]`
-    - Constructor injects `IAuditLogQueryService`, `MembershipDbContext`, `ICurrentTenantService`
-    - `[HttpGet("")]` `Index()`: load distinct table names and business users for filter dropdowns; assign to `ViewBag.TableNames` and `ViewBag.Users`; return `View()`
-    - `[HttpGet("Search")]` `Search(...)`: validate dateFrom <= dateTo; build AuditLogFilter; call `GetAuditLogsAsync`; resolve `userDisplayName` per result from loaded users dictionary; return `Json(new { success = true, data, totalCount, currentPage, totalPages })`
-    - On dateFrom > dateTo: return `Json(new { success = false, message = "Date From cannot be greater than Date To." })`
-    - On exception: log via Serilog, return `Json(new { success = false, message = "The search could not be completed. Please try again." })`
-    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
-
-  - [x] 3.2 Audit Log Viewer View
-    - Create `Portal.Web/Views/Audit/Index.cshtml`
-    - Topbar: eyebrow "Administration", heading "Audit Log"
-    - Filter card (`<section class="glass card-pad" style="margin-bottom:22px;">`): flex row (gap 14px, align-items flex-end) with Table Name select (ViewBag.TableNames, min-width 180px), Action select (All/Insert/Update/Delete), User select (ViewBag.Users, min-width 180px), Date From date input, Date To date input, Filter and Clear buttons (padding-bottom 2px wrapper)
-    - Data table card (`<section class="glass card-pad">`): `<table class="data-table">` with columns: expand toggle, Timestamp, User, Action, Table, Record ID; pagination row (margin-top 18px, flex space-between)
-    - JS `loadAuditLogs(page)`: client-side date validation (Swal warning if invalid, no submit); `BlockUI.show()`; fetch `/Admin/Audit/Search?...`; `BlockUI.hide()`; call `renderTable` and `renderPagination`
-    - `renderTable`: two `<tr>` per record (summary + hidden detail); action badges `badge--insert`/`badge--update`/`badge--delete`; expand/collapse on click (one open at a time, button rotates 180°); Update detail: two-column grid with changed properties highlighted (`background: rgba(13,94,166,0.08); border-left: 3px solid #0D5EA6`); Insert: full-width NewValues; Delete: full-width OldValues; empty state message when no records
-    - `renderPagination`: "Showing X–Y of Z" info, page buttons with `page-btn--active`, Prev/Next disabled at boundaries
-    - `document.addEventListener('DOMContentLoaded', () => loadAuditLogs(1))` triggers initial load
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12_
+  - [x] 2.4 Implement ActivitySummaryService
+    - Create `Portal.Infrastructure/Services/ActivitySummaryService.cs`
+    - Inject `ICurrentTenantService`, `UserNameResolver`, `AuditLogQueryRepository`
+    - `TransformAsync`: resolve actor names via UserNameResolver batch call; for each AuditLog record: determine ActionType (Insert→"Created", Update→"Edited" or "StatusChanged" if status field changed, Delete→"Deleted"); map TableName to entity type; resolve entity display ref from RecordId + JSON values; build summary string; parse field changes for detail panel; generate entity detail URL; format relative timestamp
+    - `GetQuickStatsAsync`: query AuditLog records for current tenant within last 7 days; compute total count, distinct non-null UserIds, most active TableName mapped to friendly name, last activity timestamp formatted with RelativeTimestampFormatter; return zeros/defaults if no records
+    - TableName mapping: Invoice/InvoiceLine→"Invoice", Quotation/QuotationLine/QuotationContact→"Quotation", Customer→"Customer", Purchase→"Purchase", Payment→"Payment", CreditNote/CreditNoteLine→"Credit Note", Business/BusinessProfile→"Settings"
+    - Status detection: changed fields ending in "StatusTypeId" or named "Status"
+    - Fallback: if JSON parsing fails or identifier can't be resolved, use raw TableName + RecordId
+    - Entity detail URLs: Invoice→`/Invoice/Details/{id}`, Customer→`/Customer/Details/{id}`, Quotation→`/Quotation/Details/{id}`, Purchase→`/Purchase/Details/{id}`; deleted entities or unknown types → null
+    - `try/catch (Exception ex) { throw; }` per repository standards
+    - _Requirements: 2.1–2.8, 3.1, 4.1–4.7, 5.1–5.5, 8.1–8.6_
 
 
-- [x] 4. Web — Admin Controller & Views
-
-  - [x] 4.1 UpdatePermissionRequest and ToggleStatusRequest Models
-    - Create `Portal.Web/Models/UpdatePermissionRequest.cs`: `UserBusinessId` (int), `Module` (string), `AccessLevel` (string)
-    - Create `Portal.Web/Models/ToggleStatusRequest.cs`: `UserBusinessId` (int), `Activate` (bool — true = reactivate, false = deactivate)
-    - Plain POCOs in `Portal.Web.Models` namespace; no validation attributes
-    - _Requirements: 5.3, 6.5, 6.6_
-
-  - [x] 4.2 AdminController
-    - Create `Portal.Web/Controllers/AdminController.cs`
-    - Apply `[Authorize(Roles = "SuperAdmin")]`, `[Route("Admin/Users")]`
-    - Constructor injects `IUserAdminService`, `ICurrentTenantService`, `UserManager<ApplicationUser>`
-    - `[HttpGet("")]` `Index(string? searchTerm, string? statusFilter, int page = 1)`: build UserAdminFilter; call `GetUsersAsync`; set `ViewBag.CurrentUserBusinessId`; return `View(pagedResult)`
-    - `[HttpGet("ModuleAccess/{userBusinessId:int}")]` `ModuleAccess(int userBusinessId)`: call `GetUserPermissionsAsync`; pass `PortalModules.All`, permissions, and user info via ViewBag; return `View()`
-    - `[HttpPost("UpdatePermission")]` `[ValidateAntiForgeryToken]` `UpdatePermission([FromBody] UpdatePermissionRequest request)`: validate module and access level; call `UpdatePermissionAsync`; return `Json(new { success, message })`
-    - `[HttpPost("ToggleStatus")]` `[ValidateAntiForgeryToken]` `ToggleStatus([FromBody] ToggleStatusRequest request)`: guard against self-deactivation; call `DeactivateUserAsync` or `ReactivateUserAsync`; return `Json(new { success, message })`
-    - All AJAX actions catch exceptions, log via Serilog, return `Json(new { success = false, message = "..." })`
-    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.7, 5.9, 5.10, 5.11, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.11, 6.12_
-
-  - [x] 4.3 User Management View
-    - Create `Portal.Web/Views/Admin/Index.cshtml` with model `PagedResult<UserAdminDto>`
-    - Topbar: eyebrow "Administration", heading "Users"
-    - Filter card (`<section class="glass card-pad" style="margin-bottom:22px;">`): flex row (gap 14px) with Search text input (placeholder "Name or email...", min-width 240px), Status select (All/Active/Inactive, min-width 160px), Filter and Clear buttons, Invite User button (btn-primary, links to `/Invitation/Create`, float right)
-    - Data table card: `<table class="data-table">` (Full Name, Email, Role, Status, Last Login, Actions); clicking a row navigates to `/Admin/Users/ModuleAccess/{userBusinessId}`; Status badge green=Active, red=Inactive; Last Login formatted "dd MMM yyyy HH:mm" or "Never"; Actions: Deactivate (danger) for active, Reactivate (primary) for inactive; self-row buttons disabled with tooltip "You cannot modify your own account."
-    - JS `deactivateUser`: Swal confirmation (`confirmButtonColor: '#C24A4A'`); `BlockUI.show()`; POST to `/Admin/Users/ToggleStatus` with `{ userBusinessId, activate: false }`; `BlockUI.hide()`; success Swal then `location.reload()` or error Swal
-    - JS `reactivateUser`: same pattern with `confirmButtonColor: '#0D5EA6'` and `activate: true`
-    - Filter form submits via GET (resets to page 1); pagination uses GET with `page` query parameter
-    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.9, 6.10, 6.11, 6.12_
-
-  - [x] 4.4 Module Access Manager View
-    - Create `Portal.Web/Views/Admin/ModuleAccess.cshtml`
-    - Topbar: eyebrow "Administration", heading "Module Access — {UserFullName}"
-    - Single permissions card (`<section class="glass card-pad">`): user info row (name, email, status badge); `<table class="data-table">` (Module, Access Level, Status); one row per module in `PortalModules.All` (from ViewBag.Modules); each row: module display name, segmented radio/toggle (Full | ReadOnly | None) pre-selected to current level, status badge (Active/Inactive); current user's row has all controls disabled with tooltip "You cannot modify your own permissions."; back link to `/Admin/Users`
-    - Each row stores current level in `data-current-level` attribute
-    - JS `updatePermission(userBusinessId, module, accessLevel, moduleName)`: Swal confirmation (`'#C24A4A'` for "none", `'#0D5EA6'` for grants); on cancel call `revertSelection(module)`; on confirm `BlockUI.show()`; POST to `/Admin/Users/UpdatePermission`; `BlockUI.hide()`; on success show success Swal and call `updateStatusBadge(module, accessLevel)`; on failure call `revertSelection(module)` and show error Swal
-    - `revertSelection(module)`: reads `data-current-level` and resets radio/toggle state
-    - `updateStatusBadge(module, accessLevel)`: updates status badge without page reload
-    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11_
+- [x] 3. Checkpoint — Service Layer Complete
+  - Ensure all DTOs and services compile cleanly
+  - Verify `UserNameResolver` batch resolution logic
+  - Verify `RelativeTimestampFormatter` covers all time brackets
+  - Verify `ActivitySummaryService` handles all action types and TableName mappings
+  - Ask the user if questions arise
 
 
-- [x] 5. Registration
+- [x] 4. Web — Activity Controller
 
-  - [x] 5.1 DI Registration in Program.cs
-    - Register `AuditInterceptor` as scoped: `builder.Services.AddScoped<AuditInterceptor>()`
-    - Replace existing `AddDbContext<PortalDbContext>` with factory lambda: `builder.Services.AddDbContext<PortalDbContext>((sp, options) => { options.UseSqlServer(...); options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>()); })`
-    - Register `AuditLogQueryRepository` as scoped using `PortalDbContext`
-    - Register `IAuditLogQueryService` → `AuditLogQueryService` as scoped
-    - Register `UserAdminRepository` as scoped using `MembershipDbContext`
-    - Register `IUserAdminService` → `UserAdminService` as scoped
-    - Add required `using` directives for new namespaces
-    - Do not duplicate or remove the existing `AuditLogRepository` registration
-    - _Requirements: 1.1, 2.1, 5.1_
+  - [x] 4.1 Create ActivityController
+    - Create `Portal.Web/Controllers/ActivityController.cs`
+    - Apply `[Authorize]`, `[ModuleAccess(PortalModules.Audit, AccessLevels.ReadOnly)]`, `[Route("Activity")]`
+    - Do NOT require SuperAdmin role — any user with `audit_log` module at ReadOnly or Full level has access
+    - Constructor injects `IActivitySummaryService`, `IAuditLogQueryService`, `ICurrentTenantService`, `MembershipDbContext`, `ILogger<ActivityController>`
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
+  - [x] 4.2 Implement Index action
+    - `[HttpGet("")]` `Index()`: load team members for filter dropdown (query MembershipDbContext UserBusiness + AspNetUsers scoped to current business); pass to ViewBag.TeamMembers as list of `{ UserId, DisplayName }` objects; return `View()`
+    - _Requirements: 1.1, 7.2_
 
-- [x] 6. Property-Based Tests
+  - [x] 4.3 Implement AxGetActivity endpoint
+    - `[HttpGet("AxGetActivity")]` — accepts `ActivityFilterDto` from query string
+    - Map `WhatChanged` filter to list of TableName values (e.g., "Invoices" → ["Invoice", "InvoiceLine"])
+    - Map `WhoChanged` filter: "system" → filter UserId IS NULL; specific userId → filter exact match; null/empty → no filter
+    - Map `ChangeType` filter: "Created"→Action "Insert", "Edited"→Action "Update", "Deleted"→Action "Delete", "StatusChanged"→Action "Update" + post-filter for status fields in JSON
+    - Build `AuditLogFilter` from mapped values; call `IAuditLogQueryService.GetAuditLogsAsync`
+    - Transform results via `IActivitySummaryService.TransformAsync`
+    - For "StatusChanged" filter: post-filter transformed results to only include items where ActionType == "StatusChanged"
+    - Return `Json(new { success = true, data = activityItems, totalCount, currentPage, totalPages })`
+    - On exception: log, return `Json(new { success = false, message = "Could not load activity data. Please try again." })`
+    - _Requirements: 6.10, 6.11, 6.13, 6.14, 7.1, 7.3, 7.4, 7.5_
 
-  - [x] 6.1 PBT — AuditInterceptor Properties (Properties 1–6)
-    - Create `Portal.Tests/PropertyBased/AuditInterceptorPropertyTests.cs`
-    - Use FsCheck.Xunit `[Property(MaxTest = 100)]`; in-memory DbContext with Moq for `ICurrentTenantService` and `IHttpContextAccessor`
-    - Each method includes `// Feature: audit-system-administration, Property N: <property_text>` comment
-    - **Property 1**: for N entities in Added/Modified/Deleted state (excluding AuditLog), exactly N AuditLog records are written
-    - **Property 2**: for any entity in Added/Modified/Deleted state, `AuditLog.Action` is "Insert"/"Update"/"Delete" respectively and no other value
-    - **Property 3**: for a Modified entity with a random subset of IsModified=true properties, OldValues and NewValues JSON contain exactly those modified properties (original vs. current values)
-    - **Property 4**: `AuditLog.TableName` equals `entry.Metadata.GetTableName()` for the entity type
-    - **Property 5**: BusinessId and UserId are resolved from injected services; when HttpContext is null or claim absent, UserId is null and record is still written
-    - **Property 6**: AuditLog entities in the change tracker produce zero additional AuditLog records
-    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.8, 1.9, 1.10_
-
-  - [x] 6.2 PBT — AuditLogQueryService Properties (Properties 7–11)
-    - Create `Portal.Tests/PropertyBased/AuditLogQueryServicePropertyTests.cs`
-    - Use FsCheck.Xunit `[Property(MaxTest = 100)]`; in-memory `PortalDbContext` seeded with generated AuditLog records
-    - Each method includes `// Feature: audit-system-administration, Property N: <property_text>` comment
-    - **Property 7**: every record in the result has BusinessId equal to the current tenant's value; no records from other businesses appear
-    - **Property 8**: for any combination of filter parameters, the result set satisfies all specified conditions simultaneously (AND logic) and is a subset of the unfiltered result
-    - **Property 9**: for any result set, all consecutive pairs satisfy `items[i].Timestamp >= items[i+1].Timestamp` (descending order)
-    - **Property 10**: for any valid PageNumber and PageSize (after clamping): `items.Count <= PageSize`; `TotalPages == Math.Ceiling(TotalCount / (double)PageSize)`; pages do not overlap; when PageNumber > TotalPages, items is empty and TotalCount/TotalPages are still correct
-    - **Property 11**: PageSize < 1 is clamped to 1; PageSize > 100 is clamped to 100; values in [1, 100] are used as-is
-    - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9_
-
-  - [x] 6.3 PBT — UserAdminService Properties (Properties 12–13)
-    - Create `Portal.Tests/PropertyBased/UserAdminServicePropertyTests.cs`
-    - Use FsCheck.Xunit `[Property(MaxTest = 100)]`; in-memory `MembershipDbContext`
-    - Each method includes `// Feature: audit-system-administration, Property N: <property_text>` comment
-    - **Property 12**: for any user-module combination and any valid access level, after `UpdatePermissionAsync` the stored record reflects the new level; "none" → IsActive=false, DeactivatedAtUtc non-null; "full"/"readonly" → IsActive=true, DeactivatedAtUtc=null
-    - **Property 13**: `DeactivateUserAsync` → IsActive=false, DeactivatedAtUtc non-null; `ReactivateUserAsync` → IsActive=true, DeactivatedAtUtc=null; operations are inverses (deactivate then reactivate yields IsActive=true, DeactivatedAtUtc=null)
-    - _Requirements: 5.3, 5.4, 5.5, 5.6, 6.5, 6.6_
+  - [x] 4.4 Implement AxGetStats endpoint
+    - `[HttpGet("AxGetStats")]` — no parameters
+    - Call `IActivitySummaryService.GetQuickStatsAsync()`
+    - Return `Json(new { success = true, data = statsDto })`
+    - On exception: log, return `Json(new { success = false, message = "Could not load statistics." })`
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
 
-## Task Dependency Graph
+- [x] 5. Checkpoint — Controller Layer Complete
+  - Ensure ActivityController compiles
+  - Verify all AJAX endpoints follow the `AxGet` prefix naming convention
+  - Verify ModuleAccess attribute uses ReadOnly (not Full, not SuperAdmin)
+  - Ask the user if questions arise
 
-```json
-{
-  "waves": [
-    { "id": 0, "tasks": ["1.1", "1.2", "2.1", "4.1"] },
-    { "id": 1, "tasks": ["1.3", "2.2"] },
-    { "id": 2, "tasks": ["1.4", "2.3"] },
-    { "id": 3, "tasks": ["1.5", "3.1", "6.2"] },
-    { "id": 4, "tasks": ["4.2", "6.1", "6.3"] },
-    { "id": 5, "tasks": ["3.2", "4.3", "4.4", "5.1"] }
-  ]
-}
-```
+
+- [x] 6. Web — Activity Log View
+
+  - [x] 6.1 Create Views/Activity/Index.cshtml
+    - Topbar: eyebrow "Business Operations", heading "Activity Log" (42px Manrope), muted description "Track what your team changed and when."
+    - Quick stats row: 4 stat cards in a flex/grid row — "Changes this week" (number), "By team members" (number + "people"), "Most active area" (text), "Last activity" (relative timestamp); cards use `glass` styling with subtle icon/color per stat
+    - Filter card (`<section class="glass card-pad" style="margin-bottom:22px;">`): flex row (gap 14px, align-items flex-end, flex-wrap wrap) with: "What changed" select (min-width 180px, options: Everything, Invoices, Quotations, Customers, Purchases, Payments, Credit Notes, Settings), "Who" select (min-width 180px, options: Everyone, System, then team members from ViewBag.TeamMembers), "Type" select (min-width 160px, options: All changes, Created, Edited, Deleted, Status changed), Date From input, Date To input, Filter button (btn-primary), Clear button (btn-secondary) — buttons in padding-bottom 2px wrapper
+    - Timeline container (`<section class="glass card-pad">`): vertical timeline line via CSS pseudo-element; each activity entry: colored dot (green=Created, blue=Edited, red=Deleted, amber=StatusChanged), summary text with entity links, relative timestamp, expand/collapse chevron
+    - Detail panel (expandable, slide-down): Created → "Created with values" table; Edited → "What changed" table (old values strikethrough red, new values bold green); Deleted → "Deleted record" table
+    - Pagination row (margin-top 18px): "Showing X–Y of Z" left, page buttons right, default 8 per page
+    - Empty state: centered message "No activity found." within the timeline card
+    - _Requirements: 6.1–6.16, 9.1–9.4_
+
+  - [x] 6.2 Implement client-side JavaScript
+    - `loadStats()`: fetch `/Activity/AxGetStats`; populate stat cards; call on DOMContentLoaded
+    - `loadActivity(page)`: `BlockUI.show('Loading activity...')`; build query params from filter fields; fetch `/Activity/AxGetActivity?...`; `BlockUI.hide()`; on success render timeline + pagination; on error show SweetAlert2 error (title "Error", text "Could not load activity data. Please try again.", confirmButtonColor '#0D5EA6')
+    - `renderTimeline(items)`: build timeline HTML with colored dots, summaries, relative timestamps, expand controls, entity links (anchor tags for EntityDetailUrl, plain text if null); expand/collapse on row click (one at a time with slide animation)
+    - `renderDetailPanel(item)`: parse ChangedFields; Created: single-column values table; Edited: two-column old/new with styling; Deleted: single-column deleted values table
+    - `renderPagination(currentPage, totalPages, totalCount)`: "Showing X–Y of Z", page buttons, 8 per page
+    - Filter button click → `loadActivity(1)`; Clear button click → reset all selects to first option, clear date inputs, `loadActivity(1)`
+    - `DOMContentLoaded` → `loadStats()` then `loadActivity(1)`
+    - _Requirements: 6.1, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 6.11, 6.12, 6.13, 6.14, 6.15_
+
+  - [x] 6.3 Add responsive CSS for mobile
+    - Media query `@media (max-width: 640px)`: stats row → 2-column grid; filters → vertical stack full-width; hide timeline vertical line; reduce activity row left padding; detail panels full-width without left offset
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+
+
+- [x] 7. Sidebar Navigation Update
+
+  - [x] 7.1 Add Activity Log to sidebar
+    - Add "Activity Log" link in the "Business Operations" sidebar section pointing to `/Activity`
+    - Use an appropriate timeline/activity icon (e.g., clock or list icon from existing icon set)
+    - Conditionally show based on subscription plan having `audit_log` feature key (use existing plan feature check pattern)
+    - Keep the existing "Audit Log" link in the "Administration" section at `/Admin/Audit` — do NOT remove it
+    - _Requirements: 1.5, 10.1, 10.3, 10.4_
+
+
+- [x] 8. DI Registration
+
+  - [x] 8.1 Register new services in Program.cs
+    - Register `UserNameResolver` as scoped
+    - Register `IActivitySummaryService` → `ActivitySummaryService` as scoped
+    - Do NOT modify existing `IAuditLogQueryService`, `AuditLogQueryRepository`, or `AuditInterceptor` registrations — they are already in place
+    - Add required `using` directives
+    - _Requirements: 1.1, 2.1, 3.1, 5.1_
+
+
+- [x] 9. Final Checkpoint
+  - Ensure full project compiles without errors
+  - Verify `/Activity` route is accessible with `audit_log` module at ReadOnly level
+  - Verify `/Admin/Audit` SuperAdmin route still works (no regression)
+  - Verify sidebar shows Activity Log in Business Operations section
+  - Verify quick stats load on page entry
+  - Verify timeline renders with expand/collapse
+  - Verify all filters map correctly to underlying query parameters
+  - Ask the user if questions arise
+
+
+- [ ]* 10. Property-Based Tests
+
+  - [ ]* 10.1 PBT — RelativeTimestampFormatter
+    - Create test class for `RelativeTimestampFormatter`
+    - Use FsCheck.Xunit `[Property(MaxTest = 100)]`
+    - **Property: Timestamp bracket correctness** — *For any* UTC timestamp and reference "now" timestamp where now >= timestamp, the formatted output SHALL match the correct bracket (Just now, N min ago, N hours ago, Yesterday at HH:mm, N days ago, dd MMM yyyy) based on the time difference
+    - Generate random (timestamp, now) pairs ensuring now >= timestamp; verify output matches expected bracket
+    - _Requirements: 4.1–4.7_
+
+  - [ ]* 10.2 PBT — ActivitySummaryService transformation
+    - Create test class for `ActivitySummaryService.TransformAsync`
+    - Use FsCheck.Xunit `[Property(MaxTest = 100)]`
+    - **Property: Action type mapping invariant** — *For any* AuditLog record with Action "Insert"/"Update"/"Delete", the resulting ActivityItemDto.ActionType SHALL be "Created"/"Edited" (or "StatusChanged")/"Deleted" respectively
+    - **Property: TableName mapping invariant** — *For any* AuditLog record with a known TableName, the resulting ActivityItemDto.EntityType SHALL be the corresponding business-friendly name from the mapping dictionary
+    - **Property: Deleted entities have no detail URL** — *For any* AuditLog record with Action "Delete", the resulting ActivityItemDto.EntityDetailUrl SHALL be null
+    - Generate random AuditLog records with varied Action, TableName, OldValues, NewValues; mock UserNameResolver to return predictable names
+    - _Requirements: 2.1–2.8, 8.5_
+
+  - [ ]* 10.3 PBT — UserNameResolver batch resolution
+    - Create test class for `UserNameResolver.ResolveNamesAsync`
+    - Use FsCheck.Xunit `[Property(MaxTest = 100)]`
+    - **Property: All input userIds appear in output** — *For any* list of userIds, the returned dictionary SHALL contain an entry for every non-null userId in the input (with "Unknown User" fallback for unresolved)
+    - **Property: Null userId maps to "System"** — *For any* input set containing null, resolving null SHALL yield "System"
+    - Use in-memory MembershipDbContext seeded with generated users
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+
 
 ## Notes
 
-- `PagedResult<T>` and `ServiceResult` already exist in `Portal.Infrastructure/Models/` — do NOT create new files for them.
-- `AuditLogRepository` already exists in `Portal.Infrastructure/Repositories/` — do NOT create a new file for it.
-- The `AuditLog` entity, `UserBusiness`, `UserBusinessPermission`, and `ApplicationUser` entities already exist — no entity changes required.
-- `PortalModules` and `AccessLevels` constants already exist in `Portal.Infrastructure/Constants/`.
-- `ModuleAccessAttribute` already exists in `Portal.Web/Security/`.
-- Migration `060` is the correct next number (last existing migration is `057`).
-- `AuditInterceptor` must be registered as **scoped** (not singleton) to match `PortalDbContext` lifetime. Using a singleton interceptor with a scoped context causes DI lifetime violations.
-- The `PortalDbContext` registration in `Program.cs` must be updated from `AddDbContext<PortalDbContext>(options => ...)` to the factory lambda `AddDbContext<PortalDbContext>((sp, options) => ...)` to allow the scoped interceptor to be resolved from the same scope.
-- The existing `AuditLogRepository` DI registration in `Program.cs` must be preserved — it is used by existing services and by the new `AuditInterceptor`.
-- PBT tests use FsCheck 2.16.6 with `FsCheck.Xunit` (already in `Portal.Tests.csproj`). Use `[Property(MaxTest = 100)]` attribute.
-- PBT tests for the interceptor (6.1) should use a test double or in-memory list to capture `AuditLogRepository.InsertAsync` calls rather than querying the database, since the interceptor writes via raw SQL.
-- The `UserAdminRepository` is backed by `MembershipDbContext` (not `PortalDbContext`) — pass `MembershipDbContext` in the DI factory lambda.
-- `AuditLogQueryRepository` is backed by `PortalDbContext` — pass `PortalDbContext` in the DI factory lambda.
-- Audit log write failures within `UserAdminService` (for permission changes and status toggles) must be logged via Serilog and swallowed — they must not fail the primary operation.
+- The existing SuperAdmin Audit Log at `/Admin/Audit` (`AuditController`) is **already implemented and working** — do NOT modify or remove it.
+- The existing `AuditLogQueryService`, `AuditLogQueryRepository`, `AuditLogFilter`, and `AuditInterceptor` are **already implemented** — reuse them as-is.
+- The `audit_log` module key is already seeded in the database and recognized by `PortalModules.Audit`.
+- No database migrations are needed — the `[audit].[AuditLog]` table and indexes are already in place.
+- `PagedResult<T>` and `ServiceResult` already exist in `Portal.Infrastructure/Models/`.
+- `PortalModules`, `AccessLevels`, and `ModuleAccessAttribute` are already implemented.
+- The Activity Log uses a page size of 8 (not 20 like the admin audit view) to keep the timeline scannable.
+- The "Status changed" filter requires post-filtering after the database query because it inspects JSON field names — this is acceptable for the small page sizes involved.
+- Entity detail URL generation should gracefully handle unknown entity types by returning null (plain text rendering in UI).
+- The `RelativeTimestampFormatter` is a static utility class to allow easy unit testing without DI — inject-ability is not needed.
+- Tasks marked with `*` are optional property-based tests that can be skipped for faster delivery.

@@ -1,0 +1,111 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** - Unmapped Controllers and Attribute Mismatch Allow Unfiltered Access
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bugs exist
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the permission gaps exist
+  - **Scoped PBT Approach**: Scope the property to the concrete failing cases:
+    - Controller "ExpenseCategory" resolves to null module (should resolve to "purchase")
+    - Controller "ExpenseCategoryLimit" resolves to null module (should resolve to "purchase")
+    - Controller "Statement" resolves to null module (should resolve to "revenue")
+    - Controller "Logo" resolves to null module (should resolve to "quotation")
+    - Controller "LineItemCatalog" resolves to null module (should resolve to "quotation")
+    - Controller "LineItemCatalogManagement" resolves to null module (should resolve to "quotation")
+    - Controller "ProposalSection" resolves to null module (should resolve to "quotation")
+    - CreditNoteController has `[ModuleAccess(PortalModules.Invoice)]` but ModuleControllerMap maps "CreditNote" to `credit` module (inconsistency)
+  - Test that `ModuleControllerMap.ResolveModule("ExpenseCategory")` returns `PortalModules.Purchase`
+  - Test that `ModuleControllerMap.ResolveModule("ExpenseCategoryLimit")` returns `PortalModules.Purchase`
+  - Test that `ModuleControllerMap.ResolveModule("Statement")` returns `PortalModules.Revenue`
+  - Test that `ModuleControllerMap.ResolveModule("Logo")` returns `PortalModules.Quotation`
+  - Test that `ModuleControllerMap.ResolveModule("LineItemCatalog")` returns `PortalModules.Quotation`
+  - Test that `ModuleControllerMap.ResolveModule("LineItemCatalogManagement")` returns `PortalModules.Quotation`
+  - Test that `ModuleControllerMap.ResolveModule("ProposalSection")` returns `PortalModules.Quotation`
+  - Test that CreditNoteController's `[ModuleAccess]` attribute uses `PortalModules.Credit` (not `PortalModules.Invoice`)
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bugs exist)
+  - Document counterexamples found to understand root cause
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 1.2, 1.3, 1.5, 2.2, 2.3, 2.5_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Existing Controller Mappings Remain Unchanged
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe: All existing entries in `ModuleControllerMap.Map` resolve correctly on unfixed code
+  - Observe: `ModuleControllerMap.ResolveModule("Customer")` returns `PortalModules.Customer`
+  - Observe: `ModuleControllerMap.ResolveModule("Invoice")` returns `PortalModules.Invoice`
+  - Observe: `ModuleControllerMap.ResolveModule("CreditNote")` returns `PortalModules.Credit` (already mapped correctly in map)
+  - Observe: `ModuleControllerMap.ResolveModule("Purchase")` returns `PortalModules.Purchase`
+  - Observe: `ModuleControllerMap.ResolveModule("Supplier")` returns `PortalModules.Purchase`
+  - Observe: `ModuleControllerMap.ResolveModule("Expense")` returns `PortalModules.Purchase`
+  - Observe: `ModuleControllerMap.ResolveModule("PaymentReminder")` returns `PortalModules.PaymentReminderManual`
+  - Write property-based test: for all controller names already in the map, `ResolveModule` returns the expected module key
+  - Write property-based test: for any unmapped controller name (not in map or new additions), `ResolveModule` returns null
+  - Verify tests pass on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.2, 3.3, 3.5_
+
+- [x] 3. Fix for permission access inconsistencies
+
+  - [x] 3.1 Fix Invoice Detail view — conditional rendering of reminder partials
+    - In `InvoiceController.Detail()`, inject `IPlanCheckService` and call `IsModuleInPlanAsync(PortalModules.PaymentReminderManual)`
+    - Pass result to view via `ViewBag.HasPaymentReminderAccess`
+    - In `Detail.cshtml`, wrap `_ReminderHistoryPanel` partial, "Send Test Reminder" button, and `_TestSendModal` partial in `@if (ViewBag.HasPaymentReminderAccess == true)` conditional
+    - Remove the `loadReminderHistory(invoiceId)` call when feature is not accessible
+    - _Bug_Condition: User's plan does NOT include `payment_reminder_manual` AND user navigates to Invoice Detail_
+    - _Expected_Behavior: Reminder section is hidden, no AJAX errors occur_
+    - _Preservation: Professional/Enterprise users still see full reminder functionality_
+    - _Requirements: 1.1, 2.1, 3.1_
+
+  - [x] 3.2 Fix CreditNoteController attribute mismatch
+    - Change `[ModuleAccess(PortalModules.Invoice)]` to `[ModuleAccess(PortalModules.Credit)]` on `CreditNoteController`
+    - This aligns the controller attribute with the `ModuleControllerMap` entry that maps "CreditNote" → `credit`
+    - _Bug_Condition: CreditNoteController attribute says `invoice` but map says `credit`_
+    - _Expected_Behavior: Attribute matches map — both use `PortalModules.Credit`_
+    - _Preservation: Users with `credit` module access continue to access CreditNote functionality_
+    - _Requirements: 1.2, 2.2, 3.2_
+
+  - [x] 3.3 Fix ModuleControllerMap — add missing controllers
+    - Add `"ExpenseCategory", "ExpenseCategoryLimit"` to the `PortalModules.Purchase` entry
+    - Add `"Statement"` to the `PortalModules.Revenue` entry
+    - Add `"Logo", "LineItemCatalog", "LineItemCatalogManagement", "ProposalSection"` to the `PortalModules.Quotation` entry
+    - _Bug_Condition: These controllers have no map entry, causing `ResolveModule` to return null_
+    - _Expected_Behavior: Each controller resolves to its correct parent module_
+    - _Preservation: All existing map entries remain unchanged_
+    - _Requirements: 1.3, 1.5, 2.3, 2.5, 3.3, 3.5_
+
+  - [x] 3.4 Create migration 105_AddAuditLogToProfessionalPlan.sql
+    - Add `audit_log` module to Professional plan's `PlanFeature` records
+    - Use idempotent INSERT pattern (IF NOT EXISTS check)
+    - Follow SQL script header rule with `USE [Portal]` and `GO`
+    - _Bug_Condition: Fresh database deploys do not include `audit_log` for Professional plan_
+    - _Expected_Behavior: Professional plan includes `audit_log` feature after migration_
+    - _Preservation: Enterprise plan `audit_log` feature (from migration 097) remains unchanged_
+    - _Requirements: 1.4, 2.4, 3.4_
+
+  - [x] 3.5 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Unmapped Controllers and Attribute Mismatch Resolved
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bugs are fixed)
+    - _Requirements: 2.2, 2.3, 2.5_
+
+  - [x] 3.6 Verify preservation tests still pass
+    - **Property 2: Preservation** - Existing Controller Mappings Remain Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all tests still pass after fix (no regressions)
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run full test suite to confirm no regressions across the project
+  - Verify CreditNote access still works for users with `credit` module
+  - Verify Invoice Detail page loads cleanly for Starter-plan users (no error popups)
+  - Verify Professional-plan users have `audit_log` access
+  - Verify Enterprise-plan `audit_log` access unchanged
+  - Verify all newly-mapped controllers resolve to correct modules
+  - Ensure all tests pass, ask the user if questions arise.

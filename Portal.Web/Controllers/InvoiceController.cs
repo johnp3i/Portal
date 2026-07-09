@@ -37,6 +37,8 @@ public class InvoiceController : Controller
     private readonly IViewRenderService _viewRenderService;
     private readonly IInvoicePdfService _invoicePdfService;
     private readonly IPaymentInstructionsService _paymentInstructionsService;
+    private readonly IPlanCheckService _planCheckService;
+    private readonly IPermissionService _permissionService;
     private readonly PortalDbContext _dbContext;
     private readonly ILogger<InvoiceController> _logger;
 
@@ -56,6 +58,8 @@ public class InvoiceController : Controller
         IViewRenderService viewRenderService,
         IInvoicePdfService invoicePdfService,
         IPaymentInstructionsService paymentInstructionsService,
+        IPlanCheckService planCheckService,
+        IPermissionService permissionService,
         PortalDbContext dbContext,
         ILogger<InvoiceController> logger)
     {
@@ -74,6 +78,8 @@ public class InvoiceController : Controller
         _viewRenderService = viewRenderService;
         _invoicePdfService = invoicePdfService;
         _paymentInstructionsService = paymentInstructionsService;
+        _planCheckService = planCheckService;
+        _permissionService = permissionService;
         _dbContext = dbContext;
         _logger = logger;
     }
@@ -263,6 +269,48 @@ public class InvoiceController : Controller
 
         // Payment Instructions override state for per-invoice toggle
         ViewBag.IsBusinessPaymentInstructionsEnabled = await _paymentInstructionsService.IsEnabledForBusinessAsync(_tenantService.CurrentBusinessId);
+
+        // Check if user's plan includes payment reminder module
+        ViewBag.HasPaymentReminderAccess = await _planCheckService.IsModuleInPlanAsync(PortalModules.PaymentReminderManual);
+
+        // Payment Schedule section data
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        var isScheduleInPlan = await _planCheckService.IsModuleInPlanAsync(PortalModules.SchedulePayments);
+        var hasSchedulePermission = isScheduleInPlan && await _permissionService.GetAccessLevelAsync(userId, PortalModules.SchedulePayments, _tenantService.CurrentBusinessId) != "none";
+        ViewData["InvoiceId"] = id;
+        ViewData["HasSchedulePermission"] = hasSchedulePermission;
+        // Compute actual outstanding balance (TotalAmount - sum of non-voided payments)
+        var totalPaid = await _dbContext.Payments
+            .Where(p => p.InvoiceId == id && p.BusinessId == _tenantService.CurrentBusinessId && !p.IsVoided)
+            .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+        ViewData["OutstandingBalance"] = invoice.TotalAmount - totalPaid;
+        ViewData["InvoiceNumber"] = invoice.InvoiceNumber;
+        ViewData["ScheduleCurrencySymbol"] = profile?.CurrencySymbol ?? "€";
+
+        // Payment Summary section data
+        ViewBag.TotalPaid = totalPaid;
+        ViewBag.OutstandingBalance = invoice.TotalAmount - totalPaid;
+
+        // Load payment history for display
+        var paymentHistory = await _dbContext.Payments
+            .Where(p => p.InvoiceId == id && p.BusinessId == _tenantService.CurrentBusinessId)
+            .OrderByDescending(p => p.PaymentDateUtc)
+            .Select(p => new { p.Id, p.PaymentDateUtc, p.Amount, p.IsVoided, p.Reference, p.PaymentMethodTypeId })
+            .ToListAsync();
+
+        var paymentMethodNames = await _dbContext.PaymentMethodTypes
+            .Where(pmt => pmt.IsActive)
+            .ToDictionaryAsync(pmt => pmt.Id, pmt => pmt.Name);
+
+        ViewBag.PaymentHistory = paymentHistory.Select(p => new Portal.Infrastructure.Models.PaymentHistoryDto
+        {
+            Id = p.Id,
+            PaymentDateUtc = p.PaymentDateUtc,
+            Amount = p.Amount,
+            PaymentMethodName = paymentMethodNames.GetValueOrDefault(p.PaymentMethodTypeId, "Unknown"),
+            Reference = p.Reference,
+            IsVoided = p.IsVoided
+        }).ToList();
 
         return View(invoice);
     }

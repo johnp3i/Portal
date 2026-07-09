@@ -11,7 +11,6 @@ using Serilog;
 namespace Portal.Web.Controllers;
 
 [Authorize(Roles = "SuperAdmin")]
-[ModuleAccess(PortalModules.Audit, AccessLevels.Full)]
 [Route("Admin/Audit")]
 public class AuditController : Controller
 {
@@ -75,15 +74,17 @@ public class AuditController : Controller
         var tableNames = await _auditLogQueryService.GetDistinctTableNamesAsync();
 
         var businessId = _currentTenantService.CurrentBusinessId;
-        var users = await _membershipDbContext.UserBusinesses
+        var usersQuery = await _membershipDbContext.UserBusinesses
             .Include(ub => ub.User)
             .Where(ub => ub.BusinessId == businessId)
-            .Select(ub => new
-            {
-                value = ub.UserId,
-                text = ub.User.FirstName + " " + ub.User.LastName
-            })
+            .Select(ub => new { Value = ub.UserId, Text = ub.User.FirstName + " " + ub.User.LastName })
             .ToListAsync();
+
+        var users = usersQuery.Select(u => new Dictionary<string, string>
+        {
+            ["value"] = u.Value,
+            ["text"] = u.Text ?? "User"
+        }).ToList();
 
         ViewBag.TableNames = tableNames;
         ViewBag.Users = users;

@@ -1,0 +1,64 @@
+@*
+    Cash Flow Widget — Dashboard Partial
+    Loads data from /CashFlow/AxGetWidget and renders a compact 30-day projection summary.
+    Only shown when business has Professional+ plan and cashflow settings configured.
+*@
+
+<div id="cashFlowWidget" style="display:none;">
+    <div class="glass card-pad" style="cursor:pointer;" onclick="window.location='/CashFlow'">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h4 style="font-family:Manrope,sans-serif;font-size:14px;font-weight:700;color:#0B1B28;margin:0;">Cash Flow (30 days)</h4>
+            <span style="font-size:12px;color:#0D5EA6;font-weight:600;">View &rarr;</span>
+        </div>
+        <div id="cashFlowWidgetAmount" style="font-family:Manrope,sans-serif;font-size:22px;font-weight:800;color:#0B1B28;margin-bottom:4px;">&mdash;</div>
+        <div id="cashFlowWidgetTrend" style="font-size:12px;font-weight:600;color:#129867;"></div>
+        <div id="cashFlowWidgetWarning" style="display:none;font-size:12px;font-weight:600;color:#C8912E;margin-top:6px;"></div>
+        <div id="cashFlowWidgetSetup" style="display:none;font-size:13px;color:#5E7385;margin-top:8px;">
+            <a href="/CashFlow" style="color:#0D5EA6;font-weight:600;text-decoration:none;">Set up your starting balance &rarr;</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    (async function loadCashFlowWidget() {
+        try {
+            var response = await fetch('/CashFlow/AxGetWidget');
+            var result = await response.json();
+
+            if (!result.success) return;
+
+            var widget = document.getElementById('cashFlowWidget');
+            var data = result.data;
+
+            if (!data.hasSettings) {
+                widget.style.display = 'block';
+                document.getElementById('cashFlowWidgetAmount').style.display = 'none';
+                document.getElementById('cashFlowWidgetTrend').style.display = 'none';
+                document.getElementById('cashFlowWidgetSetup').style.display = 'block';
+                return;
+            }
+
+            widget.style.display = 'block';
+            document.getElementById('cashFlowWidgetAmount').textContent = '\u20ac' + Number(data.projectedBalance30Days).toLocaleString(undefined, { minimumFractionDigits: 2 });
+
+            var netInflow = data.netInflow;
+            var trendEl = document.getElementById('cashFlowWidgetTrend');
+            if (netInflow >= 0) {
+                trendEl.style.color = '#129867';
+                trendEl.textContent = '\u2191 +\u20ac' + Number(netInflow).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' net inflow';
+            } else {
+                trendEl.style.color = '#C24A4A';
+                trendEl.textContent = '\u2193 -\u20ac' + Number(Math.abs(netInflow)).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' net outflow';
+            }
+
+            if (data.hasAlertBreach && data.alertBreachDate) {
+                var warningEl = document.getElementById('cashFlowWidgetWarning');
+                var breachDate = new Date(data.alertBreachDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                warningEl.textContent = '\u26A0 Balance drops below threshold on ' + breachDate;
+                warningEl.style.display = 'block';
+            }
+        } catch (e) {
+            // Widget load failed silently — user may not have cashflow access
+        }
+    })();
+</script>

@@ -1,0 +1,294 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `ScheduleOverviewRawRow` model class": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637516
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591647145
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591725660
+      }
+    ],
+    "1.2 Create response DTOs (`PaymentScheduleOverviewDto`, `OverviewKpiDto`, `MonthlyTimelineEntryDto`, `ScheduleTableRowDto`)": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637584
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591726724
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591731199
+      }
+    ],
+    "2.1 Create `PaymentScheduleOverviewRepository`": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637622
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591738018
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591820468
+      }
+    ],
+    "3.1 Create `IPaymentScheduleOverviewService` interface": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637718
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591826025
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592024473
+      }
+    ],
+    "3.2 Create `PaymentScheduleOverviewService` implementation": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637762
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591826867
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592025200
+      }
+    ],
+    "4. Checkpoint - Ensure service layer compiles and tests pass": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637799
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592032480
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592200310
+      }
+    ],
+    "5.1 Add `PaymentSchedules` page action to `RevenueController`": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637842
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592033596
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592201272
+      }
+    ],
+    "5.2 Add `AxGetPaymentSchedulesOverview` AJAX endpoint to `RevenueController`": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637880
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592034787
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592202156
+      }
+    ],
+    "5.3 Inject `IPaymentScheduleOverviewService` into `RevenueController`": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637922
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592035691
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592203060
+      }
+    ],
+    "6.1 Create `Views/Revenue/PaymentSchedules.cshtml`": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637957
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592036778
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592203942
+      }
+    ],
+    "7.1 Create `wwwroot/js/payment-schedules-overview.js`": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591637992
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592209290
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592371003
+      }
+    ],
+    "8.1 Add \"Payment Schedules\" link to sidebar navigation": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591638029
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592210319
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592370091
+      }
+    ],
+    "9.1 Register `PaymentScheduleOverviewRepository` and `IPaymentScheduleOverviewService` in DI container": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591638063
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592026365
+      }
+    ],
+    "10. Final checkpoint - Build verification": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591638111
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592371941
+      },
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592567203
+      }
+    ],
+    "1. Create DTOs and raw row model": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591731279
+      }
+    ],
+    "2. Implement repository": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783591820515
+      }
+    ],
+    "3. Implement service layer": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592025255
+      }
+    ],
+    "9. Dependency injection registration": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592026476
+      }
+    ],
+    "5. Add controller endpoints": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592203161
+      }
+    ],
+    "6. Create Razor view": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592203991
+      }
+    ],
+    "8. Sidebar navigation integration": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592370211
+      }
+    ],
+    "7. Create JavaScript module": [
+      {
+        "executionId": "e7f9641f-aa2e-4004-b647-90529ad49d41",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783592371075
+      }
+    ]
+  }
+}

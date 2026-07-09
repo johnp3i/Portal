@@ -106,13 +106,13 @@ public class PlanFeatureModuleNamePropertyTests
     #region Property 4e: The valid set contains all modules
 
     /// <summary>
-    /// Property 4e: The PortalModules.All set SHALL contain all 23 defined modules.
+    /// Property 4e: The PortalModules.All set SHALL contain all 24 defined modules.
     /// **Validates: Requirements 2.3**
     /// </summary>
     [Fact]
     public void ValidModuleSet_ContainsAllModules()
     {
-        Assert.Equal(23, PortalModules.All.Length);
+        Assert.Equal(24, PortalModules.All.Length);
 
         // Original 9 modules
         Assert.Contains("customer", PortalModules.All);
@@ -140,6 +140,7 @@ public class PlanFeatureModuleNamePropertyTests
         Assert.Contains("api", PortalModules.All);
         Assert.Contains("webhooks", PortalModules.All);
         Assert.Contains("multi_currency", PortalModules.All);
+        Assert.Contains("schedule_payments", PortalModules.All);
     }
 
     #endregion

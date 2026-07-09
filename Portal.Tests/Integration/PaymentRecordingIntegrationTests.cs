@@ -210,6 +210,7 @@ public class PaymentRecordingIntegrationTests
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
             statusEngine,
+            new Mock<IPaymentScheduleService>().Object,
             dbContext);
 
         return (paymentService, statusEngine);

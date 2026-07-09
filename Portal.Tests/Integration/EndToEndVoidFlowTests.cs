@@ -254,7 +254,7 @@ public class EndToEndVoidFlowTests
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
             var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
             var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
-            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
+            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, new Mock<IPaymentScheduleService>().Object, dbContext);
 
             var totalAmount = 1000.00m;
             var partialPaymentAmount = 400.00m;
@@ -338,7 +338,7 @@ public class EndToEndVoidFlowTests
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
             var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
             var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
-            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
+            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, new Mock<IPaymentScheduleService>().Object, dbContext);
 
             var totalAmount = 1000.00m;
 
@@ -424,7 +424,7 @@ public class EndToEndVoidFlowTests
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
             var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
             var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
-            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
+            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, new Mock<IPaymentScheduleService>().Object, dbContext);
 
             var totalAmount = 500.00m;
 
@@ -483,7 +483,7 @@ public class EndToEndVoidFlowTests
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
             var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
             var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
-            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
+            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, new Mock<IPaymentScheduleService>().Object, dbContext);
 
             var totalAmount = 1000.00m;
             var invoice = SeedIssuedInvoice(dbContext, totalAmount);
@@ -534,7 +534,7 @@ public class EndToEndVoidFlowTests
             var invoiceRepo = new InMemoryInvoiceRepository(dbContext);
             var creditNoteRepo = new InMemoryCreditNoteRepository(dbContext);
             var financialStatusEngine = new FinancialStatusEngine(paymentRepo, invoiceRepo, creditNoteRepo);
-            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, dbContext);
+            var paymentService = new PaymentService(paymentRepo, invoiceRepo, financialStatusEngine, new Mock<IPaymentScheduleService>().Object, dbContext);
 
             var totalAmount = 1000.00m;
             var invoice = SeedIssuedInvoice(dbContext, totalAmount);

@@ -1,267 +1,403 @@
-# Design Document: Audit & System Administration
+# Design Document: Activity Log (Business Manager View)
 
 ## Overview
 
-The Audit & System Administration module adds three capabilities to the Portal platform:
+The Activity Log is a business-facing redesign that transforms the raw, developer-oriented Audit Log viewer into a timeline-style activity feed. It reuses the existing `[audit].[AuditLog]` table and `AuditLogQueryService`/`AuditLogQueryRepository` infrastructure — no database schema changes are needed. The feature adds a new presentation layer with plain-English summaries, relative timestamps, quick stats, and business-friendly filters.
 
-1. **Automatic Audit Logging** — an EF Core `SaveChangesInterceptor` that captures every Insert, Update, and Delete across `PortalDbContext` and writes `AuditLog` records without requiring manual service-layer calls.
-2. **Audit Log Viewer** — a SuperAdmin-only MVC controller and Razor view that provides filtered, paginated, expandable access to the audit trail.
-3. **User & Permission Management** — a SuperAdmin-only interface for listing business users, toggling their active status, and managing per-module access levels via `UserBusinessPermission` records.
+The existing `AuditController` at `/Admin/Audit` (SuperAdmin-only) remains unchanged. A new `ActivityController` at `/Activity` provides the business-manager experience, accessible to any authenticated user with the `audit_log` module at ReadOnly level or higher.
 
-All three capabilities are scoped to the SuperAdmin role. The audit interceptor runs transparently on every `SaveChangesAsync` call; the viewer and admin screens are accessible at `/Admin/Audit` and `/Admin/Users` respectively.
+**Key principle:** Extend, don't replace. The data access layer is proven and property-tested. We add transformation and presentation services on top.
 
 
 ## Architecture
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  Portal.Web                                                             │
-│                                                                         │
-│  ┌──────────────────┐    ┌──────────────────────────────────────────┐  │
-│  │  AuditController │    │  AdminController                         │  │
-│  │  /Admin/Audit    │    │  /Admin/Users                            │  │
-│  │  [SuperAdmin]    │    │  [SuperAdmin]                            │  │
-│  └────────┬─────────┘    └──────────────┬───────────────────────────┘  │
-│           │                             │                               │
-└───────────┼─────────────────────────────┼───────────────────────────────┘
-            │                             │
-┌───────────┼─────────────────────────────┼───────────────────────────────┐
-│  Portal.Infrastructure                  │                               │
-│           │                             │                               │
-│  ┌────────▼──────────────┐   ┌──────────▼──────────────────────────┐   │
-│  │ IAuditLogQueryService │   │ IUserAdminService                   │   │
-│  │ AuditLogQueryService  │   │ UserAdminService                    │   │
-│  └────────┬──────────────┘   └──────────┬──────────────────────────┘   │
-│           │                             │                               │
-│  ┌────────▼──────────────┐   ┌──────────▼──────────────────────────┐   │
-│  │ AuditLogQueryRepo     │   │ UserAdminRepository                 │   │
-│  │ (PortalDbContext)     │   │ (MembershipDbContext)               │   │
-│  └────────┬──────────────┘   └──────────┬──────────────────────────┘   │
-│           │                             │                               │
-│  ┌────────▼──────────────────────────────▼──────────────────────────┐   │
-│  │  AuditInterceptor : SaveChangesInterceptor                       │   │
-│  │  Registered on PortalDbContext                                   │   │
-│  │  Reads: ICurrentTenantService, IHttpContextAccessor              │   │
-│  │  Writes: AuditLogRepository (direct INSERT)                      │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Portal.Web"
+        AC[ActivityController<br/>/Activity<br/>ModuleAccess: audit_log, ReadOnly]
+    end
 
-  Portal DB (PortalDbContext)          Membership DB (MembershipDbContext)
-  ┌──────────────────────────┐         ┌──────────────────────────────────┐
-  │ [audit].[AuditLog]       │         │ [membership].[UserBusiness]      │
-  │ (append-only)            │         │ [membership].[UserBusinessPerm.] │
-  └──────────────────────────┘         │ [dbo].[AspNetUsers]              │
-                                       └──────────────────────────────────┘
+    subgraph "Portal.Infrastructure — New Services"
+        ASS[IActivitySummaryService<br/>ActivitySummaryService]
+        QSS[IQuickStatsService<br/>QuickStatsService]
+        UNR[IUserNameResolver<br/>UserNameResolver]
+        RTF[RelativeTimestampFormatter<br/>static utility]
+    end
+
+    subgraph "Portal.Infrastructure — Existing (unchanged)"
+        ALQS[IAuditLogQueryService<br/>AuditLogQueryService]
+        ALQR[AuditLogQueryRepository]
+        CTS[ICurrentTenantService]
+    end
+
+    subgraph "Databases"
+        PDB[(Portal DB<br/>audit.AuditLog)]
+        MDB[(Membership DB<br/>UserBusiness + AspNetUsers)]
+    end
+
+    AC --> ASS
+    AC --> QSS
+    AC --> UNR
+    AC --> ALQS
+    ASS --> RTF
+    ASS --> UNR
+    QSS --> ALQR
+    QSS --> CTS
+    UNR --> MDB
+    ALQS --> ALQR
+    ALQR --> PDB
+    ALQS --> CTS
+```
+
+### Data Flow
+
+```
+User clicks Filter → ActivityController.AxGetActivities(filter)
+    → maps business-friendly filter labels to AuditLogFilter params
+    → calls IAuditLogQueryService.GetAuditLogsAsync(filter)
+    → receives PagedResult<AuditLog>
+    → calls IUserNameResolver.BatchResolve(userIds)
+    → calls IActivitySummaryService.TransformBatch(auditLogs, userNames)
+    → returns JSON (ActivityItemDto[] + pagination + quickStats)
 ```
 
 ### Key Design Decisions
 
-**Interceptor writes via raw SQL, not EF tracking.** The `AuditInterceptor` calls `AuditLogRepository.InsertAsync` (which uses `ExecuteSqlRawAsync`) rather than adding `AuditLog` entities to the change tracker. This avoids any risk of the interceptor triggering itself and keeps the audit write outside the main transaction boundary — audit records are written after the save succeeds.
+1. **Single endpoint for data + stats.** The `AxGetActivities` endpoint returns both the paginated activity items AND the quick stats in one response. This avoids a second AJAX call and keeps the UX snappy. Quick stats are computed on every request (they're cheap — single aggregate query scoped to 7 days with existing index).
 
-**Separate read repository from write repository.** `AuditLogRepository` (existing) handles append-only inserts. `AuditLogQueryRepository` (new) handles LINQ-based read queries against `PortalDbContext.AuditLogs`. This separation keeps the write path simple and the read path flexible.
+2. **ActivityController delegates to existing query service.** We do NOT duplicate the filter/pagination/tenant-isolation logic. The existing `IAuditLogQueryService.GetAuditLogsAsync` handles all of that. The controller maps business-friendly filter labels → `AuditLogFilter` params.
 
-**EF Core LINQ for query service, raw SQL for write.** The query service uses EF Core LINQ (not raw SQL) because the filter combinations are dynamic and LINQ composes cleanly. The write path uses raw SQL to stay consistent with the existing `AuditLogRepository` pattern.
+3. **Summary transformation is server-side.** The `ActivitySummaryService` runs on the server because it needs access to user names (resolved via `UserNameResolver`) and the TableName→friendly-name mapping. The front-end receives a ready-to-render summary string.
 
-**UserAdminService uses MembershipDbContext directly.** User and permission management operates entirely on the Membership DB. No cross-database joins are needed — the service fetches users and permissions from `MembershipDbContext` and writes audit entries via `AuditLogRepository` (Portal DB).
+4. **Relative timestamps are client-side.** The server returns raw UTC timestamps. JavaScript computes "2 min ago" / "Yesterday at 14:32" etc. This is more accurate to the user's actual timezone and doesn't stale on long-open tabs.
+
+5. **No database migrations.** The `[audit].[AuditLog]` table already has the required columns and indexes (including `IX_AuditLog_BusinessId_Timestamp`). No schema changes.
+
+6. **Module key: `audit_log`** (already exists in `PortalModules.AuditLog` and in plan feature seeding). The existing constant `PortalModules.AuditLog = "audit_log"` is used directly.
 
 
 ## Components and Interfaces
 
-### AuditInterceptor
+### ActivityController
 
-**Location:** `Portal.Infrastructure/Interceptors/AuditInterceptor.cs`
+**Location:** `Portal.Web/Controllers/ActivityController.cs`
+**Route:** `/Activity`
 
 ```csharp
-public class AuditInterceptor : SaveChangesInterceptor
+[Authorize]
+[ModuleAccess(PortalModules.AuditLog, AccessLevels.ReadOnly)]
+[Route("Activity")]
+public class ActivityController : Controller
 {
-    private readonly ICurrentTenantService _tenantService;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly AuditLogRepository _auditLogRepository;
+    private readonly IAuditLogQueryService _auditLogQueryService;
+    private readonly IActivitySummaryService _activitySummaryService;
+    private readonly IQuickStatsService _quickStatsService;
+    private readonly IUserNameResolver _userNameResolver;
+    private readonly ICurrentTenantService _currentTenantService;
+    private readonly MembershipDbContext _membershipDbContext;
 
-    public AuditInterceptor(
-        ICurrentTenantService tenantService,
-        IHttpContextAccessor httpContextAccessor,
-        AuditLogRepository auditLogRepository) { }
+    public ActivityController(
+        IAuditLogQueryService auditLogQueryService,
+        IActivitySummaryService activitySummaryService,
+        IQuickStatsService quickStatsService,
+        IUserNameResolver userNameResolver,
+        ICurrentTenantService currentTenantService,
+        MembershipDbContext membershipDbContext) { }
 
-    // Captures pre-save state for Modified/Deleted entities.
-    // Returns a list of AuditEntry (pending records, some without RecordId yet).
-    public override InterceptionResult<int> SavingChanges(
-        DbContextEventData eventData, InterceptionResult<int> result);
+    // GET /Activity — serves the Index view
+    [HttpGet("")]
+    public async Task<IActionResult> Index();
 
-    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
-        DbContextEventData eventData, InterceptionResult<int> result,
-        CancellationToken cancellationToken = default);
+    // GET /Activity/AxGetActivities — AJAX endpoint
+    [HttpGet("AxGetActivities")]
+    public async Task<IActionResult> AxGetActivities(
+        [FromQuery] string? category,
+        [FromQuery] string? userId,
+        [FromQuery] string? changeType,
+        [FromQuery] DateTime? dateFrom,
+        [FromQuery] DateTime? dateTo,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 8);
 
-    // After save: fills in identity-generated PKs for Added entries, then writes all records.
-    public override int SavedChanges(SaveChangesCompletedEventData eventData, int result);
-
-    public override ValueTask<int> SavedChangesAsync(
-        SaveChangesCompletedEventData eventData, int result,
-        CancellationToken cancellationToken = default);
+    // GET /Activity/AxGetFilterOptions — populates dropdowns
+    [HttpGet("AxGetFilterOptions")]
+    public async Task<IActionResult> AxGetFilterOptions();
 }
 ```
 
-**Internal helper type** (private, within the interceptor file):
+**Index action:** Calls `AxGetFilterOptions` logic to populate `ViewBag.TeamMembers` for the "Who" dropdown (server-rendered so the dropdown is ready on page load). Returns `View()`.
+
+**AxGetActivities action:**
+1. Maps `category` → list of `TableName` values (e.g., "Invoices" → `["Invoice", "InvoiceLine"]`).
+2. Maps `changeType` → `Action` filter value (e.g., "Created" → `"Insert"`, "Status changed" → special handling).
+3. Builds `AuditLogFilter` with mapped values + `userId`, `dateFrom`, `dateTo`, `page`, `pageSize`.
+4. Calls `_auditLogQueryService.GetAuditLogsAsync(filter)`.
+5. For "Status changed" filter: post-filters results where OldValues/NewValues JSON contains a key ending in "StatusTypeId" or named "Status".
+6. Calls `_userNameResolver.BatchResolveAsync(userIds)` for the page of results.
+7. Calls `_activitySummaryService.TransformBatch(items, userNameMap)` to produce `ActivityItemDto[]`.
+8. Calls `_quickStatsService.GetWeeklyStatsAsync()` for the stats row.
+9. Returns `Json(new { success, data, quickStats, totalCount, currentPage, totalPages })`.
+
+**AxGetFilterOptions action:**
+- Returns JSON with team member list (display names + userIds) resolved from `MembershipDbContext.UserBusinesses`.
+
+### IActivitySummaryService / ActivitySummaryService
+
+**Location:** `Portal.Infrastructure/Services/IActivitySummaryService.cs` and `ActivitySummaryService.cs`
 
 ```csharp
-private sealed class AuditEntry
+public interface IActivitySummaryService
 {
-    public EntityEntry Entry { get; init; }
-    public string Action { get; init; }        // "Insert" | "Update" | "Delete"
-    public string TableName { get; init; }
-    public string? OldValues { get; init; }    // JSON, null for Insert
-    public string? NewValues { get; set; }     // JSON, null for Delete; set after save for Insert
-    public string RecordId { get; set; }       // Set after save for identity PKs
-    public int? BusinessId { get; init; }
-    public string? UserId { get; init; }
-    public DateTime Timestamp { get; init; }
+    /// <summary>
+    /// Transforms a batch of AuditLog records into ActivityItemDtos with plain-English summaries.
+    /// </summary>
+    List<ActivityItemDto> TransformBatch(
+        List<AuditLog> records,
+        Dictionary<string, string> userNameMap);
 }
 ```
 
-### IAuditLogQueryService / AuditLogQueryService
+**Transformation logic per record:**
 
-**Location:** `Portal.Infrastructure/Services/IAuditLogQueryService.cs` and `AuditLogQueryService.cs`
+| Action | Status Key Present | Verb | Example |
+|--------|-------------------|------|---------|
+| Insert | — | "created" | "John P. created Invoice INV-2026-0089" |
+| Update | No | "edited" | "Maria T. edited Customer Acme — updated email address" |
+| Update | Yes | "changed status of" | "John P. changed status of Invoice INV-2026-0089 from Draft to Issued" |
+| Delete | — | "deleted" | "John P. deleted Purchase PUR-2026-0034 (Office Supplies, €145.00)" |
+
+**TableName → Friendly Entity Type mapping:**
+
+| TableName(s) | Friendly Name |
+|-------------|---------------|
+| Invoice, InvoiceLine | Invoice |
+| Quotation, QuotationLine, QuotationContact | Quotation |
+| Customer | Customer |
+| Purchase | Purchase |
+| Payment | Payment |
+| CreditNote, CreditNoteLine | Credit Note |
+| Business, BusinessProfile | Settings |
+| *(any other)* | *(raw TableName)* |
+
+**Entity identifier resolution:**
+- Attempt to extract a human-readable identifier from `NewValues` (for Insert/Update) or `OldValues` (for Delete).
+- Look for keys like "InvoiceNumber", "QuotationNumber", "Name", "CompanyName", "Description" in the JSON.
+- Fall back to `RecordId` if no meaningful identifier found.
+
+**Status value resolution:**
+- For status changes, extract old/new values of the status key from OldValues/NewValues.
+- Map numeric StatusTypeId values to their display names using a static lookup (e.g., `1 → "Draft"`, `2 → "Issued"`, `3 → "Paid"`).
+
+### IQuickStatsService / QuickStatsService
+
+**Location:** `Portal.Infrastructure/Services/IQuickStatsService.cs` and `QuickStatsService.cs`
 
 ```csharp
-public interface IAuditLogQueryService
+public interface IQuickStatsService
 {
-    Task<PagedResult<AuditLog>> GetAuditLogsAsync(AuditLogFilter filter);
-
-    /// <summary>Returns distinct table names present in AuditLog for the current business.</summary>
-    Task<List<string>> GetDistinctTableNamesAsync();
+    Task<QuickStatsDto> GetWeeklyStatsAsync();
 }
 ```
 
-### AuditLogFilter
+**Implementation:** Executes a single LINQ query against `PortalDbContext.AuditLogs` filtered by `BusinessId == currentTenantId` and `Timestamp >= sevenDaysAgo`. Uses `GroupBy` to compute:
+- `TotalChanges`: total record count
+- `TeamMembers`: distinct non-null `UserId` count
+- `MostActiveArea`: `TableName` with highest count, mapped to friendly name
+- `LastActivity`: `Max(Timestamp)`, returned as UTC DateTime for client-side formatting
 
-**Location:** `Portal.Infrastructure/Models/AuditLogFilter.cs`
+Uses `AuditLogQueryRepository` with a new method `GetWeeklyAggregatesAsync(int businessId, DateTime since)` that returns raw aggregates, keeping the service layer focused on mapping.
+
+### IUserNameResolver / UserNameResolver
+
+**Location:** `Portal.Infrastructure/Services/IUserNameResolver.cs` and `UserNameResolver.cs`
 
 ```csharp
-public class AuditLogFilter
+public interface IUserNameResolver
 {
-    public string? TableName { get; set; }      // optional, max 200 chars
-    public string? Action { get; set; }         // optional: "Insert" | "Update" | "Delete"
-    public string? UserId { get; set; }         // optional, max 450 chars
-    public DateTime? DateFrom { get; set; }     // inclusive >=
-    public DateTime? DateTo { get; set; }       // inclusive <=
-    public int PageNumber { get; set; } = 1;    // min 1
-    public int PageSize { get; set; } = 20;     // min 1, max 100
+    /// <summary>
+    /// Resolves a list of UserIds to display names ("{FirstName} {LastInitial}.") in a single query.
+    /// Returns a dictionary: UserId → DisplayName.
+    /// Null UserIds map to "System". Unresolvable UserIds map to "Unknown User".
+    /// </summary>
+    Task<Dictionary<string, string>> BatchResolveAsync(IEnumerable<string?> userIds);
 }
 ```
 
-### AuditLogQueryRepository
+**Implementation:**
+1. Filters out null values (tracked separately as "System").
+2. Queries `MembershipDbContext.UserBusinesses.Include(ub => ub.User)` where `UserId IN (distinctIds)` and `BusinessId == currentBusinessId`.
+3. Builds dictionary: `userId → $"{user.FirstName} {user.LastName[0]}."`.
+4. For any `userId` not found in the query result, maps to `"Unknown User"`.
+5. Adds `null → "System"` entry.
 
-**Location:** `Portal.Infrastructure/Repositories/AuditLogQueryRepository.cs`
+**Single query guarantee:** One `WHERE UserId IN (...)` query per page of results. No N+1.
+
+### RelativeTimestampFormatter
+
+**Location:** `Portal.Web/wwwroot/js/relative-time.js` (client-side utility)
+
+```javascript
+/**
+ * Formats a UTC ISO timestamp into a human-readable relative string.
+ * @param {string} isoTimestamp - UTC ISO 8601 timestamp
+ * @returns {string} Relative time string
+ */
+function formatRelativeTime(isoTimestamp) { ... }
+```
+
+**Bucketing rules:**
+
+| Condition | Output |
+|-----------|--------|
+| < 60 seconds ago | "Just now" |
+| 1–59 minutes ago | "{N} min ago" |
+| 1 hour ago | "1 hour ago" |
+| 2–23 hours ago | "{N} hours ago" |
+| Yesterday (calendar day) | "Yesterday at {HH:mm}" |
+| 2–6 days ago | "{N} days ago" |
+| 7+ days ago | "dd MMM yyyy" (e.g., "03 Jul 2026") |
+
+All comparisons use UTC. The "Yesterday" check compares UTC calendar dates.
+
+### Filter Category Mapping (Static Utility)
+
+**Location:** `Portal.Infrastructure/Mappings/ActivityFilterMapping.cs`
 
 ```csharp
-public class AuditLogQueryRepository : GenericStoredProcedureRepository<AuditLog>
+public static class ActivityFilterMapping
 {
-    public AuditLogQueryRepository(DbContext context) : base(context) { }
+    /// <summary>
+    /// Maps business-friendly category labels to their corresponding TableName values.
+    /// </summary>
+    public static readonly Dictionary<string, string[]> CategoryToTableNames = new()
+    {
+        ["Invoices"] = new[] { "Invoice", "InvoiceLine" },
+        ["Quotations"] = new[] { "Quotation", "QuotationLine", "QuotationContact" },
+        ["Customers"] = new[] { "Customer" },
+        ["Purchases"] = new[] { "Purchase" },
+        ["Payments"] = new[] { "Payment" },
+        ["Credit Notes"] = new[] { "CreditNote", "CreditNoteLine" },
+        ["Settings"] = new[] { "Business", "BusinessProfile" }
+    };
 
-    public async Task<(List<AuditLog> Items, int TotalCount)> GetPagedAsync(
-        int businessId,
-        string? tableName,
-        string? action,
-        string? userId,
-        DateTime? dateFrom,
-        DateTime? dateTo,
-        int skip,
-        int take);
+    /// <summary>
+    /// Maps business-friendly change type labels to AuditLog Action values.
+    /// "Status changed" is a special case handled separately (post-filter on JSON keys).
+    /// </summary>
+    public static readonly Dictionary<string, string> ChangeTypeToAction = new()
+    {
+        ["Created"] = "Insert",
+        ["Edited"] = "Update",
+        ["Deleted"] = "Delete",
+        ["Status changed"] = "Update"  // combined with JSON key post-filter
+    };
 
-    public async Task<List<string>> GetDistinctTableNamesAsync(int businessId);
+    /// <summary>
+    /// Maps raw TableName to business-friendly entity type for summaries.
+    /// </summary>
+    public static string GetFriendlyEntityType(string tableName) =>
+        tableName switch
+        {
+            "Invoice" or "InvoiceLine" => "Invoice",
+            "Quotation" or "QuotationLine" or "QuotationContact" => "Quotation",
+            "Customer" => "Customer",
+            "Purchase" => "Purchase",
+            "Payment" => "Payment",
+            "CreditNote" or "CreditNoteLine" => "Credit Note",
+            "Business" or "BusinessProfile" => "Settings",
+            _ => tableName
+        };
 }
 ```
 
-This repository uses EF Core LINQ via `_context.Set<AuditLog>()` (not raw SQL) because the filter combinations are dynamic and LINQ composes cleanly without string concatenation risks.
+### Entity Link Generation (Client-Side)
 
+**Location:** Within the Activity Feed JavaScript (in `Views/Activity/Index.cshtml`)
 
-### IUserAdminService / UserAdminService
+```javascript
+const entityRoutes = {
+    'Invoice': '/Invoice/Details/',
+    'Customer': '/Customer/Details/',
+    'Quotation': '/Quotation/Details/',
+    'Purchase': '/Purchase/Details/'
+};
 
-**Location:** `Portal.Infrastructure/Services/IUserAdminService.cs` and `UserAdminService.cs`
-
-```csharp
-public interface IUserAdminService
-{
-    // User listing — MembershipDbContext
-    Task<PagedResult<UserAdminDto>> GetUsersAsync(UserAdminFilter filter);
-
-    // Activate/deactivate — MembershipDbContext + AuditLog write
-    Task<ServiceResult> DeactivateUserAsync(int userBusinessId, string performedByUserId);
-    Task<ServiceResult> ReactivateUserAsync(int userBusinessId, string performedByUserId);
-
-    // Module permissions — MembershipDbContext + AuditLog write
-    Task<List<UserModulePermissionDto>> GetUserPermissionsAsync(int userBusinessId);
-    Task<ServiceResult> UpdatePermissionAsync(
-        int userBusinessId, string module, string accessLevel, string performedByUserId);
+function renderEntityLink(entityType, recordId, displayText, action) {
+    if (action === 'Delete') return `<span class="entity">${displayText}</span>`;
+    const baseRoute = entityRoutes[entityType];
+    if (!baseRoute) return `<span class="entity">${displayText}</span>`;
+    return `<a href="${baseRoute}${recordId}" class="entity">${displayText}</a>`;
 }
 ```
 
-**Supporting DTOs** (in `Portal.Infrastructure/Models/`):
-
-```csharp
-public class UserAdminFilter
-{
-    public string? SearchTerm { get; set; }     // name/email contains, case-insensitive
-    public string? StatusFilter { get; set; }   // "Active" | "Inactive" | null = All
-    public int PageNumber { get; set; } = 1;
-    public int PageSize { get; set; } = 20;
-}
-
-public class UserAdminDto
-{
-    public int UserBusinessId { get; set; }
-    public string UserId { get; set; } = null!;
-    public string FullName { get; set; } = null!;
-    public string Email { get; set; } = null!;
-    public string Role { get; set; } = null!;
-    public bool IsActive { get; set; }
-    public DateTime? LastLoginUtc { get; set; }  // from AspNetUsers.LastLoginUtc if available
-}
-
-public class UserModulePermissionDto
-{
-    public int? PermissionId { get; set; }       // null if no record exists yet
-    public string Module { get; set; } = null!;
-    public string AccessLevel { get; set; } = null!;  // "full" | "readonly" | "none"
-    public bool IsActive { get; set; }
-}
-```
-
-### UserAdminRepository
-
-**Location:** `Portal.Infrastructure/Repositories/UserAdminRepository.cs`
-
-```csharp
-public class UserAdminRepository : GenericStoredProcedureRepository<UserBusiness>
-{
-    public UserAdminRepository(DbContext context) : base(context) { }
-
-    public async Task<(List<UserBusiness> Items, int TotalCount)> GetUsersPagedAsync(
-        int businessId, string? searchTerm, bool? isActive, int skip, int take);
-
-    public async Task<UserBusiness?> GetByIdAsync(int userBusinessId);
-
-    public async Task DeactivateAsync(int userBusinessId, DateTime deactivatedAtUtc);
-
-    public async Task ReactivateAsync(int userBusinessId);
-
-    public async Task<List<UserBusinessPermission>> GetPermissionsAsync(int userBusinessId);
-
-    public async Task UpsertPermissionAsync(
-        int userBusinessId, string module, string accessLevel, bool isActive, DateTime? deactivatedAtUtc);
-}
-```
-
-`GetUsersPagedAsync` uses EF Core LINQ against `MembershipDbContext` with `.Include(ub => ub.User)` to load the `ApplicationUser` navigation property for name/email. `UpsertPermissionAsync` checks for an existing `UserBusinessPermission` record and either inserts or updates it using `ExecuteSqlRawAsync`.
+Entities with known routes render as hyperlinks. Deleted entities and unknown entity types render as plain text.
 
 
 ## Data Models
 
-### AuditLog (existing — no schema changes required)
+### ActivityItemDto (new)
 
-The `[audit].[AuditLog]` table already exists (migration `019_CreateAuditLogTable.sql`). No schema changes are needed. The existing `AuditLog` entity and `AuditLogRepository` are unchanged.
+**Location:** `Portal.Infrastructure/Models/ActivityItemDto.cs`
+
+```csharp
+public class ActivityItemDto
+{
+    public long Id { get; set; }
+    public string Summary { get; set; } = null!;          // Plain-English summary
+    public string ActorName { get; set; } = null!;        // "John P." / "System"
+    public string EntityType { get; set; } = null!;       // Friendly name: "Invoice", "Customer"
+    public string EntityIdentifier { get; set; } = null!; // Human-readable: "INV-2026-0089" or RecordId
+    public string RecordId { get; set; } = null!;         // Raw RecordId for link generation
+    public string ActionType { get; set; } = null!;       // "created" / "edited" / "deleted" / "status-changed"
+    public DateTime TimestampUtc { get; set; }            // Raw UTC for client-side relative formatting
+    public string? OldValues { get; set; }                // Raw JSON for detail panel
+    public string? NewValues { get; set; }                // Raw JSON for detail panel
+    public bool IsStatusChange { get; set; }              // True if this is a status transition
+    public string? OldStatus { get; set; }                // Resolved status name (for status changes)
+    public string? NewStatus { get; set; }                // Resolved status name (for status changes)
+}
+```
+
+### QuickStatsDto (new)
+
+**Location:** `Portal.Infrastructure/Models/QuickStatsDto.cs`
+
+```csharp
+public class QuickStatsDto
+{
+    public int TotalChangesThisWeek { get; set; }
+    public int TeamMembersActive { get; set; }
+    public string MostActiveArea { get; set; } = "None";
+    public DateTime? LastActivityUtc { get; set; }        // Null if no activity; client formats
+}
+```
+
+### ActivityFilterOptionsDto (new)
+
+**Location:** `Portal.Infrastructure/Models/ActivityFilterOptionsDto.cs`
+
+```csharp
+public class ActivityFilterOptionsDto
+{
+    public List<TeamMemberOption> TeamMembers { get; set; } = new();
+}
+
+public class TeamMemberOption
+{
+    public string UserId { get; set; } = null!;
+    public string DisplayName { get; set; } = null!;
+}
+```
+
+### Existing Models (unchanged)
+
+- **AuditLog** — entity at `Portal.Infrastructure/Entities/AuditLog.cs` (Id, BusinessId, UserId, Action, TableName, RecordId, OldValues, NewValues, Timestamp)
+- **AuditLogFilter** — filter model at `Portal.Infrastructure/Models/AuditLogFilter.cs` (TableName, Action, UserId, DateFrom, DateTo, PageNumber, PageSize)
+- **PagedResult<T>** — pagination wrapper at `Portal.Infrastructure/Models/PagedResult.cs`
+
+### AuditLog Table (existing — no changes)
 
 ```
 [audit].[AuditLog]
@@ -276,169 +412,112 @@ The `[audit].[AuditLog]` table already exists (migration `019_CreateAuditLogTabl
   Timestamp     DATETIME2 NOT NULL DEFAULT GETUTCDATE()
 ```
 
-Indexes already in place: `PK_AuditLog` (clustered on Id), `IX_AuditLog_BusinessId` (non-clustered).
+Existing indexes: `IX_AuditLog_BusinessId_Timestamp` (supports the 7-day stats query and the default timestamp-descending ordering).
 
-**Recommended additional index** (new migration `060_AddAuditLogQueryIndexes.sql`):
 
-```sql
--- Composite index to support the most common query pattern:
--- WHERE BusinessId = @b AND Timestamp BETWEEN @from AND @to ORDER BY Timestamp DESC
-CREATE NONCLUSTERED INDEX [IX_AuditLog_BusinessId_Timestamp]
-    ON [audit].[AuditLog] ([BusinessId], [Timestamp] DESC);
+## Controller Endpoint Detail
 
--- Covering index for action-filtered queries
-CREATE NONCLUSTERED INDEX [IX_AuditLog_BusinessId_Action]
-    ON [audit].[AuditLog] ([BusinessId], [Action])
-    INCLUDE ([Timestamp], [TableName], [UserId], [RecordId]);
-```
+### GET /Activity (Index)
 
-### UserBusiness (existing — no schema changes)
-
-```
-[membership].[UserBusiness]
-  Id                INT IDENTITY PK
-  UserId            NVARCHAR(450) NOT NULL FK → AspNetUsers
-  BusinessId        INT NOT NULL
-  IsDefault         BIT NOT NULL
-  IsActive          BIT NOT NULL DEFAULT 1
-  DeactivatedAtUtc  DATETIME NULL
-  CreatedAtUtc      DATETIME NOT NULL DEFAULT GETUTCDATE()
-```
-
-### UserBusinessPermission (existing — no schema changes)
-
-```
-[membership].[UserBusinessPermission]
-  Id                INT IDENTITY PK
-  UserBusinessId    INT NOT NULL FK → UserBusiness
-  Module            NVARCHAR(50) NOT NULL
-  AccessLevel       NVARCHAR(20) NOT NULL   -- "full" | "readonly" | "none"
-  IsActive          BIT NOT NULL DEFAULT 1
-  DeactivatedAtUtc  DATETIME NULL
-  CreatedAtUtc      DATETIME NOT NULL DEFAULT GETUTCDATE()
-  UNIQUE (UserBusinessId, Module)
-```
-
-### AuditLog PortalDbContext Configuration (existing — verify mapping)
-
-The existing `ConfigureAuditLog` method in `PortalDbContext` must map to `[audit].[AuditLog]`. Confirm it includes:
+Loads the view with server-rendered filter options:
 
 ```csharp
-entity.ToTable("AuditLog", "audit");
-entity.HasKey(e => e.Id);
-entity.Property(e => e.Id).ValueGeneratedOnAdd();
-entity.Property(e => e.Action).IsRequired().HasMaxLength(50);
-entity.Property(e => e.TableName).IsRequired().HasMaxLength(200);
-entity.Property(e => e.RecordId).IsRequired().HasMaxLength(50);
-entity.Property(e => e.UserId).HasMaxLength(450);
-entity.Property(e => e.Timestamp).IsRequired().HasDefaultValueSql("GETUTCDATE()");
-```
-
-
-## EF Core Audit Interceptor — Detailed Design
-
-### Lifecycle: Two-Phase Capture
-
-The interceptor operates in two phases to handle identity-generated PKs correctly:
-
-**Phase 1 — `SavingChangesAsync` (pre-save):**
-- Iterate `eventData.Context.ChangeTracker.Entries()`.
-- Skip entries where `entry.Entity is AuditLog` (prevents recursion).
-- Skip entries in `EntityState.Unchanged` or `EntityState.Detached`.
-- For each qualifying entry, build an `AuditEntry`:
-  - `Action`: `Added → "Insert"`, `Modified → "Update"`, `Deleted → "Delete"`.
-  - `TableName`: resolved from `entry.Metadata.GetTableName()`.
-  - `OldValues`: for `Modified` and `Deleted`, serialize only properties where `entry.Property(p.Name).IsModified == true` (for Modified) or all scalar properties (for Deleted) from `entry.OriginalValues`.
-  - `NewValues`: for `Added` and `Modified`, serialize only modified scalar properties from `entry.CurrentValues`.
-  - `RecordId`: for `Modified` and `Deleted`, read the PK value now (it exists). For `Added`, leave empty — will be filled post-save.
-  - `BusinessId`: `_tenantService.CurrentBusinessId`.
-  - `UserId`: `_httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier)`.
-  - `Timestamp`: `DateTime.UtcNow`.
-- Store the list of `AuditEntry` objects in a thread-local or `AsyncLocal<List<AuditEntry>>` field keyed by the `DbContext` instance.
-
-**Phase 2 — `SavedChangesAsync` (post-save):**
-- Retrieve the pending `AuditEntry` list for this context instance.
-- For entries with `Action == "Insert"`, read the generated PK from `entry.Entity` via reflection or `entry.CurrentValues[pkPropertyName].ToString()`.
-- For each `AuditEntry`, call `await _auditLogRepository.InsertAsync(new AuditLog { ... })`.
-- Clear the pending list.
-
-### Property Serialization
-
-Only scalar (non-navigation, non-shadow) properties are serialized. The helper method:
-
-```csharp
-private static string? SerializeProperties(IEnumerable<PropertyEntry> properties)
+[HttpGet("")]
+public async Task<IActionResult> Index()
 {
-    var dict = properties
-        .Where(p => !p.Metadata.IsShadowProperty() && p.Metadata.ClrType.IsValueType
-                    || p.Metadata.ClrType == typeof(string))
-        .ToDictionary(p => p.Metadata.Name, p => p.CurrentValue);
+    var businessId = _currentTenantService.CurrentBusinessId;
+    var teamMembers = await _membershipDbContext.UserBusinesses
+        .Include(ub => ub.User)
+        .Where(ub => ub.BusinessId == businessId && ub.IsActive)
+        .Select(ub => new { userId = ub.UserId, displayName = ub.User.FirstName + " " + ub.User.LastName })
+        .ToListAsync();
 
-    return dict.Count == 0 ? null : JsonSerializer.Serialize(dict);
+    ViewBag.TeamMembers = teamMembers;
+    return View();
 }
 ```
 
-For `Update` operations, only properties where `p.IsModified == true` are included in both `OldValues` (using `p.OriginalValue`) and `NewValues` (using `p.CurrentValue`).
-
-### Recursion Guard
+### GET /Activity/AxGetActivities
 
 ```csharp
-// In SavingChangesAsync — first filter applied before any other processing:
-var entries = eventData.Context.ChangeTracker.Entries()
-    .Where(e => e.Entity is not AuditLog
-             && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
-    .ToList();
-```
-
-### Failure Safety
-
-The interceptor writes audit records in `SavedChangesAsync`, which only fires when the main save succeeds. If `SaveChangesAsync` throws, `SavedChangesAsync` is never called, so no orphaned audit records are written. The pending `AuditEntry` list is cleared regardless of outcome to prevent stale state on context reuse.
-
-### Context Instance Isolation
-
-Because `PortalDbContext` is scoped (one per request), a simple instance field `private List<AuditEntry>? _pendingEntries` on the interceptor is sufficient — but only if the interceptor is also registered as scoped. If registered as singleton, use `ConditionalWeakTable<DbContext, List<AuditEntry>>` to key pending entries by context instance.
-
-**Decision:** Register `AuditInterceptor` as **scoped** to match `PortalDbContext` lifetime. This is the simplest and safest approach.
-
-
-## AuditController
-
-**Location:** `Portal.Web/Controllers/AuditController.cs`
-
-**Route prefix:** `/Admin/Audit`
-
-```csharp
-[Authorize(Roles = "SuperAdmin")]
-[ModuleAccess(PortalModules.Audit, AccessLevels.Full)]
-[Route("Admin/Audit")]
-public class AuditController : Controller
+[HttpGet("AxGetActivities")]
+public async Task<IActionResult> AxGetActivities(
+    [FromQuery] string? category,
+    [FromQuery] string? userId,
+    [FromQuery] string? changeType,
+    [FromQuery] DateTime? dateFrom,
+    [FromQuery] DateTime? dateTo,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 8)
 {
-    private readonly IAuditLogQueryService _auditLogQueryService;
-    private readonly MembershipDbContext _membershipDbContext;
-    private readonly ICurrentTenantService _tenantService;
+    try
+    {
+        // 1. Validate dates
+        if (dateFrom.HasValue && dateTo.HasValue && dateFrom.Value > dateTo.Value)
+            return Json(new { success = false, message = "Date From cannot be greater than Date To." });
 
-    // GET /Admin/Audit
-    [HttpGet("")]
-    public async Task<IActionResult> Index();
+        // 2. Map category → TableName filter
+        string? tableNameFilter = null;
+        string[]? tableNames = null;
+        if (!string.IsNullOrEmpty(category) && ActivityFilterMapping.CategoryToTableNames.TryGetValue(category, out var tables))
+            tableNames = tables;
 
-    // GET /Admin/Audit/Search?tableName=&action=&userId=&dateFrom=&dateTo=&page=1&pageSize=20
-    [HttpGet("Search")]
-    public async Task<IActionResult> Search(
-        string? tableName, string? action, string? userId,
-        DateTime? dateFrom, DateTime? dateTo,
-        int page = 1, int pageSize = 20);
+        // 3. Map changeType → Action
+        string? actionFilter = null;
+        bool isStatusChangeFilter = false;
+        if (!string.IsNullOrEmpty(changeType) && changeType != "All changes")
+        {
+            if (changeType == "Status changed")
+                isStatusChangeFilter = true;
+            if (ActivityFilterMapping.ChangeTypeToAction.TryGetValue(changeType, out var action))
+                actionFilter = action;
+        }
+
+        // 4. Map userId (handle "System" → null userId filter)
+        string? userIdFilter = userId == "system" ? null : userId;
+        bool filterBySystem = userId == "system";
+
+        // 5. Build AuditLogFilter (NOTE: existing service accepts single TableName)
+        //    For multi-table categories, we call multiple times or extend the filter.
+        //    Design decision: Extend AuditLogFilter to accept TableName[] (see below)
+        var filter = new AuditLogFilter
+        {
+            TableName = tableNames?.Length == 1 ? tableNames[0] : null,
+            Action = actionFilter,
+            UserId = filterBySystem ? "__NULL__" : userIdFilter, // sentinel for null
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            PageNumber = page,
+            PageSize = pageSize
+        };
+
+        // ... (call service, transform, return)
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error loading activity for business {BusinessId}", _currentTenantService.CurrentBusinessId);
+        return Json(new { success = false, message = "Could not load activity data. Please try again." });
+    }
 }
 ```
 
-**Index action:** Loads distinct table names and business users for filter dropdowns, passes them to the view via `ViewBag`. Returns `View()`.
+**Multi-Table Filter Design Decision:**
 
-**Search action:**
-- Validates `dateFrom <= dateTo` when both are provided; returns `Json(new { success = false, message = "Date From cannot be greater than Date To." })` if invalid.
-- Builds `AuditLogFilter` and calls `_auditLogQueryService.GetAuditLogsAsync(filter)`.
-- On success: returns `Json(new { success = true, data = pagedResult.Items, totalCount, currentPage, totalPages })`.
-- On exception: logs via Serilog, returns `Json(new { success = false, message = "The search could not be completed. Please try again." })`.
+The existing `AuditLogFilter.TableName` is a single string. Categories like "Invoices" map to multiple tables (`["Invoice", "InvoiceLine"]`). Rather than modifying the existing filter (which would affect the SuperAdmin viewer), we add a new property:
 
-**Response shape for Search:**
+```csharp
+// Extension to AuditLogFilter for multi-table support
+public string[]? TableNames { get; set; }  // When set, overrides TableName
+```
+
+The `AuditLogQueryRepository.GetPagedAsync` method's WHERE clause becomes:
+- If `TableNames` is set: `WHERE TableName IN (@t1, @t2, ...)`
+- If `TableName` is set (single): `WHERE TableName = @tableName`
+- If neither: no table filter
+
+This is backward-compatible — existing callers using `TableName` are unaffected.
+
+### Response Shape (AxGetActivities)
 
 ```json
 {
@@ -446,127 +525,96 @@ public class AuditController : Controller
   "data": [
     {
       "id": 1042,
-      "timestamp": "2026-05-26T14:32:18",
-      "userId": "abc123",
-      "userDisplayName": "John Papamichael",
-      "action": "Update",
-      "tableName": "Invoice",
+      "summary": "John P. created Invoice INV-2026-0095 for Sunrise Hospitality (€2,100.00)",
+      "actorName": "John P.",
+      "entityType": "Invoice",
+      "entityIdentifier": "INV-2026-0095",
       "recordId": "1042",
-      "oldValues": "{\"StatusTypeId\":1}",
-      "newValues": "{\"StatusTypeId\":2}"
+      "actionType": "created",
+      "timestampUtc": "2026-07-08T14:32:18Z",
+      "oldValues": null,
+      "newValues": "{\"InvoiceNumber\":\"INV-2026-0095\",\"CustomerName\":\"Sunrise Hospitality\",\"TotalAmount\":2100.00,\"StatusTypeId\":1}",
+      "isStatusChange": false,
+      "oldStatus": null,
+      "newStatus": null
     }
   ],
-  "totalCount": 142,
+  "quickStats": {
+    "totalChangesThisWeek": 47,
+    "teamMembersActive": 3,
+    "mostActiveArea": "Invoicing",
+    "lastActivityUtc": "2026-07-08T14:32:18Z"
+  },
+  "totalCount": 47,
   "currentPage": 1,
-  "totalPages": 8
+  "totalPages": 6
 }
 ```
 
-The `userDisplayName` is resolved by the service by joining against `MembershipDbContext.Users` using the `UserId` values in the result set.
 
+## View Structure
 
-## AdminController
+### Views/Activity/Index.cshtml
 
-**Location:** `Portal.Web/Controllers/AdminController.cs`
-
-**Route prefix:** `/Admin/Users`
-
-```csharp
-[Authorize(Roles = "SuperAdmin")]
-[Route("Admin/Users")]
-public class AdminController : Controller
-{
-    private readonly IUserAdminService _userAdminService;
-    private readonly ICurrentTenantService _tenantService;
-    private readonly UserManager<ApplicationUser> _userManager;
-
-    // GET /Admin/Users
-    [HttpGet("")]
-    public async Task<IActionResult> Index(
-        string? searchTerm, string? statusFilter, int page = 1);
-
-    // GET /Admin/Users/ModuleAccess/{userBusinessId}
-    [HttpGet("ModuleAccess/{userBusinessId:int}")]
-    public async Task<IActionResult> ModuleAccess(int userBusinessId);
-
-    // POST /Admin/Users/UpdatePermission
-    [HttpPost("UpdatePermission")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdatePermission(
-        [FromBody] UpdatePermissionRequest request);
-
-    // POST /Admin/Users/ToggleStatus
-    [HttpPost("ToggleStatus")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ToggleStatus(
-        [FromBody] ToggleStatusRequest request);
-}
-```
-
-**Request models** (in `Portal.Web/Models/`):
-
-```csharp
-public class UpdatePermissionRequest
-{
-    public int UserBusinessId { get; set; }
-    public string Module { get; set; } = null!;
-    public string AccessLevel { get; set; } = null!;
-}
-
-public class ToggleStatusRequest
-{
-    public int UserBusinessId { get; set; }
-    public bool Activate { get; set; }  // true = reactivate, false = deactivate
-}
-```
-
-**Index action:** Builds `UserAdminFilter`, calls `_userAdminService.GetUsersAsync(filter)`, returns view with `PagedResult<UserAdminDto>` as model.
-
-**ModuleAccess action:** Loads user info and all module permissions via `_userAdminService.GetUserPermissionsAsync(userBusinessId)`. Passes `PortalModules.All` and the permission list to the view. Returns `View()`.
-
-**UpdatePermission action:** Validates module and access level against constants. Calls `_userAdminService.UpdatePermissionAsync(...)`. Returns `Json(new { success, message })`.
-
-**ToggleStatus action:** Calls `DeactivateUserAsync` or `ReactivateUserAsync` based on `request.Activate`. Guards against self-deactivation by comparing `request.UserBusinessId` against the current user's `UserBusiness`. Returns `Json(new { success, message })`.
-
-
-## Audit Log Viewer UI
-
-**Location:** `Portal.Web/Views/Audit/Index.cshtml`
-
-### View Structure
+The view matches the locked mockup at `.kiro/docs/mockups/audit-log-business-view.html`.
 
 ```
-Page Header (eyebrow: "Administration", title: "Audit Log")
+Page Layout:
+├── Topbar
+│   ├── Eyebrow: "Business Operations"
+│   ├── H1: "Activity Log" (42px Manrope 800)
+│   └── Subtitle: "Everything that's happened in your business — who did what and when."
+│
+├── Quick Stats Row  <div class="stats-row"> (4-column grid)
+│   ├── Stat Card (blue left-border): "Changes this week" → {count}
+│   ├── Stat Card (green left-border): "By team members" → {count} people
+│   ├── Stat Card (amber left-border): "Most active area" → {area name}
+│   └── Stat Card (muted left-border): "Last activity" → {relative time}
 │
 ├── Filter Card  <section class="glass card-pad" style="margin-bottom:22px;">
-│   └── Filter row (flex, gap:14px, align-items:flex-end)
-│       ├── Table Name (select, min-width:180px) — populated from ViewBag.TableNames
-│       ├── Action (select: All / Insert / Update / Delete)
-│       ├── User (select, min-width:180px) — populated from ViewBag.Users
-│       ├── Date From (input[type=date])
-│       ├── Date To (input[type=date])
-│       └── [Filter] [Clear] buttons (padding-bottom:2px wrapper)
+│   └── Filter row (flex, gap:14px, align-items:flex-end, flex-wrap:wrap)
+│       ├── "What changed" (select, min-width:180px)
+│       ├── "Who made the change" (select, min-width:180px)
+│       ├── "What type of change" (select, min-width:180px)
+│       ├── "Date from" (input[type=date], min-width:140px)
+│       ├── "Date to" (input[type=date], min-width:140px)
+│       └── Button wrapper (padding-bottom:2px, flex, gap:8px)
+│           ├── [Filter] btn-primary
+│           └── [Clear] btn-secondary
 │
-└── Data Table Card  <section class="glass card-pad">
-    ├── <table class="data-table">
-    │   ├── thead: [expand] [Timestamp] [User] [Action] [Table] [Record ID]
-    │   └── tbody: data rows + detail rows (injected by JS)
-    └── Pagination row (margin-top:18px, flex, space-between)
-        ├── "Showing X–Y of Z" info
-        └── [← Prev] [1] [2] ... [N] [Next →] buttons
+└── Activity Feed Card  <section class="glass card-pad">
+    ├── <div class="activity-feed"> (vertical timeline line via ::before pseudo)
+    │   └── Activity rows (repeating structure):
+    │       ├── Dot indicator (32px circle, colored per action type)
+    │       ├── Content area
+    │       │   ├── Summary text (14px, entity links as <a> tags)
+    │       │   ├── Relative timestamp (12px, muted color)
+    │       │   └── Detail panel (hidden by default, slide-down on expand)
+    │       └── Expand button (32px, chevron SVG, rotates 180° when open)
+    │
+    └── Pagination bar (margin-top:18px, flex, space-between)
+        ├── "Showing X–Y of Z" (14px, muted)
+        └── Page buttons (6px 12px padding, 8px radius, 13px bold)
 ```
 
-### JavaScript AJAX Pattern
+### JavaScript Approach
+
+**File:** `Views/Activity/Index.cshtml` (inline `<script>` section)
 
 ```javascript
-// State
+// === State ===
 let currentPage = 1;
-const pageSize = 20;
+const pageSize = 8;
 
-async function loadAuditLogs(page) {
+// === Load Activities ===
+async function loadActivities(page) {
+    const category = document.getElementById('filterCategory').value;
+    const userId = document.getElementById('filterUser').value;
+    const changeType = document.getElementById('filterChangeType').value;
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo = document.getElementById('filterDateTo').value;
+
     // Client-side date validation
-    const dateFrom = document.getElementById('dateFrom').value;
-    const dateTo = document.getElementById('dateTo').value;
     if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
         Swal.fire({ title: 'Invalid Date Range',
             text: 'Date From cannot be greater than Date To.',
@@ -574,496 +622,284 @@ async function loadAuditLogs(page) {
         return;
     }
 
-    BlockUI.show('Loading audit logs...');
+    BlockUI.show('Loading activity...');
     try {
-        const params = new URLSearchParams({
-            tableName: document.getElementById('tableName').value,
-            action: document.getElementById('action').value,
-            userId: document.getElementById('userId').value,
-            dateFrom, dateTo, page, pageSize
-        });
-        const response = await fetch(`/Admin/Audit/Search?${params}`);
-        const data = await response.json();
+        const params = new URLSearchParams();
+        if (category) params.set('category', category);
+        if (userId) params.set('userId', userId);
+        if (changeType) params.set('changeType', changeType);
+        if (dateFrom) params.set('dateFrom', dateFrom);
+        if (dateTo) params.set('dateTo', dateTo);
+        params.set('page', page);
+        params.set('pageSize', pageSize);
+
+        const response = await fetch(`/Activity/AxGetActivities?${params}`);
+        const result = await response.json();
         BlockUI.hide();
 
-        if (data.success) {
-            renderTable(data.data);
-            renderPagination(data.currentPage, data.totalPages, data.totalCount);
-            currentPage = data.currentPage;
+        if (result.success) {
+            renderQuickStats(result.quickStats);
+            renderActivityFeed(result.data);
+            renderPagination(result.currentPage, result.totalPages, result.totalCount);
+            currentPage = result.currentPage;
         } else {
-            Swal.fire({ title: 'Error', text: data.message,
+            Swal.fire({ title: 'Error', text: result.message,
                 icon: 'error', confirmButtonColor: '#0D5EA6' });
         }
     } catch (e) {
         BlockUI.hide();
-        Swal.fire({ title: 'Error', text: 'An unexpected error occurred.',
+        Swal.fire({ title: 'Error',
+            text: 'Could not load activity data. Please try again.',
             icon: 'error', confirmButtonColor: '#0D5EA6' });
     }
 }
 
-// Called on page load
-document.addEventListener('DOMContentLoaded', () => loadAuditLogs(1));
+// === On page load ===
+document.addEventListener('DOMContentLoaded', () => loadActivities(1));
 ```
 
-### Table Row Rendering
-
-Each data row is rendered as two `<tr>` elements: the summary row and a hidden detail row.
-
-**Action badge classes:** `badge--insert` (green), `badge--update` (blue), `badge--delete` (red).
-
-**Detail row expand/collapse:** Clicking the summary row toggles the detail row. Only one detail row is open at a time (close others on open). The expand button rotates 180° when open (CSS `transform: rotate(180deg)`).
-
-**Detail panel layout:**
-- `Update`: two-column grid — Old Values | New Values. Changed properties highlighted with `background: rgba(13,94,166,0.08); border-left: 3px solid #0D5EA6`.
-- `Insert`: full-width New Values panel only (`grid-column: 1 / -1`).
-- `Delete`: full-width Old Values panel only (`grid-column: 1 / -1`).
-
-JSON values are parsed and rendered as `key: value` lines. For `Update`, the keys present in both `oldValues` and `newValues` are highlighted as changed.
-
-**Empty state:** When `data.data.length === 0`, render a single row spanning all columns:
-```html
-<tr><td colspan="6" style="text-align:center;padding:32px;color:#5a6b7c;">
-    No audit records found matching the selected filters.
-</td></tr>
-```
-
-### Pagination Rendering
+**Activity Row Rendering:**
 
 ```javascript
-function renderPagination(currentPage, totalPages, totalCount) {
-    const start = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-    const end = Math.min(currentPage * pageSize, totalCount);
-    document.getElementById('paginationInfo').textContent =
-        `Showing ${start}–${end} of ${totalCount}`;
-    // Render page buttons: Prev, 1..totalPages (with ellipsis for large ranges), Next
-    // Active page gets class page-btn--active; Prev/Next disabled at boundaries
-}
-```
-
-
-## User Management UI
-
-**Location:** `Portal.Web/Views/Admin/Index.cshtml`
-
-### View Structure
-
-```
-Page Header (eyebrow: "Administration", title: "Users")
-│
-├── Filter Card  <section class="glass card-pad" style="margin-bottom:22px;">
-│   └── Filter row (flex, gap:14px)
-│       ├── Search (input[type=text], placeholder: "Name or email...", min-width:240px)
-│       ├── Status (select: All / Active / Inactive, min-width:160px)
-│       ├── [Filter] [Clear] buttons
-│       └── [Invite User] button (links to /Invitation/Create, btn-primary, float right)
-│
-└── Data Table Card  <section class="glass card-pad">
-    ├── <table class="data-table">
-    │   ├── thead: [Full Name] [Email] [Role] [Status] [Last Login] [Actions]
-    │   └── tbody: user rows (clickable → ModuleAccess)
-    └── Pagination row (margin-top:18px)
-```
-
-**Status badge:** Active = green badge, Inactive = red badge (same badge pattern as action badges).
-
-**Last Login:** Formatted as `dd MMM yyyy HH:mm` or `"Never"` if null.
-
-**Actions column:** Deactivate button (danger style) for active users; Reactivate button (primary style) for inactive users. Self-row: buttons disabled with tooltip "You cannot modify your own account."
-
-### SweetAlert2 Confirmation Flow
-
-**Deactivate:**
-```javascript
-async function deactivateUser(userBusinessId, userName) {
-    const confirm = await Swal.fire({
-        title: 'Deactivate User',
-        text: `Are you sure you want to deactivate ${userName}?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#C24A4A',
-        confirmButtonText: 'Deactivate'
-    });
-    if (!confirm.isConfirmed) return;
-
-    BlockUI.show('Deactivating user...');
-    try {
-        const response = await fetch('/Admin/Users/ToggleStatus', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': getAntiForgeryToken()
-            },
-            body: JSON.stringify({ userBusinessId, activate: false })
-        });
-        const data = await response.json();
-        BlockUI.hide();
-        if (data.success) {
-            Swal.fire({ title: 'Done', text: 'User deactivated.',
-                icon: 'success', confirmButtonColor: '#0D5EA6' })
-                .then(() => location.reload());
-        } else {
-            Swal.fire({ title: 'Error', text: data.message,
-                icon: 'error', confirmButtonColor: '#0D5EA6' });
-        }
-    } catch (e) {
-        BlockUI.hide();
-        Swal.fire({ title: 'Error', text: 'An unexpected error occurred.',
-            icon: 'error', confirmButtonColor: '#0D5EA6' });
-    }
-}
-```
-
-**Reactivate:** Same pattern with `confirmButtonColor: '#0D5EA6'` and `activate: true`.
-
-**Self-deactivation guard:** Before showing the confirmation, check if `userBusinessId === currentUserBusinessId` (passed from server via `ViewBag.CurrentUserBusinessId`). If so, show informational Swal and return.
-
-
-## Module Access Manager UI
-
-**Location:** `Portal.Web/Views/Admin/ModuleAccess.cshtml`
-
-### View Structure
-
-```
-Page Header (eyebrow: "Administration", title: "Module Access — {UserFullName}")
-│
-└── Permissions Card  <section class="glass card-pad">
-    ├── User info row (name, email, status badge)
-    ├── <table class="data-table">
-    │   ├── thead: [Module] [Access Level] [Status]
-    │   └── tbody: one row per module in PortalModules.All
-    │       ├── Module name (display-friendly, e.g. "Customer", "Quotation")
-    │       ├── Access level selector (radio group or segmented control: Full | ReadOnly | None)
-    │       └── Status badge (Active / Inactive based on IsActive)
-    └── Back link → /Admin/Users
-```
-
-### Permission Change Flow
-
-Each module row has three radio/toggle buttons: Full, ReadOnly, None. Changing a selection triggers:
-
-```javascript
-async function updatePermission(userBusinessId, module, accessLevel, moduleName) {
-    const isRevocation = accessLevel === 'none';
-    const confirmColor = isRevocation ? '#C24A4A' : '#0D5EA6';
-    const confirmText = isRevocation
-        ? `Revoke ${moduleName} access?`
-        : `Grant ${accessLevel} access to ${moduleName}?`;
-
-    const confirm = await Swal.fire({
-        title: 'Confirm Permission Change',
-        text: confirmText,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: confirmColor,
-        confirmButtonText: 'Confirm'
-    });
-
-    if (!confirm.isConfirmed) {
-        // Revert the UI selection to previous value
-        revertSelection(module);
+function renderActivityFeed(items) {
+    const feed = document.getElementById('activityFeed');
+    if (items.length === 0) {
+        feed.innerHTML = `<div class="empty-state"><p>No activity found matching the selected filters.</p></div>`;
         return;
     }
+    feed.innerHTML = items.map(item => `
+        <div class="activity-row" onclick="toggleRow(this)">
+            <div class="activity-dot ${getDotClass(item.actionType)}"></div>
+            <div class="activity-content">
+                <div class="activity-summary">${buildSummaryHtml(item)}</div>
+                <div class="activity-time">${formatRelativeTime(item.timestampUtc)}</div>
+                <div class="activity-detail">${buildDetailPanel(item)}</div>
+            </div>
+            <div class="activity-expand">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </div>
+        </div>
+    `).join('');
+}
 
-    BlockUI.show('Updating permission...');
-    try {
-        const response = await fetch('/Admin/Users/UpdatePermission', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': getAntiForgeryToken()
-            },
-            body: JSON.stringify({ userBusinessId, module, accessLevel })
-        });
-        const data = await response.json();
-        BlockUI.hide();
-
-        if (data.success) {
-            Swal.fire({ title: 'Updated',
-                text: `${moduleName} access set to ${accessLevel}.`,
-                icon: 'success', confirmButtonColor: '#0D5EA6' });
-            updateStatusBadge(module, accessLevel);
-        } else {
-            revertSelection(module);
-            Swal.fire({ title: 'Error', text: data.message,
-                icon: 'error', confirmButtonColor: '#0D5EA6' });
-        }
-    } catch (e) {
-        BlockUI.hide();
-        revertSelection(module);
-        Swal.fire({ title: 'Error', text: 'An unexpected error occurred.',
-            icon: 'error', confirmButtonColor: '#0D5EA6' });
+function getDotClass(actionType) {
+    switch (actionType) {
+        case 'created': return 'created';
+        case 'edited': return 'edited';
+        case 'deleted': return 'deleted';
+        case 'status-changed': return 'status-changed';
+        default: return 'edited';
     }
 }
-```
 
-**Self-protection:** The currently authenticated user's row has all access level controls disabled (`disabled` attribute) and a tooltip: "You cannot modify your own permissions."
-
-**Previous value tracking:** Each module row stores the current access level in a `data-current-level` attribute. On cancel or error, `revertSelection` reads this attribute and resets the radio/toggle state.
-
-
-## Database Migrations
-
-### Migration 060 — Audit Log Query Indexes (new)
-
-**File:** `Portal.Database/Migrations/060_AddAuditLogQueryIndexes.sql`
-
-```sql
-/*
-    Migration: 060_AddAuditLogQueryIndexes
-    Description: Adds composite indexes on [audit].[AuditLog] to support
-                 the filtered, paginated query patterns used by AuditLogQueryService.
-    This script is idempotent — safe to run multiple times.
-*/
-
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE [name] = 'IX_AuditLog_BusinessId_Timestamp'
-      AND [object_id] = OBJECT_ID('[audit].[AuditLog]')
-)
-BEGIN
-    CREATE NONCLUSTERED INDEX [IX_AuditLog_BusinessId_Timestamp]
-        ON [audit].[AuditLog] ([BusinessId], [Timestamp] DESC);
-END
-GO
-
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE [name] = 'IX_AuditLog_BusinessId_Action'
-      AND [object_id] = OBJECT_ID('[audit].[AuditLog]')
-)
-BEGIN
-    CREATE NONCLUSTERED INDEX [IX_AuditLog_BusinessId_Action]
-        ON [audit].[AuditLog] ([BusinessId], [Action])
-        INCLUDE ([Timestamp], [TableName], [UserId], [RecordId]);
-END
-GO
-```
-
-No other schema migrations are required. All tables (`AuditLog`, `UserBusiness`, `UserBusinessPermission`) already exist with the correct columns. The `UserBusiness` and `UserBusinessPermission` tables already have `IsActive`, `DeactivatedAtUtc`, and `CreatedAtUtc` columns per the existing entity definitions.
-
-
-## Error Handling
-
-### Interceptor
-
-- If `ICurrentTenantService` or `IHttpContextAccessor` throws, the exception propagates and `SaveChangesAsync` fails — this is acceptable since a broken tenant/auth context is a fatal condition.
-- If `AuditLogRepository.InsertAsync` throws in `SavedChangesAsync`, the exception is logged via Serilog and **swallowed** — the main save has already succeeded and we must not roll it back due to an audit write failure. This is the one place in the codebase where swallowing is intentional and documented.
-- If `HttpContext` is null or the NameIdentifier claim is absent, `UserId` is set to `null` and the record is still written (Requirement 1.9).
-
-### AuditLogQueryService
-
-- All exceptions propagate to the controller (standard `try/catch; throw` pattern).
-- The controller catches and returns `Json(new { success = false, message = ... })`.
-
-### UserAdminService
-
-- All exceptions propagate to the controller.
-- The controller catches, logs via Serilog, and returns `Json(new { success = false, message = ... })`.
-- Audit log write failures within `UserAdminService` (for permission changes and status toggles) are logged but do not fail the primary operation — same rationale as the interceptor.
-
-### Controller Layer
-
-All AJAX endpoints follow the standard pattern:
-
-```csharp
-try
-{
-    // ... service call
-    return Json(new { success = true, ... });
-}
-catch (Exception ex)
-{
-    _logger.LogError(ex, "Error in {Action}", nameof(ActionName));
-    return Json(new { success = false, message = "Operation could not be completed. Please try again." });
+function toggleRow(row) {
+    row.classList.toggle('expanded');
 }
 ```
 
+**Detail Panel Rendering:**
 
-## Registration (Program.cs)
+- **Created:** Table with "Field" / "Value" columns, populated from parsed `newValues` JSON.
+- **Edited:** Table with "Field" / "Change" columns. Each row shows: `<span class="val-old">old</span> → <span class="val-new">new</span>`.
+- **Deleted:** Table with "Field" / "Value at deletion" columns, populated from parsed `oldValues` JSON.
+- **Status Changed:** Same as Edited but heading says "Status change".
 
-The following additions are required in `Program.cs`:
+**Relative Timestamp (`formatRelativeTime`):** Implemented in a reusable function at the top of the script. Uses UTC Date comparison against `new Date()`.
+
+
+## Sidebar Navigation Update
+
+The Activity Log link moves from "Administration" to "Business Operations" in the sidebar partial (`Views/Shared/_Layout.cshtml`).
+
+**Before:** "Audit Log" under Administration section, linking to `/Admin/Audit`.
+**After:** "Activity Log" under Business Operations section, linking to `/Activity`.
+
+The SuperAdmin Audit Log at `/Admin/Audit` remains in the Administration section (unchanged). The business-level Activity Log is a separate menu item visible only to users with the `audit_log` module in their subscription plan.
+
+**Sidebar item specification:**
+- Label: "Activity Log"
+- Icon: Timeline/activity icon (clock with arrow or pulse icon)
+- Route: `/Activity`
+- Visibility: `PortalModules.AuditLog` must be in the user's plan features
+- Section: "Business Operations" (alongside Invoices, Quotations, etc.)
+
+## Registration (Program.cs additions)
 
 ```csharp
-// --- Audit Interceptor ---
-// Must be scoped to match PortalDbContext lifetime
-builder.Services.AddScoped<AuditInterceptor>();
-
-// Reconfigure PortalDbContext to add the interceptor
-// Replace the existing AddDbContext<PortalDbContext> registration:
-builder.Services.AddDbContext<PortalDbContext>((sp, options) =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("PortalDb"));
-    options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
-});
-
-// --- Audit Query ---
-builder.Services.AddScoped<AuditLogQueryRepository>(sp =>
-    new AuditLogQueryRepository(sp.GetRequiredService<PortalDbContext>()));
-builder.Services.AddScoped<IAuditLogQueryService, AuditLogQueryService>();
-
-// --- User Admin ---
-builder.Services.AddScoped<UserAdminRepository>(sp =>
-    new UserAdminRepository(sp.GetRequiredService<MembershipDbContext>()));
-builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+// --- Activity Log Services ---
+builder.Services.AddScoped<IActivitySummaryService, ActivitySummaryService>();
+builder.Services.AddScoped<IQuickStatsService, QuickStatsService>();
+builder.Services.AddScoped<IUserNameResolver, UserNameResolver>();
 ```
 
-**Note on interceptor registration:** Using `sp.GetRequiredService<AuditInterceptor>()` inside the `AddDbContext` factory lambda correctly resolves the scoped interceptor from the same scope as the `PortalDbContext`. This is the recommended EF Core pattern for scoped interceptors.
+No new repository registrations needed — `QuickStatsService` uses the already-registered `AuditLogQueryRepository` (or queries directly via `PortalDbContext`).
 
 
 ## Correctness Properties
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-**Property Reflection:** Before listing properties, redundancy was assessed. Requirements 1.3 and 1.4 (NewValues/OldValues serialization) are closely related but test different directions (current vs. original values) and different entity states, so they are kept separate. Requirements 2.3 and 2.7 (unfiltered returns all records, ordered descending) are combined into one ordering invariant property since 2.3 is subsumed by 2.7 when applied to the full result set. Requirements 2.4 and 2.5 (AND filter logic, pagination non-overlap) are distinct and kept separate. Requirements 1.7 and 1.8 (BusinessId and UserId resolution) are combined into one "context resolution" property since they test the same mechanism (dependency injection into the interceptor) with the same pattern.
+**Property Reflection:** Redundancy analysis was performed across all testable acceptance criteria:
+- Requirements 2.2, 2.3, 2.4, 2.5 (verb selection per action type) are consolidated into a single property that covers all action/verb mappings.
+- Requirements 4.1–4.6 (timestamp buckets) are consolidated into a single property covering all time-difference brackets.
+- Requirements 5.1–5.3 (weekly aggregates) are consolidated into one comprehensive stats property.
+- Requirements 3.1–3.3 (name resolution formats) are consolidated into one property covering all input cases.
+- Requirement 2.8 (TableName mapping) is subsumed by Property 1 since the friendly name appears in the summary.
+- Requirements 8.1–8.6 (entity links) are consolidated into one link-generation property.
 
 ---
 
-### Property 1: One audit record per changed entity
+### Property 1: Activity summary verb correctness
 
-*For any* invocation of `SaveChangesAsync` with N entities in Added, Modified, or Deleted state (excluding `AuditLog` entities), the interceptor SHALL produce exactly N `AuditLog` records — one per changed entity.
+*For any* AuditLog record with a valid Action value ("Insert", "Update", "Delete"), the ActivitySummaryService SHALL produce a summary containing the correct verb: "created" for Insert, "edited" for Update (when no status key is present), "changed status of" for Update (when a status key is present in OldValues/NewValues), and "deleted" for Delete.
 
-**Validates: Requirements 1.1**
-
----
-
-### Property 2: Entity state maps to correct Action value
-
-*For any* entity entry in `EntityState.Added`, `EntityState.Modified`, or `EntityState.Deleted`, the resulting `AuditLog.Action` SHALL be `"Insert"`, `"Update"`, or `"Delete"` respectively, and no other value.
-
-**Validates: Requirements 1.2**
+**Validates: Requirements 2.2, 2.3, 2.4, 2.5**
 
 ---
 
-### Property 3: Modified-only properties appear in OldValues and NewValues for Updates
+### Property 2: Activity summary contains actor and entity type
 
-*For any* entity in `Modified` state with a subset of properties marked `IsModified = true`, the serialized `OldValues` and `NewValues` JSON SHALL contain exactly those modified properties — no more, no fewer — with `OldValues` containing original values and `NewValues` containing current values.
+*For any* AuditLog record and corresponding user name map, the ActivitySummaryService SHALL produce a summary that contains both the resolved actor name and the business-friendly entity type name. When the actor name is in the map, it appears verbatim. The entity type matches `ActivityFilterMapping.GetFriendlyEntityType(record.TableName)`.
 
-**Validates: Requirements 1.3, 1.4, 1.13**
-
----
-
-### Property 4: TableName matches EF Core metadata
-
-*For any* entity type tracked by `PortalDbContext`, the `AuditLog.TableName` written by the interceptor SHALL equal the table name returned by `entry.Metadata.GetTableName()` for that entity type.
-
-**Validates: Requirements 1.5**
+**Validates: Requirements 2.1, 2.8**
 
 ---
 
-### Property 5: Context values (BusinessId, UserId) are resolved from injected services
+### Property 3: Summary fallback for unparseable JSON
 
-*For any* `BusinessId` value provided by `ICurrentTenantService` and any `UserId` claim value provided by `IHttpContextAccessor`, the resulting `AuditLog` record SHALL have `BusinessId` equal to the tenant service value and `UserId` equal to the claim value. When `HttpContext` is null or the claim is absent, `UserId` SHALL be null and the record SHALL still be written.
-
-**Validates: Requirements 1.7, 1.8, 1.9**
-
----
-
-### Property 6: AuditLog entities are excluded from interception (no recursion)
-
-*For any* save operation that includes `AuditLog` entities in the change tracker, the interceptor SHALL produce zero additional `AuditLog` records for those entries — the interceptor does not audit its own writes.
-
-**Validates: Requirements 1.10**
-
----
-
-### Property 7: Tenant isolation — all query results belong to the current business
-
-*For any* `BusinessId` used as the current tenant, every `AuditLog` record returned by `IAuditLogQueryService.GetAuditLogsAsync` SHALL have `BusinessId` equal to that tenant's `BusinessId`. No records from other businesses SHALL appear in the result.
-
-**Validates: Requirements 2.2**
-
----
-
-### Property 8: Filter AND composition narrows results
-
-*For any* two filter predicates A and B applied independently and together, the result set of (A AND B) SHALL be a subset of both result(A) and result(B). Specifically: applying `TableName` filter, `Action` filter, `UserId` filter, `DateFrom`, and `DateTo` filters in combination SHALL return only records satisfying all specified conditions simultaneously.
-
-**Validates: Requirements 2.3, 2.4**
-
----
-
-### Property 9: Results are ordered by Timestamp descending
-
-*For any* result set returned by `GetAuditLogsAsync`, for all consecutive pairs of records `items[i]` and `items[i+1]`, `items[i].Timestamp >= items[i+1].Timestamp` SHALL hold.
+*For any* AuditLog record where OldValues or NewValues contains invalid JSON (not parseable as a JSON object), the ActivitySummaryService SHALL produce a summary containing the raw TableName and RecordId values (no exception thrown).
 
 **Validates: Requirements 2.7**
 
 ---
 
-### Property 10: Pagination invariants
+### Property 4: User name resolution format
 
-*For any* valid `PageNumber` and `PageSize` (after clamping), the following SHALL hold simultaneously:
-- `items.Count <= PageSize`
-- `TotalPages == Math.Ceiling(TotalCount / (double)PageSize)`
-- Pages do not overlap: the record at position `(page-1)*pageSize + k` on page N is not present on any other page
-- When `PageNumber > TotalPages`, `items` is empty and `TotalCount` and `TotalPages` are still correct
+*For any* set of UserIds where some are null, some match existing UserBusiness records (with FirstName/LastName), and some have no matching record, the UserNameResolver SHALL return: `null → "System"`, matched IDs → `"{FirstName} {LastInitial}."`, unmatched IDs → `"Unknown User"`.
 
-**Validates: Requirements 2.5, 2.6, 2.8**
+**Validates: Requirements 3.1, 3.2, 3.3**
 
 ---
 
-### Property 11: PageSize clamping
+### Property 5: Relative timestamp bucket correctness
 
-*For any* `PageSize` value less than 1, the effective page size used in the query SHALL be 1. *For any* `PageSize` value greater than 100, the effective page size SHALL be 100. Values in [1, 100] SHALL be used as-is.
+*For any* UTC timestamp and reference UTC time, the RelativeTimestampFormatter SHALL return a string matching exactly one bucket: "Just now" (< 60s), "{N} min ago" (1–59 min), "{N} hour ago" or "{N} hours ago" (1–23 hours, correct singular/plural), "Yesterday at {HH:mm}" (previous calendar day), "{N} days ago" (2–6 days), or "dd MMM yyyy" (7+ days). The bucket boundaries are non-overlapping and exhaustive.
 
-**Validates: Requirements 2.9**
-
----
-
-### Property 12: Permission upsert correctness
-
-*For any* user-module combination and any valid access level (`"full"`, `"readonly"`, `"none"`), after calling `UpdatePermissionAsync`, the stored `UserBusinessPermission` record SHALL reflect the new access level. Setting to `"none"` SHALL result in `IsActive = false` and `DeactivatedAtUtc` set to a non-null UTC timestamp. Setting to `"full"` or `"readonly"` SHALL result in `IsActive = true` and `DeactivatedAtUtc = null`.
-
-**Validates: Requirements 5.3, 5.4, 5.5, 5.6**
+**Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6**
 
 ---
 
-### Property 13: User status toggle correctness
+### Property 6: Quick stats aggregation correctness
 
-*For any* `UserBusiness` record, calling `DeactivateUserAsync` SHALL result in `IsActive = false` and `DeactivatedAtUtc` set to a non-null UTC timestamp. Calling `ReactivateUserAsync` SHALL result in `IsActive = true` and `DeactivatedAtUtc = null`. These operations are inverses of each other.
+*For any* set of AuditLog records scoped to a business, the QuickStatsService SHALL compute: TotalChangesThisWeek equals the count of records with Timestamp within the last 7 calendar days; TeamMembersActive equals the count of distinct non-null UserIds in that same window; MostActiveArea equals the friendly name of the TableName with the highest record count in that window.
 
-**Validates: Requirements 6.5, 6.6**
+**Validates: Requirements 5.1, 5.2, 5.3**
+
+---
+
+### Property 7: Filter category maps to correct table names
+
+*For any* category selection from the "What changed" dropdown and any set of AuditLog records, filtering by that category SHALL return only records whose TableName is in the corresponding `ActivityFilterMapping.CategoryToTableNames[category]` set. Records with TableNames outside the set SHALL be excluded.
+
+**Validates: Requirements 7.1**
+
+---
+
+### Property 8: Status change filter correctness
+
+*For any* set of AuditLog records with Action "Update", applying the "Status changed" filter SHALL return only records where OldValues or NewValues JSON contains at least one key ending in "StatusTypeId" or exactly named "Status". Records without such keys SHALL be excluded.
+
+**Validates: Requirements 7.4**
+
+---
+
+### Property 9: Entity link generation
+
+*For any* ActivityItemDto with a known entity type (Invoice, Customer, Quotation, Purchase) and a non-Delete action, the rendered link SHALL be an anchor tag with href matching the pattern `/{entityType}/Details/{recordId}`. For Delete actions or unknown entity types, the output SHALL be plain text (no anchor tag).
+
+**Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6**
+
+
+## Error Handling
+
+| Component | Error Scenario | Behavior |
+|-----------|---------------|----------|
+| `ActivityController.AxGetActivities` | `dateFrom > dateTo` | Returns `Json(new { success = false, message = "Date From cannot be greater than Date To." })` |
+| `ActivityController.AxGetActivities` | Service throws exception | Logs via Serilog, returns `Json(new { success = false, message = "Could not load activity data. Please try again." })` |
+| `ActivitySummaryService.TransformBatch` | JSON parsing fails for OldValues/NewValues | Falls back to raw TableName + RecordId in summary. No exception thrown. |
+| `ActivitySummaryService.TransformBatch` | StatusTypeId value not in known lookup | Displays raw numeric value (e.g., "changed status from 1 to 2") |
+| `UserNameResolver.BatchResolveAsync` | UserId not found in MembershipDbContext | Maps to "Unknown User" — no exception |
+| `UserNameResolver.BatchResolveAsync` | MembershipDbContext query fails | Exception propagates to controller; controller catches and returns error JSON |
+| `QuickStatsService.GetWeeklyStatsAsync` | No records in 7-day window | Returns `QuickStatsDto` with zeros and "None" — no exception |
+| `QuickStatsService.GetWeeklyStatsAsync` | DB query fails | Exception propagates to controller; controller catches and returns error JSON |
+| Client JS `loadActivities` | Network error or non-JSON response | `BlockUI.hide()` then `Swal.fire` error dialog |
+| Client JS `formatRelativeTime` | Invalid/null timestamp | Returns empty string (defensive check at top of function) |
+
+### Controller-Level Pattern
+
+All AJAX endpoints follow:
+
+```csharp
+try
+{
+    // ... service calls
+    return Json(new { success = true, data = ..., quickStats = ..., totalCount, currentPage, totalPages });
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "Error in {Action} for business {BusinessId}", nameof(AxGetActivities), _currentTenantService.CurrentBusinessId);
+    return Json(new { success = false, message = "Could not load activity data. Please try again." });
+}
+```
 
 
 ## Testing Strategy
 
 ### Property-Based Testing
 
-The project uses C#. The recommended PBT library is **FsCheck** (via `FsCheck.Xunit` or `FsCheck.NUnit`), which is the most mature property-based testing library for .NET. Each property test is configured to run a minimum of 100 iterations.
+The project uses C# with **FsCheck** (via `FsCheck.Xunit`). Each property test runs a minimum of 100 iterations. The existing `Portal.Tests` project already uses FsCheck for the audit interceptor and query service properties.
 
-Each property test is tagged with a comment referencing the design property:
+Each property test is tagged with:
 ```
 // Feature: audit-system-administration, Property N: <property_text>
 ```
 
-**Properties 1–6 (Interceptor):** Test the `AuditInterceptor` in isolation using an in-memory `DbContext` (or SQLite in-memory) with mocked `ICurrentTenantService` and `IHttpContextAccessor`. FsCheck generators produce random entity instances, random sets of modified properties, and random context values (BusinessId, UserId).
+**Properties 1–3 (ActivitySummaryService):** Test the transformation service in isolation. FsCheck generators produce random `AuditLog` records with varying Action values, TableName values, valid/invalid JSON in OldValues/NewValues, and random user name maps. Assertions verify verb presence, entity type presence, and fallback behavior.
 
-**Properties 7–11 (Query Service):** Test `AuditLogQueryService` against an in-memory or SQLite test database seeded with generated `AuditLog` records. FsCheck generators produce random filter combinations, page numbers, and page sizes.
+**Property 4 (UserNameResolver):** Test against an in-memory `MembershipDbContext` seeded with generated UserBusiness/ApplicationUser records. Generator produces random sets of UserIds including nulls and IDs not in the database. Assertions verify the "{FirstName} {LastInitial}." format, "System" for null, and "Unknown User" for unresolvable.
 
-**Properties 12–13 (Permission/Status):** Test `UserAdminService` against an in-memory `MembershipDbContext`. FsCheck generators produce random `UserBusiness` and `UserBusinessPermission` states.
+**Property 5 (RelativeTimestampFormatter):** Test the client-side JS function using a C# equivalent (or test the C# server-side implementation if we provide a helper). Generators produce random timestamp/reference-time pairs covering all brackets. Alternatively, test via a Node.js/Jest runner with the `formatRelativeTime` function extracted.
+
+**Property 6 (QuickStatsService):** Test against an in-memory `PortalDbContext` seeded with generated AuditLog records spanning various dates. Generator produces random record sets. Assertions verify count, distinct users, and most-active-area computations match a naive reference implementation.
+
+**Properties 7–8 (Filter Mapping & Status Filter):** Test the filter logic (static mapping + JSON key inspection) with generated record sets. Property 7 verifies correct inclusion/exclusion based on TableName. Property 8 verifies JSON key detection.
+
+**Property 9 (Entity Link Generation):** Test the `renderEntityLink` JS function logic (or a C# equivalent). Generator produces random entityType/action/recordId combinations. Assertions verify anchor vs plain-text output.
 
 ### Unit Tests (Example-Based)
 
-Unit tests cover:
-- Specific examples for each action type (Insert/Update/Delete) in the interceptor.
-- Edge cases: null `HttpContext`, missing claim, `AuditLog` entity in change tracker (recursion guard), `SaveChanges` failure (no audit records written).
-- Controller validation: `dateFrom > dateTo` returns error JSON; service exception returns error JSON.
-- Self-deactivation guard in `AdminController.ToggleStatus`.
-- `PageSize` clamping at boundaries (0, 1, 100, 101).
+- Specific examples for each action type in `ActivitySummaryService` (one Insert, one Update, one Delete, one Status Change)
+- Edge cases: empty JSON `{}`, null OldValues/NewValues, unknown TableName
+- `UserNameResolver` with specific users including multi-byte characters in names
+- `QuickStatsService` with empty database, single record, boundary (exactly 7 days ago)
+- `RelativeTimestampFormatter` at exact boundaries (59 seconds, 60 seconds, 23 hours, 24 hours, 6 days, 7 days)
+- `ActivityController` date validation (dateFrom > dateTo → error JSON)
+- Filter mapping: each category maps to correct table names (deterministic assertions)
 
 ### Integration Tests
 
-Integration tests (using a real SQL Server test database or `Testcontainers`) cover:
-- Identity-generated PK capture: insert an entity, verify `AuditLog.RecordId` equals the generated key.
-- End-to-end audit flow: call a service method that modifies an entity, verify the `AuditLog` record is written with correct values.
-- `AuditController.Search` returns correct JSON shape and HTTP 200.
-- `AdminController.UpdatePermission` and `ToggleStatus` return correct JSON and persist changes.
+- `ActivityController.AxGetActivities` returns correct JSON shape (HTTP 200, `success: true`)
+- Tenant isolation: user from Business A cannot see Business B's activity
+- End-to-end: create an entity → audit record written → activity endpoint returns it with correct summary
+- Sidebar: Activity Log link appears for user with `audit_log` module, hidden without it
 
 ### UI / Smoke Tests
 
-- Audit Log Viewer page loads without error (HTTP 200).
-- Filter dropdowns are populated (table names, users).
-- User Management page loads and displays users.
-- Module Access page loads for a valid `userBusinessId`.
-
+- Activity page loads (HTTP 200) for authenticated user with module access
+- Page returns 403 UpgradeRequired for user without the module
+- Quick stats render with correct labels
+- Filter → Clear → results reset to unfiltered state
+- Expand/collapse detail panels work
+- Mobile viewport (640px) stacks stats and filters correctly

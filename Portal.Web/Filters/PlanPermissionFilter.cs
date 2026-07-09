@@ -192,6 +192,7 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
             "client_portal" => "Provide customers with a self-service portal to view their documents.",
             "activity_timeline" => "Track all activity and changes across your business records.",
             "audit_log" => "Full audit trail of user actions and system events.",
+            "schedule_payments" => "Create instalment plans for your invoices, automatically match payments to scheduled instalments, track progress with visual timelines, and receive VAT deadline warnings.",
             "api" => "Access the Portal API for third-party integrations.",
             "webhooks" => "Configure webhooks to receive real-time event notifications.",
             "multi_currency" => "Work with multiple currencies for international business.",

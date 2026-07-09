@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Entities.Billing;
 using Portal.Infrastructure.Entities.Stripe;
+using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
 
 namespace Portal.Infrastructure.Data;
@@ -44,6 +45,12 @@ public class PortalDbContext : DbContext
     // Revenue schema
     public DbSet<PaymentMethodType> PaymentMethodTypes { get; set; } = null!;
     public DbSet<Payment> Payments { get; set; } = null!;
+
+    // Payment Schedule schema (revenue)
+    public DbSet<PaymentSchedule> PaymentSchedules { get; set; } = null!;
+    public DbSet<PaymentScheduleInstalment> PaymentScheduleInstalments { get; set; } = null!;
+    public DbSet<PaymentScheduleInstalmentStatusType> PaymentScheduleInstalmentStatusTypes { get; set; } = null!;
+    public DbSet<PaymentScheduleHistory> PaymentScheduleHistories { get; set; } = null!;
 
     // Purchase schema
     public DbSet<Supplier> Suppliers { get; set; } = null!;
@@ -109,6 +116,12 @@ public class PortalDbContext : DbContext
     public DbSet<PaymentReminderSchedule> PaymentReminderSchedules { get; set; } = null!;
     public DbSet<PaymentReminderLog> PaymentReminderLogs { get; set; } = null!;
 
+    // Cashflow schema
+    public DbSet<CashFlowSettings> CashFlowSettings { get; set; } = null!;
+
+    // Payment Schedule Overview (keyless — for read-only query results)
+    public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -166,6 +179,12 @@ public class PortalDbContext : DbContext
         ConfigureDemoInvitationPermission(modelBuilder);
         ConfigurePaymentReminderSchedule(modelBuilder);
         ConfigurePaymentReminderLog(modelBuilder);
+        ConfigureCashFlowSettings(modelBuilder);
+        ConfigurePaymentSchedule(modelBuilder);
+        ConfigurePaymentScheduleInstalment(modelBuilder);
+        ConfigurePaymentScheduleInstalmentStatusType(modelBuilder);
+        ConfigurePaymentScheduleHistory(modelBuilder);
+        ConfigureScheduleOverviewRawRow(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -2271,6 +2290,196 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureCashFlowSettings(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CashFlowSettings>(entity =>
+        {
+            entity.ToTable("CashFlowSettings", "cashflow");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithOne()
+                .HasForeignKey<CashFlowSettings>(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .IsUnique()
+                .HasDatabaseName("UQ_CashFlowSettings_BusinessId");
+
+            entity.Property(e => e.StartingBalance)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
+
+            entity.Property(e => e.AlertThreshold)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.UpdatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_CashFlowSettings_StartingBalance", "[StartingBalance] >= 0"));
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_CashFlowSettings_AlertThreshold", "[AlertThreshold] >= 0"));
+        });
+    }
+
+    private static void ConfigurePaymentSchedule(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentSchedule>(entity =>
+        {
+            entity.ToTable("PaymentSchedule", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Invoice)
+                .WithMany()
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.InvoiceId)
+                .IsUnique()
+                .HasDatabaseName("UX_PaymentSchedule_InvoiceId_Active")
+                .HasFilter("[IsActive] = 1");
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_PaymentSchedule_BusinessId");
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.CreatedByUserId)
+                .HasMaxLength(450);
+        });
+    }
+
+    private static void ConfigurePaymentScheduleInstalment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentScheduleInstalment>(entity =>
+        {
+            entity.ToTable("PaymentScheduleInstalment", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.PaymentSchedule)
+                .WithMany(s => s.Instalments)
+                .HasForeignKey(e => e.PaymentScheduleId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Payment)
+                .WithMany()
+                .HasForeignKey(e => e.PaymentId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ParentInstalment)
+                .WithMany()
+                .HasForeignKey(e => e.ParentInstalmentId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(e => e.PaymentScheduleId)
+                .HasDatabaseName("IX_PSInstalment_PaymentScheduleId");
+
+            entity.Property(e => e.Amount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.MatchedAmount)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0m);
+
+            entity.Property(e => e.IsRemainder)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigurePaymentScheduleInstalmentStatusType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentScheduleInstalmentStatusType>(entity =>
+        {
+            entity.ToTable("PaymentScheduleInstalmentStatusType", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasData(
+                new PaymentScheduleInstalmentStatusType { Id = 1, Name = "Pending" },
+                new PaymentScheduleInstalmentStatusType { Id = 2, Name = "Due" },
+                new PaymentScheduleInstalmentStatusType { Id = 3, Name = "Overdue" },
+                new PaymentScheduleInstalmentStatusType { Id = 4, Name = "Paid" },
+                new PaymentScheduleInstalmentStatusType { Id = 5, Name = "PartiallyPaid" }
+            );
+        });
+    }
+
+    private static void ConfigurePaymentScheduleHistory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentScheduleHistory>(entity =>
+        {
+            entity.ToTable("PaymentScheduleHistory", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.PaymentSchedule)
+                .WithMany(s => s.History)
+                .HasForeignKey(e => e.PaymentScheduleId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.PaymentScheduleId)
+                .HasDatabaseName("IX_PSHistory_PaymentScheduleId");
+
+            entity.Property(e => e.FieldChanged)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.OldValue)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.NewValue)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.ChangedByUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.ChangedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureScheduleOverviewRawRow(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ScheduleOverviewRawRow>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToView(null); // Not mapped to any table — used for raw SQL queries only
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -2335,6 +2544,9 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<PaymentReminderLog>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<CashFlowSettings>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

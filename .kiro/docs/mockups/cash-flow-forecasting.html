@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cash Flow Forecasting — Portal Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --line: #E2EBF3;
+            --card-radius: 20px;
+            --input-radius: 10px;
+            --btn-radius: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: Manrope, sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        /* ===== LAYOUT ===== */
+        .page-wrapper {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 28px 80px;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .topbar-left .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--blue);
+            margin-bottom: 6px;
+        }
+        .topbar-left h1 {
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .topbar-left .subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        /* Period selector */
+        .period-selector {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 12px;
+        }
+        .period-btn {
+            font-family: Inter, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: var(--btn-radius);
+            border: 1.5px solid var(--line);
+            background: #fff;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .period-btn:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+        .period-btn.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+
+        /* ===== GLASS CARD ===== */
+        .glass {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+            border: 1px solid var(--line);
+        }
+        .card-pad {
+            padding: 24px 28px;
+        }
+
+        /* ===== KPI ROW ===== */
+        .kpi-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .kpi-card {
+            flex: 1;
+            min-width: 180px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 2px 10px rgba(13, 94, 166, 0.05);
+            padding: 20px 22px;
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--blue);
+        }
+        .kpi-card.green { border-left-color: var(--green); }
+        .kpi-card.amber { border-left-color: var(--amber); }
+        .kpi-card.red { border-left-color: var(--red); }
+        .kpi-card .kpi-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .kpi-card .kpi-value {
+            font-family: Manrope, sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        /* ===== CHART PLACEHOLDER ===== */
+        .chart-area {
+            width: 100%;
+            height: 300px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(13,94,166,0.05) 0%, rgba(13,94,166,0.02) 100%);
+            border: 2px dashed var(--line);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .chart-placeholder-text {
+            font-size: 14px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+        .threshold-line {
+            position: absolute;
+            left: 28px;
+            right: 28px;
+            top: 72%;
+            border-top: 2px dashed var(--red);
+        }
+        .threshold-label {
+            position: absolute;
+            right: 36px;
+            top: calc(72% - 22px);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--red);
+            background: rgba(255,255,255,0.9);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Chart Legend */
+        .chart-legend {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-line {
+            width: 24px;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--blue);
+        }
+        .legend-line.dashed {
+            background: none;
+            border-top: 2px dashed var(--red);
+            height: 0;
+        }
+
+        /* Settings Link */
+        .settings-link {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .settings-link a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .settings-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== TABLE ===== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1.5px solid var(--line);
+        }
+        .data-table tbody td {
+            padding: 14px 12px;
+            font-size: 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f4f7;
+        }
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .data-table tbody tr.excluded {
+            opacity: 0.5;
+        }
+        .data-table tbody tr.excluded td {
+            text-decoration: line-through;
+        }
+        .data-table tbody tr.excluded td:last-child {
+            text-decoration: none;
+        }
+
+        /* Card heading inside */
+        .card-heading {
+            font-family: Manrope, sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .card-subheading {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .badge-amber {
+            background: rgba(200, 145, 46, 0.12);
+            color: var(--amber);
+        }
+        .badge-muted {
+            background: var(--bg2);
+            color: var(--muted);
+        }
+
+        /* Toggle Switch */
+        .toggle {
+            width: 36px;
+            height: 20px;
+            border-radius: 10px;
+            background: #ccd6df;
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toggle.on {
+            background: var(--green);
+        }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            transition: transform 0.2s;
+        }
+        .toggle.on::after {
+            transform: translateX(16px);
+        }
+
+        /* Summary text */
+        .summary-text {
+            font-size: 14px;
+            color: var(--muted);
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+        }
+        .summary-text strong {
+            color: var(--text);
+        }
+
+        /* ===== SECTION DIVIDER ===== */
+        .section-divider {
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 500;
+            margin: 48px 0 32px;
+            letter-spacing: 0.02em;
+        }
+
+        /* ===== SETTINGS FORM ===== */
+        .settings-form {
+            max-width: 600px;
+        }
+        .form-group {
+            margin-bottom: 22px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .input-currency {
+            display: flex;
+            align-items: center;
+            border: 1.5px solid var(--line);
+            border-radius: var(--input-radius);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .input-currency:focus-within {
+            border-color: var(--blue);
+        }
+        .input-currency .prefix {
+            background: var(--bg2);
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--muted);
+            border-right: 1.5px solid var(--line);
+        }
+        .input-currency input {
+            flex: 1;
+            border: none;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: Inter, sans-serif;
+            outline: none;
+            color: var(--text);
+        }
+        .helper-text {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+        .last-updated {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 22px;
+        }
+        .btn-primary {
+            font-family: Inter, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 28px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--btn-radius);
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* ===== WIDGET PREVIEW ===== */
+        .widget-card {
+            max-width: 400px;
+        }
+        .mini-chart {
+            width: 100%;
+            height: 120px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(87,184,232,0.12) 0%, rgba(13,94,166,0.04) 100%);
+            border: 1.5px dashed var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .mini-chart-text {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .widget-balance {
+            font-size: 15px;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .widget-balance strong {
+            color: var(--green);
+            font-family: Manrope, sans-serif;
+            font-weight: 800;
+        }
+        .widget-warning {
+            font-size: 14px;
+            color: var(--amber);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        .widget-link {
+            font-size: 13px;
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .widget-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== TEASER (SOFT-GATE) ===== */
+        .teaser-card {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 28px 32px;
+            opacity: 0.85;
+            transition: opacity 0.2s;
+            position: relative;
+            max-width: 800px;
+        }
+        .teaser-card:hover {
+            opacity: 1;
+        }
+        .teaser-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(13,94,166,0.1), rgba(87,184,232,0.15));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .teaser-icon svg {
+            width: 24px;
+            height: 24px;
+            color: var(--blue);
+        }
+        .teaser-content {
+            flex: 1;
+        }
+        .teaser-content h3 {
+            font-family: Manrope, sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .teaser-content p {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .teaser-action {
+            flex-shrink: 0;
+        }
+        .teaser-action .btn-primary {
+            padding: 10px 22px;
+            font-size: 13px;
+        }
+        .upgrade-badge {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            background: linear-gradient(135deg, var(--amber), #e0a832);
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .topbar { flex-direction: column; }
+            .kpi-row { flex-direction: column; }
+            .teaser-card { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+    <!-- ===== TOPBAR ===== -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="eyebrow">Cash Flow</div>
+            <h1>Cash Flow Forecast</h1>
+            <div class="subtitle">Projected cash position based on outstanding invoices and historical expenses.</div>
+        </div>
+        <div class="period-selector">
+            <button class="period-btn active">30</button>
+            <button class="period-btn">60</button>
+            <button class="period-btn">90</button>
+            <span style="font-size:12px;color:var(--muted);margin-left:4px;">days</span>
+        </div>
+    </div>
+
+    <!-- ===== KPI SUMMARY ROW ===== -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Starting Balance</div>
+            <div class="kpi-value">&euro;24,500.00</div>
+        </div>
+        <div class="kpi-card green">
+            <div class="kpi-label">Projected Inflows (30d)</div>
+            <div class="kpi-value">&euro;18,750.00</div>
+        </div>
+        <div class="kpi-card amber">
+            <div class="kpi-label">Projected Outflows (30d)</div>
+            <div class="kpi-value">&euro;12,340.00</div>
+        </div>
+        <div class="kpi-card green">
+            <div class="kpi-label">Projected Balance (Day 30)</div>
+            <div class="kpi-value">&euro;30,910.00</div>
+        </div>
+    </div>
+
+    <!-- ===== CHART CARD ===== -->
+    <section class="glass card-pad">
+        <div class="chart-area">
+            <span class="chart-placeholder-text">Cash flow projection chart renders here</span>
+            <div class="threshold-line"></div>
+            <div class="threshold-label">Alert Threshold: &euro;5,000</div>
+        </div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <div class="legend-line"></div>
+                <span>Running Balance</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line dashed"></div>
+                <span>Alert Threshold</span>
+            </div>
+        </div>
+        <div class="settings-link">
+            <a href="#settings">&#9881; Configure starting balance and alert threshold</a>
+        </div>
+    </section>
+
+    <!-- ===== SECTION 2: INFLOW BREAKDOWN ===== -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="card-heading">Projected Inflows</div>
+        <div class="card-subheading">Outstanding invoices ordered by expected payment date</div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Invoice #</th>
+                    <th>Outstanding Amount</th>
+                    <th>Due Date</th>
+                    <th>Adjusted Date</th>
+                    <th>Days Late Avg</th>
+                    <th>Scenario Toggle</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Acme Solutions Ltd</td>
+                    <td>INV-2026-0089</td>
+                    <td>&euro;3,200.00</td>
+                    <td>08 Jul 2026</td>
+                    <td>12 Jul 2026</td>
+                    <td><span class="badge badge-amber">+4 days</span></td>
+                    <td><span class="toggle on"></span></td>
+                </tr>
+                <tr>
+                    <td>Harbour Marine Co</td>
+                    <td>INV-2026-0076</td>
+                    <td>&euro;1,875.50</td>
+                    <td>15 Jul 2026</td>
+                    <td>15 Jul 2026</td>
+                    <td><span class="badge badge-muted">0 days</span></td>
+                    <td><span class="toggle on"></span></td>
+                </tr>
+                <tr class="excluded">
+                    <td>Malta Digital Agency</td>
+                    <td>INV-2026-0092</td>
+                    <td>&euro;950.00</td>
+                    <td>20 Jul 2026</td>
+                    <td>23 Jul 2026</td>
+                    <td><span class="badge badge-amber">+3 days</span></td>
+                    <td><span class="toggle"></span></td>
+                </tr>
+                <tr>
+                    <td>Greenfield Consulting</td>
+                    <td>INV-2026-0071</td>
+                    <td>&euro;4,500.00</td>
+                    <td>25 Jul 2026</td>
+                    <td>30 Jul 2026</td>
+                    <td><span class="badge badge-amber">+5 days</span></td>
+                    <td><span class="toggle on"></span></td>
+                </tr>
+                <tr>
+                    <td>TechVault Systems</td>
+                    <td>INV-2026-0088</td>
+                    <td>&euro;6,780.00</td>
+                    <td>01 Aug 2026</td>
+                    <td>01 Aug 2026</td>
+                    <td><span class="badge badge-muted">0 days</span></td>
+                    <td><span class="toggle on"></span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary-text">
+            Total projected inflows: <strong>&euro;17,305.50</strong> (1 invoice excluded)
+        </div>
+    </section>
+
+    <!-- ===== SECTION 3: OUTFLOW BREAKDOWN ===== -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="card-heading">Projected Outflows</div>
+        <div class="card-subheading">Average monthly expenses based on last 6 months of purchase data</div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Avg Monthly Amount</th>
+                    <th>Months of Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Hosting &amp; Infrastructure</td>
+                    <td>&euro;2,400.00</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Office Supplies</td>
+                    <td>&euro;680.00</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Marketing &amp; Advertising</td>
+                    <td>&euro;1,850.00</td>
+                    <td>5 months</td>
+                </tr>
+                <tr>
+                    <td>Professional Services</td>
+                    <td>&euro;1,200.00</td>
+                    <td>4 months</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary-text">
+            Total projected monthly outflows: <strong>&euro;6,130.00</strong>
+        </div>
+    </section>
+
+    <!-- ===== SECTION 4: SETTINGS PANEL ===== -->
+    <div class="section-divider">&#9472;&#9472;&#9472; Cash Flow Settings &#9472;&#9472;&#9472;</div>
+
+    <section class="glass card-pad" id="settings">
+        <div class="settings-form">
+            <div class="card-heading">Cash Flow Settings</div>
+            <div class="card-subheading">Configure the starting point and alert threshold for your cash flow projections.</div>
+
+            <div class="form-group">
+                <label for="startingBalance">Starting Balance</label>
+                <div class="input-currency">
+                    <span class="prefix">&euro;</span>
+                    <input type="text" id="startingBalance" value="24,500.00" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="alertThreshold">Alert Threshold</label>
+                <div class="input-currency">
+                    <span class="prefix">&euro;</span>
+                    <input type="text" id="alertThreshold" value="5,000.00" />
+                </div>
+                <div class="helper-text">You'll be warned when projected balance drops below this amount.</div>
+            </div>
+
+            <div class="last-updated">Last updated: 05 Jul 2026 14:32</div>
+
+            <button class="btn-primary">Save Settings</button>
+        </div>
+    </section>
+
+    <!-- ===== SECTION 5: DASHBOARD WIDGET PREVIEW ===== -->
+    <div class="section-divider">&#9472;&#9472;&#9472; Dashboard Widget (shown on Home Dashboard) &#9472;&#9472;&#9472;</div>
+
+    <section class="glass card-pad widget-card">
+        <div class="mini-chart">
+            <span class="mini-chart-text">Mini cash flow chart</span>
+        </div>
+        <div class="widget-balance">
+            Projected Balance (30 days): <strong>&euro;30,910.00</strong>
+        </div>
+        <div class="widget-warning" style="display:none;">
+            &#9888; Balance drops below threshold on 18 Jul 2026
+        </div>
+        <a href="#" class="widget-link">View Full Forecast &rarr;</a>
+    </section>
+
+    <!-- Alternative widget: below threshold state -->
+    <section class="glass card-pad widget-card" style="margin-top:16px;">
+        <div class="mini-chart">
+            <span class="mini-chart-text">Mini cash flow chart (warning state)</span>
+        </div>
+        <div class="widget-warning">
+            &#9888; Balance drops below threshold on 18 Jul 2026
+        </div>
+        <a href="#" class="widget-link">View Full Forecast &rarr;</a>
+    </section>
+
+    <!-- ===== SECTION 6: SOFT-GATE TEASER ===== -->
+    <div class="section-divider">&#9472;&#9472;&#9472; Soft-Gate Teaser (Revenue Dashboard &mdash; Starter users only) &#9472;&#9472;&#9472;</div>
+
+    <section class="glass teaser-card">
+        <span class="upgrade-badge">Upgrade</span>
+        <div class="teaser-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+            </svg>
+        </div>
+        <div class="teaser-content">
+            <h3>Cash Flow Forecasting</h3>
+            <p>Project your future cash position with confidence-weighted inflow projections and historical expense analysis.</p>
+        </div>
+        <div class="teaser-action">
+            <button class="btn-primary">Learn More</button>
+        </div>
+    </section>
+
+</div>
+
+</body>
+</html>

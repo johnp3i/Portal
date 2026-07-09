@@ -1,7 +1,7 @@
 @{
     ViewData["Title"] = "Audit Log";
     var tableNames = ViewBag.TableNames as List<string> ?? new List<string>();
-    var users = ViewBag.Users as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var users = ViewBag.Users ?? new List<Dictionary<string, string>>();
 }
 
 <div class="topbar">
@@ -41,9 +41,9 @@
             <label for="userId">User</label>
             <select id="userId">
                 <option value="">All Users</option>
-                @foreach (var u in users)
+                @foreach (dynamic u in users)
                 {
-                    <option value="@u.value">@u.text</option>
+                    <option value="@u["value"]">@u["text"]</option>
                 }
             </select>
         </div>

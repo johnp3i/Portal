@@ -15,6 +15,7 @@ public class PaymentService : IPaymentService
     private readonly PaymentRepository _paymentRepository;
     private readonly InvoiceRepository _invoiceRepository;
     private readonly IFinancialStatusEngine _financialStatusEngine;
+    private readonly IPaymentScheduleService _paymentScheduleService;
     private readonly PortalDbContext _portalDbContext;
 
     // Invoice status constants
@@ -24,11 +25,13 @@ public class PaymentService : IPaymentService
         PaymentRepository paymentRepository,
         InvoiceRepository invoiceRepository,
         IFinancialStatusEngine financialStatusEngine,
+        IPaymentScheduleService paymentScheduleService,
         PortalDbContext portalDbContext)
     {
         _paymentRepository = paymentRepository;
         _invoiceRepository = invoiceRepository;
         _financialStatusEngine = financialStatusEngine;
+        _paymentScheduleService = paymentScheduleService;
         _portalDbContext = portalDbContext;
     }
 
@@ -75,7 +78,10 @@ public class PaymentService : IPaymentService
 
         var paymentId = await _paymentRepository.InsertAsync(payment);
 
-        // 6. Trigger financial status recalculation
+        // 6. Match payment to instalment schedule (if active schedule exists)
+        await _paymentScheduleService.MatchPaymentToScheduleAsync(paymentId, dto.InvoiceId, businessId, userId);
+
+        // 7. Trigger financial status recalculation
         await _financialStatusEngine.RecalculateStatusAsync(dto.InvoiceId, businessId);
 
         return ServiceResult.Ok(paymentId);
@@ -96,7 +102,10 @@ public class PaymentService : IPaymentService
         // 3. Set IsVoided = 1
         await _paymentRepository.VoidAsync(paymentId);
 
-        // 4. Trigger financial status recalculation on parent invoice
+        // 4. Revert instalment matching for this payment
+        await _paymentScheduleService.RevertPaymentMatchAsync(paymentId, payment.InvoiceId, businessId);
+
+        // 5. Trigger financial status recalculation on parent invoice
         await _financialStatusEngine.RecalculateStatusAsync(payment.InvoiceId, businessId);
 
         return ServiceResult.Ok();

@@ -1,0 +1,449 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create SQL migration file for `[cashflow]` schema and `CashFlowSettings` table": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426275658
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426289872
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426482026
+      }
+    ],
+    "1.2 Create `CashFlowSettings` entity class": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426276654
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426491473
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426719516
+      }
+    ],
+    "1.3 Add EF Core configuration and DbSet registration": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426276847
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426720451
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426730108
+      }
+    ],
+    "2.1 Create all Cash Flow DTO classes": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426276961
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426731158
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426736941
+      }
+    ],
+    "2.2 Create `ICashFlowService` interface": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277030
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426742424
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426747619
+      }
+    ],
+    "3.1 Create `CashFlowService` class with constructor injection": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277108
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426755079
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426976894
+      }
+    ],
+    "3.2 Implement inflow computation within `GetProjectionAsync`": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277238
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426977669
+      }
+    ],
+    "3.3 Implement customer confidence weighting (DaysLateAverage)": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277297
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426978470
+      }
+    ],
+    "3.4 Implement outflow computation": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277371
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426979382
+      }
+    ],
+    "3.5 Implement running balance and alert breach detection": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277428
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426979958
+      }
+    ],
+    "3.6 Implement `GetWidgetDataAsync`": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277494
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426981027
+      }
+    ],
+    "4.1 Create controller with `[ModuleAccess(PortalModules.Cashflow)]`": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277563
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426990556
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427149787
+      }
+    ],
+    "4.2 Implement AJAX endpoints": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277630
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427150580
+      }
+    ],
+    "5.1 Register ICashFlowService in DI container": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277693
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427152135
+      }
+    ],
+    "6. Checkpoint — backend complete": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277763
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427152880
+      }
+    ],
+    "7.1 Create `Views/CashFlow/Index.cshtml` — page shell and layout": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277827
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427166845
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427744728
+      }
+    ],
+    "7.2 Implement inflow breakdown table with scenario toggle switches": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426277916
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427746475
+      }
+    ],
+    "7.3 Implement outflow breakdown table": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278020
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427746618
+      }
+    ],
+    "7.4 Implement settings card (inline on same page)": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278075
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427747522
+      }
+    ],
+    "8.1 Implement Chart.js line chart with annotation plugin": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278133
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427748559
+      }
+    ],
+    "8.2 Implement period selector interaction": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278192
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427749341
+      }
+    ],
+    "8.3 Implement scenario toggle JavaScript": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278251
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427750052
+      }
+    ],
+    "9.1 Create `Views/Shared/_CashFlowWidget.cshtml` partial": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278317
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427761113
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428190222
+      }
+    ],
+    "9.2 Integrate widget on Home Dashboard": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278392
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428191120
+      }
+    ],
+    "10.1 Add sidebar navigation link for Cash Flow": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278445
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428191861
+      }
+    ],
+    "10.2 Add soft-gate teaser card on Revenue Dashboard for Starter users": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278557
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428192782
+      }
+    ],
+    "11. Checkpoint — full feature integration": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278612
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428193894
+      }
+    ],
+    "16. Final checkpoint": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426278677
+      },
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428195007
+      }
+    ],
+    "1. Database migration and entity setup": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426730310
+      }
+    ],
+    "2. Create DTOs and service interface": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426747733
+      }
+    ],
+    "3. Implement CashFlowService computation logic": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783426981232
+      }
+    ],
+    "4. Create CashFlowController": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427150723
+      }
+    ],
+    "5. Register service and add module constant": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427152774
+      }
+    ],
+    "7. Create the Cash Flow Index view": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427747637
+      }
+    ],
+    "8. Implement Chart.js rendering and client-side logic": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783427750140
+      }
+    ],
+    "9. Create dashboard widget": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428191227
+      }
+    ],
+    "10. Add navigation and plan gating UI": [
+      {
+        "executionId": "ae3a0e33-f555-4231-add8-14edbf9fe7f4",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783428192891
+      }
+    ]
+  }
+}

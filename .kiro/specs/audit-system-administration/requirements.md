@@ -2,125 +2,154 @@
 
 ## Introduction
 
-The Audit & System Administration module provides business audit trail visibility and system-level administration tools for the Portal platform. It delivers automatic audit logging via an EF Core interceptor (complementing existing manual audit entries), a searchable audit log viewer for administrators, and a super admin user/module access management interface. This module is scoped to the SuperAdmin role and operates within the existing multi-tenant (BusinessId-scoped) architecture.
+The Activity Log is a business-facing redesign of the existing Audit Log viewer. It transforms the raw, developer-oriented audit data table into a timeline-style activity feed that business managers can use to track who did what and when across their operations. The underlying `[audit].[AuditLog]` table, `AuditLogQueryService`, and `AuditLogQueryRepository` remain unchanged — this feature builds a new presentation layer on top of the existing query infrastructure. The Activity Log is available on Professional and Enterprise subscription plans (using the existing `audit_log` plan feature key), accessed via a business-level route rather than the admin-only path.
 
 ## Glossary
 
-- **Audit_Interceptor**: An EF Core SaveChangesInterceptor that automatically captures entity changes (Insert, Update, Delete) and writes AuditLog records without requiring manual InsertAsync calls in service code.
-- **AuditLog**: The append-only table in the [dbo] schema that stores all tracked data changes. Columns: Id, BusinessId, UserId, Action, TableName, RecordId, OldValues, NewValues, Timestamp.
-- **Audit_Query_Service**: A service (IAuditLogQueryService) that provides filtered, paginated access to AuditLog records by table name, action type, user, and date range.
-- **Audit_Controller**: An MVC controller restricted to SuperAdmin role that exposes audit log query endpoints for the admin UI.
-- **Audit_Viewer**: The admin-facing UI page that displays audit log records in a searchable, filterable, paginated data table following the MyChair Design System.
-- **Module_Access_Manager**: The super admin interface for granting and revoking module-level access (full, readonly, none) per user within a business.
-- **User_Management_Screen**: The admin UI that lists all users within the current business, showing their status, roles, and module permissions.
-- **SuperAdmin**: A platform role that bypasses all module access checks and has full administrative privileges.
+- **Activity_Log_Controller**: An MVC controller at a business-level route (e.g., `/Activity`) that serves the Activity Log page and AJAX endpoints. Requires the `audit_log` module via ModuleAccess with ReadOnly level (not SuperAdmin-only).
+- **Activity_Summary_Service**: A service that transforms raw AuditLog records into plain-English activity summaries using the Action, TableName, RecordId, OldValues, and NewValues fields.
+- **Activity_Feed**: The timeline-style UI that displays activity entries with colored dot indicators, plain-English summaries, relative timestamps, and expandable detail panels.
+- **Quick_Stats_Service**: A service that computes weekly summary statistics from AuditLog data: total changes this week, count of distinct active team members, most active area (TableName), and timestamp of the last activity.
+- **User_Name_Resolver**: A component that resolves AuditLog.UserId values to display names by querying the MembershipDbContext UserBusinesses relationship.
+- **Activity_Filter**: Business-friendly filter parameters: "What changed" (mapped from TableName), "Who made the change" (mapped from UserId), "What type of change" (mapped from Action), Date From, and Date To.
+- **Relative_Timestamp_Formatter**: A utility that converts UTC DateTime values into human-readable relative strings such as "2 min ago", "Yesterday at 14:32", or "3 days ago".
 - **Portal_System**: The Portal web application as a whole.
 - **Current_Tenant**: The BusinessId resolved via ICurrentTenantService, used to scope all queries to the active business.
+- **AuditLog**: The existing append-only table in the [audit] schema that stores tracked data changes with columns: Id, BusinessId, UserId, Action, TableName, RecordId, OldValues, NewValues, Timestamp.
 
 ## Requirements
 
-### Requirement 1: Automatic Audit Logging Interceptor
+### Requirement 1: Activity Log Route and Access Control
 
-**User Story:** As a platform developer, I want entity changes to be automatically captured as audit records during SaveChanges, so that audit coverage is consistent without requiring manual InsertAsync calls in every service method.
-
-#### Acceptance Criteria
-
-1. WHEN PortalDbContext.SaveChangesAsync is invoked, THE Audit_Interceptor SHALL detect all Added, Modified, and Deleted entity entries in the ChangeTracker and write one AuditLog record per changed entity.
-2. THE Audit_Interceptor SHALL populate the AuditLog.Action field with "Insert" for Added entities, "Update" for Modified entities, and "Delete" for Deleted entities.
-3. THE Audit_Interceptor SHALL serialize the current property values as JSON into AuditLog.NewValues for Added and Modified entities, excluding navigation properties and shadow properties.
-4. THE Audit_Interceptor SHALL serialize the original property values as JSON into AuditLog.OldValues for Modified and Deleted entities, excluding navigation properties and shadow properties.
-5. THE Audit_Interceptor SHALL populate AuditLog.TableName with the entity's mapped table name from EF Core metadata.
-6. WHEN the changed entity has an identity-generated primary key (Added entities), THE Audit_Interceptor SHALL capture the AuditLog.RecordId after the database INSERT completes so that the generated key value is available, converted to string.
-7. THE Audit_Interceptor SHALL resolve AuditLog.BusinessId from ICurrentTenantService.CurrentBusinessId.
-8. THE Audit_Interceptor SHALL resolve AuditLog.UserId from the current authenticated user's ClaimTypes.NameIdentifier claim via IHttpContextAccessor.
-9. IF IHttpContextAccessor.HttpContext is null or the ClaimTypes.NameIdentifier claim is not present, THEN THE Audit_Interceptor SHALL set AuditLog.UserId to null and still persist the audit record.
-10. THE Audit_Interceptor SHALL exclude AuditLog entities from interception to prevent infinite recursion.
-11. THE Audit_Interceptor SHALL not interfere with existing manual audit log entries written by services — both automatic and manual entries coexist in the same AuditLog table.
-12. IF SaveChangesAsync fails with an exception, THEN THE Audit_Interceptor SHALL not persist any audit records for that failed operation.
-13. THE Audit_Interceptor SHALL record only properties where EF Core's IsModified flag is true in OldValues and NewValues for Update operations, excluding unchanged properties.
-14. THE Audit_Interceptor SHALL populate AuditLog.Timestamp with the current UTC date and time at the moment the change is detected.
-
-### Requirement 2: Audit Log Query Service
-
-**User Story:** As a super admin, I want to search and filter audit log records by multiple criteria, so that I can investigate specific changes and trace data modifications.
+**User Story:** As a business manager, I want to access my Activity Log from a business-level menu location, so that I can track team activity without needing super admin privileges.
 
 #### Acceptance Criteria
 
-1. THE Audit_Query_Service SHALL accept filter parameters: TableName (string, max 200 characters, optional), Action (string, one of "Insert", "Update", or "Delete", optional), UserId (string, max 450 characters, optional), DateFrom (DateTime, optional), and DateTo (DateTime, optional).
-2. THE Audit_Query_Service SHALL scope all queries to the Current_Tenant BusinessId.
-3. WHEN no filter parameters are provided, THE Audit_Query_Service SHALL return all AuditLog records for the current business ordered by Timestamp descending.
-4. WHEN one or more filter parameters are provided, THE Audit_Query_Service SHALL apply all specified filters using AND logic, where DateFrom is inclusive (>=) and DateTo is inclusive (<=).
-5. THE Audit_Query_Service SHALL support pagination with PageNumber (integer, minimum 1, default 1) and PageSize (integer, minimum 1, maximum 100, default 20) parameters.
-6. THE Audit_Query_Service SHALL return a paged result containing: the list of AuditLog records, total record count, current page number, and total page count.
-7. THE Audit_Query_Service SHALL return records ordered by Timestamp descending (most recent first).
-8. IF PageNumber exceeds the total page count, THEN THE Audit_Query_Service SHALL return an empty record list with the correct total record count and total page count.
-9. IF PageSize is less than 1 or greater than 100, THEN THE Audit_Query_Service SHALL clamp the value to the nearest bound (1 or 100) before executing the query.
+1. THE Activity_Log_Controller SHALL be accessible at the route `/Activity` under standard authenticated access.
+2. THE Activity_Log_Controller SHALL apply the ModuleAccess attribute with module key `audit_log` and access level ReadOnly.
+3. THE Activity_Log_Controller SHALL NOT require the SuperAdmin role — any authenticated user with the `audit_log` module assigned at ReadOnly or Full level SHALL have access.
+4. THE Activity_Log_Controller SHALL scope all data queries to the Current_Tenant BusinessId via ICurrentTenantService.
+5. THE Portal_System SHALL place the Activity Log navigation entry in the "Business Operations" sidebar section, not the "Administration" section.
+6. WHEN a user without the `audit_log` module in their subscription plan attempts to access `/Activity`, THE Portal_System SHALL display the UpgradeRequired view.
 
-### Requirement 3: Audit Controller
+### Requirement 2: Activity Summary Transformation
 
-**User Story:** As a super admin, I want a dedicated admin endpoint to access audit log data, so that only authorized administrators can view the audit trail.
+**User Story:** As a business manager, I want to see plain-English descriptions of changes instead of raw table and action names, so that I can understand what happened without technical knowledge.
 
 #### Acceptance Criteria
 
-1. THE Audit_Controller SHALL require the SuperAdmin role for all actions.
-2. WHEN a GET request is made to the index action, THE Audit_Controller SHALL return the Audit Viewer page.
-3. WHEN a GET request is made to the search action with filter parameters, THE Audit_Controller SHALL invoke the Audit_Query_Service and return a JSON response containing a success flag, the paged audit log results, total record count, current page number, and total page count.
-4. IF DateFrom is greater than DateTo when both are provided, THEN THE Audit_Controller SHALL return a JSON error response with success set to false and a message indicating the date range is invalid.
-5. IF the Audit_Query_Service throws an exception during the search action, THEN THE Audit_Controller SHALL return a JSON error response with success set to false and a message indicating the search could not be completed.
-6. THE Audit_Controller SHALL apply the ModuleAccessAttribute with the "audit" module and Full access level.
+1. THE Activity_Summary_Service SHALL transform each AuditLog record into a plain-English summary string that includes: the actor name, the action verb, the entity type, the entity identifier, and contextual detail when available.
+2. WHEN Action is "Insert", THE Activity_Summary_Service SHALL generate a summary using the verb "created" followed by the entity type and identifier (e.g., "John P. created Invoice INV-2026-0089").
+3. WHEN Action is "Update", THE Activity_Summary_Service SHALL generate a summary using the verb "edited" followed by the entity type and a brief description of what changed derived from the NewValues JSON keys (e.g., "Maria T. edited Customer Acme Solutions Ltd — updated email address").
+4. WHEN Action is "Delete", THE Activity_Summary_Service SHALL generate a summary using the verb "deleted" followed by the entity type and identifier with a parenthetical summary of key values at deletion (e.g., "John P. deleted Purchase PUR-2026-0034 (Office Supplies, €145.00)").
+5. WHEN Action is "Update" and the changed fields include a status-type column (columns ending in "StatusTypeId" or named "Status"), THE Activity_Summary_Service SHALL generate a summary using "changed status of" and include the old and new status values (e.g., "John P. changed status of Invoice INV-2026-0089 from Draft to Issued").
+6. THE Activity_Summary_Service SHALL resolve the entity identifier from the RecordId field combined with NewValues or OldValues JSON to produce a human-readable reference (e.g., invoice number, customer name, quotation number).
+7. IF the NewValues or OldValues JSON cannot be parsed or the entity identifier cannot be resolved, THEN THE Activity_Summary_Service SHALL fall back to displaying the raw TableName and RecordId in the summary.
+8. THE Activity_Summary_Service SHALL map TableName values to business-friendly entity types: "Invoice" for Invoice-related tables, "Quotation" for Quotation-related tables, "Customer" for Customer table, "Purchase" for Purchase-related tables, "Payment" for Payment-related tables, "Credit Note" for CreditNote-related tables, and "Settings" for configuration tables.
 
-### Requirement 4: Audit Log Viewer UI
+### Requirement 3: User Name Resolution
 
-**User Story:** As a super admin, I want a searchable, filterable, paginated audit log viewer, so that I can visually browse and investigate data changes across the platform.
-
-#### Acceptance Criteria
-
-1. THE Audit_Viewer SHALL display a filter card with fields: Table Name (dropdown), Action (dropdown with Insert/Update/Delete options), User (dropdown), Date From (date picker), and Date To (date picker).
-2. THE Audit_Viewer SHALL display audit records in a data table with columns: Timestamp (formatted as yyyy-MM-dd HH:mm:ss), User, Action, Table, Record ID, and a detail expand/view control.
-3. WHEN the page loads, THE Audit_Viewer SHALL automatically invoke the search endpoint with no filters applied and display the first page of results ordered by Timestamp descending.
-4. WHEN the filter button is clicked, THE Audit_Viewer SHALL call the search endpoint with the selected filter values, reset to page 1, and display the results.
-5. THE Audit_Viewer SHALL display pagination controls below the data table showing a "Showing X–Y of Z" info label, current page number, total pages, and Previous/Next navigation buttons with individual page number buttons.
-6. THE Audit_Viewer SHALL paginate results with a default page size of 20 records per page.
-7. WHEN a record detail is expanded, THE Audit_Viewer SHALL display the OldValues and NewValues as formatted JSON, and for Update actions SHALL visually distinguish changed properties using a contrasting background color on changed property rows.
-8. THE Audit_Viewer SHALL call BlockUI.show() before AJAX requests and BlockUI.hide() after completion in both success and error response paths.
-9. THE Audit_Viewer SHALL follow the MyChair Design System: Manrope headings, Inter body text, glass card containers, and the filter card (margin-bottom 22px) + data table layout pattern.
-10. WHEN no records match the filter criteria, THE Audit_Viewer SHALL display an empty state message indicating no audit records were found, rendered within the data table card.
-11. IF the user selects a Date From value greater than the Date To value, THEN THE Audit_Viewer SHALL display a validation message indicating the invalid date range and SHALL NOT submit the search request.
-12. WHEN the page loads, THE Audit_Viewer SHALL populate the Table Name dropdown with distinct table names from existing audit records and populate the User dropdown with users belonging to the current business.
-
-### Requirement 5: Super Admin Module Access Management
-
-**User Story:** As a super admin, I want to grant and revoke module access per user, so that I can control which platform modules each team member can access and at what level.
+**User Story:** As a business manager, I want to see team member names instead of user IDs in the activity feed, so that I understand who performed each action.
 
 #### Acceptance Criteria
 
-1. THE Module_Access_Manager SHALL display a list of all active users within the current business with their current module permissions, scoped to the Current_Tenant BusinessId.
-2. WHEN the super admin selects a user, THE Module_Access_Manager SHALL display all available modules (from PortalModules.All) with the user's current access level for each, defaulting to None for modules with no existing UserBusinessPermission record.
-3. WHEN the super admin changes a module access level for a user, THE Module_Access_Manager SHALL update the existing UserBusinessPermission record with the new access level, or create a new UserBusinessPermission record if none exists for that user-module combination.
-4. THE Module_Access_Manager SHALL support three access levels per module: Full, ReadOnly, and None.
-5. WHEN access level is set to None, THE Module_Access_Manager SHALL deactivate the UserBusinessPermission record by setting IsActive to false and DeactivatedAtUtc to the current UTC timestamp.
-6. WHEN access level is changed from None to Full or ReadOnly, THE Module_Access_Manager SHALL reactivate or create a UserBusinessPermission record with IsActive set to true and DeactivatedAtUtc set to null.
-7. THE Module_Access_Manager SHALL require confirmation via SweetAlert2 before applying permission changes, using confirmButtonColor '#C24A4A' for revocation (setting to None) and '#0D5EA6' for grants (setting to Full or ReadOnly).
-8. THE Module_Access_Manager SHALL write an AuditLog entry for every permission change, recording Action as "Update", TableName as "UserBusinessPermission", RecordId as the UserBusinessPermission Id, and OldValues/NewValues containing the previous and new access level values.
-9. THE Module_Access_Manager SHALL prevent the super admin from modifying their own permissions by disabling all access level controls for the currently authenticated user's row.
-10. IF a permission change fails due to a server or database error, THEN THE Module_Access_Manager SHALL display an error message via SweetAlert2 indicating the operation could not be completed, and SHALL NOT modify the displayed access level from its previous state.
-11. WHEN a permission change is successfully persisted, THE Module_Access_Manager SHALL display a success notification via SweetAlert2 confirming the module name and new access level applied.
+1. THE User_Name_Resolver SHALL resolve each AuditLog.UserId to a display name by querying MembershipDbContext for the UserBusiness record matching the UserId and Current_Tenant BusinessId, returning "{FirstName} {LastInitial}." format (e.g., "John P.").
+2. WHEN UserId is null, THE User_Name_Resolver SHALL return "System" as the display name.
+3. IF a UserId cannot be resolved to a user record in MembershipDbContext, THEN THE User_Name_Resolver SHALL return "Unknown User" as the display name.
+4. THE User_Name_Resolver SHALL batch-resolve all unique UserIds in a page of results in a single database query to avoid N+1 performance issues.
 
-### Requirement 6: Admin User Management Screen
+### Requirement 4: Relative Timestamp Formatting
 
-**User Story:** As a super admin, I want a user management screen that shows all users in my business, so that I can view user status, manage access, and maintain team oversight.
+**User Story:** As a business manager, I want to see how long ago each activity occurred in natural language, so that I can quickly gauge recency without calculating time differences.
 
 #### Acceptance Criteria
 
-1. THE User_Management_Screen SHALL display a data table listing all users associated with the current business, showing: Full Name, Email, Role, Status (Active/Inactive), and Last Login date formatted as "dd MMM yyyy HH:mm" or displaying "Never" if the user has not logged in.
-2. THE User_Management_Screen SHALL provide a filter card with fields: search by name/email (text input, case-insensitive contains match, minimum 1 character) and status filter (Active/Inactive/All dropdown, default All).
-3. WHEN the super admin clicks a user row, THE User_Management_Screen SHALL navigate to the Module_Access_Manager view for that user.
-4. THE User_Management_Screen SHALL display a button to invite new users, linking to the existing invitation flow (InvitationController.Create).
-5. WHEN the super admin clicks the deactivate action for a user, THE User_Management_Screen SHALL set UserBusiness.IsActive to false and UserBusiness.DeactivatedAtUtc to the current UTC timestamp.
-6. WHEN the super admin clicks the reactivate action for a user, THE User_Management_Screen SHALL set UserBusiness.IsActive to true and UserBusiness.DeactivatedAtUtc to null.
-7. WHEN the super admin initiates a deactivation action, THE User_Management_Screen SHALL display a SweetAlert2 confirmation dialog with confirmButtonColor '#C24A4A' before executing the deactivation.
-8. THE User_Management_Screen SHALL write an AuditLog entry for user activation and deactivation actions, recording the UserId of the affected user, the Action performed ("Deactivate" or "Reactivate"), and the TableName "UserBusiness".
-9. THE User_Management_Screen SHALL support pagination with a default page size of 20, and reset to page 1 when filter criteria are changed.
-10. THE User_Management_Screen SHALL follow the MyChair Design System layout: topbar with heading, filter card with margin-bottom 22px, and data table card with pagination.
-11. IF the super admin attempts to deactivate their own account, THEN THE User_Management_Screen SHALL prevent the action and display an informational SweetAlert2 message indicating that self-deactivation is not permitted.
-12. IF a deactivation or reactivation request fails, THEN THE User_Management_Screen SHALL display a SweetAlert2 error dialog with a message indicating the operation could not be completed.
+1. WHEN the activity Timestamp is less than 60 seconds from the current UTC time, THE Relative_Timestamp_Formatter SHALL display "Just now".
+2. WHEN the activity Timestamp is between 1 minute and 59 minutes from the current UTC time, THE Relative_Timestamp_Formatter SHALL display "{N} min ago" where N is the rounded-down number of minutes.
+3. WHEN the activity Timestamp is between 1 hour and 23 hours from the current UTC time, THE Relative_Timestamp_Formatter SHALL display "{N} hour ago" (singular) or "{N} hours ago" (plural) where N is the rounded-down number of hours.
+4. WHEN the activity Timestamp falls on the calendar day immediately before the current UTC date, THE Relative_Timestamp_Formatter SHALL display "Yesterday at {HH:mm}" using the business's local time.
+5. WHEN the activity Timestamp is between 2 and 6 calendar days before the current UTC date, THE Relative_Timestamp_Formatter SHALL display "{N} days ago".
+6. WHEN the activity Timestamp is 7 or more calendar days before the current UTC date, THE Relative_Timestamp_Formatter SHALL display the full date formatted as "dd MMM yyyy".
+7. THE Relative_Timestamp_Formatter SHALL compute all comparisons using UTC to ensure consistency across time zones.
+
+### Requirement 5: Quick Stats Computation
+
+**User Story:** As a business manager, I want to see a weekly summary at the top of my Activity Log, so that I get an at-a-glance overview of team activity levels.
+
+#### Acceptance Criteria
+
+1. THE Quick_Stats_Service SHALL compute the total number of AuditLog records for the Current_Tenant within the last 7 calendar days (from current UTC date minus 6 days at 00:00 UTC through the current UTC timestamp).
+2. THE Quick_Stats_Service SHALL compute the count of distinct UserId values that appear in AuditLog records for the Current_Tenant within the last 7 calendar days, excluding null UserId values (system actions).
+3. THE Quick_Stats_Service SHALL determine the most active area by finding the TableName with the highest record count for the Current_Tenant within the last 7 calendar days, mapped to its business-friendly name.
+4. THE Quick_Stats_Service SHALL return the Timestamp of the most recent AuditLog record for the Current_Tenant, formatted using the Relative_Timestamp_Formatter.
+5. IF no AuditLog records exist for the Current_Tenant within the last 7 calendar days, THEN THE Quick_Stats_Service SHALL return zero for changes count, zero for team members, "None" for most active area, and "No recent activity" for last activity.
+
+### Requirement 6: Activity Feed UI
+
+**User Story:** As a business manager, I want to browse my team's activity in a visual timeline with expandable details, so that I can quickly scan recent changes and drill into specifics when needed.
+
+#### Acceptance Criteria
+
+1. THE Activity_Feed SHALL display a quick stats row at the top of the page showing four stat cards: "Changes this week" (count), "By team members" (count with "people" label), "Most active area" (area name), and "Last activity" (relative timestamp).
+2. THE Activity_Feed SHALL display a filter card below the stats row with fields: "What changed" (dropdown mapped to TableName categories), "Who made the change" (dropdown of team member display names plus "Everyone" and "System" options), "What type of change" (dropdown: "All changes", "Created", "Edited", "Deleted", "Status changed"), "Date from" (date input), "Date to" (date input), a Filter button, and a Clear button.
+3. THE Activity_Feed SHALL display activities in a timeline layout with a vertical line connecting entries, where each entry shows: a colored dot indicator, a plain-English summary, a relative timestamp, and an expand/collapse control.
+4. THE Activity_Feed SHALL use colored dot indicators per action type: green for Created, blue for Edited, red for Deleted, and amber for Status Changed.
+5. WHEN a user clicks on an activity row or its expand control, THE Activity_Feed SHALL toggle the detail panel for that entry with a slide-down animation.
+6. WHEN the detail panel is expanded for a Created action, THE Activity_Feed SHALL display a "Created with values" table showing field names and their initial values parsed from NewValues JSON.
+7. WHEN the detail panel is expanded for an Update action, THE Activity_Feed SHALL display a "What changed" table showing field names with old values (styled with strikethrough in red) and new values (styled in bold green) parsed from OldValues and NewValues JSON.
+8. WHEN the detail panel is expanded for a Delete action, THE Activity_Feed SHALL display a "Deleted record" table showing field names and their values at the time of deletion parsed from OldValues JSON.
+9. THE Activity_Feed SHALL display pagination controls below the activity list showing "Showing X–Y of Z" info and page number buttons, with a default page size of 8 records per page.
+10. WHEN the page loads, THE Activity_Feed SHALL automatically fetch the first page of activities with no filters applied and display results ordered by Timestamp descending.
+11. WHEN the Filter button is clicked, THE Activity_Feed SHALL fetch results matching the selected filter criteria, reset to page 1, and update the display.
+12. WHEN the Clear button is clicked, THE Activity_Feed SHALL reset all filter fields to their default values (all options, no dates) and fetch the unfiltered first page.
+13. THE Activity_Feed SHALL call BlockUI.show('Loading activity...') before AJAX requests and BlockUI.hide() after completion in both success and error response paths.
+14. IF an AJAX request fails, THEN THE Activity_Feed SHALL display a SweetAlert2 error dialog with title "Error" and message "Could not load activity data. Please try again." using confirmButtonColor '#0D5EA6'.
+15. WHEN no activity records match the current filters, THE Activity_Feed SHALL display an empty state message within the main content card.
+16. THE Activity_Feed SHALL follow the MyChair Design System: Manrope headings (42px page title), Inter body text, glass card containers with 20px border-radius, filter card with margin-bottom 22px, and the standard topbar with eyebrow label "Business Operations".
+
+### Requirement 7: Business-Friendly Filter Mapping
+
+**User Story:** As a business manager, I want filters labeled in business terms rather than technical database terms, so that I can find what I need without understanding the underlying schema.
+
+#### Acceptance Criteria
+
+1. THE Activity_Filter "What changed" dropdown SHALL present options mapped from TableName values: "Everything" (no filter), "Invoices" (Invoice, InvoiceLine tables), "Quotations" (Quotation, QuotationLine, QuotationContact tables), "Customers" (Customer table), "Purchases" (Purchase table), "Payments" (Payment table), "Credit Notes" (CreditNote, CreditNoteLine tables), and "Settings" (Business, BusinessProfile tables).
+2. THE Activity_Filter "Who made the change" dropdown SHALL present "Everyone" (no filter) followed by display names of all users in the current business resolved from MembershipDbContext, plus "System" (filters to null UserId).
+3. THE Activity_Filter "What type of change" dropdown SHALL present: "All changes" (no filter), "Created" (maps to Action "Insert"), "Edited" (maps to Action "Update"), "Deleted" (maps to Action "Delete"), and "Status changed" (maps to Action "Update" where changed fields include status-type columns).
+4. WHEN the "Status changed" filter is selected, THE Activity_Log_Controller SHALL filter results to Update actions where OldValues or NewValues JSON contains a key ending in "StatusTypeId" or named "Status".
+5. THE Activity_Filter "Date from" and "Date to" inputs SHALL accept date values and pass them to the query service as inclusive bounds.
+
+### Requirement 8: Entity Detail Links
+
+**User Story:** As a business manager, I want entity names and identifiers in the activity feed to link to their detail pages, so that I can navigate directly to the referenced record.
+
+#### Acceptance Criteria
+
+1. WHEN an activity summary references an Invoice, THE Activity_Feed SHALL render the invoice identifier as a hyperlink navigating to the Invoice detail page at `/Invoice/Details/{id}`.
+2. WHEN an activity summary references a Customer, THE Activity_Feed SHALL render the customer name as a hyperlink navigating to the Customer detail page at `/Customer/Details/{id}`.
+3. WHEN an activity summary references a Quotation, THE Activity_Feed SHALL render the quotation identifier as a hyperlink navigating to the Quotation detail page at `/Quotation/Details/{id}`.
+4. WHEN an activity summary references a Purchase, THE Activity_Feed SHALL render the purchase identifier as a hyperlink navigating to the Purchase detail page at `/Purchase/Details/{id}`.
+5. IF the referenced entity has been deleted (Action is "Delete"), THEN THE Activity_Feed SHALL render the entity identifier as plain text without a hyperlink.
+6. IF the entity type does not have a known detail page route, THEN THE Activity_Feed SHALL render the identifier as plain text.
+
+### Requirement 9: Mobile Responsive Layout
+
+**User Story:** As a business manager using a mobile device, I want the Activity Log to adapt to smaller screens, so that I can review team activity on the go.
+
+#### Acceptance Criteria
+
+1. WHEN viewport width is 640px or less, THE Activity_Feed SHALL stack the quick stats row into a 2-column grid instead of 4-column.
+2. WHEN viewport width is 640px or less, THE Activity_Feed SHALL display filter fields in a vertical stack with each field taking full width.
+3. WHEN viewport width is 640px or less, THE Activity_Feed SHALL hide the vertical timeline line and reduce horizontal padding on activity rows.
+4. WHEN viewport width is 640px or less, THE Activity_Feed SHALL render detail panels at full width without left margin offset.
+
+### Requirement 10: Sidebar Navigation Placement
+
+**User Story:** As a business manager, I want the Activity Log to appear in a logical location in the sidebar, so that I can find it intuitively alongside other business operations.
+
+#### Acceptance Criteria
+
+1. THE Portal_System SHALL display an "Activity Log" navigation item in the "Business Operations" sidebar section.
+2. THE Portal_System SHALL remove the existing "Audit Log" link from the "Administration" sidebar section.
+3. THE Portal_System SHALL use an appropriate activity/timeline icon for the Activity Log sidebar item.
+4. WHEN the user does not have the `audit_log` module in their subscription plan, THE Portal_System SHALL hide the "Activity Log" sidebar item.

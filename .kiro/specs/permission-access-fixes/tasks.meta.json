@@ -1,0 +1,120 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519466716
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519475463
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519466777
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519476148
+      }
+    ],
+    "3.1 Fix Invoice Detail view — conditional rendering of reminder partials": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519466871
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519476931
+      }
+    ],
+    "3.2 Fix CreditNoteController attribute mismatch": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519467018
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519477769
+      }
+    ],
+    "3.3 Fix ModuleControllerMap — add missing controllers": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519467089
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519478546
+      }
+    ],
+    "3.4 Create migration 105_AddAuditLogToProfessionalPlan.sql": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519467163
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519479483
+      }
+    ],
+    "3.5 Verify bug condition exploration test now passes": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519467222
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519480150
+      }
+    ],
+    "3.6 Verify preservation tests still pass": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519467313
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519481062
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519467390
+      },
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519481681
+      }
+    ],
+    "3. Fix for permission access inconsistencies": [
+      {
+        "executionId": "2b72b5fd-33f1-4428-8938-11284e71cbab",
+        "chatSessionId": "sess_a10915a8-b472-4412-ade5-ec9f6873a642",
+        "timestamp": 1783519481266
+      }
+    ]
+  }
+}
