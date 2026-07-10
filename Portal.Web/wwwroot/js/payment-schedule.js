@@ -195,18 +195,30 @@
 
         for (var i = 0; i < data.instalments.length; i++) {
             var inst = data.instalments[i];
-            html += '<tr>';
-            html += '<td>' + inst.sequenceNumber + '</td>';
-            html += '<td>' + formatCurrency(inst.amount) + '</td>';
-            html += '<td>' + formatDate(inst.dueDate) + '</td>';
-            html += '<td>' + getStatusBadge(inst.statusId, inst.statusName) + '</td>';
+            var isRemainder = inst.isRemainder === true;
+            var hasMatchedPayments = inst.matchedAmount > 0;
+
+            // Remainder rows are visually nested
+            if (isRemainder) {
+                html += '<tr style="background:#FAFCFE;">';
+                html += '<td style="padding-left:28px;color:#5E7385;font-size:13px;">↳</td>';
+                html += '<td style="font-size:13px;color:#5E7385;">' + formatCurrency(inst.amount) + '</td>';
+                html += '<td style="font-size:13px;color:#5E7385;">' + formatDate(inst.dueDate) + '</td>';
+                html += '<td>' + getStatusBadge(inst.statusId, inst.statusName) + '</td>';
+            } else {
+                html += '<tr>';
+                html += '<td>' + inst.sequenceNumber + '</td>';
+                html += '<td>' + formatCurrency(inst.amount) + '</td>';
+                html += '<td>' + formatDate(inst.dueDate) + '</td>';
+                html += '<td>' + getStatusBadge(inst.statusId, inst.statusName) + '</td>';
+            }
 
             if (state.hasPermission) {
                 html += '<td>';
-                // Only show edit/remove for non-paid instalments
-                if (inst.statusId !== 4) {
+                // Only show actions for instalments that are NOT paid and NOT partially paid (has matched payments)
+                if (inst.statusId !== 4 && !hasMatchedPayments) {
                     html += '<button class="btn btn-secondary btn-sm" onclick="PaymentSchedule.showEditInstalment(' + inst.id + ', ' + inst.amount + ', \'' + (inst.dueDate || '') + '\')">Edit</button> ';
-                    if (inst.matchedAmount === 0) {
+                    if (!isRemainder) {
                         html += '<button class="btn btn-danger-text" onclick="PaymentSchedule.confirmRemoveInstalment(' + inst.id + ')">Remove</button>';
                     }
                 }
@@ -743,7 +755,7 @@
             html: '<div style="text-align:left;">'
                 + '<div style="margin-bottom:12px;">'
                 + '<label style="font-size:13px;font-weight:600;color:#5E7385;display:block;margin-bottom:4px;">Amount</label>'
-                + '<input id="swalEditAmount" type="number" step="0.01" min="0.01" value="' + currentAmount + '" class="swal2-input" style="margin:0;width:100%;" />'
+                + '<input id="swalEditAmount" type="number" step="0.01" min="0.01" value="' + parseFloat(currentAmount).toFixed(2) + '" class="swal2-input" style="margin:0;width:100%;" />'
                 + '</div>'
                 + '<div>'
                 + '<label style="font-size:13px;font-weight:600;color:#5E7385;display:block;margin-bottom:4px;">Due Date</label>'

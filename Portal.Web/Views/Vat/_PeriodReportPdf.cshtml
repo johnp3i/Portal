@@ -228,7 +228,7 @@
     </div>
 
     <!-- Section 3: Purchases by Origin per Month -->
-    <div class="report-card">
+    <div class="report-card" style="page-break-before:always;">
         <h2>3. Purchases by Origin Type per Month</h2>
         <p class="section-desc">Monthly breakdown of purchase amounts by origin (Domestic, EU Reverse Charge, Non-EU)</p>
         <table>
@@ -251,6 +251,31 @@
                         <td class="right">@Model.CurrencySymbol@row.NonEu.ToString("N2")</td>
                         <td class="right">@Model.CurrencySymbol@row.Total.ToString("N2")</td>
                     </tr>
+                    @if (row.ExpenseTypeRows.Any())
+                    {
+                    <tr style="font-size:10px;color:#5a6a7a;border:none;background:none;">
+                        <td></td>
+                        <td class="right">
+                            @foreach (var et in row.ExpenseTypeRows)
+                            {
+                                <div>→ @et.ExpenseTypeName @Model.CurrencySymbol@et.Domestic.ToString("N2")</div>
+                            }
+                        </td>
+                        <td class="right">
+                            @foreach (var et in row.ExpenseTypeRows)
+                            {
+                                <div>→ @et.ExpenseTypeName @Model.CurrencySymbol@et.EuReverseCharge.ToString("N2")</div>
+                            }
+                        </td>
+                        <td class="right">
+                            @foreach (var et in row.ExpenseTypeRows)
+                            {
+                                <div>→ @et.ExpenseTypeName @Model.CurrencySymbol@et.NonEu.ToString("N2")</div>
+                            }
+                        </td>
+                        <td></td>
+                    </tr>
+                    }
                 }
                 <tr class="total-row">
                     <td>Period Total</td>

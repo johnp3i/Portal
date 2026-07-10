@@ -79,7 +79,7 @@ public class PaymentService : IPaymentService
         var paymentId = await _paymentRepository.InsertAsync(payment);
 
         // 6. Match payment to instalment schedule (if active schedule exists)
-        await _paymentScheduleService.MatchPaymentToScheduleAsync(paymentId, dto.InvoiceId, businessId, userId);
+        await _paymentScheduleService.MatchPaymentToScheduleAsync(paymentId, dto.Amount, dto.InvoiceId, businessId, userId);
 
         // 7. Trigger financial status recalculation
         await _financialStatusEngine.RecalculateStatusAsync(dto.InvoiceId, businessId);

@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -359,6 +360,104 @@ public class VatController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> ExportInvoicesCsv(int periodId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        var period = await _dbContext.VatSubmissionPeriods
+            .FirstOrDefaultAsync(p => p.Id == periodId && p.BusinessId == businessId);
+
+        if (period == null) return NotFound();
+
+        var invoices = await _dbContext.Invoices
+            .Where(i => i.BusinessId == businessId
+                && i.InvoiceStatusTypeId == 2
+                && !i.IsDeleted
+                && (i.VatSubmissionPeriodId == periodId
+                    || (i.VatSubmissionPeriodId == null
+                        && i.InvoiceDate >= period.PeriodStartDate
+                        && i.InvoiceDate <= period.PeriodEndDate)))
+            .OrderByDescending(i => i.InvoiceDate)
+            .Select(i => new
+            {
+                i.InvoiceNumber,
+                CustomerName = i.Customer.Name,
+                i.InvoiceDate,
+                i.Subtotal,
+                i.TaxAmount,
+                i.TotalAmount,
+                Assignment = i.VatSubmissionPeriodId == periodId ? "Explicit" : "Date Range"
+            })
+            .ToListAsync();
+
+        var csv = new StringBuilder();
+        csv.AppendLine("Invoice Number,Customer,Invoice Date,Subtotal,VAT Amount,Total,Assignment");
+
+        foreach (var inv in invoices)
+        {
+            csv.AppendLine($"\"{inv.InvoiceNumber}\",\"{inv.CustomerName}\",{inv.InvoiceDate:yyyy-MM-dd},{inv.Subtotal:F2},{inv.TaxAmount:F2},{inv.TotalAmount:F2},\"{inv.Assignment}\"");
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        var fileName = $"vat-period-invoices-{period.PeriodLabel.Replace(" ", "-")}.csv";
+        return File(bytes, "text/csv", fileName);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPurchasesCsv(int periodId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        var period = await _dbContext.VatSubmissionPeriods
+            .FirstOrDefaultAsync(p => p.Id == periodId && p.BusinessId == businessId);
+
+        if (period == null) return NotFound();
+
+        var originLabels = new Dictionary<int, string>
+        {
+            { 1, "Domestic" },
+            { 2, "EU Reverse Charge" },
+            { 3, "Non-EU" }
+        };
+
+        var purchases = await _dbContext.Purchases
+            .Where(p => p.BusinessId == businessId
+                && !p.IsCancelled
+                && (p.VatSubmissionPeriodId == periodId
+                    || (p.VatSubmissionPeriodId == null
+                        && p.InvoiceDate >= period.PeriodStartDate
+                        && p.InvoiceDate <= period.PeriodEndDate)))
+            .OrderByDescending(p => p.InvoiceDate)
+            .Select(p => new
+            {
+                p.InvoiceNumber,
+                SupplierName = p.Supplier.Name,
+                CategoryName = p.ExpenseCategory.Name,
+                p.Description,
+                p.InvoiceDate,
+                p.AmountExcludingVat,
+                p.VatAmount,
+                p.TotalAmount,
+                p.PurchaseOriginTypeId,
+                Assignment = p.VatSubmissionPeriodId == periodId ? "Explicit" : "Date Range"
+            })
+            .ToListAsync();
+
+        var csv = new StringBuilder();
+        csv.AppendLine("Invoice Number,Supplier,Category,Description,Date,Net Amount,VAT Amount,Total,Origin Type,Assignment");
+
+        foreach (var p in purchases)
+        {
+            var origin = originLabels.GetValueOrDefault(p.PurchaseOriginTypeId, "Other");
+            csv.AppendLine($"\"{p.InvoiceNumber}\",\"{p.SupplierName}\",\"{p.CategoryName}\",\"{p.Description}\",{p.InvoiceDate:yyyy-MM-dd},{p.AmountExcludingVat:F2},{p.VatAmount:F2},{p.TotalAmount:F2},\"{origin}\",\"{p.Assignment}\"");
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        var fileName = $"vat-period-purchases-{period.PeriodLabel.Replace(" ", "-")}.csv";
+        return File(bytes, "text/csv", fileName);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> PeriodReport(int periodId)
     {
         var model = await BuildPeriodReportModelAsync(periodId);
@@ -452,7 +551,7 @@ public class VatController : Controller
                     || (p.VatSubmissionPeriodId == null
                         && p.InvoiceDate >= period.PeriodStartDate
                         && p.InvoiceDate <= period.PeriodEndDate)))
-            .Select(p => new { p.InvoiceDate, p.AmountExcludingVat, p.VatAmount, p.TotalAmount, p.PurchaseOriginTypeId })
+            .Select(p => new { p.InvoiceDate, p.AmountExcludingVat, p.VatAmount, p.TotalAmount, p.PurchaseOriginTypeId, p.ExpenseCategory.ExpenseTypeId })
             .ToListAsync();
 
         // Section 1: Sales by month
@@ -469,6 +568,20 @@ public class VatController : Controller
             };
         }).ToList();
 
+        // Add "Prior Period (Late)" row for explicitly-assigned invoices with dates before the period
+        var lateInvoices = invoices.Where(i => i.InvoiceDate < period.PeriodStartDate).ToList();
+        if (lateInvoices.Count > 0)
+        {
+            salesByMonth.Insert(0, new MonthlyAmountRow
+            {
+                MonthName = "Prior Period (Late)",
+                Net = lateInvoices.Sum(i => i.Subtotal),
+                Vat = lateInvoices.Sum(i => i.TaxAmount),
+                Gross = lateInvoices.Sum(i => i.TotalAmount),
+                Count = lateInvoices.Count
+            });
+        }
+
         // Section 2: Purchases by month
         var purchasesByMonth = months.Select(m =>
         {
@@ -483,7 +596,27 @@ public class VatController : Controller
             };
         }).ToList();
 
-        // Section 3: Purchases by origin per month
+        // Add "Prior Period (Late)" row for explicitly-assigned purchases with dates before the period
+        var latePurchases = purchases.Where(p => p.InvoiceDate < period.PeriodStartDate).ToList();
+        if (latePurchases.Count > 0)
+        {
+            purchasesByMonth.Insert(0, new MonthlyAmountRow
+            {
+                MonthName = "Prior Period (Late)",
+                Net = latePurchases.Sum(p => p.AmountExcludingVat),
+                Vat = latePurchases.Sum(p => p.VatAmount),
+                Gross = latePurchases.Sum(p => p.TotalAmount),
+                Count = latePurchases.Count
+            });
+        }
+
+        // Load expense types from database for dynamic breakdown
+        var expenseTypes = await _dbContext.ExpenseTypes
+            .OrderBy(et => et.Id)
+            .Select(et => new ExpenseTypeLookup { Id = et.Id, Name = et.Name })
+            .ToListAsync();
+
+        // Section 3: Purchases by origin per month (with dynamic expense type breakdown)
         var purchasesByOriginPerMonth = months.Select(m =>
         {
             var monthPurchases = purchases.Where(p => p.InvoiceDate >= m.Start && p.InvoiceDate <= m.End).ToList();
@@ -493,7 +626,15 @@ public class VatController : Controller
                 Domestic = monthPurchases.Where(p => p.PurchaseOriginTypeId == 1).Sum(p => p.AmountExcludingVat),
                 EuReverseCharge = monthPurchases.Where(p => p.PurchaseOriginTypeId == 2).Sum(p => p.AmountExcludingVat),
                 NonEu = monthPurchases.Where(p => p.PurchaseOriginTypeId == 3).Sum(p => p.AmountExcludingVat),
-                Total = monthPurchases.Sum(p => p.AmountExcludingVat)
+                Total = monthPurchases.Sum(p => p.AmountExcludingVat),
+                ExpenseTypeRows = expenseTypes.Select(et => new OriginExpenseTypeRow
+                {
+                    ExpenseTypeId = et.Id,
+                    ExpenseTypeName = et.Name,
+                    Domestic = monthPurchases.Where(p => p.PurchaseOriginTypeId == 1 && p.ExpenseTypeId == et.Id).Sum(p => p.AmountExcludingVat),
+                    EuReverseCharge = monthPurchases.Where(p => p.PurchaseOriginTypeId == 2 && p.ExpenseTypeId == et.Id).Sum(p => p.AmountExcludingVat),
+                    NonEu = monthPurchases.Where(p => p.PurchaseOriginTypeId == 3 && p.ExpenseTypeId == et.Id).Sum(p => p.AmountExcludingVat)
+                }).ToList()
             };
         }).ToList();
 
@@ -534,6 +675,7 @@ public class VatController : Controller
             SalesByMonth = salesByMonth,
             PurchasesByMonth = purchasesByMonth,
             PurchasesByOriginPerMonth = purchasesByOriginPerMonth,
+            ExpenseTypes = expenseTypes,
             PeriodTotalsByOrigin = periodTotalsByOrigin
         };
     }

@@ -208,6 +208,13 @@ async function submitPayment() {
         return;
     }
 
+    // Validate payment method is selected
+    var paymentMethodInput = document.getElementById('paymentMethod');
+    if (!paymentMethodInput || !paymentMethodInput.value || paymentMethodInput.value === '0' || paymentMethodInput.value === '') {
+        showValidationError('Please select a payment method.');
+        return;
+    }
+
     hideValidationError();
 
     // Build form data

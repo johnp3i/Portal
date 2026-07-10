@@ -125,33 +125,61 @@
 <section class="glass card-pad" style="margin-top:24px;">
     <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:4px;">3. Purchases by Origin Type per Month</h2>
     <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">Monthly breakdown of purchase amounts by origin (Domestic, EU Reverse Charge, Non-EU)</p>
-    <table>
+    <table style="border-collapse:separate;border-spacing:0;">
         <thead>
             <tr>
-                <th>Month</th>
-                <th class="text-right">Domestic</th>
-                <th class="text-right">EU Reverse Charge</th>
-                <th class="text-right">Non-EU</th>
-                <th class="text-right">Total</th>
+                <th style="padding:10px 12px;">Month</th>
+                <th class="text-right" style="padding:10px 12px;">Domestic</th>
+                <th class="text-right" style="padding:10px 12px;">EU Reverse Charge</th>
+                <th class="text-right" style="padding:10px 12px;">Non-EU</th>
+                <th class="text-right" style="padding:10px 12px;">Total</th>
             </tr>
         </thead>
         <tbody>
+            @{ var monthIndex = 0; }
             @foreach (var row in Model.PurchasesByOriginPerMonth)
             {
-                <tr>
-                    <td><strong>@row.MonthName</strong></td>
-                    <td class="text-right">@Model.CurrencySymbol@row.Domestic.ToString("N2")</td>
-                    <td class="text-right">@Model.CurrencySymbol@row.EuReverseCharge.ToString("N2")</td>
-                    <td class="text-right">@Model.CurrencySymbol@row.NonEu.ToString("N2")</td>
-                    <td class="text-right">@Model.CurrencySymbol@row.Total.ToString("N2")</td>
+                var stripeBg = monthIndex % 2 == 0 ? "background:rgba(13,94,166,.015);" : "";
+                <tr style="@stripeBg border-top:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:12px 12px 4px;"><strong style="font-size:14px;">@row.MonthName</strong></td>
+                    <td class="text-right" style="padding:12px 12px 4px;font-weight:700;font-size:14px;">@Model.CurrencySymbol@row.Domestic.ToString("N2")</td>
+                    <td class="text-right" style="padding:12px 12px 4px;font-weight:700;font-size:14px;">@Model.CurrencySymbol@row.EuReverseCharge.ToString("N2")</td>
+                    <td class="text-right" style="padding:12px 12px 4px;font-weight:700;font-size:14px;">@Model.CurrencySymbol@row.NonEu.ToString("N2")</td>
+                    <td class="text-right" style="padding:12px 12px 4px;font-weight:700;font-size:14px;color:#0D5EA6;">@Model.CurrencySymbol@row.Total.ToString("N2")</td>
                 </tr>
+                @if (row.ExpenseTypeRows.Any(et => et.Domestic != 0 || et.EuReverseCharge != 0 || et.NonEu != 0))
+                {
+                    <tr style="@stripeBg">
+                        <td style="padding:2px 12px 14px;"></td>
+                        <td class="text-right" style="padding:2px 12px 14px;vertical-align:top;">
+                            @foreach (var et in row.ExpenseTypeRows.Where(et => et.Domestic != 0))
+                            {
+                                <div style="font-size:11px;color:#5a6a7a;line-height:1.7;">→ @et.ExpenseTypeName <span style="font-weight:600;color:#3d4f5f;">@Model.CurrencySymbol@et.Domestic.ToString("N2")</span></div>
+                            }
+                        </td>
+                        <td class="text-right" style="padding:2px 12px 14px;vertical-align:top;">
+                            @foreach (var et in row.ExpenseTypeRows.Where(et => et.EuReverseCharge != 0))
+                            {
+                                <div style="font-size:11px;color:#5a6a7a;line-height:1.7;">→ @et.ExpenseTypeName <span style="font-weight:600;color:#3d4f5f;">@Model.CurrencySymbol@et.EuReverseCharge.ToString("N2")</span></div>
+                            }
+                        </td>
+                        <td class="text-right" style="padding:2px 12px 14px;vertical-align:top;">
+                            @foreach (var et in row.ExpenseTypeRows.Where(et => et.NonEu != 0))
+                            {
+                                <div style="font-size:11px;color:#5a6a7a;line-height:1.7;">→ @et.ExpenseTypeName <span style="font-weight:600;color:#3d4f5f;">@Model.CurrencySymbol@et.NonEu.ToString("N2")</span></div>
+                            }
+                        </td>
+                        <td style="padding:2px 12px 14px;"></td>
+                    </tr>
+                }
+                monthIndex++;
             }
-            <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
-                <td>Period Total</td>
-                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.Domestic).ToString("N2")</td>
-                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.EuReverseCharge).ToString("N2")</td>
-                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.NonEu).ToString("N2")</td>
-                <td class="text-right">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.Total).ToString("N2")</td>
+            <tr style="font-weight:700;background:rgba(13,94,166,.04);border-top:2px solid rgba(13,94,166,.14);">
+                <td style="padding:14px 12px;font-size:14px;">Period Total</td>
+                <td class="text-right" style="padding:14px 12px;font-size:14px;">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.Domestic).ToString("N2")</td>
+                <td class="text-right" style="padding:14px 12px;font-size:14px;">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.EuReverseCharge).ToString("N2")</td>
+                <td class="text-right" style="padding:14px 12px;font-size:14px;">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.NonEu).ToString("N2")</td>
+                <td class="text-right" style="padding:14px 12px;font-size:14px;color:#0D5EA6;">@Model.CurrencySymbol@Model.PurchasesByOriginPerMonth.Sum(r => r.Total).ToString("N2")</td>
             </tr>
         </tbody>
     </table>

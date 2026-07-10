@@ -81,14 +81,26 @@ public class VatSubmissionService : IVatSubmissionService
 
         var totalOutputVat = explicitOutputVat + dateRangeOutputVat - creditNoteTaxReduction;
 
-        // Compute TotalInputVat: SUM(VatAmount) from purchases assigned to this period (VatSubmissionPeriodId)
-        // This is the "actual" figure — what was reported for this period
-        var totalInputVat = await _portalDbContext.Purchases
+        // Compute TotalInputVat using two-part approach (mirrors Output VAT logic):
+        // Part 1: Purchases explicitly assigned to this period
+        var explicitInputVat = await _portalDbContext.Purchases
             .Where(p => p.BusinessId == businessId
                 && p.PurchaseOriginTypeId != 2
                 && !p.IsCancelled
                 && p.VatSubmissionPeriodId == vatSubmissionPeriodId)
             .SumAsync(p => (decimal?)p.VatAmount) ?? 0m;
+
+        // Part 2: Purchases with NULL assignment falling in date range (backward compat)
+        var dateRangeInputVat = await _portalDbContext.Purchases
+            .Where(p => p.BusinessId == businessId
+                && p.PurchaseOriginTypeId != 2
+                && !p.IsCancelled
+                && p.VatSubmissionPeriodId == null
+                && p.InvoiceDate >= period.PeriodStartDate
+                && p.InvoiceDate <= period.PeriodEndDate)
+            .SumAsync(p => (decimal?)p.VatAmount) ?? 0m;
+
+        var totalInputVat = explicitInputVat + dateRangeInputVat;
 
         // Also compute by InvoiceDate for discrepancy detection
         // This is the "expected" figure — what should have been reported based on invoice dates

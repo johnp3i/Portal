@@ -1012,7 +1012,7 @@ public class PortalDbContext : DbContext
                 .HasMaxLength(100);
 
             entity.Property(e => e.Description)
-                .IsRequired()
+                .IsRequired(false)
                 .HasMaxLength(500);
 
             entity.Property(e => e.AmountExcludingVat)

@@ -83,17 +83,21 @@
 
 <!-- Sales Invoices (Output VAT Breakdown) -->
 <section class="glass card-pad" style="margin-top:24px;">
-    <div style="margin-bottom:16px;">
-        <div class="label">Output VAT</div>
-        <h2 style="margin-top:8px;font-size:24px;">Sales Invoices &nbsp;<span id="invoiceCount" style="font-size:14px;font-weight:500;color:#5E7385;font-family:'Inter',sans-serif;"></span></h2>
-        <p class="muted" style="font-size:13px;margin-top:4px;">Issued invoices contributing to Output VAT for this period.</p>
-    </div>
-    <!-- Output VAT total card — matches purchases strip format -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:18px;">
-        <div style="background:rgba(13,94,166,.12);border-radius:14px;padding:14px 20px;min-width:160px;">
-            <div class="label" style="color:#0D5EA6;">Total Output VAT</div>
-            <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#0D5EA6;margin-top:6px;">@Model.CurrencySymbol@Model.TotalOutputVat.ToString("N2")</div>
-            <div id="invoiceTotalCount" style="font-size:12px;color:#5E7385;margin-top:3px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+            <div class="label">Output VAT</div>
+            <h2 style="margin-top:8px;font-size:24px;">Sales Invoices &nbsp;<span id="invoiceCount" style="font-size:14px;font-weight:500;color:#5E7385;font-family:'Inter',sans-serif;"></span></h2>
+            <p class="muted" style="font-size:13px;margin-top:4px;">Issued invoices contributing to Output VAT for this period.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <div style="background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:14px;padding:10px 20px;text-align:center;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D5EA6;">Total Output VAT</div>
+                <div style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#0D5EA6;margin-top:3px;">@Model.CurrencySymbol@Model.TotalOutputVat.ToString("N2")</div>
+            </div>
+            <a href="/Vat/ExportInvoicesCsv?periodId=@Model.PeriodId" class="btn btn-outline" style="font-size:13px;padding:8px 16px;display:inline-flex;align-items:center;gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+            </a>
         </div>
     </div>
     <div style="margin-bottom:16px;">
@@ -107,12 +111,16 @@
 
 <!-- Purchases (Input VAT Breakdown) -->
 <section class="glass card-pad" style="margin-top:24px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
         <div>
             <div class="label">Input VAT</div>
             <h2 style="margin-top:8px;font-size:24px;">Purchases &nbsp;<span id="purchaseCount" style="font-size:14px;font-weight:500;color:#5E7385;font-family:'Inter',sans-serif;"></span></h2>
             <p class="muted" style="font-size:13px;margin-top:4px;">Purchases contributing to Input VAT for this period.</p>
         </div>
+        <a href="/Vat/ExportPurchasesCsv?periodId=@Model.PeriodId" class="btn btn-outline" style="font-size:13px;padding:8px 16px;display:inline-flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+        </a>
     </div>
     <!-- Origin type KPI strip — populated by JS after first AJAX load -->
     <div id="purchaseOriginSummary" style="display:flex;justify-content:space-between;align-items:stretch;flex-wrap:wrap;gap:14px;margin-bottom:18px;"></div>
@@ -215,8 +223,7 @@
             // Update count in header (always reflects total, not just current page)
             var countEl = document.getElementById('invoiceCount');
             if (countEl) countEl.textContent = '· ' + data.totalCount + ' invoice' + (data.totalCount !== 1 ? 's' : '');
-            var totalCountEl = document.getElementById('invoiceTotalCount');
-            if (totalCountEl) totalCountEl.textContent = data.totalCount + ' invoice' + (data.totalCount !== 1 ? 's' : '');
+
             if (data.items.length === 0) {
                 container.innerHTML = '<div style="text-align:center;padding:32px;color:#5E7385;font-size:14px;">'
                     + (invoiceSearch ? 'No invoices match your search.' : 'No invoices in this period.')
@@ -309,12 +316,12 @@
                     : (p.purchaseOriginTypeId === 3
                         ? ' <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(94,115,133,.10);color:#5E7385;">Non-EU</span>'
                         : '');
-                var ref = p.invoiceNumber ? escapeHtml(p.invoiceNumber) : '&mdash;';
-                var desc = p.description
+                var refLine1 = '<span style="font-weight:600;">' + escapeHtml(p.categoryName) + '</span>';
+                var refLine2 = p.description
                     ? '<div style="font-size:11px;color:#5E7385;margin-top:2px;">' + escapeHtml(p.description) + '</div>'
                     : '';
                 html += '<tr>'
-                    + '<td><span style="font-weight:600;">' + ref + '</span>' + desc + '</td>'
+                    + '<td>' + refLine1 + refLine2 + '</td>'
                     + '<td>' + escapeHtml(p.supplierName) + '</td>'
                     + '<td>' + p.invoiceDate + '</td>'
                     + '<td>' + escapeHtml(p.categoryName) + '</td>'

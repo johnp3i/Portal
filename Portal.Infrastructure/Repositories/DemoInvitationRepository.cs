@@ -347,6 +347,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                        [portal].[Business].[Name],
                        [portal].[Business].[IsActive],
                        [portal].[Business].[IsDemoAccount],
+                       [portal].[Business].[IsPaymentInstructionsEnabled],
                        [portal].[Business].[CreatedAtUtc],
                        [portal].[Business].[UpdatedAtUtc]
                 FROM [portal].[Business]

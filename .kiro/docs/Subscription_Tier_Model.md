@@ -1,10 +1,11 @@
 # Subscription Tier Model
+**Last revised: 11 July 2026**
 
 ## Philosophy
 
 The Portal exists to help businesses operate with clarity and control. The pricing model reflects this:
 
-- **Starter gives you everything you need to run your business** — no critical features held hostage
+- **Foundation gives you everything you need to run your business** — no critical features held hostage. The name says it: this is the foundation every business starts with.
 - **Professional gives you automation** — the platform works for you while you focus on selling
 - **Enterprise gives you scale** — multi-user, integrations, and advanced analytics for growing teams
 
@@ -14,7 +15,7 @@ The upgrade path is natural: as a business grows, manual processes become bottle
 
 ## Tier Definitions
 
-### Starter
+### Foundation
 
 **For:** Solo operators, micro-businesses, early-stage companies (1–2 users)
 
@@ -56,13 +57,15 @@ The upgrade path is natural: as a business grows, manual processes become bottle
 Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Customer Pays → Auto-Record
 ```
 
-**Everything in Starter, plus:**
+**Everything in Foundation, plus:**
 - Automated Payment Reminders (configurable schedule, escalating tone)
 - Auto-generated Payment Links (included in invoice emails and shared pages)
+- Payment Schedules (instalment plans with auto-matching, VAT warnings, remainder tracking)
 - Cash Flow Forecasting (30/60/90-day projections)
 - Profit & Loss Summary (period-based financial overview)
 - Expense Categorisation Insights (spend analysis, budget alerts)
 - Document Attachments (attach PDFs/images to purchases, invoices, quotations)
+- Activity Log (readonly — view history of operations)
 - Up to 5 users with granular permissions
 - Priority email support
 
@@ -79,13 +82,13 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 **Everything in Professional, plus:**
 - Client Portal (customers view invoices, pay, download statements)
 - Activity Timeline & Notifications (real-time feed, email digests)
+- Activity Log (full — edit, export, and advanced filtering)
 - API Access (REST API for external integrations)
 - Webhook subscriptions (real-time event notifications to external systems)
 - Multi-Currency Support (invoice in customer's currency, report in base)
 - Unlimited users with role-based access
 - Custom branding on client-facing pages
 - Dedicated account support
-- Audit log access (full history of all operations)
 
 **Upgrade trigger:** Business has multiple team members who need visibility, or customers asking for self-service access, or integration requirements with accounting/banking systems.
 
@@ -93,7 +96,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 
 ## Feature Distribution Matrix
 
-| Feature | Starter | Professional | Enterprise |
+| Feature | Foundation | Professional | Enterprise |
 |---------|---------|-------------|-----------|
 | **Core Operations** | | | |
 | Quotations (create, send, share) | ✅ | ✅ | ✅ |
@@ -115,11 +118,12 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Cash Flow Forecasting | ❌ | ✅ | ✅ |
 | Profit & Loss Summary | ❌ | ✅ | ✅ |
 | Expense Categorisation Insights | ❌ | ✅ | ✅ |
+| Payment Schedules (Instalment Plans) | ❌ | ✅ | ✅ |
 | **Operational Tools** | | | |
 | Document Attachments | ❌ | ✅ | ✅ |
+| Activity Log | ❌ | ✅ (readonly) | ✅ (full) |
 | Client Portal (customer self-service) | ❌ | ❌ | ✅ |
 | Activity Timeline & Notifications | ❌ | ❌ | ✅ |
-| Audit Log Access | ❌ | ❌ | ✅ |
 | **Integrations** | | | |
 | API Access | ❌ | ❌ | ✅ |
 | Webhooks | ❌ | ❌ | ✅ |
@@ -160,8 +164,8 @@ Request arrives
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | INT IDENTITY PK | |
-| Name | NVARCHAR(50) | 'starter', 'professional', 'enterprise' |
-| DisplayName | NVARCHAR(100) | 'Starter', 'Professional', 'Enterprise' |
+| Name | NVARCHAR(50) | 'foundation', 'professional', 'enterprise' |
+| DisplayName | NVARCHAR(100) | 'Foundation', 'Professional', 'Enterprise' |
 | MaxUsers | INT | 2, 5, 9999 |
 | MonthlyPrice | DECIMAL(10,2) | |
 | AnnualPrice | DECIMAL(10,2) | Annual discount |
@@ -208,25 +212,26 @@ Request arrives
 
 | Key | Feature | Available From |
 |-----|---------|---------------|
-| `quotation` | Quotation Platform | Starter |
-| `invoice` | Invoicing | Starter |
-| `revenue` | Revenue Control | Starter |
-| `customer` | Customer Registry | Starter |
-| `purchase` | Purchase Management | Starter |
-| `vat` | VAT Periods | Starter |
-| `credit` | Credit Notes | Starter |
-| `products` | Product Catalog | Starter |
-| `payment_link_manual` | Manual Payment Links | Starter |
-| `payment_reminder_manual` | Manual Reminders | Starter |
+| `quotation` | Quotation Platform | Foundation |
+| `invoice` | Invoicing | Foundation |
+| `revenue` | Revenue Control | Foundation |
+| `customer` | Customer Registry | Foundation |
+| `purchase` | Purchase Management | Foundation |
+| `vat` | VAT Periods | Foundation |
+| `credit` | Credit Notes | Foundation |
+| `products` | Product Catalog | Foundation |
+| `payment_link_manual` | Manual Payment Links | Foundation |
+| `payment_reminder_manual` | Manual Reminders | Foundation |
 | `payment_link_auto` | Auto Payment Links | Professional |
 | `payment_reminder_auto` | Automated Reminders | Professional |
+| `schedule_payments` | Payment Schedules | Professional |
 | `cashflow` | Cash Flow Forecasting | Professional |
 | `pnl` | Profit & Loss | Professional |
 | `expense_insights` | Expense Categorisation | Professional |
 | `attachments` | Document Attachments | Professional |
+| `audit_log` | Activity Log (readonly on Professional, full on Enterprise) | Professional |
 | `client_portal` | Client Portal | Enterprise |
 | `activity_timeline` | Activity & Notifications | Enterprise |
-| `audit_log` | Audit Log Access | Enterprise |
 | `api` | API Access | Enterprise |
 | `webhooks` | Webhook Subscriptions | Enterprise |
 | `multi_currency` | Multi-Currency | Enterprise |
@@ -251,7 +256,7 @@ The Owner cannot have their permissions reduced. All other roles are fully confi
 
 ### Soft Gating (Awareness)
 
-When a Starter user navigates to a Professional feature area:
+When a Foundation user navigates to a Professional feature area:
 - **Don't hide the feature entirely** — show a preview/teaser
 - Show the section heading with a lock icon and brief value description
 - Example: "Cash Flow Forecasting — See your 30/60/90-day financial outlook. Available on Professional."
@@ -269,6 +274,7 @@ When a user attempts to use a gated feature via direct URL or API:
 Show upgrade suggestions at natural pain points:
 - Revenue Dashboard: "3 invoices are overdue. Automatic reminders could help."
 - Invoice Detail: "Payment links are auto-included in emails on Professional."
+- Invoice Detail (high value): "Set up payment schedules to track instalment collection. Available on Professional."
 - Purchase List: "See spending insights and budget alerts on Professional."
 
 **Never:** Pop-ups, blocking modals, countdown timers, or pressure tactics. The platform respects the business owner's decision.
@@ -277,11 +283,11 @@ Show upgrade suggestions at natural pain points:
 
 ## Pricing Principles
 
-1. **Starter must be genuinely useful** — a business should be able to operate fully on Starter for months/years if that's what they need
+1. **Foundation must be genuinely useful** — a business should be able to operate fully on Foundation for months/years if that's what they need
 2. **Professional sells itself** — the automation saves more time than the subscription costs
 3. **Enterprise earns trust** — only offered to businesses that genuinely need scale/integrations
 4. **Annual discount** — reward commitment (typically 15–20% off monthly price)
-5. **No feature crippling** — Starter features work fully, they're just not automated
+5. **No feature crippling** — Foundation features work fully, they're just not automated
 6. **Transparent pricing** — published on the website, no "contact sales" for standard tiers
 7. **Free trial of Professional** — 14 days, no credit card, full access (shows the automation value)
 
@@ -291,7 +297,7 @@ Show upgrade suggestions at natural pain points:
 
 | Plan | Trial | Purpose |
 |------|-------|---------|
-| Starter | Free forever (with subscription) | Core platform access — this is what they pay the subscription for |
+| Foundation | Free forever (with subscription) | Core platform access — this is what they pay the subscription for |
 | Professional | 14-day free trial | Let them experience automation — reminders, cash flow, P&L |
 | Enterprise | Demo invitation (existing feature) | Guided by 3 Inventors team for serious prospects |
 
@@ -305,7 +311,7 @@ When this system launches, existing users transition as follows:
 
 1. All current active businesses → **Professional** (grandfather for a period)
 2. After grace period → businesses choose their tier based on actual usage
-3. Businesses using only core features → suggest Starter (save money)
+3. Businesses using only core features → suggest Foundation (save money)
 4. Businesses using automation → stay on Professional
 5. No forced downgrades — always the business owner's choice
 
@@ -332,17 +338,29 @@ All three share the same module key vocabulary and access level concept ('full',
 
 | Plan | Monthly Equivalent | Annual Charge | Positioning |
 |------|-------------------|---------------|-------------|
-| Starter | €39/mo | €390/year | Foundation — complete business management |
-| Professional | €79/mo | €790/year | Automation — the platform works for you |
-| Enterprise | €149/mo | €1,490/year | Scale — teams, integrations, self-service |
+| Foundation | €39/mo | €390/year | The base — complete business management for any business |
+| Professional | €89/mo | €890/year | Automation — the platform works for you |
+| Enterprise | €169/mo | €1,690/year | Scale — teams, integrations, self-service |
+
+### Annual Discount Model
+
+All tiers use a "pay for 10, get 12" annual billing model:
+
+| Tier | Monthly Rate | Annual Charge | Savings |
+|------|-------------|---------------|---------|
+| Foundation | €39 | €390 | €78 (2 months free) |
+| Professional | €89 | €890 | €178 (2 months free) |
+| Enterprise | €169 | €1,690 | €338 (2 months free) |
+
+This model prioritises operational continuity over monthly billing — a business should never lose access to its platform because of a missed payment.
 
 ### Pricing Rationale
 
-**Starter (€39/mo)** — Positioned alongside serious business platforms (Xero, QuickBooks), not budget invoicing tools. At €39, the Portal offers more out of the box than competitors at the same price point: quotations, invoicing, revenue control, purchases, suppliers, VAT submissions, credit notes, product catalog, and customer statements — all in one platform.
+**Foundation (€39/mo)** — The name is intentional. This tier provides the complete foundation for running a business — quotations, invoicing, revenue control, purchases, suppliers, VAT submissions, credit notes, product catalog, and customer statements. Unlike competitors who cripple basic tiers to force upgrades, Foundation is genuinely complete. Positioned alongside serious business platforms (Xero, QuickBooks), not budget invoicing tools.
 
-**Professional (€79/mo)** — The highest-value tier. A business paying €79/mo for fully automated payment chasing, auto-generated payment links, cash flow forecasting, and P&L summaries is getting capabilities that would cost them €200+/month with a part-time bookkeeper. The automation pipeline alone (remind → pay link → auto-record) eliminates hours of manual work every week.
+**Professional (€89/mo)** — The highest-value tier. A business paying €89/mo for fully automated payment chasing, auto-generated payment links, cash flow forecasting, and P&L summaries is getting capabilities that would cost them €200+/month with a part-time bookkeeper. The automation pipeline alone (remind → pay link → auto-record) eliminates hours of manual work every week.
 
-**Enterprise (€149/mo)** — For businesses running serious operations with multiple team members, customer self-service needs, and integration requirements. At €149/mo, still well below the cost of fragmented tools covering the same scope (separate invoicing + accounting + CRM + payment platform).
+**Enterprise (€169/mo)** — For businesses running serious operations with multiple team members, customer self-service needs, and integration requirements. At €149/mo, still well below the cost of fragmented tools covering the same scope (separate invoicing + accounting + CRM + payment platform).
 
 ### Strategic Positioning
 
@@ -361,6 +379,6 @@ All three share the same module key vocabulary and access level concept ('full',
 | Cash flow visibility | Real-time | €50–100/mo (accountant time) |
 | P&L reporting | Automatic | €100–200/mo (bookkeeper) |
 | VAT preparation | Built-in | €50–150/mo (accountant) |
-| **Total alternative cost** | **€79/mo** | **€200–500+/mo** |
+| **Total alternative cost** | **€89/mo** | **€200–500+/mo** |
 
 The Professional tier pays for itself within the first month for any business with 15+ invoices and regular purchase activity.

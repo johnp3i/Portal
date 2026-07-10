@@ -208,11 +208,6 @@ public class PurchaseService : IPurchaseService
 
     private async Task<ServiceResult> ValidatePurchaseAsync(Purchase purchase)
     {
-        if (string.IsNullOrWhiteSpace(purchase.Description))
-        {
-            return ServiceResult.Fail("Description is required.");
-        }
-
         if (purchase.AmountExcludingVat <= 0)
         {
             return ServiceResult.Fail("Amount excluding VAT must be greater than zero.");

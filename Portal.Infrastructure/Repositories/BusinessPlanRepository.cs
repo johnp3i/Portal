@@ -18,7 +18,8 @@ public class BusinessPlanRepository : GenericStoredProcedureRepository<BusinessP
             const string query = @"
                 SELECT [BusinessPlan].[Id], [BusinessPlan].[BusinessId], [BusinessPlan].[PlanId],
                        [BusinessPlan].[StartDateUtc], [BusinessPlan].[EndDateUtc],
-                       [BusinessPlan].[IsActive], [BusinessPlan].[CreatedAtUtc]
+                       [BusinessPlan].[IsActive], [BusinessPlan].[Status],
+                       [BusinessPlan].[TrialEndsAtUtc], [BusinessPlan].[CreatedAtUtc]
                 FROM [dbo].[BusinessPlan]
                 WHERE [BusinessPlan].[BusinessId] = @BusinessId
                   AND [BusinessPlan].[IsActive] = 1";
@@ -26,7 +27,7 @@ public class BusinessPlanRepository : GenericStoredProcedureRepository<BusinessP
             return await ExecuteSingleRecordStoredProcedure(query,
                 new SqlParameter("@BusinessId", businessId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }

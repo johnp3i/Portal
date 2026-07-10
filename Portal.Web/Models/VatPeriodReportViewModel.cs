@@ -22,13 +22,16 @@ public class VatPeriodReportViewModel
     // Section 3: Purchases by origin per month
     public List<MonthlyOriginRow> PurchasesByOriginPerMonth { get; set; } = new();
 
+    // Expense type lookup for section 3 sub-rows (loaded dynamically from DB)
+    public List<ExpenseTypeLookup> ExpenseTypes { get; set; } = new();
+
     // Section 4: Period totals by origin
     public List<OriginTotalRow> PeriodTotalsByOrigin { get; set; } = new();
 }
 
 public class MonthlyAmountRow
 {
-    public string MonthName { get; set; } = null!; // e.g. "March 2024"
+    public string MonthName { get; set; } = null!;
     public decimal Net { get; set; }
     public decimal Vat { get; set; }
     public decimal Gross { get; set; }
@@ -42,6 +45,34 @@ public class MonthlyOriginRow
     public decimal EuReverseCharge { get; set; }
     public decimal NonEu { get; set; }
     public decimal Total { get; set; }
+
+    /// <summary>
+    /// Dynamic expense type breakdown per origin.
+    /// Key = ExpenseTypeId, Value = amounts per origin type.
+    /// </summary>
+    public List<OriginExpenseTypeRow> ExpenseTypeRows { get; set; } = new();
+}
+
+/// <summary>
+/// One row of the expense type sub-breakdown for a given month.
+/// Contains the expense type name and its amount per origin column.
+/// </summary>
+public class OriginExpenseTypeRow
+{
+    public int ExpenseTypeId { get; set; }
+    public string ExpenseTypeName { get; set; } = null!;
+    public decimal Domestic { get; set; }
+    public decimal EuReverseCharge { get; set; }
+    public decimal NonEu { get; set; }
+}
+
+/// <summary>
+/// Lookup record for expense types used in the report.
+/// </summary>
+public class ExpenseTypeLookup
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
 }
 
 public class OriginTotalRow

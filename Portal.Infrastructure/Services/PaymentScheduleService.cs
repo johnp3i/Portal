@@ -20,7 +20,7 @@ public interface IPaymentScheduleService
     Task<PaymentScheduleDetailDto?> GetScheduleByInvoiceIdAsync(int invoiceId, int businessId);
     Task<List<PaymentScheduleHistoryDto>> GetScheduleHistoryAsync(int scheduleId, int businessId);
     Task<VatWarningDto?> GetVatWarningAsync(int invoiceId, DateOnly? firstInstalmentDueDate, decimal firstInstalmentAmount, int businessId);
-    Task MatchPaymentToScheduleAsync(int paymentId, int invoiceId, int businessId, string userId);
+    Task MatchPaymentToScheduleAsync(int paymentId, decimal paymentAmount, int invoiceId, int businessId, string userId);
     Task RevertPaymentMatchAsync(int paymentId, int invoiceId, int businessId);
 }
 
@@ -53,7 +53,7 @@ public class PaymentScheduleService : IPaymentScheduleService
         { StatusDue, "Due" },
         { StatusOverdue, "Overdue" },
         { StatusPaid, "Paid" },
-        { StatusPartiallyPaid, "PartiallyPaid" }
+        { StatusPartiallyPaid, "Partially Paid" }
     };
 
     public PaymentScheduleService(
@@ -227,27 +227,6 @@ public class PaymentScheduleService : IPaymentScheduleService
                 });
             }
 
-            // Revalidate total sum
-            var allInstalments = await _instalmentRepo.GetByScheduleIdAsync(dto.ScheduleId);
-
-            // Apply the in-memory update for amount to compute the correct sum
-            var totalSum = allInstalments.Sum(i =>
-                i.Id == dto.InstalmentId && dto.NewAmount.HasValue ? dto.NewAmount.Value : i.Amount);
-
-            var invoice = await _dbContext.Invoices
-                .Where(i => i.Id == schedule.InvoiceId && i.BusinessId == businessId && !i.IsDeleted)
-                .Select(i => new { i.TotalAmount })
-                .FirstOrDefaultAsync();
-
-            if (invoice != null)
-            {
-                var totalPaid = await _paymentRepo.GetTotalPaidAsync(schedule.InvoiceId, businessId);
-                var outstandingBalance = invoice.TotalAmount - totalPaid;
-
-                if (totalSum != outstandingBalance)
-                    return ServiceResult.Fail($"After modification, the sum of instalment amounts ({totalSum:N2}) does not equal the outstanding balance ({outstandingBalance:N2}). Please adjust other instalments.");
-            }
-
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -298,24 +277,6 @@ public class PaymentScheduleService : IPaymentScheduleService
                 ChangedByUserId = userId,
                 ChangedAtUtc = DateTime.UtcNow
             });
-
-            // Revalidate sum
-            var allInstalments = await _instalmentRepo.GetByScheduleIdAsync(dto.ScheduleId);
-            var totalSum = allInstalments.Sum(i => i.Amount);
-
-            var invoice = await _dbContext.Invoices
-                .Where(i => i.Id == schedule.InvoiceId && i.BusinessId == businessId && !i.IsDeleted)
-                .Select(i => new { i.TotalAmount })
-                .FirstOrDefaultAsync();
-
-            if (invoice != null)
-            {
-                var totalPaid = await _paymentRepo.GetTotalPaidAsync(schedule.InvoiceId, businessId);
-                var outstandingBalance = invoice.TotalAmount - totalPaid;
-
-                if (totalSum != outstandingBalance)
-                    return ServiceResult.Fail($"After adding the instalment, the sum of instalment amounts ({totalSum:N2}) does not equal the outstanding balance ({outstandingBalance:N2}). Please adjust instalment amounts.");
-            }
 
             return ServiceResult.Ok(instalmentId);
         }
@@ -501,7 +462,7 @@ public class PaymentScheduleService : IPaymentScheduleService
     }
 
     /// <inheritdoc />
-    public async Task MatchPaymentToScheduleAsync(int paymentId, int invoiceId, int businessId, string userId)
+    public async Task MatchPaymentToScheduleAsync(int paymentId, decimal paymentAmount, int invoiceId, int businessId, string userId)
     {
         try
         {
@@ -510,9 +471,8 @@ public class PaymentScheduleService : IPaymentScheduleService
             if (schedule == null)
                 return;
 
-            // Get payment amount
-            var payment = await _paymentRepo.GetByIdAndBusinessIdAsync(paymentId, businessId);
-            if (payment == null || payment.IsVoided)
+            // No need to re-fetch payment — amount is passed directly by the caller
+            if (paymentAmount <= 0)
                 return;
 
             // Get instalments
@@ -535,7 +495,7 @@ public class PaymentScheduleService : IPaymentScheduleService
                 return;
 
             // Call InstalmentMatchingEngine
-            var matchResult = _matchingEngine.AllocatePayment(payment.Amount, candidates);
+            var matchResult = _matchingEngine.AllocatePayment(paymentAmount, candidates);
 
             // Apply allocations (update matched amounts)
             foreach (var allocation in matchResult.Allocations)
@@ -548,7 +508,6 @@ public class PaymentScheduleService : IPaymentScheduleService
             // Create remainder instalment if needed
             if (matchResult.Remainder != null)
             {
-                var parentInstalment = instalments.First(i => i.Id == matchResult.Remainder.ParentInstalmentId);
                 var maxSequence = instalments.Max(i => i.SequenceNumber);
 
                 var remainderInstalment = new PaymentScheduleInstalment

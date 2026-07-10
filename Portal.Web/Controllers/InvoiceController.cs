@@ -132,10 +132,10 @@ public class InvoiceController : Controller
         ViewBag.FinancialStatuses = new List<InvoiceFinancialStatusType>
         {
             new() { Id = 1, Name = "Unpaid" },
-            new() { Id = 2, Name = "PartiallyPaid" },
+            new() { Id = 2, Name = "Partially Paid" },
             new() { Id = 3, Name = "Paid" },
             new() { Id = 4, Name = "Overdue" },
-            new() { Id = 5, Name = "WrittenOff" }
+            new() { Id = 5, Name = "Written Off" }
         };
 
         return View(pagedResult.Items);
@@ -223,8 +223,8 @@ public class InvoiceController : Controller
 
         var financialStatusNames = new Dictionary<int, string>
         {
-            { 1, "Unpaid" }, { 2, "PartiallyPaid" }, { 3, "Paid" },
-            { 4, "Overdue" }, { 5, "WrittenOff" }, { 6, "PaymentOnboard" }
+            { 1, "Unpaid" }, { 2, "Partially Paid" }, { 3, "Paid" },
+            { 4, "Overdue" }, { 5, "Written Off" }, { 6, "Payment Onboard" }
         };
 
         ViewBag.Invoice = invoice;

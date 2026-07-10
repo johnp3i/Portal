@@ -300,6 +300,63 @@
         color: #5E7385;
         font-style: italic;
     }
+
+    /* Default: table layout with horizontal scroll on overflow */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    /* Responsive: Convert table rows to card-style layout when content area is narrow */
+    @@media (max-width: 1600px) {
+        #bulkGrid {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        #bulkGrid thead {
+            display: none;
+        }
+        #bulkGrid tbody tr {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px 14px;
+            padding: 20px 18px;
+            margin-bottom: 14px;
+            background: #fff;
+            border: 1px solid rgba(13,94,166,.10);
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(13,94,166,.04);
+            align-items: end;
+        }
+        #bulkGrid tbody tr td {
+            display: flex;
+            flex-direction: column;
+            padding: 0 !important;
+            min-width: 0;
+        }
+        #bulkGrid tbody tr td::before {
+            content: attr(data-label);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #5E7385;
+            margin-bottom: 4px;
+        }
+        #bulkGrid tbody tr td:last-child {
+            justify-self: end;
+            align-self: center;
+            flex-direction: row;
+        }
+        #bulkGrid tbody tr td:last-child::before {
+            display: none;
+        }
+        .table-responsive {
+            overflow-x: visible !important;
+        }
+        .scroll-hint {
+            display: none !important;
+        }
+    }
 </style>
 <script>
     var suppliers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(suppliers.Select(s => new { s.Id, s.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
@@ -693,18 +750,18 @@
         var vatDisplay = isEuRc ? '0' : vatVal;
 
         tr.innerHTML =
-            '<td><input type="date" class="cell-date" value="' + dateVal + '" data-field="InvoiceDate" /></td>' +
-            '<td><input type="text" class="cell-invoice" value="' + escapeHtml(invoiceNumVal) + '" placeholder="INV-001" maxlength="100" data-field="InvoiceNumber" /></td>' +
-            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-supplier-text" value="' + escapeHtml(supplierName) + '" placeholder="Type supplier..." autocomplete="off" /><input type="hidden" class="cell-supplier" value="' + supplierId + '" data-field="SupplierId" /><span class="ac-status"></span></div></td>' +
-            '<td><div class="autocomplete-wrapper"><input type="text" class="cell-category-text" value="' + escapeHtml(categoryName) + '" placeholder="Type category..." autocomplete="off" /><input type="hidden" class="cell-category" value="' + categoryId + '" data-field="ExpenseCategoryId" /><span class="ac-status"></span></div><span class="expense-type-indicator" style="display:none;"></span><div class="row-limit-warning"></div><div class="row-progress-panel" style="display:none;"><button type="button" class="bulk-progress-toggle" onclick="toggleRowProgress(this)"><span class="chevron">&#9660;</span> <span class="toggle-text">Spending Status</span></button><div class="row-progress-content"></div></div></td>' +
-            '<td><input type="text" class="cell-desc" value="' + escapeHtml(descVal) + '" placeholder="Description..." maxlength="500" data-field="Description" /></td>' +
-            '<td><input type="number" class="cell-amount" value="' + amtVal + '" step="0.01" min="0.01" placeholder="0.00" data-field="AmountExcludingVat" oninput="onAmountEdit(this)" /></td>' +
-            '<td><input type="number" class="cell-vat" value="' + vatDisplay + '" step="0.01" min="0" placeholder="0.00" data-field="VatAmount"' + vatDisabled + ' oninput="onVatEdit(this)" /></td>' +
-            '<td><input type="number" class="cell-total" value="' + (amtVal && vatDisplay ? (parseFloat(amtVal || 0) + parseFloat(vatDisplay || 0)).toFixed(2) : '0.00') + '" step="0.01" min="0" placeholder="0.00" data-field="TotalAmount" oninput="onTotalEdit(this)" style="font-weight:700;color:var(--blue);" /></td>' +
-            '<td><select class="cell-origin" data-field="PurchaseOriginTypeId" onchange="onOriginChange(this)">' + originOptions + '</select></td>' +
-            '<td><select class="cell-purchase-type" data-field="PurchaseTypeId">' + purchaseTypeOptions + '</select></td>' +
-            '<td><input type="text" class="cell-country" value="' + escapeHtml(countryVal) + '" placeholder="Country" maxlength="100" data-field="Country" /></td>' +
-            '<td><div class="row-actions"><button type="button" class="btn-dup" title="Duplicate Row (Ctrl+D)" onclick="duplicateRow(this)">Dup</button><button type="button" class="btn-rem" title="Remove Row" onclick="removeRow(this)">Del</button></div></td>';
+            '<td data-label="Date"><input type="date" class="cell-date" value="' + dateVal + '" data-field="InvoiceDate" /></td>' +
+            '<td data-label="Invoice #"><input type="text" class="cell-invoice" value="' + escapeHtml(invoiceNumVal) + '" placeholder="INV-001" maxlength="100" data-field="InvoiceNumber" /></td>' +
+            '<td data-label="Supplier"><div class="autocomplete-wrapper"><input type="text" class="cell-supplier-text" value="' + escapeHtml(supplierName) + '" placeholder="Type supplier..." autocomplete="off" /><input type="hidden" class="cell-supplier" value="' + supplierId + '" data-field="SupplierId" /><span class="ac-status"></span></div></td>' +
+            '<td data-label="Category"><div class="autocomplete-wrapper"><input type="text" class="cell-category-text" value="' + escapeHtml(categoryName) + '" placeholder="Type category..." autocomplete="off" /><input type="hidden" class="cell-category" value="' + categoryId + '" data-field="ExpenseCategoryId" /><span class="ac-status"></span></div><span class="expense-type-indicator" style="display:none;"></span><div class="row-limit-warning"></div><div class="row-progress-panel" style="display:none;"><button type="button" class="bulk-progress-toggle" onclick="toggleRowProgress(this)"><span class="chevron">&#9660;</span> <span class="toggle-text">Spending Status</span></button><div class="row-progress-content"></div></div></td>' +
+            '<td data-label="Description"><input type="text" class="cell-desc" value="' + escapeHtml(descVal) + '" placeholder="Optional — e.g., motorway toll" maxlength="500" data-field="Description" /></td>' +
+            '<td data-label="Amt Excl. VAT"><input type="number" class="cell-amount" value="' + amtVal + '" step="0.01" min="0.01" placeholder="0.00" data-field="AmountExcludingVat" oninput="onAmountEdit(this)" /></td>' +
+            '<td data-label="VAT Amount"><input type="number" class="cell-vat" value="' + vatDisplay + '" step="0.01" min="0" placeholder="0.00" data-field="VatAmount"' + vatDisabled + ' oninput="onVatEdit(this)" /></td>' +
+            '<td data-label="Total"><input type="number" class="cell-total" value="' + (amtVal && vatDisplay ? (parseFloat(amtVal || 0) + parseFloat(vatDisplay || 0)).toFixed(2) : '') + '" step="0.01" min="0" placeholder="0.00" data-field="TotalAmount" oninput="onTotalEdit(this)" style="font-weight:700;color:var(--blue);" /></td>' +
+            '<td data-label="Origin"><select class="cell-origin" data-field="PurchaseOriginTypeId" onchange="onOriginChange(this)">' + originOptions + '</select></td>' +
+            '<td data-label="Type"><select class="cell-purchase-type" data-field="PurchaseTypeId">' + purchaseTypeOptions + '</select></td>' +
+            '<td data-label="Country"><input type="text" class="cell-country" value="' + escapeHtml(countryVal) + '" placeholder="Country" maxlength="100" data-field="Country" /></td>' +
+            '<td data-label=""><div class="row-actions"><button type="button" class="btn-dup" title="Duplicate Row (Ctrl+D)" onclick="duplicateRow(this)">Dup</button><button type="button" class="btn-rem" title="Remove Row" onclick="removeRow(this)">Del</button></div></td>';
 
         document.getElementById('bulkGridBody').appendChild(tr);
 
@@ -812,54 +869,94 @@
         var originId = parseInt(tr.querySelector('.cell-origin').value) || 1;
         var lastEdit = tr.getAttribute('data-last-edit') || 'amount';
 
-        var amt = parseFloat(amtInput.value) || 0;
-        var vat = parseFloat(vatInput.value) || 0;
-        var total = parseFloat(totalInput.value) || 0;
+        var amt = parseFloat(amtInput.value);
+        var vat = parseFloat(vatInput.value);
+        var total = parseFloat(totalInput.value);
+
+        var hasAmt = amtInput.value.trim() !== '' && !isNaN(amt) && amt > 0;
+        var hasVat = vatInput.value.trim() !== '' && !isNaN(vat);
+        var hasTotal = totalInput.value.trim() !== '' && !isNaN(total) && total > 0;
 
         if (originId === 2) {
             // EU RC: VAT is always 0, Total = Amount
             vat = 0;
             vatInput.value = '0';
-            totalInput.value = amt.toFixed(2);
-            resetComputedStyles(tr, 'vat');
+            if (hasAmt) {
+                totalInput.value = amt.toFixed(2);
+            }
+            resetComputedStyles(tr);
             return;
         }
 
+        // Determine which field to compute based on what was just edited
         if (lastEdit === 'total') {
-            // User typed Total → back-calculate Amount = Total - VAT
-            amt = total - vat;
-            amtInput.value = amt.toFixed(2);
-            markComputed(amtInput);
-            clearComputed(vatInput);
-            clearComputed(totalInput);
-        } else if (lastEdit === 'vat') {
-            // User typed VAT → check if Total was manually set
-            var prevLastEdit = tr.getAttribute('data-prev-edit') || '';
-            if (prevLastEdit === 'total') {
-                // Total was set before VAT → back-calculate Amount
+            // User edited Total
+            if (hasTotal && hasVat) {
+                // Derive Net = Total - VAT
                 amt = total - vat;
                 amtInput.value = amt.toFixed(2);
                 markComputed(amtInput);
                 clearComputed(vatInput);
                 clearComputed(totalInput);
-            } else {
-                // Normal: Amount + VAT → Total
+            } else if (hasTotal && hasAmt) {
+                // Derive VAT = Total - Net
+                vat = total - amt;
+                vatInput.value = vat.toFixed(2);
+                markComputed(vatInput);
+                clearComputed(amtInput);
+                clearComputed(totalInput);
+            }
+        } else if (lastEdit === 'vat') {
+            // User edited VAT
+            if (hasVat && hasTotal && !hasAmt) {
+                // Has Total and VAT but no Net → derive Net = Total - VAT
+                amt = total - vat;
+                amtInput.value = amt.toFixed(2);
+                markComputed(amtInput);
+                clearComputed(vatInput);
+                clearComputed(totalInput);
+            } else if (hasVat && hasAmt) {
+                // Has Net and VAT → derive Total = Net + VAT
                 total = amt + vat;
                 totalInput.value = total.toFixed(2);
                 markComputed(totalInput);
                 clearComputed(amtInput);
                 clearComputed(vatInput);
+            } else if (hasVat && hasTotal) {
+                // Has Total and VAT → derive Net = Total - VAT
+                amt = total - vat;
+                amtInput.value = amt.toFixed(2);
+                markComputed(amtInput);
+                clearComputed(vatInput);
+                clearComputed(totalInput);
             }
         } else {
-            // User typed Amount (or default) → Total = Amount + VAT
-            total = amt + vat;
-            totalInput.value = total.toFixed(2);
-            markComputed(totalInput);
-            clearComputed(amtInput);
-            clearComputed(vatInput);
+            // User edited Amount (or default)
+            if (hasAmt && hasTotal && !hasVat) {
+                // Has Net and Total but no VAT → derive VAT = Total - Net
+                vat = total - amt;
+                vatInput.value = vat.toFixed(2);
+                markComputed(vatInput);
+                clearComputed(amtInput);
+                clearComputed(totalInput);
+            } else if (hasAmt && hasVat) {
+                // Has Net and VAT → derive Total = Net + VAT
+                total = amt + vat;
+                totalInput.value = total.toFixed(2);
+                markComputed(totalInput);
+                clearComputed(amtInput);
+                clearComputed(vatInput);
+            } else if (hasAmt && hasTotal) {
+                // Has Net and Total → derive VAT = Total - Net
+                vat = total - amt;
+                vatInput.value = vat.toFixed(2);
+                markComputed(vatInput);
+                clearComputed(amtInput);
+                clearComputed(totalInput);
+            }
         }
 
-        // Track previous edit for two-step back-calculation
+        // Track previous edit for reference
         tr.setAttribute('data-prev-edit', lastEdit);
     }
 

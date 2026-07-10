@@ -53,7 +53,7 @@
                     <option value="">All Financial Statuses</option>
                     @foreach (var fs in (IEnumerable<Portal.Infrastructure.Entities.InvoiceFinancialStatusType>)ViewBag.FinancialStatuses)
                     {
-                        <option value="@fs.Id" selected="@(ViewBag.FinancialStatusFilter != null && (int)ViewBag.FinancialStatusFilter == fs.Id ? "selected" : null)">@fs.Name</option>
+                        <option value="@fs.Id" selected="@(ViewBag.FinancialStatusFilter != null && (int)ViewBag.FinancialStatusFilter == fs.Id ? "selected" : null)">@FormatStatusName(fs.Name)</option>
                     }
                 </select>
             </div>
@@ -147,7 +147,7 @@
                                         _ => "pill-gold"
                                     };
                                 }
-                                <span class="pill @financialPillClass">@item.FinancialStatusName</span>
+                                <span class="pill @financialPillClass">@FormatStatusName(item.FinancialStatusName)</span>
                             </td>
                             <td data-mobile="hide" style="white-space:nowrap;">
                                 <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Detail</a>
@@ -283,4 +283,15 @@
             }
         }
     </script>
+}
+
+
+@functions {
+    private string FormatStatusName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        // Insert a space before each uppercase letter that follows a lowercase letter
+        var result = System.Text.RegularExpressions.Regex.Replace(name, "([a-z])([A-Z])", "$1 $2");
+        return result;
+    }
 }

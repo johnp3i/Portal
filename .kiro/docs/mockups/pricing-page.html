@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choose Your Plan — Portal Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --line: #E2EBF3;
+            --card-radius: 20px;
+            --input-radius: 10px;
+            --btn-radius: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: Manrope, sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .page-wrapper {
+            max-width: 1060px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            margin-bottom: 36px;
+            text-align: center;
+        }
+        .topbar .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--blue);
+            margin-bottom: 6px;
+        }
+        .topbar h1 {
+            font-size: 42px;
+            line-height: 1.1;
+            margin-bottom: 10px;
+        }
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* ===== PLAN CARDS GRID ===== */
+        .plans-grid {
+            display: flex;
+            gap: 28px;
+            align-items: stretch;
+            margin-bottom: 36px;
+        }
+
+        .plan-card {
+            flex: 1;
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 2px 12px rgba(11,27,40,0.06), 0 0 0 1px rgba(11,27,40,0.04);
+            padding: 36px 32px 32px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: box-shadow 0.2s;
+        }
+
+        .plan-card.recommended {
+            border: 2px solid var(--blue);
+            box-shadow: 0 4px 24px rgba(13,94,166,0.12), 0 0 0 1px rgba(13,94,166,0.10);
+        }
+
+        /* Recommended Badge */
+        .badge-recommended {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .plan-name {
+            font-family: Manrope, sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .plan-price {
+            margin-bottom: 6px;
+        }
+        .plan-price .amount {
+            font-family: Manrope, sans-serif;
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--text);
+        }
+        .plan-price .period {
+            font-size: 16px;
+            color: var(--muted);
+            font-weight: 500;
+            margin-left: 2px;
+        }
+        .plan-billing {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+
+        .plan-description {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        /* CTA Buttons */
+        .btn-plan {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 14px 20px;
+            border-radius: var(--btn-radius);
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 28px;
+            transition: background 0.15s, opacity 0.15s;
+        }
+        .btn-plan.primary {
+            background: var(--blue);
+            color: #fff;
+        }
+        .btn-plan.primary:hover {
+            background: #0a4d8a;
+        }
+        .btn-plan.disabled {
+            background: var(--bg2);
+            color: var(--muted);
+            cursor: default;
+            pointer-events: none;
+        }
+
+        /* Feature List */
+        .feature-list {
+            list-style: none;
+            flex: 1;
+        }
+        .feature-list li {
+            font-size: 14px;
+            padding: 7px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: var(--text);
+        }
+        .feature-list li .check {
+            color: var(--green);
+            font-weight: 700;
+            font-size: 15px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .feature-list li.section-divider {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            padding: 14px 0 6px;
+            border: none;
+            gap: 0;
+        }
+        .feature-list li.section-divider::before {
+            content: '';
+            display: block;
+            width: 16px;
+            height: 1px;
+            background: var(--line);
+            margin-right: 6px;
+            align-self: center;
+        }
+        .feature-list li.section-divider::after {
+            content: '';
+            display: block;
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+            margin-left: 6px;
+            align-self: center;
+        }
+
+        /* ===== COMPARISON NOTE ===== */
+        .comparison-note {
+            text-align: center;
+            font-size: 13px;
+            color: var(--muted);
+            background: var(--bg2);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 48px;
+        }
+
+        /* ===== FAQ SECTION ===== */
+        .faq-section {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .faq-section h2 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .faq-item {
+            background: #fff;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 4px rgba(11,27,40,0.04);
+            overflow: hidden;
+        }
+        .faq-question {
+            padding: 18px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .faq-question:hover {
+            background: var(--bg2);
+        }
+        .faq-question .arrow {
+            font-size: 18px;
+            color: var(--muted);
+            transition: transform 0.2s;
+        }
+        .faq-item.open .faq-question .arrow {
+            transform: rotate(180deg);
+        }
+        .faq-answer {
+            padding: 0 24px 18px;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+            display: none;
+        }
+        .faq-item.open .faq-answer {
+            display: block;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 700px) {
+            .plans-grid {
+                flex-direction: column;
+            }
+            .topbar h1 {
+                font-size: 32px;
+            }
+            .plan-price .amount {
+                font-size: 40px;
+            }
+            .plan-card {
+                padding: 28px 24px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="eyebrow">Subscription</div>
+            <h1>Choose Your Plan</h1>
+            <p class="subtitle">Select the plan that fits your business. Upgrade or downgrade anytime.</p>
+        </div>
+
+        <!-- PLAN CARDS -->
+        <div class="plans-grid">
+
+            <!-- Foundation Card -->
+            <div class="plan-card">
+                <div class="plan-name">Foundation</div>
+                <div class="plan-price">
+                    <span class="amount">€39</span><span class="period">/mo</span>
+                </div>
+                <div class="plan-billing">Billed annually at €390/year</div>
+                <p class="plan-description">Everything you need to run your business</p>
+                <button class="btn-plan disabled">Current Plan</button>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Quotations &amp; Proposals</li>
+                    <li><span class="check">✓</span> Invoicing with sharing &amp; acceptance</li>
+                    <li><span class="check">✓</span> Revenue control &amp; payment recording</li>
+                    <li><span class="check">✓</span> Customer management</li>
+                    <li><span class="check">✓</span> Purchase &amp; expense tracking</li>
+                    <li><span class="check">✓</span> Supplier management</li>
+                    <li><span class="check">✓</span> VAT periods &amp; submissions</li>
+                    <li><span class="check">✓</span> Credit notes</li>
+                    <li><span class="check">✓</span> Product catalog</li>
+                    <li><span class="check">✓</span> Payment instructions (bank transfer)</li>
+                    <li><span class="check">✓</span> Manual payment reminders</li>
+                    <li><span class="check">✓</span> Dashboard &amp; KPIs</li>
+                    <li><span class="check">✓</span> Mobile responsive</li>
+                    <li><span class="check">✓</span> Up to 2 users</li>
+                </ul>
+            </div>
+
+            <!-- Professional Card -->
+            <div class="plan-card recommended">
+                <span class="badge-recommended">Recommended</span>
+                <div class="plan-name">Professional</div>
+                <div class="plan-price">
+                    <span class="amount">€79</span><span class="period">/mo</span>
+                </div>
+                <div class="plan-billing">Billed annually at €790/year</div>
+                <p class="plan-description">Automation and intelligence for growing businesses</p>
+                <button class="btn-plan primary">Upgrade to Professional</button>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Everything in Foundation</li>
+                    <li class="section-divider">Automation</li>
+                    <li><span class="check">✓</span> Automated payment reminders (3-tier escalation)</li>
+                    <li><span class="check">✓</span> Open tracking &amp; email analytics</li>
+                    <li><span class="check">✓</span> Payment schedules (instalment plans)</li>
+                    <li class="section-divider">Intelligence</li>
+                    <li><span class="check">✓</span> Cash flow forecasting (30/60/90 days)</li>
+                    <li><span class="check">✓</span> Profit &amp; Loss summary</li>
+                    <li><span class="check">✓</span> Expense categorisation insights</li>
+                    <li class="section-divider">Operational</li>
+                    <li><span class="check">✓</span> Activity log (audit trail)</li>
+                    <li><span class="check">✓</span> Document attachments <span style="font-size:11px;color:var(--amber);font-weight:600;margin-left:4px;">coming soon</span></li>
+                    <li><span class="check">✓</span> Up to 5 users with granular permissions</li>
+                    <li><span class="check">✓</span> Priority email support</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- COMPARISON NOTE -->
+        <div class="comparison-note">
+            All plans include: SSL encryption, daily backups, 99.9% uptime, GDPR compliance, and access to all future core platform updates.
+        </div>
+
+        <!-- FAQ SECTION -->
+        <div class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+
+            <div class="faq-item open">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Can I switch plans at any time?</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="faq-answer">
+                    Yes. You can upgrade or downgrade your plan at any time. Changes take effect immediately. When upgrading, you'll be charged a prorated amount for the remainder of your billing cycle. When downgrading, the new rate applies at the start of your next billing period.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>What happens to my data if I downgrade?</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="faq-answer">
+                    All your data is preserved. Professional features become read-only — you can still view historical reports, forecasts, and audit logs, but new automated actions (reminders, schedules) will be paused until you upgrade again.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Is there a free trial?</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="faq-answer">
+                    Yes. Every new account starts with a 14-day Professional trial with full access to all features. No credit card required. At the end of the trial, you can choose Foundation or Professional.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Do I need a credit card to start?</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="faq-answer">
+                    No. You can start with Foundation immediately without entering payment details. A credit card is only required when you choose to subscribe to a paid plan or when your trial ends and you want to continue with Professional.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleFaq(el) {
+            var item = el.parentElement;
+            var isOpen = item.classList.contains('open');
+            // Close all
+            document.querySelectorAll('.faq-item').forEach(function(i) {
+                i.classList.remove('open');
+            });
+            // Toggle clicked
+            if (!isOpen) {
+                item.classList.add('open');
+            }
+        }
+    </script>
+</body>
+</html>

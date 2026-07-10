@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Four Platforms — One Intelligence Ecosystem</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            color: #1a2332;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .platforms-section {
+            background: #F0F4F8;
+            padding: 80px 40px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 56px;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .section-header-left {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .section-header-right {
+            flex: 0 1 420px;
+            min-width: 280px;
+        }
+
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #0D5EA6;
+            margin-bottom: 16px;
+        }
+
+        .section-heading {
+            font-family: 'Manrope', sans-serif;
+            font-size: 38px;
+            font-weight: 800;
+            line-height: 1.15;
+            color: #0f1c2e;
+            letter-spacing: -0.5px;
+        }
+
+        .section-subtitle {
+            font-size: 16px;
+            color: #4a5a6a;
+            line-height: 1.7;
+            padding-top: 12px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        .platform-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 32px 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.02);
+            border-top: 3px solid;
+            border-image: linear-gradient(90deg, #57B8E8, #3DA0D8) 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .platform-card:hover {
+            box-shadow: 0 6px 24px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .card-logo {
+            margin-bottom: 20px;
+        }
+
+        .card-logo-text {
+            font-family: 'Manrope', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f1c2e;
+            letter-spacing: -0.3px;
+        }
+
+        .card-logo-subtitle {
+            font-size: 12px;
+            color: #6b7a8a;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .card-logo-text.portal {
+            color: #0D5EA6;
+        }
+
+        .card-logo-text.mychair-serif {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-weight: 700;
+            font-size: 21px;
+        }
+
+        .card-category {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .card-category.teal { color: #0e9aa7; }
+        .card-category.dark-blue { color: #1a3a5c; }
+        .card-category.blue { color: #0D5EA6; }
+
+        .card-description {
+            font-size: 14.5px;
+            color: #4a5a6a;
+            line-height: 1.65;
+            margin-bottom: 24px;
+            flex: 1;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .tag {
+            font-size: 11.5px;
+            font-weight: 500;
+            color: #4a5a6a;
+            border: 1px solid #d0d8e0;
+            border-radius: 20px;
+            padding: 4px 12px;
+            white-space: nowrap;
+        }
+
+        .card-link {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #1a3a5c;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: auto;
+        }
+
+        .card-link:hover {
+            color: #0D5EA6;
+        }
+
+        .card-link .arrow {
+            transition: transform 0.2s ease;
+        }
+
+        .card-link:hover .arrow {
+            transform: translateX(3px);
+        }
+
+        /* Divider between Option A and B */
+        .option-divider {
+            text-align: center;
+            padding: 60px 40px;
+            background: #ffffff;
+        }
+
+        .option-divider-line {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .option-divider-line::before,
+        .option-divider-line::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #d0d8e0;
+        }
+
+        .option-divider-label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #6b7a8a;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        /* Responsive */
+        @media (max-width: 1100px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-heading {
+                font-size: 28px;
+            }
+
+            .platforms-section {
+                padding: 48px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- OPTION A — Portal as "Financial Operations"                    -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <section class="platforms-section">
+        <div class="container">
+
+            <!-- Section Header -->
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="eyebrow">OPERATIONAL PLATFORMS</div>
+                    <h2 class="section-heading">Four platforms. One intelligence ecosystem.</h2>
+                </div>
+                <div class="section-header-right">
+                    <p class="section-subtitle">
+                        Each platform solves a distinct operational problem — workforce visibility, order reliability, transactional backbone, and financial control. Together, they feed a single intelligence layer that turns fragmented activity into structured decision confidence.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div class="cards-grid">
+
+                <!-- Card 1: WorkforcePI -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text">WORKFORCEPI</div>
+                        <div class="card-logo-subtitle">Workforce Intelligence</div>
+                    </div>
+                    <div class="card-category teal">WORKFORCE INTELLIGENCE</div>
+                    <p class="card-description">
+                        Transforms workforce activity into operational visibility and intelligence. Move from attendance tracking to workforce decision confidence.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">Productivity</span>
+                        <span class="tag">Labour Costs</span>
+                        <span class="tag">Shift Ops</span>
+                    </div>
+                    <a href="#" class="card-link">Visit workforcepi.com <span class="arrow">→</span></a>
+                </div>
+
+                <!-- Card 2: EOMFA -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text">EOMFA</div>
+                        <div class="card-logo-subtitle">Easy Order Management for All</div>
+                    </div>
+                    <div class="card-category dark-blue">ORDER RELIABILITY</div>
+                    <p class="card-description">
+                        Turns fragmented B2B ordering into structured, traceable, and reliable workflow — reducing follow-up, ambiguity, and operational drag.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">Structured Orders</span>
+                        <span class="tag">Traceability</span>
+                        <span class="tag">Zero Follow-up</span>
+                    </div>
+                    <a href="#" class="card-link">Visit eomfa.com <span class="arrow">→</span></a>
+                </div>
+
+                <!-- Card 3: MyChair -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text mychair-serif">Mychair</div>
+                    </div>
+                    <div class="card-category dark-blue">OPERATIONAL SUITE</div>
+                    <p class="card-description">
+                        The transactional backbone connecting sales, inventory, ERP processes, and order processing into a structured operational system ready for intelligence.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">POS</span>
+                        <span class="tag">Production</span>
+                        <span class="tag">ERP</span>
+                    </div>
+                    <a href="#" class="card-link">Visit mychairpos.com <span class="arrow">→</span></a>
+                </div>
+
+                <!-- Card 4: Portal (Version A — Financial Operations) -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text portal">Portal</div>
+                    </div>
+                    <div class="card-category blue">FINANCIAL OPERATIONS</div>
+                    <p class="card-description">
+                        Quotations, invoicing, payment tracking, cash flow forecasting, and VAT compliance — unified in one calm, structured platform designed for operational clarity.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">Invoicing</span>
+                        <span class="tag">Payments</span>
+                        <span class="tag">VAT</span>
+                    </div>
+                    <a href="#" class="card-link">Visit portal.3inventors.com <span class="arrow">→</span></a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- DIVIDER                                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <div class="option-divider">
+        <div class="option-divider-line">
+            <span class="option-divider-label">— Option B —</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- OPTION B — Portal as "Business Intelligence"                   -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <section class="platforms-section">
+        <div class="container">
+
+            <!-- Section Header -->
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="eyebrow">OPERATIONAL PLATFORMS</div>
+                    <h2 class="section-heading">Four platforms. One intelligence ecosystem.</h2>
+                </div>
+                <div class="section-header-right">
+                    <p class="section-subtitle">
+                        Each platform solves a distinct operational problem — workforce visibility, order reliability, transactional backbone, and financial control. Together, they feed a single intelligence layer that turns fragmented activity into structured decision confidence.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div class="cards-grid">
+
+                <!-- Card 1: WorkforcePI -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text">WORKFORCEPI</div>
+                        <div class="card-logo-subtitle">Workforce Intelligence</div>
+                    </div>
+                    <div class="card-category teal">WORKFORCE INTELLIGENCE</div>
+                    <p class="card-description">
+                        Transforms workforce activity into operational visibility and intelligence. Move from attendance tracking to workforce decision confidence.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">Productivity</span>
+                        <span class="tag">Labour Costs</span>
+                        <span class="tag">Shift Ops</span>
+                    </div>
+                    <a href="#" class="card-link">Visit workforcepi.com <span class="arrow">→</span></a>
+                </div>
+
+                <!-- Card 2: EOMFA -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text">EOMFA</div>
+                        <div class="card-logo-subtitle">Easy Order Management for All</div>
+                    </div>
+                    <div class="card-category dark-blue">ORDER RELIABILITY</div>
+                    <p class="card-description">
+                        Turns fragmented B2B ordering into structured, traceable, and reliable workflow — reducing follow-up, ambiguity, and operational drag.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">Structured Orders</span>
+                        <span class="tag">Traceability</span>
+                        <span class="tag">Zero Follow-up</span>
+                    </div>
+                    <a href="#" class="card-link">Visit eomfa.com <span class="arrow">→</span></a>
+                </div>
+
+                <!-- Card 3: MyChair -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text mychair-serif">Mychair</div>
+                    </div>
+                    <div class="card-category dark-blue">OPERATIONAL SUITE</div>
+                    <p class="card-description">
+                        The transactional backbone connecting sales, inventory, ERP processes, and order processing into a structured operational system ready for intelligence.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">POS</span>
+                        <span class="tag">Production</span>
+                        <span class="tag">ERP</span>
+                    </div>
+                    <a href="#" class="card-link">Visit mychairpos.com <span class="arrow">→</span></a>
+                </div>
+
+                <!-- Card 4: Portal (Version B — Business Intelligence) -->
+                <div class="platform-card">
+                    <div class="card-logo">
+                        <div class="card-logo-text portal">Portal</div>
+                    </div>
+                    <div class="card-category blue">BUSINESS INTELLIGENCE</div>
+                    <p class="card-description">
+                        The back-office operational platform for quotations, invoicing, revenue control, and financial visibility — built for businesses that want structured execution without operational guesswork.
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">Invoicing</span>
+                        <span class="tag">Revenue</span>
+                        <span class="tag">Cash Flow</span>
+                    </div>
+                    <a href="#" class="card-link">Visit portal.3inventors.com <span class="arrow">→</span></a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>
