@@ -38,6 +38,12 @@ public class PurchaseFormViewModel
 
     public string? Notes { get; set; }
 
+    // VAT Period Assignment
+    public int? VatSubmissionPeriodId { get; set; }
+    public List<VatSubmissionPeriod> UnsubmittedVatPeriods { get; set; } = new();
+    public bool IsVatPeriodLocked { get; set; }
+    public string? AssignedPeriodLabel { get; set; }
+
     // Dropdown lists
     public List<Supplier> Suppliers { get; set; } = new();
     public List<ExpenseCategory> ExpenseCategories { get; set; } = new();

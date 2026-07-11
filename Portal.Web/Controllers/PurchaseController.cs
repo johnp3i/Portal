@@ -241,6 +241,24 @@ public class PurchaseController : Controller
         model.VatAmount = purchase.VatAmount;
         model.Country = purchase.Country;
         model.Notes = purchase.Notes;
+        model.VatSubmissionPeriodId = purchase.VatSubmissionPeriodId;
+
+        // Check if the purchase is locked to a submitted period
+        if (purchase.VatSubmissionPeriodId.HasValue)
+        {
+            var isLocked = await _dbContext.VatSubmissions
+                .AnyAsync(s => s.VatSubmissionPeriodId == purchase.VatSubmissionPeriodId
+                    && s.BusinessId == _currentTenantService.CurrentBusinessId
+                    && s.IsSubmitted);
+
+            if (isLocked)
+            {
+                model.IsVatPeriodLocked = true;
+                var lockedPeriod = await _dbContext.VatSubmissionPeriods
+                    .FirstOrDefaultAsync(p => p.Id == purchase.VatSubmissionPeriodId);
+                model.AssignedPeriodLabel = lockedPeriod?.PeriodLabel ?? "Submitted Period";
+            }
+        }
 
         return View(model);
     }
@@ -281,11 +299,23 @@ public class PurchaseController : Controller
         var purchaseTypes = await _dbContext.PurchaseTypes.ToListAsync();
         var expenseTypes = await _dbContext.ExpenseTypes.ToListAsync();
 
+        // Load unsubmitted VAT periods for the optional period dropdown
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var unsubmittedPeriods = await _dbContext.VatSubmissionPeriods
+            .Where(p => p.BusinessId == businessId
+                && !_dbContext.VatSubmissions.Any(s =>
+                    s.VatSubmissionPeriodId == p.Id
+                    && s.BusinessId == businessId
+                    && s.IsSubmitted))
+            .OrderByDescending(p => p.PeriodStartDate)
+            .ToListAsync();
+
         ViewBag.Suppliers = suppliers;
         ViewBag.ExpenseCategories = categories;
         ViewBag.OriginTypes = originTypes;
         ViewBag.PurchaseTypes = purchaseTypes;
         ViewBag.ExpenseTypes = expenseTypes;
+        ViewBag.UnsubmittedVatPeriods = unsubmittedPeriods;
 
         return View();
     }
@@ -325,7 +355,8 @@ public class PurchaseController : Controller
                     Description = row.Description,
                     AmountExcludingVat = row.AmountExcludingVat,
                     VatAmount = row.VatAmount,
-                    Country = row.Country
+                    Country = row.Country,
+                    VatSubmissionPeriodId = row.VatSubmissionPeriodId
                 });
             }
         }
@@ -503,6 +534,17 @@ public class PurchaseController : Controller
         var purchaseTypes = await _dbContext.PurchaseTypes.ToListAsync();
         var expenseTypes = await _dbContext.ExpenseTypes.ToListAsync();
 
+        // Load unsubmitted VAT periods for the dropdown
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var unsubmittedPeriods = await _dbContext.VatSubmissionPeriods
+            .Where(p => p.BusinessId == businessId
+                && !_dbContext.VatSubmissions.Any(s =>
+                    s.VatSubmissionPeriodId == p.Id
+                    && s.BusinessId == businessId
+                    && s.IsSubmitted))
+            .OrderByDescending(p => p.PeriodStartDate)
+            .ToListAsync();
+
         return new PurchaseFormViewModel
         {
             Suppliers = suppliers,
@@ -510,7 +552,8 @@ public class PurchaseController : Controller
             OriginTypes = originTypes,
             PurchaseTypes = purchaseTypes,
             ExpenseTypes = expenseTypes,
-            InvoiceDate = DateOnly.FromDateTime(DateTime.Today)
+            InvoiceDate = DateOnly.FromDateTime(DateTime.Today),
+            UnsubmittedVatPeriods = unsubmittedPeriods
         };
     }
 
@@ -537,7 +580,8 @@ public class PurchaseController : Controller
             AmountExcludingVat = model.AmountExcludingVat,
             VatAmount = model.VatAmount,
             Country = model.Country,
-            Notes = model.Notes
+            Notes = model.Notes,
+            VatSubmissionPeriodId = model.VatSubmissionPeriodId
         };
     }
 

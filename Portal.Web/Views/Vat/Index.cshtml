@@ -67,6 +67,10 @@
                             {
                                 <span class="pill pill-grey">Not Started</span>
                             }
+                            @if (period.Status != "Submitted" && period.UnassignedPurchaseCount > 0)
+                            {
+                                <span class="pill-unassigned">@period.UnassignedPurchaseCount unassigned</span>
+                            }
                         </td>
                         <td data-mobile="hide">
                             <a asp-action="Detail" asp-route-periodId="@period.PeriodId" class="tbl-action tbl-action--primary">View Details</a>
@@ -112,6 +116,16 @@ else
         font-weight: 800;
         letter-spacing: .08em;
         text-transform: uppercase;
+    }
+    .pill-unassigned {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(200, 145, 46, .12);
+        color: #C8912E;
+        margin-left: 8px;
     }
     .vat-submitted-date {
         margin-left: 10px;

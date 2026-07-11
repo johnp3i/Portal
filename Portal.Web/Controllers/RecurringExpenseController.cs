@@ -5,6 +5,7 @@ using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
+using Portal.Web.Models;
 using Portal.Web.Security;
 
 using DeleteRecurringRuleRequest = Portal.Web.Models.RecurringExpense.DeleteRecurringRuleRequest;
@@ -14,20 +15,23 @@ using ToggleRecurringRuleRequest = Portal.Web.Models.RecurringExpense.ToggleRecu
 namespace Portal.Web.Controllers;
 
 [Authorize]
-[ModuleAccess(PortalModules.Purchase)]
+[ModuleAccess(PortalModules.RecurringExpenseValidation)]
 public class RecurringExpenseController : Controller
 {
     private readonly IRecurringExpenseValidationService _validationService;
     private readonly ICurrentTenantService _currentTenantService;
+    private readonly IPlanCheckService _planCheckService;
     private readonly PortalDbContext _dbContext;
 
     public RecurringExpenseController(
         IRecurringExpenseValidationService validationService,
         ICurrentTenantService currentTenantService,
+        IPlanCheckService planCheckService,
         PortalDbContext dbContext)
     {
         _validationService = validationService;
         _currentTenantService = currentTenantService;
+        _planCheckService = planCheckService;
         _dbContext = dbContext;
     }
 
@@ -36,6 +40,21 @@ public class RecurringExpenseController : Controller
     {
         try
         {
+            // Plan-level gating (not bypassed by SuperAdmin)
+            var isInPlan = await _planCheckService.IsModuleInPlanAsync(PortalModules.RecurringExpenseValidation);
+            if (!isInPlan)
+            {
+                var requiredPlan = await _planCheckService.GetRequiredPlanForModuleAsync(PortalModules.RecurringExpenseValidation) ?? "Professional";
+                return View("PlanSoftGate", new SoftGateViewModel
+                {
+                    ModuleName = PortalModules.RecurringExpenseValidation,
+                    ModuleDisplayName = "Recurring Expense Validation",
+                    ModuleDescription = "Define expected recurring purchases per supplier, validate that all expected expenses are recorded before VAT submission, and catch missing invoices automatically.",
+                    RequiredPlanName = requiredPlan,
+                    CurrentPlanName = "your current plan"
+                });
+            }
+
             var businessId = _currentTenantService.CurrentBusinessId;
 
             var vatPeriods = await _dbContext.VatSubmissionPeriods
@@ -58,6 +77,21 @@ public class RecurringExpenseController : Controller
     {
         try
         {
+            // Plan-level gating (not bypassed by SuperAdmin)
+            var isInPlan = await _planCheckService.IsModuleInPlanAsync(PortalModules.RecurringExpenseValidation);
+            if (!isInPlan)
+            {
+                var requiredPlan = await _planCheckService.GetRequiredPlanForModuleAsync(PortalModules.RecurringExpenseValidation) ?? "Professional";
+                return View("PlanSoftGate", new SoftGateViewModel
+                {
+                    ModuleName = PortalModules.RecurringExpenseValidation,
+                    ModuleDisplayName = "Recurring Expense Validation",
+                    ModuleDescription = "Define expected recurring purchases per supplier, validate that all expected expenses are recorded before VAT submission, and catch missing invoices automatically.",
+                    RequiredPlanName = requiredPlan,
+                    CurrentPlanName = "your current plan"
+                });
+            }
+
             var businessId = _currentTenantService.CurrentBusinessId;
 
             var suppliers = await _dbContext.Suppliers

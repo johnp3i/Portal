@@ -167,6 +167,34 @@
                 <textarea asp-for="Notes" placeholder="Optional notes"></textarea>
                 <span asp-validation-for="Notes" class="field-validation-error"></span>
             </div>
+
+            <!-- VAT Period Assignment -->
+            <div class="field" style="margin-top:16px;">
+                <label for="VatSubmissionPeriodId">VAT Period</label>
+                @if (Model.IsVatPeriodLocked)
+                {
+                    <select id="VatSubmissionPeriodId" disabled>
+                        <option>@Model.AssignedPeriodLabel</option>
+                    </select>
+                    <span class="helper" style="display:block;margin-top:4px;font-size:12px;color:#C8912E;">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                        Locked — assigned to a submitted period.
+                    </span>
+                }
+                else
+                {
+                    <select id="VatSubmissionPeriodId" name="VatSubmissionPeriodId">
+                        <option value="">— Not assigned —</option>
+                        @if (Model.UnsubmittedVatPeriods != null)
+                        {
+                            @foreach (var period in Model.UnsubmittedVatPeriods)
+                            {
+                                <option value="@period.Id" selected="@(Model.VatSubmissionPeriodId == period.Id)">@period.PeriodLabel</option>
+                            }
+                        }
+                    </select>
+                }
+            </div>
         </div>
 
         <!-- Limit Warning Banner -->

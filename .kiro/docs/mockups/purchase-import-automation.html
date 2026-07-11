@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Import Automation — Portal Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --bg: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text: #1a2b3c;
+            --text-muted: #5a6a7a;
+            --card-radius: 20px;
+            --card-shadow: 0 2px 12px rgba(13,94,166,.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding: 32px 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Manrope', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .tab {
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: white;
+            color: var(--text-muted);
+            box-shadow: var(--card-shadow);
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            background: var(--bg-secondary);
+        }
+
+        /* Cards */
+        .glass {
+            background: white;
+            border-radius: var(--card-radius);
+            padding: 28px 32px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .card-pad { margin-bottom: 22px; }
+
+        /* Topbar */
+        .topbar {
+            margin-bottom: 28px;
+        }
+
+        .topbar .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .topbar h1 {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        .tier-badge {
+            font-size: 11px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.04em;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 16px;
+        }
+
+        .back-link:hover { text-decoration: underline; }
+
+        /* Form elements */
+        .field {
+            margin-bottom: 20px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .field select,
+        .field input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #d8e2ec;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: white;
+            transition: border-color 0.2s;
+        }
+
+        .field select:focus,
+        .field input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .field .hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .field .defaults {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        .field .defaults a {
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed #b8cde0;
+            border-radius: 14px;
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--cyan);
+            background: #eef8fd;
+        }
+
+        .upload-zone .icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+
+        .upload-zone p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .upload-zone .accepted {
+            font-size: 12px;
+            color: #8a9bab;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 11px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover { background: #0a4d8a; }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #d8e2ec;
+            color: var(--text-muted);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* KPI strip */
+        .kpi-strip {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 14px;
+            padding: 16px 22px;
+            box-shadow: var(--card-shadow);
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .kpi-card .kpi-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .kpi-card .kpi-value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .kpi-green { color: var(--green); }
+        .kpi-amber { color: var(--amber); }
+        .kpi-red { color: var(--red); }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1.5px solid #e8eff5;
+        }
+
+        .data-table tbody td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f0f4f8;
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .data-table tbody tr.row-warning {
+            border-left: 3px solid var(--amber);
+            background: #fef9f0;
+        }
+
+        /* Status icons */
+        .status-valid {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #e6f7f0;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status-warning {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: #fef3e0;
+            color: var(--amber);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status-error {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fde8e8;
+            color: var(--red);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .warning-note {
+            font-size: 11px;
+            color: var(--amber);
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        /* Pagination */
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pagination-bar .info {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .pagination-bar .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Pill badges */
+        .pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .pill-blue {
+            background: #e3f0fa;
+            color: var(--primary);
+        }
+
+        .pill-grey {
+            background: #eef2f6;
+            color: var(--text-muted);
+        }
+
+        /* Template editor */
+        .template-editor {
+            border: 1.5px solid #e8eff5;
+            border-radius: 14px;
+            padding: 24px;
+            margin-top: 22px;
+        }
+
+        .template-editor h4 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .template-editor .collapsed-indicator {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .radio-group label {
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+
+        .mapping-table th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            padding: 10px 10px;
+            text-align: left;
+            border-bottom: 1.5px solid #e8eff5;
+        }
+
+        .mapping-table td {
+            padding: 10px 10px;
+            border-bottom: 1px solid #f0f4f8;
+        }
+
+        .mapping-table input,
+        .mapping-table select {
+            padding: 7px 10px;
+            border: 1.5px solid #d8e2ec;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+        }
+
+        .add-link {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        /* View panels */
+        .view-panel { display: none; }
+        .view-panel.active { display: block; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .topbar h1 { font-size: 28px; }
+            .glass { padding: 20px 18px; }
+            .kpi-strip { flex-direction: column; }
+            .data-table { font-size: 12px; }
+            .tabs { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab(0)">Step 1: Upload</button>
+            <button class="tab" onclick="showTab(1)">Step 2: Preview & Review</button>
+            <button class="tab" onclick="showTab(2)">Step 3: Parser Templates</button>
+        </div>
+
+        <!-- ===== STEP 1: Upload ===== -->
+        <div class="view-panel active" id="panel-0">
+            <div class="topbar">
+                <a href="#" class="back-link">&#8592; Back to Purchases</a>
+                <div class="eyebrow">Purchases</div>
+                <h1>Import Purchases <span class="tier-badge">Professional</span></h1>
+                <p class="subtitle">Upload a CSV or Excel file from your supplier to bulk-record purchases.</p>
+            </div>
+
+            <section class="glass card-pad">
+                <!-- Supplier Selection -->
+                <div class="field">
+                    <label>Supplier</label>
+                    <select>
+                        <option value="">Select a supplier...</option>
+                        <option selected>Meta Platforms Ireland Ltd</option>
+                        <option>EKO Cyprus</option>
+                        <option>Database Mart LLC</option>
+                        <option>Google Cloud EMEA</option>
+                    </select>
+                    <div class="defaults">
+                        Category: Software Subscriptions &middot; Origin: EU Reverse Charge &middot; Country: Ireland
+                        <a href="#">Edit defaults</a>
+                    </div>
+                </div>
+
+                <!-- Parser Template -->
+                <div class="field">
+                    <label>Parser Template</label>
+                    <select>
+                        <option selected>Meta Ads CSV - Standard</option>
+                        <option>No template (auto-detect)</option>
+                        <option style="color: var(--primary); font-style: italic;">+ Create new template...</option>
+                    </select>
+                    <p class="hint">Templates define how columns are mapped from the file to purchase fields.</p>
+                </div>
+
+                <!-- File Upload -->
+                <div class="field">
+                    <label>File</label>
+                    <div class="upload-zone">
+                        <div class="icon">&#128196;</div>
+                        <p>Drop your CSV or Excel file here, or <strong>click to browse</strong></p>
+                        <span class="accepted">Accepted: .csv, .xlsx, .xls &middot; Max 5 MB &middot; Max 500 rows</span>
+                    </div>
+                </div>
+
+                <!-- Upload Button -->
+                <div style="margin-top: 24px;">
+                    <button class="btn btn-primary">Parse &amp; Preview</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===== STEP 2: Preview & Review ===== -->
+        <div class="view-panel" id="panel-1">
+            <div class="topbar">
+                <a href="#" class="back-link">&#8592; Back to Purchases</a>
+                <div class="eyebrow">Purchases</div>
+                <h1>Import Purchases <span class="tier-badge">Professional</span></h1>
+                <p class="subtitle">Review parsed purchases before confirming the import.</p>
+            </div>
+
+            <!-- KPI Strip -->
+            <div class="kpi-strip">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Rows</div>
+                    <div class="kpi-value">35</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Valid</div>
+                    <div class="kpi-value kpi-green">33</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Warnings</div>
+                    <div class="kpi-value kpi-amber">2</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Errors</div>
+                    <div class="kpi-value kpi-green">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Batch Total</div>
+                    <div class="kpi-value">&euro;810.43</div>
+                </div>
+            </div>
+
+            <!-- Preview Table -->
+            <section class="glass card-pad">
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Status</th>
+                                <th>Invoice Date</th>
+                                <th>Invoice Number</th>
+                                <th>Description</th>
+                                <th>Net Amount</th>
+                                <th>VAT Amount</th>
+                                <th>Total</th>
+                                <th>Category</th>
+                                <th>Origin</th>
+                                <th>Country</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td><span class="status-valid">&#10003;</span></td>
+                                <td>2025-03-01</td>
+                                <td>META-2025-0301</td>
+                                <td>Ads - Campaign March</td>
+                                <td>&euro;23.45</td>
+                                <td>&euro;0.00</td>
+                                <td>&euro;23.45</td>
+                                <td>Software Subscriptions</td>
+                                <td>EU Reverse Charge</td>
+                                <td>Ireland</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td><span class="status-valid">&#10003;</span></td>
+                                <td>2025-03-15</td>
+                                <td>META-2025-0315</td>
+                                <td>Ads - Retargeting</td>
+                                <td>&euro;18.90</td>
+                                <td>&euro;0.00</td>
+                                <td>&euro;18.90</td>
+                                <td>Software Subscriptions</td>
+                                <td>EU Reverse Charge</td>
+                                <td>Ireland</td>
+                            </tr>
+
+                            <tr class="row-warning">
+                                <td>3</td>
+                                <td><span class="status-warning">&#9888;</span></td>
+                                <td>2025-04-01</td>
+                                <td>META-2025-0401</td>
+                                <td>
+                                    Ads - Campaign April
+                                    <div class="warning-note">Potential duplicate: matches existing purchase (same supplier, invoice number, date, amount)</div>
+                                </td>
+                                <td>&euro;31.20</td>
+                                <td>&euro;0.00</td>
+                                <td>&euro;31.20</td>
+                                <td>Software Subscriptions</td>
+                                <td>EU Reverse Charge</td>
+                                <td>Ireland</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination & Actions -->
+                <div class="pagination-bar">
+                    <div class="info">Showing 1–3 of 35 rows</div>
+                    <div class="actions">
+                        <button class="btn btn-outline">Cancel</button>
+                        <button class="btn btn-primary">Confirm Import (33 rows)</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===== STEP 3: Parser Templates ===== -->
+        <div class="view-panel" id="panel-2">
+            <div class="topbar">
+                <a href="#" class="back-link">&#8592; Back to Purchases</a>
+                <div class="eyebrow">Purchases</div>
+                <h1>Parser Templates <span class="tier-badge">Professional</span></h1>
+                <p class="subtitle">Manage reusable column-mapping templates for different suppliers and file formats.</p>
+            </div>
+
+            <section class="glass card-pad">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                    <h3 style="font-size:18px;">Templates</h3>
+                    <button class="btn btn-primary">+ New Template</button>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Template Name</th>
+                                <th>Supplier</th>
+                                <th>Format</th>
+                                <th>Columns Mapped</th>
+                                <th>Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Meta Ads CSV - Standard</strong></td>
+                                <td>Meta Platforms Ireland Ltd</td>
+                                <td>CSV</td>
+                                <td>6 of 8</td>
+                                <td><span class="pill pill-grey">Custom</span></td>
+                                <td><a href="#" style="color:var(--primary);font-weight:600;font-size:13px;text-decoration:none;">Edit</a> &middot; <a href="#" style="color:var(--red);font-weight:600;font-size:13px;text-decoration:none;">Delete</a></td>
+                            </tr>
+
+                            <tr>
+                                <td><strong>EKO Fuel Receipts</strong></td>
+                                <td>EKO Cyprus</td>
+                                <td>CSV</td>
+                                <td>5 of 8</td>
+                                <td><span class="pill pill-grey">Custom</span></td>
+                                <td><a href="#" style="color:var(--primary);font-weight:600;font-size:13px;text-decoration:none;">Edit</a> &middot; <a href="#" style="color:var(--red);font-weight:600;font-size:13px;text-decoration:none;">Delete</a></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Database Mart Invoices</strong></td>
+                                <td>Database Mart LLC</td>
+                                <td>Excel</td>
+                                <td>7 of 8</td>
+                                <td><span class="pill pill-blue">Managed</span></td>
+                                <td><a href="#" style="color:var(--primary);font-weight:600;font-size:13px;text-decoration:none;">View</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Template Editor (collapsed preview) -->
+                <div class="template-editor">
+                    <h4>Template Editor <span class="collapsed-indicator">(expanded preview)</span></h4>
+
+                    <div class="field">
+                        <label>Template Name</label>
+                        <input type="text" value="Meta Ads CSV - Standard" />
+                    </div>
+
+                    <div class="field">
+                        <label>Supplier</label>
+                        <select>
+                            <option selected>Meta Platforms Ireland Ltd</option>
+                            <option>EKO Cyprus</option>
+                            <option>Database Mart LLC</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>File Format</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="format" checked /> CSV</label>
+                            <label><input type="radio" name="format" /> Excel</label>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                        <div class="field" style="flex:1;min-width:180px;">
+                            <label>Header Row</label>
+                            <input type="number" value="11" min="1" style="max-width:120px;" />
+                            <p class="hint">Row number containing column headers (e.g., 11 for Meta CSV)</p>
+                        </div>
+                        <div class="field" style="flex:1;min-width:180px;">
+                            <label>Data Starts at Row</label>
+                            <input type="number" value="12" min="1" style="max-width:120px;" />
+                            <p class="hint">First row of actual invoice data (rows above are skipped)</p>
+                        </div>
+                        <div class="field" style="flex:1;min-width:180px;">
+                            <label>Sheet Name <span style="font-weight:400;color:#8a9bab;">(Excel only)</span></label>
+                            <input type="text" value="" placeholder="First sheet" style="max-width:180px;" />
+                            <p class="hint">Leave blank to use the first worksheet</p>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label>Column Mappings</label>
+                        <table class="mapping-table">
+                            <thead>
+                                <tr>
+                                    <th>Source Column</th>
+                                    <th>Target Field</th>
+                                    <th>Format</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" value="Date" /></td>
+                                    <td>
+                                        <select>
+                                            <option selected>InvoiceDate</option>
+                                            <option>AmountExcludingVat</option>
+                                            <option>Description</option>
+                                            <option>InvoiceNumber</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" value="dd/MM/yyyy" /></td>
+                                </tr>
+
+                                <tr>
+                                    <td><input type="text" value="Amount" /></td>
+                                    <td>
+                                        <select>
+                                            <option>InvoiceDate</option>
+                                            <option selected>AmountExcludingVat</option>
+                                            <option>Description</option>
+                                            <option>InvoiceNumber</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" value=". (decimal sep)" /></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" value="Description" /></td>
+                                    <td>
+                                        <select>
+                                            <option>InvoiceDate</option>
+                                            <option>AmountExcludingVat</option>
+                                            <option selected>Description</option>
+                                            <option>InvoiceNumber</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" value="—" /></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" value="Reference" /></td>
+                                    <td>
+                                        <select>
+                                            <option>InvoiceDate</option>
+                                            <option>AmountExcludingVat</option>
+                                            <option>Description</option>
+                                            <option selected>InvoiceNumber</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" value="—" /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <a href="#" class="add-link">+ Add column mapping</a>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary">Save Template</button>
+                        <button class="btn btn-outline" style="margin-left:8px;">Cancel</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        function showTab(index) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            // Update panels
+            document.querySelectorAll('.view-panel').forEach((panel, i) => {
+                panel.classList.toggle('active', i === index);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -188,6 +188,22 @@
                 <textarea asp-for="Notes" placeholder="Optional notes"></textarea>
                 <span asp-validation-for="Notes" class="field-validation-error"></span>
             </div>
+
+            <!-- VAT Period Assignment -->
+            <div class="field" style="margin-top:16px;">
+                <label for="VatSubmissionPeriodId">VAT Period <span style="font-weight:400;color:#5E7385;">(Optional)</span></label>
+                <select id="VatSubmissionPeriodId" name="VatSubmissionPeriodId">
+                    <option value="">— Not assigned —</option>
+                    @if (Model.UnsubmittedVatPeriods != null)
+                    {
+                        @foreach (var period in Model.UnsubmittedVatPeriods)
+                        {
+                            <option value="@period.Id">@period.PeriodLabel</option>
+                        }
+                    }
+                </select>
+                <span class="helper" style="display:block;margin-top:4px;font-size:12px;color:#5E7385;">Assign to a VAT period now, or leave empty to assign later.</span>
+            </div>
         </div>
 
         <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">

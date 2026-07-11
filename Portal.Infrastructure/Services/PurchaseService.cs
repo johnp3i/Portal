@@ -73,9 +73,6 @@ public class PurchaseService : IPurchaseService
         purchase.CreatedAtUtc = DateTime.UtcNow;
         purchase.UpdatedAtUtc = DateTime.UtcNow;
 
-        // Auto-assign VAT submission period
-        await AssignVatPeriodAsync(purchase);
-
         await _purchaseRepository.InsertAsync(purchase);
 
         await _auditLogRepository.InsertAsync(new AuditLog
@@ -96,6 +93,20 @@ public class PurchaseService : IPurchaseService
         if (existing == null)
         {
             return ServiceResult.Fail("Purchase not found.");
+        }
+
+        // Locking: if existing purchase is assigned to a submitted period, reject VatSubmissionPeriodId changes
+        if (existing.VatSubmissionPeriodId.HasValue && existing.VatSubmissionPeriodId != purchase.VatSubmissionPeriodId)
+        {
+            var isLocked = await _portalDbContext.VatSubmissions
+                .AnyAsync(s => s.BusinessId == _currentTenantService.CurrentBusinessId
+                    && s.VatSubmissionPeriodId == existing.VatSubmissionPeriodId
+                    && s.IsSubmitted);
+
+            if (isLocked)
+            {
+                return ServiceResult.Fail("Cannot change VAT period — this purchase is locked to a submitted period.");
+            }
         }
 
         var validationResult = await ValidatePurchaseAsync(purchase);
@@ -206,6 +217,134 @@ public class PurchaseService : IPurchaseService
         return ServiceResult.Ok();
     }
 
+    public async Task<ServiceResult> AssignPurchasesToPeriodAsync(int businessId, int periodId, List<int> purchaseIds)
+    {
+        try
+        {
+            if (purchaseIds == null || purchaseIds.Count == 0)
+                return ServiceResult.Fail("No purchases selected.");
+
+            // Validate period exists and belongs to business
+            var period = await _portalDbContext.VatSubmissionPeriods
+                .FirstOrDefaultAsync(p => p.Id == periodId && p.BusinessId == businessId);
+            if (period == null)
+                return ServiceResult.Fail("VAT period not found.");
+
+            // Check if period is submitted
+            var isSubmitted = await _portalDbContext.VatSubmissions
+                .AnyAsync(s => s.VatSubmissionPeriodId == periodId && s.BusinessId == businessId && s.IsSubmitted);
+            if (isSubmitted)
+                return ServiceResult.Fail("Cannot assign to a submitted period.");
+
+            // Check if any purchases are locked to a submitted period
+            var lockedCount = await _portalDbContext.Purchases
+                .CountAsync(p => purchaseIds.Contains(p.Id)
+                    && p.BusinessId == businessId
+                    && p.VatSubmissionPeriodId.HasValue
+                    && _portalDbContext.VatSubmissions.Any(s =>
+                        s.VatSubmissionPeriodId == p.VatSubmissionPeriodId
+                        && s.BusinessId == businessId
+                        && s.IsSubmitted));
+
+            if (lockedCount > 0)
+                return ServiceResult.Fail($"{lockedCount} purchase(s) are locked to a submitted period and cannot be reassigned.");
+
+            var rowsAffected = await _purchaseRepository.BulkAssignToPeriodAsync(businessId, periodId, purchaseIds);
+
+            // Audit log
+            await _auditLogRepository.InsertAsync(new AuditLog
+            {
+                BusinessId = businessId,
+                Action = "BulkAssignToVatPeriod",
+                TableName = "purchase.Purchase",
+                RecordId = $"PeriodId={periodId}, Count={rowsAffected}",
+                Timestamp = DateTime.UtcNow
+            });
+
+            return ServiceResult.Ok(rowsAffected);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> UnassignPurchasesFromPeriodAsync(int businessId, List<int> purchaseIds)
+    {
+        try
+        {
+            if (purchaseIds == null || purchaseIds.Count == 0)
+                return ServiceResult.Fail("No purchases selected.");
+
+            // Check if any purchases are locked to a submitted period
+            var lockedCount = await _portalDbContext.Purchases
+                .CountAsync(p => purchaseIds.Contains(p.Id)
+                    && p.BusinessId == businessId
+                    && p.VatSubmissionPeriodId.HasValue
+                    && _portalDbContext.VatSubmissions.Any(s =>
+                        s.VatSubmissionPeriodId == p.VatSubmissionPeriodId
+                        && s.BusinessId == businessId
+                        && s.IsSubmitted));
+
+            if (lockedCount > 0)
+                return ServiceResult.Fail($"{lockedCount} purchase(s) are locked to a submitted period and cannot be unassigned.");
+
+            var rowsAffected = await _purchaseRepository.BulkUnassignFromPeriodAsync(businessId, purchaseIds);
+
+            // Audit log
+            await _auditLogRepository.InsertAsync(new AuditLog
+            {
+                BusinessId = businessId,
+                Action = "UnassignFromVatPeriod",
+                TableName = "purchase.Purchase",
+                RecordId = $"Count={rowsAffected}, PurchaseIds=[{string.Join(",", purchaseIds)}]",
+                Timestamp = DateTime.UtcNow
+            });
+
+            return ServiceResult.Ok(rowsAffected);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<Purchase>> GetUnassignedForPeriodAsync(int businessId, int periodId)
+    {
+        try
+        {
+            var period = await _portalDbContext.VatSubmissionPeriods
+                .FirstOrDefaultAsync(p => p.Id == periodId && p.BusinessId == businessId);
+
+            if (period == null)
+                return new List<Purchase>();
+
+            return await _purchaseRepository.GetUnassignedByDateRangeAsync(businessId, period.PeriodStartDate, period.PeriodEndDate);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<int> CountUnassignedForPeriodAsync(int businessId, int periodId)
+    {
+        try
+        {
+            var period = await _portalDbContext.VatSubmissionPeriods
+                .FirstOrDefaultAsync(p => p.Id == periodId && p.BusinessId == businessId);
+
+            if (period == null)
+                return 0;
+
+            return await _purchaseRepository.CountUnassignedByDateRangeAsync(businessId, period.PeriodStartDate, period.PeriodEndDate);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     private async Task<ServiceResult> ValidatePurchaseAsync(Purchase purchase)
     {
         if (purchase.AmountExcludingVat <= 0)
@@ -276,86 +415,6 @@ public class PurchaseService : IPurchaseService
             default:
                 purchase.TotalAmount = purchase.AmountExcludingVat + purchase.VatAmount;
                 break;
-        }
-    }
-
-    /// <summary>
-    /// Auto-assigns a purchase to the appropriate VAT submission period.
-    /// 1. Find the period whose date range contains the InvoiceDate
-    /// 2. If that period's submission is already submitted → assign to the next unsubmitted period
-    /// 3. If no matching period exists → leave VatSubmissionPeriodId as null
-    /// </summary>
-    private async Task AssignVatPeriodAsync(Purchase purchase)
-    {
-        var businessId = _currentTenantService.CurrentBusinessId;
-
-        // Find the period whose date range contains the InvoiceDate
-        var matchingPeriod = await _portalDbContext.VatSubmissionPeriods
-            .Where(p => p.BusinessId == businessId
-                && p.PeriodStartDate <= purchase.InvoiceDate
-                && p.PeriodEndDate >= purchase.InvoiceDate)
-            .FirstOrDefaultAsync();
-
-        if (matchingPeriod == null)
-        {
-            // No period covers this date — leave unassigned
-            purchase.VatSubmissionPeriodId = null;
-            return;
-        }
-
-        // Check if that period's submission is already submitted
-        var submission = await _portalDbContext.VatSubmissions
-            .Where(s => s.BusinessId == businessId
-                && s.VatSubmissionPeriodId == matchingPeriod.Id
-                && s.IsSubmitted)
-            .FirstOrDefaultAsync();
-
-        if (submission == null)
-        {
-            // Period is not yet submitted — assign to it
-            purchase.VatSubmissionPeriodId = matchingPeriod.Id;
-            return;
-        }
-
-        // Period is already submitted — find the next unsubmitted period
-        var nextPeriod = await _portalDbContext.VatSubmissionPeriods
-            .Where(p => p.BusinessId == businessId
-                && p.PeriodStartDate > matchingPeriod.PeriodEndDate)
-            .OrderBy(p => p.PeriodStartDate)
-            .FirstOrDefaultAsync();
-
-        if (nextPeriod != null)
-        {
-            // Check if the next period is also submitted — keep looking
-            var nextSubmission = await _portalDbContext.VatSubmissions
-                .Where(s => s.BusinessId == businessId
-                    && s.VatSubmissionPeriodId == nextPeriod.Id
-                    && s.IsSubmitted)
-                .FirstOrDefaultAsync();
-
-            if (nextSubmission == null)
-            {
-                purchase.VatSubmissionPeriodId = nextPeriod.Id;
-                return;
-            }
-
-            // Find the first unsubmitted period after the matching one
-            var unsubmittedPeriod = await _portalDbContext.VatSubmissionPeriods
-                .Where(p => p.BusinessId == businessId
-                    && p.PeriodStartDate > matchingPeriod.PeriodEndDate
-                    && !_portalDbContext.VatSubmissions.Any(s =>
-                        s.BusinessId == businessId
-                        && s.VatSubmissionPeriodId == p.Id
-                        && s.IsSubmitted))
-                .OrderBy(p => p.PeriodStartDate)
-                .FirstOrDefaultAsync();
-
-            purchase.VatSubmissionPeriodId = unsubmittedPeriod?.Id;
-        }
-        else
-        {
-            // No next period exists — leave unassigned for now
-            purchase.VatSubmissionPeriodId = null;
         }
     }
 }

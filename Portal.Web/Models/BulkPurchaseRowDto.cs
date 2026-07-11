@@ -31,4 +31,6 @@ public class BulkPurchaseRowDto
 
     [MaxLength(100)]
     public string? Country { get; set; }
+
+    public int? VatSubmissionPeriodId { get; set; }
 }

@@ -1,0 +1,25 @@
+{
+  "pbtResults": {
+    "12.1 Write property test: Locking invariant": {
+      "status": "passed",
+      "lastRunTimestamp": 1783783989315
+    },
+    "12.2 Write property test: Tenant isolation": {
+      "status": "passed",
+      "lastRunTimestamp": 1783783990014
+    },
+    "12.3 Write property test: Assignment idempotency": {
+      "status": "passed",
+      "lastRunTimestamp": 1783783990765
+    },
+    "12.4 Write property test: Cancelled purchases excluded": {
+      "status": "passed",
+      "lastRunTimestamp": 1783783991778
+    },
+    "12.5 Write property test: Count consistency": {
+      "status": "passed",
+      "lastRunTimestamp": 1783783992305
+    }
+  },
+  "executionHistory": {}
+}

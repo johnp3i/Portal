@@ -72,6 +72,11 @@
 ### VAT Compliance
 - Automatic VAT period generation based on registration date and period length
 - VAT submission period management
+- User-controlled purchase-to-period assignment (no auto-assignment)
+- Optional VAT period selector on purchase Create, Edit, and Bulk Entry forms
+- Unassigned Purchases panel on VAT Detail page with bulk-assign capability
+- Submission advisory: warns when unassigned purchases exist before filing
+- Assignment locking: purchases locked to their period after submission
 - Invoice-to-period assignment
 - Output VAT calculation from invoices
 - Input VAT calculation from purchases
@@ -175,6 +180,18 @@
 - Payment Schedules Overview page: KPI cards, monthly timeline with year selector, filterable table
 - Nested remainder instalment display (visual hierarchy)
 - Payment void → automatic match reversion
+
+### Module 8: Recurring Expense Validation
+- Define expected recurring purchase rules per supplier (optionally scoped to expense category)
+- Frequency-based validation: monthly, bimonthly, quarterly, or custom intervals
+- Amount-anchored validation: verify a specific expected amount is recorded (with configurable tolerance %)
+- Grace period: extend lookup window at period boundaries (0–15 days)
+- Validation report with pass/warning/fail status per rule, sorted by severity
+- VAT submission integration: collapsible advisory panel auto-validates before submission
+- Standalone validation view: run checks at any time against any period or custom date range
+- Rule management: create, edit, disable/enable, soft-delete rules grouped by supplier
+- Multiple rules per supplier (e.g., hosting vs. SSL from the same vendor)
+- Non-blocking: validation is advisory — never prevents VAT submission
 
 ### Activity Log
 - Timeline-style feed of all business activity

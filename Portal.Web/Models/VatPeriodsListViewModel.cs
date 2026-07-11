@@ -14,4 +14,5 @@ public class VatPeriodRowViewModel
     public DateOnly PeriodEndDate { get; set; }
     public string Status { get; set; } = null!; // "Submitted", "Pending", "Not Started"
     public DateTime? SubmittedAtUtc { get; set; }
+    public int UnassignedPurchaseCount { get; set; }
 }

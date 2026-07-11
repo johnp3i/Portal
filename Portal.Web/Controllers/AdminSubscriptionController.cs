@@ -100,6 +100,18 @@ public class AdminSubscriptionController : Controller
             var oldPlanId = businessPlan.PlanId;
             businessPlan.PlanId = request.PlanId;
 
+            // Sync [billing].[Subscription] to keep both tables aligned
+            var subscription = await _portalDbContext.Database
+                .SqlQueryRaw<int>("SELECT [Id] FROM [billing].[Subscription] WHERE [BusinessId] = @p0", request.BusinessId)
+                .FirstOrDefaultAsync();
+
+            if (subscription > 0)
+            {
+                await _portalDbContext.Database.ExecuteSqlRawAsync(
+                    "UPDATE [billing].[Subscription] SET [PlanId] = @p0 WHERE [BusinessId] = @p1",
+                    request.PlanId, request.BusinessId);
+            }
+
             await _portalDbContext.SaveChangesAsync();
 
             Log.Information("SuperAdmin changed business {BusinessId} plan from PlanId={OldPlanId} to PlanId={NewPlanId}",
@@ -134,6 +146,11 @@ public class AdminSubscriptionController : Controller
 
             var oldStatus = businessPlan.Status;
             businessPlan.Status = request.Status.ToLowerInvariant();
+
+            // Sync [billing].[Subscription] status to keep both tables aligned
+            await _portalDbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE [billing].[Subscription] SET [Status] = @p0 WHERE [BusinessId] = @p1",
+                request.Status.ToLowerInvariant(), businessPlan.BusinessId);
 
             await _portalDbContext.SaveChangesAsync();
 

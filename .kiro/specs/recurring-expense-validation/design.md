@@ -371,7 +371,7 @@ public class RecurringRuleViewModel
 --              recurring expense validation feature.
 -- ============================================================
 
-USE [Guardian]
+USE [Portal]
 GO
 
 IF NOT EXISTS (

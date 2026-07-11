@@ -23,19 +23,22 @@ public class VatController : Controller
     private readonly ICurrentTenantService _currentTenantService;
     private readonly PortalDbContext _dbContext;
     private readonly IViewRenderService _viewRenderService;
+    private readonly IPurchaseService _purchaseService;
 
     public VatController(
         IVatPeriodGenerationService vatPeriodGenerationService,
         IVatSubmissionService vatSubmissionService,
         ICurrentTenantService currentTenantService,
         PortalDbContext dbContext,
-        IViewRenderService viewRenderService)
+        IViewRenderService viewRenderService,
+        IPurchaseService purchaseService)
     {
         _vatPeriodGenerationService = vatPeriodGenerationService;
         _vatSubmissionService = vatSubmissionService;
         _currentTenantService = currentTenantService;
         _dbContext = dbContext;
         _viewRenderService = viewRenderService;
+        _purchaseService = purchaseService;
     }
 
     [HttpGet]
@@ -89,6 +92,12 @@ public class VatController : Controller
                 })
                 .ToList()
         };
+
+        // Compute unassigned purchase counts for unsubmitted periods
+        foreach (var periodRow in viewModel.Periods.Where(p => p.Status != "Submitted"))
+        {
+            periodRow.UnassignedPurchaseCount = await _purchaseService.CountUnassignedForPeriodAsync(businessId, periodRow.PeriodId);
+        }
 
         return View(viewModel);
     }
@@ -207,6 +216,87 @@ public class VatController : Controller
         var result = await _vatSubmissionService.MarkAsSubmittedAsync(submissionId);
 
         return Json(new { success = result.Success, message = result.Success ? "Submission marked as submitted successfully." : result.Message });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetUnassignedPurchases(int periodId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+            var purchases = await _purchaseService.GetUnassignedForPeriodAsync(businessId, periodId);
+
+            var items = purchases.Select(p => new
+            {
+                id = p.Id,
+                description = p.Description,
+                invoiceNumber = p.InvoiceNumber,
+                supplierId = p.SupplierId,
+                supplierName = p.Supplier?.Name,
+                expenseCategoryId = p.ExpenseCategoryId,
+                categoryName = p.ExpenseCategory?.Name,
+                invoiceDate = p.InvoiceDate.ToString("dd MMM yyyy"),
+                amountExcludingVat = p.AmountExcludingVat,
+                vatAmount = p.VatAmount,
+                totalAmount = p.TotalAmount
+            }).ToList();
+
+            return Json(new { success = true, items, count = items.Count });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load unassigned purchases.", error = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetUnassignedCount(int periodId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+            var count = await _purchaseService.CountUnassignedForPeriodAsync(businessId, periodId);
+
+            return Json(new { success = true, count });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = true, count = 0 });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostAssignPurchasesToPeriod([FromBody] AssignPurchasesRequest request)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+            var result = await _purchaseService.AssignPurchasesToPeriodAsync(businessId, request.PeriodId, request.PurchaseIds);
+
+            return Json(new { success = result.Success, message = result.Success ? $"{result.Id} purchase(s) assigned." : result.Message, count = result.Id });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUnassignPurchasesFromPeriod([FromBody] UnassignPurchasesRequest request)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+            var result = await _purchaseService.UnassignPurchasesFromPeriodAsync(businessId, request.PurchaseIds);
+
+            return Json(new { success = result.Success, message = result.Success ? $"{result.Id} purchase(s) unassigned." : result.Message, count = result.Id });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
     }
 
     [HttpGet]

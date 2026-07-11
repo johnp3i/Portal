@@ -133,6 +133,23 @@
     </div>
 </section>
 
+@if (!Model.IsSubmitted)
+{
+<!-- Unassigned Purchases -->
+<section class="glass card-pad" style="margin-top:24px;" id="unassignedSection">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <div class="label">Action Required</div>
+            <h2 style="margin-top:8px;font-size:20px;">Unassigned Purchases <span id="unassignedCount" style="font-size:14px;font-weight:600;color:#C8912E;"></span></h2>
+        </div>
+        <button type="button" class="btn btn-primary" id="assignSelectedBtn" style="display:none;" onclick="assignSelected()">Assign to this period</button>
+    </div>
+    <div id="unassignedContent" style="margin-top:16px;">
+        <p class="muted" style="font-size:14px;">Loading...</p>
+    </div>
+</section>
+}
+
 <!-- Submission Status -->
 <section class="glass card-pad" style="margin-top:24px;">
     <div class="label">Filing Status</div>
@@ -154,12 +171,7 @@
     }
 </section>
 
-<!-- Back link -->
-<div style="margin-top:24px;display:flex;justify-content:flex-end;">
-    <a href="/Vat/Index" class="btn btn-outline">&larr; Back to Periods</a>
-</div>
 
-<!-- Discrepancy Warning -->
 @if (Model.HasDiscrepancy)
 {
     <section class="glass card-pad" style="margin-top:24px;border:1px solid rgba(194,138,46,0.3);background:rgba(194,138,46,0.04);">
@@ -191,9 +203,14 @@
 <!-- Recurring Expense Check -->
 <section class="glass card-pad" style="margin-top:24px;">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleRecurringPanel()">
-        <div>
-            <div class="label">Advisory Check</div>
-            <h2 style="margin-top:8px;font-size:20px;">Recurring Expense Check</h2>
+        <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,rgba(13,94,166,.08),rgba(87,184,232,.08));display:flex;align-items:center;justify-content:center;">
+                <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+            </div>
+            <div>
+                <div class="label">Advisory Check</div>
+                <h2 style="margin-top:4px;font-size:20px;">Recurring Expense Check</h2>
+            </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
             <span id="recurringBadge" style="display:none;"></span>
@@ -204,11 +221,16 @@
         <div id="recurringContent">
             <p class="muted" style="font-size:14px;">Loading...</p>
         </div>
-        <div style="margin-top:14px;">
+        <div style="margin-top:14px;" id="recurringRevalidateBtn">
             <button type="button" class="btn btn-secondary" onclick="loadRecurringValidation()" style="font-size:13px;padding:8px 18px;">Re-validate</button>
         </div>
     </div>
 </section>
+
+<!-- Back link -->
+<div style="margin-top:24px;display:flex;justify-content:flex-end;">
+    <a href="/Vat/Index" class="btn btn-outline">&larr; Back to Periods</a>
+</div>
 
 @section Scripts {
     <script>
@@ -489,20 +511,65 @@
             }, 400);
         });
 
-        // ── markAsSubmitted (unchanged) ────────────────────────────────────────
+        // ── markAsSubmitted ────────────────────────────────────────────────────
 
         async function markAsSubmitted() {
-            const confirmed = await Swal.fire({
-                title: 'Confirm Submission',
-                text: 'Are you sure you want to mark this VAT submission as filed?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#0D5EA6',
-                confirmButtonText: 'Yes, mark as submitted'
-            });
+            // Check for unassigned purchases first
+            try {
+                var countResp = await fetch('/Vat/AxGetUnassignedCount?periodId=' + periodId);
+                var countData = await countResp.json();
 
-            if (!confirmed.isConfirmed) return;
+                if (countData.count > 0) {
+                    var result = await Swal.fire({
+                        title: 'Unassigned Purchases',
+                        html: '<p>There are <strong>' + countData.count + '</strong> unassigned purchase(s) within this period\'s date range.</p><p style="color:#5E7385;font-size:13px;margin-top:8px;">These purchases won\'t be included in the submission unless you assign them first.</p>',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: 'Submit Anyway',
+                        denyButtonText: 'Review First',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#0D5EA6',
+                        denyButtonColor: '#C8912E'
+                    });
 
+                    if (result.isDenied) {
+                        // Scroll to unassigned panel
+                        var panel = document.getElementById('unassignedSection');
+                        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        return;
+                    }
+
+                    if (!result.isConfirmed) return;
+                    // User chose "Submit Anyway" — proceed below
+                } else {
+                    // No unassigned — standard confirmation
+                    var confirmed = await Swal.fire({
+                        title: 'Confirm Submission',
+                        text: 'Are you sure you want to mark this VAT submission as filed?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#0D5EA6',
+                        confirmButtonText: 'Yes, mark as submitted'
+                    });
+
+                    if (!confirmed.isConfirmed) return;
+                }
+            } catch (e) {
+                // If check fails, proceed with standard confirmation
+                var confirmed = await Swal.fire({
+                    title: 'Confirm Submission',
+                    text: 'Are you sure you want to mark this VAT submission as filed?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0D5EA6',
+                    confirmButtonText: 'Yes, mark as submitted'
+                });
+
+                if (!confirmed.isConfirmed) return;
+            }
+
+            // Proceed with submission
             BlockUI.show('Processing...');
             try {
                 var response = await fetch('/Vat/MarkAsSubmitted', {
@@ -570,14 +637,19 @@
                 var data = await response.json();
 
                 if (!data.success || data.ruleResults.length === 0) {
-                    container.innerHTML = '<div style="text-align:center;padding:20px;color:#5E7385;font-size:14px;">'
-                        + 'No recurring expense rules configured. <a href="/RecurringExpense/Rules" style="color:#0D5EA6;font-weight:600;">Set up rules</a>'
+                    container.innerHTML = '<div style="text-align:center;padding:28px 20px;">'
+                        + '<div style="width:48px;height:48px;border-radius:12px;background:rgba(13,94,166,.06);display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;"><svg width="22" height="22" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></div>'
+                        + '<p style="font-size:15px;font-weight:700;color:#0B1B28;margin:0 0 8px;">No recurring expense rules configured</p>'
+                        + '<p style="font-size:13px;color:#5E7385;margin:0 0 18px;max-width:420px;display:inline-block;line-height:1.6;">Define expected recurring purchases per supplier to automatically verify that all regular expenses have been recorded before you submit this VAT period.</p>'
+                        + '<div><a href="/RecurringExpense/Rules" class="btn btn-primary" style="font-size:13px;padding:10px 20px;">Set Up Rules</a></div>'
                         + '</div>';
                     document.getElementById('recurringBadge').style.display = 'none';
+                    document.getElementById('recurringRevalidateBtn').style.display = 'none';
                     return;
                 }
 
                 renderRecurringResults(data, container);
+                document.getElementById('recurringRevalidateBtn').style.display = '';
             } catch (e) {
                 container.innerHTML = '<p class="muted" style="font-size:14px;">Unable to load validation.</p>';
             }
@@ -637,9 +709,126 @@
             container.innerHTML = html;
         }
 
+        // ── Unassigned Purchases ───────────────────────────────────────────────
+
+        async function loadUnassignedPurchases() {
+            var container = document.getElementById('unassignedContent');
+            if (!container) return;
+
+            try {
+                var response = await fetch('/Vat/GetUnassignedPurchases?periodId=' + periodId);
+                var data = await response.json();
+
+                if (!data.success) {
+                    container.innerHTML = '<p class="muted" style="font-size:14px;">Failed to load.</p>';
+                    return;
+                }
+
+                var countEl = document.getElementById('unassignedCount');
+                if (data.count === 0) {
+                    container.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:16px 0;color:#129867;font-size:14px;font-weight:600;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> All purchases in this date range have been assigned.</div>';
+                    countEl.textContent = '';
+                    document.getElementById('assignSelectedBtn').style.display = 'none';
+                    return;
+                }
+
+                countEl.textContent = '· ' + data.count + ' unassigned';
+                renderUnassignedTable(data.items, container);
+            } catch (e) {
+                container.innerHTML = '<p class="muted" style="font-size:14px;">Error loading unassigned purchases.</p>';
+            }
+        }
+
+        function renderUnassignedTable(items, container) {
+            var html = '<div class="table-responsive"><table><thead><tr>';
+            html += '<th><input type="checkbox" id="selectAllUnassigned" onchange="toggleSelectAll(this)"></th>';
+            html += '<th>Description</th><th>Supplier</th><th>Date</th><th>Total</th><th>VAT</th><th></th>';
+            html += '</tr></thead><tbody>';
+
+            items.forEach(function(p) {
+                html += '<tr id="unassigned-row-' + p.id + '">';
+                html += '<td><input type="checkbox" class="unassigned-check" value="' + p.id + '" onchange="updateAssignButton()"></td>';
+                html += '<td style="font-weight:600;">' + escapeHtml(p.description || p.invoiceNumber || '—') + '</td>';
+                html += '<td>' + (p.supplierId || '') + '</td>';
+                html += '<td>' + p.invoiceDate + '</td>';
+                html += '<td>' + formatCurrency(p.totalAmount) + '</td>';
+                html += '<td>' + formatCurrency(p.vatAmount) + '</td>';
+                html += '<td><button type="button" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;" onclick="dismissRow(' + p.id + ')">Dismiss</button></td>';
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function toggleSelectAll(checkbox) {
+            var checks = document.querySelectorAll('.unassigned-check');
+            checks.forEach(function(c) { c.checked = checkbox.checked; });
+            updateAssignButton();
+        }
+
+        function updateAssignButton() {
+            var checked = document.querySelectorAll('.unassigned-check:checked');
+            var btn = document.getElementById('assignSelectedBtn');
+            if (btn) {
+                btn.style.display = checked.length > 0 ? '' : 'none';
+                btn.textContent = 'Assign ' + checked.length + ' to this period';
+            }
+        }
+
+        function dismissRow(purchaseId) {
+            var row = document.getElementById('unassigned-row-' + purchaseId);
+            if (row) row.remove();
+            updateAssignButton();
+            // Update count
+            var remaining = document.querySelectorAll('.unassigned-check').length;
+            var countEl = document.getElementById('unassignedCount');
+            if (remaining === 0) {
+                document.getElementById('unassignedContent').innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:16px 0;color:#129867;font-size:14px;font-weight:600;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> All purchases in this date range have been assigned.</div>';
+                countEl.textContent = '';
+                document.getElementById('assignSelectedBtn').style.display = 'none';
+            } else {
+                countEl.textContent = '· ' + remaining + ' unassigned';
+            }
+        }
+
+        async function assignSelected() {
+            var checked = document.querySelectorAll('.unassigned-check:checked');
+            if (checked.length === 0) return;
+
+            var ids = Array.from(checked).map(function(c) { return parseInt(c.value); });
+
+            BlockUI.show('Assigning purchases...');
+            try {
+                var response = await fetch('/Vat/AxPostAssignPurchasesToPeriod', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({ periodId: periodId, purchaseIds: ids })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Assigned', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function() {
+                        loadUnassignedPurchases();
+                        loadPurchaseBreakdown();
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
         // ── Initial load ───────────────────────────────────────────────────────
         loadInvoiceBreakdown();
         loadPurchaseBreakdown();
         loadRecurringValidation();
+        loadUnassignedPurchases();
     </script>
 }

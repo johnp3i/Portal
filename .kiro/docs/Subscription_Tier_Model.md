@@ -64,6 +64,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 - Cash Flow Forecasting (30/60/90-day projections)
 - Profit & Loss Summary (period-based financial overview)
 - Expense Categorisation Insights (spend analysis, budget alerts)
+- Recurring Expense Validation (define expected supplier purchases, validate before VAT submission)
 - Document Attachments (attach PDFs/images to purchases, invoices, quotations)
 - Activity Log (readonly — view history of operations)
 - Up to 5 users with granular permissions
@@ -119,6 +120,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Profit & Loss Summary | ❌ | ✅ | ✅ |
 | Expense Categorisation Insights | ❌ | ✅ | ✅ |
 | Payment Schedules (Instalment Plans) | ❌ | ✅ | ✅ |
+| Recurring Expense Validation | ❌ | ✅ | ✅ |
 | **Operational Tools** | | | |
 | Document Attachments | ❌ | ✅ | ✅ |
 | Activity Log | ❌ | ✅ (readonly) | ✅ (full) |
@@ -228,6 +230,7 @@ Request arrives
 | `cashflow` | Cash Flow Forecasting | Professional |
 | `pnl` | Profit & Loss | Professional |
 | `expense_insights` | Expense Categorisation | Professional |
+| `recurring_expense_validation` | Recurring Expense Validation | Professional |
 | `attachments` | Document Attachments | Professional |
 | `audit_log` | Activity Log (readonly on Professional, full on Enterprise) | Professional |
 | `client_portal` | Client Portal | Enterprise |

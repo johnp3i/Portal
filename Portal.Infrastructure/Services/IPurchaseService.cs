@@ -15,4 +15,8 @@ public interface IPurchaseService
     Task<ServiceResult> UpdatePurchaseAsync(Purchase purchase);
     Task<ServiceResult> CancelPurchaseAsync(int id);
     Task<ServiceResult> BulkCreatePurchasesAsync(List<Purchase> purchases);
+    Task<ServiceResult> AssignPurchasesToPeriodAsync(int businessId, int periodId, List<int> purchaseIds);
+    Task<ServiceResult> UnassignPurchasesFromPeriodAsync(int businessId, List<int> purchaseIds);
+    Task<List<Purchase>> GetUnassignedForPeriodAsync(int businessId, int periodId);
+    Task<int> CountUnassignedForPeriodAsync(int businessId, int periodId);
 }

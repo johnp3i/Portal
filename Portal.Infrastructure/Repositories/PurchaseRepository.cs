@@ -112,6 +112,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                     [TotalAmount] = @TotalAmount,
                     [Country] = @Country,
                     [Notes] = @Notes,
+                    [VatSubmissionPeriodId] = @VatSubmissionPeriodId,
                     [UpdatedAtUtc] = @UpdatedAtUtc
                 WHERE Purchase.Id = @Id AND Purchase.BusinessId = @BusinessId";
 
@@ -130,10 +131,11 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 new SqlParameter("@TotalAmount", entity.TotalAmount),
                 new SqlParameter("@Country", entity.Country ?? (object)DBNull.Value),
                 new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value),
+                new SqlParameter("@VatSubmissionPeriodId", entity.VatSubmissionPeriodId ?? (object)DBNull.Value),
                 new SqlParameter("@UpdatedAtUtc", entity.UpdatedAtUtc)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -358,6 +360,141 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 .ToListAsync();
 
             return result.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<List<Purchase>> GetUnassignedByDateRangeAsync(int businessId, DateOnly startDate, DateOnly endDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
+                       [InvoiceNumber], [InvoiceDate], [Description],
+                       [AmountExcludingVat], [VatAmount], [TotalAmount],
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[VatSubmissionPeriodId] IS NULL
+                  AND [purchase].[Purchase].[IsCancelled] = 0
+                  AND [purchase].[Purchase].[InvoiceDate] >= @StartDate
+                  AND [purchase].[Purchase].[InvoiceDate] <= @EndDate";
+
+            var results = await ExecuteStoredProcedure(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@StartDate", startDate),
+                new SqlParameter("@EndDate", endDate));
+
+            return results.OrderByDescending(p => p.InvoiceDate).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<int> CountUnassignedByDateRangeAsync(int businessId, DateOnly startDate, DateOnly endDate)
+    {
+        try
+        {
+            const string sql = @"
+                SELECT COUNT(*)
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[VatSubmissionPeriodId] IS NULL
+                  AND [purchase].[Purchase].[IsCancelled] = 0
+                  AND [purchase].[Purchase].[InvoiceDate] >= @StartDate
+                  AND [purchase].[Purchase].[InvoiceDate] <= @EndDate";
+
+            var result = await _context.Database
+                .SqlQueryRaw<int>(sql,
+                    new SqlParameter("@BusinessId", businessId),
+                    new SqlParameter("@StartDate", startDate),
+                    new SqlParameter("@EndDate", endDate))
+                .ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<int> BulkAssignToPeriodAsync(int businessId, int periodId, List<int> purchaseIds)
+    {
+        try
+        {
+            if (purchaseIds == null || purchaseIds.Count == 0)
+                return 0;
+
+            var parameters = new List<SqlParameter>
+            {
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@PeriodId", periodId)
+            };
+
+            var idPlaceholders = new List<string>();
+            for (int i = 0; i < purchaseIds.Count; i++)
+            {
+                var paramName = $"@Id{i}";
+                idPlaceholders.Add(paramName);
+                parameters.Add(new SqlParameter(paramName, purchaseIds[i]));
+            }
+
+            var sql = $@"
+                UPDATE [purchase].[Purchase]
+                SET [VatSubmissionPeriodId] = @PeriodId
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[Id] IN ({string.Join(", ", idPlaceholders)})
+                  AND [purchase].[Purchase].[IsCancelled] = 0
+                  AND [purchase].[Purchase].[VatSubmissionPeriodId] IS NULL";
+
+            return await _context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<int> BulkUnassignFromPeriodAsync(int businessId, List<int> purchaseIds)
+    {
+        try
+        {
+            if (purchaseIds == null || purchaseIds.Count == 0)
+                return 0;
+
+            var parameters = new List<SqlParameter>
+            {
+                new SqlParameter("@BusinessId", businessId)
+            };
+
+            var idPlaceholders = new List<string>();
+            for (int i = 0; i < purchaseIds.Count; i++)
+            {
+                var paramName = $"@Id{i}";
+                idPlaceholders.Add(paramName);
+                parameters.Add(new SqlParameter(paramName, purchaseIds[i]));
+            }
+
+            var sql = $@"
+                UPDATE [purchase].[Purchase]
+                SET [VatSubmissionPeriodId] = NULL
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[Id] IN ({string.Join(", ", idPlaceholders)})
+                  AND [purchase].[Purchase].[VatSubmissionPeriodId] IS NOT NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM [vat].[VatSubmission]
+                      WHERE [vat].[VatSubmission].[VatSubmissionPeriodId] = [purchase].[Purchase].[VatSubmissionPeriodId]
+                        AND [vat].[VatSubmission].[BusinessId] = @BusinessId
+                        AND [vat].[VatSubmission].[IsSubmitted] = 1
+                  )";
+
+            return await _context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
         }
         catch (Exception ex)
         {
