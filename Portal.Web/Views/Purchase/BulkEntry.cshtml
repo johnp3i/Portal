@@ -307,7 +307,7 @@
     }
 
     /* Responsive: Convert table rows to card-style layout when content area is narrow */
-    @@media (max-width: 1600px) {
+    @@media (max-width: 1500px) {
         #bulkGrid {
             border-collapse: separate;
             border-spacing: 0;
@@ -1083,6 +1083,25 @@
         document.getElementById('summaryErrorCount').textContent = errorCount;
     }
 
+    function validateFilledRows() {
+        var rows = document.querySelectorAll('#bulkGridBody tr');
+        var errors = [];
+
+        rows.forEach(function(tr, index) {
+            if (isRowFilled(tr)) {
+                var dateVal = tr.querySelector('.cell-date').value;
+                if (dateVal) {
+                    var year = parseInt(dateVal.split('-')[0]);
+                    if (isNaN(year) || year < 2000 || year > 2100) {
+                        errors.push({ row: index + 1, field: 'InvoiceDate', message: 'Date must have a valid year (2000–2100).' });
+                    }
+                }
+            }
+        });
+
+        return errors;
+    }
+
     function collectFilledRows() {
         var rows = document.querySelectorAll('#bulkGridBody tr');
         var data = [];
@@ -1112,6 +1131,20 @@
 
     async function saveAll() {
         clearErrors();
+
+        // Client-side date validation
+        var clientErrors = validateFilledRows();
+        if (clientErrors.length > 0) {
+            highlightErrors(clientErrors);
+            Swal.fire({
+                title: 'Validation Errors',
+                text: clientErrors[0].message,
+                icon: 'warning',
+                confirmButtonColor: '#0D5EA6'
+            });
+            return;
+        }
+
         var rows = collectFilledRows();
 
         if (rows.length === 0) {

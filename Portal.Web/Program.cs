@@ -220,6 +220,9 @@ builder.Services.AddScoped<PurchaseRepository>(sp =>
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
 builder.Services.AddScoped<IExpenseCategoryLimitService, ExpenseCategoryLimitService>();
+builder.Services.AddScoped<SupplierRecurringRuleRepository>(sp =>
+    new SupplierRecurringRuleRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IRecurringExpenseValidationService, RecurringExpenseValidationService>();
 builder.Services.AddScoped<ICsvImportService, CsvImportService>();
 builder.Services.AddScoped<VatSubmissionPeriodRepository>(sp =>
     new VatSubmissionPeriodRepository(sp.GetRequiredService<PortalDbContext>()));

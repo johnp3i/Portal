@@ -1,0 +1,186 @@
+@{
+    ViewData["Title"] = "Recurring Expense Validation";
+    var vatPeriods = (List<Portal.Infrastructure.Entities.VatSubmissionPeriod>)ViewBag.VatPeriods;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 class="topbar-heading">Recurring Expense Validation</h1>
+        <p class="topbar-subtitle">Check whether expected recurring purchases have been recorded for a given period.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <a href="/RecurringExpense/Rules"
+           style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#0D5EA6 0%,#57B8E8 100%);box-shadow:0 8px 20px rgba(13,94,166,.22);text-decoration:none;transition:all .2s;letter-spacing:.02em;"
+           onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 12px 28px rgba(13,94,166,.28)'"
+           onmouseleave="this.style.transform='none';this.style.boxShadow='0 8px 20px rgba(13,94,166,.22)'">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h.09a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.09a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Manage Rules
+        </a>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:220px;">
+            <label for="vatPeriodSelect">VAT Period</label>
+            <select id="vatPeriodSelect" onchange="onPeriodChange()">
+                <option value="">Custom Date Range</option>
+                @foreach (var period in vatPeriods)
+                {
+                    <option value="@period.Id"
+                            data-start="@period.PeriodStartDate.ToString("yyyy-MM-dd")"
+                            data-end="@period.PeriodEndDate.ToString("yyyy-MM-dd")">
+                        @period.PeriodStartDate.ToString("MMM yyyy") &ndash; @period.PeriodEndDate.ToString("MMM yyyy")
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;" id="dateFromField">
+            <label for="dateFrom">From</label>
+            <input type="date" id="dateFrom" />
+        </div>
+        <div class="field" style="min-width:180px;" id="dateToField">
+            <label for="dateTo">To</label>
+            <input type="date" id="dateTo" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="runValidation()">Validate</button>
+        </div>
+    </div>
+</section>
+
+<!-- Results -->
+<section class="glass card-pad">
+    <div id="validationResults">
+        <div class="empty-state">
+            <p>Select a period or date range and click Validate to check recurring expenses.</p>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        var dateFromField = document.getElementById('dateFromField');
+        var dateToField = document.getElementById('dateToField');
+        var vatPeriodSelect = document.getElementById('vatPeriodSelect');
+
+        // Auto-select current open period if available (first unsubmitted period)
+        (function initDefaults() {
+            var options = vatPeriodSelect.options;
+            for (var i = 1; i < options.length; i++) {
+                // Select the first period by default
+                options[i].selected = true;
+                onPeriodChange();
+                break;
+            }
+        })();
+
+        function onPeriodChange() {
+            var selected = vatPeriodSelect.options[vatPeriodSelect.selectedIndex];
+            if (selected.value) {
+                // Period selected — hide custom date fields, populate from data attrs
+                dateFromField.style.display = 'none';
+                dateToField.style.display = 'none';
+                document.getElementById('dateFrom').value = selected.getAttribute('data-start');
+                document.getElementById('dateTo').value = selected.getAttribute('data-end');
+            } else {
+                // Custom — show date fields
+                dateFromField.style.display = '';
+                dateToField.style.display = '';
+            }
+        }
+
+        async function runValidation() {
+            var startDate = document.getElementById('dateFrom').value;
+            var endDate = document.getElementById('dateTo').value;
+
+            if (!startDate || !endDate) {
+                Swal.fire({ icon: 'warning', title: 'Missing Dates', text: 'Please select a date range or VAT period.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var container = document.getElementById('validationResults');
+            BlockUI.show('Validating...');
+
+            try {
+                var response = await fetch('/RecurringExpense/Validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ startDate: startDate, endDate: endDate })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (!data.success) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Validation failed.', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                if (data.ruleResults.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No recurring expense rules configured. <a href="/RecurringExpense/Rules" style="color:#0D5EA6;font-weight:600;">Set up rules</a></p></div>';
+                    return;
+                }
+
+                renderResults(data, container);
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function renderResults(data, container) {
+            var s = data.summary;
+            var html = '';
+
+            // Summary strip
+            html += '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;padding:14px 20px;border-radius:14px;background:#EEF4F8;">';
+            html += '<div style="font-size:14px;font-weight:700;color:#2C3E50;">' + s.totalRules + ' rules checked</div>';
+            html += '<div style="font-size:14px;font-weight:700;color:#129867;">' + s.passCount + ' pass</div>';
+            html += '<div style="font-size:14px;font-weight:700;color:#C8912E;">' + s.warningCount + ' warning</div>';
+            html += '<div style="font-size:14px;font-weight:700;color:#C24A4A;">' + s.failCount + ' fail</div>';
+            html += '</div>';
+
+            // Results table
+            html += '<div class="table-responsive"><table><thead><tr>'
+                + '<th>Supplier</th>'
+                + '<th>Category</th>'
+                + '<th>Description</th>'
+                + '<th>Frequency</th>'
+                + '<th style="text-align:center;">Expected</th>'
+                + '<th style="text-align:center;">Actual</th>'
+                + '<th>Status</th>'
+                + '</tr></thead><tbody>';
+
+            data.ruleResults.forEach(function(r) {
+                var statusBadge = '';
+                if (r.status === 'pass') statusBadge = '<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(18,152,103,.12);color:#129867;">Pass</span>';
+                else if (r.status === 'warning') statusBadge = '<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(200,145,46,.12);color:#C8912E;">Warning</span>';
+                else statusBadge = '<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(194,74,74,.12);color:#C24A4A;">Fail</span>';
+
+                var freqLabel = r.frequencyMonths === 1 ? 'Monthly' : r.frequencyMonths === 2 ? 'Bimonthly' : r.frequencyMonths === 3 ? 'Quarterly' : r.frequencyMonths === 6 ? 'Semi-annually' : r.frequencyMonths === 12 ? 'Annually' : r.frequencyMonths + ' months';
+
+                html += '<tr>'
+                    + '<td style="font-weight:600;">' + escapeHtml(r.supplierName) + '</td>'
+                    + '<td>' + (r.categoryName ? escapeHtml(r.categoryName) : '<span style="color:#5E7385;">Any</span>') + '</td>'
+                    + '<td style="font-size:13px;">' + escapeHtml(r.description) + '</td>'
+                    + '<td style="font-size:13px;">' + freqLabel + '</td>'
+                    + '<td style="text-align:center;font-weight:700;">' + r.expectedCount + '</td>'
+                    + '<td style="text-align:center;font-weight:700;">' + r.actualCount + '</td>'
+                    + '<td>' + statusBadge + '</td>'
+                    + '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+}

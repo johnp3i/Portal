@@ -96,6 +96,7 @@ public class PortalDbContext : DbContext
     public DbSet<BillingInvoice> BillingInvoices { get; set; } = null!;
     public DbSet<BillingPayment> BillingPayments { get; set; } = null!;
     public DbSet<InvoiceSequence> InvoiceSequences { get; set; } = null!;
+    public DbSet<SupplierRecurringRule> SupplierRecurringRules { get; set; } = null!;
 
     // Stripe schema
     public DbSet<StripeCustomer> StripeCustomers { get; set; } = null!;
@@ -170,6 +171,7 @@ public class PortalDbContext : DbContext
         ConfigureBillingInvoice(modelBuilder);
         ConfigureBillingPayment(modelBuilder);
         ConfigureInvoiceSequence(modelBuilder);
+        ConfigureSupplierRecurringRule(modelBuilder);
         ConfigureStripeCustomer(modelBuilder);
         ConfigureWebhookEvent(modelBuilder);
         ConfigurePromoCode(modelBuilder);
@@ -1811,6 +1813,65 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureSupplierRecurringRule(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SupplierRecurringRule>(entity =>
+        {
+            entity.ToTable("SupplierRecurringRule", "billing");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ExpenseCategory)
+                .WithMany()
+                .HasForeignKey(e => e.ExpenseCategoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .IsRequired(false);
+
+            entity.HasIndex(e => new { e.BusinessId, e.SupplierId })
+                .HasDatabaseName("IX_SupplierRecurringRule_BusinessId_SupplierId");
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_SupplierRecurringRule_BusinessId");
+
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.ExpectedAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.AmountTolerancePercent)
+                .HasPrecision(5, 2)
+                .HasDefaultValue(5.00m);
+
+            entity.Property(e => e.GracePeriodDays)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.IsDeleted)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
     private static void ConfigureStripeCustomer(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<StripeCustomer>(entity =>
@@ -2548,5 +2609,8 @@ public class PortalDbContext : DbContext
 
         modelBuilder.Entity<CashFlowSettings>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<SupplierRecurringRule>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId && !e.IsDeleted);
     }
 }

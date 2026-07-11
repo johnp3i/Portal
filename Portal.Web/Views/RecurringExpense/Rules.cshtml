@@ -1,0 +1,339 @@
+@{
+    ViewData["Title"] = "Recurring Expense Rules";
+    var suppliers = (List<Portal.Infrastructure.Entities.Supplier>)ViewBag.Suppliers;
+    var categories = (List<Portal.Infrastructure.Entities.ExpenseCategory>)ViewBag.Categories;
+    var rules = (List<Portal.Infrastructure.Models.RecurringRuleViewModel>)ViewBag.Rules;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 class="topbar-heading">Recurring Expense Rules</h1>
+        <p class="topbar-subtitle">Define expected recurring purchases per supplier to validate against each period.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/RecurringExpense" class="btn btn-secondary">Back to Validation</a>
+    </div>
+</div>
+
+<!-- Add / Edit Rule Form -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 id="formHeading" style="margin:0 0 16px 0;font-size:16px;font-weight:700;color:#2C3E50;">Add Rule</h3>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="field" style="min-width:200px;flex:1;">
+            <label for="ruleSupplierId">Supplier <span style="color:#C24A4A;">*</span></label>
+            <select id="ruleSupplierId">
+                <option value="">Select Supplier</option>
+                @foreach (var supplier in suppliers)
+                {
+                    <option value="@supplier.Id">@supplier.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:200px;flex:1;">
+            <label for="ruleCategoryId">Category</label>
+            <select id="ruleCategoryId">
+                <option value="">Any Category</option>
+                @foreach (var category in categories)
+                {
+                    <option value="@category.Id">@category.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;flex:1;">
+            <label for="ruleFrequency">Frequency <span style="color:#C24A4A;">*</span></label>
+            <select id="ruleFrequency">
+                <option value="1">Monthly</option>
+                <option value="2">Bimonthly</option>
+                <option value="3">Quarterly</option>
+                <option value="6">Semi-annually</option>
+                <option value="12">Annually</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;flex:1;">
+            <label for="ruleExpectedAmount">Expected Amount</label>
+            <input type="number" id="ruleExpectedAmount" step="0.01" min="0" placeholder="Optional" oninput="toggleToleranceField()" />
+        </div>
+        <div class="field" id="toleranceField" style="min-width:120px;flex:0.5;display:none;">
+            <label for="ruleTolerance">Tolerance %</label>
+            <input type="number" id="ruleTolerance" step="0.1" min="0" max="100" value="5" />
+        </div>
+        <div class="field" style="min-width:130px;flex:0.5;">
+            <label for="ruleGracePeriod">Grace Period (days)</label>
+            <input type="number" id="ruleGracePeriod" min="0" max="15" value="0" />
+        </div>
+        <div class="field" style="min-width:200px;flex:1.5;">
+            <label for="ruleDescription">Description <span style="color:#C24A4A;">*</span></label>
+            <input type="text" id="ruleDescription" maxlength="200" placeholder="e.g. Monthly hosting fee" />
+        </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+        <button type="button" class="btn btn-primary" onclick="saveRule()">Save Rule</button>
+        <button type="button" id="cancelEditBtn" class="btn btn-secondary" style="display:none;" onclick="cancelEdit()">Cancel</button>
+    </div>
+    <input type="hidden" id="editingRuleId" value="" />
+</section>
+
+<!-- Rules List -->
+<section class="glass card-pad">
+    @if (rules == null || rules.Count == 0)
+    {
+        <div class="empty-state">
+            <p>No recurring expense rules configured yet. Add your first rule above.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Category</th>
+                        <th>Frequency</th>
+                        <th>Expected Amount</th>
+                        <th>Grace Period</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rule in rules)
+                    {
+                        <tr style="@(rule.IsActive ? "" : "opacity:0.55;")"
+                            id="rule-row-@rule.Id"
+                            data-id="@rule.Id"
+                            data-supplier-id="@rule.SupplierId"
+                            data-category-id="@(rule.ExpenseCategoryId?.ToString() ?? "")"
+                            data-frequency="@rule.FrequencyMonths"
+                            data-amount="@(rule.ExpectedAmount?.ToString() ?? "")"
+                            data-tolerance="@(rule.AmountTolerancePercent?.ToString() ?? "")"
+                            data-grace="@rule.GracePeriodDays"
+                            data-description="@rule.Description"
+                            data-active="@rule.IsActive.ToString().ToLower()">
+                            <td style="font-weight:600;">@rule.SupplierName</td>
+                            <td>@(rule.CategoryName ?? "<span style=\"color:#5E7385;\">Any</span>")</td>
+                            <td>@rule.FrequencyLabel</td>
+                            <td>
+                                @if (rule.ExpectedAmount.HasValue)
+                                {
+                                    <span>@rule.ExpectedAmount.Value.ToString("N2") <span style="font-size:11px;color:#5E7385;">(&plusmn;@(rule.AmountTolerancePercent ?? 5)%)</span></span>
+                                }
+                                else
+                                {
+                                    <span style="color:#5E7385;">&mdash;</span>
+                                }
+                            </td>
+                            <td>@rule.GracePeriodDays day@(rule.GracePeriodDays == 1 ? "" : "s")</td>
+                            <td style="font-size:13px;">@rule.Description</td>
+                            <td>
+                                @if (rule.IsActive)
+                                {
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(18,152,103,.12);color:#129867;">Active</span>
+                                }
+                                else
+                                {
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(94,115,133,.12);color:#5E7385;">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                    @if (rule.IsActive)
+                                    {
+                                        <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="editRule(@rule.Id)">Edit</button>
+                                        <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="toggleRule(@rule.Id)">Disable</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="toggleRule(@rule.Id)">Enable</button>
+                                    }
+                                    <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;color:#C24A4A;border-color:#C24A4A;" onclick="deleteRule(@rule.Id)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        function toggleToleranceField() {
+            var amountInput = document.getElementById('ruleExpectedAmount');
+            var toleranceField = document.getElementById('toleranceField');
+            if (amountInput.value && parseFloat(amountInput.value) > 0) {
+                toleranceField.style.display = '';
+            } else {
+                toleranceField.style.display = 'none';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('ruleSupplierId').value = '';
+            document.getElementById('ruleCategoryId').value = '';
+            document.getElementById('ruleFrequency').value = '1';
+            document.getElementById('ruleExpectedAmount').value = '';
+            document.getElementById('ruleTolerance').value = '5';
+            document.getElementById('ruleGracePeriod').value = '0';
+            document.getElementById('ruleDescription').value = '';
+            document.getElementById('editingRuleId').value = '';
+            document.getElementById('formHeading').textContent = 'Add Rule';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('toleranceField').style.display = 'none';
+        }
+
+        function editRule(ruleId) {
+            var row = document.getElementById('rule-row-' + ruleId);
+            if (!row) return;
+
+            document.getElementById('ruleSupplierId').value = row.getAttribute('data-supplier-id');
+            document.getElementById('ruleCategoryId').value = row.getAttribute('data-category-id');
+            document.getElementById('ruleFrequency').value = row.getAttribute('data-frequency');
+            document.getElementById('ruleExpectedAmount').value = row.getAttribute('data-amount');
+            document.getElementById('ruleGracePeriod').value = row.getAttribute('data-grace');
+            document.getElementById('ruleDescription').value = row.getAttribute('data-description');
+            document.getElementById('editingRuleId').value = ruleId;
+
+            var tolerance = row.getAttribute('data-tolerance');
+            document.getElementById('ruleTolerance').value = tolerance || '5';
+
+            document.getElementById('formHeading').textContent = 'Edit Rule';
+            document.getElementById('cancelEditBtn').style.display = '';
+
+            toggleToleranceField();
+
+            // Scroll to form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            resetForm();
+        }
+
+        async function saveRule() {
+            var supplierId = document.getElementById('ruleSupplierId').value;
+            var description = document.getElementById('ruleDescription').value.trim();
+            var frequencyMonths = parseInt(document.getElementById('ruleFrequency').value);
+
+            if (!supplierId) {
+                Swal.fire({ icon: 'warning', title: 'Missing Supplier', text: 'Please select a supplier.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            if (!description) {
+                Swal.fire({ icon: 'warning', title: 'Missing Description', text: 'Please enter a description for this rule.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var categoryId = document.getElementById('ruleCategoryId').value || null;
+            var expectedAmount = document.getElementById('ruleExpectedAmount').value ? parseFloat(document.getElementById('ruleExpectedAmount').value) : null;
+            var tolerance = expectedAmount ? parseFloat(document.getElementById('ruleTolerance').value) : null;
+            var gracePeriod = parseInt(document.getElementById('ruleGracePeriod').value) || 0;
+            var editingId = document.getElementById('editingRuleId').value || null;
+
+            var payload = {
+                id: editingId ? parseInt(editingId) : null,
+                supplierId: parseInt(supplierId),
+                expenseCategoryId: categoryId ? parseInt(categoryId) : null,
+                frequencyMonths: frequencyMonths,
+                expectedAmount: expectedAmount,
+                amountTolerancePercent: tolerance,
+                gracePeriodDays: gracePeriod,
+                description: description
+            };
+
+            BlockUI.show('Saving rule...');
+            try {
+                var response = await fetch('/RecurringExpense/AxPostSaveRule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message || 'Rule saved successfully.', confirmButtonColor: '#0D5EA6' }).then(function () {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to save rule.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function deleteRule(ruleId) {
+            var result = await Swal.fire({
+                title: 'Delete Rule?',
+                text: 'This rule will be permanently removed. This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Deleting rule...');
+            try {
+                var response = await fetch('/RecurringExpense/AxPostDeleteRule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ id: ruleId })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Deleted', text: data.message || 'Rule deleted.', confirmButtonColor: '#0D5EA6' }).then(function () {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to delete rule.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function toggleRule(ruleId) {
+            BlockUI.show('Updating rule...');
+            try {
+                var response = await fetch('/RecurringExpense/AxPostToggleRule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ id: ruleId })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+                window.location.reload();
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

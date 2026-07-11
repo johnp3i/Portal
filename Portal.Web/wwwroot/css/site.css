@@ -19,7 +19,7 @@ a{text-decoration:none;color:inherit}
 .app{display:grid;grid-template-columns:280px 1fr;min-height:100vh;transition:grid-template-columns .2s cubic-bezier(.4,0,.2,1)}
 .app.sidebar-collapsed{grid-template-columns:64px 1fr}
 .sidebar{padding:24px 18px;border-right:1px solid var(--line);background:rgba(255,255,255,.72);overflow:hidden;will-change:padding}
-.app.sidebar-collapsed .sidebar{padding:24px 8px}
+.app.sidebar-collapsed .sidebar{padding:24px 8px;overflow:visible}
 .brand{display:flex;gap:14px;align-items:center;margin-bottom:28px}
 .brand-chip{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid rgba(13,94,166,.12);color:var(--blue3);font-weight:800;box-shadow:0 10px 22px rgba(13,94,166,.08)}
 .nav-title{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);padding:0 10px 10px;white-space:nowrap;overflow:hidden;transition:opacity .15s ease}
@@ -44,6 +44,20 @@ a{text-decoration:none;color:inherit}
 .app.sidebar-collapsed .nav-sub-item.active{border-left:none;background:rgba(13,94,166,.1);border-radius:12px}
 .app.sidebar-collapsed .nav-section{margin-top:2px}
 .app.sidebar-collapsed .brand img{display:none}
+
+/* Collapsed sidebar: tooltip on hover */
+.app.sidebar-collapsed .nav-item{position:relative;overflow:visible}
+.app.sidebar-collapsed .nav-sub-item{position:relative;overflow:visible}
+.app.sidebar-collapsed .nav-item:hover .nav-text,
+.app.sidebar-collapsed .nav-sub-item:hover .nav-text{
+  opacity:1;width:auto;position:absolute;left:100%;top:50%;transform:translateY(-50%);
+  margin-left:12px;padding:6px 14px;
+  background:#fff;color:var(--text);font-size:13px;font-weight:700;font-family:Manrope,Inter,sans-serif;
+  border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 8px 20px rgba(13,94,166,.10);
+  white-space:nowrap;z-index:9999;pointer-events:none;
+  transition:opacity .15s ease;
+}
 .sidebar-toggle{position:absolute;top:18px;right:18px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:30%;border:1px solid rgba(13,94,166,.1);background:#fff;cursor:pointer;z-index:10;box-shadow:0 2px 8px rgba(13,94,166,.1);transition:transform .25s}
 .sidebar{position:relative}
 .app.sidebar-collapsed .sidebar-toggle svg{transform:rotate(180deg)}

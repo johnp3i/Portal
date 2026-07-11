@@ -282,7 +282,84 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
 
             return result.FirstOrDefault();
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<int> CountQualifyingPurchasesAsync(int businessId, int supplierId, int? expenseCategoryId, DateOnly startDate, DateOnly endDate)
+    {
+        try
+        {
+            const string sql = @"
+                SELECT COUNT(*)
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[SupplierId] = @SupplierId
+                  AND [purchase].[Purchase].[IsCancelled] = 0
+                  AND (@ExpenseCategoryId IS NULL OR [purchase].[Purchase].[ExpenseCategoryId] = @ExpenseCategoryId)
+                  AND [purchase].[Purchase].[InvoiceDate] >= @StartDate
+                  AND [purchase].[Purchase].[InvoiceDate] <= @EndDate";
+
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@SupplierId", supplierId),
+                new SqlParameter("@ExpenseCategoryId", expenseCategoryId ?? (object)DBNull.Value),
+                new SqlParameter("@StartDate", startDate),
+                new SqlParameter("@EndDate", endDate)
+            };
+
+            var result = await _context.Database
+                .SqlQueryRaw<int>(sql, parameters)
+                .ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<int> CountAmountMatchingPurchasesAsync(int businessId, int supplierId, int? expenseCategoryId, DateOnly startDate, DateOnly endDate, decimal expectedAmount, decimal tolerancePercent)
+    {
+        try
+        {
+            var lowerBound = expectedAmount * (1 - tolerancePercent / 100);
+            var upperBound = expectedAmount * (1 + tolerancePercent / 100);
+
+            const string sql = @"
+                SELECT COUNT(*)
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[SupplierId] = @SupplierId
+                  AND [purchase].[Purchase].[IsCancelled] = 0
+                  AND (@ExpenseCategoryId IS NULL OR [purchase].[Purchase].[ExpenseCategoryId] = @ExpenseCategoryId)
+                  AND [purchase].[Purchase].[InvoiceDate] >= @StartDate
+                  AND [purchase].[Purchase].[InvoiceDate] <= @EndDate
+                  AND [purchase].[Purchase].[AmountExcludingVat] >= @LowerBound
+                  AND [purchase].[Purchase].[AmountExcludingVat] <= @UpperBound";
+
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@SupplierId", supplierId),
+                new SqlParameter("@ExpenseCategoryId", expenseCategoryId ?? (object)DBNull.Value),
+                new SqlParameter("@StartDate", startDate),
+                new SqlParameter("@EndDate", endDate),
+                new SqlParameter("@LowerBound", lowerBound),
+                new SqlParameter("@UpperBound", upperBound)
+            };
+
+            var result = await _context.Database
+                .SqlQueryRaw<int>(sql, parameters)
+                .ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception ex)
         {
             throw;
         }

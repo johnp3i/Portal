@@ -11,7 +11,7 @@
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a asp-action="Create" class="btn btn-primary">Create Purchase</a>
-        <a asp-action="BulkEntry" class="btn btn-secondary">Bulk Entry</a>
+        <a asp-action="BulkEntry" class="btn btn-secondary" style="background:rgba(13,94,166,.08);border:1.5px solid var(--blue);color:var(--blue);">Bulk Entry</a>
         <a asp-action="CsvImport" class="btn btn-secondary">CSV Import</a>
         <a class="btn btn-secondary" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export CSV</a>
         <a class="btn btn-secondary" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export PDF</a>
@@ -25,81 +25,133 @@
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
             Filters
         </button>
-        <div class="filter-panel" id="purchaseFilterPanel" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
-            <div class="field" style="flex:1;min-width:200px;">
-                <label for="searchTerm">Search</label>
-                <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" placeholder="Description, invoice #, or supplier..." />
+        <div class="filter-panel" id="purchaseFilterPanel">
+            <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+                <div class="field" style="flex:1;min-width:200px;">
+                    <label for="searchTerm">Search</label>
+                    <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" placeholder="Description, invoice #, or supplier..." />
+                </div>
+                <div class="field" style="flex:1;min-width:180px;">
+                    <label for="supplierId">Supplier</label>
+                    <select id="supplierId" name="supplierId">
+                        <option value="">All Suppliers</option>
+                        @foreach (var supplier in Model.Suppliers.OrderBy(s => s.Name))
+                        {
+                            <option value="@supplier.Id" selected="@(Model.SupplierId == supplier.Id)">@supplier.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="flex:1;min-width:180px;">
+                    <label for="expenseCategoryId">Expense Category</label>
+                    <select id="expenseCategoryId" name="expenseCategoryId">
+                        <option value="">All Categories</option>
+                        @foreach (var category in Model.ExpenseCategories.OrderBy(c => c.Name))
+                        {
+                            <option value="@category.Id" selected="@(Model.ExpenseCategoryId == category.Id)">@category.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="flex:1;min-width:160px;">
+                    <label for="purchaseOriginTypeId">Origin Type</label>
+                    <select id="purchaseOriginTypeId" name="purchaseOriginTypeId">
+                        <option value="">All Origins</option>
+                        @foreach (var originType in Model.OriginTypes)
+                        {
+                            <option value="@originType.Id" selected="@(Model.PurchaseOriginTypeId == originType.Id)">
+                                @(originType.Id == 2 ? "EU Reverse Charge" : originType.Id == 3 ? "Non-EU" : originType.Id == 4 ? "EU Paid" : originType.Name)
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="flex:1;min-width:160px;">
+                    <label for="purchaseTypeId">Purchase Type</label>
+                    <select id="purchaseTypeId" name="purchaseTypeId">
+                        <option value="">All Types</option>
+                        @foreach (var purchaseType in Model.PurchaseTypes)
+                        {
+                            <option value="@purchaseType.Id" selected="@(Model.PurchaseTypeId == purchaseType.Id)">@purchaseType.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="flex:1;min-width:180px;">
+                    <label for="vatPeriodId">VAT Period</label>
+                    <select id="vatPeriodId" name="vatPeriodId">
+                        <option value="">All Periods</option>
+                        @foreach (var period in Model.VatPeriods.OrderByDescending(p => p.PeriodStartDate))
+                        {
+                            <option value="@period.Id" selected="@(Model.VatPeriodId == period.Id)">
+                                @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
+                            </option>
+                        }
+                    </select>
+                </div>
             </div>
-            <div class="field" style="flex:1;min-width:180px;">
-                <label for="supplierId">Supplier</label>
-                <select id="supplierId" name="supplierId">
-                    <option value="">All Suppliers</option>
-                    @foreach (var supplier in Model.Suppliers)
-                    {
-                        <option value="@supplier.Id" selected="@(Model.SupplierId == supplier.Id)">@supplier.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="field" style="flex:1;min-width:180px;">
-                <label for="expenseCategoryId">Expense Category</label>
-                <select id="expenseCategoryId" name="expenseCategoryId">
-                    <option value="">All Categories</option>
-                    @foreach (var category in Model.ExpenseCategories)
-                    {
-                        <option value="@category.Id" selected="@(Model.ExpenseCategoryId == category.Id)">@category.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="field" style="flex:1;min-width:160px;">
-                <label for="purchaseOriginTypeId">Origin Type</label>
-                <select id="purchaseOriginTypeId" name="purchaseOriginTypeId">
-                    <option value="">All Origins</option>
-                    @foreach (var originType in Model.OriginTypes)
-                    {
-                        <option value="@originType.Id" selected="@(Model.PurchaseOriginTypeId == originType.Id)">
-                            @(originType.Id == 2 ? "EU Reverse Charge" : originType.Id == 3 ? "Non-EU" : originType.Id == 4 ? "EU Paid" : originType.Name)
-                        </option>
-                    }
-                </select>
-            </div>
-            <div class="field" style="flex:1;min-width:160px;">
-                <label for="purchaseTypeId">Purchase Type</label>
-                <select id="purchaseTypeId" name="purchaseTypeId">
-                    <option value="">All Types</option>
-                    @foreach (var purchaseType in Model.PurchaseTypes)
-                    {
-                        <option value="@purchaseType.Id" selected="@(Model.PurchaseTypeId == purchaseType.Id)">@purchaseType.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="field" style="flex:1;min-width:180px;">
-                <label for="vatPeriodId">VAT Period</label>
-                <select id="vatPeriodId" name="vatPeriodId">
-                    <option value="">All Periods</option>
-                    @foreach (var period in Model.VatPeriods)
-                    {
-                        <option value="@period.Id" selected="@(Model.VatPeriodId == period.Id)">
-                            @period.PeriodLabel (@period.PeriodStartDate.ToString("dd MMM yyyy") – @period.PeriodEndDate.ToString("dd MMM yyyy"))
-                        </option>
-                    }
-                </select>
-            </div>
-            <div class="field" style="flex:1;min-width:160px;">
-                <label for="dateFrom">Date From</label>
-                <input type="date" id="dateFrom" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
-            </div>
-            <div class="field" style="flex:1;min-width:160px;">
-                <label for="dateTo">Date To</label>
-                <input type="date" id="dateTo" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
-            </div>
-            <div style="display:flex;gap:10px;padding-bottom:2px;">
-                <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
-                <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+            <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:14px;">
+                <div class="field" style="min-width:160px;">
+                    <label for="dateFrom">Date From</label>
+                    <input type="date" id="dateFrom" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="field" style="min-width:160px;">
+                    <label for="dateTo">Date To</label>
+                    <input type="date" id="dateTo" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div style="display:flex;gap:10px;padding-bottom:2px;margin-left:auto;">
+                    <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+                    <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+                </div>
             </div>
         </div>
     </form>
 </section>
 
+<!-- Active Filter Indicator -->
+@{
+    var hasAnyFilter = Model.SupplierId.HasValue || Model.ExpenseCategoryId.HasValue
+        || Model.PurchaseOriginTypeId.HasValue || Model.PurchaseTypeId.HasValue
+        || Model.VatPeriodId.HasValue || Model.DateFrom.HasValue || Model.DateTo.HasValue
+        || !string.IsNullOrWhiteSpace(Model.SearchTerm);
+
+    var filterLabel = "Showing all purchases (no filters applied)";
+    if (hasAnyFilter)
+    {
+        var parts = new List<string>();
+        if (Model.VatPeriodId.HasValue)
+        {
+            var selectedPeriod = Model.VatPeriods.FirstOrDefault(p => p.Id == Model.VatPeriodId.Value);
+            if (selectedPeriod != null)
+            {
+                parts.Add($"VAT Period: {selectedPeriod.PeriodLabel}");
+            }
+        }
+        if (Model.DateFrom.HasValue && Model.DateTo.HasValue)
+        {
+            parts.Add($"{Model.DateFrom.Value.ToString("dd MMM yyyy")} – {Model.DateTo.Value.ToString("dd MMM yyyy")}");
+        }
+        else if (Model.DateFrom.HasValue)
+        {
+            parts.Add($"From {Model.DateFrom.Value.ToString("dd MMM yyyy")}");
+        }
+        else if (Model.DateTo.HasValue)
+        {
+            parts.Add($"Until {Model.DateTo.Value.ToString("dd MMM yyyy")}");
+        }
+        if (Model.SupplierId.HasValue)
+        {
+            var supplierName = Model.Suppliers.FirstOrDefault(s => s.Id == Model.SupplierId.Value)?.Name;
+            if (supplierName != null) parts.Add($"Supplier: {supplierName}");
+        }
+        if (Model.ExpenseCategoryId.HasValue)
+        {
+            var catName = Model.ExpenseCategories.FirstOrDefault(c => c.Id == Model.ExpenseCategoryId.Value)?.Name;
+            if (catName != null) parts.Add($"Category: {catName}");
+        }
+        if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+        {
+            parts.Add($"Search: \"{Model.SearchTerm}\"");
+        }
+        filterLabel = "Filtered: " + string.Join(" · ", parts);
+    }
+}
 <!-- KPI Cards (computed from filtered results) -->
 @{
     var activePurchases = Model.Purchases?.Where(p => !p.IsCancelled).ToList() ?? new List<Portal.Infrastructure.Entities.Purchase>();
@@ -136,21 +188,25 @@
     </div>
     <!-- Origin Type Breakdown -->
     <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid rgba(13,94,166,0.06);">
-        <div>
-            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Domestic</span>
-            <div style="font-size:1rem;font-weight:700;margin-top:4px;">@domesticCount</div>
+        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Domestic</span>
+            <div style="font-size:1.1rem;font-weight:800;margin-top:4px;font-family:'Manrope',sans-serif;">@domesticCount</div>
         </div>
-        <div>
-            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU RC</span>
-            <div style="font-size:1rem;font-weight:700;color:#0D5EA6;margin-top:4px;">@euRcCount</div>
+        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU RC</span>
+            <div style="font-size:1.1rem;font-weight:800;color:#0D5EA6;margin-top:4px;font-family:'Manrope',sans-serif;">@euRcCount</div>
         </div>
-        <div>
-            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU Paid</span>
-            <div style="font-size:1rem;font-weight:700;color:#1A8AB5;margin-top:4px;">@euPaidCount</div>
+        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU Paid</span>
+            <div style="font-size:1.1rem;font-weight:800;color:#1A8AB5;margin-top:4px;font-family:'Manrope',sans-serif;">@euPaidCount</div>
         </div>
-        <div>
-            <span style="font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Non-EU</span>
-            <div style="font-size:1rem;font-weight:700;color:#8D5D07;margin-top:4px;">@nonEuCount</div>
+        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Non-EU</span>
+            <div style="font-size:1.1rem;font-weight:800;color:#8D5D07;margin-top:4px;font-family:'Manrope',sans-serif;">@nonEuCount</div>
+        </div>
+        <div style="margin-left:auto;padding:14px 22px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);font-size:13px;font-weight:700;color:#0B1B28;display:flex;align-items:center;gap:10px;font-family:'Manrope',sans-serif;">
+            <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            @filterLabel
         </div>
     </div>
 </section>
@@ -178,7 +234,7 @@
                 </tr>
             </thead>
             <tbody id="purchaseTableBody">
-                @foreach (var purchase in Model.Purchases)
+                @foreach (var purchase in Model.Purchases.OrderByDescending(p => p.InvoiceDate))
                 {
                     <tr>
                         <td>

@@ -221,6 +221,13 @@
                 <span class="nav-text">Expense Insights</span>
             </a>
         }
+        @{
+            var isRecurringExpenseActive = currentController.Equals("RecurringExpense", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-sub-item @(isRecurringExpenseActive ? "active" : "")" asp-controller="RecurringExpense" asp-action="Index">
+            <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></span>
+            <span class="nav-text">Recurring Expenses</span>
+        </a>
     </div>
 }
 

@@ -26,6 +26,7 @@
 </head>
 <body>
     <div class="app" id="appShell">
+        <script>if(localStorage.getItem('sidebar-collapsed')==='true')document.getElementById('appShell').classList.add('sidebar-collapsed');</script>
         @if (User.Identity?.IsAuthenticated == true)
         {
             <header class="mobile-topbar">
@@ -182,11 +183,6 @@
             app.classList.toggle('sidebar-collapsed');
             localStorage.setItem('sidebar-collapsed', app.classList.contains('sidebar-collapsed'));
         }
-        (function() {
-            if (localStorage.getItem('sidebar-collapsed') === 'true') {
-                document.getElementById('appShell').classList.add('sidebar-collapsed');
-            }
-        })();
     </script>
     @RenderSection("Scripts", required: false)
     @await Html.PartialAsync("_GraceAccessModal")

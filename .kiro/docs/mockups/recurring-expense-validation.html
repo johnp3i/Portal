@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recurring Expense Validation — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #F7FAFC; --bg2: #EEF4F8;
+    --blue: #0D5EA6; --blue3: #0B4E89; --cyan: #57B8E8;
+    --green: #129867; --red: #C24A4A; --gold: #C8912E;
+    --muted: #5E7385; --muted2: #73889A; --text: #0B1B28;
+    --line: rgba(13,94,166,.10);
+    --shadow: 0 2px 16px rgba(13,94,166,.07);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    background: #fff; border-right: 1px solid var(--line);
+    padding: 20px 14px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .brand { padding: 4px 10px 18px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: var(--blue); }
+  .nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 14px 10px 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 12px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    text-decoration: none; transition: background .12s, color .12s;
+  }
+  .nav-item:hover { background: var(--bg2); color: var(--text); }
+  .nav-item.active { background: var(--blue); color: #fff; }
+  .nav-item.sub { padding-left: 32px; font-size: 12px; }
+
+  /* Content */
+  .content { padding: 28px 32px; }
+
+  /* Topbar */
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+  .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); display: inline-block; }
+  h1 { font-family: 'Manrope', sans-serif; font-size: 30px; font-weight: 800; margin-top: 10px; }
+  .subtitle { font-size: 15px; color: var(--muted); margin-top: 4px; }
+
+  /* Glass cards */
+  .glass { background: #fff; border-radius: 20px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+  .card-pad { padding: 22px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; text-decoration: none; font-family: inherit; transition: all .15s; }
+  .btn-primary { background: linear-gradient(180deg, #1A6BB8, #0D5EA6); color: #fff; box-shadow: 0 8px 20px rgba(13,94,166,.18); }
+  .btn-primary:hover { box-shadow: 0 12px 28px rgba(13,94,166,.25); transform: translateY(-1px); }
+  .btn-secondary { background: #fff; color: var(--blue); border: 1.5px solid rgba(13,94,166,.18); }
+  .btn-outline { background: transparent; color: var(--blue); border: 1.5px solid rgba(13,94,166,.18); }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select {
+    padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid rgba(13,94,166,.15); background: #fff;
+    font: 13px/1.4 'Inter', sans-serif; color: var(--text);
+    min-width: 180px;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(13,94,166,.08); }
+  .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%235E7385' d='M5 7L1 3h8z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+  /* Summary bar */
+  .summary-bar { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; padding: 16px 20px; background: var(--bg2); border-radius: 14px; }
+  .summary-item { display: flex; align-items: center; gap: 8px; }
+  .summary-count { font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 800; }
+  .summary-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .summary-count.green { color: var(--green); }
+  .summary-count.gold { color: var(--gold); }
+  .summary-count.red { color: var(--red); }
+  .summary-count.blue { color: var(--blue); }
+
+  /* Results table */
+  .results-table { width: 100%; border-collapse: collapse; }
+  .results-table th { text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .results-table td { padding: 14px; border-bottom: 1px solid rgba(13,94,166,.05); font-size: 13px; vertical-align: middle; }
+  .results-table tr:last-child td { border-bottom: none; }
+  .results-table tr:hover { background: rgba(13,94,166,.02); }
+
+  /* Status badges */
+  .status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+  .status-pass { background: rgba(18,152,103,.1); color: var(--green); }
+  .status-warning { background: rgba(200,145,46,.1); color: var(--gold); }
+  .status-fail { background: rgba(194,74,74,.1); color: var(--red); }
+  .status-icon { font-size: 13px; }
+
+  /* Progress indicator */
+  .count-progress { display: flex; align-items: center; gap: 6px; }
+  .count-bar { width: 60px; height: 6px; background: var(--bg2); border-radius: 4px; overflow: hidden; }
+  .count-fill { height: 100%; border-radius: 4px; }
+  .count-fill.green { background: var(--green); }
+  .count-fill.gold { background: var(--gold); }
+  .count-fill.red { background: var(--red); }
+
+  /* Amount info */
+  .amount-info { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .amount-match { color: var(--green); font-weight: 600; }
+  .amount-miss { color: var(--red); font-weight: 600; }
+
+  /* Divider */
+  .or-divider { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 8px; align-self: center; margin-bottom: -4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">3inventors</div>
+    <div class="nav-section">Workspace</div>
+    <a class="nav-item" href="#">Dashboard</a>
+    <a class="nav-item" href="#">My Business</a>
+    <div class="nav-section">Modules</div>
+    <a class="nav-item" href="#">Quotations</a>
+    <a class="nav-item" href="#">Invoices</a>
+    <a class="nav-item" href="#">Purchases</a>
+    <a class="nav-item sub active" href="#">Recurring Expenses</a>
+    <a class="nav-item" href="#">VAT Submissions</a>
+    <a class="nav-item" href="#">Revenue</a>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1>Recurring Expense Validation</h1>
+        <p class="subtitle">Verify that all expected recurring purchases have been recorded for a period.</p>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <a href="#" class="btn btn-secondary">Manage Rules</a>
+      </div>
+    </div>
+
+    <!-- Filter Section -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+      <div class="filter-bar">
+        <div class="field" style="min-width:240px;">
+          <label>VAT Period</label>
+          <select>
+            <option>Sep – Nov 2025 (Current)</option>
+            <option>Jun – Aug 2025</option>
+            <option>Mar – May 2025</option>
+            <option>Dec 2024 – Feb 2025</option>
+          </select>
+        </div>
+        <div class="or-divider">OR</div>
+        <div class="field">
+          <label>From</label>
+          <input type="date" value="2025-09-01" />
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="date" value="2025-11-30" />
+        </div>
+        <div style="padding-bottom:2px;">
+          <button class="btn btn-primary">Validate</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Validation Results -->
+    <section class="glass card-pad">
+      <!-- Summary -->
+      <div class="summary-bar">
+        <div class="summary-item">
+          <span class="summary-count blue">5</span>
+          <span class="summary-label">Total Rules</span>
+        </div>
+        <div style="width:1px;height:28px;background:var(--line);"></div>
+        <div class="summary-item">
+          <span class="summary-count green">3</span>
+          <span class="summary-label">Passing</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-count gold">1</span>
+          <span class="summary-label">Warning</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-count red">1</span>
+          <span class="summary-label">Missing</span>
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Supplier</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Frequency</th>
+            <th>Coverage</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- FAIL row -->
+          <tr>
+            <td style="font-weight:600;">DatabaseMart</td>
+            <td>Web Hosting</td>
+            <td>Monthly server hosting fee</td>
+            <td>Monthly</td>
+            <td>
+              <div class="count-progress">
+                <span style="font-weight:700;color:var(--red);">0</span>
+                <span style="color:var(--muted);">/ 3</span>
+                <div class="count-bar"><div class="count-fill red" style="width:0%;"></div></div>
+              </div>
+            </td>
+            <td>
+              <div><span class="amount-miss">$225.00 not found</span></div>
+              <div class="amount-info">Expected: $225.00 (±5%)</div>
+            </td>
+            <td><span class="status status-fail"><span class="status-icon">&#10007;</span> Fail</span></td>
+          </tr>
+          <!-- WARNING row -->
+          <tr>
+            <td style="font-weight:600;">EAC</td>
+            <td>Electricity</td>
+            <td>Bimonthly electricity bill</td>
+            <td>Bimonthly</td>
+            <td>
+              <div class="count-progress">
+                <span style="font-weight:700;color:var(--gold);">1</span>
+                <span style="color:var(--muted);">/ 2</span>
+                <div class="count-bar"><div class="count-fill gold" style="width:50%;"></div></div>
+              </div>
+            </td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td><span class="status status-warning"><span class="status-icon">&#9888;</span> Warning</span></td>
+          </tr>
+          <!-- PASS rows -->
+          <tr>
+            <td style="font-weight:600;">Cyta</td>
+            <td><span style="color:var(--muted);font-style:italic;">Any</span></td>
+            <td>Monthly telecommunications</td>
+            <td>Monthly</td>
+            <td>
+              <div class="count-progress">
+                <span style="font-weight:700;color:var(--green);">3</span>
+                <span style="color:var(--muted);">/ 3</span>
+                <div class="count-bar"><div class="count-fill green" style="width:100%;"></div></div>
+              </div>
+            </td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td><span class="status status-pass"><span class="status-icon">&#10003;</span> Pass</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">DatabaseMart</td>
+            <td>Domain &amp; SSL</td>
+            <td>SSL certificate renewals</td>
+            <td>Quarterly</td>
+            <td>
+              <div class="count-progress">
+                <span style="font-weight:700;color:var(--green);">1</span>
+                <span style="color:var(--muted);">/ 1</span>
+                <div class="count-bar"><div class="count-fill green" style="width:100%;"></div></div>
+              </div>
+            </td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td><span class="status status-pass"><span class="status-icon">&#10003;</span> Pass</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Office Rent Ltd</td>
+            <td>Rent</td>
+            <td>Monthly office rent</td>
+            <td>Monthly</td>
+            <td>
+              <div class="count-progress">
+                <span style="font-weight:700;color:var(--green);">3</span>
+                <span style="color:var(--muted);">/ 3</span>
+                <div class="count-bar"><div class="count-fill green" style="width:100%;"></div></div>
+              </div>
+            </td>
+            <td>
+              <div><span class="amount-match">$1,200.00 matched</span></div>
+              <div class="amount-info">Expected: $1,200.00 (±5%)</div>
+            </td>
+            <td><span class="status status-pass"><span class="status-icon">&#10003;</span> Pass</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Re-validate -->
+      <div style="margin-top:18px;display:flex;justify-content:flex-end;">
+        <button class="btn btn-outline" style="font-size:12px;padding:8px 16px;">Re-validate</button>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

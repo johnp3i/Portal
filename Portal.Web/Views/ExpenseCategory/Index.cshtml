@@ -14,10 +14,23 @@
     </div>
 </div>
 
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:360px;">
+            <label for="categorySearch">Category Name</label>
+            <input type="text" id="categorySearch" placeholder="Search by name..." maxlength="200" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="filterCategories()">Search</button>
+            <button type="button" class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+        </div>
+    </div>
+</section>
+
 <section class="glass card-pad">
     @if (Model != null && Model.Count > 0)
     {
-        <table>
+        <table id="categoriesTable">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -27,7 +40,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var category in Model)
+                @foreach (var category in Model.OrderBy(c => c.Name))
                 {
                     <tr>
                         <td><strong>@category.Name</strong></td>
@@ -245,6 +258,29 @@
             if (e.key === 'Enter') {
                 e.preventDefault();
                 saveCategory();
+            }
+        });
+
+        // Client-side search filter
+        function filterCategories() {
+            var query = document.getElementById('categorySearch').value.toLowerCase().trim();
+            var rows = document.querySelectorAll('#categoriesTable tbody tr');
+            rows.forEach(function(row) {
+                var name = row.querySelector('td:first-child').textContent.toLowerCase();
+                row.style.display = name.indexOf(query) !== -1 ? '' : 'none';
+            });
+        }
+
+        function clearSearch() {
+            document.getElementById('categorySearch').value = '';
+            filterCategories();
+        }
+
+        // Search on Enter key
+        document.getElementById('categorySearch').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filterCategories();
             }
         });
     </script>

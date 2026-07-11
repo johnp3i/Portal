@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recurring Expense Rules — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #F7FAFC; --bg2: #EEF4F8;
+    --blue: #0D5EA6; --blue3: #0B4E89; --cyan: #57B8E8;
+    --green: #129867; --red: #C24A4A; --gold: #C8912E;
+    --muted: #5E7385; --muted2: #73889A; --text: #0B1B28;
+    --line: rgba(13,94,166,.10);
+    --shadow: 0 2px 16px rgba(13,94,166,.07);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    background: #fff; border-right: 1px solid var(--line);
+    padding: 20px 14px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .brand { padding: 4px 10px 18px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: var(--blue); }
+  .nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 14px 10px 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 12px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    text-decoration: none; transition: background .12s, color .12s;
+  }
+  .nav-item:hover { background: var(--bg2); color: var(--text); }
+  .nav-item.active { background: var(--blue); color: #fff; }
+
+  /* Content */
+  .content { padding: 28px 32px; }
+
+  /* Topbar */
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+  .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); display: inline-block; }
+  h1 { font-family: 'Manrope', sans-serif; font-size: 30px; font-weight: 800; margin-top: 10px; }
+  .subtitle { font-size: 15px; color: var(--muted); margin-top: 4px; }
+
+  /* Glass cards */
+  .glass { background: #fff; border-radius: 20px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+  .card-pad { padding: 22px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; text-decoration: none; font-family: inherit; transition: all .15s; }
+  .btn-primary { background: linear-gradient(180deg, #1A6BB8, #0D5EA6); color: #fff; box-shadow: 0 8px 20px rgba(13,94,166,.18); }
+  .btn-primary:hover { box-shadow: 0 12px 28px rgba(13,94,166,.25); transform: translateY(-1px); }
+  .btn-secondary { background: #fff; color: var(--blue); border: 1.5px solid rgba(13,94,166,.18); }
+  .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 10px; }
+  .btn-danger { background: rgba(194,74,74,.08); color: var(--red); border: 1px solid rgba(194,74,74,.15); }
+  .btn-warning { background: rgba(200,145,46,.08); color: var(--gold); border: 1px solid rgba(200,145,46,.15); }
+  .btn-success { background: rgba(18,152,103,.08); color: var(--green); border: 1px solid rgba(18,152,103,.15); }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid rgba(13,94,166,.15); background: #fff;
+    font: 13px/1.4 'Inter', sans-serif; color: var(--text);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(13,94,166,.08); }
+  .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%235E7385' d='M5 7L1 3h8z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .field .helper { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* Rules table */
+  .rules-table { width: 100%; border-collapse: collapse; }
+  .rules-table th { text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .rules-table td { padding: 14px; border-bottom: 1px solid rgba(13,94,166,.05); font-size: 13px; vertical-align: middle; }
+  .rules-table tr:last-child td { border-bottom: none; }
+  .rules-table tr:hover { background: rgba(13,94,166,.02); }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+  .badge-active { background: rgba(18,152,103,.1); color: var(--green); }
+  .badge-inactive { background: rgba(94,115,133,.1); color: var(--muted); }
+  .badge-blue { background: rgba(13,94,166,.08); color: var(--blue); }
+
+  /* Supplier group header */
+  .supplier-group { font-size: 14px; font-weight: 700; color: var(--text); padding: 18px 14px 8px; border-bottom: 1px solid var(--line); }
+  .supplier-group:first-child { padding-top: 0; }
+
+  /* Toggle switch */
+  .toggle { position: relative; width: 36px; height: 20px; border-radius: 12px; background: #d1d5db; cursor: pointer; transition: background .2s; }
+  .toggle.on { background: var(--green); }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .toggle.on::after { transform: translateX(16px); }
+
+  /* Actions */
+  .actions { display: flex; gap: 6px; align-items: center; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">3inventors</div>
+    <div class="nav-section">Workspace</div>
+    <a class="nav-item" href="#">Dashboard</a>
+    <a class="nav-item" href="#">My Business</a>
+    <div class="nav-section">Modules</div>
+    <a class="nav-item" href="#">Quotations</a>
+    <a class="nav-item" href="#">Invoices</a>
+    <a class="nav-item active" href="#">Purchases</a>
+    <a class="nav-item" href="#" style="padding-left:32px;font-size:12px;">Recurring Expenses</a>
+    <a class="nav-item" href="#">VAT Submissions</a>
+    <a class="nav-item" href="#">Revenue</a>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1>Recurring Expense Rules</h1>
+        <p class="subtitle">Define expected recurring purchases per supplier. The system validates these during VAT submission.</p>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <a href="#" class="btn btn-secondary">Back to Validation</a>
+      </div>
+    </div>
+
+    <!-- Add Rule Form -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;">Add New Rule</h3>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Supplier *</label>
+          <input type="text" placeholder="Type supplier name..." value="DatabaseMart" />
+        </div>
+        <div class="field">
+          <label>Category (Optional)</label>
+          <input type="text" placeholder="Type category..." value="Web Hosting" />
+        </div>
+        <div class="field">
+          <label>Frequency *</label>
+          <select>
+            <option selected>Monthly</option>
+            <option>Bimonthly (every 2 months)</option>
+            <option>Quarterly (every 3 months)</option>
+            <option>Custom...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Expected Amount (Optional)</label>
+          <input type="number" placeholder="e.g., 225.00" value="225.00" step="0.01" />
+          <div class="helper">Leave empty for frequency-only validation</div>
+        </div>
+        <div class="field">
+          <label>Amount Tolerance %</label>
+          <input type="number" value="5" min="0" max="50" step="1" />
+          <div class="helper">Allows +/- 5% variance (213.75 to 236.25)</div>
+        </div>
+        <div class="field">
+          <label>Grace Period (Days)</label>
+          <input type="number" value="0" min="0" max="15" />
+          <div class="helper">Extends lookup window at period boundaries</div>
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="field">
+          <label>Description *</label>
+          <input type="text" placeholder="e.g., Monthly hosting fee" value="Monthly server hosting fee" />
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:2px;">
+          <button class="btn btn-primary">Save Rule</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Existing Rules -->
+    <section class="glass card-pad">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;">Configured Rules</h3>
+        <span style="font-size:13px;color:var(--muted);">4 rules active</span>
+      </div>
+
+      <!-- Group: Cyta -->
+      <div class="supplier-group">Cyta <span class="badge badge-blue" style="margin-left:8px;">1 rule</span></div>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Frequency</th>
+            <th>Expected Amount</th>
+            <th>Tolerance</th>
+            <th>Grace</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="color:var(--muted);font-style:italic;">Any</span></td>
+            <td>Monthly</td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td>0 days</td>
+            <td>Monthly telecommunications</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-sm btn-secondary">Edit</button>
+                <button class="btn btn-sm btn-warning">Disable</button>
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Group: EAC -->
+      <div class="supplier-group" style="margin-top:12px;">EAC (Electricity Authority) <span class="badge badge-blue" style="margin-left:8px;">1 rule</span></div>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Frequency</th>
+            <th>Expected Amount</th>
+            <th>Tolerance</th>
+            <th>Grace</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Electricity</td>
+            <td>Bimonthly</td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td>5 days</td>
+            <td>Bimonthly electricity bill</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-sm btn-secondary">Edit</button>
+                <button class="btn btn-sm btn-warning">Disable</button>
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Group: DatabaseMart -->
+      <div class="supplier-group" style="margin-top:12px;">DatabaseMart <span class="badge badge-blue" style="margin-left:8px;">2 rules</span></div>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Frequency</th>
+            <th>Expected Amount</th>
+            <th>Tolerance</th>
+            <th>Grace</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Web Hosting</td>
+            <td>Monthly</td>
+            <td style="font-weight:700;">$225.00</td>
+            <td>5%</td>
+            <td>0 days</td>
+            <td>Monthly server hosting fee</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-sm btn-secondary">Edit</button>
+                <button class="btn btn-sm btn-warning">Disable</button>
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </div>
+            </td>
+          </tr>
+          <tr style="opacity:0.6;">
+            <td>Domain &amp; SSL</td>
+            <td>Quarterly</td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td><span style="color:var(--muted);">—</span></td>
+            <td>0 days</td>
+            <td>SSL certificate renewals</td>
+            <td><span class="badge badge-inactive">Inactive</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-sm btn-success">Enable</button>
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+</body>
+</html>
