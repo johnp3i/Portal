@@ -1,0 +1,513 @@
+@model List<Portal.Infrastructure.Models.Import.ValidatedRow>
+@{
+    ViewData["Title"] = "Review Import";
+    var sessionId = (int)ViewBag.SessionId;
+    var fileName = (string)ViewBag.FileName;
+    var totalRows = (int)ViewBag.TotalRows;
+    var validRows = (int)ViewBag.ValidRows;
+    var invalidRows = (int)ViewBag.InvalidRows;
+    var warningRows = (int)ViewBag.WarningRows;
+    var batchTotal = (decimal)ViewBag.BatchTotal;
+    var currencySymbol = (string)ViewBag.CurrencySymbol;
+    var supplierId = (int)ViewBag.SupplierId;
+    var categories = ViewBag.Categories as List<Portal.Infrastructure.Models.SelectListItem> ?? new List<Portal.Infrastructure.Models.SelectListItem>();
+    var vatPeriods = ViewBag.VatPeriods as List<Portal.Infrastructure.Models.SelectListItem> ?? new List<Portal.Infrastructure.Models.SelectListItem>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases / Import</div>
+        <h1 class="topbar-heading">Review Import</h1>
+        <p class="topbar-subtitle">@fileName — @totalRows rows parsed</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+        <a asp-action="Index" asp-controller="PurchaseImport" class="btn btn-secondary">&larr; Back</a>
+        <button type="button" id="btnConfirm" class="btn btn-primary" @(validRows == 0 ? "disabled" : "")>Confirm Import (@validRows rows)</button>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:14px;margin-bottom:22px;">
+    <div class="glass card-pad" style="border-left:4px solid #0D5EA6;padding:14px 18px;">
+        <div style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;">Total Rows</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#0D5EA6;">@totalRows</div>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #129867;padding:14px 18px;">
+        <div style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;">Valid</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#129867;">@validRows</div>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #C24A4A;padding:14px 18px;">
+        <div style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;">Invalid</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#C24A4A;">@invalidRows</div>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #C8912E;padding:14px 18px;">
+        <div style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;">Warnings</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#C8912E;">@warningRows</div>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #57B8E8;padding:14px 18px;">
+        <div style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;">Batch Total</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#1A8AB5;">@currencySymbol@batchTotal.ToString("N2")</div>
+    </div>
+</div>
+
+<!-- Preview Grid -->
+<section class="glass card-pad">
+    <div class="edit-hint-banner">
+        <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span><strong>Click any cell to edit it.</strong> Changes are saved instantly and the row is re-validated. Use the bulk controls below to apply values to all rows at once.</span>
+    </div>
+
+    <!-- Bulk Apply Controls -->
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;padding:14px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);">
+        <div class="field" style="min-width:180px;">
+            <label style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">Category (all rows)</label>
+            <select id="bulkCategory">
+                <option value="">— No change —</option>
+                @foreach (var cat in categories)
+                {
+                    <option value="@cat.Name">@cat.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">Origin (all rows)</label>
+            <select id="bulkOrigin">
+                <option value="">— No change —</option>
+                <option value="Domestic">Domestic</option>
+                <option value="EU Reverse Charge">EU Reverse Charge</option>
+                <option value="Non-EU">Non-EU</option>
+                <option value="EU Paid">EU Paid</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">Country (all rows)</label>
+            <input type="text" id="bulkCountry" placeholder="e.g. Ireland" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">VAT Period (all rows)</label>
+            <select id="bulkVatPeriod">
+                <option value="">— Not assigned —</option>
+                @foreach (var period in vatPeriods)
+                {
+                    <option value="@period.Id">@period.Name</option>
+                }
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="applyBulk()" style="padding:9px 18px;">Apply to All Rows</button>
+        </div>
+    </div>
+
+    <div class="table-responsive index-table">
+        <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
+        <table id="previewTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Invoice No</th>
+                    <th>Description</th>
+                    <th style="text-align:right;">Excl. VAT</th>
+                    <th style="text-align:right;">VAT</th>
+                    <th style="text-align:right;">Total</th>
+                    <th>Origin</th>
+                    <th>Country</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Model.Count; i++)
+                {
+                    var row = Model[i];
+                    if (row.IsRemoved) continue;
+
+                    var rowClass = row.Status switch
+                    {
+                        Portal.Infrastructure.Models.Import.RowValidationStatus.Valid => "row-valid",
+                        Portal.Infrastructure.Models.Import.RowValidationStatus.Warning => "row-warning",
+                        Portal.Infrastructure.Models.Import.RowValidationStatus.Invalid => "row-invalid",
+                        _ => ""
+                    };
+                    var originName = row.Data.PurchaseOriginTypeId switch
+                    {
+                        1 => "Domestic",
+                        2 => "EU RC",
+                        3 => "Non-EU",
+                        4 => "EU Paid",
+                        _ => row.Data.PurchaseOriginTypeName ?? "—"
+                    };
+
+                    <tr class="@rowClass" data-row-index="@i">
+                        <td>@row.Data.RowNumber</td>
+                        <td class="editable-cell @(row.Data.InvoiceDate == null ? "cell-empty" : "")" data-field="InvoiceDate" data-row="@i">@(row.Data.InvoiceDate?.ToString("dd/MM/yyyy") ?? "")</td>
+                        <td class="editable-cell" data-field="InvoiceNumber" data-row="@i">@(row.Data.InvoiceNumber ?? "—")</td>
+                        <td class="editable-cell" data-field="Description" data-row="@i" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@row.Data.Description">@(row.Data.Description ?? "—")</td>
+                        <td class="editable-cell" data-field="AmountExcludingVat" data-row="@i" style="text-align:right;font-weight:600;">@(row.Data.AmountExcludingVat?.ToString("N2") ?? "—")</td>
+                        <td class="editable-cell" data-field="VatAmount" data-row="@i" style="text-align:right;">@(row.Data.VatAmount?.ToString("N2") ?? "0.00")</td>
+                        <td style="text-align:right;font-weight:700;">@(row.Data.TotalAmount?.ToString("N2") ?? "—")</td>
+                        <td class="editable-cell @(row.Data.PurchaseOriginTypeId == null ? "cell-empty" : "")" data-field="PurchaseOriginType" data-row="@i">@(row.Data.PurchaseOriginTypeId != null ? originName : "set origin")</td>
+                        <td class="editable-cell" data-field="Country" data-row="@i">@(row.Data.Country ?? "—")</td>
+                        <td class="editable-cell @(!row.Data.ExpenseCategoryId.HasValue ? "cell-empty" : "")" data-field="ExpenseCategory" data-row="@i">@(row.Data.ExpenseCategoryId.HasValue ? (row.Data.ExpenseCategoryName ?? "#" + row.Data.ExpenseCategoryId) : "set category")</td>
+                        <td>
+                            @if (row.IsDuplicate)
+                            {
+                                <span class="pill pill-amber" style="font-size:10px;">Duplicate</span>
+                            }
+                            @if (row.Status == Portal.Infrastructure.Models.Import.RowValidationStatus.Valid)
+                            {
+                                <span class="pill pill-green" style="font-size:10px;">Valid</span>
+                            }
+                            else if (row.Status == Portal.Infrastructure.Models.Import.RowValidationStatus.Warning)
+                            {
+                                <span class="pill pill-gold" style="font-size:10px;">Warning</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-red" style="font-size:10px;">Invalid</span>
+                            }
+                            @if (row.Errors.Count > 0)
+                            {
+                                <div style="font-size:11px;color:#C24A4A;margin-top:4px;">@string.Join("; ", row.Errors)</div>
+                            }
+                            @if (row.Warnings.Count > 0)
+                            {
+                                <div style="font-size:11px;color:#C8912E;margin-top:4px;">@string.Join("; ", row.Warnings)</div>
+                            }
+                        </td>
+                        <td>
+                            <button type="button" class="tbl-action tbl-action--danger" onclick="removeRow(@i)" title="Remove">✕</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .row-valid { border-left: 3px solid #129867; }
+    .row-warning { border-left: 3px solid #C8912E; }
+    .row-invalid { border-left: 3px solid #C24A4A; background: rgba(194,74,74,.02); }
+    .pill-amber { background: rgba(200,145,46,.12); color: #C8912E; display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-weight:700; }
+
+    /* Inline editing */
+    .editable-cell {
+        cursor: pointer;
+        position: relative;
+        transition: background .15s;
+        min-width: 60px;
+        border-radius: 4px;
+    }
+    .editable-cell:hover {
+        background: rgba(13,94,166,.05);
+    }
+    /* Cells with missing/required data get a subtle indicator */
+    .editable-cell.cell-empty {
+        color: #C8912E;
+        font-style: italic;
+        font-size: 11px;
+    }
+    .editable-cell.cell-empty::after {
+        display: none;
+    }
+    .editable-cell::after {
+        display: none;
+    }
+    .editable-cell.editing {
+        padding: 4px !important;
+        background: none;
+    }
+    .edit-input {
+        width: 100%;
+        padding: 5px 8px;
+        border: 1.5px solid #0D5EA6;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: 'Inter', sans-serif;
+        outline: none;
+        background: #fff;
+    }
+    .edit-input:focus {
+        box-shadow: 0 0 0 2px rgba(13,94,166,.1);
+    }
+    .edit-hint-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 18px;
+        margin-bottom: 14px;
+        border-radius: 10px;
+        background: rgba(13,94,166,.04);
+        border: 1px solid rgba(13,94,166,.12);
+        font-size: 13px;
+        color: #334155;
+    }
+    .edit-hint-banner svg {
+        flex-shrink: 0;
+    }
+</style>
+
+@section Scripts {
+<script>
+    var sessionId = @sessionId;
+    var supplierId = @supplierId;
+    var categories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categories.Select(c => new { id = c.Id, name = c.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+    var originTypes = [
+        { id: 1, name: 'Domestic' },
+        { id: 2, name: 'EU Reverse Charge' },
+        { id: 3, name: 'Non-EU' },
+        { id: 4, name: 'EU Paid' }
+    ];
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    // =========================================================================
+    // Bulk Apply
+    // =========================================================================
+    async function applyBulk() {
+        var category = document.getElementById('bulkCategory').value;
+        var origin = document.getElementById('bulkOrigin').value;
+        var country = document.getElementById('bulkCountry').value.trim();
+        var vatPeriodId = document.getElementById('bulkVatPeriod').value;
+
+        if (!category && !origin && !country && !vatPeriodId) {
+            Swal.fire({ icon: 'warning', title: 'No changes', text: 'Select at least one field to apply.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Applying to all rows...');
+        try {
+            var params = 'sessionId=' + sessionId;
+            if (category) params += '&category=' + encodeURIComponent(category);
+            if (origin) params += '&origin=' + encodeURIComponent(origin);
+            if (country) params += '&country=' + encodeURIComponent(country);
+            if (vatPeriodId) params += '&vatPeriodId=' + vatPeriodId;
+
+            var response = await fetch('/PurchaseImport/AxPostBulkApply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: params
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    // =========================================================================
+    // Inline Cell Editing
+    // =========================================================================
+    document.querySelectorAll('.editable-cell').forEach(function (cell) {
+        cell.addEventListener('click', function () {
+            if (cell.classList.contains('editing')) return;
+
+            var currentValue = cell.textContent.trim();
+            if (currentValue === '—' || currentValue === 'set category' || currentValue === 'set origin') currentValue = '';
+
+            var field = cell.dataset.field;
+
+            cell.classList.add('editing');
+            var originalHtml = cell.innerHTML;
+
+            // Category → dropdown
+            if (field === 'ExpenseCategory') {
+                var html = '<select class="edit-input">';
+                html += '<option value="">— Select —</option>';
+                categories.forEach(function (c) { html += '<option value="' + c.name + '">' + c.name + '</option>'; });
+                html += '</select>';
+                cell.innerHTML = html;
+                var sel = cell.querySelector('select');
+                sel.focus();
+                sel.addEventListener('change', function () { commitDropdown(cell, field, sel.value, originalHtml); });
+                sel.addEventListener('blur', function () { setTimeout(function () { if (cell.classList.contains('editing')) { cell.classList.remove('editing'); cell.innerHTML = originalHtml; } }, 150); });
+                return;
+            }
+
+            // Origin → dropdown
+            if (field === 'PurchaseOriginType') {
+                var html = '<select class="edit-input">';
+                html += '<option value="">— Select —</option>';
+                originTypes.forEach(function (o) { html += '<option value="' + o.name + '">' + o.name + '</option>'; });
+                html += '</select>';
+                cell.innerHTML = html;
+                var sel = cell.querySelector('select');
+                sel.focus();
+                sel.addEventListener('change', function () { commitDropdown(cell, field, sel.value, originalHtml); });
+                sel.addEventListener('blur', function () { setTimeout(function () { if (cell.classList.contains('editing')) { cell.classList.remove('editing'); cell.innerHTML = originalHtml; } }, 150); });
+                return;
+            }
+
+            // All other fields → text/number/date input
+            var inputType = 'text';
+            if (field === 'InvoiceDate') inputType = 'date';
+            if (field === 'AmountExcludingVat' || field === 'VatAmount') inputType = 'number';
+
+            // Convert display date to input date format
+            var inputValue = currentValue;
+            if (field === 'InvoiceDate' && currentValue) {
+                var parts = currentValue.split('/');
+                if (parts.length === 3) {
+                    inputValue = parts[2] + '-' + parts[1] + '-' + parts[0];
+                }
+            }
+
+            cell.innerHTML = '<input class="edit-input" type="' + inputType + '" value="' + escapeAttr(inputValue) + '" />';
+
+            var input = cell.querySelector('.edit-input');
+            input.focus();
+            input.select();
+
+            function commitEdit() {
+                var newValue = input.value.trim();
+                var submitValue = newValue;
+
+                cell.classList.remove('editing');
+
+                if (newValue === inputValue) {
+                    cell.innerHTML = originalHtml;
+                    return;
+                }
+
+                cell.innerHTML = '<span style="color:#0D5EA6;font-size:11px;">Saving...</span>';
+                saveFieldEdit(cell, parseInt(cell.dataset.row), field, submitValue);
+            }
+
+            input.addEventListener('blur', commitEdit);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                if (e.key === 'Escape') { cell.classList.remove('editing'); cell.innerHTML = originalHtml; }
+            });
+        });
+    });
+
+    function commitDropdown(cell, field, value, originalHtml) {
+        cell.classList.remove('editing');
+        if (!value) {
+            cell.innerHTML = originalHtml;
+            return;
+        }
+        cell.innerHTML = '<span style="color:#0D5EA6;font-size:11px;">Saving...</span>';
+        saveFieldEdit(cell, parseInt(cell.dataset.row), field, value);
+    }
+
+    async function saveFieldEdit(cell, rowIndex, field, value) {
+        try {
+            var response = await fetch('/PurchaseImport/AxPostUpdateRow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: 'sessionId=' + sessionId + '&rowIndex=' + rowIndex + '&field=' + encodeURIComponent(field) + '&value=' + encodeURIComponent(value)
+            });
+            var data = await response.json();
+
+            if (data.success) {
+                // Reload to reflect updated validation status and recalculated totals
+                location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Update Failed', text: data.message, confirmButtonColor: '#0D5EA6' })
+                    .then(function () { location.reload(); });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to save edit.', confirmButtonColor: '#0D5EA6' })
+                .then(function () { location.reload(); });
+        }
+    }
+
+    function escapeAttr(str) {
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // =========================================================================
+    // Remove Row
+    // =========================================================================
+    async function removeRow(rowIndex) {
+        BlockUI.show('Removing row...');
+        try {
+            var response = await fetch('/PurchaseImport/AxPostRemoveRow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: 'sessionId=' + sessionId + '&rowIndex=' + rowIndex
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    // =========================================================================
+    // Confirm Import
+    // =========================================================================
+    document.getElementById('btnConfirm').addEventListener('click', async function () {
+        var result = await Swal.fire({
+            title: 'Confirm Import',
+            text: 'This will create purchase records for all valid rows. Continue?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, import',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Importing purchases...');
+        try {
+            var response = await fetch('/PurchaseImport/AxPostConfirmImport', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: 'sessionId=' + sessionId
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Import Complete',
+                    text: data.data.importedCount + ' purchases imported. Total: ' + data.data.totalAmount.toFixed(2),
+                    confirmButtonColor: '#0D5EA6'
+                });
+                window.location = '/Purchase';
+            } else {
+                Swal.fire({ icon: 'error', title: 'Import Failed', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Import failed. No records were created. Please try again.', confirmButtonColor: '#0D5EA6' });
+        }
+    });
+</script>
+}

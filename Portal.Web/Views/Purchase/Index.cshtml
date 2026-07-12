@@ -95,6 +95,16 @@
                     <label for="dateTo">Date To</label>
                     <input type="date" id="dateTo" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
                 </div>
+                <div class="field" style="min-width:180px;">
+                    <label for="sortBy">Sort By</label>
+                    <select id="sortBy" name="sortBy">
+                        <option value="recent" selected="@(Model.SortBy == "recent" || Model.SortBy == null ? "selected" : null)">Recently Added</option>
+                        <option value="date_desc" selected="@(Model.SortBy == "date_desc" ? "selected" : null)">Invoice Date (Newest)</option>
+                        <option value="date_asc" selected="@(Model.SortBy == "date_asc" ? "selected" : null)">Invoice Date (Oldest)</option>
+                        <option value="amount_desc" selected="@(Model.SortBy == "amount_desc" ? "selected" : null)">Amount (Highest)</option>
+                        <option value="amount_asc" selected="@(Model.SortBy == "amount_asc" ? "selected" : null)">Amount (Lowest)</option>
+                    </select>
+                </div>
                 <div style="display:flex;gap:10px;padding-bottom:2px;margin-left:auto;">
                     <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
                     <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
@@ -234,12 +244,22 @@
                 </tr>
             </thead>
             <tbody id="purchaseTableBody">
-                @foreach (var purchase in Model.Purchases.OrderByDescending(p => p.InvoiceDate))
+                @{
+                    var sortedPurchases = (Model.SortBy ?? "recent") switch
+                    {
+                        "date_desc" => Model.Purchases.OrderByDescending(p => p.InvoiceDate).ToList(),
+                        "date_asc" => Model.Purchases.OrderBy(p => p.InvoiceDate).ToList(),
+                        "amount_desc" => Model.Purchases.OrderByDescending(p => p.TotalAmount).ToList(),
+                        "amount_asc" => Model.Purchases.OrderBy(p => p.TotalAmount).ToList(),
+                        _ => Model.Purchases.OrderByDescending(p => p.CreatedAtUtc).ToList()
+                    };
+                }
+                @foreach (var purchase in sortedPurchases)
                 {
                     <tr>
                         <td>
                             <strong>@(string.IsNullOrWhiteSpace(purchase.Description) ? purchase.ExpenseCategory?.Name ?? "Purchase" : purchase.Description)</strong>
-                            <div style="font-size:11px;color:#5a6a7a;margin-top:2px;">@purchase.InvoiceDate.ToString("dd MMM yyyy")</div>
+                            <div style="font-size:11px;color:#5a6a7a;margin-top:2px;">Added @purchase.CreatedAtUtc.ToString("dd MMM yyyy")</div>
                         </td>
                         <td>@purchase.Supplier?.Name</td>
                         <td data-mobile="hide">@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>

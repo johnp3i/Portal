@@ -68,6 +68,11 @@
 - Purchase origin types: Domestic, EU Reverse Charge, Non-EU, EU Paid
 - Purchase types: Asset, Stock, Expense
 - Expense category limits (annual and period budgets)
+- Bulk purchase import from CSV/Excel files (Professional+)
+- Configurable parser templates per supplier with column mapping
+- Supplier import profiles (default category, origin type, country)
+- Advisory duplicate detection during import
+- Inline preview editing before confirmation
 
 ### VAT Compliance
 - Automatic VAT period generation based on registration date and period length

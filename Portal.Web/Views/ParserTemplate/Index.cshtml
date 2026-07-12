@@ -1,0 +1,460 @@
+@model List<Portal.Infrastructure.Entities.Import.ParserTemplate>
+@{
+    ViewData["Title"] = "Parser Templates";
+    var suppliers = ViewBag.Suppliers as List<Portal.Infrastructure.Models.SelectListItem> ?? new List<Portal.Infrastructure.Models.SelectListItem>();
+    var categories = ViewBag.Categories as List<Portal.Infrastructure.Models.SelectListItem> ?? new List<Portal.Infrastructure.Models.SelectListItem>();
+    var originTypes = ViewBag.OriginTypes as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases / Import</div>
+        <h1 class="topbar-heading">Parser Templates</h1>
+        <p class="topbar-subtitle">Configure how supplier files are parsed during import.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+        <button type="button" class="btn btn-primary" onclick="openCreateModal()">Create Template</button>
+        <a asp-controller="PurchaseImport" asp-action="Index" class="btn btn-secondary">&larr; Back to Import</a>
+    </div>
+</div>
+
+<!-- Template List -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="table-responsive index-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Supplier</th>
+                        <th>Format</th>
+                        <th>Header Row</th>
+                        <th>Columns</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var template in Model)
+                    {
+                        var supplierName = suppliers.FirstOrDefault(s => s.Id == template.SupplierId)?.Name ?? "Unknown";
+                        var mappingCount = 0;
+                        try
+                        {
+                            var mappings = System.Text.Json.JsonSerializer.Deserialize<List<Portal.Infrastructure.Models.Import.ColumnMapping>>(template.ColumnMappingsJson);
+                            mappingCount = mappings?.Count(m => !m.IsSkipped) ?? 0;
+                        }
+                        catch { }
+
+                        <tr>
+                            <td><strong>@template.Name</strong></td>
+                            <td>@supplierName</td>
+                            <td><span class="pill pill-blue" style="font-size:10px;">@template.FileFormatType</span></td>
+                            <td>@template.HeaderRow</td>
+                            <td>@mappingCount mapped</td>
+                            <td>
+                                @if (template.IsManaged)
+                                {
+                                    <span class="pill pill-gold" style="font-size:10px;">Managed</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-green" style="font-size:10px;">Custom</span>
+                                }
+                            </td>
+                            <td style="white-space:nowrap;">
+                                @if (!template.IsManaged || User.IsInRole("SuperAdmin"))
+                                {
+                                    <button type="button" class="tbl-action tbl-action--primary" onclick="editTemplate(@template.Id)">Edit</button>
+                                    <button type="button" class="tbl-action tbl-action--danger" onclick="deleteTemplate(@template.Id)">Delete</button>
+                                }
+                                else
+                                {
+                                    <span style="font-size:11px;color:#5a6a7a;">Read-only</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No parser templates yet. Create one to automate your supplier file imports.</p>
+        </div>
+    }
+</section>
+
+<!-- Supplier Import Defaults -->
+<section class="glass card-pad" style="margin-top:22px;">
+    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 6px;">Supplier Import Defaults</h3>
+    <p style="font-size:13px;color:#5a6a7a;margin:0 0 16px;">Set default values per supplier — these are auto-applied to imported rows that don't have the field in the file.</p>
+
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:200px;">
+            <label for="profileSupplierId">Supplier</label>
+            <select id="profileSupplierId">
+                <option value="">— Select supplier —</option>
+                @foreach (var s in suppliers)
+                {
+                    <option value="@s.Id">@s.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="profileCategory">Default Category</label>
+            <select id="profileCategory">
+                <option value="">— None —</option>
+                @foreach (var c in categories)
+                {
+                    <option value="@c.Id">@c.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label for="profileOrigin">Default Origin</label>
+            <select id="profileOrigin">
+                <option value="">— None —</option>
+                <option value="1">Domestic</option>
+                <option value="2">EU Reverse Charge</option>
+                <option value="3">Non-EU</option>
+                <option value="4">EU Paid</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="profileCountry">Default Country</label>
+            <input type="text" id="profileCountry" placeholder="e.g. Ireland" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="saveSupplierProfile()">Save Defaults</button>
+        </div>
+    </div>
+    <div id="profileStatus" style="display:none;margin-top:12px;font-size:13px;color:#129867;font-weight:600;"></div>
+</section>
+
+@Html.AntiForgeryToken()
+
+<!-- Create/Edit Modal -->
+<div id="templateModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:600px;box-shadow:0 20px 60px rgba(13,94,166,.18);margin:auto;flex-shrink:0;">
+        <h2 style="font-size:22px;margin-bottom:6px;" id="modalTitle">Create Template</h2>
+        <p class="muted" style="font-size:14px;margin-bottom:24px;">Configure column mappings for a supplier file format.</p>
+        <form id="templateForm" onsubmit="return false;">
+            <input type="hidden" id="tplId" value="0" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="field">
+                    <label>Name *</label>
+                    <input type="text" id="tplName" required maxlength="200" placeholder="e.g. Monthly Invoice CSV" />
+                </div>
+                <div class="field">
+                    <label>Supplier *</label>
+                    <select id="tplSupplierId" required>
+                        <option value="">— Select —</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.Id">@s.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Format *</label>
+                    <select id="tplFormat" required>
+                        <option value="CSV">CSV</option>
+                        <option value="Excel">Excel</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Sheet Name (Excel only)</label>
+                    <input type="text" id="tplSheetName" placeholder="Leave blank for first sheet" />
+                </div>
+                <div class="field">
+                    <label>Header Row</label>
+                    <input type="number" id="tplHeaderRow" value="1" min="1" />
+                </div>
+                <div class="field">
+                    <label>Data Start Row</label>
+                    <input type="number" id="tplDataStartRow" value="2" min="1" />
+                </div>
+            </div>
+
+            <!-- Column Mappings -->
+            <div style="margin-top:18px;">
+                <label style="font-size:12px;font-weight:700;color:#5a6a7a;text-transform:uppercase;">Column Mappings</label>
+                <div id="mappingsContainer" style="margin-top:8px;"></div>
+                <button type="button" class="btn btn-secondary" style="margin-top:8px;font-size:12px;padding:6px 14px;" onclick="addMapping()">+ Add Mapping</button>
+            </div>
+
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modalSubmitBtn" onclick="submitTemplate()">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var targetFields = ['InvoiceDate', 'InvoiceNumber', 'Description', 'AmountExcludingVat', 'VatAmount', 'TotalAmount', 'PurchaseOriginType', 'Country', 'Notes'];
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    // =========================================================================
+    // Supplier Import Profile
+    // =========================================================================
+    document.getElementById('profileSupplierId').addEventListener('change', async function () {
+        var supplierId = this.value;
+        document.getElementById('profileCategory').value = '';
+        document.getElementById('profileOrigin').value = '';
+        document.getElementById('profileCountry').value = '';
+        document.getElementById('profileStatus').style.display = 'none';
+
+        if (!supplierId) return;
+
+        try {
+            var response = await fetch('/PurchaseImport/AxGetSupplierProfile?supplierId=' + supplierId);
+            var data = await response.json();
+            if (data.success && data.data) {
+                if (data.data.defaultExpenseCategoryId) document.getElementById('profileCategory').value = data.data.defaultExpenseCategoryId;
+                if (data.data.defaultPurchaseOriginTypeId) document.getElementById('profileOrigin').value = data.data.defaultPurchaseOriginTypeId;
+                if (data.data.defaultCountry) document.getElementById('profileCountry').value = data.data.defaultCountry;
+            }
+        } catch (e) { }
+    });
+
+    async function saveSupplierProfile() {
+        var supplierId = document.getElementById('profileSupplierId').value;
+        if (!supplierId) {
+            Swal.fire({ icon: 'warning', title: 'Select a supplier', text: 'Choose a supplier before saving defaults.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var params = 'supplierId=' + supplierId;
+        var catVal = document.getElementById('profileCategory').value;
+        var originVal = document.getElementById('profileOrigin').value;
+        var countryVal = document.getElementById('profileCountry').value.trim();
+
+        if (catVal) params += '&defaultExpenseCategoryId=' + catVal;
+        if (originVal) params += '&defaultPurchaseOriginTypeId=' + originVal;
+        if (countryVal) params += '&defaultCountry=' + encodeURIComponent(countryVal);
+
+        BlockUI.show('Saving...');
+        try {
+            var response = await fetch('/PurchaseImport/AxPostSaveSupplierProfile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: params
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                var statusEl = document.getElementById('profileStatus');
+                statusEl.textContent = '✓ Defaults saved for this supplier.';
+                statusEl.style.display = 'block';
+                setTimeout(function () { statusEl.style.display = 'none'; }, 3000);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function openCreateModal() {
+        document.getElementById('modalTitle').textContent = 'Create Template';
+        document.getElementById('modalSubmitBtn').textContent = 'Create';
+        document.getElementById('tplId').value = '0';
+        document.getElementById('tplName').value = '';
+        document.getElementById('tplSupplierId').value = '';
+        document.getElementById('tplFormat').value = 'CSV';
+        document.getElementById('tplSheetName').value = '';
+        document.getElementById('tplHeaderRow').value = '1';
+        document.getElementById('tplDataStartRow').value = '2';
+        document.getElementById('mappingsContainer').innerHTML = '';
+        addMapping();
+        document.getElementById('templateModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('templateModal').style.display = 'none';
+    }
+
+    function addMapping() {
+        var container = document.getElementById('mappingsContainer');
+        var idx = container.children.length;
+        var html = '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;" data-mapping-idx="' + idx + '">' +
+            '<input type="text" placeholder="Source column" style="flex:1.2;padding:8px;border-radius:8px;border:1px solid #d0d9e2;font-size:12px;" data-field="sourceColumn" />' +
+            '<select style="flex:1.2;padding:8px;border-radius:8px;border:1px solid #d0d9e2;font-size:12px;" data-field="targetField" onchange="updateFormatOptions(this)">' +
+            targetFields.map(function(f) { return '<option value="' + f + '">' + f + '</option>'; }).join('') +
+            '</select>' +
+            '<select style="width:120px;padding:8px;border-radius:8px;border:1px solid #d0d9e2;font-size:12px;" data-field="format">' +
+            getFormatOptions('InvoiceDate') +
+            '</select>' +
+            '<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#C24A4A;cursor:pointer;font-size:16px;">✕</button>' +
+            '</div>';
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function getFormatOptions(targetField) {
+        if (targetField === 'InvoiceDate') {
+            return '<option value="">Auto-detect</option>' +
+                '<option value="dd/MM/yyyy">dd/MM/yyyy</option>' +
+                '<option value="yyyy-MM-dd">yyyy-MM-dd</option>' +
+                '<option value="MM/dd/yyyy">MM/dd/yyyy</option>' +
+                '<option value="dd-MM-yyyy">dd-MM-yyyy</option>' +
+                '<option value="dd.MM.yyyy">dd.MM.yyyy</option>';
+        }
+        if (targetField === 'AmountExcludingVat' || targetField === 'VatAmount' || targetField === 'TotalAmount') {
+            return '<option value="">Auto-detect</option>' +
+                '<option value=".">Period (1,000.00)</option>' +
+                '<option value=",">Comma (1.000,00)</option>';
+        }
+        return '<option value="">— N/A —</option>';
+    }
+
+    function updateFormatOptions(selectEl) {
+        var row = selectEl.closest('[data-mapping-idx]');
+        var formatSelect = row.querySelector('[data-field="format"]');
+        var targetField = selectEl.value;
+        formatSelect.innerHTML = getFormatOptions(targetField);
+    }
+
+    function collectMappings() {
+        var container = document.getElementById('mappingsContainer');
+        var mappings = [];
+        container.querySelectorAll('[data-mapping-idx]').forEach(function (el) {
+            var sourceCol = el.querySelector('[data-field="sourceColumn"]').value.trim();
+            var target = el.querySelector('[data-field="targetField"]').value;
+            var format = el.querySelector('[data-field="format"]').value.trim();
+            if (sourceCol || target) {
+                mappings.push({ sourceColumn: sourceCol || null, sourceIndex: null, targetField: target, format: format || null, isSkipped: false });
+            }
+        });
+        return JSON.stringify(mappings);
+    }
+
+    async function submitTemplate() {
+        var id = parseInt(document.getElementById('tplId').value);
+        var url = id > 0 ? '/ParserTemplate/AxPostUpdateTemplate' : '/ParserTemplate/AxPostCreateTemplate';
+
+        var formData = new URLSearchParams();
+        if (id > 0) formData.append('id', id);
+        formData.append('supplierId', document.getElementById('tplSupplierId').value);
+        formData.append('name', document.getElementById('tplName').value);
+        formData.append('fileFormatType', document.getElementById('tplFormat').value);
+        formData.append('headerRow', document.getElementById('tplHeaderRow').value);
+        formData.append('dataStartRow', document.getElementById('tplDataStartRow').value);
+        formData.append('sheetName', document.getElementById('tplSheetName').value);
+        formData.append('columnMappingsJson', collectMappings());
+
+        BlockUI.show('Saving...');
+        try {
+            var response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: formData.toString()
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Saved', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function editTemplate(id) {
+        BlockUI.show('Loading template...');
+        try {
+            var response = await fetch('/ParserTemplate/AxGetTemplate?id=' + id);
+            var result = await response.json();
+            BlockUI.hide();
+
+            if (!result.success) {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var t = result.data;
+
+            document.getElementById('modalTitle').textContent = 'Edit Template';
+            document.getElementById('modalSubmitBtn').textContent = 'Save Changes';
+            document.getElementById('tplId').value = t.id;
+            document.getElementById('tplName').value = t.name;
+            document.getElementById('tplSupplierId').value = t.supplierId;
+            document.getElementById('tplFormat').value = t.fileFormatType;
+            document.getElementById('tplSheetName').value = t.sheetName || '';
+            document.getElementById('tplHeaderRow').value = t.headerRow;
+            document.getElementById('tplDataStartRow').value = t.dataStartRow;
+
+            // Populate column mappings
+            var container = document.getElementById('mappingsContainer');
+            container.innerHTML = '';
+
+            try {
+                var mappings = JSON.parse(t.columnMappingsJson);
+                mappings.forEach(function (m) {
+                    addMapping();
+                    var row = container.lastElementChild;
+                    row.querySelector('[data-field="sourceColumn"]').value = m.sourceColumn || '';
+                    row.querySelector('[data-field="targetField"]').value = m.targetField || '';
+                    // Update format dropdown options based on target field, then set value
+                    var formatSelect = row.querySelector('[data-field="format"]');
+                    formatSelect.innerHTML = getFormatOptions(m.targetField || 'InvoiceDate');
+                    formatSelect.value = m.format || '';
+                });
+            } catch (e) {
+                addMapping();
+            }
+
+            document.getElementById('templateModal').style.display = 'flex';
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load template.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function deleteTemplate(id) {
+        var result = await Swal.fire({
+            title: 'Delete template?',
+            text: 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete',
+            confirmButtonColor: '#C24A4A'
+        });
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Deleting...');
+        try {
+            var response = await fetch('/ParserTemplate/AxPostDeleteTemplate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: 'templateId=' + id
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Deleted', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
+}

@@ -37,6 +37,7 @@
     var hasCashflowAccess = Model.TryGetValue("cashflow", out var cfAccess) && cfAccess != "none";
     var hasSchedulePaymentsAccess = Model.TryGetValue("schedule_payments", out var spAccess) && spAccess != "none";
     var hasAttachmentsAccess = Model.TryGetValue("attachments", out var attAccess) && attAccess != "none";
+    var hasPurchaseImportAccess = Model.TryGetValue("purchase_import", out var piAccess) && piAccess != "none";
 
     var hasSalesSection = hasCustomerAccess || hasQuotationAccess || hasInvoiceAccess || hasCreditAccess;
     var hasFinanceSection = hasRevenueAccess || hasVatAccess || hasPnlAccess || hasPaymentReminderAccess || hasPaymentReminderAutoAccess || hasCashflowAccess || hasSchedulePaymentsAccess || hasAuditLogAccess;
@@ -229,6 +230,14 @@
             <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></span>
             <span class="nav-text">Recurring Expenses</span>
         </a>
+        @if (hasPurchaseImportAccess)
+        {
+            var isImportActive = currentController.Equals("PurchaseImport", StringComparison.OrdinalIgnoreCase) || currentController.Equals("ParserTemplate", StringComparison.OrdinalIgnoreCase);
+            <a class="nav-sub-item @(isImportActive ? "active" : "")" asp-controller="PurchaseImport" asp-action="Index">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg></span>
+                <span class="nav-text">Import Purchases</span>
+            </a>
+        }
     </div>
 }
 

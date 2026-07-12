@@ -27,6 +27,7 @@ public static class PortalModules
     public const string MultiCurrency = "multi_currency";
     public const string SchedulePayments = "schedule_payments";
     public const string RecurringExpenseValidation = "recurring_expense_validation";
+    public const string PurchaseImport = "purchase_import";
 
     public static readonly string[] All =
     {
@@ -34,7 +35,7 @@ public static class PortalModules
         PaymentLinkManual, PaymentReminderManual, PaymentLinkAuto, PaymentReminderAuto,
         Cashflow, Pnl, ExpenseInsights, Attachments, ClientPortal,
         ActivityTimeline, AuditLog, Api, Webhooks, MultiCurrency, SchedulePayments,
-        RecurringExpenseValidation
+        RecurringExpenseValidation, PurchaseImport
     };
 
     public static bool IsValid(string module) => module is not null && All.Contains(module);

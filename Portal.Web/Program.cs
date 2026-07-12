@@ -6,7 +6,9 @@ using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Interceptors;
 using Portal.Infrastructure.Repositories;
+using Portal.Infrastructure.Repositories.Import;
 using Portal.Infrastructure.Services;
+using Portal.Infrastructure.Services.Import;
 using Portal.Web.Extensions;
 using Portal.Web.Security;
 using Portal.Web.Services;
@@ -230,6 +232,19 @@ builder.Services.AddScoped<DocumentAttachmentRepository>(sp =>
     new DocumentAttachmentRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IDocumentAttachmentService, DocumentAttachmentService>();
+
+// Purchase Import
+builder.Services.AddScoped<ParserTemplateRepository>(sp =>
+    new ParserTemplateRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ImportSessionRepository>(sp =>
+    new ImportSessionRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<SupplierImportProfileRepository>(sp =>
+    new SupplierImportProfileRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IFileParsingService, FileParsingService>();
+builder.Services.AddScoped<IImportValidationService, ImportValidationService>();
+builder.Services.AddScoped<IDuplicateDetectionService, DuplicateDetectionService>();
+builder.Services.AddScoped<IParserTemplateService, ParserTemplateService>();
+builder.Services.AddScoped<IImportEngineService, ImportEngineService>();
 builder.Services.AddScoped<VatSubmissionPeriodRepository>(sp =>
     new VatSubmissionPeriodRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<VatSubmissionRepository>(sp =>

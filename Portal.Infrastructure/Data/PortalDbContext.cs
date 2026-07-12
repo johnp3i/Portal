@@ -123,6 +123,11 @@ public class PortalDbContext : DbContext
     // Document schema
     public DbSet<DocumentAttachment> DocumentAttachments { get; set; } = null!;
 
+    // Import schema
+    public DbSet<Entities.Import.ParserTemplate> ParserTemplates { get; set; } = null!;
+    public DbSet<Entities.Import.SupplierImportProfile> SupplierImportProfiles { get; set; } = null!;
+    public DbSet<Entities.Import.ImportSession> ImportSessions { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -191,6 +196,9 @@ public class PortalDbContext : DbContext
         ConfigurePaymentScheduleHistory(modelBuilder);
         ConfigureScheduleOverviewRawRow(modelBuilder);
         ConfigureDocumentAttachment(modelBuilder);
+        ConfigureParserTemplate(modelBuilder);
+        ConfigureSupplierImportProfile(modelBuilder);
+        ConfigureImportSession(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -2602,6 +2610,145 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureParserTemplate(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Import.ParserTemplate>(entity =>
+        {
+            entity.ToTable("ParserTemplate", "import");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.FileFormatType)
+                .IsRequired()
+                .HasMaxLength(10);
+
+            entity.Property(e => e.SheetName)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ColumnMappingsJson)
+                .IsRequired();
+
+            entity.Property(e => e.IsManaged)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.UpdatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.SupplierId })
+                .HasDatabaseName("IX_ParserTemplate_BusinessId_SupplierId")
+                .HasFilter("[IsActive] = 1");
+        });
+    }
+
+    private static void ConfigureSupplierImportProfile(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Import.SupplierImportProfile>(entity =>
+        {
+            entity.ToTable("SupplierImportProfile", "import");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.DefaultExpenseCategory)
+                .WithMany()
+                .HasForeignKey(e => e.DefaultExpenseCategoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.DefaultPurchaseOriginType)
+                .WithMany()
+                .HasForeignKey(e => e.DefaultPurchaseOriginTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.DefaultCountry)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.UpdatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.SupplierId })
+                .IsUnique()
+                .HasDatabaseName("UQ_SupplierImportProfile_Business_Supplier");
+        });
+    }
+
+    private static void ConfigureImportSession(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Import.ImportSession>(entity =>
+        {
+            entity.ToTable("ImportSession", "import");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ParserTemplate)
+                .WithMany()
+                .HasForeignKey(e => e.ParserTemplateId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.FileName)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.RowDataJson)
+                .IsRequired();
+
+            entity.Property(e => e.IsConfirmed)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -2676,5 +2823,14 @@ public class PortalDbContext : DbContext
 
         modelBuilder.Entity<DocumentAttachment>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId && !e.IsDeleted);
+
+        modelBuilder.Entity<Entities.Import.ParserTemplate>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId && e.IsActive);
+
+        modelBuilder.Entity<Entities.Import.SupplierImportProfile>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<Entities.Import.ImportSession>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

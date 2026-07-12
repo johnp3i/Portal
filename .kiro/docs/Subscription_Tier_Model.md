@@ -65,6 +65,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 - Profit & Loss Summary (period-based financial overview)
 - Expense Categorisation Insights (spend analysis, budget alerts)
 - Recurring Expense Validation (define expected supplier purchases, validate before VAT submission)
+- Purchase Import (bulk CSV/Excel upload with configurable parser templates)
 - Document Attachments (attach PDFs/images to purchases, invoices, quotations)
 - Activity Log (readonly — view history of operations)
 - Up to 5 users with granular permissions
@@ -121,6 +122,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Expense Categorisation Insights | ❌ | ✅ | ✅ |
 | Payment Schedules (Instalment Plans) | ❌ | ✅ | ✅ |
 | Recurring Expense Validation | ❌ | ✅ | ✅ |
+| Purchase Import (CSV/Excel) | ❌ | ✅ | ✅ |
 | **Operational Tools** | | | |
 | Document Attachments | ❌ | ✅ | ✅ |
 | Activity Log | ❌ | ✅ (readonly) | ✅ (full) |
@@ -231,6 +233,7 @@ Request arrives
 | `pnl` | Profit & Loss | Professional |
 | `expense_insights` | Expense Categorisation | Professional |
 | `recurring_expense_validation` | Recurring Expense Validation | Professional |
+| `purchase_import` | Purchase Import (CSV/Excel) | Professional |
 | `attachments` | Document Attachments | Professional |
 | `audit_log` | Activity Log (readonly on Professional, full on Enterprise) | Professional |
 | `client_portal` | Client Portal | Enterprise |

@@ -45,7 +45,7 @@ public class PurchaseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy)
     {
         var purchases = await GetFilteredPurchasesForExportAsync(supplierId, expenseCategoryId, purchaseOriginTypeId, purchaseTypeId, vatPeriodId, dateFrom, dateTo, searchTerm);
 
@@ -107,6 +107,7 @@ public class PurchaseController : Controller
             DateFrom = dateFrom,
             DateTo = dateTo,
             SearchTerm = searchTerm,
+            SortBy = sortBy,
             ShowExpenseInsightsTeaser = showExpenseInsightsTeaser
         };
 

@@ -1,0 +1,208 @@
+@{
+    ViewData["Title"] = "Import Purchases";
+    var suppliers = ViewBag.Suppliers as List<Portal.Infrastructure.Models.SelectListItem> ?? new List<Portal.Infrastructure.Models.SelectListItem>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 class="topbar-heading">Import Purchases</h1>
+        <p class="topbar-subtitle">Upload a CSV or Excel file to bulk-import purchase records.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+        <a asp-controller="ParserTemplate" asp-action="Index" class="btn btn-secondary">Manage Templates</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <form id="importForm" onsubmit="return false;">
+        <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+            <!-- Supplier Selection -->
+            <div class="field">
+                <label for="supplierId">Supplier *</label>
+                <select id="supplierId" name="supplierId" required>
+                    <option value="">— Select a supplier —</option>
+                    @foreach (var supplier in suppliers)
+                    {
+                        <option value="@supplier.Id">@supplier.Name</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Template Selection -->
+            <div class="field">
+                <label for="templateId">Parser Template</label>
+                <select id="templateId" name="templateId" disabled>
+                    <option value="">Auto-detect (no template)</option>
+                </select>
+                <span class="helper" style="font-size:11px;color:#5a6a7a;margin-top:4px;display:block;">Select a supplier first to load available templates.</span>
+            </div>
+        </div>
+
+        <!-- Supplier Profile Defaults -->
+        <div id="profileDefaults" style="display:none;margin-top:18px;padding:14px 18px;border-radius:10px;background:rgba(13,94,166,0.03);border:1px solid rgba(13,94,166,0.08);">
+            <div style="font-size:12px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Supplier Defaults</div>
+            <div id="profileDetails" style="font-size:13px;color:#334155;"></div>
+        </div>
+
+        <!-- File Upload -->
+        <div style="margin-top:22px;">
+            <label style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:8px;">Upload File *</label>
+            <div id="dropArea" class="upload-drop-area">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="opacity:.4;">
+                    <path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p style="margin:8px 0 4px;font-size:14px;color:#334155;">Drag & drop or <label for="importFile" style="color:#0D5EA6;font-weight:600;cursor:pointer;text-decoration:underline;">browse</label></p>
+                <span style="font-size:12px;color:#94a3b8;">CSV, XLSX, XLS — Max 5 MB, 500 rows</span>
+                <input type="file" id="importFile" accept=".csv,.xlsx,.xls" style="display:none;" />
+            </div>
+            <div id="selectedFile" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;background:#EEF4F8;font-size:13px;font-weight:600;color:#1e293b;"></div>
+        </div>
+
+        <div style="margin-top:22px;">
+            <button type="button" id="btnUpload" class="btn btn-primary" disabled>Upload & Preview</button>
+        </div>
+    </form>
+</section>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .upload-drop-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+        transition: border-color .2s, background .2s;
+        cursor: pointer;
+    }
+    .upload-drop-area.drag-over {
+        border-color: #0D5EA6;
+        background: rgba(13,94,166,.04);
+    }
+</style>
+
+@section Scripts {
+<script>
+    var selectedFile = null;
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    // Supplier change → load templates + profile
+    document.getElementById('supplierId').addEventListener('change', async function () {
+        var supplierId = this.value;
+        var templateSelect = document.getElementById('templateId');
+        var profileDiv = document.getElementById('profileDefaults');
+
+        templateSelect.innerHTML = '<option value="">Auto-detect (no template)</option>';
+
+        if (!supplierId) {
+            templateSelect.disabled = true;
+            profileDiv.style.display = 'none';
+            return;
+        }
+
+        // Load templates
+        try {
+            var resp = await fetch('/PurchaseImport/AxGetTemplatesForSupplier?supplierId=' + supplierId);
+            var data = await resp.json();
+            if (data.success && data.data.length > 0) {
+                data.data.forEach(function (t) {
+                    var opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name + ' (' + t.fileFormatType + ')' + (t.isManaged ? ' — managed' : '');
+                    templateSelect.appendChild(opt);
+                });
+            }
+            templateSelect.disabled = false;
+        } catch (e) { }
+
+        // Load supplier profile
+        try {
+            var resp2 = await fetch('/PurchaseImport/AxGetSupplierProfile?supplierId=' + supplierId);
+            var data2 = await resp2.json();
+            if (data2.success && data2.data) {
+                var details = [];
+                if (data2.data.defaultExpenseCategoryId) details.push('Category: #' + data2.data.defaultExpenseCategoryId);
+                if (data2.data.defaultPurchaseOriginTypeId) details.push('Origin: #' + data2.data.defaultPurchaseOriginTypeId);
+                if (data2.data.defaultCountry) details.push('Country: ' + data2.data.defaultCountry);
+                if (details.length > 0) {
+                    document.getElementById('profileDetails').textContent = details.join(' · ');
+                    profileDiv.style.display = 'block';
+                } else {
+                    profileDiv.style.display = 'none';
+                }
+            } else {
+                profileDiv.style.display = 'none';
+            }
+        } catch (e) { profileDiv.style.display = 'none'; }
+
+        updateUploadButton();
+    });
+
+    // File selection
+    var dropArea = document.getElementById('dropArea');
+    var fileInput = document.getElementById('importFile');
+
+    dropArea.addEventListener('click', function () { fileInput.click(); });
+    ['dragenter', 'dragover'].forEach(function (evt) {
+        dropArea.addEventListener(evt, function (e) { e.preventDefault(); dropArea.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+        dropArea.addEventListener(evt, function (e) { e.preventDefault(); dropArea.classList.remove('drag-over'); });
+    });
+    dropArea.addEventListener('drop', function (e) {
+        if (e.dataTransfer.files.length > 0) setFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function () {
+        if (this.files.length > 0) setFile(this.files[0]);
+    });
+
+    function setFile(file) {
+        selectedFile = file;
+        document.getElementById('selectedFile').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        document.getElementById('selectedFile').style.display = 'block';
+        updateUploadButton();
+    }
+
+    function updateUploadButton() {
+        var hasSupplier = document.getElementById('supplierId').value !== '';
+        document.getElementById('btnUpload').disabled = !(hasSupplier && selectedFile);
+    }
+
+    // Upload & Parse
+    document.getElementById('btnUpload').addEventListener('click', async function () {
+        if (!selectedFile) return;
+
+        var supplierId = document.getElementById('supplierId').value;
+        var templateId = document.getElementById('templateId').value;
+
+        var formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('supplierId', supplierId);
+        if (templateId) formData.append('templateId', templateId);
+
+        BlockUI.show('Parsing file...');
+        try {
+            var response = await fetch('/PurchaseImport/AxPostParseFile', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                window.location = '/PurchaseImport/Preview?sessionId=' + data.sessionId;
+            } else {
+                Swal.fire({ icon: 'error', title: 'Upload Failed', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    });
+</script>
+}
