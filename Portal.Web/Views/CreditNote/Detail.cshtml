@@ -184,6 +184,9 @@
     </div>
 </section>
 
+<!-- Document Attachments -->
+@await Component.InvokeAsync("AttachmentPanel", new { entityType = "CreditNote", entityId = cn.Id })
+
 <!-- Back link -->
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
     <a asp-action="Index" asp-controller="CreditNote" class="btn btn-outline">&larr; Back to Credit Notes</a>

@@ -120,6 +120,7 @@
                                 </td>
                                 <td data-mobile="amount">@(ViewBag.CurrencySymbol)@quotation.TotalAmount.ToString("N2")</td>
                                 <td data-mobile="hide" style="white-space:nowrap;">
+                                    @await Component.InvokeAsync("AttachmentCount", new { entityType = "Quotation", entityId = quotation.Id })
                                     <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Detail</a>
                                     <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Edit</a>
                                     <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>

@@ -1,0 +1,254 @@
+@model Portal.Infrastructure.Models.PagedResult<Portal.Infrastructure.Models.AttachmentIndexDto>
+@{
+    ViewData["Title"] = "Attachments";
+    var summary = ViewBag.Summary as Portal.Infrastructure.Models.AttachmentIndexSummary;
+    var entityTypeFilter = ViewBag.EntityType as string;
+    var fileTypeFilter = ViewBag.FileType as string;
+    var uploadedByFilter = ViewBag.UploadedBy as string;
+    var dateFrom = ViewBag.DateFrom as DateTime?;
+    var dateTo = ViewBag.DateTo as DateTime?;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Document Attachments</div>
+        <h1 class="topbar-heading">Attachments</h1>
+        <p class="topbar-subtitle">All uploaded documents across your business records.</p>
+    </div>
+</div>
+
+<!-- KPI Summary Cards -->
+@if (summary != null)
+{
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:18px;margin-bottom:22px;">
+        <div class="glass card-pad" style="border-left:4px solid #0D5EA6;">
+            <p style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px;">Total Files</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;color:#0D5EA6;margin:0;">@summary.TotalFiles</h2>
+        </div>
+        <div class="glass card-pad" style="border-left:4px solid #129867;">
+            <p style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px;">Total Size</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;color:#129867;margin:0;">@FormatFileSize(summary.TotalSizeBytes)</h2>
+        </div>
+        <div class="glass card-pad" style="border-left:4px solid #57B8E8;">
+            <p style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px;">Entities With Files</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;color:#1A8AB5;margin:0;">@summary.EntitiesWithFiles</h2>
+        </div>
+        <div class="glass card-pad" style="border-left:4px solid #C8912E;">
+            <p style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px;">This Month</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;color:#C8912E;margin:0;">@summary.ThisMonthCount</h2>
+        </div>
+    </div>
+}
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" asp-action="Index" asp-controller="Attachment" style="margin:0;">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:180px;">
+                <label for="entityType">Entity Type</label>
+                <select id="entityType" name="entityType">
+                    <option value="">All Types</option>
+                    <option value="Invoice" selected="@(entityTypeFilter == "Invoice")">Invoice</option>
+                    <option value="Purchase" selected="@(entityTypeFilter == "Purchase")">Purchase</option>
+                    <option value="Quotation" selected="@(entityTypeFilter == "Quotation")">Quotation</option>
+                    <option value="CreditNote" selected="@(entityTypeFilter == "CreditNote")">Credit Note</option>
+                    <option value="Payment" selected="@(entityTypeFilter == "Payment")">Payment</option>
+                    <option value="Supplier" selected="@(entityTypeFilter == "Supplier")">Supplier</option>
+                    <option value="Customer" selected="@(entityTypeFilter == "Customer")">Customer</option>
+                </select>
+            </div>
+            <div class="field" style="min-width:140px;">
+                <label for="fileType">File Type</label>
+                <select id="fileType" name="fileType">
+                    <option value="">All Formats</option>
+                    <option value="pdf" selected="@(fileTypeFilter == "pdf")">PDF</option>
+                    <option value="png" selected="@(fileTypeFilter == "png")">PNG</option>
+                    <option value="jpg" selected="@(fileTypeFilter == "jpg")">JPG</option>
+                    <option value="webp" selected="@(fileTypeFilter == "webp")">WEBP</option>
+                </select>
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateFrom">Date From</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="@(dateFrom?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateTo">Date To</label>
+                <input type="date" id="dateTo" name="dateTo" value="@(dateTo?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a asp-action="Index" asp-controller="Attachment" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    @if (Model.Items != null && Model.Items.Count > 0)
+    {
+        <div class="table-responsive index-table">
+            <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Entity Type</th>
+                        <th>Entity Reference</th>
+                        <th>Uploaded</th>
+                        <th>Uploaded By</th>
+                        <th>Size</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var isImage = item.ContentType.StartsWith("image/");
+                        var fileTypeLabel = item.ContentType switch
+                        {
+                            "application/pdf" => "PDF Document",
+                            "image/png" => "PNG Image",
+                            "image/jpeg" => "JPEG Image",
+                            "image/webp" => "WEBP Image",
+                            _ => "File"
+                        };
+                        var entityPillClass = item.EntityType switch
+                        {
+                            "Invoice" => "pill-blue",
+                            "Purchase" => "pill-green",
+                            "Quotation" => "pill-gold",
+                            "CreditNote" => "pill-red",
+                            "Payment" => "pill-cyan",
+                            "Supplier" => "pill-purple",
+                            "Customer" => "pill-grey",
+                            _ => "pill-blue"
+                        };
+                        var detailUrl = item.EntityType switch
+                        {
+                            "Invoice" => $"/Invoice/Detail/{item.EntityId}",
+                            "Purchase" => $"/Purchase/Edit/{item.EntityId}",
+                            "Quotation" => $"/Quotation/Detail/{item.EntityId}",
+                            "CreditNote" => $"/CreditNote/Detail/{item.EntityId}",
+                            "Payment" => $"/Revenue/InvoiceDetail/{item.EntityId}",
+                            "Supplier" => $"/Supplier/Dashboard/{item.EntityId}",
+                            "Customer" => $"/Customer/Edit/{item.EntityId}",
+                            _ => "#"
+                        };
+
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:@(isImage ? "rgba(13,94,166,.06)" : "rgba(194,74,74,.08)");">
+                                        @if (isImage)
+                                        {
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#0D5EA6" stroke-width="1.5" fill="none"/><circle cx="8.5" cy="8.5" r="1.5" stroke="#0D5EA6" stroke-width="1.2" fill="none"/><path d="M21 15l-5-5-9 9" stroke="#0D5EA6" stroke-width="1.5" fill="none"/></svg>
+                                        }
+                                        else
+                                        {
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#C24A4A" stroke-width="1.5" fill="none"/><path d="M14 2v6h6" stroke="#C24A4A" stroke-width="1.5" fill="none"/></svg>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;" title="@item.OriginalFileName">@item.OriginalFileName</div>
+                                        <div style="font-size:11px;color:#5a6a7a;">@fileTypeLabel</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="pill @entityPillClass">@item.EntityType</span></td>
+                            <td><a href="@detailUrl" style="color:#0D5EA6;text-decoration:none;font-weight:600;">@item.EntityReference</a></td>
+                            <td data-mobile="hide">@item.CreatedAtUtc.ToString("dd MMM yyyy")</td>
+                            <td data-mobile="hide">@item.UploadedByDisplayName</td>
+                            <td data-mobile="hide">@FormatFileSize(item.FileSizeBytes)</td>
+                            <td style="white-space:nowrap;">
+                                <a href="/Attachment/AxGetDownload?id=@item.Id" class="tbl-action tbl-action--primary" download>Download</a>
+                                @if (item.IsOwnedByCurrentUser)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--danger" onclick="deleteAttachment(@item.Id)">Delete</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @await Html.PartialAsync("_PagingControl", null, new ViewDataDictionary(ViewData) {
+            { "CurrentPage", Model.CurrentPage },
+            { "TotalPages", Model.TotalPages },
+            { "TotalCount", Model.TotalCount },
+            { "PageSize", Model.PageSize },
+            { "HasPreviousPage", Model.HasPreviousPage },
+            { "HasNextPage", Model.HasNextPage }
+        })
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No attachments found. Upload files from any detail page to see them here.</p>
+        </div>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    async function deleteAttachment(id) {
+        var result = await Swal.fire({
+            title: 'Delete attachment?',
+            text: 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#C24A4A',
+            cancelButtonColor: '#64748b'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Deleting...');
+        try {
+            var response = await fetch('/Attachment/AxPostDelete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: 'id=' + id
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Attachment removed.', confirmButtonColor: '#0D5EA6' })
+                    .then(function() { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
+}
+
+@functions {
+    string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024.0).ToString("0.#") + " KB";
+        return (bytes / (1024.0 * 1024.0)).ToString("0.#") + " MB";
+    }
+}
+
+<style>
+    .pill-purple { background: rgba(139,92,246,.08); color: #7C3AED; }
+    .pill-cyan { background: rgba(87,184,232,.08); color: #1A8AB5; }
+</style>

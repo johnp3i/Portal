@@ -1,0 +1,62 @@
+@*
+    Soft-gate teaser for the Attachment Panel.
+    Shown to Starter plan users who do not have access to the attachments module.
+*@
+
+<div class="attachment-panel-softgate">
+    <div class="softgate-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#0D5EA6" stroke-width="1.5" fill="none"/>
+            <path d="M14 2v6h6" stroke="#0D5EA6" stroke-width="1.5" fill="none"/>
+            <path d="M12 11v6M9 14h6" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+    </div>
+    <h4>Document Attachments</h4>
+    <p>Attach PDFs, receipts, and images directly to your records. Available on the <strong>Professional</strong> plan and above.</p>
+    <a href="/Subscription" class="btn-softgate-upgrade">View Plans</a>
+</div>
+
+<style>
+    .attachment-panel-softgate {
+        border-left: 3px solid #cbd5e1;
+        border-radius: 12px;
+        background: #F7FAFC;
+        padding: 28px 24px;
+        margin-top: 24px;
+        text-align: center;
+    }
+    .softgate-icon {
+        margin-bottom: 12px;
+        opacity: .7;
+    }
+    .attachment-panel-softgate h4 {
+        font-family: 'Manrope', sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 8px;
+    }
+    .attachment-panel-softgate p {
+        font-size: 13px;
+        color: #5a6a7a;
+        margin: 0 0 16px;
+        max-width: 320px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .btn-softgate-upgrade {
+        display: inline-block;
+        padding: 8px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #0D5EA6;
+        border: 1.5px solid #0D5EA6;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: background .15s, color .15s;
+    }
+    .btn-softgate-upgrade:hover {
+        background: #0D5EA6;
+        color: #fff;
+    }
+</style>

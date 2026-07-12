@@ -1,0 +1,419 @@
+@model Portal.Web.Models.AttachmentPanelViewModel
+
+@{
+    var attachments = Model.Attachments ?? new List<Portal.Infrastructure.Models.AttachmentDto>();
+    var currentCount = attachments.Count;
+    var limitReached = currentCount >= Model.MaxAttachments;
+}
+
+<div class="attachment-panel" id="attachment-panel-@Model.EntityType-@Model.EntityId"
+     data-entity-type="@Model.EntityType" data-entity-id="@Model.EntityId" data-max="@Model.MaxAttachments">
+
+    <div class="attachment-panel-header">
+        <h4>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="vertical-align: -2px; margin-right: 6px;">
+                <path d="M14 4.5V14a2 2 0 01-2 2H4a2 2 0 01-2-2V2a2 2 0 012-2h5.5L14 4.5z" stroke="#0D5EA6" stroke-width="1.2" fill="none"/>
+                <path d="M14 4.5H9.5V0" stroke="#0D5EA6" stroke-width="1.2" fill="none"/>
+            </svg>
+            Attachments
+        </h4>
+        <span class="attachment-count-badge">@currentCount of @Model.MaxAttachments</span>
+    </div>
+
+    <!-- Attachment List -->
+    <div class="attachment-list">
+        @if (attachments.Count == 0)
+        {
+            <div class="attachment-empty-state">
+                <p>No attachments yet.</p>
+                @if (!Model.IsReadOnly)
+                {
+                    <p class="text-muted">Drag a file here or click Upload to add one.</p>
+                }
+            </div>
+        }
+        else
+        {
+            @foreach (var attachment in attachments)
+            {
+                var isImage = attachment.ContentType.StartsWith("image/");
+                var iconClass = isImage ? "attachment-thumb-img" : "attachment-thumb-pdf";
+                var sizeDisplay = FormatFileSize(attachment.FileSizeBytes);
+                var dateDisplay = attachment.CreatedAtUtc.ToString("dd MMM yyyy");
+
+                <div class="attachment-item" data-id="@attachment.Id">
+                    <div class="attachment-thumb @iconClass">
+                        @if (isImage)
+                        {
+                            <img src="/Attachment/AxGetDownload?id=@attachment.Id"
+                                 alt="@attachment.OriginalFileName"
+                                 class="attachment-thumbnail-image"
+                                 loading="lazy"
+                                 onclick="openLightbox(this.src, '@attachment.OriginalFileName')" />
+                        }
+                        else
+                        {
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#C24A4A" stroke-width="1.5" fill="none"/>
+                                <path d="M14 2v6h6" stroke="#C24A4A" stroke-width="1.5" fill="none"/>
+                                <text x="7" y="17" font-size="5" font-weight="700" fill="#C24A4A" font-family="Inter">PDF</text>
+                            </svg>
+                        }
+                    </div>
+                    <div class="attachment-info">
+                        <span class="attachment-filename" title="@attachment.OriginalFileName">@attachment.OriginalFileName</span>
+                        <span class="attachment-meta">@sizeDisplay &middot; @dateDisplay &middot; @attachment.UploadedByDisplayName</span>
+                    </div>
+                    <div class="attachment-actions">
+                        <a href="/Attachment/AxGetDownload?id=@attachment.Id" class="btn-attachment-action" title="Download" download>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 1v10M4 8l4 4 4-4M2 14h12" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </a>
+                        @if (!Model.IsReadOnly && attachment.IsOwnedByCurrentUser)
+                        {
+                            <button type="button" class="btn-attachment-action btn-attachment-delete" title="Delete" onclick="deleteAttachment(@attachment.Id)">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M2 4h12M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M10 7v5M3 4l1 10a1 1 0 001 1h6a1 1 0 001-1l1-10" stroke="#C24A4A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Upload Zone -->
+    @if (!Model.IsReadOnly)
+    {
+        <div class="attachment-upload-zone @(limitReached ? "disabled" : "")" id="upload-zone-@Model.EntityType-@Model.EntityId">
+            @if (limitReached)
+            {
+                <p class="text-muted">Maximum of @Model.MaxAttachments attachments reached.</p>
+            }
+            else
+            {
+                <div class="upload-drop-area" id="drop-area-@Model.EntityType-@Model.EntityId">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="opacity:.5;">
+                        <path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p>Drag & drop or <label for="file-input-@Model.EntityType-@Model.EntityId" class="upload-link">browse</label></p>
+                    <span class="upload-hint">PDF, PNG, JPG, WEBP &middot; Max 5 MB</span>
+                </div>
+                <input type="file"
+                       id="file-input-@Model.EntityType-@Model.EntityId"
+                       accept=".pdf,.png,.jpg,.jpeg,.webp"
+                       capture="environment"
+                       style="display:none;"
+                       onchange="uploadAttachment(this)" />
+            }
+        </div>
+    }
+</div>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .attachment-panel {
+        border-left: 3px solid #0D5EA6;
+        border-radius: 12px;
+        background: #fff;
+        padding: 20px 24px;
+        margin-top: 24px;
+    }
+    .attachment-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .attachment-panel-header h4 {
+        font-family: 'Manrope', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+    .attachment-count-badge {
+        font-size: 12px;
+        font-weight: 600;
+        color: #5a6a7a;
+        background: #EEF4F8;
+        border-radius: 20px;
+        padding: 4px 12px;
+    }
+    .attachment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .attachment-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        background: #F7FAFC;
+        border-radius: 10px;
+        transition: background .15s;
+    }
+    .attachment-item:hover {
+        background: #EEF4F8;
+    }
+    .attachment-thumb {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+        background: #EEF4F8;
+    }
+    .attachment-thumbnail-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+    .attachment-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .attachment-filename {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .attachment-meta {
+        font-size: 11px;
+        color: #5a6a7a;
+    }
+    .attachment-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+    .btn-attachment-action {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background .15s;
+        text-decoration: none;
+    }
+    .btn-attachment-action:hover {
+        background: #e2e8f0;
+    }
+    .btn-attachment-delete:hover {
+        background: #fee2e2;
+    }
+    .attachment-empty-state {
+        text-align: center;
+        padding: 20px 0;
+        color: #5a6a7a;
+        font-size: 13px;
+    }
+    .attachment-empty-state p {
+        margin: 4px 0;
+    }
+    .attachment-upload-zone {
+        margin-top: 14px;
+    }
+    .attachment-upload-zone.disabled {
+        opacity: .6;
+        pointer-events: none;
+    }
+    .upload-drop-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: border-color .2s, background .2s;
+        cursor: pointer;
+    }
+    .upload-drop-area.drag-over {
+        border-color: #0D5EA6;
+        background: rgba(13,94,166,.04);
+    }
+    .upload-drop-area p {
+        margin: 8px 0 4px;
+        font-size: 13px;
+        color: #334155;
+    }
+    .upload-link {
+        color: #0D5EA6;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+    .upload-hint {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    /* Responsive */
+    @@media (max-width: 576px) {
+        .attachment-panel {
+            padding: 16px;
+        }
+        .attachment-item {
+            flex-wrap: wrap;
+        }
+        .attachment-info {
+            min-width: calc(100% - 60px);
+        }
+        .attachment-actions {
+            width: 100%;
+            justify-content: flex-end;
+            margin-top: 6px;
+        }
+    }
+</style>
+
+<script>
+(function() {
+    var panelEl = document.getElementById('attachment-panel-@(Model.EntityType)-@(Model.EntityId)');
+    var entityType = '@Model.EntityType';
+    var entityId = @Model.EntityId;
+    var dropArea = document.getElementById('drop-area-' + entityType + '-' + entityId);
+    var fileInput = document.getElementById('file-input-' + entityType + '-' + entityId);
+
+    // Drag & Drop
+    if (dropArea) {
+        ['dragenter', 'dragover'].forEach(function(evt) {
+            dropArea.addEventListener(evt, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropArea.classList.add('drag-over');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function(evt) {
+            dropArea.addEventListener(evt, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropArea.classList.remove('drag-over');
+            });
+        });
+        dropArea.addEventListener('drop', function(e) {
+            var files = e.dataTransfer.files;
+            if (files.length > 0) {
+                doUpload(files[0]);
+            }
+        });
+        dropArea.addEventListener('click', function() {
+            if (fileInput) fileInput.click();
+        });
+    }
+
+    // Expose global functions for inline event handlers
+    window.uploadAttachment = function(input) {
+        if (input.files.length > 0) {
+            doUpload(input.files[0]);
+            input.value = '';
+        }
+    };
+
+    window.deleteAttachment = function(id) {
+        Swal.fire({
+            title: 'Delete attachment?',
+            text: 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#C24A4A',
+            cancelButtonColor: '#64748b'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                performDelete(id);
+            }
+        });
+    };
+
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function doUpload(file) {
+        BlockUI.show('Uploading...');
+        try {
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('entityType', entityType);
+            formData.append('entityId', entityId);
+
+            var response = await fetch('/Attachment/AxPostUpload', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: formData
+            });
+
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Uploaded', text: 'File attached successfully.', confirmButtonColor: '#0D5EA6' })
+                    .then(function() { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Upload Failed', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function performDelete(id) {
+        BlockUI.show('Deleting...');
+        try {
+            var response = await fetch('/Attachment/AxPostDelete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: 'id=' + id
+            });
+
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Attachment removed.', confirmButtonColor: '#0D5EA6' })
+                    .then(function() { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+})();
+</script>
+
+@functions {
+    string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024.0).ToString("0.#") + " KB";
+        return (bytes / (1024.0 * 1024.0)).ToString("0.#") + " MB";
+    }
+}

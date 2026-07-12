@@ -212,6 +212,9 @@
     }
 </section>
 
+<!-- Document Attachments -->
+@await Component.InvokeAsync("AttachmentPanel", new { entityType = "Supplier", entityId = Model.SupplierId })
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" onerror="showChartsUnavailable()"></script>
     <script>

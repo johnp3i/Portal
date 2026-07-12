@@ -395,6 +395,9 @@
 }
 
 <!-- Back link -->
+<!-- Document Attachments -->
+@await Component.InvokeAsync("AttachmentPanel", new { entityType = "Invoice", entityId = invoice.Id })
+
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
     <a asp-action="Index" asp-controller="Invoice" class="btn btn-outline">&larr; Back to Invoices</a>
 </div>

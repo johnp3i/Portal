@@ -140,22 +140,22 @@ Both payment methods would coexist on the shared invoice page — customers coul
 
 **Effort:** Medium | **Dependencies:** Revenue module (existing), Payment recording (existing), VAT Submission Periods (existing)
 
-- [ ] 7.1 Create `PaymentSchedule` table (per-invoice instalment plan: InvoiceId, CreatedByUserId, CreatedAtUtc, Notes)
-- [ ] 7.2 Create `PaymentScheduleInstalment` table (individual instalment: ScheduleId, Amount, DueDate, Status, PaymentId nullable)
-- [ ] 7.3 Create `PaymentScheduleHistory` table (tracks modifications: who changed what and when)
-- [ ] 7.4 Create PaymentScheduleService (CRUD, auto-suggest remaining amount, match payments to instalments)
-- [ ] 7.5 Create payment schedule UI on Invoice Detail page (create/view/edit schedule with instalment rows)
-- [ ] 7.6 Create payment schedule UI on Revenue InvoiceDetail page (same functionality)
-- [ ] 7.7 Implement auto-suggestion: when creating schedule, suggest remaining balance for next instalment
-- [ ] 7.8 Implement payment-to-instalment matching (record payment → auto-match to next due instalment)
-- [ ] 7.9 Handle partial instalment payments (warning + create new instalment for remainder)
-- [ ] 7.10 Implement schedule modification with history tracking (adjustments logged with before/after)
-- [ ] 7.11 Add VAT period warning: notify user when first instalment is after the invoice's VAT period submission date
-- [ ] 7.12 Add VAT advisory: suggest first instalment should cover at least the VAT amount (€TaxAmount)
-- [ ] 7.13 Display instalment status indicators (Upcoming, Due, Overdue, Paid, Partially Paid)
-- [ ] 7.14 Add user permission gate (`schedule_payments` module key or use existing `revenue` module)
-- [ ] 7.15 Visual QA and mobile responsiveness check
-- [ ] 7.16 End-to-end testing: create schedule → record payments → verify matching → modify schedule
+- [x] 7.1 Create `PaymentSchedule` table (per-invoice instalment plan: InvoiceId, CreatedByUserId, CreatedAtUtc, Notes)
+- [x] 7.2 Create `PaymentScheduleInstalment` table (individual instalment: ScheduleId, Amount, DueDate, Status, PaymentId nullable)
+- [x] 7.3 Create `PaymentScheduleHistory` table (tracks modifications: who changed what and when)
+- [x] 7.4 Create PaymentScheduleService (CRUD, auto-suggest remaining amount, match payments to instalments)
+- [x] 7.5 Create payment schedule UI on Invoice Detail page (create/view/edit schedule with instalment rows)
+- [x] 7.6 Create payment schedule UI on Revenue InvoiceDetail page (same functionality)
+- [x] 7.7 Implement auto-suggestion: when creating schedule, suggest remaining balance for next instalment
+- [x] 7.8 Implement payment-to-instalment matching (record payment → auto-match to next due instalment)
+- [x] 7.9 Handle partial instalment payments (warning + create new instalment for remainder)
+- [x] 7.10 Implement schedule modification with history tracking (adjustments logged with before/after)
+- [x] 7.11 Add VAT period warning: notify user when first instalment is after the invoice's VAT period submission date
+- [x] 7.12 Add VAT advisory: suggest first instalment should cover at least the VAT amount (€TaxAmount)
+- [x] 7.13 Display instalment status indicators (Upcoming, Due, Overdue, Paid, Partially Paid)
+- [x] 7.14 Add user permission gate (`schedule_payments` module key or use existing `revenue` module)
+- [x] 7.15 Visual QA and mobile responsiveness check
+- [x] 7.16 End-to-end testing: create schedule → record payments → verify matching → modify schedule
 
 ### Future Sub-Tasks (Phase 2)
 - [ ] 7.17 Customer-facing payment schedule agreement via shared invoice link (business proposes schedule, customer accepts/negotiates)

@@ -74,3 +74,9 @@
         </div>
     </form>
 </section>
+
+<!-- Document Attachments -->
+@{
+    var customerId = int.Parse(ViewContext.RouteData.Values["id"]?.ToString() ?? "0");
+}
+@await Component.InvokeAsync("AttachmentPanel", new { entityType = "Customer", entityId = customerId })

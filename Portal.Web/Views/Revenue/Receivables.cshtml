@@ -112,6 +112,7 @@
                             <span class="pill @pillClass">@item.FinancialStatusName</span>
                         </td>
                         <td data-mobile="hide" style="white-space:nowrap;">
+                            @await Component.InvokeAsync("AttachmentCount", new { entityType = "Payment", entityId = item.Id })
                             <a asp-action="InvoiceDetail" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">View</a>
                             @if (item.HasOutstandingBalance)
                             {

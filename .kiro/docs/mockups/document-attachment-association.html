@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Attachment Association — Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F7FAFC;
+            color: #1a2a3a;
+            padding: 40px 24px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Manrope', sans-serif;
+        }
+
+        /* Topbar */
+        .topbar {
+            margin-bottom: 32px;
+        }
+
+        .topbar .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #0D5EA6;
+            margin-bottom: 6px;
+        }
+
+        .topbar h1 {
+            font-size: 42px;
+            font-weight: 800;
+            color: #1a2a3a;
+            margin-bottom: 4px;
+            line-height: 1.1;
+        }
+
+        .topbar .subtitle {
+            font-size: 15px;
+            color: #5a6a7a;
+            font-weight: 500;
+        }
+
+        /* Glass Card */
+        .glass {
+            background: #fff;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(13, 94, 166, .08);
+            border: 1px solid rgba(13, 94, 166, .06);
+        }
+
+        /* Section Divider Labels */
+        .section-label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #5a6a7a;
+            margin: 48px 0 16px;
+            padding-left: 4px;
+        }
+
+        .section-label:first-of-type {
+            margin-top: 0;
+        }
+
+        /* Detail Card */
+        .detail-card {
+            margin-bottom: 22px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+        }
+
+        .detail-item label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #5a6a7a;
+            margin-bottom: 4px;
+        }
+
+        .detail-item .value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a2a3a;
+        }
+
+        .detail-item .value.amount {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0D5EA6;
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-success {
+            background: rgba(18, 152, 103, .1);
+            color: #129867;
+        }
+
+        .badge-warning {
+            background: rgba(200, 145, 46, .1);
+            color: #C8912E;
+        }
+
+        .badge-info {
+            background: rgba(13, 94, 166, .08);
+            color: #0D5EA6;
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Attachments Panel */
+        .attachments-panel {
+            border-left: 3px solid #0D5EA6;
+            padding-left: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .panel-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a2a3a;
+        }
+
+        .panel-context {
+            font-size: 13px;
+            color: #5a6a7a;
+            margin-bottom: 16px;
+        }
+
+        .count-badge {
+            background: rgba(13, 94, 166, .08);
+            color: #0D5EA6;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 8px;
+        }
+
+        /* Attachment Rows */
+        .attachment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .attachment-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            transition: background 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .attachment-row:hover {
+            background: #F7FAFC;
+            border-color: rgba(13, 94, 166, .06);
+        }
+
+        .file-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .file-icon-pdf {
+            background: rgba(13, 94, 166, .1);
+            color: #0D5EA6;
+        }
+
+        .file-icon-jpg {
+            background: linear-gradient(135deg, #fde8c8, #f5d0a0);
+            color: #8B5E20;
+        }
+
+        .file-icon-png {
+            background: linear-gradient(135deg, #c8f5e0, #a0e8c8);
+            color: #1a6b4a;
+        }
+
+        .attachment-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .attachment-filename {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a2a3a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .attachment-meta {
+            font-size: 12px;
+            color: #5a6a7a;
+            margin-top: 2px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .attachment-meta span {
+            margin-right: 6px;
+        }
+
+        .attachment-meta .uploader {
+            color: #0D5EA6;
+            font-weight: 600;
+        }
+
+        .attachment-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* Buttons */
+        .btn {
+            border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid rgba(13, 94, 166, .15);
+            color: #0D5EA6;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(13, 94, 166, .04);
+            border-color: rgba(13, 94, 166, .25);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #5a6a7a;
+        }
+
+        .btn-ghost:hover {
+            color: #C24A4A;
+            border-color: rgba(194, 74, 74, .2);
+        }
+
+        .btn-upload {
+            background: linear-gradient(135deg, #0D5EA6, #57B8E8);
+            color: #fff;
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-upload:hover {
+            opacity: 0.9;
+        }
+
+        /* Upload / Add More Area */
+        .add-more-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(13, 94, 166, .06);
+        }
+
+        .btn-add {
+            background: rgba(13, 94, 166, .04);
+            border: 1px dashed rgba(13, 94, 166, .20);
+            color: #0D5EA6;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-add:hover {
+            background: rgba(13, 94, 166, .08);
+            border-color: rgba(13, 94, 166, .35);
+        }
+
+        /* List Table (Scenario 3) */
+        .list-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .list-table th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #5a6a7a;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(13, 94, 166, .08);
+        }
+
+        .list-table td {
+            padding: 14px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(13, 94, 166, .04);
+            vertical-align: middle;
+        }
+
+        .list-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .list-table tr:hover td {
+            background: #F7FAFC;
+        }
+
+        .list-table .supplier-name {
+            font-weight: 600;
+            color: #1a2a3a;
+        }
+
+        .list-table .amount-cell {
+            font-weight: 700;
+            color: #0D5EA6;
+        }
+
+        /* Paperclip Badge */
+        .clip-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(13, 94, 166, .06);
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: #0D5EA6;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .clip-badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .no-clip {
+            color: #c0c8d0;
+            font-size: 12px;
+        }
+
+        /* Verified Badge */
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(18, 152, 103, .08);
+            color: #129867;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .verified-badge svg {
+            width: 12px;
+            height: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ============================================================ -->
+        <!-- PAGE HEADER                                                   -->
+        <!-- ============================================================ -->
+        <div class="topbar">
+            <div class="eyebrow">Document Management</div>
+            <h1>Attachment Association</h1>
+            <div class="subtitle">How uploaded documents are visually linked to records across the platform</div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SCENARIO 1: Purchase Detail with Attachments                  -->
+        <!-- ============================================================ -->
+        <div class="section-label">Scenario 1 — Purchase Detail with 2 Attachments Linked</div>
+
+        <!-- Purchase Detail Card -->
+        <section class="glass detail-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+                <div>
+                    <h2 style="font-size:20px;font-weight:700;color:#1a2a3a;margin-bottom:4px;">Purchase #PUR-00247</h2>
+                    <span class="badge badge-success"><span class="badge-dot"></span>Recorded</span>
+                </div>
+                <span style="font-size:12px;color:#5a6a7a;">Created 12 Mar 2026</span>
+            </div>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Supplier</label>
+                    <div class="value">Telkom SA</div>
+                </div>
+                <div class="detail-item">
+                    <label>Amount (incl. VAT)</label>
+                    <div class="value amount">R 1,250.00</div>
+                </div>
+                <div class="detail-item">
+                    <label>Date</label>
+                    <div class="value">12 March 2026</div>
+                </div>
+                <div class="detail-item">
+                    <label>Category</label>
+                    <div class="value">Telecommunications</div>
+                </div>
+                <div class="detail-item">
+                    <label>VAT Period</label>
+                    <div class="value">Mar–May 2026</div>
+                </div>
+                <div class="detail-item">
+                    <label>VAT Rate</label>
+                    <div class="value">15%</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Attachments Panel for Purchase -->
+        <section class="glass">
+            <div class="attachments-panel">
+                <div class="panel-header">
+                    <h3>Attachments <span class="count-badge">2</span></h3>
+                    <button class="btn btn-upload">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload New
+                    </button>
+                </div>
+                <div class="panel-context">Documents attached to this purchase</div>
+
+                <div class="attachment-list">
+                    <!-- Attachment 1: PDF Invoice -->
+                    <div class="attachment-row">
+                        <div class="file-icon file-icon-pdf">PDF</div>
+                        <div class="attachment-info">
+                            <div class="attachment-filename">Telkom-Invoice-March-2026.pdf</div>
+                            <div class="attachment-meta">
+                                <span>1.4 MB</span>
+                                <span>12 Mar 2026</span>
+                                <span class="uploader">Johan V.</span>
+                            </div>
+                        </div>
+                        <div class="attachment-actions">
+                            <button class="btn btn-secondary">Download</button>
+                            <button class="btn btn-secondary">View</button>
+                            <button class="btn btn-ghost">Unlink</button>
+                        </div>
+                    </div>
+
+                    <!-- Attachment 2: JPG Receipt -->
+                    <div class="attachment-row">
+                        <div class="file-icon file-icon-jpg">JPG</div>
+                        <div class="attachment-info">
+                            <div class="attachment-filename">telkom-receipt-scan.jpg</div>
+                            <div class="attachment-meta">
+                                <span>892 KB</span>
+                                <span>12 Mar 2026</span>
+                                <span class="uploader">Johan V.</span>
+                            </div>
+                        </div>
+                        <div class="attachment-actions">
+                            <button class="btn btn-secondary">Download</button>
+                            <button class="btn btn-secondary">View</button>
+                            <button class="btn btn-ghost">Unlink</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add More Actions -->
+                <div class="add-more-area">
+                    <button class="btn-add">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload new file
+                    </button>
+                    <button class="btn-add">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        Attach from library
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SCENARIO 2: Invoice Detail with Signed Copy                   -->
+        <!-- ============================================================ -->
+        <div class="section-label">Scenario 2 — Invoice Detail with Attached Signed Copy</div>
+
+        <!-- Invoice Detail Card -->
+        <section class="glass detail-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+                <div>
+                    <h2 style="font-size:20px;font-weight:700;color:#1a2a3a;margin-bottom:4px;">Invoice INV-1-00090</h2>
+                    <span class="badge badge-success"><span class="badge-dot"></span>Paid</span>
+                </div>
+                <span style="font-size:12px;color:#5a6a7a;">Issued 28 Feb 2026</span>
+            </div>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Customer</label>
+                    <div class="value">Cape Town Digital Agency</div>
+                </div>
+                <div class="detail-item">
+                    <label>Amount (incl. VAT)</label>
+                    <div class="value amount">R 18,400.00</div>
+                </div>
+                <div class="detail-item">
+                    <label>Due Date</label>
+                    <div class="value">30 March 2026</div>
+                </div>
+                <div class="detail-item">
+                    <label>Status</label>
+                    <div class="value"><span class="badge badge-success"><span class="badge-dot"></span>Paid in Full</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Attachments Panel for Invoice -->
+        <section class="glass">
+            <div class="attachments-panel">
+                <div class="panel-header">
+                    <h3>Attachments <span class="count-badge">1</span></h3>
+                    <button class="btn btn-upload">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload New
+                    </button>
+                </div>
+                <div class="panel-context">Documents attached to this invoice</div>
+
+                <div class="attachment-list">
+                    <!-- Signed PDF -->
+                    <div class="attachment-row">
+                        <div class="file-icon file-icon-pdf">PDF</div>
+                        <div class="attachment-info">
+                            <div class="attachment-filename">
+                                INV-1-00090-signed.pdf
+                                <span class="verified-badge">
+                                    <svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Verified
+                                </span>
+                            </div>
+                            <div class="attachment-meta">
+                                <span>2.1 MB</span>
+                                <span>1 Mar 2026</span>
+                                <span class="uploader">Client Upload</span>
+                            </div>
+                        </div>
+                        <div class="attachment-actions">
+                            <button class="btn btn-secondary">Download</button>
+                            <button class="btn btn-secondary">View</button>
+                            <button class="btn btn-ghost">Unlink</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add More Actions -->
+                <div class="add-more-area">
+                    <button class="btn-add">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload new file
+                    </button>
+                    <button class="btn-add">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        Attach from library
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SCENARIO 3: List View with Attachment Indicators              -->
+        <!-- ============================================================ -->
+        <div class="section-label">Scenario 3 — Purchase List with Attachment Indicators</div>
+
+        <section class="glass">
+            <div style="margin-bottom:16px;">
+                <h3 style="font-size:18px;font-weight:700;color:#1a2a3a;">Purchases</h3>
+                <p style="font-size:13px;color:#5a6a7a;margin-top:4px;">Paperclip badges show at-a-glance which records have documents attached</p>
+            </div>
+
+            <table class="list-table">
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>VAT Period</th>
+                        <th>Docs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="supplier-name">Telkom SA</td>
+                        <td>12 Mar 2026</td>
+                        <td>Telecommunications</td>
+                        <td class="amount-cell">R 1,250.00</td>
+                        <td>Mar–May 2026</td>
+                        <td>
+                            <span class="clip-badge">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                2
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="supplier-name">Capitec Bank</td>
+                        <td>10 Mar 2026</td>
+                        <td>Bank Charges</td>
+                        <td class="amount-cell">R 285.00</td>
+                        <td>Mar–May 2026</td>
+                        <td>
+                            <span class="no-clip">—</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="supplier-name">Takealot (Office)</td>
+                        <td>8 Mar 2026</td>
+                        <td>Office Supplies</td>
+                        <td class="amount-cell">R 640.00</td>
+                        <td>Mar–May 2026</td>
+                        <td>
+                            <span class="clip-badge">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                1
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- DESIGN NOTES                                                  -->
+        <!-- ============================================================ -->
+        <div class="section-label">Design Notes</div>
+
+        <section class="glass" style="padding:20px 24px;">
+            <div style="font-size:13px;color:#5a6a7a;line-height:1.7;">
+                <p style="margin-bottom:10px;"><strong style="color:#1a2a3a;">Visual Association Cues:</strong></p>
+                <ul style="padding-left:18px;margin-bottom:14px;">
+                    <li>3px left-border accent (#0D5EA6) on the attachments panel reinforces "belongs to" relationship</li>
+                    <li>Contextual label "Documents attached to this purchase/invoice" makes the relationship explicit</li>
+                    <li>"Unlink" action (not "Delete") makes clear that removing only breaks the association — the file remains in the library</li>
+                    <li>"Attach from library" button allows linking existing documents without re-uploading</li>
+                </ul>
+                <p style="margin-bottom:10px;"><strong style="color:#1a2a3a;">List View Indicators:</strong></p>
+                <ul style="padding-left:18px;margin-bottom:14px;">
+                    <li>Paperclip icon + count badge provides quick scan of attachment status</li>
+                    <li>Rows without attachments show a subtle dash — no visual noise</li>
+                    <li>Badge is clickable (in implementation) to jump straight to the attachments panel</li>
+                </ul>
+                <p style="margin-bottom:10px;"><strong style="color:#1a2a3a;">Verified Badge:</strong></p>
+                <ul style="padding-left:18px;">
+                    <li>Used for signed documents or externally validated files</li>
+                    <li>Green color matches the success palette token</li>
+                    <li>Positioned inline with the filename for immediate visibility</li>
+                </ul>
+            </div>
+        </section>
+
+    </div>
+</body>
+</html>

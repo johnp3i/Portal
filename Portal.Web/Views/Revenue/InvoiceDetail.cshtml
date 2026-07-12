@@ -203,6 +203,9 @@
 <!-- Payment Schedule Section -->
 @await Html.PartialAsync("_PaymentScheduleSection")
 
+<!-- Document Attachments -->
+@await Component.InvokeAsync("AttachmentPanel", new { entityType = "Payment", entityId = invoice.Id })
+
 @section Scripts {
     <script src="/js/revenue-payment.js"></script>
     <script src="/js/payment-schedule.js"></script>

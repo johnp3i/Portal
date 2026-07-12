@@ -358,6 +358,9 @@
 }
 
 <!-- Back link -->
+<!-- Document Attachments -->
+@await Component.InvokeAsync("AttachmentPanel", new { entityType = "Quotation", entityId = Model.Quotation.Id })
+
 <div style="margin-top:24px;display:flex;justify-content:flex-end;">
     <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
 </div>

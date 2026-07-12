@@ -300,6 +300,7 @@
                             }
                         </td>
                         <td data-mobile="hide" style="white-space:nowrap;">
+                            @await Component.InvokeAsync("AttachmentCount", new { entityType = "Purchase", entityId = purchase.Id })
                             <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
                             @if (!purchase.IsCancelled)
                             {

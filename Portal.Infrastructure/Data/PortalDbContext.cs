@@ -120,6 +120,9 @@ public class PortalDbContext : DbContext
     // Cashflow schema
     public DbSet<CashFlowSettings> CashFlowSettings { get; set; } = null!;
 
+    // Document schema
+    public DbSet<DocumentAttachment> DocumentAttachments { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -187,6 +190,7 @@ public class PortalDbContext : DbContext
         ConfigurePaymentScheduleInstalmentStatusType(modelBuilder);
         ConfigurePaymentScheduleHistory(modelBuilder);
         ConfigureScheduleOverviewRawRow(modelBuilder);
+        ConfigureDocumentAttachment(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -2541,6 +2545,63 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureDocumentAttachment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DocumentAttachment>(entity =>
+        {
+            entity.ToTable("DocumentAttachment", "document");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.EntityType)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.FileName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.OriginalFileName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.ContentType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.StoragePath)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.FileSizeBytes)
+                .IsRequired();
+
+            entity.Property(e => e.UploadedByUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.IsDeleted)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.DeletedAtUtc)
+                .IsRequired(false);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.EntityType, e.EntityId })
+                .HasDatabaseName("IX_DocumentAttachment_BusinessId_EntityType_EntityId")
+                .HasFilter("[IsDeleted] = 0");
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -2611,6 +2672,9 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<SupplierRecurringRule>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId && !e.IsDeleted);
+
+        modelBuilder.Entity<DocumentAttachment>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId && !e.IsDeleted);
     }
 }

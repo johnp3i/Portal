@@ -224,6 +224,12 @@ builder.Services.AddScoped<SupplierRecurringRuleRepository>(sp =>
     new SupplierRecurringRuleRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IRecurringExpenseValidationService, RecurringExpenseValidationService>();
 builder.Services.AddScoped<ICsvImportService, CsvImportService>();
+
+// Document Attachments
+builder.Services.AddScoped<DocumentAttachmentRepository>(sp =>
+    new DocumentAttachmentRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IDocumentAttachmentService, DocumentAttachmentService>();
 builder.Services.AddScoped<VatSubmissionPeriodRepository>(sp =>
     new VatSubmissionPeriodRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<VatSubmissionRepository>(sp =>

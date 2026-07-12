@@ -150,6 +150,7 @@
                                 <span class="pill @financialPillClass">@FormatStatusName(item.FinancialStatusName)</span>
                             </td>
                             <td data-mobile="hide" style="white-space:nowrap;">
+                                @await Component.InvokeAsync("AttachmentCount", new { entityType = "Invoice", entityId = item.Id })
                                 <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Detail</a>
                                 @if (item.InvoiceStatusTypeId == 1)
                                 {

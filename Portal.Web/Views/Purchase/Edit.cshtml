@@ -214,6 +214,9 @@
     </form>
 </section>
 
+<!-- Document Attachments -->
+@await Component.InvokeAsync("AttachmentPanel", new { entityType = "Purchase", entityId = Model.Id })
+
 @section Scripts {
     <style>
         .expense-type-indicator {
