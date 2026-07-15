@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Contacts — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary-blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --bg: #F7FAFC;
+            --card-bg: #ffffff;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6a7a;
+            --text-muted: #8a9aaa;
+            --border: #e2e8f0;
+            --shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+            --shadow-card: 0 1px 6px rgba(13, 94, 166, 0.08);
+            --radius: 20px;
+            --radius-sm: 8px;
+            --font-heading: 'Manrope', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Topbar */
+        .topbar {
+            padding: 32px 40px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .topbar-left .eyebrow {
+            font-family: var(--font-heading);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 4px;
+        }
+
+        .topbar-left h1 {
+            font-family: var(--font-heading);
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .topbar-left .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-top: 12px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #0a4d8a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(13, 94, 166, 0.25);
+        }
+
+        .btn-secondary {
+            background: #eef4f8;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #e2ecf2;
+        }
+
+        /* Cards */
+        .glass {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        .card-pad {
+            padding: 24px 28px;
+        }
+
+        /* Content area */
+        .content {
+            padding: 0 40px 40px;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            margin-bottom: 22px;
+        }
+
+        .filter-bar .filter-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 180px;
+        }
+
+        .filter-bar .field.search-field {
+            min-width: 320px;
+            flex: 1;
+        }
+
+        .filter-bar .field label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+        }
+
+        .filter-bar .field input,
+        .filter-bar .field select {
+            padding: 9px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            background: #fff;
+            transition: border-color 0.15s;
+        }
+
+        .filter-bar .field input:focus,
+        .filter-bar .field select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.08);
+        }
+
+        .filter-bar .filter-actions {
+            padding-bottom: 2px;
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr {
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(13, 94, 166, 0.02);
+        }
+
+        .data-table tbody tr.expanded-row {
+            background: rgba(13, 94, 166, 0.02);
+        }
+
+        .data-table tbody td {
+            font-size: 13px;
+            padding: 14px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .name-cell {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .email-cell a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .email-cell a:hover {
+            text-decoration: underline;
+        }
+
+        .phone-cell a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .phone-cell a:hover {
+            color: var(--primary-blue);
+        }
+
+        .phone-cell .no-phone {
+            color: var(--text-muted);
+        }
+
+        /* Pills */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .pill-active {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--green);
+        }
+
+        .pill-inactive {
+            background: rgba(138, 154, 170, 0.12);
+            color: var(--text-muted);
+        }
+
+        .pill-leads-blue {
+            background: rgba(13, 94, 166, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .pill-leads-grey {
+            background: rgba(138, 154, 170, 0.08);
+            color: var(--text-muted);
+        }
+
+        .pill-stage-new {
+            background: rgba(87, 184, 232, 0.12);
+            color: #2a8ab8;
+        }
+
+        .pill-stage-contacted {
+            background: rgba(200, 145, 46, 0.12);
+            color: var(--amber);
+        }
+
+        .pill-product {
+            background: rgba(13, 94, 166, 0.08);
+            color: var(--primary-blue);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 6px;
+        }
+
+        /* Actions */
+        .actions-cell {
+            white-space: nowrap;
+        }
+
+        .actions-cell a {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            text-decoration: none;
+            margin-right: 12px;
+        }
+
+        .actions-cell a:hover {
+            text-decoration: underline;
+        }
+
+        .actions-cell a.action-danger {
+            color: var(--red);
+        }
+
+        .actions-cell a.action-green {
+            color: var(--green);
+        }
+
+        /* Expanded interest history */
+        .interest-history-row td {
+            padding: 0 !important;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .interest-history-panel {
+            background: rgba(13, 94, 166, 0.02);
+            padding: 18px 28px 18px 42px;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .interest-history-panel h4 {
+            font-family: var(--font-heading);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .interest-entries {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .interest-entry {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #fff;
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+
+        .interest-entry .entry-product {
+            flex-shrink: 0;
+        }
+
+        .interest-entry .entry-text {
+            flex: 1;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            max-width: 400px;
+        }
+
+        .interest-entry .entry-stage {
+            flex-shrink: 0;
+        }
+
+        .interest-entry .entry-date {
+            flex-shrink: 0;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Pagination */
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .pagination-controls button {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+
+        .pagination-controls button:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .pagination-controls button.active {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Date cell */
+        .date-cell {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .topbar {
+                padding: 24px 20px 18px;
+            }
+            .content {
+                padding: 0 20px 30px;
+            }
+            .topbar-left h1 {
+                font-size: 28px;
+            }
+            .filter-bar .field.search-field {
+                min-width: 100%;
+            }
+            .data-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="eyebrow">SALES</div>
+            <h1>Contacts</h1>
+            <div class="subtitle">Manage your prospect database and view interest history</div>
+        </div>
+        <div class="topbar-right">
+            <button class="btn btn-primary">+ New Contact</button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Filter Bar -->
+        <section class="glass card-pad filter-bar">
+            <div class="filter-row">
+                <div class="field search-field">
+                    <label>Search</label>
+                    <input type="text" placeholder="Search by name, email, phone, or company...">
+                </div>
+                <div class="field">
+                    <label>Status</label>
+                    <select>
+                        <option>All</option>
+                        <option>Active</option>
+                        <option>Inactive</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-primary">Filter</button>
+                    <button class="btn btn-secondary">Clear</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contacts Table -->
+        <section class="glass card-pad">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Company</th>
+                        <th>Leads</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Row 1 - Andreas (expanded) -->
+                    <tr class="expanded-row" onclick="toggleRow(this)">
+                        <td class="name-cell">Andreas Christoforou</td>
+                        <td class="email-cell"><a href="mailto:andreas@cypria-audit.com">andreas@cypria-audit.com</a></td>
+                        <td class="phone-cell"><a href="tel:+35722123456">+357 22 123456</a></td>
+                        <td>Cypria Audit Ltd</td>
+                        <td><span class="pill pill-leads-blue">2 leads</span></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td class="date-cell">5 Jul 2026</td>
+                        <td class="actions-cell">
+                            <a href="#">View</a>
+                            <a href="#">Edit</a>
+                            <a href="#" class="action-danger">Deactivate</a>
+                        </td>
+                    </tr>
+                    <!-- Expanded interest history for Row 1 -->
+                    <tr class="interest-history-row" id="history-row-1">
+                        <td colspan="8">
+                            <div class="interest-history-panel">
+                                <h4>Interest History — Andreas Christoforou</h4>
+                                <div class="interest-entries">
+                                    <div class="interest-entry">
+                                        <span class="entry-product"><span class="pill pill-product">WorkforcePi</span></span>
+                                        <span class="entry-text">"We need a workforce management solution..."</span>
+                                        <span class="entry-stage"><span class="pill pill-stage-contacted">Contacted</span></span>
+                                        <span class="entry-date">5 Jul 2026</span>
+                                    </div>
+                                    <div class="interest-entry">
+                                        <span class="entry-product"><span class="pill pill-product">Chaplin Pro</span></span>
+                                        <span class="entry-text">"Also interested in scheduling"</span>
+                                        <span class="entry-stage"><span class="pill pill-stage-new">New</span></span>
+                                        <span class="entry-date">14 Jul 2026</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Row 2 - Maria -->
+                    <tr onclick="toggleRow(this)">
+                        <td class="name-cell">Maria Georgiou</td>
+                        <td class="email-cell"><a href="mailto:maria@limassolhotels.com">maria@limassolhotels.com</a></td>
+                        <td class="phone-cell"><a href="tel:+35725987654">+357 25 987654</a></td>
+                        <td>Limassol Hotels Group</td>
+                        <td><span class="pill pill-leads-grey">1 lead</span></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td class="date-cell">12 Jul 2026</td>
+                        <td class="actions-cell">
+                            <a href="#">View</a>
+                            <a href="#">Edit</a>
+                            <a href="#" class="action-danger">Deactivate</a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 3 - Nikos -->
+                    <tr onclick="toggleRow(this)">
+                        <td class="name-cell">Nikos Papadopoulos</td>
+                        <td class="email-cell"><a href="mailto:nikos@cytech.com">nikos@cytech.com</a></td>
+                        <td class="phone-cell"><a href="tel:+35722555111">+357 22 555111</a></td>
+                        <td>CY Tech Solutions</td>
+                        <td><span class="pill pill-leads-grey">1 lead</span></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td class="date-cell">13 Jul 2026</td>
+                        <td class="actions-cell">
+                            <a href="#">View</a>
+                            <a href="#">Edit</a>
+                            <a href="#" class="action-danger">Deactivate</a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 4 - Costas -->
+                    <tr onclick="toggleRow(this)">
+                        <td class="name-cell">Costas Demetriou</td>
+                        <td class="email-cell"><a href="mailto:costas@nicosiamotors.com">costas@nicosiamotors.com</a></td>
+                        <td class="phone-cell"><a href="tel:+35722444222">+357 22 444222</a></td>
+                        <td>Nicosia Motors</td>
+                        <td><span class="pill pill-leads-grey">1 lead</span></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td class="date-cell">10 Jul 2026</td>
+                        <td class="actions-cell">
+                            <a href="#">View</a>
+                            <a href="#">Edit</a>
+                            <a href="#" class="action-danger">Deactivate</a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 5 - Yiannis -->
+                    <tr onclick="toggleRow(this)">
+                        <td class="name-cell">Yiannis Michaelides</td>
+                        <td class="email-cell"><a href="mailto:yiannis@larnacabay.com">yiannis@larnacabay.com</a></td>
+                        <td class="phone-cell"><a href="tel:+35724333111">+357 24 333111</a></td>
+                        <td>Larnaca Bay Restaurants</td>
+                        <td><span class="pill pill-leads-grey">1 lead</span></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td class="date-cell">7 Jul 2026</td>
+                        <td class="actions-cell">
+                            <a href="#">View</a>
+                            <a href="#">Edit</a>
+                            <a href="#" class="action-danger">Deactivate</a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 6 - Stavros -->
+                    <tr onclick="toggleRow(this)">
+                        <td class="name-cell">Stavros Ioannou</td>
+                        <td class="email-cell"><a href="mailto:stavros@techub.com.cy">stavros@techub.com.cy</a></td>
+                        <td class="phone-cell"><a href="tel:+35725111222">+357 25 111222</a></td>
+                        <td>Limassol Tech Hub</td>
+                        <td><span class="pill pill-leads-grey">1 lead</span></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td class="date-cell">1 Jul 2026</td>
+                        <td class="actions-cell">
+                            <a href="#">View</a>
+                            <a href="#">Edit</a>
+                            <a href="#" class="action-danger">Deactivate</a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 7 - Anna (Inactive) -->
+                    <tr onclick="toggleRow(this)">
+                        <td class="name-cell">Anna Loizou</td>
+                        <td class="email-cell"><a href="mailto:anna@famagusta-trading.com">anna@famagusta-trading.com</a></td>
+                        <td class="phone-cell"><span class="no-phone">—</span></td>
+                        <td>Famagusta Trading</td>
+                        <td><span class="pill pill-leads-grey">1 lead</span></td>
+                        <td><span class="pill pill-inactive">Inactive</span></td>
+                        <td class="date-cell">28 Jun 2026</td>
+                        <td class="actions-cell">
+                            <a href="#">View</a>
+                            <a href="#">Edit</a>
+                            <a href="#" class="action-green">Activate</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination-bar">
+                <div class="pagination-info">Showing 1–7 of 7 contacts</div>
+                <div class="pagination-controls">
+                    <button disabled>Prev</button>
+                    <button class="active">1</button>
+                    <button disabled>Next</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        function toggleRow(clickedRow) {
+            // Find the next sibling if it's a history row
+            const nextRow = clickedRow.nextElementSibling;
+            const isExpanded = nextRow && nextRow.classList.contains('interest-history-row');
+
+            // Close all expanded rows first
+            document.querySelectorAll('.interest-history-row').forEach(row => {
+                row.style.display = 'none';
+            });
+            document.querySelectorAll('.expanded-row').forEach(row => {
+                row.classList.remove('expanded-row');
+            });
+
+            // If the clicked row had an expanded history below it, toggle it
+            if (isExpanded) {
+                const isVisible = nextRow.style.display !== 'none';
+                if (!isVisible) {
+                    nextRow.style.display = '';
+                    clickedRow.classList.add('expanded-row');
+                }
+            }
+        }
+
+        // Initialize: show row 1's history expanded by default
+        document.addEventListener('DOMContentLoaded', function() {
+            const historyRow = document.getElementById('history-row-1');
+            if (historyRow) {
+                historyRow.style.display = '';
+            }
+        });
+    </script>
+
+</body>
+</html>

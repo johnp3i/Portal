@@ -259,6 +259,10 @@
                     <tr>
                         <td>
                             <strong>@(string.IsNullOrWhiteSpace(purchase.Description) ? purchase.ExpenseCategory?.Name ?? "Purchase" : purchase.Description)</strong>
+                            @if (!string.IsNullOrWhiteSpace(purchase.InvoiceNumber))
+                            {
+                                <div style="font-size:11px;color:#0D5EA6;margin-top:2px;">@purchase.InvoiceNumber</div>
+                            }
                             <div style="font-size:11px;color:#5a6a7a;margin-top:2px;">Added @purchase.CreatedAtUtc.ToString("dd MMM yyyy")</div>
                         </td>
                         <td>@purchase.Supplier?.Name</td>

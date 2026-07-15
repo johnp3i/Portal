@@ -6,10 +6,12 @@ namespace Portal.Infrastructure.Models;
 public class RecentPaymentDto
 {
     public int Id { get; set; }
+    public int PaymentId => Id;
     public DateTime PaymentDateUtc { get; set; }
     public string InvoiceNumber { get; set; } = null!;
     public string CustomerName { get; set; } = null!;
     public string PaymentMethodName { get; set; } = null!;
     public decimal Amount { get; set; }
     public bool IsFullPayment { get; set; }
+    public bool IsVoided { get; set; }
 }

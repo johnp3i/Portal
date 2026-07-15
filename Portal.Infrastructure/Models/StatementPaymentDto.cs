@@ -11,4 +11,7 @@ public class StatementPaymentDto
     public string? Reference { get; set; }
     public string? Notes { get; set; }
     public string PaymentMethodName { get; set; } = string.Empty;
+    public int? ParentPaymentId { get; set; }
+    public string? InvoiceNumber { get; set; }
+    public bool IsAutoAllocated { get; set; }
 }

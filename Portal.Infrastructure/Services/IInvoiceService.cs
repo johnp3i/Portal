@@ -35,6 +35,7 @@ public interface IInvoiceService
         string? searchTerm = null,
         int? vatPeriodId = null);
     Task<Invoice?> GetInvoiceByIdAsync(int id);
+    Task<Invoice?> GetInvoiceByIdAsync(int id, int businessId);
     Task<List<InvoiceLine>> GetInvoiceLinesAsync(int invoiceId);
 
     // Lifecycle

@@ -102,7 +102,7 @@ public class AdminSubscriptionController : Controller
 
             // Sync [billing].[Subscription] to keep both tables aligned
             var subscription = await _portalDbContext.Database
-                .SqlQueryRaw<int>("SELECT [Id] FROM [billing].[Subscription] WHERE [BusinessId] = @p0", request.BusinessId)
+                .SqlQueryRaw<int>("SELECT [Id] AS [Value] FROM [billing].[Subscription] WHERE [BusinessId] = @p0", request.BusinessId)
                 .FirstOrDefaultAsync();
 
             if (subscription > 0)

@@ -46,12 +46,12 @@ public class InvoiceRenderer : IInvoiceRenderer
 
     public async Task<string> RenderAsync(int invoiceId, int businessId)
     {
-        var invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId)
+        var invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId, businessId)
             ?? throw new InvalidOperationException($"Invoice {invoiceId} not found.");
 
         var lines = await _invoiceService.GetInvoiceLinesAsync(invoiceId);
         var sections = await _invoiceSectionService.GetByInvoiceIdAsync(invoiceId);
-        var customer = await _customerService.GetCustomerByIdAsync(invoice.CustomerId);
+        var customer = await _customerService.GetCustomerByIdAsync(invoice.CustomerId, businessId);
         var logos = await _logoService.GetByBusinessIdAsync(businessId);
         var primaryLogo = logos.FirstOrDefault(l => l.IsPrimary) ?? logos.FirstOrDefault();
         var business = await _businessService.GetBusinessByIdAsync(businessId);

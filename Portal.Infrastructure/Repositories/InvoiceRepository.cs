@@ -36,7 +36,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 INNER JOIN [invoice].[InvoiceFinancialStatusType] ON [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = [invoice].[InvoiceFinancialStatusType].[Id]
                 WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
                   AND [invoice].[Invoice].[IsDeleted] = 0
-                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC";
+                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC, [invoice].[Invoice].[Id] DESC";
 
             var results = new List<InvoiceListDto>();
             var connection = _context.Database.GetDbConnection();
@@ -109,6 +109,37 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 new SqlParameter("@BusinessId", businessId));
         }
         catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task<Invoice?> GetByIdAndBusinessIdUnfilteredAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [invoice].[Invoice].[Id], [invoice].[Invoice].[BusinessId], [invoice].[Invoice].[CustomerId],
+                       [invoice].[Invoice].[QuotationId], [invoice].[Invoice].[InvoiceStatusTypeId],
+                       [invoice].[Invoice].[InvoiceFinancialStatusTypeId], [invoice].[Invoice].[InvoiceNumber],
+                       [invoice].[Invoice].[InvoiceDate], [invoice].[Invoice].[DueDate],
+                       [invoice].[Invoice].[Subtotal], [invoice].[Invoice].[TaxAmount],
+                       [invoice].[Invoice].[TotalAmount], [invoice].[Invoice].[CurrencyCode],
+                       [invoice].[Invoice].[Notes], [invoice].[Invoice].[IsGrandTotalShown],
+                       [invoice].[Invoice].[IsQuotationReferenceShown],
+                       [invoice].[Invoice].[VatSubmissionPeriodId],
+                       [invoice].[Invoice].[IsDisputed],
+                       [invoice].[Invoice].[PaymentInstructionsOverride],
+                       [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
+                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
+                FROM [invoice].[Invoice]
+                WHERE [invoice].[Invoice].[Id] = @Id AND [invoice].[Invoice].[BusinessId] = @BusinessId";
+
+            return await ExecuteSingleRecordStoredProcedureUnfiltered(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception ex)
         {
             throw;
         }
@@ -359,7 +390,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                       [invoice].[Invoice].[InvoiceNumber] LIKE '%' + @SearchTerm + '%'
                       OR [customer].[Customer].[Name] LIKE '%' + @SearchTerm + '%'
                   ))
-                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC
+                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC, [invoice].[Invoice].[Id] DESC
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             var results = new List<InvoiceListDto>();
@@ -461,7 +492,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                       [invoice].[Invoice].[InvoiceNumber] LIKE '%' + @SearchTerm + '%'
                       OR [customer].[Customer].[Name] LIKE '%' + @SearchTerm + '%'
                   ))
-                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC";
+                ORDER BY [invoice].[Invoice].[InvoiceDate] DESC, [invoice].[Invoice].[Id] DESC";
 
             var results = new List<InvoiceListDto>();
             var connection = _context.Database.GetDbConnection();

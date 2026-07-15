@@ -38,6 +38,9 @@ public static class ModuleControllerMap
         [PortalModules.Api] = new[] { "Api" },
         [PortalModules.Webhooks] = new[] { "Webhook", "Webhooks" },
         [PortalModules.MultiCurrency] = new[] { "MultiCurrency", "Currency" },
+        [PortalModules.SchedulePayments] = new[] { "PaymentSchedule" },
+        [PortalModules.RecurringExpenseValidation] = new[] { "RecurringExpense" },
+        [PortalModules.PurchaseImport] = new[] { "PurchaseImport", "ParserTemplate" },
     };
 
     /// <summary>

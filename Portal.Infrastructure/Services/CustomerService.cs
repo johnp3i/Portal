@@ -54,6 +54,11 @@ public class CustomerService : ICustomerService
         return await _customerRepository.GetByIdAndBusinessIdAsync(id, _currentTenantService.CurrentBusinessId);
     }
 
+    public async Task<Customer?> GetCustomerByIdAsync(int id, int businessId)
+    {
+        return await _customerRepository.GetByIdAndBusinessIdUnfilteredAsync(id, businessId);
+    }
+
     public async Task<Customer> CreateCustomerAsync(Customer customer)
     {
         ValidateName(customer.Name);

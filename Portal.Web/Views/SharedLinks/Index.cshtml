@@ -11,10 +11,29 @@
     </div>
 </div>
 
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:240px;">
+            <label for="linkSearch">Search</label>
+            <input type="text" id="linkSearch" placeholder="Reference, email, or customer..." maxlength="200" />
+        </div>
+        <div class="field" style="min-width:200px;">
+            <label for="customerFilter">Customer</label>
+            <select id="customerFilter">
+                <option value="">All Customers</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="filterLinks()">Search</button>
+            <button type="button" class="btn btn-secondary" onclick="clearLinkFilters()">Clear</button>
+        </div>
+    </div>
+</section>
+
 <section class="glass card-pad">
     @if (Model != null && Model.Count > 0)
     {
-        <table>
+        <table id="sharedLinksTable">
             <thead>
                 <tr>
                     <th>Document Type</th>
@@ -29,7 +48,7 @@
             <tbody>
                 @foreach (var link in Model)
                 {
-                    <tr>
+                    <tr data-customer="@link.CustomerName" data-reference="@link.DocumentReference" data-email="@link.CustomerEmail">
                         <td>@link.DocumentType</td>
                         <td><strong>@link.DocumentReference</strong></td>
                         <td>@link.CustomerEmail</td>
@@ -139,5 +158,51 @@
                 }
             });
         }
+
+        // Filter logic
+        function filterLinks() {
+            var query = document.getElementById('linkSearch').value.toLowerCase().trim();
+            var customer = document.getElementById('customerFilter').value;
+            var rows = document.querySelectorAll('#sharedLinksTable tbody tr');
+
+            rows.forEach(function(row) {
+                var ref = (row.getAttribute('data-reference') || '').toLowerCase();
+                var email = (row.getAttribute('data-email') || '').toLowerCase();
+                var cust = row.getAttribute('data-customer') || '';
+
+                var matchesSearch = !query || ref.indexOf(query) !== -1 || email.indexOf(query) !== -1 || cust.toLowerCase().indexOf(query) !== -1;
+                var matchesCustomer = !customer || cust === customer;
+
+                row.style.display = (matchesSearch && matchesCustomer) ? '' : 'none';
+            });
+        }
+
+        function clearLinkFilters() {
+            document.getElementById('linkSearch').value = '';
+            document.getElementById('customerFilter').value = '';
+            filterLinks();
+        }
+
+        // Populate customer dropdown from table data
+        (function() {
+            var rows = document.querySelectorAll('#sharedLinksTable tbody tr');
+            var customers = new Set();
+            rows.forEach(function(row) {
+                var cust = row.getAttribute('data-customer');
+                if (cust) customers.add(cust);
+            });
+            var select = document.getElementById('customerFilter');
+            Array.from(customers).sort().forEach(function(name) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+        })();
+
+        // Search on Enter key
+        document.getElementById('linkSearch').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); filterLinks(); }
+        });
     </script>
 }

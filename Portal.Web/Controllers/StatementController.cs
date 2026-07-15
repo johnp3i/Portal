@@ -22,6 +22,7 @@ public class StatementController : Controller
     private readonly IStatementRenderer _statementRenderer;
     private readonly IEmailService _emailService;
     private readonly ILogoService _logoService;
+    private readonly IPaymentService _paymentService;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<StatementController> _logger;
 
@@ -33,6 +34,7 @@ public class StatementController : Controller
         IStatementRenderer statementRenderer,
         IEmailService emailService,
         ILogoService logoService,
+        IPaymentService paymentService,
         IWebHostEnvironment environment,
         ILogger<StatementController> logger)
     {
@@ -43,6 +45,7 @@ public class StatementController : Controller
         _statementRenderer = statementRenderer;
         _emailService = emailService;
         _logoService = logoService;
+        _paymentService = paymentService;
         _environment = environment;
         _logger = logger;
     }
@@ -112,7 +115,9 @@ public class StatementController : Controller
                 description = l.Description,
                 debit = l.Debit,
                 credit = l.Credit,
-                runningBalance = l.RunningBalance
+                runningBalance = l.RunningBalance,
+                paymentId = l.PaymentId,
+                isVoided = l.IsVoided
             })
         });
     }

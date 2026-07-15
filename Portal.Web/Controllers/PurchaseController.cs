@@ -292,7 +292,7 @@ public class PurchaseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> BulkEntry()
+    public async Task<IActionResult> BulkEntry(int? importSessionId)
     {
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var categories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
@@ -318,7 +318,78 @@ public class PurchaseController : Controller
         ViewBag.ExpenseTypes = expenseTypes;
         ViewBag.UnsubmittedVatPeriods = unsubmittedPeriods;
 
+        // Load pre-populated data from import session (if transferring from Import)
+        ViewBag.ImportSessionId = importSessionId;
+
         return View();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetImportSessionData(int importSessionId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+
+            var session = await _dbContext.Set<Portal.Infrastructure.Entities.Import.ImportSession>()
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.Id == importSessionId && s.BusinessId == businessId);
+
+            if (session == null)
+                return Json(new { success = false, message = "Session not found." });
+
+            var rows = System.Text.Json.JsonSerializer.Deserialize<List<Portal.Infrastructure.Models.Import.ValidatedRow>>(
+                session.RowDataJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+            // Resolve supplier name
+            var supplierName = await _dbContext.Suppliers
+                .Where(s => s.Id == session.SupplierId && s.BusinessId == businessId)
+                .Select(s => s.Name)
+                .FirstOrDefaultAsync() ?? "";
+
+            // Resolve category names
+            var categoryIds = rows
+                .Where(r => r.Data.ExpenseCategoryId.HasValue)
+                .Select(r => r.Data.ExpenseCategoryId!.Value)
+                .Distinct()
+                .ToList();
+
+            var categoryNames = await _dbContext.ExpenseCategories
+                .Where(c => categoryIds.Contains(c.Id) && c.BusinessId == businessId)
+                .ToDictionaryAsync(c => c.Id, c => c.Name);
+
+            var bulkData = rows
+                .Where(r => r.Data.InvoiceDate.HasValue && (r.Data.AmountExcludingVat.HasValue || r.Data.TotalAmount.HasValue))
+                .Select(r => new
+                {
+                    invoiceDate = r.Data.InvoiceDate?.ToString("yyyy-MM-dd"),
+                    invoiceNumber = r.Data.InvoiceNumber,
+                    description = r.Data.Description,
+                    amountExcludingVat = r.Data.AmountExcludingVat,
+                    vatAmount = r.Data.VatAmount,
+                    totalAmount = r.Data.TotalAmount,
+                    country = r.Data.Country,
+                    notes = r.Data.Notes,
+                    supplierId = session.SupplierId,
+                    supplierName,
+                    expenseCategoryId = r.Data.ExpenseCategoryId,
+                    categoryName = r.Data.ExpenseCategoryId.HasValue && categoryNames.ContainsKey(r.Data.ExpenseCategoryId.Value)
+                        ? categoryNames[r.Data.ExpenseCategoryId.Value] : (string?)null,
+                    purchaseOriginTypeId = r.Data.PurchaseOriginTypeId,
+                    vatSubmissionPeriodId = r.Data.VatSubmissionPeriodId
+                })
+                .ToList();
+
+            // Delete session after loading
+            _dbContext.Remove(session);
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, data = bulkData });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load import data." });
+        }
     }
 
     [HttpPost]

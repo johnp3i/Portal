@@ -123,6 +123,12 @@ public class ImportValidationService : IImportValidationService
             validated.Errors.Add("Amount must be greater than zero");
         }
 
+        // TotalAmount must be > 0 (when provided directly without AmountExcludingVat)
+        if (row.TotalAmount.HasValue && !row.AmountExcludingVat.HasValue && row.TotalAmount.Value <= 0)
+        {
+            validated.Errors.Add("Total amount must be greater than zero");
+        }
+
         // VatAmount must be >= 0
         if (row.VatAmount.HasValue && row.VatAmount.Value < 0)
         {

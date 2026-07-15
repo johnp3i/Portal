@@ -60,6 +60,9 @@ public class FinancialStatusEngine : IFinancialStatusEngine
             return StatusPaid;
 
         // Overdue: has outstanding balance and past due date
+        // DESIGN DECISION: Overdue takes priority over PartiallyPaid. An invoice that is both
+        // partially paid AND past due is classified as Overdue — the urgency of the overdue state
+        // is more actionable for the business than the "partially paid" information.
         if (outstandingBalance > 0 && dueDate < DateOnly.FromDateTime(DateTime.UtcNow))
             return StatusOverdue;
 
@@ -68,10 +71,13 @@ public class FinancialStatusEngine : IFinancialStatusEngine
             return StatusPartiallyPaid;
 
         // Unpaid: full amount outstanding and not yet overdue
+        // NOTE: An invoice with partial credit notes applied (outstanding < totalAmount) but no payments
+        // and not yet overdue will fall through to the default "Unpaid" status. This is semantically
+        // correct — the invoice hasn't been paid, even though credits reduced the balance.
         if (outstandingBalance == totalAmount && dueDate >= DateOnly.FromDateTime(DateTime.UtcNow))
             return StatusUnpaid;
 
-        // Default: Unpaid
+        // Default: Unpaid (covers edge cases like partial credits with no payments, not overdue)
         return StatusUnpaid;
     }
 

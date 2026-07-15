@@ -143,4 +143,28 @@ public class ImportSessionRepository : GenericStoredProcedureRepository<ImportSe
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets the count of active (unconfirmed) sessions for a business.
+    /// </summary>
+    public async Task<int> GetActiveSessionCountAsync(int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT COUNT(*)
+                FROM [import].[ImportSession]
+                WHERE ImportSession.BusinessId = @BusinessId
+                  AND ImportSession.IsConfirmed = 0";
+
+            var result = await _context.Database.SqlQueryRaw<int>(query,
+                new SqlParameter("@BusinessId", businessId)).ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 }

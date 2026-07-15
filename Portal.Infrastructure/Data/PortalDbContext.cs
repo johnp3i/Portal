@@ -822,9 +822,11 @@ public class PortalDbContext : DbContext
                 .HasForeignKey(e => e.BusinessId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
+            // InvoiceId is nullable — NULL for parent (global) payments
             entity.HasOne(e => e.Invoice)
                 .WithMany(i => i.Payments)
                 .HasForeignKey(e => e.InvoiceId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
             entity.HasOne(e => e.PaymentMethodType)
@@ -832,11 +834,41 @@ public class PortalDbContext : DbContext
                 .HasForeignKey(e => e.PaymentMethodTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
+            // Self-referencing FK: ParentPaymentId → Payment.Id
+            entity.HasOne(e => e.ParentPayment)
+                .WithMany(e => e.ChildAllocations)
+                .HasForeignKey(e => e.ParentPaymentId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            // CustomerId FK → Customer.Id (set on parent payments only)
+            entity.HasOne(e => e.Customer)
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
             entity.HasIndex(e => e.BusinessId)
                 .HasDatabaseName("IX_Payment_BusinessId");
 
+            entity.HasIndex(e => e.ParentPaymentId)
+                .HasDatabaseName("IX_Payment_ParentPaymentId")
+                .HasFilter("[ParentPaymentId] IS NOT NULL");
+
+            entity.HasIndex(e => e.CustomerId)
+                .HasDatabaseName("IX_Payment_CustomerId")
+                .HasFilter("[CustomerId] IS NOT NULL");
+
             entity.Property(e => e.Amount)
                 .HasPrecision(18, 2);
+
+            entity.Property(e => e.CreditAmount)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0m);
+
+            entity.Property(e => e.IsAutoAllocated)
+                .IsRequired()
+                .HasDefaultValue(false);
 
             entity.Property(e => e.Reference)
                 .HasMaxLength(200);

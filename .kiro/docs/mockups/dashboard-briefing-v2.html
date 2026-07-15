@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Briefing — Option B Polished</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --green: #129867;
+            --warning: #C8912E;
+            --red: #C24A4A;
+            --bg: #F7FAFC;
+            --text: #1e293b;
+            --muted: #5a6a7a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 40px;
+            min-height: 100vh;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+        .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 40px; }
+        .section-title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 50px 0 14px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(13,94,166,.08);
+        }
+        .section-desc { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+        a { color: var(--blue); font-weight: 600; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<h1>Dashboard Briefing — Option B (Polished)</h1>
+<p class="subtitle">Premium, warm, operational. Designed to feel like your platform is watching out for you.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h3 class="section-title">State: Mixed (urgent + positive)</h3>
+<p class="section-desc">The most common state — some items need attention, some good news.</p>
+
+<section style="background:linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);border-radius:18px;border:1px solid rgba(13,94,166,.08);box-shadow:0 4px 24px rgba(13,94,166,.05);padding:26px 30px;margin-bottom:24px;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg, rgba(13,94,166,.1) 0%, rgba(87,184,232,.1) 100%);display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">Good morning</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">Your operational briefing</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:500;">Today, 13 Jul 2026</div>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg, rgba(13,94,166,.08) 0%, transparent 100%);margin-bottom:16px;"></div>
+
+    <!-- Insights -->
+    <div style="display:flex;flex-direction:column;gap:11px;">
+        <!-- Urgent: Overdue -->
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C24A4A;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(194,74,74,.12);"></span>
+            <span>You have <strong>3 overdue invoices</strong> totalling <strong>€4,200.00</strong> — the oldest is 12 days past due from <strong>Le Paris Roasting</strong>. <a href="#">View receivables →</a></span>
+        </div>
+
+        <!-- Action: Proposals -->
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>2 proposals</strong> worth <strong>€8,500.00</strong> are awaiting client acceptance. <a href="#">Follow up →</a></span>
+        </div>
+
+        <!-- Action: Unassigned -->
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>5 purchases</strong> are not yet assigned to a VAT period. <a href="#">Assign now →</a></span>
+        </div>
+
+        <!-- Action: Draft invoices -->
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>2 invoices</strong> have been sitting in Draft for more than 3 days. <a href="#">Review drafts →</a></span>
+        </div>
+
+        <!-- Positive: Cash flow -->
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span>Cash flow looks healthy for the next 30 days.</span>
+        </div>
+
+        <!-- Positive: Payment received -->
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span>A payment of <strong>€1,200.00</strong> was received from <strong>Acme Wholesale</strong> yesterday.</span>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h3 class="section-title">State: All Clear</h3>
+<p class="section-desc">When nothing needs attention. The border turns green, tone is celebratory but calm.</p>
+
+<section style="background:linear-gradient(135deg, #ffffff 0%, #f5fcf9 100%);border-radius:18px;border:1px solid rgba(18,152,103,.1);box-shadow:0 4px 24px rgba(18,152,103,.04);padding:26px 30px;margin-bottom:24px;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg, rgba(18,152,103,.1) 0%, rgba(18,152,103,.05) 100%);display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#129867" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">Good afternoon</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">Your operational briefing</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:500;">Today, 13 Jul 2026</div>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg, rgba(18,152,103,.1) 0%, transparent 100%);margin-bottom:16px;"></div>
+
+    <!-- All clear message -->
+    <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+        <span>Everything looks good — no items need your attention right now. A payment of <strong>€1,200.00</strong> was received from <strong>Acme Wholesale</strong> this morning.</span>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h3 class="section-title">State: Critical (overdue dominant)</h3>
+<p class="section-desc">When the business has multiple urgent items. The tone shifts subtly — still calm but with emphasis on what matters first.</p>
+
+<section style="background:linear-gradient(135deg, #ffffff 0%, #fefafa 100%);border-radius:18px;border:1px solid rgba(194,74,74,.08);box-shadow:0 4px 24px rgba(194,74,74,.04);padding:26px 30px;margin-bottom:24px;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg, rgba(194,74,74,.1) 0%, rgba(194,74,74,.05) 100%);display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#C24A4A" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">Good morning</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">A few things need your attention</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:500;">Today, 13 Jul 2026</div>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg, rgba(194,74,74,.1) 0%, transparent 100%);margin-bottom:16px;"></div>
+
+    <!-- Insights -->
+    <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C24A4A;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(194,74,74,.12);"></span>
+            <span>You have <strong>7 overdue invoices</strong> totalling <strong>€12,840.00</strong> — the oldest is 28 days past due from <strong>Global Traders Ltd</strong>. <a href="#">View receivables →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C24A4A;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(194,74,74,.12);"></span>
+            <span>Your 30-day cash flow projection is <strong style="color:#C24A4A;">negative (−€3,200.00)</strong>. <a href="#">Review forecast →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>4 payment reminders</strong> are scheduled to send today. <a href="#">View upcoming →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>12 purchases</strong> are not yet assigned to a VAT period. <a href="#">Assign now →</a></span>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h3 class="section-title">State: New Business (onboarding)</h3>
+<p class="section-desc">First-time user. Warm welcome, subtle guidance without pressure.</p>
+
+<section style="background:linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);border-radius:18px;border:1px solid rgba(13,94,166,.08);box-shadow:0 4px 24px rgba(13,94,166,.05);padding:26px 30px;margin-bottom:24px;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg, rgba(13,94,166,.1) 0%, rgba(87,184,232,.1) 100%);display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">Welcome to your dashboard</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">Let's get you started</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg, rgba(13,94,166,.08) 0%, transparent 100%);margin-bottom:16px;"></div>
+
+    <div style="font-size:14px;color:#334155;line-height:1.7;">
+        Your workspace is ready. Start by <a href="#">creating your first quotation</a>, <a href="#">adding a supplier</a>, or <a href="#">recording a purchase</a>. Your briefing will update as your business data grows.
+    </div>
+</section>
+
+</body>
+</html>

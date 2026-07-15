@@ -199,17 +199,23 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                        [revenue].[Payment].[Amount],
                        [revenue].[Payment].[Reference],
                        [revenue].[Payment].[Notes],
-                       [revenue].[PaymentMethodType].[Name]
+                       [revenue].[Payment].[ParentPaymentId],
+                       [revenue].[Payment].[IsAutoAllocated],
+                       [revenue].[PaymentMethodType].[Name],
+                       [invoice].[Invoice].[InvoiceNumber]
                 FROM [revenue].[Payment]
-                INNER JOIN [invoice].[Invoice]
+                LEFT JOIN [invoice].[Invoice]
                     ON [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
                 INNER JOIN [revenue].[PaymentMethodType]
                     ON [revenue].[Payment].[PaymentMethodTypeId] = [revenue].[PaymentMethodType].[Id]
-                WHERE [invoice].[Invoice].[CustomerId] = @CustomerId
-                  AND [revenue].[Payment].[BusinessId] = @BusinessId
+                WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                   AND [revenue].[Payment].[IsVoided] = 0
                   AND [revenue].[Payment].[PaymentDateUtc] >= @FromDate
                   AND [revenue].[Payment].[PaymentDateUtc] <= @ToDate
+                  AND (
+                      [invoice].[Invoice].[CustomerId] = @CustomerId
+                      OR [revenue].[Payment].[CustomerId] = @CustomerId
+                  )
                 ORDER BY [revenue].[Payment].[PaymentDateUtc]";
 
             var results = new List<StatementPaymentDto>();
@@ -242,7 +248,10 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                         Amount = reader.GetDecimal(reader.GetOrdinal("Amount")),
                         Reference = reader.IsDBNull(reader.GetOrdinal("Reference")) ? null : reader.GetString(reader.GetOrdinal("Reference")),
                         Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
-                        PaymentMethodName = reader.GetString(reader.GetOrdinal("Name"))
+                        PaymentMethodName = reader.GetString(reader.GetOrdinal("Name")),
+                        ParentPaymentId = reader.IsDBNull(reader.GetOrdinal("ParentPaymentId")) ? null : reader.GetInt32(reader.GetOrdinal("ParentPaymentId")),
+                        InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber")),
+                        IsAutoAllocated = reader.GetBoolean(reader.GetOrdinal("IsAutoAllocated"))
                     });
                 }
             }

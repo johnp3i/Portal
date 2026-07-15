@@ -209,8 +209,10 @@ public class PaymentRecordingIntegrationTests
         var paymentService = new PaymentService(
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
+            mockCreditNoteRepo.Object,
             statusEngine,
             new Mock<IPaymentScheduleService>().Object,
+            new Mock<IPaymentAllocationEngine>().Object,
             dbContext);
 
         return (paymentService, statusEngine);

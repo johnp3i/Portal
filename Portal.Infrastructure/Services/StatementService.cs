@@ -75,28 +75,68 @@ public class StatementService : IStatementService
         }
 
         // 4. Build statement lines for payments
+        // For child allocations (ParentPaymentId != null), add a note about the parent payment amount.
+        // For parent payments (InvoiceId = null), skip them — the children carry the detail.
+        // For standalone payments (ParentPaymentId = null, InvoiceId != null), show as normal.
+        var parentIds = payments.Where(p => p.ParentPaymentId == null && p.InvoiceNumber == null).Select(p => p.Id).ToHashSet();
+        var parentAmounts = payments.Where(p => parentIds.Contains(p.Id)).ToDictionary(p => p.Id, p => p.Amount);
+
         foreach (var payment in payments)
         {
+            // Skip parent payments that have children (children carry the detail)
+            // But KEEP parent payments that are credit-only (no children, CreditAmount > 0 or no allocations exist)
+            if (payment.ParentPaymentId == null && payment.InvoiceNumber == null)
+            {
+                // This is a parent payment — check if it has children in the list
+                var hasChildren = payments.Any(p => p.ParentPaymentId == payment.Id);
+                if (hasChildren)
+                    continue; // Skip — children will show individually
+
+                // No children — this is a credit-only payment, show it
+            }
+
             var reference = string.IsNullOrEmpty(payment.Reference)
                 ? payment.PaymentMethodName
                 : $"{payment.PaymentMethodName} · Ref: {payment.Reference}";
+
+            // Add invoice reference
+            if (!string.IsNullOrEmpty(payment.InvoiceNumber))
+            {
+                reference += $" · {payment.InvoiceNumber}";
+            }
+
+            // If this is a child allocation, annotate with parent amount
+            if (payment.ParentPaymentId.HasValue && parentAmounts.TryGetValue(payment.ParentPaymentId.Value, out var parentAmount))
+            {
+                reference += $" · from €{parentAmount:N2} payment";
+            }
+
+            var description = payment.InvoiceNumber != null
+                ? $"Applied to {payment.InvoiceNumber}"
+                : (payment.ParentPaymentId == null && payment.InvoiceNumber == null)
+                    ? "Credit payment (unallocated)"
+                    : (payment.Notes ?? string.Empty);
 
             transactionLines.Add(new StatementLineDto
             {
                 Date = DateOnly.FromDateTime(payment.PaymentDateUtc),
                 Type = StatementLineType.Payment,
                 Reference = reference,
-                Description = payment.Notes ?? string.Empty,
+                Description = description,
                 Debit = 0m,
                 Credit = payment.Amount,
-                RunningBalance = 0m // Will be computed after sorting
+                RunningBalance = 0m,
+                PaymentId = payment.Id,
+                IsVoided = false
             });
         }
 
-        // 5. Sort lines chronologically by Date, invoices before payments on same date
+        // 5. Sort lines chronologically by Date, invoices before payments on same date,
+        //    then payments grouped by target invoice for readability.
         transactionLines = transactionLines
             .OrderBy(l => l.Date)
             .ThenBy(l => l.Type == StatementLineType.Invoice ? 0 : 1)
+            .ThenBy(l => l.Description)
             .ToList();
 
         // 6. Build the full lines list with Opening line prepended

@@ -65,8 +65,24 @@ public class ImportEngineService : IImportEngineService
                 return ServiceResult<ImportSessionResult>.Fail("File size exceeds the 5 MB limit.");
             }
 
+            // Validate file content (magic bytes for Excel files)
+            if (!extension.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!ValidateExcelMagicBytes(fileStream))
+                {
+                    return ServiceResult<ImportSessionResult>.Fail("The file could not be read. Please verify the format is a valid Excel file.");
+                }
+            }
+
+            // Ensure stream is at the beginning before parsing
+            if (fileStream.CanSeek)
+            {
+                fileStream.Position = 0;
+            }
+
             // Parse file
             List<ParsedRow> parsedRows;
+            var usedFallbackAutoDetect = false;
 
             if (templateId.HasValue)
             {
@@ -77,6 +93,17 @@ public class ImportEngineService : IImportEngineService
                 parsedRows = extension.Equals(".csv", StringComparison.OrdinalIgnoreCase)
                     ? _fileParsingService.ParseCsv(fileStream, template)
                     : _fileParsingService.ParseExcel(fileStream, template);
+
+                // Fallback: if template produced 0 rows, try auto-detection
+                if (parsedRows.Count == 0 && fileStream.CanSeek)
+                {
+                    fileStream.Position = 0;
+                    parsedRows = _fileParsingService.AutoDetectAndParse(fileStream, extension);
+                    if (parsedRows.Count > 0)
+                    {
+                        usedFallbackAutoDetect = true;
+                    }
+                }
             }
             else
             {
@@ -97,6 +124,17 @@ public class ImportEngineService : IImportEngineService
 
             if (parsedRows.Count == 0)
             {
+                // Provide a more helpful error when template is configured but produces no results
+                if (templateId.HasValue)
+                {
+                    var template = await _templateService.GetTemplateByIdAsync(templateId.Value, businessId);
+                    var templateName = template?.Name ?? "selected template";
+                    return ServiceResult<ImportSessionResult>.Fail(
+                        $"No data rows found using the '{templateName}' template (Header Row: {template?.HeaderRow}, Data Start Row: {template?.DataStartRow}). " +
+                        "Check that the header row and data start row numbers match your file's structure. " +
+                        "The system searched ±3 rows from the configured position for matching column names.");
+                }
+
                 return ServiceResult<ImportSessionResult>.Fail("No data rows found in the file.");
             }
 
@@ -138,6 +176,17 @@ public class ImportEngineService : IImportEngineService
                 CreatedAtUtc = DateTime.UtcNow
             };
 
+            // Clean up expired sessions for this business (older than 1 hour during active development, 24 hours in production)
+            await _sessionRepository.DeleteExpiredSessionsAsync(DateTime.UtcNow.AddHours(-1));
+
+            // Limit active sessions per business (prevent storage abuse)
+            var activeCount = await _sessionRepository.GetActiveSessionCountAsync(businessId);
+            if (activeCount >= 10)
+            {
+                return ServiceResult<ImportSessionResult>.Fail(
+                    "Too many active import sessions. Please confirm or cancel existing imports before starting a new one.");
+            }
+
             var sessionId = await _sessionRepository.CreateSessionAsync(session);
 
             return ServiceResult<ImportSessionResult>.Ok(new ImportSessionResult
@@ -148,6 +197,7 @@ public class ImportEngineService : IImportEngineService
                 InvalidRows = invalidCount,
                 WarningRows = warningCount,
                 BatchTotal = batchTotal,
+                UsedFallbackAutoDetect = usedFallbackAutoDetect,
                 Rows = validatedRows
             });
         }
@@ -380,5 +430,35 @@ public class ImportEngineService : IImportEngineService
                 row.ExpenseCategoryId = null; // Will be re-resolved during validation
                 break;
         }
+    }
+
+    /// <summary>
+    /// Validates that Excel files start with the correct magic bytes (ZIP for .xlsx, OLE2 for .xls).
+    /// Resets stream position after checking.
+    /// </summary>
+    private static bool ValidateExcelMagicBytes(Stream stream)
+    {
+        if (!stream.CanSeek || stream.Length < 4)
+            return false;
+
+        var originalPosition = stream.Position;
+        stream.Position = 0;
+
+        var header = new byte[4];
+        var bytesRead = stream.Read(header, 0, 4);
+        stream.Position = originalPosition;
+
+        if (bytesRead < 4)
+            return false;
+
+        // .xlsx files are ZIP archives: starts with PK (50 4B 03 04)
+        if (header[0] == 0x50 && header[1] == 0x4B && header[2] == 0x03 && header[3] == 0x04)
+            return true;
+
+        // .xls files are OLE2 Compound Documents: starts with D0 CF 11 E0
+        if (header[0] == 0xD0 && header[1] == 0xCF && header[2] == 0x11 && header[3] == 0xE0)
+            return true;
+
+        return false;
     }
 }

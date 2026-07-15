@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Briefing — Mockup Options</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --green: #129867;
+            --warning: #C8912E;
+            --red: #C24A4A;
+            --bg: #F7FAFC;
+            --text: #1e293b;
+            --muted: #5a6a7a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 40px;
+            min-height: 100vh;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+        .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 40px; }
+        .option-label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 50px 0 16px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(13,94,166,.1);
+        }
+        .option-desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+        .glass {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(13,94,166,.04);
+            border: 1px solid rgba(13,94,166,.06);
+        }
+        a { color: var(--blue); font-weight: 600; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<h1>Dashboard Briefing — Design Options</h1>
+<p class="subtitle">Three visual approaches for the narrative summary card. Same data, different presentation.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 class="option-label">Option A: Flowing Paragraph</h2>
+<p class="option-desc">Clean, minimal. Reads like a written brief. Compact vertical space. Links are inline.</p>
+
+<section class="glass" style="border-left:3px solid #0D5EA6;padding:20px 24px;margin-bottom:16px;">
+    <div style="font-size:14px;line-height:1.8;color:#334155;">
+        <strong style="color:#0B1B28;">Good morning.</strong>
+        You have <strong>3 overdue invoices</strong> totalling <strong>€4,200.00</strong> — the oldest is 12 days past due (Le Paris Roasting).
+        <a href="#">View receivables →</a>
+        &nbsp;·&nbsp;
+        <strong>2 proposals</strong> worth <strong>€8,500.00</strong> are awaiting acceptance.
+        <a href="#">Follow up →</a>
+        &nbsp;·&nbsp;
+        <strong>5 purchases</strong> are not yet assigned to a VAT period.
+        <a href="#">Assign now →</a>
+        &nbsp;·&nbsp;
+        Cash flow looks healthy for the next 30 days.
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 class="option-label">Option B: Structured Lines</h2>
+<p class="option-desc">Each insight on its own line. Easier to scan quickly. Still narrative tone. Links at end of each line.</p>
+
+<section class="glass" style="border-left:3px solid #0D5EA6;padding:22px 26px;margin-bottom:16px;">
+    <div style="font-size:13px;font-weight:600;color:#0B1B28;margin-bottom:12px;">Good morning — here's your briefing.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;color:#334155;line-height:1.6;">
+        <div>
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#C24A4A;margin-right:10px;vertical-align:middle;"></span>
+            You have <strong>3 overdue invoices</strong> totalling <strong>€4,200.00</strong> — the oldest is 12 days past due (Le Paris Roasting).
+            <a href="#" style="margin-left:8px;">View →</a>
+        </div>
+        <div>
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#C8912E;margin-right:10px;vertical-align:middle;"></span>
+            <strong>2 proposals</strong> worth <strong>€8,500.00</strong> are awaiting client acceptance.
+            <a href="#" style="margin-left:8px;">Follow up →</a>
+        </div>
+        <div>
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#C8912E;margin-right:10px;vertical-align:middle;"></span>
+            <strong>5 purchases</strong> are not yet assigned to a VAT period.
+            <a href="#" style="margin-left:8px;">Assign →</a>
+        </div>
+        <div>
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#129867;margin-right:10px;vertical-align:middle;"></span>
+            Cash flow looks healthy for the next 30 days.
+        </div>
+        <div>
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#129867;margin-right:10px;vertical-align:middle;"></span>
+            A payment of <strong>€1,200.00</strong> was received from <strong>Acme Wholesale</strong> yesterday.
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 class="option-label">Option C: Card with Icon Rows</h2>
+<p class="option-desc">More visual. Uses coloured icons to signal urgency (red = overdue, amber = needs action, green = good). Feels more like a notification centre.</p>
+
+<section class="glass" style="padding:22px 26px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(13,94,166,.08);display:flex;align-items:center;justify-content:center;">
+            <svg width="18" height="18" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <div>
+            <div style="font-size:15px;font-weight:700;color:#0B1B28;">Good morning</div>
+            <div style="font-size:12px;color:#5a6a7a;">Your operational briefing for today</div>
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        <!-- Overdue -->
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:rgba(194,74,74,.04);border:1px solid rgba(194,74,74,.1);">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(194,74,74,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="14" height="14" fill="none" stroke="#C24A4A" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:13px;color:#334155;line-height:1.5;">
+                    <strong>3 overdue invoices</strong> totalling <strong>€4,200.00</strong> — oldest is 12 days past due (Le Paris Roasting).
+                </div>
+            </div>
+            <a href="#" style="font-size:12px;white-space:nowrap;">View →</a>
+        </div>
+
+        <!-- Proposals -->
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:rgba(200,145,46,.04);border:1px solid rgba(200,145,46,.1);">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(200,145,46,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="14" height="14" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:13px;color:#334155;line-height:1.5;">
+                    <strong>2 proposals</strong> worth <strong>€8,500.00</strong> are awaiting acceptance.
+                </div>
+            </div>
+            <a href="#" style="font-size:12px;white-space:nowrap;">Follow up →</a>
+        </div>
+
+        <!-- Unassigned -->
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:rgba(200,145,46,.04);border:1px solid rgba(200,145,46,.1);">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(200,145,46,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="14" height="14" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:13px;color:#334155;line-height:1.5;">
+                    <strong>5 purchases</strong> not yet assigned to a VAT period.
+                </div>
+            </div>
+            <a href="#" style="font-size:12px;white-space:nowrap;">Assign →</a>
+        </div>
+
+        <!-- Cash flow positive -->
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:rgba(18,152,103,.04);border:1px solid rgba(18,152,103,.1);">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(18,152,103,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="14" height="14" fill="none" stroke="#129867" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:13px;color:#334155;line-height:1.5;">
+                    Cash flow looks healthy for the next 30 days.
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent payment -->
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:rgba(18,152,103,.04);border:1px solid rgba(18,152,103,.1);">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(18,152,103,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="14" height="14" fill="none" stroke="#129867" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v22m5-18H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:13px;color:#334155;line-height:1.5;">
+                    A payment of <strong>€1,200.00</strong> was received from <strong>Acme Wholesale</strong> yesterday.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 class="option-label">Option D: All Clear State</h2>
+<p class="option-desc">What it looks like when nothing needs attention.</p>
+
+<section class="glass" style="border-left:3px solid #129867;padding:20px 24px;">
+    <div style="font-size:14px;line-height:1.8;color:#334155;">
+        <strong style="color:#0B1B28;">Good afternoon.</strong>
+        Everything looks good — no items need your attention right now. A payment of <strong>€1,200.00</strong> was received from <strong>Acme Wholesale</strong> this morning.
+    </div>
+</section>
+
+</body>
+</html>

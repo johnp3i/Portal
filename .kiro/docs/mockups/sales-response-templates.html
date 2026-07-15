@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales - Response Templates</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success-green: #129867;
+            --warning-amber: #C8912E;
+            --danger-red: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6a7a;
+            --text-muted: #8a9bab;
+            --border-light: #e2e8f0;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-shadow: 0 4px 24px rgba(13, 94, 166, 0.06);
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 32px;
+        }
+
+        h1, h2, h3, h4, h5 {
+            font-family: 'Manrope', sans-serif;
+        }
+
+        /* Topbar */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+        }
+
+        .topbar-left .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+        }
+
+        .topbar-left h1 {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+        }
+
+        .topbar-left .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-top: 12px;
+        }
+
+        .back-link {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #0a4d8a;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary-blue);
+            border: 1.5px solid var(--primary-blue);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-secondary);
+        }
+
+        /* Glass Card */
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius);
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .card-pad {
+            padding: 28px 32px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+        }
+
+        .tab.active {
+            background: #fff;
+            color: var(--primary-blue);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .data-table tbody td {
+            font-size: 13px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .template-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Status Pills */
+        .pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .pill-active {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--success-green);
+        }
+
+        .pill-inactive {
+            background: rgba(138, 155, 171, 0.12);
+            color: var(--text-muted);
+        }
+
+        /* Action Links */
+        .action-link {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .action-link:hover {
+            text-decoration: underline;
+        }
+
+        .action-separator {
+            color: var(--border-light);
+            margin: 0 6px;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Editor Layout */
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 60% 40%;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .editor-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Form Fields */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group label .required {
+            color: var(--danger-red);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border-light);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.08);
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10L6 8z' fill='%235a6a7a'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 200px;
+            line-height: 1.6;
+            font-family: 'Inter', monospace;
+            font-size: 13px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Wait Time Field */
+        .wait-time-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wait-time-row input {
+            width: 70px;
+        }
+
+        .wait-time-row .unit {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Placeholder Chips */
+        .placeholder-section {
+            margin-top: 16px;
+        }
+
+        .placeholder-section h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border: 1px solid var(--primary-blue);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .chip:hover {
+            background: rgba(13, 94, 166, 0.06);
+        }
+
+        .chip-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .chip:hover .chip-tooltip {
+            display: block;
+        }
+
+        /* Form Actions */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            background: var(--bg-secondary);
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .preview-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .preview-header .info-text {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .sample-data-pill {
+            display: inline-block;
+            padding: 5px 12px;
+            background: rgba(87, 184, 232, 0.1);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 16px;
+        }
+
+        /* Email Preview */
+        .email-preview {
+            background: #fff;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .email-preview-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .email-field {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .email-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .email-field-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            min-width: 56px;
+        }
+
+        .email-field-value {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .email-field-value.subject {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .email-preview-body {
+            padding: 20px 18px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .topbar-left h1 {
+                font-size: 32px;
+            }
+
+            .card-pad {
+                padding: 20px;
+            }
+
+            .data-table {
+                font-size: 12px;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('list')">Template List</button>
+        <button class="tab" onclick="switchTab('editor')">Template Editor</button>
+    </div>
+
+    <!-- Tab 1: Template List -->
+    <div id="tab-list" class="tab-content active">
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="eyebrow">SALES</div>
+                <h1>Response Templates</h1>
+                <p class="subtitle">Configure email templates for quick lead responses</p>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-primary" onclick="switchTab('editor')">+ New Template</button>
+            </div>
+        </div>
+
+        <section class="glass card-pad">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Product</th>
+                        <th>Type</th>
+                        <th>Wait Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="template-name">WorkforcePi First Response</td>
+                        <td>WorkforcePi</td>
+                        <td>Email</td>
+                        <td>2 hours</td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td>
+                            <a class="action-link" onclick="switchTab('editor')">Edit</a>
+                            <span class="action-separator">·</span>
+                            <a class="action-link">Deactivate</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="template-name">General Enquiry Reply</td>
+                        <td>All Products</td>
+                        <td>Email</td>
+                        <td>1 hour</td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td>
+                            <a class="action-link" onclick="switchTab('editor')">Edit</a>
+                            <span class="action-separator">·</span>
+                            <a class="action-link">Deactivate</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="template-name">Chaplin Pro Demo Invite</td>
+                        <td>Chaplin Pro</td>
+                        <td>Email</td>
+                        <td>4 hours</td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td>
+                            <a class="action-link" onclick="switchTab('editor')">Edit</a>
+                            <span class="action-separator">·</span>
+                            <a class="action-link">Deactivate</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="template-name">Guardian Follow-Up</td>
+                        <td>Guardian</td>
+                        <td>Email</td>
+                        <td>24 hours</td>
+                        <td><span class="pill pill-inactive">Inactive</span></td>
+                        <td>
+                            <a class="action-link" onclick="switchTab('editor')">Edit</a>
+                            <span class="action-separator">·</span>
+                            <a class="action-link">Activate</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <!-- Tab 2: Template Editor -->
+    <div id="tab-editor" class="tab-content">
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="eyebrow">SALES / TEMPLATES</div>
+                <h1>Edit Template</h1>
+                <p class="subtitle">WorkforcePi First Response</p>
+            </div>
+            <div class="topbar-right">
+                <a class="back-link" onclick="switchTab('list')">&#8592; Back to Templates</a>
+            </div>
+        </div>
+
+        <div class="editor-layout">
+            <!-- Left Column: Editor Form -->
+            <section class="glass card-pad">
+                <div class="form-group">
+                    <label>Template Name <span class="required">*</span></label>
+                    <input type="text" class="form-control" value="WorkforcePi First Response">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Product</label>
+                        <select class="form-control">
+                            <option>WorkforcePi</option>
+                            <option>Chaplin Pro</option>
+                            <option>Guardian</option>
+                            <option>All Products</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Response Type</label>
+                        <select class="form-control">
+                            <option>Email</option>
+                            <option>Telephone</option>
+                            <option>SMS</option>
+                            <option>WhatsApp</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Wait Time</label>
+                    <div class="wait-time-row">
+                        <input type="number" class="form-control" value="2" min="0">
+                        <span class="unit">hours</span>
+                    </div>
+                    <p class="form-hint">Time to suggest sending this response after lead creation</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Subject</label>
+                    <input type="text" class="form-control" value="Thank you for your interest in {ProductName}">
+                </div>
+
+                <div class="form-group">
+                    <label>Email Body</label>
+                    <textarea class="form-control">Dear {ContactFirstName},
+
+Thank you for reaching out about {ProductName}. We appreciate your interest.
+
+I would be happy to schedule a brief demo to show you how {ProductName} can help your team. Would any of the following times work for you?
+
+- Tuesday 10:00-11:00
+- Wednesday 14:00-15:00
+- Thursday 10:00-11:00
+
+Alternatively, you can book directly using this link: {MeetingBookingLink}
+
+Looking forward to hearing from you.
+
+Best regards,
+{BusinessName} Team</textarea>
+                </div>
+
+                <div class="placeholder-section">
+                    <h4>Available Placeholders</h4>
+                    <div class="chips-container">
+                        <span class="chip">
+                            {ContactFirstName}
+                            <span class="chip-tooltip">Contact's first name</span>
+                        </span>
+                        <span class="chip">
+                            {ProductName}
+                            <span class="chip-tooltip">Product name</span>
+                        </span>
+                        <span class="chip">
+                            {BusinessName}
+                            <span class="chip-tooltip">Your business name</span>
+                        </span>
+                        <span class="chip">
+                            {MeetingBookingLink}
+                            <span class="chip-tooltip">Meeting booking URL</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary">Save Template</button>
+                    <button class="btn btn-outline" onclick="switchTab('list')">Cancel</button>
+                </div>
+            </section>
+
+            <!-- Right Column: Live Preview -->
+            <section class="glass card-pad preview-panel">
+                <div class="preview-header">
+                    <h3>Preview</h3>
+                    <span class="info-text">How this template will look when suggested to the user</span>
+                </div>
+
+                <div class="sample-data-pill">Using sample data: Andreas Christoforou, WorkforcePi, 3 Inventors Limited</div>
+
+                <div class="email-preview">
+                    <div class="email-preview-header">
+                        <div class="email-field">
+                            <span class="email-field-label">To:</span>
+                            <span class="email-field-value">andreas@cypria-audit.com</span>
+                        </div>
+                        <div class="email-field">
+                            <span class="email-field-label">Subject:</span>
+                            <span class="email-field-value subject">Thank you for your interest in WorkforcePi</span>
+                        </div>
+                    </div>
+                    <div class="email-preview-body">Dear Andreas,
+
+Thank you for reaching out about WorkforcePi. We appreciate your interest.
+
+I would be happy to schedule a brief demo to show you how WorkforcePi can help your team. Would any of the following times work for you?
+
+- Tuesday 10:00-11:00
+- Wednesday 14:00-15:00
+- Thursday 10:00-11:00
+
+Alternatively, you can book directly using this link: https://calendar.3inventors.com/book
+
+Looking forward to hearing from you.
+
+Best regards,
+3 Inventors Limited Team</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            if (tab === 'list') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+            }
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+    </script>
+</body>
+</html>

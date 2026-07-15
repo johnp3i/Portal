@@ -12,4 +12,19 @@ public class PaymentHistoryDto
     public string? Reference { get; set; }
     public string? Notes { get; set; }
     public bool IsVoided { get; set; }
+
+    /// <summary>
+    /// True if this payment was created by the FIFO allocation engine.
+    /// </summary>
+    public bool IsAutoAllocated { get; set; }
+
+    /// <summary>
+    /// Set when this payment is a child allocation — references the parent payment Id.
+    /// </summary>
+    public int? ParentPaymentId { get; set; }
+
+    /// <summary>
+    /// The parent payment's reference (for display: "Auto-allocated from Payment [REF]").
+    /// </summary>
+    public string? ParentReference { get; set; }
 }

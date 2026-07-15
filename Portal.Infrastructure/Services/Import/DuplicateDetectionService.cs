@@ -37,6 +37,7 @@ public class DuplicateDetectionService : IDuplicateDetectionService
 
             // Load potential matches: all purchases for this supplier in the business
             var existingPurchases = await _dbContext.Purchases
+                .IgnoreQueryFilters()
                 .Where(p => p.BusinessId == businessId
                     && p.SupplierId == supplierId
                     && !p.IsCancelled)

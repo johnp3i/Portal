@@ -27,6 +27,40 @@
 
 @if (Model.HasAnyKpiSection)
 {
+<!-- Operational Briefing -->
+var briefing = ViewBag.Briefing as Portal.Infrastructure.Models.BriefingViewModel;
+if (briefing != null)
+{
+    @await Html.PartialAsync("_DashboardBriefing", briefing)
+}
+
+var systemBriefing = ViewBag.SystemBriefing as Portal.Infrastructure.Models.BriefingViewModel;
+if (systemBriefing != null)
+{
+    <div style="margin-bottom:22px;">
+        <button type="button" onclick="toggleSystemBriefing()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:6px 0;font-size:13px;font-weight:600;color:#5a6a7a;">
+            <svg id="systemBriefingChevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="transition:transform .2s;transform:rotate(-90deg);"><path d="M6 9l6 6 6-6"/></svg>
+            System Health (SuperAdmin)
+        </button>
+        <div id="systemBriefingContent" style="display:none;margin-top:8px;">
+            @await Html.PartialAsync("_DashboardBriefing", systemBriefing)
+        </div>
+    </div>
+    <script>
+        function toggleSystemBriefing() {
+            var content = document.getElementById('systemBriefingContent');
+            var chevron = document.getElementById('systemBriefingChevron');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'none';
+                chevron.style.transform = 'rotate(-90deg)';
+            }
+        }
+    </script>
+}
+
 <!-- Quick Actions -->
 <div class="filter-panel quick-actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
     @if (Model.ShowQuotation)
@@ -710,7 +744,6 @@ else if (Model.ShowQuotation)
 <div style="margin-top:24px;">
     @await Html.PartialAsync("_CashFlowWidget")
 </div>
-}
 }
 else
 {

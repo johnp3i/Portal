@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payment Receipt — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue: #0D5EA6; --cyan: #57B8E8; --green: #129867;
+    --red: #C24A4A; --gold: #C8912E; --muted: #5E7385; --text: #0B1B28;
+    --line: rgba(13,94,166,.10); --bg: #F7FAFC;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: var(--text); max-width: 800px; margin: 0 auto; padding: 40px 48px; }
+
+  .receipt-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+  .logo { font-family: 'Manrope', sans-serif; font-size: 24px; font-weight: 800; color: var(--blue); }
+  .business-info { text-align: right; font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+  .receipt-title { margin-bottom: 32px; }
+  .receipt-title h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; color: var(--green); margin-bottom: 4px; }
+  .receipt-title .receipt-number { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .receipt-title .bill-to { float: right; text-align: right; }
+  .receipt-title .bill-to .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+  .receipt-title .bill-to .name { font-size: 16px; font-weight: 700; color: var(--text); }
+
+  .meta-row { display: flex; gap: 48px; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .meta-item .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+  .meta-item .value { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  .status-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 24px; }
+  .status-paid { background: rgba(18,152,103,.1); color: var(--green); }
+  .status-partial { background: rgba(200,145,46,.1); color: var(--gold); }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 12px 14px; border-bottom: 2px solid var(--line); }
+  thead th:last-child, thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5) { text-align: right; }
+  tbody td { padding: 14px; font-size: 13px; border-bottom: 1px solid rgba(13,94,166,.05); }
+  tbody td:last-child, tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5) { text-align: right; }
+  tbody td.invoice-ref { font-weight: 700; color: var(--blue); }
+
+  .totals { margin-top: 16px; display: flex; justify-content: flex-end; }
+  .totals-box { width: 280px; }
+  .totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px solid rgba(13,94,166,.05); }
+  .totals-row.total { font-size: 16px; font-weight: 800; font-family: 'Manrope', sans-serif; border-bottom: none; padding-top: 12px; color: var(--green); }
+
+  .signature-section { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: flex-end; }
+  .signature-block { text-align: center; }
+  .signature-block .sig-image { width: 160px; height: 60px; object-fit: contain; margin-bottom: 8px; }
+  .signature-block .sig-line { width: 180px; border-top: 1px solid var(--muted); padding-top: 6px; font-size: 11px; color: var(--muted); }
+
+  .footer { margin-top: 48px; text-align: center; font-size: 11px; color: var(--muted); padding-top: 16px; border-top: 1px solid var(--line); }
+
+  .payment-info { background: rgba(18,152,103,.04); border: 1px solid rgba(18,152,103,.12); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; }
+  .payment-info .pi-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+  .payment-info .pi-label { color: var(--muted); font-weight: 600; }
+  .payment-info .pi-value { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="receipt-header">
+  <div>
+    <div class="logo">3inventors</div>
+  </div>
+  <div class="business-info">
+    3 Inventors Limited<br>
+    18 Michalakopoulou<br>
+    Nicosia, 2108<br>
+    VAT No: CY10419718W<br>
+    730 75 700<br>
+    john@3inventors.com
+  </div>
+</div>
+
+<!-- Title Row -->
+<div class="receipt-title" style="display:flex;justify-content:space-between;align-items:flex-start;">
+  <div>
+    <h1>PAYMENT RECEIPT</h1>
+    <div class="receipt-number">REC-1-00042</div>
+  </div>
+  <div class="bill-to">
+    <div class="label">Received From</div>
+    <div class="name">Hatio Trading Ltd</div>
+  </div>
+</div>
+
+<hr style="border:none;border-top:2px solid var(--green);margin-bottom:24px;" />
+
+<!-- Meta -->
+<div class="meta-row">
+  <div class="meta-item">
+    <div class="label">Receipt Date</div>
+    <div class="value">15 Jul 2026</div>
+  </div>
+  <div class="meta-item">
+    <div class="label">Payment Method</div>
+    <div class="value">Bank Transfer</div>
+  </div>
+  <div class="meta-item">
+    <div class="label">Reference</div>
+    <div class="value">TRF-2026-07-15-001</div>
+  </div>
+  <div class="meta-item">
+    <div class="label">Status</div>
+    <div class="value"><span class="status-badge status-partial">Partial Payment</span></div>
+  </div>
+</div>
+
+<!-- Payment Details -->
+<div class="payment-info">
+  <div class="pi-row">
+    <span class="pi-label">Total Amount Received</span>
+    <span class="pi-value" style="color:var(--green);font-size:16px;">€1,600.00</span>
+  </div>
+  <div class="pi-row">
+    <span class="pi-label">Applied to Invoices</span>
+    <span class="pi-value">3 invoices</span>
+  </div>
+  <div class="pi-row">
+    <span class="pi-label">Outstanding After Payment</span>
+    <span class="pi-value" style="color:var(--red);">€3,900.00</span>
+  </div>
+</div>
+
+<!-- Invoice Lines -->
+<table>
+  <thead>
+    <tr>
+      <th>Invoice</th>
+      <th>Description</th>
+      <th>Invoice Total</th>
+      <th>Amount Applied</th>
+      <th>Outstanding After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="invoice-ref">INV-1-00089</td>
+      <td>Web hosting services — June 2026</td>
+      <td>€1,500.00</td>
+      <td style="font-weight:700;">€1,500.00</td>
+      <td style="color:var(--green);font-weight:700;">€0.00 <span style="font-size:10px;font-weight:400;color:var(--muted);">Paid</span></td>
+    </tr>
+    <tr>
+      <td class="invoice-ref">INV-1-00090</td>
+      <td>Platform setup — Q2</td>
+      <td>€2,600.00</td>
+      <td style="font-weight:700;">€100.00</td>
+      <td style="color:var(--gold);font-weight:700;">€2,500.00</td>
+    </tr>
+    <tr>
+      <td class="invoice-ref">INV-1-00091</td>
+      <td>Online service platform setup</td>
+      <td>€900.00</td>
+      <td style="font-weight:700;">€0.00</td>
+      <td>€900.00</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Totals -->
+<div class="totals">
+  <div class="totals-box">
+    <div class="totals-row">
+      <span>Subtotal Applied</span>
+      <span>€1,600.00</span>
+    </div>
+    <div class="totals-row">
+      <span>Credit on Account</span>
+      <span>€0.00</span>
+    </div>
+    <div class="totals-row total">
+      <span>Total Received</span>
+      <span>€1,600.00</span>
+    </div>
+  </div>
+</div>
+
+<!-- Signature -->
+<div class="signature-section">
+  <div class="signature-block">
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='60'%3E%3Cpath d='M10 45 C30 20 50 50 80 30 C100 20 120 40 150 25' stroke='%230B1B28' stroke-width='2' fill='none'/%3E%3C/svg%3E" class="sig-image" alt="Signature" />
+    <div class="sig-line">Issued by</div>
+  </div>
+  <div class="signature-block">
+    <div style="width:180px;height:60px;"></div>
+    <div class="sig-line">Received by</div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  Powered by 3inventors — Operational Intelligence
+</div>
+
+</body>
+</html>

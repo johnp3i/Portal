@@ -187,25 +187,40 @@
                 <th>Method</th>
                 <th style="text-align:right;">Amount</th>
                 <th>Status</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody id="paymentsTableBody">
             @foreach (var item in recentPayments.Items)
             {
-                <tr>
+                <tr style="@(item.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
                     <td>@item.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
                     <td><strong>@item.InvoiceNumber</strong></td>
                     <td>@item.CustomerName</td>
                     <td>@item.PaymentMethodName</td>
-                    <td style="text-align:right;font-weight:700;color:@(item.IsFullPayment ? "var(--green)" : "var(--gold)");">@currency@item.Amount.ToString("N2")</td>
+                    <td style="text-align:right;font-weight:700;color:@(item.IsVoided ? "#999" : item.IsFullPayment ? "var(--green)" : "var(--gold)");">@currency@item.Amount.ToString("N2")</td>
                     <td>
-                        @if (item.IsFullPayment)
+                        @if (item.IsVoided)
+                        {
+                            <span class="pill" style="background:#fdeaea;color:#C24A4A;font-weight:700;">Voided</span>
+                        }
+                        else if (item.IsFullPayment)
                         {
                             <span class="pill pill-green">Full Payment</span>
                         }
                         else
                         {
                             <span class="pill pill-gold">Partial</span>
+                        }
+                    </td>
+                    <td style="white-space:nowrap;">
+                        @if (!item.IsVoided)
+                        {
+                            <button type="button" class="tbl-action tbl-action--danger" style="font-size:11px;padding:3px 8px;" onclick="voidPayment(@item.PaymentId)">Void</button>
+                        }
+                        else
+                        {
+                            <span style="font-size:10px;font-weight:700;color:#C24A4A;">—</span>
                         }
                     </td>
                 </tr>

@@ -308,6 +308,144 @@ public class RevenueController : Controller
         }
     }
 
+    /// <summary>
+    /// Records a global (customer-level) payment with FIFO or manual allocation.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRecordGlobalPayment([FromBody] RecordGlobalPaymentDto request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name ?? string.Empty;
+
+            var result = await _paymentService.RecordGlobalPaymentAsync(request, businessId, userId);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            return Json(new
+            {
+                success = true,
+                message = $"Payment allocated across {result.Data!.AllocatedCount} invoice(s).",
+                allocationCount = result.Data.AllocatedCount,
+                totalAllocated = result.Data.TotalAllocated,
+                creditAmount = result.Data.CreditAmount,
+                allocations = result.Data.Allocations.Select(a => new
+                {
+                    invoiceId = a.InvoiceId,
+                    invoiceNumber = a.InvoiceNumber,
+                    allocatedAmount = a.AllocatedAmount,
+                    outstandingAfter = a.InvoiceOutstandingAfter
+                })
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    /// <summary>
+    /// Gets outstanding invoices for a customer (for manual allocation UI).
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetOutstandingInvoicesForCustomer(int customerId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var invoices = await _paymentService.GetOutstandingForCustomerAsync(customerId, businessId);
+            var creditBalance = await _paymentService.GetCreditBalanceAsync(customerId, businessId);
+
+            return Json(new
+            {
+                success = true,
+                data = invoices.Select(i => new
+                {
+                    invoiceId = i.InvoiceId,
+                    invoiceNumber = i.InvoiceNumber,
+                    invoiceDate = i.InvoiceDate.ToString("yyyy-MM-dd"),
+                    totalAmount = i.TotalAmount,
+                    outstandingBalance = i.OutstandingBalance
+                }),
+                totalOutstanding = invoices.Sum(i => i.OutstandingBalance),
+                creditBalance
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    /// <summary>
+    /// Voids a global payment and cascades to all child allocations.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostApplyCredit(int customerId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var result = await _paymentService.ApplyCreditAsync(customerId, businessId, userId);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            return Json(new
+            {
+                success = true,
+                message = $"Credit applied to {result.Data!.AllocatedCount} invoice(s).",
+                allocatedCount = result.Data.AllocatedCount,
+                totalAllocated = result.Data.TotalAllocated,
+                remainingCredit = result.Data.CreditAmount
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to apply credit." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostVoidPaymentSmart(int paymentId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _paymentService.VoidPaymentSmartAsync(paymentId, businessId);
+            return Json(new { success = result.Success, message = result.Success ? "Payment voided successfully." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to void payment." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostVoidGlobalPayment(int paymentId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _paymentService.VoidGlobalPaymentAsync(paymentId, businessId);
+
+            return Json(new { success = result.Success, message = result.Success ? "Global payment voided and all allocations reversed." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+
     // === AJAX GET Data Endpoints ===
 
     [HttpGet]

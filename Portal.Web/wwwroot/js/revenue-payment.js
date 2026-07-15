@@ -286,7 +286,7 @@ function voidPayment(paymentId) {
             var formData = new FormData();
             formData.append('paymentId', paymentId);
 
-            var response = await fetch('/Revenue/VoidPayment', {
+            var response = await fetch('/Revenue/AxPostVoidPaymentSmart', {
                 method: 'POST',
                 headers: {
                     'RequestVerificationToken': getAntiForgeryToken()

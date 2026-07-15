@@ -1446,5 +1446,40 @@
 
     // Initialize with 3 empty rows
     addRows(3);
+
+    // Pre-populate from Import transfer (if available)
+    var importSessionId = '@(ViewBag.ImportSessionId ?? "")';
+    if (importSessionId) {
+        loadImportSessionData(importSessionId);
+    }
+
+    async function loadImportSessionData(sessionId) {
+        try {
+            var response = await fetch('/Purchase/AxGetImportSessionData?importSessionId=' + sessionId);
+            var result = await response.json();
+
+            if (result.success && result.data && result.data.length > 0) {
+                // Clear default empty rows
+                document.getElementById('bulkGridBody').innerHTML = '';
+                rowCounter = 0;
+
+                // Create pre-filled rows
+                for (var i = 0; i < result.data.length; i++) {
+                    createRow(result.data[i]);
+                }
+
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Rows Imported',
+                    text: result.data.length + ' rows transferred from file import. Review and submit when ready.',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            } else {
+                console.warn('Import session data: success=' + result.success + ', rows=' + (result.data ? result.data.length : 0));
+            }
+        } catch (e) {
+            console.error('Failed to load import session data:', e);
+        }
+    }
 </script>
 }

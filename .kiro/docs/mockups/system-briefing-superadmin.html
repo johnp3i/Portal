@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Briefing — SuperAdmin Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --blue: #0D5EA6; --green: #129867; --warning: #C8912E; --red: #C24A4A; --bg: #F7FAFC; --text: #1e293b; --muted: #5a6a7a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 40px; min-height: 100vh; }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+        .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 40px; }
+        .section-title { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); margin: 50px 0 14px; padding-top: 30px; border-top: 1px solid rgba(13,94,166,.08); }
+        .section-desc { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+        a { color: var(--blue); font-weight: 600; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { font-size: 12px; padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<h1>System Briefing — SuperAdmin</h1>
+<p class="subtitle">Platform health and operational signals. Shown only to SuperAdmin users on the System Logs or Admin Dashboard page.</p>
+
+<h3 class="section-title">State: Issues Detected (Critical)</h3>
+<p class="section-desc">Errors spiking, a background job failed, and some slow queries. Mixed with positive signals.</p>
+
+<section style="background:linear-gradient(135deg, #ffffff 0%, #fefafa 100%);border-radius:18px;border:1px solid rgba(194,74,74,.08);box-shadow:0 4px 24px rgba(194,74,74,.04);padding:26px 30px;margin-bottom:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg, rgba(194,74,74,.1) 0%, rgba(194,74,74,.05) 100%);display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#C24A4A" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">System Status</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">Issues detected in the last 24 hours</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:500;">Last checked: 14 Jul 2026, 09:15 UTC</div>
+    </div>
+    <div style="height:1px;background:linear-gradient(90deg, rgba(194,74,74,.1) 0%, transparent 100%);margin-bottom:16px;"></div>
+    <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C24A4A;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(194,74,74,.12);"></span>
+            <span><strong>47 errors</strong> in the last 24 hours — up <strong>320%</strong> from yesterday. Most frequent: <code style="background:rgba(194,74,74,.06);color:#C24A4A;">NullReferenceException</code> in <strong>PaymentService</strong>. <a href="#">View error logs →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C24A4A;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(194,74,74,.12);"></span>
+            <span>Payment Reminder background job <strong>failed</strong> at 06:00 UTC. <strong>2 retries</strong> exhausted — reminders not sent today. <a href="#">View job status →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>12 slow queries</strong> exceeded 1 second in the last 24 hours. Slowest: <code style="background:rgba(200,145,46,.06);color:#C8912E;">GetReceivablesAsync</code> at <strong>3.2s</strong>. <a href="#">View slow queries →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>8 failed login attempts</strong> across 3 accounts in the last 24 hours. <a href="#">Review security →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span><strong>14 businesses</strong> active with subscriptions. <strong>2 new users</strong> registered today.</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span>Upload storage: <strong>2.4 GB</strong> used across all businesses. No cleanup needed.</span>
+        </div>
+    </div>
+</section>
+
+<h3 class="section-title">State: All Healthy</h3>
+<p class="section-desc">No errors, no failures. Platform running smoothly.</p>
+
+<section style="background:linear-gradient(135deg, #ffffff 0%, #f5fcf9 100%);border-radius:18px;border:1px solid rgba(18,152,103,.1);box-shadow:0 4px 24px rgba(18,152,103,.04);padding:26px 30px;margin-bottom:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg, rgba(18,152,103,.1) 0%, rgba(18,152,103,.05) 100%);display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#129867" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">System Status</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">All systems operational</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:500;">Last checked: 14 Jul 2026, 09:15 UTC</div>
+    </div>
+    <div style="height:1px;background:linear-gradient(90deg, rgba(18,152,103,.1) 0%, transparent 100%);margin-bottom:16px;"></div>
+    <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span><strong>0 errors</strong> in the last 24 hours. All services running normally.</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span>Payment Reminder job completed successfully at 06:00 UTC. <strong>4 reminders</strong> sent.</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span><strong>14 businesses</strong> active. <strong>3 new users</strong> registered yesterday. <strong>1 new subscription</strong> activated.</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span>Average response time: <strong>142ms</strong>. No queries exceeded 1 second.</span>
+        </div>
+    </div>
+</section>
+
+<h3 class="section-title">State: Warning (elevated but not critical)</h3>
+<p class="section-desc">Some errors appearing but no services down. Typical post-deployment monitoring state.</p>
+
+<section style="background:linear-gradient(135deg, #ffffff 0%, #fffdf7 100%);border-radius:18px;border:1px solid rgba(200,145,46,.1);box-shadow:0 4px 24px rgba(200,145,46,.04);padding:26px 30px;margin-bottom:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg, rgba(200,145,46,.1) 0%, rgba(200,145,46,.05) 100%);display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">System Status</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">Elevated activity — monitoring recommended</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:500;">Last checked: 14 Jul 2026, 09:15 UTC</div>
+    </div>
+    <div style="height:1px;background:linear-gradient(90deg, rgba(200,145,46,.1) 0%, transparent 100%);margin-bottom:16px;"></div>
+    <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>9 errors</strong> in the last 24 hours — slightly above normal (<strong>avg: 3/day</strong>). Most in <code style="background:rgba(200,145,46,.06);color:#C8912E;">InvoiceEmailService</code>. <a href="#">View errors →</a></span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C8912E;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(200,145,46,.12);"></span>
+            <span><strong>3 slow queries</strong> in the last 24 hours. Slowest: <code style="background:rgba(200,145,46,.06);color:#C8912E;">VatSubmissionService</code> at <strong>1.8s</strong>.</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span>All background jobs completed successfully. Payment reminders sent on schedule.</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#129867;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px rgba(18,152,103,.12);"></span>
+            <span><strong>14 businesses</strong> active. No subscription lapses detected.</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

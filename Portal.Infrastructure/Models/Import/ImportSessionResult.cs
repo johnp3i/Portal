@@ -17,6 +17,8 @@ public class ImportSessionResult
 
     public decimal BatchTotal { get; set; }
 
+    public bool UsedFallbackAutoDetect { get; set; }
+
     public List<ValidatedRow> Rows { get; set; } = new();
 }
 

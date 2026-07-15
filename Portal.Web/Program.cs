@@ -280,7 +280,16 @@ builder.Services.AddScoped<IFinancialStatusEngine>(sp =>
         sp.GetRequiredService<InvoiceRepository>(),
         sp.GetRequiredService<CreditNoteRepository>()));
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+builder.Services.AddScoped<IPaymentAllocationEngine>(sp =>
+    new PaymentAllocationEngine(
+        sp.GetRequiredService<PaymentRepository>(),
+        sp.GetRequiredService<IFinancialStatusEngine>(),
+        sp.GetRequiredService<IPaymentScheduleService>(),
+        sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IDashboardBriefingService, DashboardBriefingService>();
+builder.Services.AddScoped<ISystemBriefingService, SystemBriefingService>();
 builder.Services.AddScoped<IReceivablesQueryService, ReceivablesQueryService>();
 builder.Services.AddScoped<IVatIntegrationService, VatIntegrationService>();
 builder.Services.AddSingleton<IInstalmentStatusEngine>(sp =>

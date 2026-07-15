@@ -1,5 +1,5 @@
 # Portal — Business Management Platform
-**Product Overview | 11 July 2026**
+**Product Overview | 15 July 2026**
 
 ---
 
@@ -49,13 +49,28 @@
 - Invoice sharing via secure links with customer acceptance flow
 - PDF download and preview
 - Invoice duplication for recurring billing
+
+### Revenue Ingestion (External Sales)
+- Revenue Summary Entry — record Z-report totals from POS systems (daily/weekly/monthly)
+- Supports hospitality, retail, and any POS-driven business
+- Links external sales data to VAT periods for compliant reporting
+- Document attachment for Z-report evidence
+- Sales Invoice Import (Professional+) — bulk CSV/Excel import for POS transaction-level data
+- Optional customer ID tracking for behaviour analytics (Enterprise)
+- Reuses the Purchase Import engine with configurable parser templates
+
 - Soft-delete with recovery
 - Per-invoice payment instructions override (show/hide bank details)
 - VAT period assignment
 
 ### Revenue Control
 - Payment recording with method, date, reference, and notes
-- Payment voiding with audit trail
+- Global payment allocation: customer-level payments distributed across outstanding invoices
+- Allocation modes: Auto (FIFO — oldest invoice first) and Manual (user selects invoices and amounts)
+- Overpayment handling: excess funds stored as credit balance on the customer account
+- Apply Credit: one-click allocation of existing credit to outstanding invoices
+- Payment voiding: standalone, child allocation (returns to credit), and cascade parent void
+- Smart void detection: auto-voids parent payment when all child allocations are voided
 - Outstanding balance tracking per invoice
 - Receivables dashboard: overdue invoices, recent payments, collection metrics
 - Financial KPI cards: Invoice Total, Total Paid, Outstanding Balance, Due Date
@@ -332,7 +347,7 @@ Invoicing tools are **transactional** — create invoice, send, get paid. Portal
 
 ## Current Status
 
-- **Phase 1:** Complete (7 modules + infrastructure)
-- **Phase 2:** Planned (Client Portal, Document Attachments, Activity Timeline expansion)
+- **Phase 1:** Complete (7 modules + infrastructure + Global Payment Allocation + Document Attachments + Purchase Import)
+- **Phase 2:** Planned (Client Portal, Activity Timeline expansion)
 - **Subscription Management:** Live (Stripe integration for billing)
 - **Production Readiness:** All modules end-to-end tested

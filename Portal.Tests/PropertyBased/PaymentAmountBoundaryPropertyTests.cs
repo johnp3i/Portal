@@ -98,8 +98,10 @@ public class PaymentAmountBoundaryPropertyTests
         var service = new PaymentService(
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
+            new Mock<CreditNoteRepository>(null!).Object,
             mockFinancialStatusEngine.Object,
             new Mock<IPaymentScheduleService>().Object,
+            new Mock<IPaymentAllocationEngine>().Object,
             dbContext);
 
         return (service, mockPaymentRepo);

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Pipeline — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary-blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --purple: #6B5CE7;
+            --bg: #F7FAFC;
+            --card-bg: #ffffff;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6a7a;
+            --text-muted: #8a9aaa;
+            --border: #e2e8f0;
+            --shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+            --shadow-card: 0 1px 6px rgba(13, 94, 166, 0.08);
+            --radius: 20px;
+            --radius-card: 14px;
+            --radius-sm: 8px;
+            --font-heading: 'Manrope', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Topbar */
+        .topbar {
+            padding: 32px 40px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .topbar-left .eyebrow {
+            font-family: var(--font-heading);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 4px;
+        }
+
+        .topbar-left h1 {
+            font-family: var(--font-heading);
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .topbar-left .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-group {
+            display: flex;
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .toggle-btn {
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font-body);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--primary-blue);
+            color: #fff;
+        }
+
+        .filter-dropdown {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--font-body);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6a7a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        /* Kanban Board */
+        .kanban-wrapper {
+            padding: 0 40px 24px;
+            overflow-x: auto;
+        }
+
+        .kanban-board {
+            display: flex;
+            gap: 16px;
+            min-width: max-content;
+            padding-bottom: 16px;
+        }
+
+        .kanban-column {
+            min-width: 260px;
+            max-width: 300px;
+            flex: 1;
+            border-radius: var(--radius);
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .kanban-column.won,
+        .kanban-column.lost {
+            min-width: 230px;
+            max-width: 260px;
+        }
+
+        .kanban-column.won .lead-card,
+        .kanban-column.lost .lead-card {
+            opacity: 0.7;
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 4px 8px;
+        }
+
+        .stage-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .column-header h3 {
+            font-family: var(--font-heading);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .lead-count {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, 0.06);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* Lead Card */
+        .lead-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-card);
+            padding: 14px 14px 12px;
+            box-shadow: var(--shadow-card);
+            border-left: 3px solid transparent;
+            transition: box-shadow 0.2s, transform 0.15s;
+            cursor: pointer;
+        }
+
+        .lead-card:hover {
+            box-shadow: 0 4px 16px rgba(13, 94, 166, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .lead-card .contact-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .lead-card .company-name {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .lead-card .product-pill {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            background: rgba(13, 94, 166, 0.08);
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .lead-card .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .lead-card .avatar-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .avatar-circle {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .avatar-circle.unassigned {
+            background: var(--border);
+            color: var(--text-muted);
+        }
+
+        .avatar-circle.john {
+            background: var(--primary-blue);
+        }
+
+        .avatar-circle.elena {
+            background: var(--purple);
+        }
+
+        .lead-card .date-text {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .lead-card .source-icon {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .source-icon svg {
+            width: 12px;
+            height: 12px;
+            stroke: var(--text-muted);
+            fill: none;
+        }
+
+        /* Stage colours */
+        .stage-new { background: rgba(87, 184, 232, 0.04); }
+        .stage-new .lead-card { border-left-color: var(--cyan); }
+        .stage-new .stage-dot { background: var(--cyan); }
+
+        .stage-contacted { background: rgba(13, 94, 166, 0.04); }
+        .stage-contacted .lead-card { border-left-color: var(--primary-blue); }
+        .stage-contacted .stage-dot { background: var(--primary-blue); }
+
+        .stage-followup { background: rgba(200, 145, 46, 0.04); }
+        .stage-followup .lead-card { border-left-color: var(--amber); }
+        .stage-followup .stage-dot { background: var(--amber); }
+
+        .stage-meeting { background: rgba(107, 92, 231, 0.04); }
+        .stage-meeting .lead-card { border-left-color: var(--purple); }
+        .stage-meeting .stage-dot { background: var(--purple); }
+
+        .stage-proposal { background: rgba(13, 94, 166, 0.04); }
+        .stage-proposal .lead-card { border-left-color: var(--primary-blue); }
+        .stage-proposal .stage-dot { background: var(--primary-blue); }
+
+        .stage-won { background: rgba(18, 152, 103, 0.04); }
+        .stage-won .lead-card { border-left-color: var(--green); }
+        .stage-won .stage-dot { background: var(--green); }
+
+        .stage-lost { background: rgba(194, 74, 74, 0.04); }
+        .stage-lost .lead-card { border-left-color: var(--red); }
+        .stage-lost .stage-dot { background: var(--red); }
+
+        /* Summary Strip */
+        .summary-strip {
+            margin: 8px 40px 32px;
+            padding: 20px 28px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-item .value {
+            font-family: var(--font-heading);
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .summary-item .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            color: #fff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(13, 94, 166, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 100;
+        }
+
+        .fab:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 28px rgba(13, 94, 166, 0.4);
+        }
+
+        .fab svg {
+            width: 24px;
+            height: 24px;
+            stroke: #fff;
+            stroke-width: 2.5;
+            fill: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .topbar {
+                padding: 24px 20px 20px;
+            }
+
+            .topbar-left h1 {
+                font-size: 32px;
+            }
+
+            .kanban-wrapper {
+                padding: 0 20px 24px;
+            }
+
+            .summary-strip {
+                margin: 8px 20px 32px;
+                padding: 16px 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .topbar {
+                padding: 20px 16px 16px;
+                flex-direction: column;
+            }
+
+            .topbar-left h1 {
+                font-size: 28px;
+            }
+
+            .topbar-right {
+                width: 100%;
+            }
+
+            .kanban-wrapper {
+                padding: 0 16px 20px;
+            }
+
+            .kanban-column {
+                min-width: 240px;
+            }
+
+            .summary-strip {
+                margin: 8px 16px 24px;
+                flex-direction: column;
+                align-items: center;
+                gap: 14px;
+            }
+
+            .fab {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="eyebrow">SALES</div>
+            <h1>Pipeline</h1>
+            <p class="subtitle">Track leads through your sales funnel</p>
+        </div>
+        <div class="topbar-right">
+            <div class="toggle-group">
+                <button class="toggle-btn active">Board</button>
+                <button class="toggle-btn">Table</button>
+            </div>
+            <select class="filter-dropdown">
+                <option>Filter</option>
+                <option>By Product</option>
+                <option>By Assigned User</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Kanban Board -->
+    <div class="kanban-wrapper">
+        <div class="kanban-board">
+
+            <!-- New -->
+            <div class="kanban-column stage-new">
+                <div class="column-header">
+                    <span class="stage-dot"></span>
+                    <h3>New</h3>
+                    <span class="lead-count">3</span>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Maria Georgiou</div>
+                    <div class="company-name">Limassol Hotels Group</div>
+                    <span class="product-pill">WorkforcePi</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle unassigned">?</span>
+                            <span class="date-text">1 day ago</span>
+                        </div>
+                        <span class="source-icon">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        </span>
+                    </div>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Nikos Papadopoulos</div>
+                    <div class="company-name">CY Tech Solutions</div>
+                    <span class="product-pill">Chaplin Pro</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle unassigned">?</span>
+                            <span class="date-text">2 days ago</span>
+                        </div>
+                        <span class="source-icon">
+                            <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+                        </span>
+                    </div>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Elena Stavrou</div>
+                    <div class="company-name">Paphos Wellness Spa</div>
+                    <span class="product-pill">Guardian</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle unassigned">?</span>
+                            <span class="date-text">4 days ago</span>
+                        </div>
+                        <span class="source-icon">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contacted -->
+            <div class="kanban-column stage-contacted">
+                <div class="column-header">
+                    <span class="stage-dot"></span>
+                    <h3>Contacted</h3>
+                    <span class="lead-count">2</span>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Andreas Christoforou</div>
+                    <div class="company-name">Cypria Audit Ltd</div>
+                    <span class="product-pill">WorkforcePi</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle john">J</span>
+                            <span class="date-text">5 days ago</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Costas Demetriou</div>
+                    <div class="company-name">Nicosia Motors</div>
+                    <span class="product-pill">EOMFA</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle elena">E</span>
+                            <span class="date-text">3 days ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Follow-Up -->
+            <div class="kanban-column stage-followup">
+                <div class="column-header">
+                    <span class="stage-dot"></span>
+                    <h3>Follow-Up</h3>
+                    <span class="lead-count">2</span>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Yiannis Michaelides</div>
+                    <div class="company-name">Larnaca Bay Restaurants</div>
+                    <span class="product-pill">MyChair</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle john">J</span>
+                            <span class="date-text">1 week ago</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Christos Antoniou</div>
+                    <div class="company-name">Pafos Retail Group</div>
+                    <span class="product-pill">Portal</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle elena">E</span>
+                            <span class="date-text">6 days ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meeting Scheduled -->
+            <div class="kanban-column stage-meeting">
+                <div class="column-header">
+                    <span class="stage-dot"></span>
+                    <h3>Meeting Scheduled</h3>
+                    <span class="lead-count">1</span>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Stavros Ioannou</div>
+                    <div class="company-name">Limassol Tech Hub</div>
+                    <span class="product-pill">WorkforcePi</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle john">J</span>
+                            <span class="date-text">2 weeks ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proposal Sent -->
+            <div class="kanban-column stage-proposal">
+                <div class="column-header">
+                    <span class="stage-dot"></span>
+                    <h3>Proposal Sent</h3>
+                    <span class="lead-count">1</span>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Katerina Nikolaou</div>
+                    <div class="company-name">Nicosia Legal Partners</div>
+                    <span class="product-pill">Chaplin Pro</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle elena">E</span>
+                            <span class="date-text">3 weeks ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Won -->
+            <div class="kanban-column stage-won won">
+                <div class="column-header">
+                    <span class="stage-dot"></span>
+                    <h3>Won</h3>
+                    <span class="lead-count">1</span>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Marios Constantinou</div>
+                    <div class="company-name">Larnaca Shipping Co</div>
+                    <span class="product-pill">WorkforcePi</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle john">J</span>
+                            <span class="date-text">1 month ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lost -->
+            <div class="kanban-column stage-lost lost">
+                <div class="column-header">
+                    <span class="stage-dot"></span>
+                    <h3>Lost</h3>
+                    <span class="lead-count">1</span>
+                </div>
+                <div class="lead-card">
+                    <div class="contact-name">Anna Loizou</div>
+                    <div class="company-name">Famagusta Trading</div>
+                    <span class="product-pill">EOMFA</span>
+                    <div class="card-footer">
+                        <div class="avatar-row">
+                            <span class="avatar-circle elena">E</span>
+                            <span class="date-text">2 weeks ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Summary Strip -->
+    <div class="summary-strip">
+        <div class="summary-item">
+            <div class="value">10</div>
+            <div class="label">Total Active Leads</div>
+        </div>
+        <div class="summary-item">
+            <div class="value">3</div>
+            <div class="label">This Month</div>
+        </div>
+        <div class="summary-item">
+            <div class="value">15%</div>
+            <div class="label">Conversion Rate</div>
+        </div>
+        <div class="summary-item">
+            <div class="value">21</div>
+            <div class="label">Avg. Days to Won</div>
+        </div>
+    </div>
+
+    <!-- FAB: + New Lead -->
+    <button class="fab" title="New Lead">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+
+</body>
+</html>

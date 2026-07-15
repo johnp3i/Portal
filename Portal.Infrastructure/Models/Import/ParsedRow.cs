@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Portal.Infrastructure.Models.Import;
 
 /// <summary>
@@ -33,6 +35,7 @@ public class ParsedRow
 
     public int? VatSubmissionPeriodId { get; set; }
 
-    /// <summary>Raw values keyed by source column name/index for debugging.</summary>
+    /// <summary>Raw values keyed by source column name/index for debugging. Not persisted to session.</summary>
+    [JsonIgnore]
     public Dictionary<string, string> RawValues { get; set; } = new();
 }

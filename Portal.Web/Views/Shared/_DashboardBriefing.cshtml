@@ -1,0 +1,115 @@
+@model Portal.Infrastructure.Models.BriefingViewModel
+
+@{
+    var gradientBg = Model.State switch
+    {
+        Portal.Infrastructure.Models.BriefingState.Critical => "linear-gradient(135deg, #ffffff 0%, #fefafa 100%)",
+        Portal.Infrastructure.Models.BriefingState.AllClear => "linear-gradient(135deg, #ffffff 0%, #f5fcf9 100%)",
+        _ => "linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)"
+    };
+    var borderColor = Model.State switch
+    {
+        Portal.Infrastructure.Models.BriefingState.Critical => "rgba(194,74,74,.08)",
+        Portal.Infrastructure.Models.BriefingState.AllClear => "rgba(18,152,103,.1)",
+        _ => "rgba(13,94,166,.08)"
+    };
+    var shadowColor = Model.State switch
+    {
+        Portal.Infrastructure.Models.BriefingState.Critical => "rgba(194,74,74,.04)",
+        Portal.Infrastructure.Models.BriefingState.AllClear => "rgba(18,152,103,.04)",
+        _ => "rgba(13,94,166,.05)"
+    };
+    var iconBg = Model.State switch
+    {
+        Portal.Infrastructure.Models.BriefingState.Critical => "linear-gradient(135deg, rgba(194,74,74,.1) 0%, rgba(194,74,74,.05) 100%)",
+        Portal.Infrastructure.Models.BriefingState.AllClear => "linear-gradient(135deg, rgba(18,152,103,.1) 0%, rgba(18,152,103,.05) 100%)",
+        _ => "linear-gradient(135deg, rgba(13,94,166,.1) 0%, rgba(87,184,232,.1) 100%)"
+    };
+    var iconStroke = Model.State switch
+    {
+        Portal.Infrastructure.Models.BriefingState.Critical => "#C24A4A",
+        Portal.Infrastructure.Models.BriefingState.AllClear => "#129867",
+        _ => "#0D5EA6"
+    };
+    var dividerColor = Model.State switch
+    {
+        Portal.Infrastructure.Models.BriefingState.Critical => "rgba(194,74,74,.1)",
+        Portal.Infrastructure.Models.BriefingState.AllClear => "rgba(18,152,103,.1)",
+        _ => "rgba(13,94,166,.08)"
+    };
+}
+
+<section style="background:@gradientBg;border-radius:18px;border:1px solid @borderColor;box-shadow:0 4px 24px @shadowColor;padding:26px 30px;margin-bottom:22px;" class="briefing-card">
+    <style>
+        .briefing-card a {
+            color: #0D5EA6 !important;
+            font-weight: 600 !important;
+            text-decoration: none !important;
+        }
+        .briefing-card a:hover {
+            text-decoration: underline !important;
+        }
+    </style>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:@iconBg;display:flex;align-items:center;justify-content:center;">
+                @if (Model.State == Portal.Infrastructure.Models.BriefingState.Critical)
+                {
+                    <svg width="18" height="18" fill="none" stroke="@iconStroke" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                }
+                else if (Model.State == Portal.Infrastructure.Models.BriefingState.AllClear)
+                {
+                    <svg width="18" height="18" fill="none" stroke="@iconStroke" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                }
+                else
+                {
+                    <svg width="18" height="18" fill="none" stroke="@iconStroke" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                }
+            </div>
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;color:#0B1B28;">@Model.Greeting</div>
+                <div style="font-size:11px;color:#8a9bab;font-weight:500;letter-spacing:0.2px;">@Model.Subtitle</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:500;">Today, @Model.DateDisplay</div>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg, @dividerColor 0%, transparent 100%);margin-bottom:16px;"></div>
+
+    <!-- Insights -->
+    @if (Model.HasInsights)
+    {
+        <div style="display:flex;flex-direction:column;gap:11px;">
+            @foreach (var insight in Model.Insights)
+            {
+                var dotColor = insight.Severity switch
+                {
+                    Portal.Infrastructure.Models.BriefingSeverity.Urgent => "#C24A4A",
+                    Portal.Infrastructure.Models.BriefingSeverity.Action => "#C8912E",
+                    Portal.Infrastructure.Models.BriefingSeverity.Positive => "#129867",
+                    _ => "#0D5EA6"
+                };
+                var glowColor = insight.Severity switch
+                {
+                    Portal.Infrastructure.Models.BriefingSeverity.Urgent => "rgba(194,74,74,.12)",
+                    Portal.Infrastructure.Models.BriefingSeverity.Action => "rgba(200,145,46,.12)",
+                    Portal.Infrastructure.Models.BriefingSeverity.Positive => "rgba(18,152,103,.12)",
+                    _ => "rgba(13,94,166,.12)"
+                };
+
+                <div style="display:flex;align-items:baseline;gap:12px;font-size:14px;color:#334155;line-height:1.55;">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:@dotColor;flex-shrink:0;margin-top:6px;box-shadow:0 0 0 3px @glowColor;"></span>
+                    <span>@Html.Raw(insight.Html)</span>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="font-size:14px;color:#334155;line-height:1.55;">
+            Everything looks good — no items need your attention right now.
+        </div>
+    }
+</section>

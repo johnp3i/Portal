@@ -12,4 +12,8 @@ public class StatementLineDto
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
     public decimal RunningBalance { get; set; }
+    /// <summary>Payment ID for void action (null for non-payment lines).</summary>
+    public int? PaymentId { get; set; }
+    /// <summary>Whether this payment is voided (for display styling).</summary>
+    public bool IsVoided { get; set; }
 }

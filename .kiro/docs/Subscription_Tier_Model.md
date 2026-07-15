@@ -1,5 +1,5 @@
 # Subscription Tier Model
-**Last revised: 11 July 2026**
+**Last revised: 12 July 2026**
 
 ## Philosophy
 
@@ -24,12 +24,13 @@ The upgrade path is natural: as a business grows, manual processes become bottle
 **Included modules:**
 - Quotation Platform (create, send, share, accept)
 - Invoicing (create, issue, share, track)
-- Revenue Control (manual payment recording, receivables view)
+- Revenue Control (manual payment recording, global payment allocation, credit management, receivables view)
 - Customer Registry (CRUD, statements)
 - Purchase Management (record, categorise, VAT assignment)
 - Supplier Registry
 - VAT Periods & Submissions
 - Credit Notes
+- Revenue Summary Entry (Z-Report recording for POS businesses)
 - Product/Line Item Catalog
 - Payment Links (manual generation via Stripe — one at a time)
 - Payment Reminders (manual send only — click per invoice, no automation)
@@ -66,6 +67,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 - Expense Categorisation Insights (spend analysis, budget alerts)
 - Recurring Expense Validation (define expected supplier purchases, validate before VAT submission)
 - Purchase Import (bulk CSV/Excel upload with configurable parser templates)
+- Sales Invoice Import (bulk CSV/Excel upload for POS transaction data with optional customer tracking)
 - Document Attachments (attach PDFs/images to purchases, invoices, quotations)
 - Activity Log (readonly — view history of operations)
 - Up to 5 users with granular permissions
@@ -104,6 +106,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Quotations (create, send, share) | ✅ | ✅ | ✅ |
 | Invoicing (create, issue, share) | ✅ | ✅ | ✅ |
 | Revenue (manual payment recording) | ✅ | ✅ | ✅ |
+| Global Payment Allocation & Credit | ✅ | ✅ | ✅ |
 | Customer Registry | ✅ | ✅ | ✅ |
 | Purchases & Suppliers | ✅ | ✅ | ✅ |
 | VAT Periods & Submissions | ✅ | ✅ | ✅ |
@@ -123,6 +126,9 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Payment Schedules (Instalment Plans) | ❌ | ✅ | ✅ |
 | Recurring Expense Validation | ❌ | ✅ | ✅ |
 | Purchase Import (CSV/Excel) | ❌ | ✅ | ✅ |
+| Revenue Summary Entry (Z-Reports) | ✅ | ✅ | ✅ |
+| Sales Invoice Import (POS data) | ❌ | ✅ | ✅ |
+| Customer Behaviour Analytics | ❌ | ❌ | ✅ |
 | **Operational Tools** | | | |
 | Document Attachments | ❌ | ✅ | ✅ |
 | Activity Log | ❌ | ✅ (readonly) | ✅ (full) |

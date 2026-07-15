@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Import;
+using Portal.Infrastructure.Models.Import;
 using Portal.Infrastructure.Services;
 using Portal.Infrastructure.Services.Import;
 using Portal.Web.Security;
@@ -182,6 +183,76 @@ public class ParserTemplateController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to load template." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostTestTemplate(
+        IFormFile file, string fileFormatType, int headerRow, int dataStartRow,
+        string? sheetName, string columnMappingsJson)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+                return Json(new { success = false, message = "Please select a file." });
+
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrEmpty(extension) ||
+                !new[] { ".csv", ".xlsx", ".xls" }.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            {
+                return Json(new { success = false, message = "Only CSV, XLSX, and XLS files are accepted." });
+            }
+
+            // Build a temporary template from the form data (not persisted)
+            var tempTemplate = new ParserTemplate
+            {
+                FileFormatType = fileFormatType ?? "CSV",
+                HeaderRow = headerRow > 0 ? headerRow : 1,
+                DataStartRow = dataStartRow > 0 ? dataStartRow : 2,
+                SheetName = sheetName,
+                ColumnMappingsJson = columnMappingsJson ?? "[]"
+            };
+
+            var fileParsingService = HttpContext.RequestServices.GetRequiredService<IFileParsingService>();
+
+            using var stream = file.OpenReadStream();
+            List<ParsedRow> parsedRows;
+
+            if (extension.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                parsedRows = fileParsingService.ParseCsv(stream, tempTemplate);
+            }
+            else
+            {
+                parsedRows = fileParsingService.ParseExcel(stream, tempTemplate);
+            }
+
+            // Return only first 5 rows for preview
+            var previewRows = parsedRows.Take(5).Select(r => new
+            {
+                rowNumber = r.RowNumber,
+                invoiceDate = r.InvoiceDate?.ToString("dd/MM/yyyy"),
+                invoiceNumber = r.InvoiceNumber,
+                description = r.Description,
+                amountExcludingVat = r.AmountExcludingVat?.ToString("N2"),
+                vatAmount = r.VatAmount?.ToString("N2"),
+                totalAmount = r.TotalAmount?.ToString("N2"),
+                country = r.Country
+            }).ToList();
+
+            if (previewRows.Count == 0)
+            {
+                return Json(new { success = true, rows = previewRows, totalParsed = 0,
+                    message = $"No rows parsed. Header row {tempTemplate.HeaderRow} may not contain the expected column names. The system searched ±3 rows from that position." });
+            }
+
+            return Json(new { success = true, rows = previewRows, totalParsed = parsedRows.Count,
+                message = $"{parsedRows.Count} rows parsed successfully. Showing first {previewRows.Count}." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to test template: " + ex.Message });
         }
     }
 }

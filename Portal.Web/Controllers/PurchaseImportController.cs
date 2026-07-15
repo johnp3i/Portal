@@ -23,19 +23,25 @@ public class PurchaseImportController : Controller
     private readonly ICurrentTenantService _currentTenantService;
     private readonly PortalDbContext _dbContext;
     private readonly SupplierImportProfileRepository _profileRepository;
+    private readonly IImportValidationService _validationService;
+    private readonly ImportSessionRepository _importSessionRepository;
 
     public PurchaseImportController(
         IImportEngineService importEngine,
         IParserTemplateService templateService,
         ICurrentTenantService currentTenantService,
         PortalDbContext dbContext,
-        SupplierImportProfileRepository profileRepository)
+        SupplierImportProfileRepository profileRepository,
+        IImportValidationService validationService,
+        ImportSessionRepository importSessionRepository)
     {
         _importEngine = importEngine;
         _templateService = templateService;
         _currentTenantService = currentTenantService;
         _dbContext = dbContext;
         _profileRepository = profileRepository;
+        _validationService = validationService;
+        _importSessionRepository = importSessionRepository;
     }
 
     [HttpGet]
@@ -49,6 +55,21 @@ public class PurchaseImportController : Controller
             .ToListAsync();
 
         ViewBag.Suppliers = suppliers;
+
+        // Check active sessions for limit warning
+        var activeSessionCount = await _importSessionRepository.GetActiveSessionCountAsync(businessId);
+        ViewBag.ActiveSessionCount = activeSessionCount;
+
+        // Load import history from AuditLog
+        var importHistory = await _dbContext.AuditLogs
+            .Where(a => a.BusinessId == businessId && a.Action == "PurchaseImport")
+            .OrderByDescending(a => a.Timestamp)
+            .Take(20)
+            .Select(a => new ImportHistoryEntry { UserId = a.UserId, RecordId = a.RecordId, NewValues = a.NewValues, Timestamp = a.Timestamp })
+            .ToListAsync();
+
+        ViewBag.ImportHistory = importHistory;
+
         return View();
     }
 
@@ -114,7 +135,7 @@ public class PurchaseImportController : Controller
             if (!result.Success)
                 return Json(new { success = false, message = result.Message });
 
-            return Json(new { success = true, sessionId = result.Data!.SessionId, data = result.Data });
+            return Json(new { success = true, sessionId = result.Data!.SessionId, data = result.Data, usedFallbackAutoDetect = result.Data.UsedFallbackAutoDetect });
         }
         catch (Exception ex)
         {
@@ -195,6 +216,227 @@ public class PurchaseImportController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostCancelSession(int sessionId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+            await _importSessionRepository.DeleteAsync(sessionId, businessId);
+            return Json(new { success = true, message = "Import cancelled." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to cancel import." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostCreateMissingCategories(int sessionId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+
+            var session = await _dbContext.ImportSessions
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.Id == sessionId && s.BusinessId == businessId && !s.IsConfirmed);
+
+            if (session == null)
+                return Json(new { success = false, message = "Session not found." });
+
+            var rows = System.Text.Json.JsonSerializer.Deserialize<List<ValidatedRow>>(session.RowDataJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+            // Collect unique unresolved category names
+            var unresolvedNames = rows
+                .Where(r => !r.IsRemoved && !r.Data.ExpenseCategoryId.HasValue && !string.IsNullOrEmpty(r.Data.ExpenseCategoryName))
+                .Select(r => r.Data.ExpenseCategoryName!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (unresolvedNames.Count == 0)
+                return Json(new { success = false, message = "No missing categories to create." });
+
+            // Check which ones already exist (avoid duplicates)
+            var existingCategories = await _dbContext.ExpenseCategories
+                .Where(c => c.BusinessId == businessId && c.IsActive)
+                .Select(c => c.Name.ToLower())
+                .ToListAsync();
+
+            var toCreate = unresolvedNames
+                .Where(n => !existingCategories.Contains(n.ToLowerInvariant()))
+                .ToList();
+
+            if (toCreate.Count == 0)
+                return Json(new { success = true, message = "All categories already exist. Re-validating...", created = 0 });
+
+            // Create the missing categories
+            foreach (var name in toCreate)
+            {
+                var insertQuery = @"
+                    INSERT INTO [purchase].[ExpenseCategory] ([BusinessId], [Name], [IsActive], [CreatedAtUtc])
+                    VALUES (@BusinessId, @Name, 1, GETUTCDATE())";
+
+                await _dbContext.Database.ExecuteSqlRawAsync(insertQuery,
+                    new Microsoft.Data.SqlClient.SqlParameter("@BusinessId", businessId),
+                    new Microsoft.Data.SqlClient.SqlParameter("@Name", name));
+            }
+
+            // Re-validate all rows with the new categories available
+            var validated = await _validationService.ValidateRowsAsync(
+                rows.Where(r => !r.IsRemoved).Select(r => r.Data).ToList(),
+                session.SupplierId, businessId);
+
+            // Rebuild rows preserving removed rows
+            var newRows = new List<ValidatedRow>();
+            var validIdx = 0;
+            for (var i = 0; i < rows.Count; i++)
+            {
+                if (rows[i].IsRemoved)
+                {
+                    newRows.Add(rows[i]);
+                }
+                else
+                {
+                    var v = validated[validIdx++];
+                    v.IsDuplicate = rows[i].IsDuplicate;
+                    newRows.Add(v);
+                }
+            }
+
+            var activeRows = newRows.Where(r => !r.IsRemoved).ToList();
+            var validCount = activeRows.Count(r => r.Status != RowValidationStatus.Invalid);
+            var invalidCount = activeRows.Count(r => r.Status == RowValidationStatus.Invalid);
+
+            await _importSessionRepository.UpdateRowDataAsync(sessionId, businessId,
+                System.Text.Json.JsonSerializer.Serialize(newRows), validCount, invalidCount, activeRows.Count);
+
+            return Json(new { success = true, message = $"{toCreate.Count} categor{(toCreate.Count == 1 ? "y" : "ies")} created.", created = toCreate.Count });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to create categories." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRemoveRowsWithoutInvoiceId(int sessionId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+
+            var session = await _dbContext.ImportSessions
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.Id == sessionId && s.BusinessId == businessId && !s.IsConfirmed);
+
+            if (session == null)
+                return Json(new { success = false, message = "Session not found." });
+
+            var rows = System.Text.Json.JsonSerializer.Deserialize<List<ValidatedRow>>(session.RowDataJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+            var removedCount = 0;
+            for (var i = 0; i < rows.Count; i++)
+            {
+                if (rows[i].IsRemoved) continue;
+                if (string.IsNullOrEmpty(rows[i].Data.InvoiceNumber))
+                {
+                    rows[i].IsRemoved = true;
+                    removedCount++;
+                }
+            }
+
+            if (removedCount == 0)
+                return Json(new { success = false, message = "No rows without Invoice ID to remove." });
+
+            var activeRows = rows.Where(r => !r.IsRemoved).ToList();
+            var validCount = activeRows.Count(r => r.Status != RowValidationStatus.Invalid);
+            var invalidCount = activeRows.Count(r => r.Status == RowValidationStatus.Invalid);
+
+            await _importSessionRepository.UpdateRowDataAsync(sessionId, businessId,
+                System.Text.Json.JsonSerializer.Serialize(rows), validCount, invalidCount, activeRows.Count);
+
+            return Json(new { success = true, message = $"{removedCount} row{(removedCount == 1 ? "" : "s")} without Invoice ID removed.", removed = removedCount });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to remove rows." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRemoveInvalidRows(int sessionId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+
+            var session = await _dbContext.ImportSessions
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.Id == sessionId && s.BusinessId == businessId && !s.IsConfirmed);
+
+            if (session == null)
+                return Json(new { success = false, message = "Session not found." });
+
+            var rows = System.Text.Json.JsonSerializer.Deserialize<List<ValidatedRow>>(session.RowDataJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+            var removedCount = 0;
+            for (var i = 0; i < rows.Count; i++)
+            {
+                if (rows[i].IsRemoved) continue;
+                if (rows[i].Status == RowValidationStatus.Invalid)
+                {
+                    rows[i].IsRemoved = true;
+                    removedCount++;
+                }
+            }
+
+            if (removedCount == 0)
+                return Json(new { success = false, message = "No invalid rows to remove." });
+
+            var activeRows = rows.Where(r => !r.IsRemoved).ToList();
+            var validCount = activeRows.Count(r => r.Status != RowValidationStatus.Invalid);
+            var invalidCount = activeRows.Count(r => r.Status == RowValidationStatus.Invalid);
+
+            await _importSessionRepository.UpdateRowDataAsync(sessionId, businessId,
+                System.Text.Json.JsonSerializer.Serialize(rows), validCount, invalidCount, activeRows.Count);
+
+            return Json(new { success = true, message = $"{removedCount} invalid row{(removedCount == 1 ? "" : "s")} removed.", removed = removedCount });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to remove invalid rows." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSendToBulkEntry(int sessionId)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+
+            var session = await _dbContext.ImportSessions
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.Id == sessionId && s.BusinessId == businessId && !s.IsConfirmed);
+
+            if (session == null)
+                return Json(new { success = false, message = "Session not found." });
+
+            // Pass sessionId via query param — BulkEntry will load data directly from DB
+            return Json(new { success = true, redirectUrl = "/Purchase/BulkEntry?importSessionId=" + sessionId });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to transfer data." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostBulkApply(int sessionId, string? category, string? origin, string? country, int? vatPeriodId)
     {
         try
@@ -208,7 +450,7 @@ public class PurchaseImportController : Controller
             if (session == null)
                 return Json(new { success = false, message = "Session not found." });
 
-            var rows = System.Text.Json.JsonSerializer.Deserialize<List<ValidatedRow>>(session.RowDataJson) ?? new();
+            var rows = System.Text.Json.JsonSerializer.Deserialize<List<ValidatedRow>>(session.RowDataJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
             var changed = false;
 
             for (var i = 0; i < rows.Count; i++)
@@ -243,8 +485,7 @@ public class PurchaseImportController : Controller
                 return Json(new { success = false, message = "No changes specified." });
 
             // Re-validate all rows
-            var validationService = HttpContext.RequestServices.GetRequiredService<IImportValidationService>();
-            var validated = await validationService.ValidateRowsAsync(
+            var validated = await _validationService.ValidateRowsAsync(
                 rows.Where(r => !r.IsRemoved).Select(r => r.Data).ToList(),
                 session.SupplierId, businessId);
 
@@ -269,8 +510,7 @@ public class PurchaseImportController : Controller
             var validCount = activeRows.Count(r => r.Status != RowValidationStatus.Invalid);
             var invalidCount = activeRows.Count(r => r.Status == RowValidationStatus.Invalid);
 
-            var importSessionRepo = HttpContext.RequestServices.GetRequiredService<ImportSessionRepository>();
-            await importSessionRepo.UpdateRowDataAsync(sessionId, businessId,
+            await _importSessionRepository.UpdateRowDataAsync(sessionId, businessId,
                 System.Text.Json.JsonSerializer.Serialize(newRows), validCount, invalidCount, activeRows.Count);
 
             return Json(new { success = true, message = "Applied to all rows." });
@@ -309,11 +549,32 @@ public class PurchaseImportController : Controller
             if (profile == null)
                 return Json(new { success = true, data = (object?)null });
 
+            // Resolve names for display
+            string? categoryName = null;
+            if (profile.DefaultExpenseCategoryId.HasValue)
+            {
+                categoryName = await _dbContext.ExpenseCategories
+                    .Where(c => c.Id == profile.DefaultExpenseCategoryId.Value && c.BusinessId == businessId)
+                    .Select(c => c.Name)
+                    .FirstOrDefaultAsync();
+            }
+
+            string? originName = profile.DefaultPurchaseOriginTypeId switch
+            {
+                1 => "Domestic",
+                2 => "EU Reverse Charge",
+                3 => "Non-EU",
+                4 => "EU Paid",
+                _ => null
+            };
+
             return Json(new { success = true, data = new
             {
                 profile.DefaultExpenseCategoryId,
                 profile.DefaultPurchaseOriginTypeId,
-                profile.DefaultCountry
+                profile.DefaultCountry,
+                categoryName,
+                originName
             }});
         }
         catch (Exception ex)

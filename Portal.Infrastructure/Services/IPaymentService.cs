@@ -9,28 +9,44 @@ namespace Portal.Infrastructure.Services;
 /// </summary>
 public interface IPaymentService
 {
-    /// <summary>
-    /// Records a payment against an issued invoice after validation.
-    /// Validates: invoice exists, is Issued, amount > 0, amount ≤ outstanding balance.
-    /// Triggers financial status recalculation on success.
-    /// </summary>
     Task<ServiceResult> RecordPaymentAsync(RecordPaymentDto dto, int businessId, string userId);
-
-    /// <summary>
-    /// Voids a payment by setting IsVoided = 1.
-    /// Returns informational message if already voided.
-    /// Triggers financial status recalculation on the parent invoice.
-    /// </summary>
     Task<ServiceResult> VoidPaymentAsync(int paymentId, int businessId);
-
-    /// <summary>
-    /// Gets all payments for an invoice (including voided) for display in payment history.
-    /// Joins with PaymentMethodType to include the method name.
-    /// </summary>
     Task<List<PaymentHistoryDto>> GetPaymentHistoryAsync(int invoiceId, int businessId);
+    Task<List<PaymentMethodType>> GetPaymentMethodTypesAsync();
 
     /// <summary>
-    /// Gets active payment method types for dropdown population.
+    /// Records a global (customer-level) payment and allocates across outstanding invoices.
     /// </summary>
-    Task<List<PaymentMethodType>> GetPaymentMethodTypesAsync();
+    Task<ServiceResult<AllocationResult>> RecordGlobalPaymentAsync(RecordGlobalPaymentDto dto, int businessId, string userId);
+
+    /// <summary>
+    /// Voids a global parent payment and cascades to all child allocations.
+    /// </summary>
+    Task<ServiceResult> VoidGlobalPaymentAsync(int paymentId, int businessId);
+
+    /// <summary>
+    /// Gets outstanding invoices for a customer (for manual allocation UI).
+    /// </summary>
+    Task<List<OutstandingInvoiceDto>> GetOutstandingForCustomerAsync(int customerId, int businessId);
+
+    /// <summary>
+    /// Gets the total available credit balance for a customer (sum of CreditAmount on non-voided parent payments).
+    /// </summary>
+    Task<decimal> GetCreditBalanceAsync(int customerId, int businessId);
+
+    /// <summary>
+    /// Applies existing credit from a customer's overpayment to their outstanding invoices using FIFO.
+    /// </summary>
+    Task<ServiceResult<AllocationResult>> ApplyCreditAsync(int customerId, int businessId, string userId);
+
+    /// <summary>
+    /// Voids a single child allocation, returning its amount to the parent's CreditAmount.
+    /// </summary>
+    Task<ServiceResult> VoidChildAllocationAsync(int paymentId, int businessId);
+
+    /// <summary>
+    /// Smart void that detects payment type and calls the appropriate void method.
+    /// Returns a message describing what was done.
+    /// </summary>
+    Task<ServiceResult> VoidPaymentSmartAsync(int paymentId, int businessId);
 }

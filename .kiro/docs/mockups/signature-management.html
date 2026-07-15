@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Signature Management — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#F7FAFC;--bg2:#EEF4F8;--blue:#0D5EA6;--cyan:#57B8E8;--green:#129867;
+    --red:#C24A4A;--gold:#C8912E;--muted:#5E7385;--text:#0B1B28;
+    --line:rgba(13,94,166,.10);--shadow:0 2px 16px rgba(13,94,166,.07); }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+  .sidebar{background:#fff;border-right:1px solid var(--line);padding:20px 14px;}
+  .brand{padding:4px 10px 18px;font-family:'Manrope',sans-serif;font-size:18px;
+    font-weight:800;color:var(--blue);}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">3inventors</div>
+  </aside>
+  <main style="padding:28px 32px;">
+    <!-- Topbar -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--cyan);display:inline-block;"></span> My Business
+        </div>
+        <h1 style="font-family:'Manrope',sans-serif;font-size:30px;font-weight:800;margin-top:10px;">Signature Library</h1>
+        <p style="font-size:15px;color:var(--muted);margin-top:4px;">Upload and manage digital signatures for receipts and documents.</p>
+      </div>
+      <button style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:linear-gradient(180deg,#1A6BB8,#0D5EA6);color:#fff;box-shadow:0 8px 20px rgba(13,94,166,.18);">
+        Upload Signature
+      </button>
+    </div>
+
+    <!-- Upload Area -->
+    <section style="background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:var(--shadow);padding:22px;margin-bottom:22px;">
+      <div style="border:2px dashed rgba(13,94,166,.2);border-radius:16px;padding:40px;text-align:center;background:rgba(13,94,166,.02);">
+        <svg width="40" height="40" fill="none" stroke="var(--blue)" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:12px;">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">Drop signature image here or click to browse</p>
+        <p style="font-size:12px;color:var(--muted);">PNG or SVG with transparent background recommended. Max 2MB.</p>
+        <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;align-items:center;">
+          <div style="min-width:200px;">
+            <input type="text" placeholder="Label (e.g., John Smith — Director)" style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(13,94,166,.15);font:13px/1.4 'Inter',sans-serif;" />
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;">
+            <input type="checkbox" /> Set as default
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signature Gallery -->
+    <section style="background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:var(--shadow);padding:22px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;">Your Signatures</h3>
+        <span style="font-size:13px;color:var(--muted);">3 signatures uploaded</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
+        <!-- Signature Card 1 (Default) -->
+        <div style="border:2px solid var(--blue);border-radius:16px;padding:20px;background:rgba(13,94,166,.02);position:relative;">
+          <span style="position:absolute;top:12px;right:12px;background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;">DEFAULT</span>
+          <div style="height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="180" height="60"><path d="M10 45 C30 20 50 50 80 30 C100 20 120 40 150 25" stroke="#0B1B28" stroke-width="2" fill="none"/></svg>
+          </div>
+          <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">John Smith — Director</p>
+          <p style="font-size:11px;color:var(--muted);">Uploaded 10 Jun 2026</p>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button style="padding:5px 12px;border-radius:8px;border:1px solid rgba(13,94,166,.12);background:#fff;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;">Edit Label</button>
+            <button style="padding:5px 12px;border-radius:8px;border:1px solid rgba(194,74,74,.15);background:rgba(194,74,74,.04);font-size:11px;font-weight:600;color:var(--red);cursor:pointer;">Deactivate</button>
+          </div>
+        </div>
+
+        <!-- Signature Card 2 -->
+        <div style="border:1.5px solid var(--line);border-radius:16px;padding:20px;background:#fff;">
+          <div style="height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="180" height="60"><path d="M15 40 C40 30 60 55 90 25 C110 15 130 35 160 30" stroke="#0B1B28" stroke-width="2" fill="none"/></svg>
+          </div>
+          <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Maria K. — Finance</p>
+          <p style="font-size:11px;color:var(--muted);">Uploaded 15 Jun 2026</p>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button style="padding:5px 12px;border-radius:8px;border:1px solid rgba(18,152,103,.15);background:rgba(18,152,103,.04);font-size:11px;font-weight:600;color:var(--green);cursor:pointer;">Set Default</button>
+            <button style="padding:5px 12px;border-radius:8px;border:1px solid rgba(13,94,166,.12);background:#fff;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;">Edit Label</button>
+            <button style="padding:5px 12px;border-radius:8px;border:1px solid rgba(194,74,74,.15);background:rgba(194,74,74,.04);font-size:11px;font-weight:600;color:var(--red);cursor:pointer;">Deactivate</button>
+          </div>
+        </div>
+
+        <!-- Signature Card 3 (Inactive) -->
+        <div style="border:1.5px solid var(--line);border-radius:16px;padding:20px;background:#fff;opacity:.5;">
+          <div style="height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="180" height="60"><path d="M20 35 C45 45 65 20 100 40 C120 50 140 25 165 35" stroke="#0B1B28" stroke-width="2" fill="none"/></svg>
+          </div>
+          <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Nikos P. — Operations</p>
+          <p style="font-size:11px;color:var(--muted);">Uploaded 01 May 2026 &middot; <span style="color:var(--red);font-weight:600;">Inactive</span></p>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button style="padding:5px 12px;border-radius:8px;border:1px solid rgba(18,152,103,.15);background:rgba(18,152,103,.04);font-size:11px;font-weight:600;color:var(--green);cursor:pointer;">Reactivate</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

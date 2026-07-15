@@ -24,29 +24,34 @@ public static class ColumnMapper
             return new List<ParsedRow>();
 
         // Build header name → column index lookup
-        var headerLookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        if (headerRowIndex < rawRows.Count)
+        // If the configured header row doesn't contain expected columns, search nearby rows
+        var headerLookup = BuildHeaderLookup(rawRows, mappings, headerRowIndex, out var actualHeaderRowIndex);
+
+        // Adjust data start row if header was found at a different position
+        var actualDataStartRowIndex = dataStartRowIndex;
+        if (actualHeaderRowIndex != headerRowIndex)
         {
-            var headerRow = rawRows[headerRowIndex];
-            for (var i = 0; i < headerRow.Length; i++)
-            {
-                var name = headerRow[i].Trim();
-                if (!string.IsNullOrEmpty(name) && !headerLookup.ContainsKey(name))
-                {
-                    headerLookup[name] = i;
-                }
-            }
+            actualDataStartRowIndex = actualHeaderRowIndex + (dataStartRowIndex - headerRowIndex);
         }
 
         var result = new List<ParsedRow>();
 
-        for (var rowIdx = dataStartRowIndex; rowIdx < rawRows.Count; rowIdx++)
+        // Get the actual header row content for section-boundary detection
+        string[]? headerRowContent = (actualHeaderRowIndex >= 0 && actualHeaderRowIndex < rawRows.Count)
+            ? rawRows[actualHeaderRowIndex]
+            : null;
+
+        for (var rowIdx = actualDataStartRowIndex; rowIdx < rawRows.Count; rowIdx++)
         {
             var rawRow = rawRows[rowIdx];
 
             // Skip entirely empty rows
             if (rawRow.All(f => string.IsNullOrWhiteSpace(f)))
                 continue;
+
+            // Stop at section boundary: if this row matches the header row, it's a repeated header (multi-section file)
+            if (headerRowContent != null && IsHeaderRepeat(rawRow, headerRowContent))
+                break;
 
             var parsed = new ParsedRow
             {
@@ -67,9 +72,8 @@ public static class ColumnMapper
                 ApplyValue(parsed, mapping.TargetField, value, mapping.Format);
             }
 
-            // Skip rows that have no valid date (summary rows, section headers, footers)
-            // InvoiceDate is required for any importable purchase row.
-            if (!parsed.InvoiceDate.HasValue)
+            // Skip rows where no mapped field produced any value (truly empty/blank rows)
+            if (parsed.RawValues.Count == 0)
                 continue;
 
             result.Add(parsed);
@@ -111,6 +115,94 @@ public static class ColumnMapper
         return mappings;
     }
 
+    /// <summary>
+    /// Builds the header lookup, searching nearby rows if the configured header row doesn't match.
+    /// </summary>
+    private static Dictionary<string, int> BuildHeaderLookup(
+        List<string[]> rawRows, List<ColumnMapping> mappings, int configuredHeaderRowIndex, out int actualHeaderRowIndex)
+    {
+        // Get expected header names from mappings
+        var expectedHeaders = mappings
+            .Where(m => !m.IsSkipped && !string.IsNullOrEmpty(m.SourceColumn))
+            .Select(m => m.SourceColumn!)
+            .ToList();
+
+        // Try the configured row first
+        var lookup = TryBuildLookup(rawRows, configuredHeaderRowIndex, expectedHeaders);
+        if (lookup != null)
+        {
+            actualHeaderRowIndex = configuredHeaderRowIndex;
+            return lookup;
+        }
+
+        // Search nearby rows (±3) for the header
+        for (var offset = 1; offset <= 3; offset++)
+        {
+            // Try below
+            lookup = TryBuildLookup(rawRows, configuredHeaderRowIndex + offset, expectedHeaders);
+            if (lookup != null)
+            {
+                actualHeaderRowIndex = configuredHeaderRowIndex + offset;
+                return lookup;
+            }
+
+            // Try above
+            lookup = TryBuildLookup(rawRows, configuredHeaderRowIndex - offset, expectedHeaders);
+            if (lookup != null)
+            {
+                actualHeaderRowIndex = configuredHeaderRowIndex - offset;
+                return lookup;
+            }
+        }
+
+        // Fallback: use configured row even if no headers match (positional mappings may still work)
+        actualHeaderRowIndex = configuredHeaderRowIndex;
+        return BuildLookupFromRow(rawRows, configuredHeaderRowIndex);
+    }
+
+    private static Dictionary<string, int>? TryBuildLookup(List<string[]> rawRows, int rowIndex, List<string> expectedHeaders)
+    {
+        if (rowIndex < 0 || rowIndex >= rawRows.Count)
+            return null;
+
+        var row = rawRows[rowIndex];
+        var lookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < row.Length; i++)
+        {
+            var name = row[i].Trim();
+            if (!string.IsNullOrEmpty(name) && !lookup.ContainsKey(name))
+            {
+                lookup[name] = i;
+            }
+        }
+
+        // Check if at least one expected header is found
+        var matchCount = expectedHeaders.Count(h => lookup.ContainsKey(h));
+        if (matchCount == 0)
+            return null;
+
+        return lookup;
+    }
+
+    private static Dictionary<string, int> BuildLookupFromRow(List<string[]> rawRows, int rowIndex)
+    {
+        var lookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (rowIndex >= 0 && rowIndex < rawRows.Count)
+        {
+            var row = rawRows[rowIndex];
+            for (var i = 0; i < row.Length; i++)
+            {
+                var name = row[i].Trim();
+                if (!string.IsNullOrEmpty(name) && !lookup.ContainsKey(name))
+                {
+                    lookup[name] = i;
+                }
+            }
+        }
+        return lookup;
+    }
+
     private static string? ResolveValue(string[] row, ColumnMapping mapping, Dictionary<string, int> headerLookup)
     {
         int? colIndex = null;
@@ -137,6 +229,17 @@ public static class ColumnMapper
     {
         if (value == null)
             return;
+
+        // Truncate field values to reasonable limits to prevent oversized session JSON
+        value = targetField switch
+        {
+            ImportTargetFields.InvoiceNumber => Truncate(value, 100),
+            ImportTargetFields.Description => Truncate(value, 500),
+            ImportTargetFields.Country => Truncate(value, 100),
+            ImportTargetFields.Notes => Truncate(value, 1000),
+            ImportTargetFields.PurchaseOriginType => Truncate(value, 50),
+            _ => value
+        };
 
         switch (targetField)
         {
@@ -254,5 +357,39 @@ public static class ColumnMapper
             [ImportTargetFields.Country] = new[] { "Country", "Origin Country" },
             [ImportTargetFields.Notes] = new[] { "Notes", "Note", "Comments", "Memo" }
         };
+    }
+
+    private static string Truncate(string value, int maxLength)
+    {
+        return value.Length <= maxLength ? value : value.Substring(0, maxLength);
+    }
+
+    /// <summary>
+    /// Checks if a data row is actually a repeated header row (section boundary in multi-section files).
+    /// Compares trimmed field values — matches if all non-empty header fields are present in the same positions.
+    /// </summary>
+    private static bool IsHeaderRepeat(string[] row, string[] headerRow)
+    {
+        // Must have at least the same number of fields
+        var checkLength = Math.Min(row.Length, headerRow.Length);
+        if (checkLength == 0)
+            return false;
+
+        var matchCount = 0;
+        var headerFieldCount = 0;
+
+        for (var i = 0; i < checkLength; i++)
+        {
+            var headerVal = headerRow[i].Trim();
+            if (string.IsNullOrEmpty(headerVal))
+                continue;
+
+            headerFieldCount++;
+            if (string.Equals(row[i].Trim(), headerVal, StringComparison.OrdinalIgnoreCase))
+                matchCount++;
+        }
+
+        // Consider it a header repeat if all non-empty header fields match
+        return headerFieldCount > 0 && matchCount == headerFieldCount;
     }
 }

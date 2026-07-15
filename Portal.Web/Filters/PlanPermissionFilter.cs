@@ -153,6 +153,17 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
         if (string.IsNullOrEmpty(moduleKey))
             return string.Empty;
 
+        // Known display name overrides
+        var overrides = new Dictionary<string, string>
+        {
+            ["pnl"] = "Profit & Loss",
+            ["vat"] = "VAT",
+            ["api"] = "API"
+        };
+
+        if (overrides.TryGetValue(moduleKey, out var displayName))
+            return displayName;
+
         // Split on underscores and capitalize each word
         var words = moduleKey.Split('_');
         for (int i = 0; i < words.Length; i++)
@@ -196,6 +207,8 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
             "api" => "Access the Portal API for third-party integrations.",
             "webhooks" => "Configure webhooks to receive real-time event notifications.",
             "multi_currency" => "Work with multiple currencies for international business.",
+            "purchase_import" => "Import purchases from CSV files with intelligent column mapping and template management.",
+            "recurring_expense_validation" => "Define expected recurring purchases per supplier, validate that all expected expenses are recorded before VAT submission, and catch missing invoices automatically.",
             _ => "Access advanced features to enhance your business operations."
         };
     }

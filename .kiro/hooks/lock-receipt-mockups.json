@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Lock Payment Receipt Mockups",
+      "trigger": "PreToolUse",
+      "description": "Prevents accidental modification of the approved payment receipt and signature management mockup files.",
+      "matcher": "fs_write|str_replace|delete_file",
+      "action": {
+        "type": "agent",
+        "prompt": "If the tool is attempting to modify, overwrite, or delete any of these files, you MUST deny the operation and inform the user that these mockups are locked:\n- .kiro/docs/mockups/payment-receipt-list.html\n- .kiro/docs/mockups/payment-receipt-document.html\n- .kiro/docs/mockups/signature-management.html\n\nThese files are approved mockups and must not be changed without explicit user permission to unlock them."
+      },
+      "enabled": false
+    }
+  ]
+}

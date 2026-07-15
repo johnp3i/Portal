@@ -55,6 +55,27 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
         }
     }
 
+    public virtual async Task<Customer?> GetByIdAndBusinessIdUnfilteredAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [Name], [ContactPerson], [Email], [TelephoneNumber], [MobileNumber],
+                       [AddressLine1], [AddressLine2], [City], [PostalCode], [Country],
+                       [IsActive], [IsReminderOptedOut], [CreatedAtUtc], [UpdatedAtUtc]
+                FROM [customer].[Customer]
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
+
+            return await ExecuteSingleRecordStoredProcedureUnfiltered(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<int> InsertAsync(Customer entity)
     {
         try

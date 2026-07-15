@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Meetings — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary-blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --purple: #6B5CE7;
+            --bg: #F7FAFC;
+            --card-bg: #ffffff;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6a7a;
+            --text-muted: #8a9aaa;
+            --border: #e2e8f0;
+            --shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+            --shadow-card: 0 1px 6px rgba(13, 94, 166, 0.08);
+            --radius: 20px;
+            --radius-card: 14px;
+            --radius-sm: 8px;
+            --font-heading: 'Manrope', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Topbar */
+        .topbar {
+            padding: 32px 40px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .topbar-left .eyebrow {
+            font-family: var(--font-heading);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 4px;
+        }
+
+        .topbar-left h1 {
+            font-family: var(--font-heading);
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .topbar-left .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-left .back-link {
+            font-size: 13px;
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .topbar-left .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-body);
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #0a4d8a;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary-blue);
+            border: 1.5px solid var(--primary-blue);
+        }
+
+        .btn-outline:hover {
+            background: rgba(13, 94, 166, 0.05);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            padding: 0 40px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-body);
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            border-bottom: 2.5px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-blue);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-blue);
+            border-bottom-color: var(--primary-blue);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 0 40px 40px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Glass Card */
+        .glass {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        .card-pad {
+            padding: 28px 32px;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-title .badge {
+            background: var(--primary-blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-family: var(--font-body);
+        }
+
+        /* Meeting Cards */
+        .meeting-card {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 18px 22px;
+            border-radius: var(--radius-card);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+            transition: box-shadow 0.15s ease;
+        }
+
+        .meeting-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .meeting-card:hover {
+            box-shadow: var(--shadow-card);
+        }
+
+        .meeting-card.border-cyan {
+            border-left: 4px solid var(--cyan);
+        }
+
+        .meeting-card.border-amber {
+            border-left: 4px solid var(--amber);
+        }
+
+        .meeting-card.border-grey {
+            border-left: 4px solid #b0bec5;
+        }
+
+        .meeting-card.past {
+            opacity: 0.8;
+        }
+
+        .meeting-card-left {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .meeting-subject {
+            font-family: var(--font-heading);
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+
+        .pill-cyan {
+            background: rgba(87, 184, 232, 0.15);
+            color: #2a8ab8;
+        }
+
+        .pill-amber {
+            background: rgba(200, 145, 46, 0.15);
+            color: #9a6e1a;
+        }
+
+        .pill-grey {
+            background: rgba(176, 190, 197, 0.2);
+            color: #607d8b;
+        }
+
+        .meeting-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .meeting-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .meeting-meta .label {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meeting-meta a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .meeting-meta a:hover {
+            text-decoration: underline;
+        }
+
+        .meeting-outcome {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 8px 12px;
+            background: rgba(18, 152, 103, 0.05);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--green);
+        }
+
+        .meeting-card-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .meeting-card-right .action-link {
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.12s ease;
+        }
+
+        .action-link-edit {
+            color: var(--primary-blue);
+        }
+
+        .action-link-edit:hover {
+            background: rgba(13, 94, 166, 0.06);
+        }
+
+        .action-link-cancel {
+            color: var(--red);
+        }
+
+        .action-link-cancel:hover {
+            background: rgba(194, 74, 74, 0.06);
+        }
+
+        .action-link-view {
+            color: var(--text-secondary);
+        }
+
+        .action-link-view:hover {
+            background: rgba(90, 106, 122, 0.06);
+        }
+
+        /* Form Styles */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px 24px;
+        }
+
+        .form-grid .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .field label .required {
+            color: var(--red);
+            margin-left: 2px;
+        }
+
+        .field input,
+        .field select,
+        .field textarea {
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: var(--font-body);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.08);
+        }
+
+        .field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Separator */
+        .separator {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 28px 0;
+        }
+
+        /* Sub-section */
+        .sub-section {
+            background: var(--bg);
+            border-radius: var(--radius-card);
+            padding: 20px 24px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .sub-section-title {
+            font-family: var(--font-heading);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .sub-section-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        /* Mini Table */
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .mini-table th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mini-table td {
+            padding: 8px 10px;
+            vertical-align: middle;
+        }
+
+        .mini-table input,
+        .mini-table select {
+            padding: 7px 10px;
+            font-size: 13px;
+            font-family: var(--font-body);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            outline: none;
+            width: 100%;
+        }
+
+        .mini-table input:focus,
+        .mini-table select:focus {
+            border-color: var(--primary-blue);
+        }
+
+        .mini-table .remove-btn {
+            background: none;
+            border: none;
+            color: var(--red);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.12s ease;
+        }
+
+        .mini-table .remove-btn:hover {
+            background: rgba(194, 74, 74, 0.08);
+        }
+
+        .add-row-btn {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .add-row-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* Form Actions */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .topbar {
+                padding: 24px 20px 18px;
+            }
+
+            .topbar-left h1 {
+                font-size: 28px;
+            }
+
+            .tabs {
+                padding: 0 20px;
+            }
+
+            .tab-content {
+                padding: 0 20px 30px;
+            }
+
+            .card-pad {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .meeting-card {
+                flex-direction: column;
+            }
+
+            .meeting-card-right {
+                margin-top: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="list">Meeting List</button>
+        <button class="tab-btn" data-tab="create">Schedule Meeting</button>
+    </div>
+
+    <!-- Tab 1: Meeting List -->
+    <div class="tab-content active" id="tab-list">
+        <div class="topbar" style="padding-left:0;padding-right:0;padding-top:0;">
+            <div class="topbar-left">
+                <div class="eyebrow">SALES</div>
+                <h1>Meetings</h1>
+                <div class="subtitle">Schedule and manage meetings with prospects</div>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-primary" onclick="switchTab('create')">+ Schedule Meeting</button>
+            </div>
+        </div>
+
+        <!-- Upcoming Meetings -->
+        <section class="glass card-pad">
+            <div class="section-title">
+                Upcoming <span class="badge">2</span>
+            </div>
+
+            <!-- Meeting 1 -->
+            <div class="meeting-card border-cyan">
+                <div class="meeting-card-left">
+                    <div class="meeting-subject">
+                        WorkforcePi Demo — Cypria Audit
+                        <span class="pill pill-cyan">Online</span>
+                    </div>
+                    <div class="meeting-meta">
+                        <span><span class="label">Date</span> 18 July 2026, 10:00 — 10:45</span>
+                        <span><span class="label">Contact</span> Andreas Christoforou</span>
+                        <span><span class="label">Lead</span> <a href="#">WorkforcePi enquiry</a></span>
+                        <span><span class="label">Location</span> <a href="https://meet.google.com/abc-defg-hij" target="_blank">Google Meet (link)</a></span>
+                    </div>
+                </div>
+                <div class="meeting-card-right">
+                    <button class="btn btn-outline btn-sm">Download .ics</button>
+                    <a class="action-link action-link-edit" href="#">Edit</a>
+                    <a class="action-link action-link-cancel" href="#">Cancel</a>
+                </div>
+            </div>
+
+            <!-- Meeting 2 -->
+            <div class="meeting-card border-amber">
+                <div class="meeting-card-left">
+                    <div class="meeting-subject">
+                        Guardian Presentation — Paphos Wellness
+                        <span class="pill pill-amber">On-Site</span>
+                    </div>
+                    <div class="meeting-meta">
+                        <span><span class="label">Date</span> 22 July 2026, 14:00 — 15:00</span>
+                        <span><span class="label">Contact</span> Elena Stavrou</span>
+                        <span><span class="label">Lead</span> <a href="#">Guardian enquiry</a></span>
+                        <span><span class="label">Location</span> 26 Poseidonos Ave, Paphos</span>
+                    </div>
+                </div>
+                <div class="meeting-card-right">
+                    <button class="btn btn-outline btn-sm">Download .ics</button>
+                    <a class="action-link action-link-edit" href="#">Edit</a>
+                    <a class="action-link action-link-cancel" href="#">Cancel</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Past Meetings -->
+        <section class="glass card-pad" style="margin-top:24px;">
+            <div class="section-title">
+                Past <span class="badge">1</span>
+            </div>
+
+            <!-- Meeting 3 -->
+            <div class="meeting-card border-grey past">
+                <div class="meeting-card-left">
+                    <div class="meeting-subject">
+                        MyChair Discussion — Larnaca Bay
+                        <span class="pill pill-grey">Phone Call</span>
+                    </div>
+                    <div class="meeting-meta">
+                        <span><span class="label">Date</span> 8 July 2026, 11:00 — 11:30</span>
+                        <span><span class="label">Contact</span> Yiannis Michaelides</span>
+                    </div>
+                    <div class="meeting-outcome">
+                        Interested in scheduling module for 3 restaurants. Follow-up next week.
+                    </div>
+                </div>
+                <div class="meeting-card-right">
+                    <a class="action-link action-link-view" href="#">View</a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Tab 2: Create Meeting Form -->
+    <div class="tab-content" id="tab-create">
+        <div class="topbar" style="padding-left:0;padding-right:0;padding-top:0;">
+            <div class="topbar-left">
+                <a class="back-link" href="#" onclick="switchTab('list'); return false;">&#8592; Back to Meetings</a>
+                <div class="eyebrow">SALES</div>
+                <h1>Schedule Meeting</h1>
+                <div class="subtitle">Create a new meeting with a prospect</div>
+            </div>
+        </div>
+
+        <section class="glass card-pad">
+            <div class="form-grid">
+                <!-- Row 1 -->
+                <div class="field">
+                    <label>Contact <span class="required">*</span></label>
+                    <select>
+                        <option value="">Select contact...</option>
+                        <option selected>Andreas Christoforou — Cypria Audit Ltd</option>
+                        <option>Elena Stavrou — Paphos Wellness</option>
+                        <option>Yiannis Michaelides — Larnaca Bay</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Lead</label>
+                    <select>
+                        <option value="">Select lead (optional)...</option>
+                        <option selected>WorkforcePi enquiry (5 Jul 2026)</option>
+                        <option>Guardian enquiry (10 Jul 2026)</option>
+                    </select>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="field">
+                    <label>Subject <span class="required">*</span></label>
+                    <input type="text" value="WorkforcePi Demo — Cypria Audit" placeholder="Meeting subject...">
+                </div>
+                <div class="field">
+                    <label>Meeting Type <span class="required">*</span></label>
+                    <select>
+                        <option selected>Online</option>
+                        <option>On-Site</option>
+                        <option>Phone Call</option>
+                        <option>Video Call</option>
+                    </select>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="field">
+                    <label>Date & Time <span class="required">*</span></label>
+                    <input type="datetime-local" value="2026-07-18T10:00">
+                </div>
+                <div class="field">
+                    <label>Duration (minutes) <span class="required">*</span></label>
+                    <input type="number" value="45" min="5" step="5">
+                </div>
+
+                <!-- Row 4 -->
+                <div class="field full-width">
+                    <label>Location</label>
+                    <input type="text" value="https://meet.google.com/abc-defg-hij" placeholder="Address or meeting link...">
+                </div>
+
+                <!-- Row 5 -->
+                <div class="field full-width">
+                    <label>Notes / Agenda</label>
+                    <textarea placeholder="Meeting agenda, discussion points...">Demo the core attendance tracking features. Discuss payroll integration requirements.</textarea>
+                </div>
+            </div>
+
+            <hr class="separator">
+
+            <!-- Products Discussed Section -->
+            <div class="sub-section">
+                <div class="sub-section-title">Products Discussed in Meeting</div>
+                <div class="sub-section-subtitle">Optional — track which products were presented or discussed</div>
+                <table class="mini-table">
+                    <thead>
+                        <tr>
+                            <th style="width:35%;">Product</th>
+                            <th>Notes</th>
+                            <th style="width:60px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <select>
+                                    <option>WorkforcePi</option>
+                                    <option>Guardian</option>
+                                    <option>MyChair</option>
+                                    <option>Portal</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="text" value="Main product of interest" placeholder="Notes...">
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="remove-btn" title="Remove">&times;</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="add-row-btn">+ Add Product</button>
+            </div>
+
+            <!-- Opportunities Section -->
+            <div class="sub-section">
+                <div class="sub-section-title">Opportunities Discovered</div>
+                <div class="sub-section-subtitle">Optional — capture potential opportunities identified during the meeting</div>
+                <table class="mini-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th style="width:160px;">Est. Value</th>
+                            <th style="width:60px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <input type="text" placeholder="Partnership opportunity...">
+                            </td>
+                            <td>
+                                <input type="text" placeholder="&euro;" style="text-align:right;">
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="remove-btn" title="Remove">&times;</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="add-row-btn">+ Add Opportunity</button>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button class="btn btn-primary">Save Meeting</button>
+                <button class="btn btn-outline" onclick="switchTab('list')">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                switchTab(this.dataset.tab);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -16,6 +16,8 @@ public class HomeController : Controller
     private readonly ICurrentTenantService _tenantService;
     private readonly IDashboardService _dashboardService;
     private readonly IPermissionService _permissionService;
+    private readonly IDashboardBriefingService _briefingService;
+    private readonly ISystemBriefingService _systemBriefingService;
 
     public HomeController(
         IQuotationService quotationService,
@@ -23,7 +25,10 @@ public class HomeController : Controller
         IBusinessService businessService,
         ICurrentTenantService tenantService,
         IDashboardService dashboardService,
-        IPermissionService permissionService)
+        IPermissionService permissionService,
+        IDashboardBriefingService briefingService,
+        ISystemBriefingService systemBriefingService)
+
     {
         _quotationService = quotationService;
         _customerService = customerService;
@@ -31,6 +36,8 @@ public class HomeController : Controller
         _tenantService = tenantService;
         _dashboardService = dashboardService;
         _permissionService = permissionService;
+        _briefingService = briefingService;
+        _systemBriefingService = systemBriefingService;
     }
 
     [HttpGet]
@@ -201,6 +208,21 @@ public class HomeController : Controller
             HasAnyKpiSection = scope.HasAnyKpiSection,
             ShowPnlTeaser = scope.ShowPnlTeaser
         };
+
+        // Generate operational briefing
+        var briefing = await _briefingService.GenerateBriefingAsync(businessId, scope, profile?.CurrencySymbol ?? "€");
+        ViewBag.Briefing = briefing;
+
+        // Generate system briefing for SuperAdmin only
+        if (User.IsInRole("SuperAdmin"))
+        {
+            try
+            {
+                var systemBriefing = await _systemBriefingService.GenerateBriefingAsync();
+                ViewBag.SystemBriefing = systemBriefing;
+            }
+            catch { ViewBag.SystemBriefing = null; }
+        }
 
         return View(model);
     }

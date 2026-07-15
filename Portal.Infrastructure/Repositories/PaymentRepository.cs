@@ -15,6 +15,26 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
     public PaymentRepository(DbContext context) : base(context) { }
 
     /// <summary>
+    /// Standard column list for Payment SELECT queries.
+    /// </summary>
+    private const string PaymentColumns = @"
+        [revenue].[Payment].[Id],
+        [revenue].[Payment].[BusinessId],
+        [revenue].[Payment].[InvoiceId],
+        [revenue].[Payment].[ParentPaymentId],
+        [revenue].[Payment].[IsAutoAllocated],
+        [revenue].[Payment].[CustomerId],
+        [revenue].[Payment].[CreditAmount],
+        [revenue].[Payment].[PaymentMethodTypeId],
+        [revenue].[Payment].[PaymentDateUtc],
+        [revenue].[Payment].[Amount],
+        [revenue].[Payment].[Reference],
+        [revenue].[Payment].[Notes],
+        [revenue].[Payment].[IsVoided],
+        [revenue].[Payment].[CreatedAtUtc],
+        [revenue].[Payment].[CreatedByUserId]";
+
+    /// <summary>
     /// Inserts a new payment record and returns the new Payment.Id via OUTPUT INSERTED.Id.
     /// </summary>
     public virtual async Task<int> InsertAsync(Payment entity)
@@ -23,11 +43,13 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
         {
             const string query = @"
                 INSERT INTO [revenue].[Payment]
-                    ([BusinessId], [InvoiceId], [PaymentMethodTypeId], [PaymentDateUtc],
+                    ([BusinessId], [InvoiceId], [ParentPaymentId], [IsAutoAllocated],
+                     [CustomerId], [CreditAmount], [PaymentMethodTypeId], [PaymentDateUtc],
                      [Amount], [Reference], [Notes], [IsVoided], [CreatedAtUtc], [CreatedByUserId])
                 OUTPUT INSERTED.Id
                 VALUES
-                    (@BusinessId, @InvoiceId, @PaymentMethodTypeId, @PaymentDateUtc,
+                    (@BusinessId, @InvoiceId, @ParentPaymentId, @IsAutoAllocated,
+                     @CustomerId, @CreditAmount, @PaymentMethodTypeId, @PaymentDateUtc,
                      @Amount, @Reference, @Notes, @IsVoided, @CreatedAtUtc, @CreatedByUserId)";
 
             var connection = _context.Database.GetDbConnection();
@@ -45,7 +67,11 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     command.Transaction = transaction.GetDbTransaction();
 
                 command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
-                command.Parameters.Add(new SqlParameter("@InvoiceId", entity.InvoiceId));
+                command.Parameters.Add(new SqlParameter("@InvoiceId", entity.InvoiceId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ParentPaymentId", entity.ParentPaymentId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@IsAutoAllocated", entity.IsAutoAllocated));
+                command.Parameters.Add(new SqlParameter("@CustomerId", entity.CustomerId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CreditAmount", entity.CreditAmount));
                 command.Parameters.Add(new SqlParameter("@PaymentMethodTypeId", entity.PaymentMethodTypeId));
                 command.Parameters.Add(new SqlParameter("@PaymentDateUtc", entity.PaymentDateUtc));
                 command.Parameters.Add(new SqlParameter("@Amount", entity.Amount));
@@ -64,7 +90,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -77,18 +103,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
     {
         try
         {
-            const string query = @"
-                SELECT [revenue].[Payment].[Id],
-                       [revenue].[Payment].[BusinessId],
-                       [revenue].[Payment].[InvoiceId],
-                       [revenue].[Payment].[PaymentMethodTypeId],
-                       [revenue].[Payment].[PaymentDateUtc],
-                       [revenue].[Payment].[Amount],
-                       [revenue].[Payment].[Reference],
-                       [revenue].[Payment].[Notes],
-                       [revenue].[Payment].[IsVoided],
-                       [revenue].[Payment].[CreatedAtUtc],
-                       [revenue].[Payment].[CreatedByUserId]
+            string query = $@"
+                SELECT {PaymentColumns}
                 FROM [revenue].[Payment]
                 WHERE [revenue].[Payment].[Id] = @Id
                   AND [revenue].[Payment].[BusinessId] = @BusinessId";
@@ -97,7 +113,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                 new SqlParameter("@Id", id),
                 new SqlParameter("@BusinessId", businessId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -118,7 +134,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@PaymentId", paymentId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -131,18 +147,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
     {
         try
         {
-            const string query = @"
-                SELECT [revenue].[Payment].[Id],
-                       [revenue].[Payment].[BusinessId],
-                       [revenue].[Payment].[InvoiceId],
-                       [revenue].[Payment].[PaymentMethodTypeId],
-                       [revenue].[Payment].[PaymentDateUtc],
-                       [revenue].[Payment].[Amount],
-                       [revenue].[Payment].[Reference],
-                       [revenue].[Payment].[Notes],
-                       [revenue].[Payment].[IsVoided],
-                       [revenue].[Payment].[CreatedAtUtc],
-                       [revenue].[Payment].[CreatedByUserId]
+            string query = $@"
+                SELECT {PaymentColumns}
                 FROM [revenue].[Payment]
                 WHERE [revenue].[Payment].[InvoiceId] = @InvoiceId
                   AND [revenue].[Payment].[BusinessId] = @BusinessId
@@ -152,7 +158,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                 new SqlParameter("@InvoiceId", invoiceId),
                 new SqlParameter("@BusinessId", businessId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -165,18 +171,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
     {
         try
         {
-            const string query = @"
-                SELECT [revenue].[Payment].[Id],
-                       [revenue].[Payment].[BusinessId],
-                       [revenue].[Payment].[InvoiceId],
-                       [revenue].[Payment].[PaymentMethodTypeId],
-                       [revenue].[Payment].[PaymentDateUtc],
-                       [revenue].[Payment].[Amount],
-                       [revenue].[Payment].[Reference],
-                       [revenue].[Payment].[Notes],
-                       [revenue].[Payment].[IsVoided],
-                       [revenue].[Payment].[CreatedAtUtc],
-                       [revenue].[Payment].[CreatedByUserId]
+            string query = $@"
+                SELECT {PaymentColumns}
                 FROM [revenue].[Payment]
                 WHERE [revenue].[Payment].[InvoiceId] = @InvoiceId
                   AND [revenue].[Payment].[BusinessId] = @BusinessId";
@@ -187,7 +183,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
 
             return results.OrderByDescending(p => p.PaymentDateUtc).ToList();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -195,7 +191,6 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
 
     /// <summary>
     /// Gets the sum of valid (non-voided) payment amounts for an invoice.
-    /// Returns 0 when no payments exist.
     /// </summary>
     public virtual async Task<decimal> GetTotalPaidAsync(int invoiceId, int businessId)
     {
@@ -234,7 +229,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -242,7 +237,6 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
 
     /// <summary>
     /// Gets the sum of valid (non-voided) payment amounts within a date range for a business.
-    /// Returns 0 when no payments exist in the period.
     /// </summary>
     public virtual async Task<decimal> GetPaidInPeriodAsync(int businessId, DateTime fromUtc, DateTime toUtc)
     {
@@ -283,7 +277,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -291,7 +285,6 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
 
     /// <summary>
     /// Gets monthly payment totals grouped by Year/Month from the specified date onwards.
-    /// Used for the Revenue Collected chart on the dashboard.
     /// </summary>
     public virtual async Task<List<MonthlyRevenueDto>> GetMonthlyTotalsAsync(int businessId, DateTime fromUtc)
     {
@@ -350,16 +343,17 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
     }
 
     /// <summary>
-    /// Gets recent non-voided payments with Invoice, Customer, and PaymentMethodType joins.
-    /// Supports search by InvoiceNumber or CustomerName (case-insensitive) and pagination.
-    /// Returns a tuple of (items, totalCount).
+    /// Gets recent payments (including voided) with Invoice, Customer, and PaymentMethodType joins.
+    /// NOTE: Parent payments (InvoiceId = NULL) are excluded by design — the INNER JOIN on Invoice
+    /// filters them out. The dashboard shows allocation-level payments only. Pure credit payments
+    /// and unallocated parents are managed via the Statement view.
     /// </summary>
     public virtual async Task<(List<RecentPaymentDto> Items, int TotalCount)> GetRecentPaymentsPagedAsync(
         int businessId, string? searchTerm, int offset, int pageSize)
@@ -380,8 +374,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     ON [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
                 INNER JOIN [revenue].[PaymentMethodType]
                     ON [revenue].[Payment].[PaymentMethodTypeId] = [revenue].[PaymentMethodType].[Id]
-                WHERE [revenue].[Payment].[BusinessId] = @BusinessId
-                  AND [revenue].[Payment].[IsVoided] = 0{searchFilter}";
+                WHERE [revenue].[Payment].[BusinessId] = @BusinessId{searchFilter}";
 
             var dataQuery = $@"
                 SELECT [revenue].[Payment].[Id],
@@ -393,7 +386,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                        CASE WHEN [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = 3
                             THEN CAST(1 AS BIT)
                             ELSE CAST(0 AS BIT)
-                       END AS [IsFullPayment]
+                       END AS [IsFullPayment],
+                       [revenue].[Payment].[IsVoided]
                 FROM [revenue].[Payment]
                 INNER JOIN [invoice].[Invoice]
                     ON [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
@@ -401,8 +395,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     ON [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
                 INNER JOIN [revenue].[PaymentMethodType]
                     ON [revenue].[Payment].[PaymentMethodTypeId] = [revenue].[PaymentMethodType].[Id]
-                WHERE [revenue].[Payment].[BusinessId] = @BusinessId
-                  AND [revenue].[Payment].[IsVoided] = 0{searchFilter}
+                WHERE [revenue].[Payment].[BusinessId] = @BusinessId{searchFilter}
                 ORDER BY [revenue].[Payment].[PaymentDateUtc] DESC
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
@@ -415,37 +408,28 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
 
                 var transaction = _context.Database.CurrentTransaction;
 
-                // Execute count query
                 int totalCount;
                 using (var countCommand = connection.CreateCommand())
                 {
                     countCommand.CommandText = countQuery;
-
                     if (transaction != null)
                         countCommand.Transaction = transaction.GetDbTransaction();
-
                     countCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
-
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                         countCommand.Parameters.Add(new SqlParameter("@SearchTerm", $"%{searchTerm}%"));
-
                     var countResult = await countCommand.ExecuteScalarAsync();
                     totalCount = (int)countResult!;
                 }
 
-                // Execute data query
                 var items = new List<RecentPaymentDto>();
                 using (var dataCommand = connection.CreateCommand())
                 {
                     dataCommand.CommandText = dataQuery;
-
                     if (transaction != null)
                         dataCommand.Transaction = transaction.GetDbTransaction();
-
                     dataCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
                     dataCommand.Parameters.Add(new SqlParameter("@Offset", offset));
                     dataCommand.Parameters.Add(new SqlParameter("@PageSize", pageSize));
-
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                         dataCommand.Parameters.Add(new SqlParameter("@SearchTerm", $"%{searchTerm}%"));
 
@@ -460,7 +444,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                             CustomerName = reader.GetString(3),
                             PaymentMethodName = reader.GetString(4),
                             Amount = reader.GetDecimal(5),
-                            IsFullPayment = reader.GetBoolean(6)
+                            IsFullPayment = reader.GetBoolean(6),
+                            IsVoided = reader.GetBoolean(7)
                         });
                     }
                 }
@@ -473,7 +458,165 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all child allocations for a parent payment.
+    /// </summary>
+    public virtual async Task<List<Payment>> GetChildAllocationsAsync(int parentPaymentId, int businessId)
+    {
+        try
+        {
+            string query = $@"
+                SELECT {PaymentColumns}
+                FROM [revenue].[Payment]
+                WHERE [revenue].[Payment].[ParentPaymentId] = @ParentPaymentId
+                  AND [revenue].[Payment].[BusinessId] = @BusinessId";
+
+            return await ExecuteStoredProcedure(query,
+                new SqlParameter("@ParentPaymentId", parentPaymentId),
+                new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Bulk-voids all non-voided children of a parent payment.
+    /// </summary>
+    public virtual async Task<int> VoidChildrenAsync(int parentPaymentId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [revenue].[Payment]
+                SET [IsVoided] = 1
+                WHERE [revenue].[Payment].[ParentPaymentId] = @ParentPaymentId
+                  AND [revenue].[Payment].[BusinessId] = @BusinessId
+                  AND [revenue].[Payment].[IsVoided] = 0";
+
+            return await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@ParentPaymentId", parentPaymentId),
+                new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets outstanding invoices for a customer in FIFO order (InvoiceDate ASC, Id ASC).
+    /// </summary>
+    public virtual async Task<List<OutstandingInvoiceDto>> GetOutstandingInvoicesForCustomerAsync(int customerId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [invoice].[Invoice].[Id],
+                       [invoice].[Invoice].[InvoiceNumber],
+                       [invoice].[Invoice].[InvoiceDate],
+                       [invoice].[Invoice].[TotalAmount],
+                       [invoice].[Invoice].[TotalAmount] - ISNULL(
+                           (SELECT SUM([revenue].[Payment].[Amount])
+                            FROM [revenue].[Payment]
+                            WHERE [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
+                              AND [revenue].[Payment].[IsVoided] = 0
+                              AND [revenue].[Payment].[BusinessId] = @BusinessId), 0
+                       ) - ISNULL(
+                           (SELECT SUM([credit].[CreditNoteApplication].[AmountApplied])
+                            FROM [credit].[CreditNoteApplication]
+                            WHERE [credit].[CreditNoteApplication].[InvoiceId] = [invoice].[Invoice].[Id]
+                              AND [credit].[CreditNoteApplication].[IsVoided] = 0), 0
+                       ) AS [OutstandingBalance]
+                FROM [invoice].[Invoice]
+                WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
+                  AND [invoice].[Invoice].[CustomerId] = @CustomerId
+                  AND [invoice].[Invoice].[InvoiceStatusTypeId] = 2
+                  AND [invoice].[Invoice].[IsDeleted] = 0
+                  AND ([invoice].[Invoice].[TotalAmount] - ISNULL(
+                           (SELECT SUM([revenue].[Payment].[Amount])
+                            FROM [revenue].[Payment]
+                            WHERE [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
+                              AND [revenue].[Payment].[IsVoided] = 0
+                              AND [revenue].[Payment].[BusinessId] = @BusinessId), 0
+                       ) - ISNULL(
+                           (SELECT SUM([credit].[CreditNoteApplication].[AmountApplied])
+                            FROM [credit].[CreditNoteApplication]
+                            WHERE [credit].[CreditNoteApplication].[InvoiceId] = [invoice].[Invoice].[Id]
+                              AND [credit].[CreditNoteApplication].[IsVoided] = 0), 0
+                       )) > 0
+                ORDER BY [invoice].[Invoice].[InvoiceDate] ASC, [invoice].[Invoice].[Id] ASC";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@CustomerId", customerId));
+
+                var results = new List<OutstandingInvoiceDto>();
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new OutstandingInvoiceDto
+                    {
+                        InvoiceId = reader.GetInt32(0),
+                        InvoiceNumber = reader.GetString(1),
+                        InvoiceDate = reader.GetDateTime(2),
+                        TotalAmount = reader.GetDecimal(3),
+                        OutstandingBalance = reader.GetDecimal(4)
+                    });
+                }
+
+                return results;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates the CreditAmount on a parent payment.
+    /// </summary>
+    public virtual async Task UpdateCreditAmountAsync(int paymentId, decimal creditAmount)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [revenue].[Payment]
+                SET [CreditAmount] = @CreditAmount
+                WHERE [revenue].[Payment].[Id] = @PaymentId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@PaymentId", paymentId),
+                new SqlParameter("@CreditAmount", creditAmount));
+        }
+        catch (Exception ex)
         {
             throw;
         }

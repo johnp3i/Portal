@@ -94,8 +94,10 @@ public class PaymentValidationNonIssuedPropertyTests
         var paymentService = new PaymentService(
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
+            new Mock<CreditNoteRepository>(null!).Object,
             mockStatusEngine.Object,
             new Mock<IPaymentScheduleService>().Object,
+            new Mock<IPaymentAllocationEngine>().Object,
             dbContext);
 
         // Act
@@ -184,8 +186,10 @@ public class PaymentValidationNonIssuedPropertyTests
         var paymentService = new PaymentService(
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
+            new Mock<CreditNoteRepository>(null!).Object,
             mockStatusEngine.Object,
             new Mock<IPaymentScheduleService>().Object,
+            new Mock<IPaymentAllocationEngine>().Object,
             dbContext);
 
         var dto = new RecordPaymentDto
@@ -258,8 +262,10 @@ public class PaymentValidationNonIssuedPropertyTests
         var paymentService = new PaymentService(
             mockPaymentRepo.Object,
             mockInvoiceRepo.Object,
+            new Mock<CreditNoteRepository>(null!).Object,
             mockStatusEngine.Object,
             new Mock<IPaymentScheduleService>().Object,
+            new Mock<IPaymentAllocationEngine>().Object,
             dbContext);
 
         var dto = new RecordPaymentDto

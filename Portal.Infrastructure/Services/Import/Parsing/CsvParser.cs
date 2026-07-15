@@ -25,6 +25,12 @@ public static class CsvParser
     /// </summary>
     public static List<string[]> ParseContent(string content, char delimiter = ',')
     {
+        // Strip UTF-8 BOM if present
+        if (content.Length > 0 && content[0] == '\uFEFF')
+        {
+            content = content.Substring(1);
+        }
+
         var rows = new List<string[]>();
         var fields = new List<string>();
         var fieldBuilder = new System.Text.StringBuilder();

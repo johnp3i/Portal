@@ -10,9 +10,24 @@
         <p class="topbar-subtitle">Upload a CSV or Excel file to bulk-import purchase records.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
-        <a asp-controller="ParserTemplate" asp-action="Index" class="btn btn-secondary">Manage Templates</a>
+        <a asp-controller="ParserTemplate" asp-action="Index" class="btn btn-outline" style="gap:8px;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            Parser Templates
+        </a>
     </div>
 </div>
+
+@{
+    var activeSessionCount = (int)(ViewBag.ActiveSessionCount ?? 0);
+    var remainingImports = 10 - activeSessionCount;
+}
+@if (activeSessionCount > 0 && remainingImports <= 5)
+{
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;margin-bottom:18px;border-radius:10px;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.1);font-size:13px;color:#334155;">
+        <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>@remainingImports</strong> import attempt@(remainingImports == 1 ? "" : "s") remaining this hour. Confirm or cancel pending imports to free up space.</span>
+    </div>
+}
 
 <section class="glass card-pad">
     <form id="importForm" onsubmit="return false;">
@@ -64,6 +79,40 @@
         </div>
     </form>
 </section>
+
+<!-- Import History -->
+@{
+    var importHistory = ViewBag.ImportHistory as List<Portal.Infrastructure.Models.Import.ImportHistoryEntry>;
+}
+@if (importHistory != null && importHistory.Any())
+{
+    <section class="glass card-pad" style="margin-top:22px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;margin:0 0 14px;">Import History</h3>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Details</th>
+                        <th>Rows</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in importHistory)
+                    {
+                        var recordId = entry.RecordId ?? "";
+                        var rowCount = recordId.StartsWith("Batch:") ? recordId.Replace("Batch:", "") : "—";
+                        <tr>
+                            <td>@entry.Timestamp.ToString("dd MMM yyyy HH:mm")</td>
+                            <td style="font-size:13px;">@entry.NewValues</td>
+                            <td>@rowCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
 
 @Html.AntiForgeryToken()
 
@@ -125,8 +174,10 @@
             var data2 = await resp2.json();
             if (data2.success && data2.data) {
                 var details = [];
-                if (data2.data.defaultExpenseCategoryId) details.push('Category: #' + data2.data.defaultExpenseCategoryId);
-                if (data2.data.defaultPurchaseOriginTypeId) details.push('Origin: #' + data2.data.defaultPurchaseOriginTypeId);
+                if (data2.data.categoryName) details.push('Category: ' + data2.data.categoryName);
+                else if (data2.data.defaultExpenseCategoryId) details.push('Category: #' + data2.data.defaultExpenseCategoryId);
+                if (data2.data.originName) details.push('Origin: ' + data2.data.originName);
+                else if (data2.data.defaultPurchaseOriginTypeId) details.push('Origin: Type ' + data2.data.defaultPurchaseOriginTypeId);
                 if (data2.data.defaultCountry) details.push('Country: ' + data2.data.defaultCountry);
                 if (details.length > 0) {
                     document.getElementById('profileDetails').textContent = details.join(' · ');
@@ -195,7 +246,9 @@
             BlockUI.hide();
 
             if (data.success) {
-                window.location = '/PurchaseImport/Preview?sessionId=' + data.sessionId;
+                var url = '/PurchaseImport/Preview?sessionId=' + data.sessionId;
+                if (data.usedFallbackAutoDetect) url += '&fallback=1';
+                window.location = url;
             } else {
                 Swal.fire({ icon: 'error', title: 'Upload Failed', text: data.message, confirmButtonColor: '#0D5EA6' });
             }

@@ -537,6 +537,11 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.GetByIdAndBusinessIdAsync(id, businessId);
     }
 
+    public async Task<Invoice?> GetInvoiceByIdAsync(int id, int businessId)
+    {
+        return await _invoiceRepository.GetByIdAndBusinessIdUnfilteredAsync(id, businessId);
+    }
+
     public async Task<List<InvoiceLine>> GetInvoiceLinesAsync(int invoiceId)
     {
         return await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);

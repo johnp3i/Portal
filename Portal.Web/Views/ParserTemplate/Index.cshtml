@@ -187,6 +187,16 @@
                 <button type="button" class="btn btn-secondary" style="margin-top:8px;font-size:12px;padding:6px 14px;" onclick="addMapping()">+ Add Mapping</button>
             </div>
 
+            <!-- Test with File -->
+            <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(13,94,166,.08);">
+                <label style="font-size:12px;font-weight:700;color:#5a6a7a;text-transform:uppercase;">Test Template</label>
+                <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+                    <input type="file" id="testFile" accept=".csv,.xlsx,.xls" style="font-size:12px;" />
+                    <button type="button" class="btn btn-secondary" style="font-size:12px;padding:6px 14px;" onclick="testTemplate()">Test (first 5 rows)</button>
+                </div>
+                <div id="testResult" style="display:none;margin-top:12px;"></div>
+            </div>
+
             <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                 <button type="button" class="btn btn-primary" id="modalSubmitBtn" onclick="submitTemplate()">Create</button>
@@ -422,6 +432,64 @@
         } catch (e) {
             BlockUI.hide();
             Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load template.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function testTemplate() {
+        var testFile = document.getElementById('testFile').files[0];
+        if (!testFile) {
+            Swal.fire({ icon: 'warning', title: 'No file', text: 'Select a file to test the template against.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('file', testFile);
+        formData.append('fileFormatType', document.getElementById('tplFormat').value);
+        formData.append('headerRow', document.getElementById('tplHeaderRow').value);
+        formData.append('dataStartRow', document.getElementById('tplDataStartRow').value);
+        formData.append('sheetName', document.getElementById('tplSheetName').value);
+        formData.append('columnMappingsJson', collectMappings());
+
+        BlockUI.show('Testing template...');
+        try {
+            var response = await fetch('/ParserTemplate/AxPostTestTemplate', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            var resultDiv = document.getElementById('testResult');
+            resultDiv.style.display = 'block';
+
+            if (!data.success) {
+                resultDiv.innerHTML = '<div style="padding:10px;border-radius:8px;background:rgba(194,74,74,.06);border:1px solid rgba(194,74,74,.15);font-size:12px;color:#C24A4A;">' + data.message + '</div>';
+                return;
+            }
+
+            var html = '<div style="font-size:12px;color:#129867;font-weight:600;margin-bottom:8px;">' + data.message + '</div>';
+            if (data.rows && data.rows.length > 0) {
+                html += '<div style="overflow-x:auto;"><table style="width:100%;font-size:11px;border-collapse:collapse;">';
+                html += '<thead><tr style="background:#EEF4F8;"><th style="padding:4px 8px;text-align:left;">Row</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Invoice No</th><th style="padding:4px 8px;">Description</th><th style="padding:4px 8px;text-align:right;">Amount</th><th style="padding:4px 8px;">Country</th></tr></thead><tbody>';
+                data.rows.forEach(function (r) {
+                    html += '<tr style="border-bottom:1px solid #eee;">';
+                    html += '<td style="padding:4px 8px;">' + r.rowNumber + '</td>';
+                    html += '<td style="padding:4px 8px;">' + (r.invoiceDate || '—') + '</td>';
+                    html += '<td style="padding:4px 8px;">' + (r.invoiceNumber || '—') + '</td>';
+                    html += '<td style="padding:4px 8px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (r.description || '—') + '</td>';
+                    html += '<td style="padding:4px 8px;text-align:right;">' + (r.totalAmount || r.amountExcludingVat || '—') + '</td>';
+                    html += '<td style="padding:4px 8px;">' + (r.country || '—') + '</td>';
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html = '<div style="padding:10px;border-radius:8px;background:rgba(200,145,46,.06);border:1px solid rgba(200,145,46,.15);font-size:12px;color:#7A5A1A;">' + data.message + '</div>';
+            }
+            resultDiv.innerHTML = html;
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Test failed.', confirmButtonColor: '#0D5EA6' });
         }
     }
 
