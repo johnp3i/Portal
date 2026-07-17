@@ -123,6 +123,12 @@ public class PortalDbContext : DbContext
     // Document schema
     public DbSet<DocumentAttachment> DocumentAttachments { get; set; } = null!;
 
+    // Signature & Receipt schema
+    public DbSet<Signature> Signatures { get; set; } = null!;
+    public DbSet<PaymentReceipt> PaymentReceipts { get; set; } = null!;
+    public DbSet<PaymentReceiptLine> PaymentReceiptLines { get; set; } = null!;
+    public DbSet<PaymentReceiptShare> PaymentReceiptShares { get; set; } = null!;
+
     // Import schema
     public DbSet<Entities.Import.ParserTemplate> ParserTemplates { get; set; } = null!;
     public DbSet<Entities.Import.SupplierImportProfile> SupplierImportProfiles { get; set; } = null!;
@@ -196,6 +202,10 @@ public class PortalDbContext : DbContext
         ConfigurePaymentScheduleHistory(modelBuilder);
         ConfigureScheduleOverviewRawRow(modelBuilder);
         ConfigureDocumentAttachment(modelBuilder);
+        ConfigureSignature(modelBuilder);
+        ConfigurePaymentReceipt(modelBuilder);
+        ConfigurePaymentReceiptLine(modelBuilder);
+        ConfigurePaymentReceiptShare(modelBuilder);
         ConfigureParserTemplate(modelBuilder);
         ConfigureSupplierImportProfile(modelBuilder);
         ConfigureImportSession(modelBuilder);
@@ -235,6 +245,14 @@ public class PortalDbContext : DbContext
                 .HasDefaultValueSql("GETUTCDATE()");
 
             entity.Property(e => e.IsPaymentInstructionsEnabled)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.IsAutoReceiptEnabled)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.IsAutoInvoiceSignatureEnabled)
                 .IsRequired()
                 .HasDefaultValue(false);
         });
@@ -2781,6 +2799,138 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureSignature(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Signature>(entity =>
+        {
+            entity.ToTable("Signature", "portal");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Label).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Position).HasMaxLength(100);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ContentType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.FilePath).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.IsDefault).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.UploadedByUserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne<Business>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePaymentReceipt(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentReceipt>(entity =>
+        {
+            entity.ToTable("PaymentReceipt", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.ReceiptNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.TotalAmountReceived).HasPrecision(18, 2);
+            entity.Property(e => e.OutstandingBalanceAfter).HasPrecision(18, 2);
+            entity.Property(e => e.PaymentReference).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.IsVoided).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.CreatedByUserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.ReceiptNumber }).IsUnique();
+            entity.HasIndex(e => e.PaymentId);
+            entity.HasIndex(e => new { e.BusinessId, e.CustomerId });
+
+            entity.HasOne<Business>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne<Customer>()
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne<Payment>()
+                .WithMany()
+                .HasForeignKey(e => e.PaymentId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne<PaymentMethodType>()
+                .WithMany()
+                .HasForeignKey(e => e.PaymentMethodTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne<Signature>()
+                .WithMany()
+                .HasForeignKey(e => e.SignatureId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasMany(e => e.Lines)
+                .WithOne()
+                .HasForeignKey(e => e.PaymentReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigurePaymentReceiptLine(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentReceiptLine>(entity =>
+        {
+            entity.ToTable("PaymentReceiptLine", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.InvoiceNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+            entity.Property(e => e.InvoiceTotal).HasPrecision(18, 2);
+            entity.Property(e => e.InvoiceOutstandingBefore).HasPrecision(18, 2);
+            entity.Property(e => e.InvoiceOutstandingAfter).HasPrecision(18, 2);
+
+            entity.HasIndex(e => e.PaymentReceiptId);
+
+            entity.HasOne<Payment>()
+                .WithMany()
+                .HasForeignKey(e => e.PaymentId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne<Invoice>()
+                .WithMany()
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePaymentReceiptShare(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PaymentReceiptShare>(entity =>
+        {
+            entity.ToTable("PaymentReceiptShare", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.ShareToken).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.SnapshotHtml).IsRequired();
+            entity.Property(e => e.CustomerEmail).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedByUserId).IsRequired().HasMaxLength(450);
+
+            entity.HasIndex(e => e.ShareToken).IsUnique();
+            entity.HasIndex(e => e.PaymentReceiptId).HasFilter("[IsActive] = 1");
+
+            entity.HasOne<PaymentReceipt>()
+                .WithMany()
+                .HasForeignKey(e => e.PaymentReceiptId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne<Business>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -2863,6 +3013,15 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<Entities.Import.ImportSession>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<Signature>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<PaymentReceipt>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<PaymentReceiptShare>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

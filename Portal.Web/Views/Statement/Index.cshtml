@@ -470,11 +470,20 @@
                 tdBalance.textContent = '€' + formatCurrency(line.runningBalance);
                 tr.appendChild(tdBalance);
 
-                // Actions (Void button for payments)
+                // Actions (Void + Receipt buttons for payments)
                 var tdActions = document.createElement('td');
                 tdActions.style.textAlign = 'center';
                 tdActions.style.whiteSpace = 'nowrap';
                 if (line.type === 'Payment' && line.paymentId && !line.isVoided) {
+                    var receiptBtn = document.createElement('button');
+                    receiptBtn.textContent = 'Receipt';
+                    receiptBtn.className = 'tbl-action tbl-action--primary';
+                    receiptBtn.style.fontSize = '11px';
+                    receiptBtn.style.padding = '3px 8px';
+                    receiptBtn.style.marginRight = '4px';
+                    receiptBtn.onclick = function() { generateReceiptFromStatement(line.paymentId); };
+                    tdActions.appendChild(receiptBtn);
+
                     var voidBtn = document.createElement('button');
                     voidBtn.textContent = 'Void';
                     voidBtn.className = 'tbl-action tbl-action--danger';
@@ -778,6 +787,25 @@
             }
         }
 
+        async function generateReceiptFromStatement(paymentId) {
+            BlockUI.show('Checking receipt...');
+            try {
+                var checkResponse = await fetch('/Receipt/AxGetHasReceipt?paymentId=' + paymentId);
+                var checkData = await checkResponse.json();
+                BlockUI.hide();
+
+                if (checkData.success && checkData.hasReceipt) {
+                    window.location.href = '/Receipt/Detail/' + checkData.receiptId;
+                    return;
+                }
+
+                openReceiptModal(paymentId);
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to check receipt status.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
         async function applyCredit() {
             var customerId = parseInt(document.getElementById('customerSelect').value);
             if (!customerId) return;
@@ -918,8 +946,8 @@
 
                 if (data.success) {
                     closeGlobalPaymentModal();
-                    var msg = data.allocatedCount + ' invoice(s) allocated. Total: ' + currencySymbol + data.totalAllocated.toFixed(2);
-                    if (data.creditAmount > 0) msg += '. Credit: ' + currencySymbol + data.creditAmount.toFixed(2);
+                    var msg = data.message || (data.allocationCount + ' invoice(s) allocated.');
+                    if (data.creditAmount > 0) msg += '\nCredit: ' + currencySymbol + data.creditAmount.toFixed(2);
                     Swal.fire({ icon: 'success', title: 'Payment Recorded', text: msg, confirmButtonColor: '#0D5EA6' })
                         .then(function() { generateStatement(); });
                 } else {
@@ -933,3 +961,5 @@
         }
     </script>
 }
+
+@await Html.PartialAsync("_GenerateReceiptModal")

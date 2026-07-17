@@ -1,0 +1,38 @@
+@inject Portal.Infrastructure.Services.ISignatureService SignatureService
+@inject Portal.Infrastructure.Services.ICurrentTenantService TenantService
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var businessId = TenantService.CurrentBusinessId;
+    var defaultSig = await SignatureService.GetDefaultAsync(businessId);
+}
+@if (defaultSig != null)
+{
+    var basePath = Configuration["FileStorage:BasePath"] ?? "C:/BusinessPortal/Uploads";
+    var sigEntity = await SignatureService.GetByIdAsync(defaultSig.Id, businessId);
+    if (sigEntity != null)
+    {
+        var fullPath = System.IO.Path.Combine(basePath, sigEntity.FileName);
+        // Try to resolve from the FilePath stored in the entity via repository
+        // The SignatureViewModel doesn't expose FilePath, so we use GetImageStreamAsync
+        var stream = await SignatureService.GetImageStreamAsync(defaultSig.Id, businessId);
+        if (stream != null)
+        {
+            using (var ms = new System.IO.MemoryStream())
+            {
+                await stream.CopyToAsync(ms);
+                var sigBase64 = Convert.ToBase64String(ms.ToArray());
+                var sigMime = defaultSig.ContentType ?? "image/png";
+                <div style="margin-top:40px;page-break-inside:avoid;display:inline-block;">
+                    <img src="data:@sigMime;base64,@sigBase64" style="max-height:60px;margin-bottom:8px;display:block;" />
+                    <div style="border-top:2px solid #1a2b3c;width:180px;margin-bottom:8px;"></div>
+                    <p style="font-size:13px;color:#1a2b3c;font-weight:700;margin:0;">@defaultSig.Label</p>
+                    @if (!string.IsNullOrEmpty(defaultSig.Position))
+                    {
+                        <p style="font-size:12px;color:#5a6a7a;margin:3px 0 0 0;">@defaultSig.Position</p>
+                    }
+                </div>
+            }
+            stream.Dispose();
+        }
+    }
+}

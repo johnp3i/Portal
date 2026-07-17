@@ -38,6 +38,10 @@
        style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "payment" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "payment" ? "#0D5EA6" : "#5E7385");">
         Payment Details
     </a>
+    <a href="@Url.Action("Index", "MyBusiness", new { tab = "automation" })"
+       style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "automation" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "automation" ? "#0D5EA6" : "#5E7385");">
+        Automation
+    </a>
 </div>
 
 @{
@@ -344,9 +348,19 @@ else if (activeTab == "payment")
                     <p class="muted" style="font-size:14px;">No payment details added yet. Add your bank accounts to display them on invoices.</p>
                 }
             </div>
+        </section>
+    </div>
+}
+
+<!-- ═══ AUTOMATION TAB ═══ -->
+@if (activeTab == "automation")
+{
+    <div>
+        <section class="glass card-pad">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;">Document & Payment Automation</h3>
 
             <!-- Payment Instructions Toggle -->
-            <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f0f4f7;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;">
                 <div>
                     <div style="font-size:14px;font-weight:600;color:#0B1B28;">Show bank transfer payment option on shared invoices</div>
                     <p style="font-size:13px;color:#5E7385;margin-top:4px;">When enabled, customers viewing shared invoices will see a "Pay by Bank Transfer" button.</p>
@@ -359,6 +373,32 @@ else if (activeTab == "payment")
                     <input type="checkbox" id="paymentInstructionsToggle" @(ViewBag.IsPaymentInstructionsEnabled == true ? "checked" : "") @(!paymentDetails.Any() ? "disabled" : "") onchange="togglePaymentInstructions(this.checked)" style="opacity:0;width:0;height:0;position:absolute;" />
                     <span style="position:absolute;cursor:pointer;inset:0;background:@(ViewBag.IsPaymentInstructionsEnabled == true ? "#129867" : "#d0dbe5");border-radius:13px;transition:background 0.2s;"></span>
                     <span style="position:absolute;top:3px;left:@(ViewBag.IsPaymentInstructionsEnabled == true ? "25px" : "3px");width:20px;height:20px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+                </label>
+            </div>
+
+            <!-- Auto-Receipt Toggle -->
+            <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f0f4f7;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+                <div>
+                    <div style="font-size:14px;font-weight:600;color:#0B1B28;">Auto-generate payment receipts</div>
+                    <p style="font-size:13px;color:#5E7385;margin-top:4px;">When enabled, a receipt is automatically generated every time a payment is recorded.</p>
+                </div>
+                <label class="reminder-toggle" style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
+                    <input type="checkbox" id="autoReceiptToggle" @(ViewBag.IsAutoReceiptEnabled == true ? "checked" : "") onchange="toggleAutoReceipt(this.checked)" style="opacity:0;width:0;height:0;position:absolute;" />
+                    <span style="position:absolute;cursor:pointer;inset:0;background:@(ViewBag.IsAutoReceiptEnabled == true ? "#129867" : "#d0dbe5");border-radius:13px;transition:background 0.2s;"></span>
+                    <span style="position:absolute;top:3px;left:@(ViewBag.IsAutoReceiptEnabled == true ? "25px" : "3px");width:20px;height:20px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+                </label>
+            </div>
+
+            <!-- Auto-Signature on Invoices Toggle -->
+            <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f0f4f7;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+                <div>
+                    <div style="font-size:14px;font-weight:600;color:#0B1B28;">Auto-sign invoices with default signature</div>
+                    <p style="font-size:13px;color:#5E7385;margin-top:4px;">When enabled, the default signature is automatically shown on invoice PDFs and shared links.</p>
+                </div>
+                <label class="reminder-toggle" style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
+                    <input type="checkbox" id="autoInvoiceSigToggle" @(ViewBag.IsAutoInvoiceSignatureEnabled == true ? "checked" : "") onchange="toggleAutoInvoiceSignature(this.checked)" style="opacity:0;width:0;height:0;position:absolute;" />
+                    <span style="position:absolute;cursor:pointer;inset:0;background:@(ViewBag.IsAutoInvoiceSignatureEnabled == true ? "#129867" : "#d0dbe5");border-radius:13px;transition:background 0.2s;"></span>
+                    <span style="position:absolute;top:3px;left:@(ViewBag.IsAutoInvoiceSignatureEnabled == true ? "25px" : "3px");width:20px;height:20px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
                 </label>
             </div>
         </section>
@@ -388,6 +428,81 @@ else if (activeTab == "payment")
                 BlockUI.hide();
                 Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
                 document.getElementById('paymentInstructionsToggle').checked = !enabled;
+            }
+        }
+
+        async function toggleAutoReceipt(enabled) {
+            BlockUI.show('Updating...');
+            try {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/MyBusiness/AxPostToggleAutoReceipt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                    body: 'enabled=' + enabled
+                });
+                var result = await response.json();
+                BlockUI.hide();
+                if (result.success) {
+                    var toggle = document.getElementById('autoReceiptToggle');
+                    var track = toggle.nextElementSibling;
+                    var knob = track.nextElementSibling;
+                    track.style.background = enabled ? '#129867' : '#d0dbe5';
+                    knob.style.left = enabled ? '25px' : '3px';
+                    Swal.fire({ icon: 'success', title: 'Updated', text: result.message, confirmButtonColor: '#0D5EA6' });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
+                    document.getElementById('autoReceiptToggle').checked = !enabled;
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                document.getElementById('autoReceiptToggle').checked = !enabled;
+            }
+        }
+
+        async function toggleAutoInvoiceSignature(enabled) {
+            if (enabled) {
+                var confirm = await Swal.fire({
+                    title: 'Important',
+                    html: '<p style="text-align:left;line-height:1.7;">Enabling auto-signature will attach your default signature to <strong>new invoice shares and PDFs</strong> generated from now on.</p>' +
+                        '<p style="text-align:left;line-height:1.7;margin-top:12px;color:#5E7385;">Previously shared invoices will <strong>not</strong> be updated — their snapshots are permanent records of what the customer received. To include the signature on an existing shared invoice, deactivate and re-share it.</p>',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Enable',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#0D5EA6'
+                });
+                if (!confirm.isConfirmed) {
+                    document.getElementById('autoInvoiceSigToggle').checked = false;
+                    return;
+                }
+            }
+
+            BlockUI.show('Updating...');
+            try {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/MyBusiness/AxPostToggleAutoInvoiceSignature', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                    body: 'enabled=' + enabled
+                });
+                var result = await response.json();
+                BlockUI.hide();
+                if (result.success) {
+                    var toggle = document.getElementById('autoInvoiceSigToggle');
+                    var track = toggle.nextElementSibling;
+                    var knob = track.nextElementSibling;
+                    track.style.background = enabled ? '#129867' : '#d0dbe5';
+                    knob.style.left = enabled ? '25px' : '3px';
+                    Swal.fire({ icon: 'success', title: 'Updated', text: result.message, confirmButtonColor: '#0D5EA6' });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
+                    document.getElementById('autoInvoiceSigToggle').checked = !enabled;
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                document.getElementById('autoInvoiceSigToggle').checked = !enabled;
             }
         }
     </script>

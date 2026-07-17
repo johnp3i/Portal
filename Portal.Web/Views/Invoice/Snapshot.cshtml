@@ -397,18 +397,50 @@
 
     <!-- Document Footer (signature + payment + branding — kept together, pushed to bottom) -->
     <div style="break-inside:avoid;page-break-inside:avoid;margin-top:auto;padding-top:32px;">
-    <!-- Signature -->
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:12px;">Signature</div>
-    <div class="signature-section">
-        <div class="signature-block">
-            <div class="sig-label">Issued by</div>
-            <div class="sig-line"></div>
+    <!-- Digital Signature (from business default) -->
+    @inject Portal.Infrastructure.Services.ISignatureService _sigCheckService
+    @inject Portal.Infrastructure.Services.ICurrentTenantService _tenantCheckService
+    @inject Portal.Infrastructure.Data.PortalDbContext _sigDbContext
+    @{
+        var bizId = _tenantCheckService.CurrentBusinessId;
+        var defaultSig = await _sigCheckService.GetDefaultAsync(bizId);
+        var bizForSig = await _sigDbContext.Businesses.FindAsync(bizId);
+        var isAutoSigEnabled = bizForSig?.IsAutoInvoiceSignatureEnabled ?? false;
+    }
+    @if (isAutoSigEnabled && defaultSig != null)
+    {
+        <!-- Structured signature layout -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:32px;padding:24px 28px;background:var(--bg);border:1px solid var(--border);border-radius:12px;break-inside:avoid;page-break-inside:avoid;">
+            <div style="text-align:left;">
+                <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Issued by</div>
+                <div style="text-align:left;">
+                    @await Html.PartialAsync("_SignatureBlock")
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;text-align:right;">
+                <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Received by</div>
+                <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;">
+                    <div style="border-bottom:2px solid var(--text);width:220px;margin-bottom:8px;"></div>
+                    <p style="font-size:13px;font-weight:700;margin:0;">@customerName</p>
+                </div>
+            </div>
         </div>
-        <div class="signature-block">
-            <div class="sig-label">Received by</div>
-            <div class="sig-line"></div>
+    }
+    else
+    {
+        <!-- Manual Signature Lines (no digital signature) -->
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:12px;">Signature</div>
+        <div class="signature-section">
+            <div class="signature-block">
+                <div class="sig-label">Issued by</div>
+                <div class="sig-line"></div>
+            </div>
+            <div class="signature-block">
+                <div class="sig-label">Received by</div>
+                <div class="sig-line"></div>
+            </div>
         </div>
-    </div>
+    }
 
     <!-- Payment Details -->
     @if (paymentDetails.Any())

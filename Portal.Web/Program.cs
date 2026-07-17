@@ -325,6 +325,18 @@ builder.Services.AddScoped<StatementRepository>(sp =>
 builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IStatementRenderer, StatementRenderer>();
 
+// --- Payment Receipts & Signatures ---
+builder.Services.AddScoped<SignatureRepository>(sp =>
+    new SignatureRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PaymentReceiptRepository>(sp =>
+    new PaymentReceiptRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PaymentReceiptLineRepository>(sp =>
+    new PaymentReceiptLineRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PaymentReceiptShareRepository>(sp =>
+    new PaymentReceiptShareRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ISignatureService, SignatureService>();
+builder.Services.AddScoped<IPaymentReceiptService, PaymentReceiptService>();
+
 // --- Product Catalog ---
 builder.Services.AddScoped<ProductRepository>(sp =>
     new ProductRepository(sp.GetRequiredService<PortalDbContext>()));

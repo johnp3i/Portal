@@ -1106,6 +1106,41 @@
                 }
 
                 <!-- FOOTER -->
+                <!-- Digital Signature -->
+                @inject Portal.Infrastructure.Services.ISignatureService _sigCheckServiceProposal
+                @inject Portal.Infrastructure.Services.ICurrentTenantService _tenantCheckServiceProposal
+                @inject Portal.Infrastructure.Data.PortalDbContext _sigDbContextProposal
+                @{
+                    var bizIdProposal = _tenantCheckServiceProposal.CurrentBusinessId;
+                    var defaultSigProposal = await _sigCheckServiceProposal.GetDefaultAsync(bizIdProposal);
+                    var bizForSigProposal = await _sigDbContextProposal.Businesses.FindAsync(bizIdProposal);
+                    var isAutoSigEnabledProposal = bizForSigProposal?.IsAutoInvoiceSignatureEnabled ?? false;
+                }
+                @if (isAutoSigEnabledProposal && defaultSigProposal != null)
+                {
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:32px;padding:24px 28px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;break-inside:avoid;page-break-inside:avoid;">
+                        <div style="text-align:left;">
+                            <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Issued by</div>
+                            <div style="text-align:left;">
+                                @await Html.PartialAsync("_SignatureBlock")
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;text-align:right;">
+                            <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Received by</div>
+                            <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;">
+                                <div style="border-bottom:2px solid var(--text);width:220px;margin-bottom:8px;"></div>
+                                <p style="font-size:13px;font-weight:700;margin:0;">@Model.CustomerName</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="text-align:right;">
+                        @await Html.PartialAsync("_SignatureBlock")
+                    </div>
+                }
+
                 <div class="footer-line"></div>
                 <div class="footer-row">
                     <div>

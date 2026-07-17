@@ -87,6 +87,9 @@ a{text-decoration:none;color:inherit}
 .btn-outline:hover{background:rgba(13,94,166,.05);opacity:1}
 .btn-danger{background:linear-gradient(180deg,#D04E4E 0%, #C24A4A 100%);color:#fff;box-shadow:0 14px 28px rgba(194,74,74,.20)}
 
+/* ===== TABLES ===== */
+/*tbody td{vertical-align:middle}*/
+
 /* ===== TABLE ACTION BUTTONS (Theme C: Soft Filled) ===== */
 .tbl-action{font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;border:none;transition:all .15s;font-family:inherit}
 .tbl-action--primary{color:#0D5EA6;background:rgba(13,94,166,.08)}
@@ -159,7 +162,7 @@ a{text-decoration:none;color:inherit}
 /* ===== TABLE ===== */
 table{width:100%;border-collapse:separate;border-spacing:0;border-radius:18px;overflow:hidden}
 thead th{background:#F4FAFE;color:#395367;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(13,94,166,.08);padding:14px;text-align:left}
-tbody td{padding:14px;border-bottom:1px solid rgba(13,94,166,.06);font-size:14px;color:#2B3F51;vertical-align:top}
+tbody td{padding:14px;border-bottom:1px solid rgba(13,94,166,.06);font-size:14px;color:#2B3F51;vertical-align:middle}
 tbody tr:last-child td{border-bottom:0}
 
 /* ===== VALIDATION ===== */

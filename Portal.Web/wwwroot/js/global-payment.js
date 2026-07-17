@@ -144,8 +144,11 @@ async function submitGlobalPayment() {
 
         if (data.success) {
             closeGlobalPaymentModal();
-            var msg = data.message;
-            if (data.creditAmount > 0) msg += ' Credit balance: \u20AC' + parseFloat(data.creditAmount).toFixed(2);
+            var count = data.allocationCount || 0;
+            var total = data.totalAllocated || 0;
+            var credit = data.creditAmount || 0;
+            var msg = data.message || ('Payment allocated across ' + count + ' invoice(s).');
+            if (credit > 0) msg += '\nCredit: \u20AC' + parseFloat(credit).toFixed(2);
             Swal.fire({ title: 'Payment Recorded', text: msg, icon: 'success', confirmButtonColor: '#0D5EA6' }).then(function () { location.reload(); });
         } else {
             Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });

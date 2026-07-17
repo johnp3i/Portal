@@ -367,6 +367,7 @@
                                     {
                                         <span style="display:inline-block;padding:2px 8px;background:#E6F7EF;color:#129867;border-radius:4px;font-size:11px;font-weight:600;">Received</span>
                                         <button type="button" style="margin-left:8px;padding:2px 8px;font-size:11px;font-weight:600;color:#C24A4A;background:none;border:1px solid rgba(194,74,74,.2);border-radius:4px;cursor:pointer;" onclick="voidPayment(@payment.Id)">Void</button>
+                                        <button type="button" style="margin-left:6px;padding:2px 8px;font-size:11px;font-weight:600;color:#0D5EA6;background:none;border:1px solid rgba(13,94,166,.2);border-radius:4px;cursor:pointer;" onclick="generateReceipt(@payment.Id)" title="Generate Receipt">Receipt</button>
                                     }
                                 </td>
                             </tr>
@@ -394,6 +395,8 @@
     <!-- Test Send Modal -->
     @await Html.PartialAsync("_TestSendModal")
 }
+
+@await Html.PartialAsync("_GenerateReceiptModal")
 
 <!-- Back link -->
 <!-- Document Attachments -->
@@ -913,6 +916,24 @@
             } catch (e) {
                 BlockUI.hide();
                 Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+        async function generateReceipt(paymentId) {
+            BlockUI.show('Checking receipt...');
+            try {
+                var checkResponse = await fetch('/Receipt/AxGetHasReceipt?paymentId=' + paymentId);
+                var checkData = await checkResponse.json();
+                BlockUI.hide();
+
+                if (checkData.success && checkData.hasReceipt) {
+                    window.location.href = '/Receipt/Detail/' + checkData.receiptId;
+                    return;
+                }
+
+                openReceiptModal(paymentId);
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'Failed to check receipt status.', icon: 'error', confirmButtonColor: '#0D5EA6' });
             }
         }
     </script>

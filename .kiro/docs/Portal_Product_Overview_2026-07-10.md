@@ -71,10 +71,28 @@
 - Apply Credit: one-click allocation of existing credit to outstanding invoices
 - Payment voiding: standalone, child allocation (returns to credit), and cascade parent void
 - Smart void detection: auto-voids parent payment when all child allocations are voided
+- Payment Receipts: formal documents confirming receipt of payment (single or multi-invoice)
+- Receipt numbering: REC-{InvoiceSeq}-{PaymentNumber}-{DDMMYY} format
+- Auto-receipt generation: configurable business-level toggle for automatic receipt creation on payment
+- Receipt sharing via secure token-based links with expiry
+- Receipt PDF download with embedded signature
+- Receipt void with cascade from payment void
 - Outstanding balance tracking per invoice
 - Receivables dashboard: overdue invoices, recent payments, collection metrics
 - Financial KPI cards: Invoice Total, Total Paid, Outstanding Balance, Due Date
 - Payment progress bars with percentage tracking
+
+### Digital Signatures
+- Signature library: upload PNG or SVG signature images (transparent background)
+- Signature metadata: name + position (e.g., "John Smith", "Director")
+- Default signature: one signature set as business default, auto-applied to receipts
+- Signature management: upload, edit label/position, set default, deactivate, reactivate
+- Permission-controlled: only business owner/SuperAdmin can manage signatures
+- Signature embedded in receipt PDFs as base64 image (no external dependencies)
+- Formatted display: signature image → line → name (bold) → position (muted)
+- Max 10 active signatures per business
+- Magic-byte validation on PNG uploads for security
+- Filename sanitization on storage
 
 ### Purchase & Expense Management
 - Purchase recording with supplier, category, amount, VAT
@@ -347,7 +365,7 @@ Invoicing tools are **transactional** — create invoice, send, get paid. Portal
 
 ## Current Status
 
-- **Phase 1:** Complete (7 modules + infrastructure + Global Payment Allocation + Document Attachments + Purchase Import)
+- **Phase 1:** Complete (7 modules + infrastructure + Global Payment Allocation + Document Attachments + Purchase Import + Payment Receipts & Signatures)
 - **Phase 2:** Planned (Client Portal, Activity Timeline expansion)
 - **Subscription Management:** Live (Stripe integration for billing)
 - **Production Readiness:** All modules end-to-end tested

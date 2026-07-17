@@ -1,0 +1,225 @@
+@{
+    ViewData["Title"] = "Signature Library";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Business Settings</div>
+        <h1 class="topbar-heading">Signature Library</h1>
+        <p class="topbar-subtitle">Upload and manage digital signatures for receipts and documents.</p>
+    </div>
+</div>
+
+<!-- Upload Section -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 style="margin-bottom:14px;">Upload Signature</h3>
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:200px;">
+            <label>Name</label>
+            <input type="text" id="signatureLabel" placeholder="e.g. John Smith" />
+        </div>
+        <div class="field" style="min-width:200px;">
+            <label>Position (optional)</label>
+            <input type="text" id="signaturePosition" placeholder="e.g. Director" />
+        </div>
+        <div class="field" style="min-width:200px;">
+            <label>File (PNG or SVG)</label>
+            <input type="file" id="signatureFile" accept=".png,.svg" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="uploadSignature()">Upload</button>
+        </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px;">The signature will appear on receipts as: [signature image] — [line] — <strong>Name</strong> — Position. Recommended: transparent background PNG, max 2 MB.</p>
+</section>
+
+<!-- Signature Gallery -->
+<section class="glass card-pad">
+    <h3 style="margin-bottom:14px;">Your Signatures</h3>
+    <div id="signatureGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;">
+        <p style="color:var(--muted);">Loading...</p>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', loadSignatures);
+
+    async function loadSignatures() {
+        try {
+            var response = await fetch('/Signature/AxGetListAll');
+            var result = await response.json();
+            if (result.success) renderGallery(result.data);
+        } catch (e) {
+            document.getElementById('signatureGallery').innerHTML = '<p style="color:#C24A4A;">Failed to load.</p>';
+        }
+    }
+
+    function renderGallery(items) {
+        var gallery = document.getElementById('signatureGallery');
+        if (!items || items.length === 0) {
+            gallery.innerHTML = '<p style="color:var(--muted);">No signatures uploaded yet.</p>';
+            return;
+        }
+        gallery.innerHTML = items.map(function(sig) {
+            var defaultBadge = sig.isDefault ? '<span class="pill pill-green" style="font-size:10px;">Default</span>' : '';
+            var inactiveBadge = !sig.isActive ? '<span class="pill" style="font-size:10px;background:#fdeaea;color:#C24A4A;">Inactive</span>' : '';
+            var cardOpacity = sig.isActive ? '' : 'opacity:0.6;';
+            var actions = '';
+            if (!sig.isActive) {
+                actions = '<button class="btn btn-primary" style="font-size:11px;padding:4px 10px;" onclick="reactivateSig(' + sig.id + ')">Reactivate</button>';
+            } else if (sig.isDefault) {
+                actions = '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="editSigLabel(' + sig.id + ', \'' + sig.label.replace(/'/g, "\\'") + '\')">Edit</button>' +
+                    ' <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="deactivateSig(' + sig.id + ')">Deactivate</button>';
+            } else {
+                actions = '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="editSigLabel(' + sig.id + ', \'' + sig.label.replace(/'/g, "\\'") + '\')">Edit</button>' +
+                    ' <button class="btn btn-primary" style="font-size:11px;padding:4px 10px;" onclick="setDefault(' + sig.id + ')">Set Default</button>' +
+                    ' <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="deactivateSig(' + sig.id + ')">Deactivate</button>';
+            }
+            return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;' + cardOpacity + '" data-sig-id="' + sig.id + '" data-position="' + (sig.position || '') + '">' +
+                '<img src="/Signature/GetImage?id=' + sig.id + '" alt="' + sig.label + '" style="max-height:50px;margin-bottom:10px;" />' +
+                (defaultBadge ? '<div style="margin-bottom:6px;">' + defaultBadge + '</div>' : '') +
+                (inactiveBadge ? '<div style="margin-bottom:6px;">' + inactiveBadge + '</div>' : '') +
+                '<p style="font-weight:600;font-size:13px;margin-bottom:2px;">' + sig.label + '</p>' +
+                (sig.position ? '<p style="font-size:12px;color:var(--muted);margin-bottom:4px;">' + sig.position + '</p>' : '') +
+                '<p style="font-size:11px;color:var(--muted);margin-bottom:10px;">' + sig.fileName + '</p>' +
+                '<div style="display:flex;gap:6px;justify-content:center;">' + actions + '</div>' +
+                '</div>';
+        }).join('');
+    }
+
+    async function uploadSignature() {
+        var label = document.getElementById('signatureLabel').value.trim();
+        var position = document.getElementById('signaturePosition').value.trim();
+        var fileInput = document.getElementById('signatureFile');
+        if (!label) { Swal.fire({ icon: 'warning', title: 'Name required', confirmButtonColor: '#0D5EA6' }); return; }
+        if (!fileInput.files.length) { Swal.fire({ icon: 'warning', title: 'Select a file', confirmButtonColor: '#0D5EA6' }); return; }
+
+        var formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('label', label);
+        if (position) formData.append('position', position);
+
+        BlockUI.show('Uploading...');
+        try {
+            var response = await fetch('/Signature/AxPostUpload', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Uploaded', text: data.message, confirmButtonColor: '#0D5EA6' });
+                document.getElementById('signatureLabel').value = '';
+                document.getElementById('signaturePosition').value = '';
+                fileInput.value = '';
+                loadSignatures();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Upload failed.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function setDefault(id) {
+        BlockUI.show('Updating...');
+        try {
+            var response = await fetch('/Signature/AxPostSetDefault?id=' + id, {
+                method: 'POST', headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) { loadSignatures(); }
+            else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+        } catch (e) { BlockUI.hide(); }
+    }
+
+    async function deactivateSig(id) {
+        Swal.fire({
+            title: 'Deactivate?', text: 'This signature will no longer be available for documents.',
+            icon: 'warning', showCancelButton: true, confirmButtonText: 'Deactivate', confirmButtonColor: '#C24A4A'
+        }).then(async function(result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Deactivating...');
+                try {
+                    var response = await fetch('/Signature/AxPostDeactivate?id=' + id, {
+                        method: 'POST', headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+                    if (data.success) { loadSignatures(); }
+                    else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+                } catch (e) { BlockUI.hide(); }
+            }
+        });
+    }
+
+    async function reactivateSig(id) {
+        BlockUI.show('Reactivating...');
+        try {
+            var response = await fetch('/Signature/AxPostReactivate?id=' + id, {
+                method: 'POST', headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) { loadSignatures(); }
+            else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+        } catch (e) { BlockUI.hide(); }
+    }
+
+    async function editSigLabel(id, currentLabel) {
+        var { value: formValues } = await Swal.fire({
+            title: 'Edit Signature',
+            html: '<div style="text-align:left;padding:0 8px;">' +
+                '<div style="margin-bottom:16px;">' +
+                '<label style="display:block;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Name</label>' +
+                '<input id="swalSigName" type="text" style="width:100%;padding:10px 14px;border:1.5px solid rgba(13,94,166,.12);border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s;" value="' + currentLabel.replace(/"/g, '&quot;') + '" />' +
+                '</div>' +
+                '<div>' +
+                '<label style="display:block;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Position (optional)</label>' +
+                '<input id="swalSigPosition" type="text" style="width:100%;padding:10px 14px;border:1.5px solid rgba(13,94,166,.12);border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s;" placeholder="e.g. Director" />' +
+                '</div>' +
+                '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Save',
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d',
+            focusConfirm: false,
+            customClass: { popup: 'swal2-popup' },
+            didOpen: function() {
+                var gallery = document.getElementById('signatureGallery');
+                var card = gallery.querySelector('[data-sig-id="' + id + '"]');
+                if (card && card.dataset.position) {
+                    document.getElementById('swalSigPosition').value = card.dataset.position;
+                }
+                document.getElementById('swalSigName').focus();
+            },
+            preConfirm: function() {
+                var name = document.getElementById('swalSigName').value.trim();
+                if (!name) { Swal.showValidationMessage('Name is required.'); return false; }
+                return { name: name, position: document.getElementById('swalSigPosition').value.trim() };
+            }
+        });
+
+        if (!formValues) return;
+
+        BlockUI.show('Updating...');
+        try {
+            var response = await fetch('/Signature/AxPostUpdateLabel?id=' + id + '&label=' + encodeURIComponent(formValues.name) + '&position=' + encodeURIComponent(formValues.position), {
+                method: 'POST', headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) { loadSignatures(); }
+            else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+        } catch (e) { BlockUI.hide(); }
+    }
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    }
+</script>
+}

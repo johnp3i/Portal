@@ -1,0 +1,34 @@
+@{
+    Layout = null;
+    var snapshotHtml = ViewBag.SnapshotHtml as string ?? "";
+    var receiptNumber = ViewBag.ReceiptNumber as string ?? "Receipt";
+    var isVoided = ViewBag.IsVoided as bool? ?? false;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@receiptNumber — Payment Receipt</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: #F7FAFC; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+        .receipt-container { max-width: 800px; width: 100%; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.06); padding: 40px; }
+        .voided-banner { background: #fdeaea; border: 1px solid #C24A4A; border-radius: 10px; padding: 12px 20px; margin-bottom: 24px; color: #C24A4A; font-weight: 600; text-align: center; }
+        .actions { margin-top: 24px; text-align: center; }
+        .actions a { display: inline-block; padding: 10px 24px; background: #0D5EA6; color: #fff; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        @if (isVoided)
+        {
+            <div class="voided-banner">This receipt has been voided.</div>
+        }
+        @Html.Raw(snapshotHtml)
+    </div>
+    <div class="actions">
+        <a href="javascript:window.print();">Print / Download PDF</a>
+    </div>
+</body>
+</html>

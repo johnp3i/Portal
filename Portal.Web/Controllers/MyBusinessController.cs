@@ -27,11 +27,12 @@ public class MyBusinessController : Controller
     private readonly IPlanCheckService _planCheckService;
     private readonly MembershipDbContext _membershipDbContext;
     private readonly IPaymentInstructionsService _paymentInstructionsService;
+    private readonly PortalDbContext _dbContext;
 
     public MyBusinessController(IBusinessService businessService, ILogoService logoService,
         ICurrentTenantService tenantService, BusinessPaymentDetailRepository paymentDetailRepository,
         IPlanCheckService planCheckService, MembershipDbContext membershipDbContext,
-        IPaymentInstructionsService paymentInstructionsService)
+        IPaymentInstructionsService paymentInstructionsService, PortalDbContext dbContext)
     {
         _businessService = businessService;
         _logoService = logoService;
@@ -40,6 +41,7 @@ public class MyBusinessController : Controller
         _planCheckService = planCheckService;
         _membershipDbContext = membershipDbContext;
         _paymentInstructionsService = paymentInstructionsService;
+        _dbContext = dbContext;
     }
 
     private bool CanEdit()
@@ -62,6 +64,8 @@ public class MyBusinessController : Controller
         ViewBag.PaymentDetails = paymentDetails;
         ViewBag.IsReadOnly = !CanEdit();
         ViewBag.IsPaymentInstructionsEnabled = business?.IsPaymentInstructionsEnabled ?? false;
+        ViewBag.IsAutoReceiptEnabled = business?.IsAutoReceiptEnabled ?? false;
+        ViewBag.IsAutoInvoiceSignatureEnabled = business?.IsAutoInvoiceSignatureEnabled ?? false;
 
         if (profile == null)
         {
@@ -478,6 +482,44 @@ public class MyBusinessController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to update payment instructions setting." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostToggleAutoReceipt(bool enabled)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE [portal].[Business] SET [IsAutoReceiptEnabled] = @Enabled WHERE [Id] = @Id",
+                new Microsoft.Data.SqlClient.SqlParameter("@Enabled", enabled),
+                new Microsoft.Data.SqlClient.SqlParameter("@Id", businessId));
+            return Json(new { success = true, message = enabled ? "Auto-receipt enabled." : "Auto-receipt disabled." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to update auto-receipt setting." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostToggleAutoInvoiceSignature(bool enabled)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE [portal].[Business] SET [IsAutoInvoiceSignatureEnabled] = @Enabled WHERE [Id] = @Id",
+                new Microsoft.Data.SqlClient.SqlParameter("@Enabled", enabled),
+                new Microsoft.Data.SqlClient.SqlParameter("@Id", businessId));
+            return Json(new { success = true, message = enabled ? "Auto-signature on invoices enabled." : "Auto-signature on invoices disabled." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to update setting." });
         }
     }
 }

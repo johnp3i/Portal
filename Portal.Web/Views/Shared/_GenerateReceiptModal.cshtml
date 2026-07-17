@@ -1,0 +1,111 @@
+<!-- Generate Receipt Modal -->
+<div id="generateReceiptModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.4);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:20px;padding:32px;max-width:440px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,.15);">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin:0 0 6px;">Generate Receipt</h3>
+        <p style="font-size:14px;color:#5a6a7a;margin:0 0 20px;">Create a payment receipt document.</p>
+
+        <div class="field" style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:.04em;">Signature</label>
+            <select id="receiptModalSignature" style="width:100%;margin-top:6px;">
+                <option value="">No signature</option>
+            </select>
+        </div>
+
+        <div class="field" style="margin-bottom:20px;">
+            <label style="font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:.04em;">Notes (optional)</label>
+            <textarea id="receiptModalNotes" rows="2" placeholder="Optional notes for this receipt..." style="width:100%;margin-top:6px;resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeReceiptModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="confirmGenerateReceipt()">Generate</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var _receiptModalPaymentId = null;
+    var _receiptModalSignaturesLoaded = false;
+
+    function openReceiptModal(paymentId) {
+        console.log('[ReceiptModal] openReceiptModal called with paymentId:', paymentId, 'type:', typeof paymentId);
+        _receiptModalPaymentId = paymentId;
+        document.getElementById('receiptModalNotes').value = '';
+        document.getElementById('generateReceiptModal').style.display = 'flex';
+
+        if (!_receiptModalSignaturesLoaded) {
+            loadReceiptModalSignatures();
+        }
+    }
+
+    function closeReceiptModal() {
+        document.getElementById('generateReceiptModal').style.display = 'none';
+        _receiptModalPaymentId = null;
+    }
+
+    async function loadReceiptModalSignatures() {
+        try {
+            var response = await fetch('/Receipt/AxGetSignatures');
+            var result = await response.json();
+            if (result.success) {
+                var select = document.getElementById('receiptModalSignature');
+                select.innerHTML = '<option value="">No signature</option>';
+                result.data.forEach(function(sig) {
+                    var opt = document.createElement('option');
+                    opt.value = sig.id;
+                    opt.textContent = sig.label;
+                    if (sig.isDefault) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                _receiptModalSignaturesLoaded = true;
+            }
+        } catch (e) { console.error('[ReceiptModal] Failed to load signatures:', e); }
+    }
+
+    async function confirmGenerateReceipt() {
+        console.log('[ReceiptModal] confirmGenerateReceipt called. _receiptModalPaymentId:', _receiptModalPaymentId);
+        if (!_receiptModalPaymentId) {
+            console.error('[ReceiptModal] _receiptModalPaymentId is falsy!');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No payment selected.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var paymentId = _receiptModalPaymentId;
+        var signatureId = document.getElementById('receiptModalSignature').value || '';
+        var notes = document.getElementById('receiptModalNotes').value.trim() || '';
+
+        closeReceiptModal();
+        BlockUI.show('Generating receipt...');
+        try {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            var url = '/Receipt/AxPostGenerate?paymentId=' + paymentId;
+            if (signatureId) url += '&signatureId=' + signatureId;
+            if (notes) url += '&notes=' + encodeURIComponent(notes);
+
+            console.log('[ReceiptModal] Fetching URL:', url);
+
+            var response = await fetch(url, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token }
+            });
+            var data = await response.json();
+            console.log('[ReceiptModal] Response:', data);
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'Receipt Generated',
+                    html: 'Receipt <strong>' + data.receiptNumber + '</strong> created.<br><br><a href="/Receipt/Detail/' + data.receiptId + '" style="color:#0D5EA6;font-weight:600;">View Receipt \u2192</a>',
+                    icon: 'success',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            console.error('[ReceiptModal] Exception:', e);
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to generate receipt.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>

@@ -193,7 +193,7 @@
         <tbody id="paymentsTableBody">
             @foreach (var item in recentPayments.Items)
             {
-                <tr style="@(item.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
+                <tr style="vertical-align:middle;@(item.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
                     <td>@item.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
                     <td><strong>@item.InvoiceNumber</strong></td>
                     <td>@item.CustomerName</td>
@@ -216,6 +216,7 @@
                     <td style="white-space:nowrap;">
                         @if (!item.IsVoided)
                         {
+                            <button type="button" class="tbl-action tbl-action--primary" style="font-size:11px;padding:3px 8px;margin-right:4px;" onclick="generateReceiptFromDashboard(@item.PaymentId)">Receipt</button>
                             <button type="button" class="tbl-action tbl-action--danger" style="font-size:11px;padding:3px 8px;" onclick="voidPayment(@item.PaymentId)">Void</button>
                         }
                         else
@@ -254,12 +255,12 @@
                 <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;color:#1a2b3c;margin:0 0 4px;">Automated Payment Reminders</h3>
                 <p style="font-size:14px;color:#5a6a7a;margin:0;">Automatically send escalating reminders for overdue invoices. Schedule friendly, firm, and formal follow-ups with full tracking.</p>
             </div>
-            <span class="btn btn-primary" style="min-width:120px;text-align:center;">Learn More</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <span style="font-size:11px;font-weight:600;color:#0D5EA6;background:rgba(13,94,166,.08);padding:3px 10px;border-radius:50px;">Upgrade</span>
+                <span class="btn btn-primary" style="min-width:120px;text-align:center;">Learn More</span>
+            </div>
         </div>
     </a>
-    <div style="position:absolute;top:12px;right:16px;">
-        <span style="font-size:11px;font-weight:600;color:#0D5EA6;background:rgba(13,94,166,.08);padding:3px 10px;border-radius:50px;">Upgrade</span>
-    </div>
 </section>
 }
 
@@ -276,17 +277,20 @@
                 <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;color:#1a2b3c;margin:0 0 4px;">Cash Flow Forecasting</h3>
                 <p style="font-size:14px;color:#5a6a7a;margin:0;">Project your future cash position with confidence-weighted inflow projections and historical expense analysis.</p>
             </div>
-            <span class="btn btn-primary" style="min-width:120px;text-align:center;">Learn More</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <span style="font-size:11px;font-weight:600;color:#0D5EA6;background:rgba(13,94,166,.08);padding:3px 10px;border-radius:50px;">Upgrade</span>
+                <span class="btn btn-primary" style="min-width:120px;text-align:center;">Learn More</span>
+            </div>
         </div>
     </a>
-    <div style="position:absolute;top:12px;right:16px;">
-        <span style="font-size:11px;font-weight:600;color:#0D5EA6;background:rgba(13,94,166,.08);padding:3px 10px;border-radius:50px;">Upgrade</span>
-    </div>
 </section>
 }
 
 <!-- Payment Modal Partial -->
 @await Html.PartialAsync("_PaymentModal")
+
+<!-- Generate Receipt Modal -->
+@await Html.PartialAsync("_GenerateReceiptModal")
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>

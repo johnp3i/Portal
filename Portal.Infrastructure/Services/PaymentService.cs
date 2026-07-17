@@ -18,6 +18,7 @@ public class PaymentService : IPaymentService
     private readonly IFinancialStatusEngine _financialStatusEngine;
     private readonly IPaymentScheduleService _paymentScheduleService;
     private readonly IPaymentAllocationEngine _allocationEngine;
+    private readonly IPaymentReceiptService? _receiptService;
     private readonly PortalDbContext _portalDbContext;
 
     private const int InvoiceStatusIssued = 2;
@@ -29,7 +30,8 @@ public class PaymentService : IPaymentService
         IFinancialStatusEngine financialStatusEngine,
         IPaymentScheduleService paymentScheduleService,
         IPaymentAllocationEngine allocationEngine,
-        PortalDbContext portalDbContext)
+        PortalDbContext portalDbContext,
+        IPaymentReceiptService? receiptService = null)
     {
         _paymentRepository = paymentRepository;
         _invoiceRepository = invoiceRepository;
@@ -38,6 +40,7 @@ public class PaymentService : IPaymentService
         _paymentScheduleService = paymentScheduleService;
         _allocationEngine = allocationEngine;
         _portalDbContext = portalDbContext;
+        _receiptService = receiptService;
     }
 
     /// <inheritdoc />
@@ -86,6 +89,9 @@ public class PaymentService : IPaymentService
         await _paymentScheduleService.MatchPaymentToScheduleAsync(paymentId, dto.Amount, dto.InvoiceId, businessId, userId);
         await _financialStatusEngine.RecalculateStatusAsync(dto.InvoiceId, businessId);
 
+        // Auto-generate receipt if enabled
+        await TryAutoGenerateReceiptAsync(paymentId, businessId, userId);
+
         return ServiceResult.Ok(paymentId);
     }
 
@@ -110,6 +116,10 @@ public class PaymentService : IPaymentService
             await _paymentScheduleService.RevertPaymentMatchAsync(paymentId, payment.InvoiceId.Value, businessId);
             await _financialStatusEngine.RecalculateStatusAsync(payment.InvoiceId.Value, businessId);
         }
+
+        // Void associated receipt (cascade)
+        if (_receiptService != null)
+            await _receiptService.VoidByPaymentIdAsync(paymentId, businessId);
 
         return ServiceResult.Ok();
     }
@@ -218,6 +228,10 @@ public class PaymentService : IPaymentService
                 }
 
                 await transaction.CommitAsync();
+
+                // Auto-generate receipt if enabled
+                await TryAutoGenerateReceiptAsync(parentId, businessId, userId);
+
                 return ServiceResult<AllocationResult>.Ok(allocationResult);
             }
             catch
@@ -273,6 +287,11 @@ public class PaymentService : IPaymentService
                 }
 
                 await transaction.CommitAsync();
+
+                // Void associated receipt (cascade)
+                if (_receiptService != null)
+                    await _receiptService.VoidByPaymentIdAsync(paymentId, businessId);
+
                 return ServiceResult.Ok();
             }
             catch
@@ -529,5 +548,32 @@ public class PaymentService : IPaymentService
             .FirstOrDefaultAsync();
 
         return currencySymbol ?? "€";
+    }
+
+    /// <summary>
+    /// Checks if auto-receipt is enabled for the business and generates a receipt if so.
+    /// </summary>
+    private async Task TryAutoGenerateReceiptAsync(int paymentId, int businessId, string userId)
+    {
+        if (_receiptService == null) return;
+
+        var business = await _portalDbContext.Businesses
+            .Where(b => b.Id == businessId)
+            .Select(b => new { b.IsAutoReceiptEnabled })
+            .FirstOrDefaultAsync();
+
+        if (business?.IsAutoReceiptEnabled == true)
+        {
+            // Use default signature if available
+            int? defaultSignatureId = null;
+            var defaultSig = await _portalDbContext.Signatures.IgnoreQueryFilters()
+                .Where(s => s.BusinessId == businessId && s.IsDefault && s.IsActive)
+                .Select(s => s.Id)
+                .FirstOrDefaultAsync();
+            if (defaultSig > 0)
+                defaultSignatureId = defaultSig;
+
+            await _receiptService.GenerateReceiptAsync(paymentId, businessId, userId, defaultSignatureId);
+        }
     }
 }

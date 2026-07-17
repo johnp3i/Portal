@@ -348,6 +348,8 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                        [portal].[Business].[IsActive],
                        [portal].[Business].[IsDemoAccount],
                        [portal].[Business].[IsPaymentInstructionsEnabled],
+                       [portal].[Business].[IsAutoReceiptEnabled],
+                       [portal].[Business].[IsAutoInvoiceSignatureEnabled],
                        [portal].[Business].[CreatedAtUtc],
                        [portal].[Business].[UpdatedAtUtc]
                 FROM [portal].[Business]

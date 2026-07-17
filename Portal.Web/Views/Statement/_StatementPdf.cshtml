@@ -351,6 +351,12 @@
         </tfoot>
     </table>
 
+    <!-- Digital Signature (from business default) -->
+    <div style="text-align:left;">
+        <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Issued by</div>
+        @await Html.PartialAsync("_SignatureBlock")
+    </div>
+
     <!-- Footer -->
     <div style="margin-top:24px;padding-top:12px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center;">
         Statement generated on @DateTime.UtcNow.ToString("dd MMM yyyy") | @Model.BusinessName

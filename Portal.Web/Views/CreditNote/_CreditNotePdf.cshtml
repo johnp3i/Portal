@@ -332,6 +332,12 @@
         </div>
     </div>
 
+    <!-- Digital Signature (from business default) -->
+    <div style="text-align:left;">
+        <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Issued by</div>
+        @await Html.PartialAsync("_SignatureBlock")
+    </div>
+
     <!-- Footer -->
     <div class="footer">
         Credit note generated on @DateTime.UtcNow.ToString("dd MMM yyyy") | @Model.BusinessName

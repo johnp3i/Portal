@@ -20,6 +20,10 @@ public class Business
 
     public bool IsPaymentInstructionsEnabled { get; set; }
 
+    public bool IsAutoReceiptEnabled { get; set; }
+
+    public bool IsAutoInvoiceSignatureEnabled { get; set; }
+
     // Navigation properties
     public BusinessProfile? BusinessProfile { get; set; }
 

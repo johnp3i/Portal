@@ -393,17 +393,49 @@
         </div>
     }
 
-    <!-- Signature Lines -->
-    <div class="signature-section">
-        <div class="signature-block">
-            <div class="sig-label">Issued by</div>
-            <div class="sig-line"></div>
+    <!-- Digital Signature -->
+    @inject Portal.Infrastructure.Services.ISignatureService _sigCheckServicePreview
+    @inject Portal.Infrastructure.Services.ICurrentTenantService _tenantCheckServicePreview
+    @inject Portal.Infrastructure.Data.PortalDbContext _sigDbContextPreview
+    @{
+        var bizIdPreview = _tenantCheckServicePreview.CurrentBusinessId;
+        var defaultSigPreview = await _sigCheckServicePreview.GetDefaultAsync(bizIdPreview);
+        var bizForSigPreview = await _sigDbContextPreview.Businesses.FindAsync(bizIdPreview);
+        var isAutoSigEnabledPreview = bizForSigPreview?.IsAutoInvoiceSignatureEnabled ?? false;
+    }
+    @if (isAutoSigEnabledPreview && defaultSigPreview != null)
+    {
+        <!-- Structured signature layout -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:32px;padding:24px 28px;background:var(--bg);border:1px solid var(--border);border-radius:12px;break-inside:avoid;page-break-inside:avoid;">
+            <div style="text-align:left;">
+                <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Issued by</div>
+                <div style="text-align:left;">
+                    @await Html.PartialAsync("_SignatureBlock")
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;text-align:right;">
+                <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">Received by</div>
+                <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;">
+                    <div style="border-bottom:2px solid var(--text);width:220px;margin-bottom:8px;"></div>
+                    <p style="font-size:13px;font-weight:700;margin:0;">@customerName</p>
+                </div>
+            </div>
         </div>
-        <div class="signature-block">
-            <div class="sig-label">Received by</div>
-            <div class="sig-line"></div>
+    }
+    else
+    {
+        <!-- Manual Signature Lines -->
+        <div class="signature-section">
+            <div class="signature-block">
+                <div class="sig-label">Issued by</div>
+                <div class="sig-line"></div>
+            </div>
+            <div class="signature-block">
+                <div class="sig-label">Received by</div>
+                <div class="sig-line"></div>
+            </div>
         </div>
-    </div>
+    }
 
     <!-- Payment Details -->
     @if (paymentDetails.Any())

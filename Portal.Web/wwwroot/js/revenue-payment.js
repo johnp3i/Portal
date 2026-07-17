@@ -356,3 +356,27 @@ window.onInvoiceSelected = onInvoiceSelected;
 window.closePaymentModal = closePaymentModal;
 window.submitPayment = submitPayment;
 window.voidPayment = voidPayment;
+
+/**
+ * Generates a payment receipt for a given payment ID.
+ * @param {number} paymentId - The payment ID to generate a receipt for
+ */
+async function generateReceiptFromDashboard(paymentId) {
+    BlockUI.show('Checking receipt...');
+    try {
+        var checkResponse = await fetch('/Receipt/AxGetHasReceipt?paymentId=' + paymentId);
+        var checkData = await checkResponse.json();
+        BlockUI.hide();
+
+        if (checkData.success && checkData.hasReceipt) {
+            window.location.href = '/Receipt/Detail/' + checkData.receiptId;
+            return;
+        }
+
+        openReceiptModal(paymentId);
+    } catch (e) {
+        BlockUI.hide();
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to check receipt status.', confirmButtonColor: '#0D5EA6' });
+    }
+}
+window.generateReceiptFromDashboard = generateReceiptFromDashboard;
