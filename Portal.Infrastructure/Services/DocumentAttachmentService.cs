@@ -16,7 +16,7 @@ public class DocumentAttachmentService : IDocumentAttachmentService
 
     private static readonly string[] ValidEntityTypes =
     {
-        "Invoice", "CreditNote", "Quotation", "Payment", "Purchase", "Supplier", "Customer"
+        "Invoice", "CreditNote", "Quotation", "Payment", "Purchase", "Supplier", "Customer", "RevenueSummary"
     };
 
     private readonly DocumentAttachmentRepository _repository;
@@ -59,11 +59,15 @@ public class DocumentAttachmentService : IDocumentAttachmentService
                 return ServiceResult<AttachmentDto>.Fail(validationResult.ErrorMessage!);
             }
 
-            // Check attachment count limit
+            // Check attachment count limit (1 per Z-Report, 5 for other entities)
+            var maxAllowed = request.EntityType.Equals("RevenueSummary", StringComparison.OrdinalIgnoreCase) ? 1 : MaxAttachmentsPerEntity;
             var currentCount = await _repository.GetCountAsync(request.BusinessId, request.EntityType, request.EntityId);
-            if (currentCount >= MaxAttachmentsPerEntity)
+            if (currentCount >= maxAllowed)
             {
-                return ServiceResult<AttachmentDto>.Fail("Maximum of 5 attachments per record reached.");
+                var message = maxAllowed == 1
+                    ? "A Z-Report can only have one attached file. Delete the existing file to upload a new one."
+                    : $"Maximum of {MaxAttachmentsPerEntity} attachments per record reached.";
+                return ServiceResult<AttachmentDto>.Fail(message);
             }
 
             // Upload file to storage

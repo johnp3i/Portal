@@ -85,6 +85,57 @@
     </table>
 </section>
 
+<!-- External Revenue (Z-Reports) -->
+@if (Model.IsZReportEnabled)
+{
+    <section class="glass card-pad" style="margin-top:24px;">
+        <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:4px;">External Revenue (Z-Reports)</h2>
+        <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">Revenue summaries from POS systems assigned to this period</p>
+
+        @if (Model.ZReportRows.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Z-Report #</th>
+                        <th>Period</th>
+                        <th class="text-right">Net Amount</th>
+                        <th class="text-right">VAT Amount</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-right">Discount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.ZReportRows)
+                    {
+                        <tr>
+                            <td><strong>@row.SourceName</strong></td>
+                            <td>@(row.ZReportNumber ?? "—")</td>
+                            <td>@row.PeriodDisplay</td>
+                            <td class="text-right">@Model.CurrencySymbol@row.Net.ToString("N2")</td>
+                            <td class="text-right">@Model.CurrencySymbol@row.Vat.ToString("N2")</td>
+                            <td class="text-right">@Model.CurrencySymbol@row.Gross.ToString("N2")</td>
+                            <td class="text-right">@(row.Discount.HasValue ? $"{Model.CurrencySymbol}{row.Discount.Value:N2}" : "—")</td>
+                        </tr>
+                    }
+                    <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
+                        <td colspan="3">Period Total</td>
+                        <td class="text-right">@Model.CurrencySymbol@Model.ZReportRows.Sum(r => r.Net).ToString("N2")</td>
+                        <td class="text-right">@Model.CurrencySymbol@Model.ZReportRows.Sum(r => r.Vat).ToString("N2")</td>
+                        <td class="text-right">@Model.CurrencySymbol@Model.ZReportRows.Sum(r => r.Gross).ToString("N2")</td>
+                        <td class="text-right">@(Model.ZReportRows.Sum(r => r.Discount ?? 0) > 0 ? $"{Model.CurrencySymbol}{Model.ZReportRows.Sum(r => r.Discount ?? 0):N2}" : "—")</td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">No Z-Reports assigned to this period.</p>
+        }
+    </section>
+}
+
 <!-- Section 2: Purchases by Month -->
 <section class="glass card-pad" style="margin-top:24px;">
     <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:4px;">2. Purchases Amount by Month</h2>

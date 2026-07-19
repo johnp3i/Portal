@@ -1,0 +1,143 @@
+@model Portal.Infrastructure.Models.PagedResult<Portal.Infrastructure.Entities.ExternalSalesRecord>
+@{
+    ViewData["Title"] = "Sales Records";
+    var sources = (List<Portal.Infrastructure.Entities.RevenueSource>)ViewData["RevenueSources"]!;
+    var filterSourceId = ViewData["SourceId"] as int?;
+    var filterDateFrom = ViewData["DateFrom"] as string;
+    var filterDateTo = ViewData["DateTo"] as string;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Records</div>
+        <h1 class="topbar-heading">Sales Records</h1>
+        <p class="topbar-subtitle">Transaction-level POS sales data imported from external systems.</p>
+    </div>
+    <div style="display:flex;gap:12px;">
+        <a href="/SalesImport" class="btn btn-primary">Import Sales</a>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" action="/SalesImport/Records">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:180px;">
+                <label for="sourceId">Revenue Source</label>
+                <select id="sourceId" name="sourceId">
+                    <option value="">All Sources</option>
+                    @foreach (var source in sources)
+                    {
+                        var isSelected = filterSourceId == source.Id;
+                        if (isSelected) { <option value="@source.Id" selected>@source.Name</option> }
+                        else { <option value="@source.Id">@source.Name</option> }
+                    }
+                </select>
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateFrom">From Date</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="@filterDateFrom" />
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateTo">To Date</label>
+                <input type="date" id="dateTo" name="dateTo" value="@filterDateTo" />
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="/SalesImport/Records" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<section class="glass card-pad">
+    @if (Model.Items.Any())
+    {
+        <div class="table-responsive index-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Invoice #</th>
+                        <th>Description</th>
+                        <th>Payment</th>
+                        <th style="text-align:right;">Net</th>
+                        <th style="text-align:right;">VAT</th>
+                        <th style="text-align:right;">Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var isCancelled = !item.IsActive;
+                        var rowStyle = isCancelled ? "opacity:0.5;text-decoration:line-through;" : "";
+                        <tr style="@rowStyle">
+                            <td>@item.TransactionDate.ToString("dd/MM/yyyy")</td>
+                            <td><strong>@(item.InvoiceNumber ?? "—")</strong></td>
+                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(item.Description ?? "—")</td>
+                            <td>@(item.PaymentMethod ?? "—")</td>
+                            <td style="text-align:right;">€@item.NetAmount.ToString("N2")</td>
+                            <td style="text-align:right;">€@item.VatAmount.ToString("N2")</td>
+                            <td style="text-align:right;font-weight:700;">€@item.TotalAmount.ToString("N2")</td>
+                            <td style="text-decoration:none;">
+                                @if (isCancelled) { <span class="pill" style="background:#fdeaea;color:#C24A4A;font-weight:700;">Cancelled</span> }
+                                else { <span class="pill pill-green">Active</span> }
+                            </td>
+                            <td style="white-space:nowrap;text-decoration:none;">
+                                @if (isCancelled)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--success" onclick="restoreRecord(@item.Id)">Restore</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="tbl-action tbl-action--danger" onclick="cancelRecord(@item.Id)">Cancel</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_PagingControl")
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No sales records found.</p>
+            <a href="/SalesImport" class="btn btn-primary" style="margin-top:16px;">Import Sales</a>
+        </div>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+
+    async function cancelRecord(id) {
+        var r = await Swal.fire({ title:'Cancel Record', text:'Cancel this sales record?', icon:'warning', showCancelButton:true, confirmButtonColor:'#C24A4A', confirmButtonText:'Yes, cancel' });
+        if (!r.isConfirmed) return;
+        var fd = new FormData(); fd.append('id', id);
+        BlockUI.show('Cancelling...');
+        try {
+            var resp = await fetch('/SalesImport/AxPostCancelRecord', { method:'POST', headers:{'RequestVerificationToken':getAntiForgeryToken()}, body:fd });
+            var data = await resp.json(); BlockUI.hide();
+            if (data.success) { window.location.reload(); } else { Swal.fire({icon:'error',title:'Error',text:data.message,confirmButtonColor:'#0D5EA6'}); }
+        } catch(e) { BlockUI.hide(); Swal.fire({icon:'error',title:'Error',text:'An unexpected error occurred.',confirmButtonColor:'#0D5EA6'}); }
+    }
+
+    async function restoreRecord(id) {
+        var r = await Swal.fire({ title:'Restore Record', text:'Restore this sales record?', icon:'question', showCancelButton:true, confirmButtonColor:'#0D5EA6', confirmButtonText:'Yes, restore' });
+        if (!r.isConfirmed) return;
+        var fd = new FormData(); fd.append('id', id);
+        BlockUI.show('Restoring...');
+        try {
+            var resp = await fetch('/SalesImport/AxPostRestoreRecord', { method:'POST', headers:{'RequestVerificationToken':getAntiForgeryToken()}, body:fd });
+            var data = await resp.json(); BlockUI.hide();
+            if (data.success) { window.location.reload(); } else { Swal.fire({icon:'error',title:'Error',text:data.message,confirmButtonColor:'#0D5EA6'}); }
+        } catch(e) { BlockUI.hide(); Swal.fire({icon:'error',title:'Error',text:'An unexpected error occurred.',confirmButtonColor:'#0D5EA6'}); }
+    }
+</script>
+}

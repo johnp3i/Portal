@@ -1,0 +1,532 @@
+@model Portal.Infrastructure.Entities.RevenueSummary
+@{
+    var isEdit = (bool)(ViewData["IsEdit"] ?? false);
+    ViewData["Title"] = isEdit ? "Edit Z-Report" : "New Z-Report";
+    var sources = (List<Portal.Infrastructure.Entities.RevenueSource>)ViewData["RevenueSources"]!;
+    var vatPeriods = (List<Portal.Infrastructure.Entities.VatSubmissionPeriod>)ViewData["VatPeriods"]!;
+    var existingLines = ViewData["Lines"] as List<Portal.Infrastructure.Entities.RevenueSummaryLine>;
+    var isLocked = (bool)(ViewData["IsLocked"] ?? false);
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Z-Reports</div>
+        <h1 class="topbar-heading">@(isEdit ? "Edit Z-Report" : "New Z-Report")</h1>
+        <p class="topbar-subtitle">@(isEdit ? "Update Z-Report details and VAT breakdown." : "Record a Z-Report from your POS system.")</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/ZReport/Index" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>
+
+@if (isLocked)
+{
+    <section class="glass card-pad" style="margin-bottom:22px;border-left:4px solid #C8912E;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <div style="font-size:14px;color:#0B1B28;line-height:1.6;">
+                <strong>Locked — assigned to a submitted VAT period.</strong>
+                <span style="color:#5E7385;">This Z-Report cannot be edited because it is included in a submitted VAT return.</span>
+            </div>
+        </div>
+    </section>
+}
+
+<!-- Z-Report Form -->
+<section class="glass card-pad">
+    <form id="zReportForm" onsubmit="return false;">
+        <input type="hidden" id="zReportId" value="@(isEdit ? Model.Id : 0)" />
+
+        <!-- Header Fields -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;">
+            <div class="field">
+                <label for="revenueSourceId">Revenue Source <span style="color:#C24A4A;">*</span></label>
+                <select id="revenueSourceId" required>
+                    <option value="">Select source...</option>
+                    @foreach (var source in sources)
+                    {
+                        var isSelected = isEdit && Model.RevenueSourceId == source.Id;
+                        if (isSelected)
+                        {
+                            <option value="@source.Id" selected>@source.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@source.Id">@source.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label for="summaryDate">Period Start <span style="color:#C24A4A;">*</span></label>
+                <input type="date" id="summaryDate" required value="@(isEdit ? Model.SummaryDate.ToString("yyyy-MM-dd") : "")" />
+            </div>
+            <div class="field">
+                <label for="periodEndDate">Period End</label>
+                <input type="date" id="periodEndDate" value="@(isEdit && Model.PeriodEndDate.HasValue ? Model.PeriodEndDate.Value.ToString("yyyy-MM-dd") : "")" />
+            </div>
+            <div class="field">
+                <label for="zReportNumber">Z-Report Number</label>
+                <input type="text" id="zReportNumber" placeholder="e.g. 78419" maxlength="50" value="@(isEdit ? Model.ZReportNumber : "")" />
+            </div>
+            <div class="field">
+                <label for="exportedAtUtc">Export Date/Time</label>
+                <input type="datetime-local" id="exportedAtUtc" value="@(isEdit && Model.ExportedAtUtc.HasValue ? Model.ExportedAtUtc.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+            </div>
+            <div class="field">
+                <label for="transactionCount">Transaction Count</label>
+                <input type="number" id="transactionCount" min="0" placeholder="Optional" value="@(isEdit && Model.TransactionCount.HasValue ? Model.TransactionCount.Value.ToString() : "")" @(isLocked ? "disabled" : "") />
+            </div>
+            <div class="field">
+                <label for="vatPeriodId">VAT Period</label>
+                <select id="vatPeriodId" @(isLocked ? "disabled" : "")>
+                    <option value="">— Not assigned —</option>
+                    @foreach (var period in vatPeriods)
+                    {
+                        var isSelected = isEdit && Model.VatSubmissionPeriodId == period.Id;
+                        if (isSelected)
+                        {
+                            <option value="@period.Id" selected>@period.PeriodLabel</option>
+                        }
+                        else
+                        {
+                            <option value="@period.Id">@period.PeriodLabel</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <!-- Optional Fields -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;">
+            <div class="field">
+                <label for="reference" style="display:flex;align-items:center;gap:6px;">
+                    Internal Reference
+                    <span class="field-hint-icon" onclick="showFieldInfo('reference')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </span>
+                </label>
+                <input type="text" id="reference" placeholder="e.g. Q2-2026, AUDIT-REVIEWED..." maxlength="200" value="@(isEdit ? Model.Reference : "")" @(isLocked ? "disabled" : "") />
+            </div>
+            <div class="field">
+                <label for="notes" style="display:flex;align-items:center;gap:6px;">
+                    Additional Notes
+                    <span class="field-hint-icon" onclick="showFieldInfo('notes')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </span>
+                </label>
+                <input type="text" id="notes" placeholder="e.g. Till offline for 2 hours, includes staff discounts..." value="@(isEdit ? Model.Notes : "")" @(isLocked ? "disabled" : "") />
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- VAT Lines -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
+        <div>
+            <h2 style="font-size:18px;font-weight:800;margin:0;">VAT Breakdown</h2>
+            <p class="muted" style="font-size:13px;margin-top:4px;">Add one line per VAT rate. Totals are computed automatically.</p>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="addLine()">Add VAT Line</button>
+    </div>
+
+    <div id="vatLinesContainer">
+        <!-- Lines will be rendered here -->
+    </div>
+
+    <div id="noLinesMessage" style="display:none;text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">
+        No VAT lines added. Click "Add VAT Line" to begin.
+    </div>
+</section>
+
+<!-- Totals Summary -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;">Totals</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;">
+        <div class="summary-box">
+            <span class="summary-label">Total Net</span>
+            <span class="summary-value" id="totalNet">€0.00</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Total VAT</span>
+            <span class="summary-value" id="totalVat">€0.00</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Total Gross</span>
+            <span class="summary-value summary-value--bold" id="totalGross">€0.00</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Total Discount</span>
+            <span class="summary-value" id="totalDiscount">€0.00</span>
+        </div>
+    </div>
+</section>
+
+<!-- Document Attachments (only shown after Z-Report is saved) -->
+@if (isEdit)
+{
+    <section class="glass card-pad" style="margin-top:24px;">
+        @await Component.InvokeAsync("AttachmentPanel", new { entityType = "RevenueSummary", entityId = Model.Id })
+    </section>
+}
+
+<!-- Bottom spacer for sticky action bar -->
+<div style="height:80px;"></div>
+
+<!-- Sticky Action Bar -->
+@if (!isLocked)
+{
+    <div class="sticky-action-bar">
+        <div class="sticky-action-bar__inner">
+            <a href="/ZReport/Index" class="btn btn-secondary">Cancel</a>
+            <button type="button" class="btn btn-primary" onclick="submitZReport()">@(isEdit ? "Save Z-Report" : "Create Z-Report")</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="sticky-action-bar">
+        <div class="sticky-action-bar__inner">
+            <a href="/ZReport/Index" class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .sticky-action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: #d6e6f0;
+        border-top: 1.5px solid rgba(13,94,166,.15);
+        box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+        padding: 14px 32px;
+    }
+    .sticky-action-bar__inner {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+    }
+    .field-hint-icon {
+        display: inline-flex;
+        cursor: help;
+        opacity: 0.7;
+        transition: opacity .15s;
+    }
+    .field-hint-icon:hover {
+        opacity: 1;
+    }
+    .vat-line-row {
+        display: grid;
+        grid-template-columns: 100px 1fr 1fr 1fr 1fr 1fr 44px;
+        gap: 12px;
+        align-items: flex-end;
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(13,94,166,.06);
+    }
+    .vat-line-row:last-child {
+        border-bottom: none;
+    }
+    .vat-line-row .field {
+        margin: 0;
+    }
+    .vat-line-row .field label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--muted);
+        margin-bottom: 4px;
+    }
+    .vat-line-row input {
+        font-size: 14px;
+    }
+    .vat-line-remove {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: none;
+        background: rgba(194,74,74,.08);
+        color: #C24A4A;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: 700;
+        transition: background .15s;
+        margin-bottom: 2px;
+    }
+    .vat-line-remove:hover {
+        background: rgba(194,74,74,.16);
+    }
+    .summary-box {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 14px 18px;
+        border-radius: 14px;
+        background: rgba(13,94,166,.03);
+        border: 1px solid rgba(13,94,166,.06);
+    }
+    .summary-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--muted);
+    }
+    .summary-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #1a2b3c;
+    }
+    .summary-value--bold {
+        font-size: 22px;
+        color: #0D5EA6;
+    }
+
+    @@media (max-width: 800px) {
+        .vat-line-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .vat-line-remove {
+            grid-column: span 2;
+            width: 100%;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        var lineCounter = 0;
+        var existingLines = @Html.Raw(isEdit && existingLines != null
+            ? System.Text.Json.JsonSerializer.Serialize(existingLines.Select(l => new {
+                l.VatRate,
+                l.NetAmount,
+                l.VatAmount,
+                l.DiscountAmount,
+                l.Description
+            }))
+            : "[]");
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            if (existingLines.length > 0) {
+                existingLines.forEach(function (line) {
+                    addLine(line.VatRate, line.NetAmount, line.VatAmount, line.DiscountAmount, line.Description);
+                });
+            }
+            updateVisibility();
+            recalculateTotals();
+        });
+
+        function addLine(vatRate, netAmount, vatAmount, discountAmount, description) {
+            lineCounter++;
+            var idx = lineCounter;
+            var container = document.getElementById('vatLinesContainer');
+
+            var row = document.createElement('div');
+            row.className = 'vat-line-row';
+            row.id = 'vat-line-' + idx;
+            row.innerHTML =
+                '<div class="field"><label>VAT Rate %</label><input type="number" step="0.01" min="0" max="100" id="vatRate_' + idx + '" placeholder="5.00" oninput="recalculateTotals()" value="' + (vatRate != null ? vatRate : '') + '" /></div>' +
+                '<div class="field"><label>Net Amount</label><input type="number" step="0.01" min="0" id="netAmount_' + idx + '" placeholder="0.00" oninput="recalculateTotals()" value="' + (netAmount != null ? netAmount : '') + '" /></div>' +
+                '<div class="field"><label>VAT Amount</label><input type="number" step="0.01" min="0" id="vatAmount_' + idx + '" placeholder="0.00" oninput="recalculateTotals()" value="' + (vatAmount != null ? vatAmount : '') + '" /></div>' +
+                '<div class="field"><label>Total</label><input type="text" id="lineTotal_' + idx + '" readonly style="background:#f8fafc;font-weight:700;" value="0.00" /></div>' +
+                '<div class="field"><label>Discount</label><input type="number" step="0.01" min="0" id="discount_' + idx + '" placeholder="0.00" oninput="recalculateTotals()" value="' + (discountAmount != null ? discountAmount : '') + '" /></div>' +
+                '<div class="field"><label>Description</label><input type="text" id="desc_' + idx + '" placeholder="Optional" maxlength="200" value="' + (description != null ? description : '') + '" /></div>' +
+                '<button type="button" class="vat-line-remove" onclick="removeLine(' + idx + ')" title="Remove line">&times;</button>';
+
+            container.appendChild(row);
+            updateVisibility();
+            recalculateTotals();
+        }
+
+        function removeLine(idx) {
+            var row = document.getElementById('vat-line-' + idx);
+            if (row) row.remove();
+            updateVisibility();
+            recalculateTotals();
+        }
+
+        function updateVisibility() {
+            var container = document.getElementById('vatLinesContainer');
+            var msg = document.getElementById('noLinesMessage');
+            if (container.children.length === 0) {
+                msg.style.display = 'block';
+            } else {
+                msg.style.display = 'none';
+            }
+        }
+
+        function recalculateTotals() {
+            var container = document.getElementById('vatLinesContainer');
+            var rows = container.querySelectorAll('.vat-line-row');
+            var totalNet = 0, totalVat = 0, totalGross = 0, totalDiscount = 0;
+
+            rows.forEach(function (row) {
+                var idx = row.id.replace('vat-line-', '');
+                var net = parseFloat(document.getElementById('netAmount_' + idx)?.value) || 0;
+                var vat = parseFloat(document.getElementById('vatAmount_' + idx)?.value) || 0;
+                var disc = parseFloat(document.getElementById('discount_' + idx)?.value) || 0;
+                var lineTotal = net + vat;
+
+                var lineTotalField = document.getElementById('lineTotal_' + idx);
+                if (lineTotalField) lineTotalField.value = lineTotal.toFixed(2);
+
+                totalNet += net;
+                totalVat += vat;
+                totalGross += lineTotal;
+                totalDiscount += disc;
+            });
+
+            document.getElementById('totalNet').textContent = '€' + totalNet.toFixed(2);
+            document.getElementById('totalVat').textContent = '€' + totalVat.toFixed(2);
+            document.getElementById('totalGross').textContent = '€' + totalGross.toFixed(2);
+            document.getElementById('totalDiscount').textContent = '€' + totalDiscount.toFixed(2);
+        }
+
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        function showFieldInfo(field) {
+            var info = {
+                reference: {
+                    title: 'Internal Reference',
+                    html: '<p style="text-align:left;line-height:1.7;">A short identifier used for internal tracking or categorisation.</p>' +
+                          '<p style="text-align:left;line-height:1.7;margin-top:12px;"><strong>Examples:</strong></p>' +
+                          '<ul style="text-align:left;line-height:2;margin-top:4px;padding-left:20px;">' +
+                          '<li>Batch code (e.g. <code>BATCH-072026</code>)</li>' +
+                          '<li>Accounting reference number</li>' +
+                          '<li>Filing tag (e.g. <code>Q2-2026</code>, <code>AUDIT-REVIEWED</code>)</li>' +
+                          '</ul>' +
+                          '<p style="text-align:left;line-height:1.7;margin-top:12px;color:#5E7385;font-size:13px;">This field does not affect calculations. It is optional and for organisational purposes only.</p>'
+                },
+                notes: {
+                    title: 'Additional Notes',
+                    html: '<p style="text-align:left;line-height:1.7;">Free-text context about this Z-Report for audit trail and human reference.</p>' +
+                          '<p style="text-align:left;line-height:1.7;margin-top:12px;"><strong>Examples:</strong></p>' +
+                          '<ul style="text-align:left;line-height:2;margin-top:4px;padding-left:20px;">' +
+                          '<li>Till malfunction — 2 hours of sales missing</li>' +
+                          '<li>Includes staff discount corrections</li>' +
+                          '<li>Exported late due to POS offline</li>' +
+                          '<li>Monthly consolidation for November</li>' +
+                          '</ul>' +
+                          '<p style="text-align:left;line-height:1.7;margin-top:12px;color:#5E7385;font-size:13px;">This field does not affect calculations. Use it to document any context that may be useful during audits or reviews.</p>'
+                }
+            };
+            var data = info[field];
+            if (!data) return;
+            Swal.fire({
+                title: data.title,
+                html: data.html,
+                icon: 'info',
+                confirmButtonColor: '#0D5EA6',
+                confirmButtonText: 'Got it'
+            });
+        }
+
+        function collectFormData() {
+            var container = document.getElementById('vatLinesContainer');
+            var rows = container.querySelectorAll('.vat-line-row');
+            var lines = [];
+
+            rows.forEach(function (row) {
+                var idx = row.id.replace('vat-line-', '');
+                var vatRate = parseFloat(document.getElementById('vatRate_' + idx)?.value) || 0;
+                var netAmount = parseFloat(document.getElementById('netAmount_' + idx)?.value) || 0;
+                var vatAmount = parseFloat(document.getElementById('vatAmount_' + idx)?.value) || 0;
+                var discountAmount = parseFloat(document.getElementById('discount_' + idx)?.value) || 0;
+                var description = document.getElementById('desc_' + idx)?.value?.trim() || null;
+
+                lines.push({
+                    vatRate: vatRate,
+                    netAmount: netAmount,
+                    vatAmount: vatAmount,
+                    discountAmount: discountAmount > 0 ? discountAmount : null,
+                    description: description
+                });
+            });
+
+            var summaryDate = document.getElementById('summaryDate').value;
+            var periodEndDate = document.getElementById('periodEndDate').value || null;
+            var exportedAtUtcVal = document.getElementById('exportedAtUtc').value || null;
+            var transactionCountVal = document.getElementById('transactionCount').value;
+
+            return {
+                id: parseInt(document.getElementById('zReportId').value) || 0,
+                revenueSourceId: parseInt(document.getElementById('revenueSourceId').value) || 0,
+                summaryDate: summaryDate,
+                periodEndDate: periodEndDate,
+                zReportNumber: document.getElementById('zReportNumber').value.trim() || null,
+                exportedAtUtc: exportedAtUtcVal,
+                transactionCount: transactionCountVal ? parseInt(transactionCountVal) : null,
+                vatSubmissionPeriodId: parseInt(document.getElementById('vatPeriodId').value) || null,
+                reference: document.getElementById('reference').value.trim() || null,
+                notes: document.getElementById('notes').value.trim() || null,
+                totalDiscount: null, // Computed server-side from lines
+                lines: lines
+            };
+        }
+
+        async function submitZReport() {
+            var data = collectFormData();
+
+            // Client-side validation
+            if (!data.revenueSourceId) {
+                Swal.fire({ title: 'Validation', text: 'Please select a Revenue Source.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            if (!data.summaryDate) {
+                Swal.fire({ title: 'Validation', text: 'Period Start date is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            if (data.lines.length === 0) {
+                Swal.fire({ title: 'Validation', text: 'At least one VAT line is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var isEdit = data.id > 0;
+            var url = isEdit ? '/ZReport/AxPostUpdateZReport' : '/ZReport/AxPostCreateZReport';
+
+            BlockUI.show(isEdit ? 'Saving changes...' : 'Creating Z-Report...');
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify(data)
+                });
+                var result = await response.json();
+                BlockUI.hide();
+
+                if (result.success) {
+                    await Swal.fire({
+                        title: isEdit ? 'Updated!' : 'Created!',
+                        text: result.message,
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.href = '/ZReport/Index';
+                } else {
+                    Swal.fire({ title: 'Error', text: result.message || 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

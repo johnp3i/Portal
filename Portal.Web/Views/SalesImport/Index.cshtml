@@ -1,0 +1,114 @@
+@{
+    ViewData["Title"] = "Import Sales Records";
+    var sources = (List<Portal.Infrastructure.Entities.RevenueSource>)ViewData["RevenueSources"]!;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Records</div>
+        <h1 class="topbar-heading">Import Sales Records</h1>
+        <p class="topbar-subtitle">Upload transaction-level POS sales data from a CSV file.</p>
+    </div>
+    <div style="display:flex;gap:12px;">
+        <a href="/SalesImport/Records" class="btn btn-outline">View Records</a>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:4px 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div style="font-size:13px;color:#4a6278;line-height:1.7;">
+            <strong style="color:#0B1B28;">CSV Format:</strong> One row per transaction. Customer ID is optional (FK to existing customers).
+            <br/>
+            <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">Date, Invoice No, Net, VAT, Total, Description, Payment Method, Customer ID</code>
+        </div>
+    </div>
+</section>
+
+<section class="glass card-pad">
+    <form id="importForm" onsubmit="return false;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+            <div class="field">
+                <label for="revenueSourceId">Revenue Source (optional)</label>
+                <select id="revenueSourceId">
+                    <option value="">— No source (general) —</option>
+                    @foreach (var source in sources)
+                    {
+                        <option value="@source.Id">@source.Name</option>
+                    }
+                </select>
+            </div>
+            <div></div>
+        </div>
+
+        <div style="margin-top:22px;">
+            <label style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:8px;">Upload File *</label>
+            <div id="dropArea" class="upload-drop-area">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="opacity:.4;">
+                    <path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p style="margin:8px 0 4px;font-size:14px;color:#334155;">Drag & drop or <label for="importFile" style="color:#0D5EA6;font-weight:600;cursor:pointer;text-decoration:underline;">browse</label></p>
+                <span style="font-size:12px;color:#94a3b8;">CSV — Max 5 MB, 500 rows</span>
+                <input type="file" id="importFile" accept=".csv" style="display:none;" />
+            </div>
+            <div id="selectedFile" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;background:#EEF4F8;font-size:13px;font-weight:600;color:#1e293b;"></div>
+        </div>
+
+        <div style="margin-top:22px;">
+            <button type="button" id="btnUpload" class="btn btn-primary" disabled onclick="uploadFile()">Upload & Preview</button>
+        </div>
+    </form>
+</section>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .upload-drop-area { border:2px dashed #cbd5e1;border-radius:12px;padding:32px;text-align:center;transition:border-color .2s,background .2s;cursor:pointer; }
+    .upload-drop-area.drag-over { border-color:#0D5EA6;background:rgba(13,94,166,.04); }
+</style>
+
+@section Scripts {
+<script>
+    var selectedFile = null;
+    function getAntiForgeryToken() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+
+    var dropArea = document.getElementById('dropArea');
+    var fileInput = document.getElementById('importFile');
+    dropArea.addEventListener('click', function() { fileInput.click(); });
+    ['dragenter','dragover'].forEach(function(e) { dropArea.addEventListener(e, function(ev) { ev.preventDefault(); dropArea.classList.add('drag-over'); }); });
+    ['dragleave','drop'].forEach(function(e) { dropArea.addEventListener(e, function(ev) { ev.preventDefault(); dropArea.classList.remove('drag-over'); }); });
+    dropArea.addEventListener('drop', function(e) { if (e.dataTransfer.files.length > 0) setFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', function() { if (this.files.length > 0) setFile(this.files[0]); });
+
+    function setFile(file) {
+        selectedFile = file;
+        document.getElementById('selectedFile').textContent = file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+        document.getElementById('selectedFile').style.display = 'block';
+        document.getElementById('btnUpload').disabled = false;
+    }
+
+    async function uploadFile() {
+        if (!selectedFile) return;
+        var formData = new FormData();
+        formData.append('file', selectedFile);
+        var sourceId = document.getElementById('revenueSourceId').value;
+        if (sourceId) formData.append('revenueSourceId', sourceId);
+
+        BlockUI.show('Parsing file...');
+        try {
+            var response = await fetch('/SalesImport/AxPostParseFile', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) { window.location = '/SalesImport/Preview'; }
+            else { Swal.fire({ icon:'error', title:'Upload Failed', text:data.message, confirmButtonColor:'#0D5EA6' }); }
+        } catch(e) {
+            BlockUI.hide();
+            Swal.fire({ icon:'error', title:'Error', text:'An unexpected error occurred.', confirmButtonColor:'#0D5EA6' });
+        }
+    }
+</script>
+}

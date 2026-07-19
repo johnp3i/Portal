@@ -1,0 +1,411 @@
+@model Portal.Infrastructure.Models.PagedResult<Portal.Infrastructure.Entities.RevenueSummary>
+@{
+    ViewData["Title"] = "Z-Reports";
+    var sources = (List<Portal.Infrastructure.Entities.RevenueSource>)ViewData["RevenueSources"]!;
+    var vatPeriods = (List<Portal.Infrastructure.Entities.VatSubmissionPeriod>)ViewData["VatPeriods"]!;
+    var filterSourceId = ViewData["SourceId"] as int?;
+    var filterDateFrom = ViewData["DateFrom"] as string;
+    var filterDateTo = ViewData["DateTo"] as string;
+    var filterZNumber = ViewData["ZNumber"] as string;
+    var dateMode = (ViewData["DateMode"] as string) ?? "period";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Z-Reports</div>
+        <h1 class="topbar-heading">Z-Reports</h1>
+        <p class="topbar-subtitle">Revenue summaries from your POS systems.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/ZReport/Entry" class="btn btn-primary">New Z-Report</a>
+    </div>
+</div>
+
+@if (!sources.Any())
+{
+    <section class="glass card-pad" style="margin-bottom:22px;border-left:4px solid #C8912E;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div style="font-size:14px;color:#0B1B28;line-height:1.6;">
+                <strong>No revenue sources configured.</strong>
+                <span style="color:#5E7385;">You need at least one active revenue source before you can record Z-Reports.</span>
+                <a href="/ZReport/Sources" style="display:inline-block;margin-top:6px;color:#0D5EA6;font-weight:700;text-decoration:none;">Go to Revenue Sources &rarr;</a>
+            </div>
+        </div>
+    </section>
+}
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form id="filterForm" method="get" action="/ZReport/Index">
+        <input type="hidden" id="dateModeInput" name="dateMode" value="@dateMode" />
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:180px;">
+                <label for="sourceId">Revenue Source</label>
+                <select id="sourceId" name="sourceId">
+                    <option value="">All Sources</option>
+                    @foreach (var source in sources)
+                    {
+                        var isSelected = filterSourceId == source.Id;
+                        if (isSelected)
+                        {
+                            <option value="@source.Id" selected>@source.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@source.Id">@source.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateFrom">From Date</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="@filterDateFrom" />
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateTo">To Date</label>
+                <input type="date" id="dateTo" name="dateTo" value="@filterDateTo" />
+            </div>
+            <div class="field" style="min-width:140px;">
+                <label for="zNumber">Z-Report #</label>
+                <input type="text" id="zNumber" name="zNumber" value="@filterZNumber" placeholder="Search..." maxlength="50" />
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="/ZReport/Index" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Filter dates by:</span>
+            <div class="date-mode-toggle">
+                <button type="button" class="date-mode-btn @(dateMode == "period" ? "active" : "")" onclick="setDateMode('period')">Report Period</button>
+                <button type="button" class="date-mode-btn @(dateMode == "created" ? "active" : "")" onclick="setDateMode('created')">Date Created</button>
+            </div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;margin-right:4px;">Quick:</span>
+            <button type="button" class="period-shortcut" onclick="setQuickPeriod('this_month')">This Month</button>
+            <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_month')">Last Month</button>
+            <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_3')">Last 3 Months</button>
+            <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_6')">Last 6 Months</button>
+            <button type="button" class="period-shortcut" onclick="setQuickPeriod('this_year')">This Year</button>
+            <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_year')">Last Year</button>
+            <button type="button" class="period-shortcut" onclick="setQuickPeriod('all')">All Time</button>
+        </div>
+    </form>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    @if (Model.Items.Any())
+    {
+        <div class="table-responsive index-table">
+            <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Z-Report #</th>
+                        <th>Source</th>
+                        <th>Period</th>
+                        <th style="text-align:right;">Net</th>
+                        <th style="text-align:right;">VAT</th>
+                        <th style="text-align:right;">Total</th>
+                        <th>VAT Period</th>
+                        <th>Files</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var sourceName = sources.FirstOrDefault(s => s.Id == item.RevenueSourceId)?.Name ?? "Unknown";
+                        var periodDisplay = item.PeriodEndDate.HasValue && item.PeriodEndDate.Value != item.SummaryDate
+                            ? $"{item.SummaryDate:dd/MM/yyyy} – {item.PeriodEndDate:dd/MM/yyyy}"
+                            : item.SummaryDate.ToString("dd/MM/yyyy");
+                        var isCancelled = !item.IsActive;
+                        var rowStyle = isCancelled ? "vertical-align:middle;opacity:0.5;text-decoration:line-through;" : "vertical-align:middle;";
+                        <tr style="@rowStyle">
+                            <td><strong>@(item.ZReportNumber ?? "—")</strong></td>
+                            <td>@sourceName</td>
+                            <td>@periodDisplay</td>
+                            <td style="text-align:right;font-variant-numeric:tabular-nums;">€@item.TotalNet.ToString("N2")</td>
+                            <td style="text-align:right;font-variant-numeric:tabular-nums;">€@item.TotalVat.ToString("N2")</td>
+                            <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">€@item.TotalGross.ToString("N2")</td>
+                            <td data-mobile="hide">
+                                @if (item.VatSubmissionPeriodId.HasValue)
+                                {
+                                    var periodLabel = vatPeriods.FirstOrDefault(p => p.Id == item.VatSubmissionPeriodId)?.PeriodLabel ?? "Assigned";
+                                    <span class="pill pill-green" style="font-size:11px;">@periodLabel</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size:12px;color:#999;">Unassigned</span>
+                                }
+                            </td>
+                            <td data-mobile="hide" style="text-decoration:none;cursor:pointer;" onclick="showAttachmentModal(@item.Id, '@((item.ZReportNumber ?? "Z-Report").Replace("'", "\\'"))')">
+                                @await Component.InvokeAsync("AttachmentCount", new { entityType = "RevenueSummary", entityId = item.Id })
+                            </td>
+                            <td data-mobile="hide" style="text-decoration:none;">
+                                @if (isCancelled)
+                                {
+                                    <span class="pill" style="background:#fdeaea;color:#C24A4A;font-weight:700;">Cancelled</span>
+                                }
+                                else
+                                {
+                                    @item.CreatedAtUtc.ToString("dd MMM yyyy")
+                                }
+                            </td>
+                            <td data-mobile="hide" style="white-space:nowrap;text-decoration:none;">
+                                @if (isCancelled)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--success" onclick="confirmRestore(@item.Id, '@((item.ZReportNumber ?? "Z-Report").Replace("'", "\\'"))')">Restore</button>
+                                }
+                                else
+                                {
+                                    <a href="/ZReport/Entry?id=@item.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                    <button type="button" class="tbl-action tbl-action--danger" onclick="confirmCancel(@item.Id, '@((item.ZReportNumber ?? "Z-Report").Replace("'", "\\'"))')">Cancel</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_PagingControl")
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No Z-Reports found.</p>
+            @if (filterSourceId.HasValue || !string.IsNullOrEmpty(filterDateFrom) || !string.IsNullOrEmpty(filterDateTo) || !string.IsNullOrEmpty(filterZNumber))
+            {
+                <p class="muted" style="font-size:14px;margin-top:8px;">Try adjusting your filters or <a href="/ZReport/Index">clear all filters</a>.</p>
+            }
+            else
+            {
+                <p class="muted" style="font-size:14px;margin-top:8px;">Create your first Z-Report to start recording POS revenue.</p>
+                <a href="/ZReport/Entry" class="btn btn-primary" style="margin-top:16px;">New Z-Report</a>
+            }
+        </div>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <style>
+        .period-shortcut {
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 1.5px solid rgba(13,94,166,.12);
+            background: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: #5E7385;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .period-shortcut:hover {
+            background: rgba(13,94,166,.06);
+            border-color: rgba(13,94,166,.25);
+            color: #0D5EA6;
+        }
+        .period-shortcut.active {
+            background: rgba(13,94,166,.08);
+            border-color: #0D5EA6;
+            color: #0D5EA6;
+        }
+        .date-mode-toggle {
+            display: inline-flex;
+            border-radius: 8px;
+            border: 1.5px solid rgba(13,94,166,.15);
+            overflow: hidden;
+        }
+        .date-mode-btn {
+            padding: 5px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: #5E7385;
+            background: #fff;
+            border: none;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .date-mode-btn:not(:last-child) {
+            border-right: 1.5px solid rgba(13,94,166,.15);
+        }
+        .date-mode-btn:hover {
+            background: rgba(13,94,166,.04);
+            color: #0D5EA6;
+        }
+        .date-mode-btn.active {
+            background: #0D5EA6;
+            color: #fff;
+        }
+        .date-mode-btn.active:hover {
+            background: #0B4F8C;
+        }
+    </style>
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        async function confirmCancel(id, label) {
+            var result = await Swal.fire({
+                title: 'Cancel Z-Report',
+                text: 'Are you sure you want to cancel Z-Report "' + label + '"? It will be marked as cancelled but can be restored later.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, cancel it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            var formData = new FormData();
+            formData.append('id', id);
+
+            BlockUI.show('Cancelling Z-Report...');
+            try {
+                var response = await fetch('/ZReport/AxPostDeleteZReport', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({ title: 'Cancelled!', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function confirmRestore(id, label) {
+            var result = await Swal.fire({
+                title: 'Restore Z-Report',
+                text: 'Restore Z-Report "' + label + '"? It will become active again and included in VAT calculations.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, restore it'
+            });
+
+            if (!result.isConfirmed) return;
+
+            var formData = new FormData();
+            formData.append('id', id);
+
+            BlockUI.show('Restoring Z-Report...');
+            try {
+                var response = await fetch('/ZReport/AxPostRestoreZReport', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({ title: 'Restored!', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function setQuickPeriod(preset) {
+            var now = new Date();
+            var from, to;
+            switch (preset) {
+                case 'this_month': from = new Date(now.getFullYear(), now.getMonth(), 1); to = now; break;
+                case 'last_month': from = new Date(now.getFullYear(), now.getMonth() - 1, 1); to = new Date(now.getFullYear(), now.getMonth(), 0); break;
+                case 'last_3': from = new Date(now.getFullYear(), now.getMonth() - 3, 1); to = now; break;
+                case 'last_6': from = new Date(now.getFullYear(), now.getMonth() - 6, 1); to = now; break;
+                case 'this_year': from = new Date(now.getFullYear(), 0, 1); to = now; break;
+                case 'last_year': from = new Date(now.getFullYear() - 1, 0, 1); to = new Date(now.getFullYear() - 1, 11, 31); break;
+                case 'all': from = null; to = null; break;
+            }
+            document.getElementById('dateFrom').value = from ? formatDateISO(from) : '';
+            document.getElementById('dateTo').value = to ? formatDateISO(to) : '';
+            document.querySelectorAll('.period-shortcut').forEach(function(b) { b.classList.remove('active'); });
+            event.target.classList.add('active');
+            document.getElementById('filterForm').submit();
+        }
+
+        function formatDateISO(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function setDateMode(mode) {
+            document.getElementById('dateModeInput').value = mode;
+            document.querySelectorAll('.date-mode-btn').forEach(function(b) { b.classList.remove('active'); });
+            event.target.classList.add('active');
+            // If dates are already set, re-submit to apply with new mode
+            var from = document.getElementById('dateFrom').value;
+            var to = document.getElementById('dateTo').value;
+            if (from || to) {
+                document.getElementById('filterForm').submit();
+            }
+        }
+
+        async function showAttachmentModal(entityId, label) {
+            BlockUI.show('Loading...');
+            try {
+                var response = await fetch('/Attachment/AxGetList?entityType=RevenueSummary&entityId=' + entityId);
+                var result = await response.json();
+                BlockUI.hide();
+
+                if (!result.success || !result.data || result.data.length === 0) {
+                    Swal.fire({ title: 'No Attachments', text: 'No files attached to this Z-Report.', icon: 'info', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                var files = result.data;
+                var html = '<div style="text-align:left;">';
+                files.forEach(function(file) {
+                    var sizeKb = (file.fileSizeBytes / 1024).toFixed(1);
+                    var uploadDate = new Date(file.createdAtUtc);
+                    if (!file.createdAtUtc.endsWith('Z')) uploadDate = new Date(file.createdAtUtc + 'Z');
+                    var dateStr = uploadDate.toLocaleDateString() + ' ' + uploadDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                    html += '<div style="padding:12px 0;border-bottom:1px solid #f0f4f7;display:flex;justify-content:space-between;align-items:center;gap:12px;">';
+                    html += '<div style="min-width:0;">';
+                    html += '<div style="font-weight:600;font-size:14px;color:#0B1B28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + file.originalFileName + '</div>';
+                    html += '<div style="font-size:12px;color:#5E7385;margin-top:3px;">' + sizeKb + ' KB &middot; ' + dateStr + ' &middot; ' + file.uploadedByDisplayName + '</div>';
+                    html += '</div>';
+                    html += '<a href="/Attachment/AxGetDownload?id=' + file.id + '" class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;flex-shrink:0;">Download</a>';
+                    html += '</div>';
+                });
+                html += '</div>';
+
+                Swal.fire({
+                    title: 'Attachments \u2014 Z-Report ' + label,
+                    html: html,
+                    width: 540,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Close',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'Failed to load attachments.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

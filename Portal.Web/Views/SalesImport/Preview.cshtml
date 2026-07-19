@@ -1,0 +1,120 @@
+@model Portal.Infrastructure.Services.SalesImportPreview
+@{
+    ViewData["Title"] = "Preview Sales Import";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Records</div>
+        <h1 class="topbar-heading">Import Preview</h1>
+        <p class="topbar-subtitle">Review @Model.TotalRows record(s) from <strong>@Model.FileName</strong></p>
+    </div>
+    <div><a href="/SalesImport" class="btn btn-secondary">Cancel & Upload New</a></div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;">
+        <div class="summary-box"><span class="summary-label">Total Rows</span><span class="summary-value">@Model.TotalRows</span></div>
+        <div class="summary-box"><span class="summary-label">Valid</span><span class="summary-value" style="color:#129867;">@Model.ValidRows</span></div>
+        <div class="summary-box"><span class="summary-label">Duplicates</span><span class="summary-value" style="color:@(Model.DuplicateCount > 0 ? "#C8912E" : "#129867");">@Model.DuplicateCount</span></div>
+        <div class="summary-box"><span class="summary-label">Source</span><span class="summary-value" style="font-size:14px;">@(Model.RevenueSourceName ?? "General")</span></div>
+        <div class="summary-box"><span class="summary-label">Batch Total</span><span class="summary-value summary-value--bold">€@Model.BatchTotal.ToString("N2")</span></div>
+    </div>
+</section>
+
+<section class="glass card-pad">
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th style="text-align:right;">Net</th>
+                    <th style="text-align:right;">VAT</th>
+                    <th style="text-align:right;">Total</th>
+                    <th>Description</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Rows.Count; i++)
+                {
+                    var row = Model.Rows[i];
+                    var rowStyle = !row.IsValid ? "background:rgba(194,74,74,.04);" : row.IsDuplicate ? "background:rgba(200,145,46,.06);" : "";
+                    <tr style="@rowStyle">
+                        <td>@(i + 1)</td>
+                        <td>@(row.TransactionDate != default ? row.TransactionDate.ToString("dd/MM/yyyy") : "—")</td>
+                        <td>@(row.InvoiceNumber ?? "—")</td>
+                        <td style="text-align:right;">€@row.NetAmount.ToString("N2")</td>
+                        <td style="text-align:right;">€@row.VatAmount.ToString("N2")</td>
+                        <td style="text-align:right;font-weight:700;">€@row.TotalAmount.ToString("N2")</td>
+                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(row.Description ?? "—")</td>
+                        <td>@(row.PaymentMethod ?? "—")</td>
+                        <td>
+                            @if (!row.IsValid)
+                            {
+                                <span class="pill" style="background:#fdeaea;color:#C24A4A;font-weight:700;font-size:11px;" title="@row.ValidationError">Invalid</span>
+                            }
+                            else if (row.IsDuplicate)
+                            {
+                                <span class="pill" style="background:#fef3cd;color:#856404;font-weight:700;font-size:11px;">Duplicate</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-green" style="font-size:11px;">Ready</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div style="height:80px;"></div>
+<div class="sticky-action-bar">
+    <div class="sticky-action-bar__inner">
+        <a href="/SalesImport" class="btn btn-secondary">Cancel</a>
+        @if (Model.ValidRows > 0)
+        {
+            <button type="button" class="btn btn-primary" onclick="confirmImport()">Confirm Import (@Model.ValidRows records)</button>
+        }
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .summary-box { display:flex;flex-direction:column;gap:4px;padding:14px 18px;border-radius:14px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06); }
+    .summary-label { font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted); }
+    .summary-value { font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:#1a2b3c; }
+    .summary-value--bold { color:#0D5EA6; }
+    .sticky-action-bar { position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#d6e6f0;border-top:1.5px solid rgba(13,94,166,.15);box-shadow:0 -4px 20px rgba(0,0,0,.08);padding:14px 32px; }
+    .sticky-action-bar__inner { display:flex;justify-content:flex-end;align-items:center;gap:12px; }
+</style>
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+
+    async function confirmImport() {
+        var r = await Swal.fire({ title:'Confirm Import', text:'Import @Model.ValidRows sales record(s)?', icon:'question', showCancelButton:true, confirmButtonColor:'#0D5EA6', confirmButtonText:'Yes, import' });
+        if (!r.isConfirmed) return;
+
+        BlockUI.show('Importing records...');
+        try {
+            var response = await fetch('/SalesImport/AxPostConfirmImport', {
+                method:'POST',
+                headers:{ 'Content-Type':'application/json', 'RequestVerificationToken':getAntiForgeryToken() },
+                body: JSON.stringify({ excludeRowIndexes: [] })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) { await Swal.fire({ title:'Done!', text:data.message, icon:'success', confirmButtonColor:'#0D5EA6' }); window.location='/SalesImport/Records'; }
+            else { Swal.fire({ icon:'error', title:'Failed', text:data.message, confirmButtonColor:'#0D5EA6' }); }
+        } catch(e) { BlockUI.hide(); Swal.fire({ icon:'error', title:'Error', text:'An unexpected error occurred.', confirmButtonColor:'#0D5EA6' }); }
+    }
+</script>
+}

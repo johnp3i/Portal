@@ -377,3 +377,39 @@ This means the same POS that generates Kennedy's Cafe Z-reports could eventually
 1. VAT Rate on ExternalSalesRecord: Should individual sales records track VAT rate? Or just total VAT amount? (For now: just total. Can add VatRate column later if needed.)
 2. Discount allocation: When importing Z-reports, should discount be split proportionally across VAT lines? Or kept as a single total on the header? (For now: single total on header, optional per-line.)
 3. Z-Report numbering validation: Should we enforce sequential Z-Report numbers? (Probably not — some POS systems reset numbering. Just use it for dedup, not validation.)
+
+
+---
+
+## Additional Requirements (from review)
+
+### 1. Z-Report Feature Toggle on MyBusiness Page
+
+A toggle on the MyBusiness settings page enables/disables Z-Report functionality for the business.
+
+New column on BusinessProfile:
+```sql
+ALTER TABLE [dbo].[BusinessProfile]
+ADD [IsZReportEnabled] BIT NOT NULL DEFAULT 0;
+```
+
+Behaviour when IsZReportEnabled = false:
+- "Z-Reports" nav item is hidden from the Revenue menu
+- Revenue dashboard only shows Portal-issued invoices
+- VAT reports do not include Z-Report/External Revenue sections (no empty sections)
+- Revenue Source management is hidden
+
+Behaviour when IsZReportEnabled = true:
+- "Z-Reports" nav item appears under Revenue
+- Revenue dashboard aggregates Portal invoices + Z-Reports
+- VAT reports include the "External Revenue (Z-Reports)" section
+- Revenue Source management is accessible
+- If no Revenue Sources exist, prompt user to create their first one
+
+This prevents clutter for businesses that don't use POS systems while making the feature discoverable for those that do.
+
+### 2. Document Attachments on Z-Report Entries
+
+Each RevenueSummary record supports file attachments (PDF, image) via the existing Document Attachments feature. The attachment links via EntityType = "RevenueSummary" and EntityId = RevenueSummary.Id.
+
+Purpose: Store the original Z-report printout as audit evidence for VAT compliance. The accountant or tax auditor can view the source document directly from the platform.

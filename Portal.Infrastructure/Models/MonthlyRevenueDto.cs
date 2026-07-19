@@ -9,4 +9,5 @@ public class MonthlyRevenueDto
     public int Month { get; set; }
     public string Label { get; set; } = null!;
     public decimal Amount { get; set; }
+    public bool IncludesPosRevenue { get; set; }
 }

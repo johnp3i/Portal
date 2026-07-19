@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revenue Sources — MyChair Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --bg: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text: #1a2b3c;
+            --text-muted: #5a6a7a;
+            --border: #e2e8f0;
+            --card-radius: 20px;
+            --shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .glass.card-pad {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow);
+            padding: 28px 32px;
+        }
+
+        /* Topbar */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+        }
+
+        .topbar-left {}
+
+        .back-link {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .back-link:hover {
+            opacity: 0.7;
+        }
+
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .topbar h1 {
+            font-size: 42px;
+            line-height: 1.1;
+            margin-bottom: 6px;
+        }
+
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .topbar-right {
+            padding-top: 24px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #0a4d8a;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1.5px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Table */
+        .sources-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sources-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1.5px solid var(--border);
+        }
+
+        .sources-table tbody td {
+            padding: 16px 14px;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f4f8;
+            vertical-align: middle;
+        }
+
+        .sources-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .sources-table tbody tr:hover {
+            background: #f9fbfd;
+        }
+
+        .source-name {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .source-desc {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Status pills */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pill-active {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--green);
+        }
+
+        .pill-inactive {
+            background: rgba(90, 106, 122, 0.1);
+            color: var(--text-muted);
+        }
+
+        .pill-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .pill-active .pill-dot {
+            background: var(--green);
+        }
+
+        .pill-inactive .pill-dot {
+            background: var(--text-muted);
+        }
+
+        /* Actions */
+        .action-link {
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .action-link:hover {
+            opacity: 0.7;
+        }
+
+        .action-edit {
+            color: var(--primary);
+        }
+
+        .action-deactivate {
+            color: var(--red);
+        }
+
+        .action-activate {
+            color: var(--green);
+        }
+
+        .action-separator {
+            color: var(--border);
+            margin: 0 6px;
+        }
+
+        /* Inline Form */
+        .inline-form {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1.5px solid var(--border);
+        }
+
+        .inline-form h3 {
+            font-size: 18px;
+            margin-bottom: 18px;
+        }
+
+        .form-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 480px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .field input,
+        .field textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: #fff;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .field input:focus,
+        .field textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .field input::placeholder,
+        .field textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        /* Info Card */
+        .info-card {
+            background: rgba(87, 184, 232, 0.06);
+            border-radius: var(--card-radius);
+            padding: 24px 28px;
+            margin-top: 24px;
+            border: 1px solid rgba(87, 184, 232, 0.15);
+        }
+
+        .info-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .info-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(87, 184, 232, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .info-card h4 {
+            font-size: 15px;
+            color: var(--text);
+        }
+
+        .info-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 8px;
+        }
+
+        .info-card .future-note {
+            font-size: 13px;
+            color: #8a9bb0;
+            font-style: italic;
+        }
+
+        /* Count badge */
+        .count-badge {
+            font-weight: 700;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .topbar h1 {
+                font-size: 28px;
+            }
+
+            .glass.card-pad {
+                padding: 20px;
+            }
+
+            .sources-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="#" class="back-link">&larr; Back to Z-Reports</a>
+            <div class="eyebrow">REVENUE / SETTINGS</div>
+            <h1>Revenue Sources</h1>
+            <p class="subtitle">Manage your POS devices and sales registers</p>
+        </div>
+        <div class="topbar-right">
+            <button class="btn btn-primary" onclick="toggleForm()">+ New Source</button>
+        </div>
+    </div>
+
+    <!-- Sources Table -->
+    <section class="glass card-pad">
+        <table class="sources-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Z-Reports Count</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="source-name">Main POS</span></td>
+                    <td><span class="source-desc">Primary register — ground floor</span></td>
+                    <td>
+                        <span class="pill pill-active">
+                            <span class="pill-dot"></span>
+                            Active
+                        </span>
+                    </td>
+                    <td><span class="count-badge">245</span></td>
+                    <td>15 Jan 2026</td>
+                    <td>
+                        <a class="action-link action-edit" href="#">Edit</a>
+                        <span class="action-separator">&middot;</span>
+                        <a class="action-link action-deactivate" href="#">Deactivate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="source-name">Bar Register</span></td>
+                    <td><span class="source-desc">Bar area till</span></td>
+                    <td>
+                        <span class="pill pill-active">
+                            <span class="pill-dot"></span>
+                            Active
+                        </span>
+                    </td>
+                    <td><span class="count-badge">89</span></td>
+                    <td>15 Jan 2026</td>
+                    <td>
+                        <a class="action-link action-edit" href="#">Edit</a>
+                        <span class="action-separator">&middot;</span>
+                        <a class="action-link action-deactivate" href="#">Deactivate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="source-name">Terrace POS</span></td>
+                    <td><span class="source-desc">Summer terrace (seasonal)</span></td>
+                    <td>
+                        <span class="pill pill-inactive">
+                            <span class="pill-dot"></span>
+                            Inactive
+                        </span>
+                    </td>
+                    <td><span class="count-badge">12</span></td>
+                    <td>01 May 2026</td>
+                    <td>
+                        <a class="action-link action-edit" href="#">Edit</a>
+                        <span class="action-separator">&middot;</span>
+                        <a class="action-link action-activate" href="#">Activate</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Inline Create/Edit Form -->
+        <div class="inline-form" id="inlineForm" style="display: none;">
+            <h3 id="formTitle">Add Revenue Source</h3>
+            <div class="form-grid">
+                <div class="field">
+                    <label>Name <span style="color: var(--red);">*</span></label>
+                    <input type="text" placeholder="e.g., Main POS, Bar Register" id="sourceName">
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <textarea rows="2" placeholder="Optional description for this device or register..." id="sourceDescription"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary">Save</button>
+                    <button class="btn btn-outline" onclick="toggleForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Info Card -->
+    <div class="info-card">
+        <div class="info-card-header">
+            <div class="info-icon">i</div>
+            <h4>What is a Revenue Source?</h4>
+        </div>
+        <p>A Revenue Source represents a POS device, cash register, or sales channel in your business. Each Z-Report is recorded against a specific source, making it easy to track revenue per device.</p>
+        <p class="future-note">In the future, each source will support an API key for automated Z-Report posting from your POS system.</p>
+    </div>
+
+    <script>
+        function toggleForm() {
+            const form = document.getElementById('inlineForm');
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+                document.getElementById('sourceName').focus();
+            } else {
+                form.style.display = 'none';
+                document.getElementById('sourceName').value = '';
+                document.getElementById('sourceDescription').value = '';
+            }
+        }
+    </script>
+
+</body>
+</html>

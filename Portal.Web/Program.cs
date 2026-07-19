@@ -252,6 +252,18 @@ builder.Services.AddScoped<VatSubmissionRepository>(sp =>
 builder.Services.AddScoped<IVatPeriodGenerationService, VatPeriodGenerationService>();
 builder.Services.AddScoped<IVatSubmissionService, VatSubmissionService>();
 
+// --- Revenue Ingestion (Z-Reports) ---
+builder.Services.AddScoped<RevenueSourceRepository>(sp =>
+    new RevenueSourceRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<RevenueSummaryRepository>(sp =>
+    new RevenueSummaryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IRevenueSourceService, RevenueSourceService>();
+builder.Services.AddScoped<IRevenueSummaryService, RevenueSummaryService>();
+builder.Services.AddScoped<IZReportImportService, ZReportImportService>();
+builder.Services.AddScoped<ExternalSalesRecordRepository>(sp =>
+    new ExternalSalesRecordRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ISalesImportService, SalesImportService>();
+
 // P&L services
 builder.Services.AddScoped<IPnlService, PnlService>();
 builder.Services.AddScoped<IPnlPdfService, PnlPdfService>();

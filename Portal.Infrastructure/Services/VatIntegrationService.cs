@@ -49,6 +49,19 @@ public class VatIntegrationService : IVatIntegrationService
                 && !i.IsDeleted)
             .SumAsync(i => (decimal?)i.TaxAmount) ?? 0m;
 
+        // Z-Report Revenue: add RevenueSummary.TotalVat for Z-Reports assigned to this period
+        var businessProfile = await _dbContext.BusinessProfiles
+            .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+        if (businessProfile?.IsZReportEnabled == true)
+        {
+            var zReportVat = await _dbContext.RevenueSummaries
+                .Where(rs => rs.BusinessId == businessId
+                    && rs.IsActive
+                    && rs.VatSubmissionPeriodId == currentPeriod.Id)
+                .SumAsync(rs => (decimal?)rs.TotalVat) ?? 0m;
+            outputVat += zReportVat;
+        }
+
         // Compute Input VAT: sum of Purchase.VatAmount for non-cancelled purchases
         // with InvoiceDate in current period
         var inputVat = await _dbContext.Purchases
@@ -82,6 +95,10 @@ public class VatIntegrationService : IVatIntegrationService
 
         var result = new List<VatPeriodLiabilityDto>();
 
+        // Load business profile once for Z-Report feature check
+        var businessProfile = await _dbContext.BusinessProfiles
+            .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+
         foreach (var period in periods)
         {
             // Compute Output VAT for this period: sum of Invoice.TaxAmount for fully paid invoices
@@ -91,6 +108,17 @@ public class VatIntegrationService : IVatIntegrationService
                     && i.InvoiceDate <= period.PeriodEndDate
                     && !i.IsDeleted)
                 .SumAsync(i => (decimal?)i.TaxAmount) ?? 0m;
+
+            // Z-Report Revenue: add RevenueSummary.TotalVat for Z-Reports assigned to this period
+            if (businessProfile?.IsZReportEnabled == true)
+            {
+                var zReportVat = await _dbContext.RevenueSummaries
+                    .Where(rs => rs.BusinessId == businessId
+                        && rs.IsActive
+                        && rs.VatSubmissionPeriodId == period.Id)
+                    .SumAsync(rs => (decimal?)rs.TotalVat) ?? 0m;
+                outputVat += zReportVat;
+            }
 
             // Compute Input VAT for this period: sum of Purchase.VatAmount for non-cancelled purchases
             var inputVat = await _dbContext.Purchases

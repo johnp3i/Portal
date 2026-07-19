@@ -38,6 +38,8 @@ public class BusinessProfile
 
     public string CurrencySymbol { get; set; } = "€";
 
+    public bool IsZReportEnabled { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 }

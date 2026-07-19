@@ -29,12 +29,18 @@ public class AttachmentPanelViewComponent : ViewComponent
 
     public async Task<IViewComponentResult> InvokeAsync(string entityType, int entityId)
     {
-        // Check if user's plan includes attachments module
-        var hasAccess = await _planCheckService.IsModuleInPlanAsync(PortalModules.Attachments);
+        // Z-Report attachments are included with the Foundation tier (no separate plan check)
+        var isZReportAttachment = entityType.Equals("RevenueSummary", StringComparison.OrdinalIgnoreCase);
 
-        if (!hasAccess)
+        if (!isZReportAttachment)
         {
-            return View("SoftGate");
+            // Check if user's plan includes attachments module
+            var hasAccess = await _planCheckService.IsModuleInPlanAsync(PortalModules.Attachments);
+
+            if (!hasAccess)
+            {
+                return View("SoftGate");
+            }
         }
 
         var businessId = _currentTenantService.CurrentBusinessId;
@@ -47,7 +53,7 @@ public class AttachmentPanelViewComponent : ViewComponent
             EntityType = entityType,
             EntityId = entityId,
             Attachments = attachments,
-            MaxAttachments = 5,
+            MaxAttachments = isZReportAttachment ? 1 : 5,
             IsReadOnly = false
         };
 

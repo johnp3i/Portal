@@ -131,6 +131,69 @@ public class VatController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> DiagnoseVat(int periodId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        var period = await _dbContext.VatSubmissionPeriods
+            .FirstOrDefaultAsync(p => p.Id == periodId && p.BusinessId == businessId);
+        if (period == null) return Json(new { error = "Period not found" });
+
+        var profile = await _dbContext.BusinessProfiles
+            .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+
+        var explicitOutputVat = await _dbContext.Invoices
+            .Where(i => i.BusinessId == businessId
+                && i.InvoiceStatusTypeId == 2
+                && !i.IsDeleted
+                && i.VatSubmissionPeriodId == periodId)
+            .SumAsync(i => (decimal?)i.TaxAmount) ?? 0m;
+
+        var dateRangeOutputVat = await _dbContext.Invoices
+            .Where(i => i.BusinessId == businessId
+                && i.InvoiceStatusTypeId == 2
+                && !i.IsDeleted
+                && i.VatSubmissionPeriodId == null
+                && i.InvoiceDate >= period.PeriodStartDate
+                && i.InvoiceDate <= period.PeriodEndDate)
+            .SumAsync(i => (decimal?)i.TaxAmount) ?? 0m;
+
+        var creditNoteTaxReduction = await _dbContext.CreditNotes
+            .Where(cn => cn.BusinessId == businessId
+                && cn.VatSubmissionPeriodId == periodId
+                && (cn.CreditNoteStatusTypeId == 2 || cn.CreditNoteStatusTypeId == 3))
+            .SumAsync(cn => (decimal?)cn.TaxAmount) ?? 0m;
+
+        var zReportVat = await _dbContext.RevenueSummaries
+            .Where(rs => rs.BusinessId == businessId
+                && rs.IsActive
+                && rs.VatSubmissionPeriodId == periodId)
+            .SumAsync(rs => (decimal?)rs.TotalVat) ?? 0m;
+
+        var zReportCount = await _dbContext.RevenueSummaries
+            .Where(rs => rs.BusinessId == businessId
+                && rs.IsActive
+                && rs.VatSubmissionPeriodId == periodId)
+            .CountAsync();
+
+        return Json(new
+        {
+            businessId,
+            periodId,
+            periodLabel = period.PeriodLabel,
+            isZReportEnabled = profile?.IsZReportEnabled,
+            profileFound = profile != null,
+            explicitOutputVat,
+            dateRangeOutputVat,
+            creditNoteTaxReduction,
+            zReportVat,
+            zReportCount,
+            totalWithZReports = explicitOutputVat + dateRangeOutputVat + zReportVat - creditNoteTaxReduction,
+            totalWithoutZReports = explicitOutputVat + dateRangeOutputVat - creditNoteTaxReduction
+        });
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Detail(int periodId)
     {
         // Create or recalculate the submission for this period
@@ -169,6 +232,7 @@ public class VatController : Controller
             TotalOutputVat = submission.TotalOutputVat,
             TotalInputVat = submission.TotalInputVat,
             NetVatPayable = submission.NetVatPayable,
+            InvoiceOutputVat = submission.TotalOutputVat, // Will be adjusted below if Z-Reports are included
             IsSubmitted = submission.IsSubmitted,
             SubmittedAtUtc = submission.SubmittedAtUtc,
             CurrencySymbol = currencySymbol
@@ -204,6 +268,60 @@ public class VatController : Controller
                 && p.VatSubmissionPeriodId != null
                 && p.VatSubmissionPeriodId != periodId)
             .CountAsync();
+
+        // Z-Reports: load Revenue Summaries for this period (if feature enabled)
+        viewModel.IsZReportEnabled = profile?.IsZReportEnabled ?? false;
+        if (viewModel.IsZReportEnabled)
+        {
+            var revenueSummaries = await _dbContext.RevenueSummaries
+                .Where(rs => rs.BusinessId == businessId
+                    && rs.IsActive
+                    && rs.VatSubmissionPeriodId == periodId)
+                .Join(_dbContext.RevenueSources,
+                    rs => rs.RevenueSourceId,
+                    src => src.Id,
+                    (rs, src) => new { rs, src.Name })
+                .ToListAsync();
+
+            viewModel.ZReportRows = revenueSummaries.Select(x => new ZReportDetailRow
+            {
+                SourceName = x.Name,
+                ZReportNumber = x.rs.ZReportNumber,
+                PeriodDisplay = x.rs.PeriodEndDate.HasValue && x.rs.PeriodEndDate.Value != x.rs.SummaryDate
+                    ? $"{x.rs.SummaryDate:dd/MM/yyyy} – {x.rs.PeriodEndDate:dd/MM/yyyy}"
+                    : x.rs.SummaryDate.ToString("dd/MM/yyyy"),
+                TotalVat = x.rs.TotalVat,
+                AssignmentStatus = "Explicit"
+            }).ToList();
+
+            viewModel.ZReportTotalVat = revenueSummaries.Sum(x => x.rs.TotalVat);
+
+            // Invoice-only Output VAT = Total Output VAT minus Z-Report contribution
+            viewModel.InvoiceOutputVat = viewModel.TotalOutputVat - viewModel.ZReportTotalVat;
+        }
+        else
+        {
+            // Feature is disabled — check if there are Z-Reports assigned to this period
+            // that are being excluded from the calculation (safety warning)
+            var excludedCount = await _dbContext.RevenueSummaries
+                .Where(rs => rs.BusinessId == businessId
+                    && rs.IsActive
+                    && rs.VatSubmissionPeriodId == periodId)
+                .CountAsync();
+
+            if (excludedCount > 0)
+            {
+                var excludedVat = await _dbContext.RevenueSummaries
+                    .Where(rs => rs.BusinessId == businessId
+                        && rs.IsActive
+                        && rs.VatSubmissionPeriodId == periodId)
+                    .SumAsync(rs => (decimal?)rs.TotalVat) ?? 0m;
+
+                viewModel.HasExcludedZReports = true;
+                viewModel.ExcludedZReportCount = excludedCount;
+                viewModel.ExcludedZReportVat = excludedVat;
+            }
+        }
 
         return View(viewModel);
     }
@@ -752,6 +870,40 @@ public class VatController : Controller
         var totalOutputVat = invoices.Sum(i => i.TaxAmount);
         var totalInputVat = purchases.Where(p => p.PurchaseOriginTypeId != 2).Sum(p => p.VatAmount);
 
+        // Z-Reports: load Revenue Summaries assigned to this period (if enabled)
+        var isZReportEnabled = profile?.IsZReportEnabled ?? false;
+        var zReportRows = new List<ZReportPeriodRow>();
+        var zReportOutputVat = 0m;
+
+        if (isZReportEnabled)
+        {
+            var revenueSummaries = await _dbContext.RevenueSummaries
+                .Where(rs => rs.BusinessId == businessId
+                    && rs.IsActive
+                    && rs.VatSubmissionPeriodId == periodId)
+                .Join(_dbContext.RevenueSources,
+                    rs => rs.RevenueSourceId,
+                    src => src.Id,
+                    (rs, src) => new { rs, src.Name })
+                .ToListAsync();
+
+            zReportRows = revenueSummaries.Select(x => new ZReportPeriodRow
+            {
+                SourceName = x.Name,
+                ZReportNumber = x.rs.ZReportNumber,
+                PeriodDisplay = x.rs.PeriodEndDate.HasValue && x.rs.PeriodEndDate.Value != x.rs.SummaryDate
+                    ? $"{x.rs.SummaryDate:dd/MM/yyyy} – {x.rs.PeriodEndDate:dd/MM/yyyy}"
+                    : x.rs.SummaryDate.ToString("dd/MM/yyyy"),
+                Net = x.rs.TotalNet,
+                Vat = x.rs.TotalVat,
+                Gross = x.rs.TotalGross,
+                Discount = x.rs.TotalDiscount
+            }).ToList();
+
+            zReportOutputVat = revenueSummaries.Sum(x => x.rs.TotalVat);
+            totalOutputVat += zReportOutputVat;
+        }
+
         return new VatPeriodReportViewModel
         {
             PeriodId = period.Id,
@@ -763,6 +915,8 @@ public class VatController : Controller
             InputVat = totalInputVat,
             TaxOwed = totalOutputVat - totalInputVat,
             SalesByMonth = salesByMonth,
+            ZReportRows = zReportRows,
+            IsZReportEnabled = isZReportEnabled,
             PurchasesByMonth = purchasesByMonth,
             PurchasesByOriginPerMonth = purchasesByOriginPerMonth,
             ExpenseTypes = expenseTypes,

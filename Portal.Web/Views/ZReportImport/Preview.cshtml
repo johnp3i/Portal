@@ -1,0 +1,224 @@
+@model Portal.Infrastructure.Services.ZReportImportPreview
+@{
+    ViewData["Title"] = "Preview Z-Report Import";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Z-Reports</div>
+        <h1 class="topbar-heading">Import Preview</h1>
+        <p class="topbar-subtitle">Review @Model.TotalGroups Z-Report(s) parsed from <strong>@Model.FileName</strong></p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/ZReportImport" class="btn btn-secondary">Cancel & Upload New</a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;">
+        <div class="summary-box">
+            <span class="summary-label">CSV Rows</span>
+            <span class="summary-value">@Model.TotalCsvRows</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Z-Reports</span>
+            <span class="summary-value">@Model.TotalGroups</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Source</span>
+            <span class="summary-value" style="font-size:14px;">@Model.RevenueSourceName</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Duplicates</span>
+            <span class="summary-value" style="color:@(Model.DuplicateCount > 0 ? "#C8912E" : "#129867");">@Model.DuplicateCount</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Total Gross</span>
+            <span class="summary-value summary-value--bold">€@Model.Groups.Sum(g => g.TotalGross).ToString("N2")</span>
+        </div>
+    </div>
+</section>
+
+<!-- Errors -->
+@if (Model.Errors.Any())
+{
+    <section class="glass card-pad" style="margin-bottom:22px;border-left:4px solid #C24A4A;">
+        <h3 style="font-size:15px;font-weight:700;color:#C24A4A;margin-bottom:8px;">Validation Errors</h3>
+        <ul style="margin:0;padding-left:18px;font-size:13px;color:#5E7385;line-height:2;">
+            @foreach (var error in Model.Errors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </section>
+}
+
+<!-- Grouped Z-Reports Table -->
+<section class="glass card-pad">
+    <h2 style="font-size:18px;font-weight:700;font-family:'Manrope',sans-serif;margin-bottom:16px;">Z-Reports to Import</h2>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Z-Report Number</th>
+                    <th>Period</th>
+                    <th style="text-align:right;">Net</th>
+                    <th style="text-align:right;">VAT</th>
+                    <th style="text-align:right;">Total</th>
+                    <th>VAT Lines</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Groups.Count; i++)
+                {
+                    var group = Model.Groups[i];
+                    var periodDisplay = group.DateTo != group.DateFrom
+                        ? $"{group.DateFrom:dd/MM/yyyy} – {group.DateTo:dd/MM/yyyy}"
+                        : group.DateFrom.ToString("dd/MM/yyyy");
+                    var rowStyle = group.IsDuplicate ? "background:rgba(200,145,46,.06);" : "";
+                    <tr style="@rowStyle">
+                        <td>@(i + 1)</td>
+                        <td><strong>@(group.ZReportNumber ?? "—")</strong></td>
+                        <td>@periodDisplay</td>
+                        <td style="text-align:right;font-variant-numeric:tabular-nums;">€@group.TotalNet.ToString("N2")</td>
+                        <td style="text-align:right;font-variant-numeric:tabular-nums;">€@group.TotalVat.ToString("N2")</td>
+                        <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">€@group.TotalGross.ToString("N2")</td>
+                        <td>
+                            @foreach (var line in group.Lines)
+                            {
+                                <span style="display:inline-block;padding:2px 8px;margin:2px 4px 2px 0;border-radius:6px;background:#EEF4F8;font-size:11px;font-weight:600;color:#0D5EA6;">
+                                    @line.VatRate%: €@line.NetAmount.ToString("N2")
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            @if (group.IsDuplicate)
+                            {
+                                <span class="pill" style="background:#fef3cd;color:#856404;font-weight:700;font-size:11px;">Duplicate</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-green" style="font-size:11px;">Ready</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Sticky Action Bar -->
+<div style="height:80px;"></div>
+<div class="sticky-action-bar">
+    <div class="sticky-action-bar__inner">
+        <a href="/ZReportImport" class="btn btn-secondary">Cancel</a>
+        @if (!Model.Errors.Any())
+        {
+            <button type="button" class="btn btn-primary" onclick="confirmImport()">
+                Confirm Import (@(Model.TotalGroups - Model.DuplicateCount) Z-Reports)
+            </button>
+        }
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .summary-box {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 14px 18px;
+        border-radius: 14px;
+        background: rgba(13,94,166,.03);
+        border: 1px solid rgba(13,94,166,.06);
+    }
+    .summary-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--muted);
+    }
+    .summary-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #1a2b3c;
+    }
+    .summary-value--bold {
+        color: #0D5EA6;
+    }
+    .sticky-action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: #d6e6f0;
+        border-top: 1.5px solid rgba(13,94,166,.15);
+        box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+        padding: 14px 32px;
+    }
+    .sticky-action-bar__inner {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+    }
+</style>
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    async function confirmImport() {
+        var result = await Swal.fire({
+            title: 'Confirm Import',
+            text: 'Import @(Model.TotalGroups - Model.DuplicateCount) Z-Report(s) into your revenue records? This cannot be undone.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, import'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Importing Z-Reports...');
+        try {
+            var response = await fetch('/ZReportImport/AxPostConfirmImport', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ excludeGroupIndexes: [] })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({
+                    title: 'Import Complete!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#0D5EA6'
+                });
+                window.location = '/ZReport/Index';
+            } else {
+                Swal.fire({ icon: 'error', title: 'Import Failed', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
+}

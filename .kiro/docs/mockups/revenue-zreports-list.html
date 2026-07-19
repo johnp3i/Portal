@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Z-Reports — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#F7FAFC;--bg2:#EEF4F8;--blue:#0D5EA6;--cyan:#57B8E8;--green:#129867;--red:#C24A4A;--amber:#C8912E;--muted:#5E7385;--text:#0B1B28;--line:rgba(13,94,166,.10);--shadow:0 2px 16px rgba(13,94,166,.07); }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+  .sidebar{background:#fff;border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:2px;}
+  .brand{padding:4px 10px 18px;font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:var(--blue);}
+  .nav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:14px 10px 6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:background .12s;}
+  .nav-item:hover{background:var(--bg2);color:var(--text);}
+  .nav-item.active{background:var(--blue);color:#fff;}
+  .content{padding:28px 32px;}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;}
+  .eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);display:inline-block;}
+  h1{font-family:'Manrope',sans-serif;font-size:30px;font-weight:800;margin-top:10px;}
+  .subtitle{font-size:15px;color:var(--muted);margin-top:4px;}
+  .glass{background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:var(--shadow);}
+  .card-pad{padding:22px;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;border:none;cursor:pointer;text-decoration:none;font-family:inherit;transition:all .15s;}
+  .btn-primary{background:linear-gradient(180deg,#1A6BB8,#0D5EA6);color:#fff;box-shadow:0 8px 20px rgba(13,94,166,.18);}
+  .btn-secondary{background:#fff;color:var(--blue);border:1.5px solid rgba(13,94,166,.18);}
+  .btn-sm{padding:6px 14px;font-size:12px;border-radius:10px;}
+  .btn-outline-sm{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:600;background:#fff;color:var(--muted);border:1.5px solid rgba(13,94,166,.15);cursor:pointer;text-decoration:none;font-family:inherit;transition:all .15s;}
+  .btn-outline-sm:hover{color:var(--blue);border-color:var(--blue);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);}
+  th.right{text-align:right;}
+  td{padding:14px;border-bottom:1px solid rgba(13,94,166,.05);font-size:13px;vertical-align:middle;}
+  td.right{text-align:right;}
+  td.bold{font-weight:700;}
+  tr:hover{background:rgba(13,94,166,.02);}
+  tr.locked{opacity:0.7;}
+  tr.locked:hover{background:transparent;}
+  .pill{display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;}
+  .pill-blue{background:rgba(13,94,166,.08);color:var(--blue);}
+  .pill-muted{background:rgba(94,115,133,.08);color:var(--muted);}
+  .field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;}
+  .field input,.field select{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(13,94,166,.15);background:#fff;font:13px/1.4 'Inter',sans-serif;color:var(--text);}
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
+  .kpi-card{background:#fff;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow);padding:18px 20px;display:flex;flex-direction:column;gap:4px;}
+  .kpi-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .kpi-value{font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:var(--text);}
+  .action-link{font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;cursor:pointer;}
+  .action-link:hover{text-decoration:underline;}
+  .action-link.danger{color:var(--red);}
+  .lock-icon{font-size:13px;color:var(--muted);}
+  .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;}
+  .pagination-info{font-size:14px;color:var(--muted);}
+  .pagination-controls{display:flex;gap:4px;}
+  .page-btn{padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1.5px solid rgba(13,94,166,.12);background:#fff;color:var(--muted);cursor:pointer;transition:all .12s;}
+  .page-btn:hover{border-color:var(--blue);color:var(--blue);}
+  .page-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .page-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .topbar-actions{display:flex;align-items:center;gap:12px;padding-top:10px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">3inventors</div>
+    <div class="nav-section">Revenue</div>
+    <a class="nav-item" href="#">Dashboard</a>
+    <a class="nav-item" href="#">Sources</a>
+    <a class="nav-item active" href="#">Z-Reports</a>
+    <a class="nav-item" href="#">Revenue Summary</a>
+    <div class="nav-section">Finance</div>
+    <a class="nav-item" href="#">Invoices</a>
+    <a class="nav-item" href="#">Payments</a>
+    <a class="nav-item" href="#">VAT</a>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> Revenue</div>
+        <h1>Z-Reports</h1>
+        <p class="subtitle">Record and manage POS revenue summaries for VAT reporting</p>
+      </div>
+      <div class="topbar-actions">
+        <a href="#" class="btn-outline-sm">Manage Sources</a>
+        <button class="btn btn-primary">+ New Z-Report</button>
+      </div>
+    </div>
+
+    <!-- Filter Panel -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+      <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+          <label>Revenue Source</label>
+          <select>
+            <option>All Sources</option>
+            <option>Main POS</option>
+            <option>Bar Register</option>
+          </select>
+        </div>
+        <div class="field" style="min-width:200px;">
+          <label>VAT Period</label>
+          <select>
+            <option>All Periods</option>
+            <option>Q1 2026 (Jan-Mar)</option>
+            <option>Q2 2026 (Apr-Jun)</option>
+          </select>
+        </div>
+        <div class="field" style="min-width:140px;">
+          <label>Date From</label>
+          <input type="date" />
+        </div>
+        <div class="field" style="min-width:140px;">
+          <label>Date To</label>
+          <input type="date" />
+        </div>
+        <div style="padding-bottom:2px;">
+          <button class="btn btn-primary">Filter</button>
+          <button class="btn btn-secondary" style="margin-left:6px;">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI Summary Strip -->
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <span class="kpi-label">Total Z-Reports</span>
+        <span class="kpi-value">12</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Total Net</span>
+        <span class="kpi-value">&euro;45,230.80</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Total VAT</span>
+        <span class="kpi-value">&euro;2,891.45</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Total Gross</span>
+        <span class="kpi-value">&euro;48,122.25</span>
+      </div>
+    </div>
+
+    <!-- Z-Reports Table -->
+    <section class="glass card-pad">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Period End</th>
+            <th>Source</th>
+            <th>Z-Report #</th>
+            <th class="right">Net</th>
+            <th class="right">VAT</th>
+            <th class="right">Total</th>
+            <th class="right">Discount</th>
+            <th>VAT Period</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01/07/2026</td>
+            <td>01/07/2026</td>
+            <td><span class="pill pill-muted">Main POS</span></td>
+            <td>Z-82401</td>
+            <td class="right">&euro;1,856.30</td>
+            <td class="right">&euro;118.40</td>
+            <td class="right bold">&euro;1,974.70</td>
+            <td class="right">&euro;45.20</td>
+            <td><span class="pill pill-blue">Q3 2026</span></td>
+            <td><a href="#" class="action-link">Edit</a> &middot; <a href="#" class="action-link danger">Delete</a></td>
+          </tr>
+          <tr>
+            <td>02/07/2026</td>
+            <td>02/07/2026</td>
+            <td><span class="pill pill-muted">Main POS</span></td>
+            <td>Z-82402</td>
+            <td class="right">&euro;2,103.50</td>
+            <td class="right">&euro;134.20</td>
+            <td class="right bold">&euro;2,237.70</td>
+            <td class="right">&euro;62.80</td>
+            <td><span class="pill pill-blue">Q3 2026</span></td>
+            <td><a href="#" class="action-link">Edit</a> &middot; <a href="#" class="action-link danger">Delete</a></td>
+          </tr>
+          <tr>
+            <td>03/07/2026</td>
+            <td>03/07/2026</td>
+            <td><span class="pill pill-muted">Main POS</span></td>
+            <td>Z-82403</td>
+            <td class="right">&euro;1,645.80</td>
+            <td class="right">&euro;105.10</td>
+            <td class="right bold">&euro;1,750.90</td>
+            <td class="right">&euro;38.50</td>
+            <td><span class="pill pill-blue">Q3 2026</span></td>
+            <td><a href="#" class="action-link">Edit</a> &middot; <a href="#" class="action-link danger">Delete</a></td>
+          </tr>
+          <tr>
+            <td>01/07/2026</td>
+            <td>01/07/2026</td>
+            <td><span class="pill pill-muted">Bar Register</span></td>
+            <td>Z-4501</td>
+            <td class="right">&euro;890.20</td>
+            <td class="right">&euro;169.14</td>
+            <td class="right bold">&euro;1,059.34</td>
+            <td class="right">&euro;0.00</td>
+            <td><span class="pill pill-blue">Q3 2026</span></td>
+            <td><a href="#" class="action-link">Edit</a> &middot; <a href="#" class="action-link danger">Delete</a></td>
+          </tr>
+          <tr>
+            <td>02/07/2026</td>
+            <td>02/07/2026</td>
+            <td><span class="pill pill-muted">Bar Register</span></td>
+            <td>Z-4502</td>
+            <td class="right">&euro;1,120.40</td>
+            <td class="right">&euro;212.88</td>
+            <td class="right bold">&euro;1,333.28</td>
+            <td class="right">&euro;0.00</td>
+            <td><span class="pill pill-blue">Q3 2026</span></td>
+            <td><a href="#" class="action-link">Edit</a> &middot; <a href="#" class="action-link danger">Delete</a></td>
+          </tr>
+          <tr class="locked">
+            <td>01/06/2026</td>
+            <td>30/06/2026</td>
+            <td><span class="pill pill-muted">Main POS</span></td>
+            <td>Z-82380</td>
+            <td class="right">&euro;37,614.60</td>
+            <td class="right">&euro;2,151.73</td>
+            <td class="right bold">&euro;39,766.33</td>
+            <td class="right">&euro;786.72</td>
+            <td><span class="pill pill-blue">Q2 2026</span></td>
+            <td><span class="lock-icon" title="Assigned to submitted VAT period">&#128274; View</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <div class="pagination-info">Showing 1&ndash;6 of 12 Z-Reports</div>
+        <div class="pagination-controls">
+          <button class="page-btn" disabled>Prev</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

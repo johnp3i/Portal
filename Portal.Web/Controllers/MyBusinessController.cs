@@ -67,6 +67,9 @@ public class MyBusinessController : Controller
         ViewBag.IsAutoReceiptEnabled = business?.IsAutoReceiptEnabled ?? false;
         ViewBag.IsAutoInvoiceSignatureEnabled = business?.IsAutoInvoiceSignatureEnabled ?? false;
 
+        // Z-Report feature flag
+        ViewBag.IsZReportEnabled = profile?.IsZReportEnabled ?? false;
+
         if (profile == null)
         {
             profile = new BusinessProfile { BusinessId = businessId };
@@ -520,6 +523,28 @@ public class MyBusinessController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to update setting." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostToggleZReport(bool enabled)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var profile = await _businessService.GetBusinessProfileAsync(businessId);
+            if (profile == null)
+                return Json(new { success = false, message = "Business profile not found." });
+
+            profile.IsZReportEnabled = enabled;
+            await _businessService.SaveBusinessProfileAsync(profile);
+
+            return Json(new { success = true, message = enabled ? "Z-Report entry enabled. You can now record POS revenue." : "Z-Report entry disabled." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to update Z-Report setting." });
         }
     }
 }

@@ -38,6 +38,7 @@
     var hasSchedulePaymentsAccess = Model.TryGetValue("schedule_payments", out var spAccess) && spAccess != "none";
     var hasAttachmentsAccess = Model.TryGetValue("attachments", out var attAccess) && attAccess != "none";
     var hasPurchaseImportAccess = Model.TryGetValue("purchase_import", out var piAccess) && piAccess != "none";
+    var hasZReportImportAccess = Model.TryGetValue("zreport_import", out var zriAccess) && zriAccess != "none";
 
     var hasSalesSection = hasCustomerAccess || hasQuotationAccess || hasInvoiceAccess || hasCreditAccess;
     var hasFinanceSection = hasRevenueAccess || hasVatAccess || hasPnlAccess || hasPaymentReminderAccess || hasPaymentReminderAutoAccess || hasCashflowAccess || hasSchedulePaymentsAccess || hasAuditLogAccess;
@@ -123,6 +124,38 @@
                 <span class="nav-icon">@Html.Raw(vatIcon)</span>
                 <span class="nav-text">VAT</span>
             </a>
+        }
+        @if (hasRevenueAccess)
+        {
+            var isZReportEnabled = (bool)(ViewData["IsZReportEnabled"] ?? false);
+            if (isZReportEnabled)
+            {
+                var isZReportActive = currentController.Equals("ZReport", StringComparison.OrdinalIgnoreCase)
+                    && !currentAction.Equals("Sources", StringComparison.OrdinalIgnoreCase);
+                <a class="nav-item @(isZReportActive ? "active" : "")" asp-controller="ZReport" asp-action="Index">
+                    <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17H7A5 5 0 017 7h2"/><path d="M15 7h2a5 5 0 010 10h-2"/><path d="M8 12h8"/></svg></span>
+                    <span class="nav-text">Z-Reports</span>
+                </a>
+                var isSourcesActive = currentController.Equals("ZReport", StringComparison.OrdinalIgnoreCase)
+                    && currentAction.Equals("Sources", StringComparison.OrdinalIgnoreCase);
+                <a class="nav-sub-item @(isSourcesActive ? "active" : "")" asp-controller="ZReport" asp-action="Sources">
+                    <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+                    <span class="nav-text">Revenue Sources</span>
+                </a>
+                if (hasZReportImportAccess)
+                {
+                    var isImportActive = currentController.Equals("ZReportImport", StringComparison.OrdinalIgnoreCase);
+                    <a class="nav-sub-item @(isImportActive ? "active" : "")" asp-controller="ZReportImport" asp-action="Index">
+                        <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg></span>
+                        <span class="nav-text">Import Z-Reports</span>
+                    </a>
+                    var isSalesActive = currentController.Equals("SalesImport", StringComparison.OrdinalIgnoreCase);
+                    <a class="nav-sub-item @(isSalesActive ? "active" : "")" asp-controller="SalesImport" asp-action="Records">
+                        <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M12 11v6M9 14h6"/></svg></span>
+                        <span class="nav-text">Sales Records</span>
+                    </a>
+                }
+            }
         }
         @if (hasPnlAccess)
         {

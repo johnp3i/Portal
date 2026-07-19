@@ -1,0 +1,285 @@
+@model List<Portal.Infrastructure.Entities.RevenueSource>
+@{
+    ViewData["Title"] = "Revenue Sources";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Z-Reports</div>
+        <h1 class="topbar-heading">Revenue Sources</h1>
+        <p class="topbar-subtitle">Manage your POS devices, registers, and sales channels.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" onclick="openCreateModal()">Add Source</button>
+    </div>
+</div>
+
+<!-- Flow Info Banner -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:4px 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div style="font-size:13px;color:#4a6278;line-height:1.7;">
+            <strong style="color:#0B1B28;">How Z-Report recording works:</strong>
+            <ol style="margin:8px 0 0 0;padding-left:18px;">
+                <li><strong>Create a Revenue Source</strong> — Register each POS device, register, or sales channel (e.g. "Main POS", "Bar Register").</li>
+                <li><strong>Record Z-Reports</strong> — Go to <a href="/ZReport/Index" style="color:#0D5EA6;font-weight:600;">Z-Reports</a> and enter daily or periodic Z-Reports with the VAT breakdown from your POS.</li>
+                <li><strong>VAT Integration</strong> — Recorded Z-Reports are automatically included in your VAT period calculations alongside Portal-issued invoices.</li>
+            </ol>
+        </div>
+    </div>
+</section>
+
+<section class="glass card-pad">
+    @if (Model.Any())
+    {
+        <div class="table-responsive index-table">
+            <div class="scroll-hint">&larr; Scroll horizontally &rarr;</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var source in Model)
+                    {
+                        <tr id="source-row-@source.Id">
+                            <td><strong>@source.Name</strong></td>
+                            <td data-mobile="hide">@(source.Description ?? "—")</td>
+                            <td data-mobile="status">
+                                @if (source.IsActive)
+                                {
+                                    <span class="pill pill-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-red">Inactive</span>
+                                }
+                            </td>
+                            <td data-mobile="hide">@source.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                            <td data-mobile="hide" style="white-space:nowrap;">
+                                <button type="button" class="tbl-action tbl-action--primary" onclick="openEditModal(@source.Id, '@source.Name.Replace("'", "\\'")','@((source.Description ?? "").Replace("'", "\\'"))')">Edit</button>
+                                @if (source.IsActive)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--danger" onclick="confirmDeactivate(@source.Id, '@source.Name.Replace("'", "\\'")') ">Deactivate</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="tbl-action tbl-action--success" onclick="confirmActivate(@source.Id, '@source.Name.Replace("'", "\\'")') ">Activate</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No revenue sources configured yet.</p>
+            <p class="muted" style="font-size:14px;margin-top:8px;">Create your first revenue source to start recording Z-Reports from your POS system.</p>
+            <button type="button" class="btn btn-primary" style="margin-top:16px;" onclick="openCreateModal()">Add First Source</button>
+        </div>
+    }
+</section>
+
+<!-- Source Modal -->
+<div id="sourceModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(13,94,166,.18);margin:auto;flex-shrink:0;">
+        <h2 style="font-size:22px;margin-bottom:6px;" id="modalTitle">Add Revenue Source</h2>
+        <p class="muted" style="font-size:14px;margin-bottom:24px;" id="modalSubtitle">Register a POS device or sales channel.</p>
+        <form id="sourceForm" onsubmit="return false;">
+            <input type="hidden" id="sourceId" value="0" />
+            <div class="field">
+                <label for="sourceName">Name <span style="color:#C24A4A;">*</span></label>
+                <input type="text" id="sourceName" placeholder="e.g. Main POS, Bar Register, Terrace POS..." required maxlength="200" />
+            </div>
+            <div class="field" style="margin-top:16px;">
+                <label for="sourceDescription">Description</label>
+                <textarea id="sourceDescription" placeholder="Optional description..." maxlength="500" rows="3" style="resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modalSubmitBtn" onclick="submitSource()">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Add Revenue Source';
+            document.getElementById('modalSubtitle').textContent = 'Register a POS device or sales channel.';
+            document.getElementById('modalSubmitBtn').textContent = 'Create';
+            document.getElementById('sourceId').value = '0';
+            document.getElementById('sourceName').value = '';
+            document.getElementById('sourceDescription').value = '';
+            showModal();
+        }
+
+        function openEditModal(id, name, description) {
+            document.getElementById('modalTitle').textContent = 'Edit Revenue Source';
+            document.getElementById('modalSubtitle').textContent = 'Update the source details.';
+            document.getElementById('modalSubmitBtn').textContent = 'Save Changes';
+            document.getElementById('sourceId').value = id;
+            document.getElementById('sourceName').value = name;
+            document.getElementById('sourceDescription').value = description;
+            showModal();
+        }
+
+        function showModal() {
+            var modal = document.getElementById('sourceModal');
+            modal.style.display = 'flex';
+            document.getElementById('sourceName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('sourceModal').style.display = 'none';
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('sourceModal').addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        async function submitSource() {
+            var id = document.getElementById('sourceId').value;
+            var name = document.getElementById('sourceName').value.trim();
+            var description = document.getElementById('sourceDescription').value.trim();
+
+            if (!name) {
+                Swal.fire({ title: 'Validation', text: 'Revenue source name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var isEdit = id !== '0';
+            var url = isEdit ? '/ZReport/AxPostUpdateSource' : '/ZReport/AxPostCreateSource';
+            var formData = new FormData();
+            formData.append('name', name);
+            formData.append('description', description);
+            if (isEdit) formData.append('id', id);
+
+            BlockUI.show(isEdit ? 'Updating source...' : 'Creating source...');
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    closeModal();
+                    await Swal.fire({
+                        title: isEdit ? 'Updated!' : 'Created!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'An error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function confirmDeactivate(id, name) {
+            var result = await Swal.fire({
+                title: 'Deactivate Source',
+                text: 'Are you sure you want to deactivate "' + name + '"? It will no longer appear in the Z-Report entry form.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C24A4A',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, deactivate'
+            });
+
+            if (!result.isConfirmed) return;
+
+            var formData = new FormData();
+            formData.append('id', id);
+            formData.append('isActive', 'false');
+
+            BlockUI.show('Deactivating source...');
+            try {
+                var response = await fetch('/ZReport/AxPostToggleSource', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({ title: 'Deactivated!', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function confirmActivate(id, name) {
+            var result = await Swal.fire({
+                title: 'Activate Source',
+                text: 'Re-activate "' + name + '"? It will become available for new Z-Report entries.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, activate'
+            });
+
+            if (!result.isConfirmed) return;
+
+            var formData = new FormData();
+            formData.append('id', id);
+            formData.append('isActive', 'true');
+
+            BlockUI.show('Activating source...');
+            try {
+                var response = await fetch('/ZReport/AxPostToggleSource', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    await Swal.fire({ title: 'Activated!', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

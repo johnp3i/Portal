@@ -79,7 +79,20 @@ public class VatSubmissionService : IVatSubmissionService
                 && (cn.CreditNoteStatusTypeId == 2 || cn.CreditNoteStatusTypeId == 3)) // Issued or Applied
             .SumAsync(cn => (decimal?)cn.TaxAmount) ?? 0m;
 
-        var totalOutputVat = explicitOutputVat + dateRangeOutputVat - creditNoteTaxReduction;
+        // Z-Report Revenue: sum of RevenueSummary.TotalVat assigned to this period (if feature enabled)
+        var zReportOutputVat = 0m;
+        var businessProfile = await _portalDbContext.BusinessProfiles
+            .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+        if (businessProfile?.IsZReportEnabled == true)
+        {
+            zReportOutputVat = await _portalDbContext.RevenueSummaries
+                .Where(rs => rs.BusinessId == businessId
+                    && rs.IsActive
+                    && rs.VatSubmissionPeriodId == vatSubmissionPeriodId)
+                .SumAsync(rs => (decimal?)rs.TotalVat) ?? 0m;
+        }
+
+        var totalOutputVat = explicitOutputVat + dateRangeOutputVat + zReportOutputVat - creditNoteTaxReduction;
 
         // Compute TotalInputVat using two-part approach (mirrors Output VAT logic):
         // Part 1: Purchases explicitly assigned to this period

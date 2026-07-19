@@ -1,0 +1,163 @@
+@{
+    ViewData["Title"] = "Import Z-Reports";
+    var sources = (List<Portal.Infrastructure.Entities.RevenueSource>)ViewData["RevenueSources"]!;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Z-Reports</div>
+        <h1 class="topbar-heading">Import Z-Reports</h1>
+        <p class="topbar-subtitle">Upload a CSV file to bulk-import Z-Report summaries from your POS system.</p>
+    </div>
+</div>
+
+<!-- Info Banner -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:4px 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div style="font-size:13px;color:#4a6278;line-height:1.7;">
+            <strong style="color:#0B1B28;">CSV Format:</strong> One row per VAT rate per Z-Report. Rows are grouped automatically by Date From + Date To + Z-Number.
+            <br/>
+            <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">Date From, Date To, Z-Number, VAT Rate, Net Sales, VAT Amount, Discount, Export Date</code>
+        </div>
+    </div>
+</section>
+
+<!-- Upload Form -->
+<section class="glass card-pad">
+    <form id="importForm" onsubmit="return false;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+            <div class="field">
+                <label for="revenueSourceId">Revenue Source *</label>
+                <select id="revenueSourceId" required>
+                    <option value="">— Select a revenue source —</option>
+                    @foreach (var source in sources)
+                    {
+                        <option value="@source.Id">@source.Name</option>
+                    }
+                </select>
+            </div>
+            <div></div>
+        </div>
+
+        <!-- File Upload -->
+        <div style="margin-top:22px;">
+            <label style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:8px;">Upload File *</label>
+            <div id="dropArea" class="upload-drop-area">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="opacity:.4;">
+                    <path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p style="margin:8px 0 4px;font-size:14px;color:#334155;">Drag & drop or <label for="importFile" style="color:#0D5EA6;font-weight:600;cursor:pointer;text-decoration:underline;">browse</label></p>
+                <span style="font-size:12px;color:#94a3b8;">CSV — Max 5 MB, 500 rows</span>
+                <input type="file" id="importFile" accept=".csv" style="display:none;" />
+            </div>
+            <div id="selectedFile" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;background:#EEF4F8;font-size:13px;font-weight:600;color:#1e293b;"></div>
+        </div>
+
+        <div style="margin-top:22px;">
+            <button type="button" id="btnUpload" class="btn btn-primary" disabled onclick="uploadFile()">Upload & Preview</button>
+        </div>
+    </form>
+</section>
+
+@if (!sources.Any())
+{
+    <section class="glass card-pad" style="margin-top:22px;border-left:4px solid #C8912E;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div style="font-size:14px;color:#0B1B28;line-height:1.6;">
+                <strong>No revenue sources configured.</strong>
+                <span style="color:#5E7385;">Create a revenue source before importing Z-Reports.</span>
+                <a href="/ZReport/Sources" style="display:inline-block;margin-top:6px;color:#0D5EA6;font-weight:700;text-decoration:none;">Go to Revenue Sources &rarr;</a>
+            </div>
+        </div>
+    </section>
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .upload-drop-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+        transition: border-color .2s, background .2s;
+        cursor: pointer;
+    }
+    .upload-drop-area.drag-over {
+        border-color: #0D5EA6;
+        background: rgba(13,94,166,.04);
+    }
+</style>
+
+@section Scripts {
+<script>
+    var selectedFile = null;
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    // File selection
+    var dropArea = document.getElementById('dropArea');
+    var fileInput = document.getElementById('importFile');
+
+    dropArea.addEventListener('click', function () { fileInput.click(); });
+    ['dragenter', 'dragover'].forEach(function (evt) {
+        dropArea.addEventListener(evt, function (e) { e.preventDefault(); dropArea.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+        dropArea.addEventListener(evt, function (e) { e.preventDefault(); dropArea.classList.remove('drag-over'); });
+    });
+    dropArea.addEventListener('drop', function (e) {
+        if (e.dataTransfer.files.length > 0) setFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function () {
+        if (this.files.length > 0) setFile(this.files[0]);
+    });
+
+    function setFile(file) {
+        selectedFile = file;
+        document.getElementById('selectedFile').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        document.getElementById('selectedFile').style.display = 'block';
+        updateUploadButton();
+    }
+
+    document.getElementById('revenueSourceId').addEventListener('change', updateUploadButton);
+
+    function updateUploadButton() {
+        var hasSource = document.getElementById('revenueSourceId').value !== '';
+        document.getElementById('btnUpload').disabled = !(hasSource && selectedFile);
+    }
+
+    async function uploadFile() {
+        if (!selectedFile) return;
+
+        var revenueSourceId = document.getElementById('revenueSourceId').value;
+        var formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('revenueSourceId', revenueSourceId);
+
+        BlockUI.show('Parsing file...');
+        try {
+            var response = await fetch('/ZReportImport/AxPostParseFile', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                window.location = '/ZReportImport/Preview';
+            } else {
+                Swal.fire({ icon: 'error', title: 'Upload Failed', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
+}

@@ -31,6 +31,26 @@
     </div>
 </div>
 
+<!-- Z-Report Exclusion Warning -->
+@if (Model.HasExcludedZReports)
+{
+    <section class="glass card-pad" style="margin-bottom:22px;border-left:4px solid #C8912E;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8912E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div style="font-size:14px;color:#0B1B28;line-height:1.6;">
+                <strong>Z-Report revenue excluded from this period.</strong>
+                <span style="color:#5E7385;">
+                    You have @Model.ExcludedZReportCount Z-Report@(Model.ExcludedZReportCount > 1 ? "s" : "") assigned to this period but the Z-Report feature is currently disabled.
+                    This revenue (<strong>@Model.CurrencySymbol@Model.ExcludedZReportVat.ToString("N2") VAT</strong>) is NOT included in the Output VAT calculation.
+                </span>
+                <div style="margin-top:8px;">
+                    <a href="/MyBusiness?tab=automation" style="color:#0D5EA6;font-weight:700;text-decoration:none;">Enable Z-Reports &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
 <!-- VAT Breakdown -->
 <section class="glass card-pad">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -91,8 +111,8 @@
         </div>
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
             <div style="background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:14px;padding:10px 20px;text-align:center;">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D5EA6;">Total Output VAT</div>
-                <div style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#0D5EA6;margin-top:3px;">@Model.CurrencySymbol@Model.TotalOutputVat.ToString("N2")</div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D5EA6;">Invoice VAT</div>
+                <div style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#0D5EA6;margin-top:3px;">@Model.CurrencySymbol@Model.InvoiceOutputVat.ToString("N2")</div>
             </div>
             <a href="/Vat/ExportInvoicesCsv?periodId=@Model.PeriodId" class="btn btn-outline" style="font-size:13px;padding:8px 16px;display:inline-flex;align-items:center;gap:6px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -108,6 +128,69 @@
         <div style="text-align:center;padding:32px;color:#5E7385;font-size:14px;">Loading...</div>
     </div>
 </section>
+
+<!-- External Revenue (Z-Reports) -->
+@if (Model.IsZReportEnabled)
+{
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+            <div class="label">Output VAT</div>
+            <h2 style="margin-top:8px;font-size:24px;">External Revenue (Z-Reports) &nbsp;<span style="font-size:14px;font-weight:500;color:#5E7385;font-family:'Inter',sans-serif;">(@Model.ZReportRows.Count)</span></h2>
+            <p class="muted" style="font-size:13px;margin-top:4px;">Revenue summaries from POS systems contributing to Output VAT for this period.</p>
+        </div>
+        @if (Model.ZReportRows.Any())
+        {
+            <div style="background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:14px;padding:10px 20px;text-align:center;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D5EA6;">Z-Report VAT Total</div>
+                <div style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#0D5EA6;margin-top:3px;">@Model.CurrencySymbol@Model.ZReportTotalVat.ToString("N2")</div>
+            </div>
+        }
+    </div>
+
+    @if (Model.ZReportRows.Any())
+    {
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Revenue Source</th>
+                        <th>Z-Report #</th>
+                        <th>Period</th>
+                        <th class="text-right">VAT Amount</th>
+                        <th>Assignment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.ZReportRows)
+                    {
+                        <tr>
+                            <td><strong>@row.SourceName</strong></td>
+                            <td>@(row.ZReportNumber ?? "—")</td>
+                            <td>@row.PeriodDisplay</td>
+                            <td class="text-right" style="font-weight:700;">@Model.CurrencySymbol@row.TotalVat.ToString("N2")</td>
+                            <td><span class="pill pill-green" style="font-size:11px;">@row.AssignmentStatus</span></td>
+                        </tr>
+                    }
+                    <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
+                        <td colspan="3">Total</td>
+                        <td class="text-right">@Model.CurrencySymbol@Model.ZReportTotalVat.ToString("N2")</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(13,94,166,.10);flex-wrap:wrap;gap:10px;">
+            <div style="font-size:13px;color:#5E7385;">Showing 1&ndash;@Model.ZReportRows.Count of @Model.ZReportRows.Count</div>
+            <div></div>
+        </div>
+    }
+    else
+    {
+        <p style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">No Z-Reports assigned to this period.</p>
+    }
+</section>
+}
 
 <!-- Purchases (Input VAT Breakdown) -->
 <section class="glass card-pad" style="margin-top:24px;">
@@ -298,12 +381,17 @@
                     + '</tr>';
             });
 
+            html += '<tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">'
+                + '<td colspan="4">Total</td>'
+                + '<td></td>'
+                + '<td>' + formatCurrency(@Model.InvoiceOutputVat) + '</td>'
+                + '</tr>';
+
             html += '</tbody></table></div>';
 
             var from = (data.page - 1) * data.pageSize + 1;
             var to = Math.min(data.page * data.pageSize, data.totalCount);
-            html += renderPagingRow(from, to, data.totalCount, data.totalPages, data.page, 'invoice',
-                'Total Output VAT: <strong>' + formatCurrency(@Model.TotalOutputVat) + '</strong>');
+            html += renderPagingRow(from, to, data.totalCount, data.totalPages, data.page, 'invoice', '');
 
             container.innerHTML = html;
         }
@@ -425,7 +513,7 @@
 
         function renderPagingRow(from, to, total, totalPages, currentPage, type, totalLabel) {
             var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(13,94,166,.10);flex-wrap:wrap;gap:10px;">';
-            html += '<div style="font-size:13px;color:#5E7385;">Showing ' + from + '&ndash;' + to + ' of ' + total + ' &nbsp;&middot;&nbsp; ' + totalLabel + '</div>';
+            html += '<div style="font-size:13px;color:#5E7385;">Showing ' + from + '&ndash;' + to + ' of ' + total + (totalLabel ? ' &nbsp;&middot;&nbsp; ' + totalLabel : '') + '</div>';
             html += '<div style="display:flex;gap:6px;align-items:center;">';
 
             // Prev button

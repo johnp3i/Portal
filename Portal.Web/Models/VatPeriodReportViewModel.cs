@@ -16,6 +16,10 @@ public class VatPeriodReportViewModel
     // Section 1: Sales by month
     public List<MonthlyAmountRow> SalesByMonth { get; set; } = new();
 
+    // Section 1b: External Revenue (Z-Reports)
+    public List<ZReportPeriodRow> ZReportRows { get; set; } = new();
+    public bool IsZReportEnabled { get; set; }
+
     // Section 2: Purchases by month
     public List<MonthlyAmountRow> PurchasesByMonth { get; set; } = new();
 
@@ -82,4 +86,18 @@ public class OriginTotalRow
     public decimal Vat { get; set; }
     public decimal Gross { get; set; }
     public int Count { get; set; }
+}
+
+/// <summary>
+/// One Z-Report row for the VAT Period Report section.
+/// </summary>
+public class ZReportPeriodRow
+{
+    public string SourceName { get; set; } = null!;
+    public string? ZReportNumber { get; set; }
+    public string PeriodDisplay { get; set; } = null!;
+    public decimal Net { get; set; }
+    public decimal Vat { get; set; }
+    public decimal Gross { get; set; }
+    public decimal? Discount { get; set; }
 }

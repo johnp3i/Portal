@@ -214,7 +214,49 @@ public class DashboardService : IDashboardService
             var fromUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc)
                 .AddMonths(-11);
 
-            return await _paymentRepository.GetMonthlyTotalsAsync(businessId, fromUtc);
+            var monthlyPayments = await _paymentRepository.GetMonthlyTotalsAsync(businessId, fromUtc);
+
+            // Add Z-Report revenue if feature is enabled
+            var profile = await _dbContext.BusinessProfiles
+                .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+
+            if (profile?.IsZReportEnabled == true)
+            {
+                var fromDate = DateOnly.FromDateTime(fromUtc);
+
+                var zReportMonthly = await _dbContext.RevenueSummaries
+                    .Where(rs => rs.BusinessId == businessId
+                        && rs.IsActive
+                        && rs.SummaryDate >= fromDate)
+                    .GroupBy(rs => new { rs.SummaryDate.Year, rs.SummaryDate.Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(rs => rs.TotalGross) })
+                    .ToListAsync();
+
+                foreach (var zMonth in zReportMonthly)
+                {
+                    var existing = monthlyPayments.FirstOrDefault(m => m.Year == zMonth.Year && m.Month == zMonth.Month);
+                    if (existing != null)
+                    {
+                        existing.Amount += zMonth.Total;
+                        existing.IncludesPosRevenue = true;
+                    }
+                    else
+                    {
+                        monthlyPayments.Add(new MonthlyRevenueDto
+                        {
+                            Year = zMonth.Year,
+                            Month = zMonth.Month,
+                            Label = new DateTime(zMonth.Year, zMonth.Month, 1).ToString("MMM"),
+                            Amount = zMonth.Total,
+                            IncludesPosRevenue = true
+                        });
+                    }
+                }
+
+                monthlyPayments = monthlyPayments.OrderBy(m => m.Year).ThenBy(m => m.Month).ToList();
+            }
+
+            return monthlyPayments;
         }
         catch (Exception)
         {
@@ -307,6 +349,43 @@ public class DashboardService : IDashboardService
                         InvoicedAmount = reader.GetDecimal(2),
                         CollectedAmount = reader.GetDecimal(3)
                     });
+                }
+
+                // Add Z-Report revenue to InvoicedAmount if feature is enabled
+                var profile = await _dbContext.BusinessProfiles
+                    .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+
+                if (profile?.IsZReportEnabled == true)
+                {
+                    var zReportMonthly = await _dbContext.RevenueSummaries
+                        .Where(rs => rs.BusinessId == businessId
+                            && rs.IsActive
+                            && rs.SummaryDate >= fromDate)
+                        .GroupBy(rs => new { rs.SummaryDate.Year, rs.SummaryDate.Month })
+                        .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(rs => rs.TotalGross) })
+                        .ToListAsync();
+
+                    foreach (var zMonth in zReportMonthly)
+                    {
+                        var existing = results.FirstOrDefault(r => r.Year == zMonth.Year && r.Month == zMonth.Month);
+                        if (existing != null)
+                        {
+                            existing.InvoicedAmount += zMonth.Total;
+                        }
+                        else
+                        {
+                            results.Add(new InvoicedVsCollectedDto
+                            {
+                                Year = zMonth.Year,
+                                Month = zMonth.Month,
+                                Label = new DateTime(zMonth.Year, zMonth.Month, 1).ToString("MMM"),
+                                InvoicedAmount = zMonth.Total,
+                                CollectedAmount = 0
+                            });
+                        }
+                    }
+
+                    results = results.OrderBy(r => r.Year).ThenBy(r => r.Month).ToList();
                 }
 
                 return results;

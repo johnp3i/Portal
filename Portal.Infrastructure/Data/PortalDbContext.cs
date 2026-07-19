@@ -134,6 +134,12 @@ public class PortalDbContext : DbContext
     public DbSet<Entities.Import.SupplierImportProfile> SupplierImportProfiles { get; set; } = null!;
     public DbSet<Entities.Import.ImportSession> ImportSessions { get; set; } = null!;
 
+    // Revenue ingestion schema
+    public DbSet<RevenueSource> RevenueSources { get; set; } = null!;
+    public DbSet<RevenueSummary> RevenueSummaries { get; set; } = null!;
+    public DbSet<RevenueSummaryLine> RevenueSummaryLines { get; set; } = null!;
+    public DbSet<ExternalSalesRecord> ExternalSalesRecords { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -209,6 +215,10 @@ public class PortalDbContext : DbContext
         ConfigureParserTemplate(modelBuilder);
         ConfigureSupplierImportProfile(modelBuilder);
         ConfigureImportSession(modelBuilder);
+        ConfigureRevenueSource(modelBuilder);
+        ConfigureRevenueSummary(modelBuilder);
+        ConfigureRevenueSummaryLine(modelBuilder);
+        ConfigureExternalSalesRecord(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -325,6 +335,10 @@ public class PortalDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(5)
                 .HasDefaultValue("€");
+
+            entity.Property(e => e.IsZReportEnabled)
+                .IsRequired()
+                .HasDefaultValue(false);
         });
     }
 
@@ -2931,6 +2945,134 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureRevenueSource(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RevenueSource>(entity =>
+        {
+            entity.ToTable("RevenueSource", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureRevenueSummary(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RevenueSummary>(entity =>
+        {
+            entity.ToTable("RevenueSummary", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.SummaryDate).IsRequired();
+            entity.Property(e => e.ZReportNumber).HasMaxLength(50);
+            entity.Property(e => e.TotalNet).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.TotalVat).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.TotalGross).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.TotalDiscount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Reference).HasMaxLength(200);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.RevenueSource)
+                .WithMany(s => s.RevenueSummaries)
+                .HasForeignKey(e => e.RevenueSourceId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.VatSubmissionPeriod)
+                .WithMany()
+                .HasForeignKey(e => e.VatSubmissionPeriodId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureRevenueSummaryLine(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RevenueSummaryLine>(entity =>
+        {
+            entity.ToTable("RevenueSummaryLine", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.VatRate).HasColumnType("decimal(5,2)").IsRequired();
+            entity.Property(e => e.NetAmount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.VatAmount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Description).HasMaxLength(200);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.RevenueSummary)
+                .WithMany(s => s.Lines)
+                .HasForeignKey(e => e.RevenueSummaryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureExternalSalesRecord(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ExternalSalesRecord>(entity =>
+        {
+            entity.ToTable("ExternalSalesRecord", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.TransactionDate).IsRequired();
+            entity.Property(e => e.InvoiceNumber).HasMaxLength(100);
+            entity.Property(e => e.NetAmount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.VatAmount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.PaymentMethod).HasMaxLength(50);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.RevenueSource)
+                .WithMany()
+                .HasForeignKey(e => e.RevenueSourceId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Customer)
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.VatSubmissionPeriod)
+                .WithMany()
+                .HasForeignKey(e => e.VatSubmissionPeriodId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -3015,6 +3157,15 @@ public class PortalDbContext : DbContext
         modelBuilder.Entity<Entities.Import.ImportSession>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
+        modelBuilder.Entity<RevenueSummary>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId && e.IsActive);
+
+        modelBuilder.Entity<RevenueSource>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<ExternalSalesRecord>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
         modelBuilder.Entity<Signature>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
@@ -3022,6 +3173,12 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<PaymentReceiptShare>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<RevenueSource>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<RevenueSummary>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

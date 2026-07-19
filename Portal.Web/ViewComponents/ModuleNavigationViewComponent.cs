@@ -8,10 +8,17 @@ namespace Portal.Web.ViewComponents;
 public class ModuleNavigationViewComponent : ViewComponent
 {
     private readonly IPermissionService _permissionService;
+    private readonly ICurrentTenantService _currentTenantService;
+    private readonly IBusinessService _businessService;
 
-    public ModuleNavigationViewComponent(IPermissionService permissionService)
+    public ModuleNavigationViewComponent(
+        IPermissionService permissionService,
+        ICurrentTenantService currentTenantService,
+        IBusinessService businessService)
     {
         _permissionService = permissionService;
+        _currentTenantService = currentTenantService;
+        _businessService = businessService;
     }
 
     public async Task<IViewComponentResult> InvokeAsync()
@@ -39,6 +46,18 @@ public class ModuleNavigationViewComponent : ViewComponent
         else
         {
             permissions = new Dictionary<string, string>();
+        }
+
+        // Z-Report feature flag
+        var businessId = _currentTenantService.CurrentBusinessId;
+        if (businessId > 0)
+        {
+            var profile = await _businessService.GetBusinessProfileAsync(businessId);
+            ViewData["IsZReportEnabled"] = profile?.IsZReportEnabled ?? false;
+        }
+        else
+        {
+            ViewData["IsZReportEnabled"] = false;
         }
 
         return View(permissions);
