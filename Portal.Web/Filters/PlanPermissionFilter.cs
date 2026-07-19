@@ -131,7 +131,7 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
                             ModuleDisplayName = FormatModuleDisplayName(module),
                             ModuleDescription = GetModuleDescription(module),
                             RequiredPlanName = requiredPlan,
-                            CurrentPlanName = "your current plan"
+                            CurrentPlanName = await _planCheckService.GetCurrentPlanNameAsync() ?? "your current plan"
                         }
                     }
                 };
@@ -158,7 +158,8 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
         {
             ["pnl"] = "Profit & Loss",
             ["vat"] = "VAT",
-            ["api"] = "API"
+            ["api"] = "API",
+            ["zreport_import"] = "Z-Report Import"
         };
 
         if (overrides.TryGetValue(moduleKey, out var displayName))
@@ -208,6 +209,7 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
             "webhooks" => "Configure webhooks to receive real-time event notifications.",
             "multi_currency" => "Work with multiple currencies for international business.",
             "purchase_import" => "Import purchases from CSV files with intelligent column mapping and template management.",
+            "zreport_import" => "Bulk-import Z-Reports from CSV and import transaction-level sales records from your POS system.",
             "recurring_expense_validation" => "Define expected recurring purchases per supplier, validate that all expected expenses are recorded before VAT submission, and catch missing invoices automatically.",
             _ => "Access advanced features to enhance your business operations."
         };

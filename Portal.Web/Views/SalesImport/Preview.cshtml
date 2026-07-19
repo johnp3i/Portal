@@ -1,6 +1,7 @@
 @model Portal.Infrastructure.Services.SalesImportPreview
 @{
     ViewData["Title"] = "Preview Sales Import";
+    var cacheKey = ViewData["CacheKey"] as string;
 }
 
 <div class="topbar">
@@ -108,7 +109,7 @@
             var response = await fetch('/SalesImport/AxPostConfirmImport', {
                 method:'POST',
                 headers:{ 'Content-Type':'application/json', 'RequestVerificationToken':getAntiForgeryToken() },
-                body: JSON.stringify({ excludeRowIndexes: [] })
+                body: JSON.stringify({ cacheKey: '@cacheKey', excludeRowIndexes: [] })
             });
             var data = await response.json();
             BlockUI.hide();

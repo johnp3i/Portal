@@ -1,6 +1,7 @@
 @model Portal.Infrastructure.Services.ZReportImportPreview
 @{
     ViewData["Title"] = "Preview Z-Report Import";
+    var cacheKey = ViewData["CacheKey"] as string;
 }
 
 <div class="topbar">
@@ -199,7 +200,7 @@
                     'Content-Type': 'application/json',
                     'RequestVerificationToken': getAntiForgeryToken()
                 },
-                body: JSON.stringify({ excludeGroupIndexes: [] })
+                body: JSON.stringify({ cacheKey: '@cacheKey', excludeGroupIndexes: [] })
             });
             var data = await response.json();
             BlockUI.hide();

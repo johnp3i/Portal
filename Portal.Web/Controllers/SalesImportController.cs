@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
@@ -22,19 +23,22 @@ public class SalesImportController : Controller
     private readonly ExternalSalesRecordRepository _recordRepository;
     private readonly ICurrentTenantService _tenantService;
     private readonly IBusinessService _businessService;
+    private readonly IMemoryCache _cache;
 
     public SalesImportController(
         ISalesImportService importService,
         IRevenueSourceService revenueSourceService,
         ExternalSalesRecordRepository recordRepository,
         ICurrentTenantService tenantService,
-        IBusinessService businessService)
+        IBusinessService businessService,
+        IMemoryCache cache)
     {
         _importService = importService;
         _revenueSourceService = revenueSourceService;
         _recordRepository = recordRepository;
         _tenantService = tenantService;
         _businessService = businessService;
+        _cache = cache;
     }
 
     // ════════════════════════════════════════════
@@ -67,8 +71,10 @@ public class SalesImportController : Controller
             if (!result.Success)
                 return Json(new { success = false, message = result.Message });
 
-            TempData["SalesImportPreview"] = JsonSerializer.Serialize(result.Data);
-            return Json(new { success = true });
+            var cacheKey = $"SalesImport_{_tenantService.CurrentBusinessId}_{DateTime.UtcNow.Ticks}";
+            _cache.Set(cacheKey, result.Data, TimeSpan.FromMinutes(30));
+
+            return Json(new { success = true, cacheKey });
         }
         catch (Exception ex)
         {
@@ -77,17 +83,12 @@ public class SalesImportController : Controller
     }
 
     [HttpGet]
-    public IActionResult Preview()
+    public IActionResult Preview(string cacheKey)
     {
-        var json = TempData["SalesImportPreview"] as string;
-        if (string.IsNullOrEmpty(json))
+        if (string.IsNullOrEmpty(cacheKey) || !_cache.TryGetValue(cacheKey, out SalesImportPreview? preview) || preview == null)
             return RedirectToAction("Index");
 
-        var preview = JsonSerializer.Deserialize<SalesImportPreview>(json);
-        if (preview == null)
-            return RedirectToAction("Index");
-
-        TempData["SalesImportPreview"] = json;
+        ViewData["CacheKey"] = cacheKey;
         return View(preview);
     }
 
@@ -97,18 +98,18 @@ public class SalesImportController : Controller
     {
         try
         {
-            var json = TempData["SalesImportPreview"] as string;
-            if (string.IsNullOrEmpty(json))
+            if (string.IsNullOrEmpty(request?.CacheKey) ||
+                !_cache.TryGetValue(request.CacheKey, out SalesImportPreview? preview) || preview == null)
+            {
                 return Json(new { success = false, message = "Import session expired. Please upload the file again." });
-
-            var preview = JsonSerializer.Deserialize<SalesImportPreview>(json);
-            if (preview == null)
-                return Json(new { success = false, message = "Invalid import session." });
+            }
 
             var result = await _importService.ConfirmImportAsync(preview, request?.ExcludeRowIndexes);
 
             if (!result.Success)
                 return Json(new { success = false, message = result.Message });
+
+            _cache.Remove(request.CacheKey);
 
             return Json(new
             {
@@ -201,5 +202,6 @@ public class SalesImportController : Controller
 
 public class SalesConfirmRequest
 {
+    public string? CacheKey { get; set; }
     public List<int>? ExcludeRowIndexes { get; set; }
 }

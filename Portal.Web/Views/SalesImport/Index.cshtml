@@ -103,7 +103,7 @@
             });
             var data = await response.json();
             BlockUI.hide();
-            if (data.success) { window.location = '/SalesImport/Preview'; }
+            if (data.success) { window.location = '/SalesImport/Preview?cacheKey=' + encodeURIComponent(data.cacheKey); }
             else { Swal.fire({ icon:'error', title:'Upload Failed', text:data.message, confirmButtonColor:'#0D5EA6' }); }
         } catch(e) {
             BlockUI.hide();

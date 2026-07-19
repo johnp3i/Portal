@@ -11,16 +11,94 @@
     </div>
 </div>
 
-<!-- Info Banner -->
+<!-- Info Banner + Template Download -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;align-items:flex-start;gap:12px;padding:4px 0;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <div style="font-size:13px;color:#4a6278;line-height:1.7;">
-            <strong style="color:#0B1B28;">CSV Format:</strong> One row per VAT rate per Z-Report. Rows are grouped automatically by Date From + Date To + Z-Number.
-            <br/>
-            <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">Date From, Date To, Z-Number, VAT Rate, Net Sales, VAT Amount, Discount, Export Date</code>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:280px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div style="font-size:13px;color:#4a6278;line-height:1.7;">
+                <strong style="color:#0B1B28;">CSV Format:</strong> One row per VAT rate per Z-Report. Rows are grouped automatically by Date From + Date To + Z-Number.
+                <br/>
+                <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">Date From, Date To, Z-Number, VAT Rate, Net Sales, VAT Amount, Discount, Export Date</code>
+            </div>
         </div>
+        <a href="/ZReportImport/DownloadTemplate" class="btn btn-outline" style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Template
+        </a>
     </div>
+
+    <!-- Expandable Structure Review -->
+    <details style="margin-top:16px;border-top:1px solid rgba(13,94,166,.08);padding-top:14px;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:700;color:#0D5EA6;user-select:none;">View CSV structure & column reference</summary>
+        <div style="margin-top:12px;font-size:13px;color:#4a6278;line-height:1.8;">
+            <table style="width:100%;font-size:12px;border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:2px solid rgba(13,94,166,.12);">
+                        <th style="text-align:left;padding:6px 8px;font-weight:700;color:#0B1B28;">Column</th>
+                        <th style="text-align:left;padding:6px 8px;font-weight:700;color:#0B1B28;">Required</th>
+                        <th style="text-align:left;padding:6px 8px;font-weight:700;color:#0B1B28;">Format</th>
+                        <th style="text-align:left;padding:6px 8px;font-weight:700;color:#0B1B28;">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom:1px solid #f0f4f7;">
+                        <td style="padding:6px 8px;font-weight:600;">Date From</td>
+                        <td style="padding:6px 8px;"><span class="pill pill-green" style="font-size:10px;">Yes</span></td>
+                        <td style="padding:6px 8px;"><code>dd/MM/yyyy</code></td>
+                        <td style="padding:6px 8px;">Period start date. Used for grouping.</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f4f7;">
+                        <td style="padding:6px 8px;font-weight:600;">Date To</td>
+                        <td style="padding:6px 8px;"><span style="font-size:10px;color:#5E7385;">Optional</span></td>
+                        <td style="padding:6px 8px;"><code>dd/MM/yyyy</code></td>
+                        <td style="padding:6px 8px;">Period end. Defaults to Date From if omitted.</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f4f7;">
+                        <td style="padding:6px 8px;font-weight:600;">Z-Number</td>
+                        <td style="padding:6px 8px;"><span class="pill pill-green" style="font-size:10px;">Yes</span></td>
+                        <td style="padding:6px 8px;">Text</td>
+                        <td style="padding:6px 8px;">Z-Report number from POS. Used for grouping + duplicate detection.</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f4f7;">
+                        <td style="padding:6px 8px;font-weight:600;">VAT Rate</td>
+                        <td style="padding:6px 8px;"><span class="pill pill-green" style="font-size:10px;">Yes</span></td>
+                        <td style="padding:6px 8px;">Number (0–100)</td>
+                        <td style="padding:6px 8px;">VAT percentage (e.g. 5, 9, 19).</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f4f7;">
+                        <td style="padding:6px 8px;font-weight:600;">Net Sales</td>
+                        <td style="padding:6px 8px;"><span class="pill pill-green" style="font-size:10px;">Yes</span></td>
+                        <td style="padding:6px 8px;">Decimal</td>
+                        <td style="padding:6px 8px;">Net amount for this VAT rate line.</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f4f7;">
+                        <td style="padding:6px 8px;font-weight:600;">VAT Amount</td>
+                        <td style="padding:6px 8px;"><span class="pill pill-green" style="font-size:10px;">Yes</span></td>
+                        <td style="padding:6px 8px;">Decimal</td>
+                        <td style="padding:6px 8px;">VAT collected at this rate.</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f4f7;">
+                        <td style="padding:6px 8px;font-weight:600;">Discount</td>
+                        <td style="padding:6px 8px;"><span style="font-size:10px;color:#5E7385;">Optional</span></td>
+                        <td style="padding:6px 8px;">Decimal</td>
+                        <td style="padding:6px 8px;">Discount amount for this line.</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 8px;font-weight:600;">Export Date</td>
+                        <td style="padding:6px 8px;"><span style="font-size:10px;color:#5E7385;">Optional</span></td>
+                        <td style="padding:6px 8px;"><code>dd/MM/yyyy HH:mm</code></td>
+                        <td style="padding:6px 8px;">When the POS generated this report.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top:14px;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                <strong style="font-size:12px;color:#0B1B28;">Grouping rule:</strong>
+                <span style="font-size:12px;">Rows with the same <code>Date From</code> + <code>Date To</code> + <code>Z-Number</code> become one Z-Report with multiple VAT lines.</span>
+            </div>
+        </div>
+    </details>
 </section>
 
 <!-- Upload Form -->
@@ -150,7 +228,7 @@
             BlockUI.hide();
 
             if (data.success) {
-                window.location = '/ZReportImport/Preview';
+                window.location = '/ZReportImport/Preview?cacheKey=' + encodeURIComponent(data.cacheKey);
             } else {
                 Swal.fire({ icon: 'error', title: 'Upload Failed', text: data.message, confirmButtonColor: '#0D5EA6' });
             }

@@ -157,6 +157,23 @@ public class PlanCheckService : IPlanCheckService
         return isOwner;
     }
 
+    /// <inheritdoc />
+    public async Task<string?> GetCurrentPlanNameAsync()
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+
+        var planName = await _portalDbContext.Subscriptions
+            .Where(s => s.BusinessId == businessId
+                && (s.Status == "active" || s.Status == "trialing" || s.Status == "past_due"))
+            .Join(_portalDbContext.Plans,
+                s => s.PlanId,
+                p => p.Id,
+                (s, p) => p.Name)
+            .FirstOrDefaultAsync();
+
+        return planName;
+    }
+
     /// <summary>
     /// Retrieves the plan-level access levels for all included modules (cached per-request).
     /// </summary>

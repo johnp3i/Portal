@@ -37,4 +37,10 @@ public interface IPlanCheckService
     /// Returns true if the current user is the business owner.
     /// </summary>
     Task<bool> IsOwnerAsync(string userId);
+
+    /// <summary>
+    /// Returns the display name of the current business's active subscription plan (e.g., "Foundation", "Professional").
+    /// Returns null if no active subscription.
+    /// </summary>
+    Task<string?> GetCurrentPlanNameAsync();
 }
