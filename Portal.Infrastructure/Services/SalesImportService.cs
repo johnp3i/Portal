@@ -96,12 +96,24 @@ public class SalesImportService : ISalesImportService
             // Duplicate detection (only if invoice number is provided)
             if (!string.IsNullOrWhiteSpace(row.InvoiceNumber))
             {
+                // Exact duplicate: same source + invoice + date
                 var isDuplicate = await _repository.ExistsDuplicateAsync(
                     businessId, revenueSourceId, row.InvoiceNumber.Trim(), row.TransactionDate);
                 if (isDuplicate)
                 {
                     row.IsDuplicate = true;
                     duplicateCount++;
+                }
+                else
+                {
+                    // Cross-source warning: same invoice + date exists under a different source
+                    var otherSource = await _repository.FindCrossSourceDuplicateAsync(
+                        businessId, revenueSourceId, row.InvoiceNumber.Trim(), row.TransactionDate);
+                    if (otherSource != null)
+                    {
+                        row.HasCrossSourceWarning = true;
+                        row.CrossSourceWarning = $"Same invoice exists under \"{otherSource}\"";
+                    }
                 }
             }
         }

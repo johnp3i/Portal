@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Detail — Andreas Christoforou — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary-blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --amber: #C8912E;
+            --red: #C24A4A;
+            --purple: #6B5CE7;
+            --bg: #F7FAFC;
+            --card-bg: #ffffff;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6a7a;
+            --text-muted: #8a9aaa;
+            --border: #e2e8f0;
+            --shadow: 0 2px 12px rgba(13, 94, 166, 0.06);
+            --shadow-card: 0 1px 6px rgba(13, 94, 166, 0.08);
+            --radius: 20px;
+            --radius-card: 14px;
+            --radius-sm: 8px;
+            --font-heading: 'Manrope', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Topbar */
+        .topbar {
+            padding: 32px 40px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .topbar-left .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .topbar-left .back-link:hover {
+            opacity: 0.75;
+        }
+
+        .topbar-left .eyebrow {
+            font-family: var(--font-heading);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 4px;
+        }
+
+        .topbar-left h1 {
+            font-family: var(--font-heading);
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .topbar-left .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding-top: 20px;
+        }
+
+        /* Pipeline Stage Pills */
+        .stage-pills {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .stage-pill {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            cursor: default;
+            transition: all 0.2s;
+        }
+
+        .stage-pill.active {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+            box-shadow: 0 2px 8px rgba(13, 94, 166, 0.25);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: var(--font-body);
+            border-radius: var(--radius-sm);
+            border: 1.5px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
+
+        .btn-primary:hover {
+            background: #0a4d8a;
+            border-color: #0a4d8a;
+        }
+
+        .btn-green {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+
+        .btn-green:hover {
+            background: #0f7d55;
+            border-color: #0f7d55;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-primary);
+            border-color: var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .btn-outline-red {
+            background: transparent;
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        .btn-outline-red:hover {
+            background: var(--red);
+            color: #fff;
+        }
+
+        /* Layout */
+        .content-wrapper {
+            padding: 0 40px 40px;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 28px;
+            align-items: start;
+        }
+
+        /* Cards */
+        .glass {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 28px 32px;
+        }
+
+        .glass + .glass {
+            margin-top: 22px;
+        }
+
+        .sidebar-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-card);
+            padding: 20px;
+        }
+
+        .sidebar-card + .sidebar-card {
+            margin-top: 16px;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            font-size: 11px;
+            font-weight: 700;
+            background: var(--primary-blue);
+            color: #fff;
+            border-radius: 12px;
+        }
+
+        /* Pills */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 16px;
+            white-space: nowrap;
+        }
+
+        .pill-blue {
+            background: rgba(13, 94, 166, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .pill-cyan {
+            background: rgba(87, 184, 232, 0.12);
+            color: #2a8eb8;
+        }
+
+        .pill-green {
+            background: rgba(18, 152, 103, 0.1);
+            color: var(--green);
+        }
+
+        .pill-amber {
+            background: rgba(200, 145, 46, 0.1);
+            color: var(--amber);
+        }
+
+        .pill-purple {
+            background: rgba(107, 92, 231, 0.1);
+            color: var(--purple);
+        }
+
+        /* Lead Info Grid */
+        .lead-info-grid {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 12px 16px;
+            font-size: 14px;
+        }
+
+        .lead-info-grid dt {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .lead-info-grid dd {
+            color: var(--text-primary);
+        }
+
+        .lead-info-grid .request-text {
+            font-style: italic;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .source-arrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .source-arrow .arrow {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .avatar-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            text-align: left;
+            padding: 10px 12px;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            border-bottom: 1.5px solid var(--border);
+        }
+
+        .data-table tbody td {
+            padding: 12px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .truncated-text {
+            max-width: 320px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ics-link {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .ics-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        /* Sidebar Contact */
+        .contact-info {
+            font-size: 14px;
+        }
+
+        .contact-info .contact-name {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .contact-info .contact-company {
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+
+        .contact-detail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .contact-detail .label {
+            color: var(--text-muted);
+            min-width: 70px;
+        }
+
+        .contact-detail a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-detail a:hover {
+            text-decoration: underline;
+        }
+
+        .view-contact-link {
+            display: inline-block;
+            margin-top: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            text-decoration: none;
+        }
+
+        .view-contact-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Pipeline Stepper */
+        .pipeline-stepper {
+            list-style: none;
+            position: relative;
+            padding-left: 16px;
+        }
+
+        .pipeline-stepper li {
+            position: relative;
+            padding: 8px 0 8px 24px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .pipeline-stepper li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        .pipeline-stepper li::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: calc(50% + 10px);
+            width: 2px;
+            height: calc(100% - 4px);
+            background: var(--border);
+        }
+
+        .pipeline-stepper li:last-child::after {
+            display: none;
+        }
+
+        .pipeline-stepper li.completed {
+            color: var(--text-muted);
+        }
+
+        .pipeline-stepper li.completed::before {
+            background: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+
+        .pipeline-stepper li.completed::after {
+            background: var(--text-muted);
+        }
+
+        .pipeline-stepper li.active {
+            color: var(--primary-blue);
+            font-weight: 700;
+        }
+
+        .pipeline-stepper li.active::before {
+            background: var(--primary-blue);
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 4px rgba(13, 94, 166, 0.15);
+        }
+
+        .pipeline-stepper li.active::after {
+            background: var(--border);
+        }
+
+        .stage-select {
+            width: 100%;
+            margin-top: 16px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-family: var(--font-body);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .stage-select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        /* Activity Summary */
+        .activity-list {
+            list-style: none;
+            font-size: 13px;
+        }
+
+        .activity-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .activity-list li:last-child {
+            border-bottom: none;
+        }
+
+        .activity-list .label {
+            color: var(--text-muted);
+        }
+
+        .activity-list .value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            list-style: none;
+        }
+
+        .quick-actions li {
+            margin-bottom: 2px;
+        }
+
+        .quick-actions a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: background 0.15s;
+        }
+
+        .quick-actions a:hover {
+            background: rgba(13, 94, 166, 0.04);
+        }
+
+        .quick-actions .icon {
+            width: 20px;
+            text-align: center;
+            font-size: 15px;
+        }
+
+        .quick-actions .danger {
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
+            padding-top: 10px;
+        }
+
+        .quick-actions .danger a {
+            color: var(--red);
+        }
+
+        .quick-actions .danger a:hover {
+            background: rgba(194, 74, 74, 0.05);
+        }
+
+        /* Sidebar Section Title */
+        .sidebar-title {
+            font-family: var(--font-heading);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+                padding: 0 20px 30px;
+            }
+
+            .topbar {
+                padding: 24px 20px 18px;
+            }
+
+            .topbar-right {
+                width: 100%;
+                padding-top: 12px;
+            }
+
+            .glass {
+                padding: 22px 20px;
+            }
+
+            .data-table {
+                font-size: 12px;
+            }
+
+            .truncated-text {
+                max-width: 200px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .topbar-left h1 {
+                font-size: 28px;
+            }
+
+            .stage-pills {
+                display: none;
+            }
+
+            .lead-info-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .lead-info-grid dt {
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="#" class="back-link">&larr; Back to Pipeline</a>
+            <div class="eyebrow">SALES / LEAD DETAIL</div>
+            <h1>Andreas Christoforou</h1>
+            <div class="subtitle">Cypria Audit Ltd &mdash; WorkforcePi</div>
+        </div>
+        <div class="topbar-right">
+            <div class="stage-pills">
+                <span class="stage-pill">New</span>
+                <span class="stage-pill active">Contacted</span>
+                <span class="stage-pill">Follow-Up</span>
+                <span class="stage-pill">Meeting</span>
+                <span class="stage-pill">Proposal</span>
+            </div>
+            <button class="btn btn-green">Mark as Won</button>
+            <button class="btn btn-outline-red">Mark as Lost</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+
+        <!-- Left Column -->
+        <div class="main-column">
+
+            <!-- Lead Information Card -->
+            <section class="glass">
+                <div class="section-header">
+                    <div class="section-title">Lead Information</div>
+                </div>
+                <dl class="lead-info-grid">
+                    <dt>Product</dt>
+                    <dd><span class="pill pill-blue">WorkforcePi</span></dd>
+
+                    <dt>Source</dt>
+                    <dd>
+                        <span class="source-arrow">
+                            <span class="pill pill-purple">Website</span>
+                            <span class="arrow">&rarr;</span>
+                            <span class="pill pill-cyan">LinkedIn</span>
+                        </span>
+                    </dd>
+
+                    <dt>Request</dt>
+                    <dd class="request-text">&ldquo;We are an audit firm with 12 employees. We need a workforce management solution that integrates with our existing payroll. Please contact us for a demo.&rdquo;</dd>
+
+                    <dt>Created</dt>
+                    <dd>5 July 2026</dd>
+
+                    <dt>Assigned to</dt>
+                    <dd><span class="avatar-circle">JP</span>John Panayiotou</dd>
+                </dl>
+            </section>
+
+            <!-- Responses Section -->
+            <section class="glass">
+                <div class="section-header">
+                    <div class="section-title">Responses <span class="count-badge">1</span></div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Message</th>
+                            <th>Sent By</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="pill pill-blue">Email</span></td>
+                            <td class="truncated-text">&ldquo;Dear Andreas, Thank you for your interest in WorkforcePi. We would be happy to schedule a demo at your convenience...&rdquo;</td>
+                            <td>John Panayiotou</td>
+                            <td>10 July 2026</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="section-actions">
+                    <button class="btn btn-primary">Respond</button>
+                </div>
+            </section>
+
+            <!-- Meetings Section -->
+            <section class="glass">
+                <div class="section-header">
+                    <div class="section-title">Meetings <span class="count-badge">1</span></div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Duration</th>
+                            <th>Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>WorkforcePi Demo &mdash; Cypria Audit</td>
+                            <td><span class="pill pill-cyan">Online</span></td>
+                            <td>18 July 2026, 10:00</td>
+                            <td>45 min</td>
+                            <td>&mdash; (upcoming) &nbsp;<a href="#" class="ics-link">Download .ics</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="section-actions">
+                    <button class="btn btn-outline">Schedule Meeting</button>
+                </div>
+            </section>
+
+            <!-- Proposals & Invoices Section -->
+            <section class="glass">
+                <div class="section-header">
+                    <div class="section-title">Proposals &amp; Invoices <span class="count-badge" style="background:var(--text-muted);">0</span></div>
+                </div>
+                <div class="empty-state">
+                    <p>No proposals or invoices linked to this lead yet.</p>
+                </div>
+                <div class="section-actions">
+                    <button class="btn btn-primary">Create Proposal</button>
+                    <button class="btn btn-outline">Create Invoice</button>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Right Column (Sidebar) -->
+        <div class="sidebar-column">
+
+            <!-- Contact Card -->
+            <div class="sidebar-card">
+                <div class="contact-info">
+                    <div class="contact-name">Andreas Christoforou</div>
+                    <div class="contact-company">Cypria Audit Ltd</div>
+
+                    <div class="contact-detail">
+                        <span class="label">Email</span>
+                        <a href="mailto:andreas@cypria-audit.com">andreas@cypria-audit.com</a>
+                    </div>
+                    <div class="contact-detail">
+                        <span class="label">Phone</span>
+                        <a href="tel:+35722123456">+357 22 123456</a>
+                    </div>
+                    <div class="contact-detail">
+                        <span class="label">Job Title</span>
+                        <span>Managing Partner</span>
+                    </div>
+                    <div class="contact-detail">
+                        <span class="label">Country</span>
+                        <span>Cyprus</span>
+                    </div>
+
+                    <a href="#" class="view-contact-link">View Contact &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Pipeline Stage Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Pipeline Stage</div>
+                <ul class="pipeline-stepper">
+                    <li class="completed">New</li>
+                    <li class="active">Contacted</li>
+                    <li>Follow-Up</li>
+                    <li>Meeting Scheduled</li>
+                    <li>Proposal Sent</li>
+                    <li>Won / Lost</li>
+                </ul>
+                <select class="stage-select">
+                    <option value="" disabled>Change Stage...</option>
+                    <option value="new">New</option>
+                    <option value="contacted" selected>Contacted</option>
+                    <option value="follow-up">Follow-Up</option>
+                    <option value="meeting">Meeting Scheduled</option>
+                    <option value="proposal">Proposal Sent</option>
+                    <option value="won">Won</option>
+                    <option value="lost">Lost</option>
+                </select>
+            </div>
+
+            <!-- Activity Summary Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Activity Summary</div>
+                <ul class="activity-list">
+                    <li>
+                        <span class="label">Lead created</span>
+                        <span class="value">5 July 2026</span>
+                    </li>
+                    <li>
+                        <span class="label">First response</span>
+                        <span class="value">10 July 2026</span>
+                    </li>
+                    <li>
+                        <span class="label">Days in pipeline</span>
+                        <span class="value">10</span>
+                    </li>
+                    <li>
+                        <span class="label">Next action</span>
+                        <span class="value">Demo on 18 July</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Quick Actions</div>
+                <ul class="quick-actions">
+                    <li><a href="#"><span class="icon">&#9993;</span> Respond</a></li>
+                    <li><a href="#"><span class="icon">&#128197;</span> Schedule Meeting</a></li>
+                    <li><a href="#"><span class="icon">&#128196;</span> Create Proposal</a></li>
+                    <li><a href="#"><span class="icon">&#128100;</span> Assign to...</a></li>
+                    <li class="danger"><a href="#"><span class="icon">&#10005;</span> Cancel Lead</a></li>
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

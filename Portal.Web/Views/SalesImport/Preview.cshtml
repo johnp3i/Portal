@@ -18,6 +18,7 @@
         <div class="summary-box"><span class="summary-label">Total Rows</span><span class="summary-value">@Model.TotalRows</span></div>
         <div class="summary-box"><span class="summary-label">Valid</span><span class="summary-value" style="color:#129867;">@Model.ValidRows</span></div>
         <div class="summary-box"><span class="summary-label">Duplicates</span><span class="summary-value" style="color:@(Model.DuplicateCount > 0 ? "#C8912E" : "#129867");">@Model.DuplicateCount</span></div>
+        <div class="summary-box"><span class="summary-label">Warnings</span><span class="summary-value" style="color:@(Model.Rows.Count(r => r.HasCrossSourceWarning) > 0 ? "#C8912E" : "#129867");">@Model.Rows.Count(r => r.HasCrossSourceWarning)</span></div>
         <div class="summary-box"><span class="summary-label">Source</span><span class="summary-value" style="font-size:14px;">@(Model.RevenueSourceName ?? "General")</span></div>
         <div class="summary-box"><span class="summary-label">Batch Total</span><span class="summary-value summary-value--bold">€@Model.BatchTotal.ToString("N2")</span></div>
     </div>
@@ -61,6 +62,11 @@
                             else if (row.IsDuplicate)
                             {
                                 <span class="pill" style="background:#fef3cd;color:#856404;font-weight:700;font-size:11px;">Duplicate</span>
+                            }
+                            else if (row.HasCrossSourceWarning)
+                            {
+                                <span class="pill" style="background:#fef3cd;color:#856404;font-weight:700;font-size:11px;">Warning</span>
+                                <div style="font-size:11px;color:#856404;margin-top:3px;line-height:1.4;">@row.CrossSourceWarning</div>
                             }
                             else
                             {

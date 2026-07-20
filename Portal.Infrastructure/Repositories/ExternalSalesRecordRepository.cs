@@ -250,4 +250,54 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
             throw;
         }
     }
+
+    /// <summary>
+    /// Checks for cross-source duplicate: same InvoiceNumber + TransactionDate exists under ANY source for the business.
+    /// Returns the source name if found, null otherwise.
+    /// </summary>
+    public async Task<string?> FindCrossSourceDuplicateAsync(int businessId, int? excludeSourceId, string invoiceNumber, DateOnly transactionDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 1 RevenueSource.[Name]
+                FROM [revenue].[ExternalSalesRecord]
+                LEFT JOIN [revenue].[RevenueSource] ON ExternalSalesRecord.RevenueSourceId = RevenueSource.Id
+                WHERE ExternalSalesRecord.BusinessId = @BusinessId
+                  AND ExternalSalesRecord.IsActive = 1
+                  AND ExternalSalesRecord.InvoiceNumber = @InvoiceNumber
+                  AND ExternalSalesRecord.TransactionDate = @TransactionDate
+                  AND (@ExcludeSourceId IS NULL OR ExternalSalesRecord.RevenueSourceId != @ExcludeSourceId)";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null) command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@ExcludeSourceId", excludeSourceId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@InvoiceNumber", invoiceNumber));
+                command.Parameters.Add(new SqlParameter("@TransactionDate", transactionDate.ToDateTime(TimeOnly.MinValue)));
+
+                var result = await command.ExecuteScalarAsync();
+                return result as string;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 }

@@ -36,6 +36,8 @@ public class SalesImportRow
     public string? Description { get; set; }
     public string? PaymentMethod { get; set; }
     public bool IsDuplicate { get; set; }
+    public bool HasCrossSourceWarning { get; set; }
+    public string? CrossSourceWarning { get; set; }
     public bool IsValid { get; set; } = true;
     public string? ValidationError { get; set; }
 }
