@@ -326,4 +326,72 @@
         // Redirect to meetings page or open inline modal
         window.location.href = '/Sales/Meetings?leadRequestId=' + leadRequestId + '&contactId=' + contactId;
     };
+
+    window.showActivityInfo = function () {
+        Swal.fire({
+            title: 'Activity Feed',
+            icon: 'info',
+            confirmButtonColor: '#0D5EA6',
+            html: '<div style="text-align:left;font-size:13px;line-height:1.8;color:#0B1B28;">'
+                + '<p style="margin-bottom:12px;color:#5E7385;">The activity feed automatically logs the following actions performed on this lead:</p>'
+                + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Lead Created</td><td style="padding:6px 0;color:#5E7385;">When the lead was added</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Stage Changed</td><td style="padding:6px 0;color:#5E7385;">Lead moves to a different stage</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Response Logged</td><td style="padding:6px 0;color:#5E7385;">A response is composed and logged</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Meeting Scheduled</td><td style="padding:6px 0;color:#5E7385;">A meeting is scheduled from this lead</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Meeting Cancelled</td><td style="padding:6px 0;color:#5E7385;">A linked meeting is cancelled</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Proposal Linked</td><td style="padding:6px 0;color:#5E7385;">A quotation is linked to this lead</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Invoice Linked</td><td style="padding:6px 0;color:#5E7385;">An invoice is linked to this lead</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Assigned / Unassigned</td><td style="padding:6px 0;color:#5E7385;">A team member is assigned or removed</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Marked as Won</td><td style="padding:6px 0;color:#5E7385;">Lead won, contact converted to customer</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Lead Cancelled</td><td style="padding:6px 0;color:#5E7385;">Lead cancelled with optional reason</td></tr>'
+                + '<tr><td style="padding:6px 0;font-weight:700;">Lead Reactivated</td><td style="padding:6px 0;color:#5E7385;">A cancelled lead is reactivated</td></tr>'
+                + '</table>'
+                + '</div>'
+        });
+    };
+
+    window.assignTeamMember = async function (leadId, teamMemberId) {
+        if (!teamMemberId) {
+            // Unassign
+            BlockUI.show('Unassigning...');
+            try {
+                var response = await fetch('/Sales/AxPostUnassignTeamMember?leadId=' + leadId, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        } else {
+            // Assign
+            BlockUI.show('Assigning...');
+            try {
+                var response = await fetch('/Sales/AxPostAssignTeamMember?leadId=' + leadId + '&teamMemberId=' + teamMemberId, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    };
 })();

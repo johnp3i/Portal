@@ -126,6 +126,17 @@ public class SalesController : Controller
     public async Task<IActionResult> Team()
     {
         var members = await _teamMemberService.GetAllAsync();
+
+        // KPI data
+        var activeMembers = members.Count(m => m.IsActive);
+        var totalActiveLeads = members.Sum(m => m.ActiveLeadCount);
+        var unassignedLeads = await _teamMemberService.GetUnassignedLeadCountAsync();
+
+        ViewBag.ActiveMembers = activeMembers;
+        ViewBag.TotalActiveLeads = totalActiveLeads;
+        ViewBag.AvgLeadsPerMember = activeMembers > 0 ? Math.Round((double)totalActiveLeads / activeMembers, 1) : 0;
+        ViewBag.UnassignedLeads = unassignedLeads;
+
         return View(members);
     }
 
@@ -144,6 +155,9 @@ public class SalesController : Controller
         ViewBag.ResponseTypes = responseTypes;
         ViewBag.MeetingTypes = meetingTypes;
         ViewBag.Products = products;
+
+        var teamMembers = await _teamMemberService.GetActiveAsync();
+        ViewBag.TeamMembers = teamMembers;
 
         var businessId = _tenantService.CurrentBusinessId;
         var profile = await _businessService.GetBusinessProfileAsync(businessId);
@@ -299,6 +313,22 @@ public class SalesController : Controller
         }
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostActivateProduct(int id)
+    {
+        try
+        {
+            var result = await _productService.ActivateProductAsync(id);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error activating product");
+            return Json(new { success = false, message = "An error occurred while activating the product." });
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════
     // AJAX — LEAD MANAGEMENT
     // ═══════════════════════════════════════════════════════════
@@ -310,6 +340,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.CreateLeadRequestAsync(request);
+            if (result.Success && result.Id > 0)
+                await RecordActivityAsync(result.Id.Value, "lead_created", "New lead created.");
             return Json(new { success = result.Success, message = result.Message, id = result.Id });
         }
         catch (Exception ex)
@@ -326,6 +358,12 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.ChangeStageAsync(id, leadStatusTypeId);
+            if (result.Success)
+            {
+                var statuses = await _statusTypeRepository.GetAllAsync();
+                var stageName = statuses.FirstOrDefault(s => s.Id == leadStatusTypeId)?.Name ?? "Unknown";
+                await RecordActivityAsync(id, "stage_changed", $"Stage changed to {stageName}.");
+            }
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -374,6 +412,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.CancelLeadAsync(id, description);
+            if (result.Success)
+                await RecordActivityAsync(id, "lead_cancelled", $"Lead cancelled.{(string.IsNullOrWhiteSpace(description) ? "" : $" Reason: {description}")}");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -390,6 +430,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.ReactivateLeadAsync(id);
+            if (result.Success)
+                await RecordActivityAsync(id, "lead_reactivated", "Lead reactivated and returned to New stage.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -422,6 +464,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.UpdateRequestDetailsAsync(request.Id, request.RequestText);
+            if (result.Success)
+                await RecordActivityAsync(request.Id, "request_details_updated", "Request details updated.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -438,6 +482,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.MarkAsWonAsync(id);
+            if (result.Success)
+                await RecordActivityAsync(id, "marked_as_won", "Lead marked as Won. Contact converted to customer.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -448,11 +494,11 @@ public class SalesController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> AxGetPipelineData(string? assignedToUserId, int? productId)
+    public async Task<IActionResult> AxGetPipelineData(string? assignedToUserId, int? productId, int? teamMemberId)
     {
         try
         {
-            var data = await _leadRequestService.GetPipelineDataAsync(assignedToUserId, productId);
+            var data = await _leadRequestService.GetPipelineDataAsync(assignedToUserId, productId, teamMemberId);
             var cancelledLeads = await _leadRequestService.GetCancelledLeadsAsync();
             return Json(new { success = true, data, cancelledLeads });
         }
@@ -492,6 +538,8 @@ public class SalesController : Controller
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
             var result = await _meetingService.CreateMeetingAsync(request, userId);
+            if (result.Success && request.LeadRequestId.HasValue)
+                await RecordActivityAsync(request.LeadRequestId.Value, "meeting_scheduled", $"Meeting scheduled: {request.Subject}.");
             return Json(new { success = result.Success, message = result.Message, id = result.Id });
         }
         catch (Exception ex)
@@ -523,13 +571,32 @@ public class SalesController : Controller
     {
         try
         {
+            var meeting = await _meetingService.GetByIdAsync(id);
             var result = await _meetingService.CancelMeetingAsync(id, description);
+            if (result.Success && meeting?.LeadRequestId.HasValue == true)
+                await RecordActivityAsync(meeting.LeadRequestId.Value, "meeting_cancelled", $"Meeting cancelled: {meeting.Subject}.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling meeting");
             return Json(new { success = false, message = "An error occurred while cancelling the meeting." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostReactivateMeeting(int id)
+    {
+        try
+        {
+            var result = await _meetingService.ReactivateMeetingAsync(id);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reactivating meeting");
+            return Json(new { success = false, message = "An error occurred while reactivating the meeting." });
         }
     }
 
@@ -610,6 +677,8 @@ public class SalesController : Controller
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
             var result = await _responseService.SendResponseAsync(request, userId);
+            if (result.Success)
+                await RecordActivityAsync(request.LeadRequestId, "response_logged", "Response logged.");
             return Json(new { success = result.Success, message = result.Message, id = result.Id });
         }
         catch (Exception ex)
@@ -824,6 +893,12 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.AssignToTeamMemberAsync(leadId, teamMemberId);
+            if (result.Success)
+            {
+                var member = await _teamMemberService.GetByIdAsync(teamMemberId);
+                var memberName = member?.DisplayName ?? "Unknown";
+                await RecordActivityAsync(leadId, "assigned", $"Assigned to {memberName}.");
+            }
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -840,6 +915,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.UnassignTeamMemberAsync(leadId);
+            if (result.Success)
+                await RecordActivityAsync(leadId, "unassigned", "Lead unassigned.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -894,6 +971,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.LinkProposalAsync(leadRequestId, quotationId);
+            if (result.Success)
+                await RecordActivityAsync(leadRequestId, "proposal_linked", $"Proposal #{quotationId} linked to lead.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -910,6 +989,8 @@ public class SalesController : Controller
         try
         {
             var result = await _leadRequestService.LinkInvoiceAsync(leadRequestId, invoiceId);
+            if (result.Success)
+                await RecordActivityAsync(leadRequestId, "invoice_linked", $"Invoice #{invoiceId} linked to lead.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -934,6 +1015,7 @@ public class SalesController : Controller
             var responseTypes = await _responseTypeRepository.GetAllAsync();
             var meetingTypes = await _meetingTypeRepository.GetAllAsync();
             var products = await _productService.GetActiveProductsAsync();
+            var teamMembers = await _teamMemberService.GetActiveAsync();
 
             return Json(new
             {
@@ -945,7 +1027,8 @@ public class SalesController : Controller
                     sourceReferences = sourceRefs.Select(s => new { s.Id, s.Name }),
                     responseTypes = responseTypes.Select(r => new { r.Id, r.Name }),
                     meetingTypes = meetingTypes.Select(m => new { m.Id, m.Name }),
-                    products = products.Select(p => new { p.Id, p.Name })
+                    products = products.Select(p => new { p.Id, p.Name }),
+                    teamMembers = teamMembers.Select(t => new { t.Id, t.DisplayName })
                 }
             });
         }
@@ -953,6 +1036,33 @@ public class SalesController : Controller
         {
             _logger.LogError(ex, "Error loading lookups");
             return Json(new { success = false, message = "Failed to load lookup data." });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PRIVATE — ACTIVITY FEED RECORDING
+    // ═══════════════════════════════════════════════════════════
+
+    private async Task RecordActivityAsync(int leadRequestId, string action, string description)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var businessId = _tenantService.CurrentBusinessId;
+
+            await _activityFeedService.RecordAsync(new ActivityEntry
+            {
+                BusinessId = businessId,
+                LeadRequestId = leadRequestId,
+                Action = action,
+                Description = description,
+                PerformedByUserId = userId
+            });
+        }
+        catch (Exception ex)
+        {
+            // Non-blocking: log but don't fail the primary action
+            _logger.LogWarning(ex, "Failed to record activity for lead {LeadRequestId}", leadRequestId);
         }
     }
 }

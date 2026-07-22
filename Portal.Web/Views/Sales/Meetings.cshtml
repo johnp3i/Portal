@@ -76,7 +76,11 @@
                             <a href="/Sales/AxGetDownloadIcs?id=@meeting.Id" class="tbl-action tbl-action--secondary">Calendar Task</a>
                             @if (!meeting.IsCancelled)
                             {
-                                <button class="tbl-action tbl-action--danger" onclick="cancelMeeting(@meeting.Id, '@meeting.Subject.Replace("'", "\\'")'))">Cancel</button>
+                                <button class="tbl-action tbl-action--danger" onclick="cancelMeeting(@meeting.Id, '@meeting.Subject.Replace("'", "\\'")')">Cancel</button>
+                            }
+                            else
+                            {
+                                <button class="tbl-action tbl-action--secondary" onclick="reactivateMeeting(@meeting.Id, '@meeting.Subject.Replace("'", "\\'")')">Activate</button>
                             }
                         </td>
                     </tr>
@@ -114,5 +118,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/meetings.js"></script>
+    <script src="~/js/sales/meetings.js?v=4"></script>
 }

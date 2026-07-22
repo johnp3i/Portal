@@ -24,6 +24,7 @@
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Role</th>
+                    <th>Active Leads</th>
                     <th>Portal User</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -37,6 +38,7 @@
                         <td>@(member.Email ?? "—")</td>
                         <td>@(member.PhoneNumber ?? "—")</td>
                         <td>@(member.Role ?? "—")</td>
+                        <td style="font-weight:700;text-align:center;">@member.ActiveLeadCount</td>
                         <td>
                             @if (member.IsLinkedToPortalUser)
                             {
@@ -79,6 +81,28 @@
             <p>No team members yet. Add your first team member to start assigning leads.</p>
         </div>
     }
+</section>
+
+<!-- Team KPIs -->
+<section class="glass card-pad" style="margin-top:22px;">
+    <div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:16px;text-align:center;">
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">@ViewBag.ActiveMembers</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Active Members</div>
+        </div>
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">@ViewBag.TotalActiveLeads</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Total Active Leads</div>
+        </div>
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">@ViewBag.AvgLeadsPerMember</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Avg. Leads / Member</div>
+        </div>
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:@(((int)ViewBag.UnassignedLeads) > 0 ? "#C8912E" : "#0B1B28");">@ViewBag.UnassignedLeads</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Unassigned Leads</div>
+        </div>
+    </div>
 </section>
 
 <!-- Create/Edit Modal -->
@@ -152,6 +176,11 @@
 
             if (!payload.firstName) {
                 Swal.fire({ icon: 'warning', title: 'Validation', text: 'First name is required.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            if (payload.email && !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(payload.email)) {
+                Swal.fire({ icon: 'warning', title: 'Invalid Email', text: 'Please enter a valid email address.', confirmButtonColor: '#0D5EA6' });
                 return;
             }
 

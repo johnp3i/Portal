@@ -74,6 +74,10 @@
                             {
                                 <button class="tbl-action tbl-action--danger" onclick="deactivateProduct(@product.Id, '@(product.Name.Replace("'", "\\'"))')">Deactivate</button>
                             }
+                            else
+                            {
+                                <button class="tbl-action tbl-action--secondary" onclick="activateProduct(@product.Id, '@(product.Name.Replace("'", "\\'"))')">Activate</button>
+                            }
                         </td>
                     </tr>
                 }
@@ -110,5 +114,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/products.js"></script>
+    <script src="~/js/sales/products.js?v=2"></script>
 }

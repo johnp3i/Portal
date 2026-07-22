@@ -23,7 +23,7 @@ public interface ILeadRequestService
     Task<ServiceResult> LinkProposalAsync(int leadRequestId, int quotationId);
     Task<ServiceResult> LinkInvoiceAsync(int leadRequestId, int invoiceId);
     Task<LeadRequestDetailDto?> GetLeadDetailAsync(int id);
-    Task<List<PipelineStageGroupDto>> GetPipelineDataAsync(string? assignedToUserId, int? productId);
+    Task<List<PipelineStageGroupDto>> GetPipelineDataAsync(string? assignedToUserId, int? productId, int? teamMemberId = null);
     Task<PagedResult<LeadTableRowDto>> GetLeadsPagedAsync(LeadFilterDto filter);
     Task SuggestStageTransitionAsync(int leadRequestId, string eventType);
 }

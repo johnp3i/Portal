@@ -98,4 +98,37 @@
             }
         });
     };
+
+    window.activateProduct = function (id, name) {
+        Swal.fire({
+            title: 'Activate Product?',
+            text: 'Reactivate "' + name + '"?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, activate',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        }).then(async function (result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Activating...');
+                try {
+                    var response = await fetch('/Sales/AxPostActivateProduct?id=' + id, {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: 'Product activated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    };
 })();

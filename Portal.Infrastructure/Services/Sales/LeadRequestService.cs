@@ -282,6 +282,7 @@ public class LeadRequestService : ILeadRequestService
     {
         try
         {
+            var businessId = _tenantService.CurrentBusinessId;
             const string query = @"
                 UPDATE [quotation].[Quotation]
                 SET [LeadRequestId] = @LeadRequestId
@@ -290,10 +291,32 @@ public class LeadRequestService : ILeadRequestService
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@LeadRequestId", leadRequestId),
                 new SqlParameter("@QuotationId", quotationId),
-                new SqlParameter("@BusinessId", _tenantService.CurrentBusinessId));
+                new SqlParameter("@BusinessId", businessId));
 
             // Suggest stage transition to Proposal Sent (5)
             await SuggestStageTransitionAsync(leadRequestId, "proposal_linked");
+
+            // Record activity
+            try
+            {
+                var reference = await _context.Quotations
+                    .Where(q => q.Id == quotationId)
+                    .Select(q => q.Reference)
+                    .FirstOrDefaultAsync() ?? $"#{quotationId}";
+
+                const string activityQuery = @"
+                    INSERT INTO [sales].[ActivityFeed]
+                        ([BusinessId], [LeadRequestId], [Action], [Description], [PerformedByUserId], [PerformedByTeamMemberId], [Metadata])
+                    VALUES
+                        (@BusinessId, @LeadRequestId, @Action, @Description, NULL, NULL, NULL)";
+
+                await _context.Database.ExecuteSqlRawAsync(activityQuery,
+                    new SqlParameter("@BusinessId", businessId),
+                    new SqlParameter("@LeadRequestId", leadRequestId),
+                    new SqlParameter("@Action", "proposal_linked"),
+                    new SqlParameter("@Description", $"Proposal {reference} linked to lead."));
+            }
+            catch { /* Non-blocking */ }
 
             return ServiceResult.Ok();
         }
@@ -307,6 +330,7 @@ public class LeadRequestService : ILeadRequestService
     {
         try
         {
+            var businessId = _tenantService.CurrentBusinessId;
             const string query = @"
                 UPDATE [invoice].[Invoice]
                 SET [LeadRequestId] = @LeadRequestId
@@ -315,7 +339,29 @@ public class LeadRequestService : ILeadRequestService
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@LeadRequestId", leadRequestId),
                 new SqlParameter("@InvoiceId", invoiceId),
-                new SqlParameter("@BusinessId", _tenantService.CurrentBusinessId));
+                new SqlParameter("@BusinessId", businessId));
+
+            // Record activity
+            try
+            {
+                var invoiceNumber = await _context.Invoices
+                    .Where(i => i.Id == invoiceId)
+                    .Select(i => i.InvoiceNumber)
+                    .FirstOrDefaultAsync() ?? $"#{invoiceId}";
+
+                const string activityQuery = @"
+                    INSERT INTO [sales].[ActivityFeed]
+                        ([BusinessId], [LeadRequestId], [Action], [Description], [PerformedByUserId], [PerformedByTeamMemberId], [Metadata])
+                    VALUES
+                        (@BusinessId, @LeadRequestId, @Action, @Description, NULL, NULL, NULL)";
+
+                await _context.Database.ExecuteSqlRawAsync(activityQuery,
+                    new SqlParameter("@BusinessId", businessId),
+                    new SqlParameter("@LeadRequestId", leadRequestId),
+                    new SqlParameter("@Action", "invoice_linked"),
+                    new SqlParameter("@Description", $"Invoice {invoiceNumber} linked to lead."));
+            }
+            catch { /* Non-blocking */ }
 
             return ServiceResult.Ok();
         }
@@ -354,7 +400,7 @@ public class LeadRequestService : ILeadRequestService
 
             // Get linked quotations
             var linkedQuotations = await _context.Quotations
-                .Where(q => q.LeadRequestId == lead.Id)
+                .Where(q => q.LeadRequestId == lead.Id && !q.IsDeleted)
                 .Select(q => new LinkedDocumentDto
                 {
                     Id = q.Id,
@@ -401,6 +447,7 @@ public class LeadRequestService : ILeadRequestService
                 StageColour = status?.Colour,
                 IsTerminal = status?.IsTerminal ?? false,
                 AssignedToUserId = lead.AssignedToUserId,
+                TeamMemberId = lead.TeamMemberId,
                 IsCancelled = lead.IsCancelled,
                 CancellationDescription = lead.CancellationDescription,
                 CreatedAtUtc = lead.CreatedAtUtc,
@@ -425,6 +472,18 @@ public class LeadRequestService : ILeadRequestService
                 LinkedInvoices = linkedInvoices
             };
 
+            // Resolve assigned team member name
+            if (lead.TeamMemberId.HasValue)
+            {
+                var teamMember = await _context.TeamMembers.FirstOrDefaultAsync(tm => tm.Id == lead.TeamMemberId.Value && tm.BusinessId == businessId);
+                if (teamMember != null)
+                {
+                    dto.AssignedToUserName = string.IsNullOrWhiteSpace(teamMember.LastName)
+                        ? teamMember.FirstName
+                        : $"{teamMember.FirstName} {teamMember.LastName}";
+                }
+            }
+
             return dto;
         }
         catch (Exception ex)
@@ -433,12 +492,13 @@ public class LeadRequestService : ILeadRequestService
         }
     }
 
-    public async Task<List<PipelineStageGroupDto>> GetPipelineDataAsync(string? assignedToUserId, int? productId)
+    public async Task<List<PipelineStageGroupDto>> GetPipelineDataAsync(string? assignedToUserId, int? productId, int? teamMemberId = null)
     {
         try
         {
             var businessId = _tenantService.CurrentBusinessId;
             var statuses = await _statusTypeRepository.GetAllAsync();
+            var sourceTypes = await _sourceTypeRepository.GetAllAsync();
             var leads = await _leadRequestRepository.GetByBusinessIdAsync(businessId);
             var contacts = new Dictionary<int, SalesContact>();
 
@@ -448,6 +508,9 @@ public class LeadRequestService : ILeadRequestService
             // Apply filters
             if (!string.IsNullOrWhiteSpace(assignedToUserId))
                 leads = leads.Where(l => l.AssignedToUserId == assignedToUserId).ToList();
+
+            if (teamMemberId.HasValue)
+                leads = leads.Where(l => l.TeamMemberId == teamMemberId.Value).ToList();
 
             if (productId.HasValue)
                 leads = leads.Where(l => l.ProductId == productId.Value).ToList();
@@ -494,6 +557,8 @@ public class LeadRequestService : ILeadRequestService
                         var product = await _productRepository.GetByIdAsync(lead.ProductId.Value, businessId);
                         card.ProductName = product?.Name;
                     }
+
+                    card.SourceName = sourceTypes.FirstOrDefault(s => s.Id == lead.LeadSourceTypeId)?.Name;
                 }
             }
 

@@ -35,6 +35,7 @@
         var productSelect = document.getElementById('leadProductId');
         var sourceSelect = document.getElementById('leadSourceTypeId');
         var sourceRefSelect = document.getElementById('leadSourceRefTypeId');
+        var assignedFilter = document.getElementById('filterAssigned');
 
         // Load contacts async
         loadContactsForSelect(contactSelect);
@@ -53,6 +54,14 @@
         lookups.sourceReferences.forEach(function (s) {
             sourceRefSelect.innerHTML += '<option value="' + s.id + '">' + s.name + '</option>';
         });
+
+        // Populate Assigned To filter with team members
+        if (lookups.teamMembers && lookups.teamMembers.length > 0) {
+            assignedFilter.innerHTML = '<option value="">All Members</option>';
+            lookups.teamMembers.forEach(function (t) {
+                assignedFilter.innerHTML += '<option value="' + t.id + '">' + t.displayName + '</option>';
+            });
+        }
     }
 
     async function loadContactsForSelect(selectEl) {
@@ -65,13 +74,13 @@
                     selectEl.innerHTML += '<option value="' + c.id + '">' + c.fullName + (c.companyName ? ' (' + c.companyName + ')' : '') + '</option>';
                 });
             }
-        } catch (e) { console.error('Failed to load contacts', e); }
+        } catch (e) { /* Request aborted — page navigating away */ }
     }
 
     window.loadPipelineData = async function () {
         var assignedFilter = document.getElementById('filterAssigned').value;
         var productFilter = document.getElementById('filterProduct').value;
-        var url = '/Sales/AxGetPipelineData?assignedToUserId=' + encodeURIComponent(assignedFilter || '') + '&productId=' + encodeURIComponent(productFilter || '');
+        var url = '/Sales/AxGetPipelineData?teamMemberId=' + encodeURIComponent(assignedFilter || '') + '&productId=' + encodeURIComponent(productFilter || '');
 
         BlockUI.show('Loading pipeline...');
         try {
@@ -80,7 +89,9 @@
             BlockUI.hide();
 
             if (result.success) {
+                window._lastPipelineStages = result.data;
                 renderKanban(result.data);
+                renderTable(result.data);
                 updatePipelineKpis(result.data);
                 renderCancelledLeads(result.cancelledLeads || []);
             } else {
@@ -127,6 +138,79 @@
             board.appendChild(col);
         });
     }
+
+    function renderTable(stages) {
+        var tbody = document.getElementById('leadsTableBody');
+        var allLeads = [];
+
+        stages.forEach(function (stage) {
+            stage.leads.forEach(function (lead) {
+                allLeads.push({
+                    id: lead.id,
+                    contactName: lead.contactName || '—',
+                    companyName: lead.companyName || '—',
+                    productName: lead.productName || '—',
+                    stageName: stage.stageName,
+                    stageColour: stage.colour || '#8a9bab',
+                    sourceName: lead.sourceName || '—',
+                    createdAtUtc: lead.createdAtUtc
+                });
+            });
+        });
+
+        // Sort by created date descending (newest first)
+        allLeads.sort(function (a, b) {
+            return new Date(b.createdAtUtc) - new Date(a.createdAtUtc);
+        });
+
+        if (allLeads.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#8a9bab;padding:24px;">No leads found.</td></tr>';
+            document.getElementById('paginationInfo').textContent = '';
+            document.getElementById('paginationControls').innerHTML = '';
+            return;
+        }
+
+        // Pagination
+        var pageSize = 20;
+        var totalPages = Math.ceil(allLeads.length / pageSize);
+        if (typeof window._tableCurrentPage === 'undefined') window._tableCurrentPage = 1;
+        if (window._tableCurrentPage > totalPages) window._tableCurrentPage = totalPages;
+        var start = (window._tableCurrentPage - 1) * pageSize;
+        var pageLeads = allLeads.slice(start, start + pageSize);
+
+        var html = '';
+        pageLeads.forEach(function (lead) {
+            var dateStr = new Date(lead.createdAtUtc).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            html += '<tr>'
+                + '<td style="font-weight:600;">' + lead.contactName + '</td>'
+                + '<td>' + lead.companyName + '</td>'
+                + '<td>' + lead.productName + '</td>'
+                + '<td><span class="pill" style="background:' + lead.stageColour + '18;color:' + lead.stageColour + ';border:1px solid ' + lead.stageColour + '30;">' + lead.stageName + '</span></td>'
+                + '<td>' + lead.sourceName + '</td>'
+                + '<td>' + dateStr + '</td>'
+                + '<td><button class="tbl-action tbl-action--primary" onclick="window.open(\'/Sales/LeadDetail/' + lead.id + '\', \'_blank\')">View</button></td>'
+                + '</tr>';
+        });
+
+        tbody.innerHTML = html;
+
+        // Pagination info and controls
+        document.getElementById('paginationInfo').textContent = 'Showing ' + (start + 1) + '–' + Math.min(start + pageSize, allLeads.length) + ' of ' + allLeads.length;
+
+        var controlsHtml = '';
+        if (window._tableCurrentPage > 1) {
+            controlsHtml += '<button class="btn btn-secondary" style="padding:6px 12px;font-size:13px;font-weight:700;border-radius:8px;" onclick="goToTablePage(' + (window._tableCurrentPage - 1) + ')">Previous</button> ';
+        }
+        if (window._tableCurrentPage < totalPages) {
+            controlsHtml += '<button class="btn btn-secondary" style="padding:6px 12px;font-size:13px;font-weight:700;border-radius:8px;" onclick="goToTablePage(' + (window._tableCurrentPage + 1) + ')">Next</button>';
+        }
+        document.getElementById('paginationControls').innerHTML = controlsHtml;
+    }
+
+    window.goToTablePage = function (page) {
+        window._tableCurrentPage = page;
+        renderTable(window._lastPipelineStages || []);
+    };
 
     function timeAgo(dateStr) {
         var now = new Date();
@@ -212,11 +296,21 @@
     }
 
     window.switchView = function (view) {
+        localStorage.setItem('pipeline_view', view);
         document.getElementById('kanbanView').style.display = view === 'kanban' ? 'block' : 'none';
         document.getElementById('tableView').style.display = view === 'table' ? 'block' : 'none';
         document.getElementById('btnKanbanView').classList.toggle('active', view === 'kanban');
         document.getElementById('btnTableView').classList.toggle('active', view === 'table');
     };
+
+    // Restore saved view preference on load
+    (function restoreView() {
+        var saved = localStorage.getItem('pipeline_view') || 'kanban';
+        document.getElementById('kanbanView').style.display = saved === 'kanban' ? 'block' : 'none';
+        document.getElementById('tableView').style.display = saved === 'table' ? 'block' : 'none';
+        document.getElementById('btnKanbanView').classList.toggle('active', saved === 'kanban');
+        document.getElementById('btnTableView').classList.toggle('active', saved === 'table');
+    })();
 
     window.applyFilters = function () { loadPipelineData(); };
     window.clearFilters = function () {
@@ -298,6 +392,30 @@
     };
     window.closeCreateLeadModal = function () {
         document.getElementById('createLeadModal').style.display = 'none';
+    };
+
+    window.showActivityInfo = function () {
+        Swal.fire({
+            title: 'Activity Feed',
+            icon: 'info',
+            confirmButtonColor: '#0D5EA6',
+            html: '<div style="text-align:left;font-size:13px;line-height:1.8;color:#0B1B28;">'
+                + '<p style="margin-bottom:12px;color:#5E7385;">The activity feed automatically logs the following actions performed on leads:</p>'
+                + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Lead Created</td><td style="padding:6px 0;color:#5E7385;">A new lead is added to the pipeline</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Stage Changed</td><td style="padding:6px 0;color:#5E7385;">Lead moves to a different stage</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Response Logged</td><td style="padding:6px 0;color:#5E7385;">A response is composed and logged</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Meeting Scheduled</td><td style="padding:6px 0;color:#5E7385;">A meeting is scheduled from a lead</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Meeting Cancelled</td><td style="padding:6px 0;color:#5E7385;">A linked meeting is cancelled</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Proposal Linked</td><td style="padding:6px 0;color:#5E7385;">A quotation is linked to a lead</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Invoice Linked</td><td style="padding:6px 0;color:#5E7385;">An invoice is linked to a lead</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Assigned / Unassigned</td><td style="padding:6px 0;color:#5E7385;">A team member is assigned or removed</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Marked as Won</td><td style="padding:6px 0;color:#5E7385;">Lead is won and contact converted to customer</td></tr>'
+                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Lead Cancelled</td><td style="padding:6px 0;color:#5E7385;">Lead is cancelled with optional reason</td></tr>'
+                + '<tr><td style="padding:6px 0;font-weight:700;">Lead Reactivated</td><td style="padding:6px 0;color:#5E7385;">A cancelled lead is reactivated</td></tr>'
+                + '</table>'
+                + '</div>'
+        });
     };
 
     window.submitCreateLead = async function () {

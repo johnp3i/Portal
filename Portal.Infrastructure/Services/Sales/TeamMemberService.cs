@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Sales;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Models.Sales;
@@ -9,11 +11,13 @@ public class TeamMemberService : ITeamMemberService
 {
     private readonly TeamMemberRepository _repository;
     private readonly ICurrentTenantService _tenantService;
+    private readonly PortalDbContext _context;
 
-    public TeamMemberService(TeamMemberRepository repository, ICurrentTenantService tenantService)
+    public TeamMemberService(TeamMemberRepository repository, ICurrentTenantService tenantService, PortalDbContext context)
     {
         _repository = repository;
         _tenantService = tenantService;
+        _context = context;
     }
 
     public async Task<ServiceResult> CreateAsync(CreateTeamMemberRequest request)
@@ -139,7 +143,24 @@ public class TeamMemberService : ITeamMemberService
         {
             var businessId = _tenantService.CurrentBusinessId;
             var members = await _repository.GetAllByBusinessIdAsync(businessId);
-            return members.Select(MapToDto).ToList();
+
+            // Get active lead counts per team member (non-cancelled, active, non-terminal stages)
+            // Terminal stages: Won=6, Lost=7, Inactive=8
+            var terminalStageIds = new[] { 6, 7, 8 };
+            var leadCounts = await _context.LeadRequests
+                .Where(l => l.TeamMemberId != null && !l.IsCancelled && l.IsActive && !terminalStageIds.Contains(l.LeadStatusTypeId))
+                .GroupBy(l => l.TeamMemberId)
+                .Select(g => new { TeamMemberId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var countLookup = leadCounts.ToDictionary(x => x.TeamMemberId!.Value, x => x.Count);
+
+            return members.Select(m =>
+            {
+                var dto = MapToDto(m);
+                dto.ActiveLeadCount = countLookup.GetValueOrDefault(m.Id, 0);
+                return dto;
+            }).ToList();
         }
         catch (Exception ex)
         {
@@ -181,5 +202,20 @@ public class TeamMemberService : ITeamMemberService
             IsActive = m.IsActive,
             CreatedAtUtc = m.CreatedAtUtc
         };
+    }
+
+    public async Task<int> GetUnassignedLeadCountAsync()
+    {
+        try
+        {
+            var terminalStageIds = new[] { 6, 7, 8 };
+            return await _context.LeadRequests
+                .Where(l => l.TeamMemberId == null && !l.IsCancelled && l.IsActive && !terminalStageIds.Contains(l.LeadStatusTypeId))
+                .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 }

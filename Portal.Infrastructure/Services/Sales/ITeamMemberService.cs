@@ -12,4 +12,5 @@ public interface ITeamMemberService
     Task<List<TeamMemberDto>> GetActiveAsync();
     Task<List<TeamMemberDto>> GetAllAsync();
     Task<TeamMemberDto?> GetByIdAsync(int id);
+    Task<int> GetUnassignedLeadCountAsync();
 }

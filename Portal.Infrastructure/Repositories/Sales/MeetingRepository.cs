@@ -117,6 +117,28 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
         }
     }
 
+    public async Task ReactivateAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [sales].[Meeting]
+                SET [IsCancelled] = 0,
+                    [CancellationTimestamp] = NULL,
+                    [CancellationDescription] = NULL
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId)
+            );
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<Meeting?> GetByIdAsync(int id, int businessId)
     {
         try

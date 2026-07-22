@@ -115,6 +115,19 @@ public class MeetingService : IMeetingService
         }
     }
 
+    public async Task<ServiceResult> ReactivateMeetingAsync(int id)
+    {
+        try
+        {
+            await _meetingRepository.ReactivateAsync(id, _tenantService.CurrentBusinessId);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<MeetingDetailDto?> GetByIdAsync(int id)
     {
         try

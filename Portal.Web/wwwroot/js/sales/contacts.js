@@ -18,6 +18,19 @@
         window.location.href = '/Sales/Contacts';
     };
 
+    // Enter key triggers search
+    document.addEventListener('DOMContentLoaded', function () {
+        var searchInput = document.getElementById('contactSearch');
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchContacts();
+                }
+            });
+        }
+    });
+
     window.openCreateContactModal = function () {
         document.getElementById('contactModalTitle').textContent = 'New Contact';
         document.getElementById('contactId').value = '';

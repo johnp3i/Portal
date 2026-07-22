@@ -82,7 +82,7 @@
                     <th>Stage</th>
                     <th>Source</th>
                     <th>Created</th>
-                    <th></th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="leadsTableBody">
@@ -122,6 +122,7 @@
 <section class="glass card-pad" style="margin-top:22px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h4 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;">Recent Activity</h4>
+        <button class="tbl-action tbl-action--secondary" onclick="showActivityInfo()">What's logged?</button>
     </div>
     <div id="globalActivityFeed">
         <p class="muted" style="font-size:14px;">Loading...</p>
@@ -166,5 +167,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/pipeline.js"></script>
+    <script src="~/js/sales/pipeline.js?v=7"></script>
 }

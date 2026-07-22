@@ -7,6 +7,7 @@
     var responseTypes = (List<LeadResponseType>)ViewBag.ResponseTypes;
     var meetingTypes = (List<MeetingType>)ViewBag.MeetingTypes;
     var products = (List<SalesProduct>)ViewBag.Products;
+    var teamMembers = (List<TeamMemberDto>)ViewBag.TeamMembers;
 }
 
 <div class="topbar">
@@ -91,7 +92,22 @@
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Product</span>@(Model.ProductName ?? "—")</div>
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Source</span>@Model.SourceName @(Model.SourceReferenceName != null ? $"({Model.SourceReferenceName})" : "")</div>
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Created</span>@Model.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</div>
-        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Assigned To</span>@(Model.AssignedToUserName ?? "Unassigned")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Assigned To</span>
+            @if (!Model.IsTerminal && !Model.IsCancelled)
+            {
+                <select id="assignTeamMemberSelect" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(13,94,166,.1);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;color:#0B1B28;background:transparent;appearance:auto;cursor:pointer;margin-top:2px;" onchange="assignTeamMember(@Model.Id, this.value)">
+                    <option value="">Unassigned</option>
+                    @foreach (var tm in teamMembers)
+                    {
+                        <option value="@tm.Id" selected="@(tm.Id == Model.TeamMemberId)">@tm.DisplayName</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <span style="font-size:14px;color:#0B1B28;">@(Model.AssignedToUserName ?? "Unassigned")</span>
+            }
+        </div>
     </div>
     @if (!string.IsNullOrWhiteSpace(Model.RequestText))
     {
@@ -242,6 +258,7 @@
 <section class="glass card-pad" style="margin-top:22px;margin-bottom:22px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h4 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;">Activity Feed</h4>
+        <button class="tbl-action tbl-action--secondary" onclick="showActivityInfo()">What's logged?</button>
     </div>
     <div id="activityFeedContainer">
         <p class="muted" style="font-size:14px;">Loading...</p>
@@ -297,7 +314,7 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/lead-detail.js?v=5"></script>
+    <script src="~/js/sales/lead-detail.js?v=7"></script>
     <script>
         var activityPage = 1;
 

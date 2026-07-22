@@ -231,6 +231,25 @@
 - Multiple rules per supplier (e.g., hosting vs. SSL from the same vendor)
 - Non-blocking: validation is advisory — never prevents VAT submission
 
+### Module 9: Opportunities (Sales Pipeline)
+- Kanban lead board with drag-less stage management (New → Contacted → Follow-Up → Meeting Scheduled → Proposal Sent → Won/Lost/Inactive)
+- Table view toggle with pagination and localStorage persistence
+- Sales contacts directory with deduplication (email + phone)
+- Sales products catalog (independent from quotation product catalog)
+- Team members with role assignments and active lead counts
+- Team KPIs: active members, total active leads, avg leads/member, unassigned leads
+- Lead detail page: stage change, assignment, request details, linked documents, response history, meetings, activity feed
+- Compose Response with template selector, placeholder rendering, and copy-to-clipboard
+- Response templates with Quill rich text editor and placeholder support ({{ContactName}}, {{ProductName}}, {{BusinessName}}, {{ResponseTime}})
+- Meeting scheduling from leads with ICS calendar file download
+- Contact-to-customer conversion on "Mark as Won" (with existing customer deduplication)
+- Proposal and invoice linking from leads
+- Activity feed per lead and global (records all pipeline actions)
+- Lead cancellation with reason and reactivation
+- Pipeline filtering by product and team member
+- Cancelled leads section (separate from kanban)
+- Tier-gated: available on Professional and Enterprise plans
+
 ### Activity Log
 - Timeline-style feed of all business activity
 - Plain-English summaries with coloured timeline dots (created/edited/deleted/status changed)
@@ -365,7 +384,7 @@ Invoicing tools are **transactional** — create invoice, send, get paid. Portal
 
 ## Current Status
 
-- **Phase 1:** Complete (7 modules + infrastructure + Global Payment Allocation + Document Attachments + Purchase Import + Payment Receipts & Signatures)
+- **Phase 1:** Complete (7 modules + infrastructure + Global Payment Allocation + Document Attachments + Purchase Import + Payment Receipts & Signatures + Opportunities)
 - **Phase 2:** Planned (Client Portal, Activity Timeline expansion)
 - **Subscription Management:** Live (Stripe integration for billing)
 - **Production Readiness:** All modules end-to-end tested

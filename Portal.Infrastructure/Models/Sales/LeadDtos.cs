@@ -9,6 +9,7 @@ public class LeadCardDto
     public string ContactName { get; set; } = null!;
     public string? CompanyName { get; set; }
     public string? ProductName { get; set; }
+    public string? SourceName { get; set; }
     public string? AssignedToUserName { get; set; }
     public string? AssignedToUserId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
@@ -81,6 +82,7 @@ public class LeadRequestDetailDto
     public bool IsTerminal { get; set; }
     public string? AssignedToUserId { get; set; }
     public string? AssignedToUserName { get; set; }
+    public int? TeamMemberId { get; set; }
     public bool IsCancelled { get; set; }
     public string? CancellationDescription { get; set; }
     public DateTime CreatedAtUtc { get; set; }

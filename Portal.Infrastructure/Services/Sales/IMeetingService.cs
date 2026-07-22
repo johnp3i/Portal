@@ -11,6 +11,7 @@ public interface IMeetingService
     Task<ServiceResult> CreateMeetingAsync(CreateMeetingRequest request, string userId);
     Task<ServiceResult> UpdateMeetingAsync(UpdateMeetingRequest request);
     Task<ServiceResult> CancelMeetingAsync(int id, string? description);
+    Task<ServiceResult> ReactivateMeetingAsync(int id);
     Task<MeetingDetailDto?> GetByIdAsync(int id);
     Task<List<MeetingListDto>> GetMeetingsForLeadAsync(int leadRequestId);
     Task<List<MeetingListDto>> GetAllMeetingsAsync();

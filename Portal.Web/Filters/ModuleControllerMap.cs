@@ -42,6 +42,7 @@ public static class ModuleControllerMap
         [PortalModules.SchedulePayments] = new[] { "PaymentSchedule" },
         [PortalModules.RecurringExpenseValidation] = new[] { "RecurringExpense" },
         [PortalModules.PurchaseImport] = new[] { "PurchaseImport", "ParserTemplate" },
+        [PortalModules.Sales] = new[] { "Sales" },
     };
 
     /// <summary>

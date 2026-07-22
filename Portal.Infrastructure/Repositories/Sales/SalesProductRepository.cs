@@ -94,6 +94,26 @@ public class SalesProductRepository : GenericStoredProcedureRepository<SalesProd
         }
     }
 
+    public async Task ActivateAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [sales].[Product]
+                SET [IsActive] = 1
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId)
+            );
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<SalesProduct?> GetByIdAsync(int id, int businessId)
     {
         try

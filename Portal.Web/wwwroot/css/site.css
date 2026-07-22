@@ -82,6 +82,7 @@ a{text-decoration:none;color:inherit}
 .btn:hover{opacity:.88}
 .btn-primary{background:linear-gradient(180deg,#1A6BB8 0%, #0D5EA6 100%);color:#fff;box-shadow:0 14px 28px rgba(13,94,166,.22)}
 .btn-secondary{background:rgba(255,255,255,.8);color:var(--text);border-color:rgba(13,94,166,.12)}
+.btn-secondary.active{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 4px 12px rgba(13,94,166,.18)}
 .btn-green{background:linear-gradient(180deg,#17A06D 0%, #129867 100%);color:#fff;box-shadow:0 14px 28px rgba(18,152,103,.20)}
 .btn-outline{background:transparent;color:var(--blue);border:2px solid var(--blue);box-shadow:none;text-decoration:none}
 .btn-outline:hover{background:rgba(13,94,166,.05);opacity:1}

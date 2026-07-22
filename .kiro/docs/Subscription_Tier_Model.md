@@ -75,6 +75,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 -   Recurring Expense Validation (define expected supplier purchases, validate before VAT submission)
 -   Purchase Import (bulk CSV/Excel upload with configurable parser templates)
 -   Sales Invoice Import (bulk CSV/Excel upload for POS transaction data with optional customer tracking)
+-   Opportunities (sales pipeline: lead board, contacts, team, meetings, templates, activity feed)
 -   Document Attachments (attach PDFs/images to purchases, invoices, quotations)
 -   Activity Log (readonly — view history of operations)
 -   Up to 5 users with granular permissions
@@ -140,6 +141,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Customer Behaviour Analytics              | ❌                   | ❌                   | ✅                   |
 | **Operational Tools**                     |                      |                      |                      |
 | Document Attachments                      | ❌                   | ✅                   | ✅                   |
+| Opportunities (sales pipeline)            | ❌                   | ✅                   | ✅                   |
 | Activity Log                              | ❌                   | ✅ (readonly)        | ✅ (full)            |
 | Client Portal (customer self-service)     | ❌                   | ❌                   | ✅                   |
 | Activity Timeline & Notifications         | ❌                   | ❌                   | ✅                   |
@@ -249,6 +251,8 @@ Request arrives
 | `expense_insights`             | Expense Categorisation                                      | Professional   |
 | `recurring_expense_validation` | Recurring Expense Validation                                | Professional   |
 | `purchase_import`              | Purchase Import (CSV/Excel)                                 | Professional   |
+| `zreport_import`               | Sales Invoice Import (POS data)                             | Professional   |
+| `sales`                        | Opportunities (sales pipeline & lead tracking)              | Professional   |
 | `attachments`                  | Document Attachments                                        | Professional   |
 | `audit_log`                    | Activity Log (readonly on Professional, full on Enterprise) | Professional   |
 | `client_portal`                | Client Portal                                               | Enterprise     |

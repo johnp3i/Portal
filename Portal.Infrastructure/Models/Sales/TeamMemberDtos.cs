@@ -12,6 +12,7 @@ public class TeamMemberDto
     public string? UserId { get; set; }
     public bool IsLinkedToPortalUser { get; set; }
     public bool IsActive { get; set; }
+    public int ActiveLeadCount { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }
 

@@ -74,6 +74,19 @@ public class SalesProductService : ISalesProductService
         }
     }
 
+    public async Task<ServiceResult> ActivateProductAsync(int id)
+    {
+        try
+        {
+            await _productRepository.ActivateAsync(id, _tenantService.CurrentBusinessId);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<SalesProduct?> GetByIdAsync(int id)
     {
         try
