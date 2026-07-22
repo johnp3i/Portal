@@ -1,0 +1,369 @@
+@using Portal.Infrastructure.Models.Sales
+@using Portal.Infrastructure.Entities.Sales
+@model LeadRequestDetailDto
+@{
+    ViewData["Title"] = $"Lead: {Model.ContactName}";
+    var statuses = (List<LeadStatusType>)ViewBag.Statuses;
+    var responseTypes = (List<LeadResponseType>)ViewBag.ResponseTypes;
+    var meetingTypes = (List<MeetingType>)ViewBag.MeetingTypes;
+    var products = (List<SalesProduct>)ViewBag.Products;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Pipeline / Lead Detail</div>
+        <h1 class="topbar-heading">@Model.ContactName</h1>
+        <p class="topbar-subtitle">
+            @(Model.ProductName ?? "No product") · @Model.SourceName
+            @if (Model.IsCancelled) { <span class="pill pill-red">Cancelled</span> }
+        </p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="/Sales/Pipeline" class="btn btn-secondary">Back to Pipeline</a>
+    </div>
+</div>
+
+<!-- Stage & Actions -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Stage</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:10px;font-size:14px;font-weight:700;background:@(Model.StageColour ?? "#8a9bab")12;color:@(Model.StageColour ?? "#8a9bab");border:1.5px solid @(Model.StageColour ?? "#8a9bab")30;">
+                <span style="width:8px;height:8px;border-radius:50%;background:@(Model.StageColour ?? "#8a9bab");display:inline-block;"></span>
+                @Model.StageName
+            </span>
+            @if (!Model.IsTerminal && !Model.IsCancelled)
+            {
+                <select id="stageSelect" style="min-width:160px;padding:8px 14px;border-radius:10px;border:1.5px solid rgba(13,94,166,.15);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;color:#0B1B28;background:#fff;appearance:auto;" onchange="changeStage(@Model.Id, this.value)">
+                    @foreach (var s in statuses)
+                    {
+                        <option value="@s.Id" selected="@(s.Id == Model.LeadStatusTypeId)">@s.Name</option>
+                    }
+                </select>
+            }
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            @if (!Model.IsTerminal && !Model.IsCancelled)
+            {
+                <button class="btn btn-primary" onclick="openRespondModal(@Model.Id)">Compose Response</button>
+                <button class="btn btn-secondary" onclick="openScheduleMeetingModal(@Model.Id, @Model.ContactId)">Schedule Meeting</button>
+                <a href="/Quotation/Create?leadRequestId=@Model.Id&customerId=" class="btn btn-secondary">Create Proposal</a>
+                <button class="btn btn-secondary" style="background:#12986722;color:#129867;border:1.5px solid #129867;" onclick="markAsWon(@Model.Id)">Mark as Won</button>
+                <button class="btn btn-secondary" style="color:#C24A4A;border-color:#C24A4A;" onclick="cancelLead(@Model.Id)">Cancel</button>
+            }
+            @if (Model.IsTerminal)
+            {
+                <button class="btn btn-secondary" onclick="changeStage(@Model.Id, 1)">Reopen (→ New)</button>
+            }
+            @if (Model.IsCancelled)
+            {
+                <button class="btn btn-secondary" onclick="reactivateLead(@Model.Id)">Reactivate Lead</button>
+            }
+        </div>
+    </div>
+</section>
+
+@if (Model.IsCancelled)
+{
+    <section style="display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(194,74,74,.04);border:1.5px solid rgba(194,74,74,.18);border-radius:16px;margin-bottom:22px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(194,74,74,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" fill="none" stroke="#C24A4A" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#C24A4A;">This lead has been cancelled</div>
+            @if (!string.IsNullOrWhiteSpace(Model.CancellationDescription))
+            {
+                <div style="font-size:13px;color:#5E7385;margin-top:2px;">Reason: "@Model.CancellationDescription"</div>
+            }
+        </div>
+        <button class="btn btn-secondary" style="flex-shrink:0;" onclick="reactivateLead(@Model.Id)">Reactivate Lead</button>
+    </section>
+}
+
+<!-- Lead Info -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h4 style="margin-bottom:12px;">Lead Information</h4>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Contact</span><a href="/Sales/ContactDetail/@Model.ContactId" style="color:var(--blue);">@Model.ContactName</a></div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Email</span>@(Model.ContactEmail ?? "—")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Phone</span>@(Model.ContactPhone ?? "—")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Company</span>@(Model.CompanyName ?? "—")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Product</span>@(Model.ProductName ?? "—")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Source</span>@Model.SourceName @(Model.SourceReferenceName != null ? $"({Model.SourceReferenceName})" : "")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Created</span>@Model.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Assigned To</span>@(Model.AssignedToUserName ?? "Unassigned")</div>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.RequestText))
+    {
+        <div style="margin-top:16px;padding:16px 18px;background:rgba(13,94,166,.03);border:1.5px solid rgba(13,94,166,.08);border-radius:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Request Details</span>
+                <button class="tbl-action tbl-action--primary" onclick="editRequestDetails(@Model.Id, this)">Edit</button>
+            </div>
+            <p id="requestDetailsText" style="margin:0;font-size:14px;line-height:1.7;color:#0B1B28;">@Model.RequestText</p>
+            @if (!string.IsNullOrWhiteSpace(Model.SourceUrl))
+            {
+                <div style="margin-top:8px;">
+                    <a href="@Model.SourceUrl" target="_blank" style="font-size:12px;color:#0D5EA6;font-weight:600;text-decoration:none;">Source URL ↗</a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="margin-top:16px;padding:16px 18px;background:rgba(13,94,166,.03);border:1.5px solid rgba(13,94,166,.08);border-radius:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Request Details</span>
+                <button class="tbl-action tbl-action--primary" onclick="editRequestDetails(@Model.Id, this)">Edit</button>
+            </div>
+            <p id="requestDetailsText" style="margin:6px 0 0;font-size:13px;color:#8a9bab;font-style:italic;">No request details provided.</p>
+        </div>
+    }
+</section>
+
+<!-- Response History -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h4 style="margin-bottom:12px;">Responses (@Model.Responses.Count)</h4>
+    @if (Model.Responses.Count == 0)
+    {
+        <p style="color:#5a6a7a;">No responses sent yet.</p>
+    }
+    else
+    {
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            @foreach (var r in Model.Responses)
+            {
+                <div style="padding:12px;background:#f7fafc;border-radius:8px;border-left:3px solid var(--blue);">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span style="font-weight:600;">@r.ResponseTypeName @(r.IsAutomated ? "(Auto)" : "")</span>
+                        <span style="font-size:12px;color:#5a6a7a;">@r.SentAtUtc.ToString("dd MMM yyyy HH:mm")</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(r.ResponseText))
+                    {
+                        <p style="margin:0;font-size:14px;">@(r.ResponseText.Length > 200 ? r.ResponseText.Substring(0, 200) + "…" : r.ResponseText)</p>
+                    }
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<!-- Meetings -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h4 style="margin-bottom:12px;">Meetings (@Model.Meetings.Count)</h4>
+    @if (Model.Meetings.Count == 0)
+    {
+        <p style="color:#5a6a7a;">No meetings scheduled for this lead.</p>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead><tr><th>Subject</th><th>Type</th><th>Scheduled</th><th>Duration</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var m in Model.Meetings)
+                {
+                    <tr>
+                        <td>@m.Subject</td>
+                        <td>@m.MeetingTypeName</td>
+                        <td>@m.ScheduledAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>@m.DurationMinutes min</td>
+                        <td>@(m.IsCancelled ? "Cancelled" : (m.ScheduledAtUtc > DateTime.UtcNow ? "Upcoming" : "Completed"))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<!-- Linked Documents -->
+<section class="glass card-pad">
+    <h4 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:18px;">Linked Documents</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <!-- Quotations -->
+        <div style="background:#f7fafc;border-radius:14px;padding:18px;border:1px solid rgba(13,94,166,.06);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <svg width="18" height="18" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                <span style="font-size:14px;font-weight:700;color:#0B1B28;">Quotations</span>
+                <span style="margin-left:auto;background:rgba(13,94,166,.08);color:#0D5EA6;padding:2px 10px;border-radius:8px;font-size:12px;font-weight:700;">@Model.LinkedQuotations.Count</span>
+            </div>
+            @if (Model.LinkedQuotations.Count == 0)
+            {
+                <p style="color:#8a9bab;font-size:13px;text-align:center;padding:12px 0;">No linked quotations.</p>
+            }
+            else
+            {
+                @foreach (var q in Model.LinkedQuotations)
+                {
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fff;border-radius:10px;margin-bottom:8px;border:1px solid rgba(13,94,166,.06);">
+                        <div>
+                            <a href="/Quotation/Edit/@q.Id" style="color:#0D5EA6;font-weight:700;font-size:14px;text-decoration:none;">@q.Reference</a>
+                            <div style="font-size:12px;color:#5E7385;margin-top:2px;">@q.CreatedAtUtc.ToString("dd MMM yyyy")</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-weight:700;font-size:14px;color:#0B1B28;">@ViewBag.CurrencySymbol@q.TotalAmount.ToString("N2")</span>
+                            <span class="pill pill-grey">@q.Status</span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <!-- Invoices -->
+        <div style="background:#f7fafc;border-radius:14px;padding:18px;border:1px solid rgba(13,94,166,.06);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <svg width="18" height="18" fill="none" stroke="#129867" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8m-8 4h8m-8 4h4"/></svg>
+                <span style="font-size:14px;font-weight:700;color:#0B1B28;">Invoices</span>
+                <span style="margin-left:auto;background:rgba(18,152,103,.08);color:#129867;padding:2px 10px;border-radius:8px;font-size:12px;font-weight:700;">@Model.LinkedInvoices.Count</span>
+            </div>
+            @if (Model.LinkedInvoices.Count == 0)
+            {
+                <p style="color:#8a9bab;font-size:13px;text-align:center;padding:12px 0;">No linked invoices.</p>
+            }
+            else
+            {
+                @foreach (var i in Model.LinkedInvoices)
+                {
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fff;border-radius:10px;margin-bottom:8px;border:1px solid rgba(13,94,166,.06);">
+                        <div>
+                            <a href="/Invoice/Detail/@i.Id" style="color:#0D5EA6;font-weight:700;font-size:14px;text-decoration:none;">@i.Reference</a>
+                            <div style="font-size:12px;color:#5E7385;margin-top:2px;">@i.CreatedAtUtc.ToString("dd MMM yyyy")</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-weight:700;font-size:14px;color:#0B1B28;">@ViewBag.CurrencySymbol@i.TotalAmount.ToString("N2")</span>
+                            <span class="pill pill-blue">@i.Status</span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Activity Feed -->
+<section class="glass card-pad" style="margin-top:22px;margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h4 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;">Activity Feed</h4>
+    </div>
+    <div id="activityFeedContainer">
+        <p class="muted" style="font-size:14px;">Loading...</p>
+    </div>
+    <div id="activityLoadMore" style="display:none;margin-top:14px;text-align:center;">
+        <button class="btn btn-secondary" onclick="loadMoreActivity()">Load more</button>
+    </div>
+</section>
+
+<!-- Compose Response Modal -->
+<div id="composeModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:680px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+            <h3 style="margin:0;">Compose Response</h3>
+            <button onclick="closeComposeModal()" style="background:none;border:none;font-size:20px;color:#8a9bab;cursor:pointer;padding:4px 8px;">&times;</button>
+        </div>
+        <p style="font-size:12px;color:#5E7385;line-height:1.6;margin-bottom:14px;padding:10px 12px;background:rgba(13,94,166,.03);border-radius:8px;border:1px solid rgba(13,94,166,.08);">
+            Select a template to generate the response text with placeholders filled in. Copy the text into your email client, or log the response directly.
+        </p>
+        <input type="hidden" id="composeLeadRequestId" />
+        <input type="hidden" id="composeResponseTypeId" />
+        <div class="field" style="margin-bottom:14px;">
+            <label>Template</label>
+            <select id="composeTemplateSelect" onchange="onTemplateSelected()" style="width:100%;">
+                <option value="">— Select a template —</option>
+            </select>
+        </div>
+        <div id="composeTemplateName" style="font-size:12px;color:#5E7385;margin-bottom:8px;font-weight:600;"></div>
+        <div class="field" style="margin-bottom:14px;">
+            <label>Subject</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="composeSubject" readonly style="flex:1;background:#f7fafc;" />
+                <button class="tbl-action tbl-action--primary" onclick="copyComposeSubject()" title="Copy subject">Copy</button>
+            </div>
+        </div>
+        <div class="field" style="margin-bottom:14px;">
+            <label>Body Preview</label>
+            <div id="composeBodyPreview" style="min-height:140px;max-height:300px;overflow-y:auto;padding:14px 16px;background:#f7fafc;border:1.5px solid rgba(13,94,166,.1);border-radius:12px;font-size:14px;line-height:1.7;color:#0B1B28;">
+                <p style="color:#8a9bab;font-size:13px;">Select a template to see the rendered preview.</p>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:18px;">
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-secondary" onclick="copyComposeBody()">Copy Body</button>
+                <button class="btn btn-secondary" onclick="copyComposeAll()">Copy All</button>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-secondary" onclick="closeComposeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="logComposeResponse()">Log Response</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/lead-detail.js?v=5"></script>
+    <script>
+        var activityPage = 1;
+
+        async function loadActivityFeed(page) {
+            var container = document.getElementById('activityFeedContainer');
+            try {
+                var response = await fetch('/Sales/AxGetActivityFeed?leadRequestId=@Model.Id&page=' + page);
+                var result = await response.json();
+
+                if (!result.success || !result.data || result.data.length === 0) {
+                    if (page === 1) {
+                        container.innerHTML = '<p style="font-size:13px;color:#8a9bab;text-align:center;padding:16px 0;">No activity recorded yet.</p>';
+                    }
+                    document.getElementById('activityLoadMore').style.display = 'none';
+                    return;
+                }
+
+                var html = page === 1 ? '' : container.innerHTML;
+                result.data.forEach(function(entry) {
+                    var dotColor = getActionColor(entry.action);
+                    var icon = getActionIcon(entry.action);
+                    var label = formatActionLabel(entry.action);
+                    var timeStr = new Date(entry.createdAtUtc).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+                    html += '<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid rgba(13,94,166,.05);">';
+                    html += '<div style="flex-shrink:0;width:28px;height:28px;border-radius:8px;background:' + dotColor + '18;color:' + dotColor + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">' + icon + '</div>';
+                    html += '<div style="flex:1;min-width:0;">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+                    html += '<span style="font-size:13px;font-weight:700;color:#0B1B28;">' + label + '</span>';
+                    html += '<span style="font-size:11px;color:#8a9bab;">' + timeStr + '</span>';
+                    html += '</div>';
+                    html += '<div style="font-size:12px;color:#5E7385;margin-top:3px;line-height:1.5;">' + entry.description + '</div>';
+                    if (entry.performedByName) {
+                        html += '<div style="font-size:11px;color:#8a9bab;margin-top:4px;">by ' + entry.performedByName + '</div>';
+                    }
+                    html += '</div></div>';
+                });
+
+                container.innerHTML = html;
+                document.getElementById('activityLoadMore').style.display = result.data.length >= 20 ? 'block' : 'none';
+            } catch (e) {
+                if (page === 1) container.innerHTML = '<p style="font-size:13px;color:#8a9bab;">Failed to load activity.</p>';
+            }
+        }
+
+        function loadMoreActivity() {
+            activityPage++;
+            loadActivityFeed(activityPage);
+        }
+
+        function getActionColor(action) {
+            var map = { lead_created:'#8a9bab', stage_changed:'#0D5EA6', lead_cancelled:'#C24A4A', lead_reactivated:'#129867', response_logged:'#129867', meeting_scheduled:'#C8912E', meeting_cancelled:'#C24A4A', proposal_linked:'#57B8E8', invoice_linked:'#57B8E8', marked_as_won:'#129867', assigned:'#0D5EA6', unassigned:'#8a9bab', request_details_updated:'#8a9bab' };
+            return map[action] || '#8a9bab';
+        }
+
+        function getActionIcon(action) {
+            var map = { lead_created:'+', stage_changed:'→', lead_cancelled:'✕', lead_reactivated:'↺', response_logged:'💬', meeting_scheduled:'📅', meeting_cancelled:'📅', proposal_linked:'📄', invoice_linked:'📄', marked_as_won:'✓', assigned:'👤', unassigned:'👤', request_details_updated:'✏' };
+            return map[action] || '•';
+        }
+
+        function formatActionLabel(action) {
+            var map = { lead_created:'Lead Created', stage_changed:'Stage Changed', lead_cancelled:'Lead Cancelled', lead_reactivated:'Lead Reactivated', response_logged:'Response Logged', meeting_scheduled:'Meeting Scheduled', meeting_cancelled:'Meeting Cancelled', proposal_linked:'Proposal Linked', invoice_linked:'Invoice Linked', marked_as_won:'Marked as Won', assigned:'Assigned', unassigned:'Unassigned', request_details_updated:'Details Updated' };
+            return map[action] || action;
+        }
+
+        // Load on page ready
+        loadActivityFeed(1);
+    </script>
+}

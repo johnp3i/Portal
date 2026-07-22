@@ -100,7 +100,8 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[IsDisputed],
                        [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
-                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
+                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc],
+                       [invoice].[Invoice].[LeadRequestId]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[Id] = @Id AND [invoice].[Invoice].[BusinessId] = @BusinessId";
 
@@ -131,7 +132,8 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[IsDisputed],
                        [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
-                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
+                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc],
+                       [invoice].[Invoice].[LeadRequestId]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[Id] = @Id AND [invoice].[Invoice].[BusinessId] = @BusinessId";
 
@@ -293,7 +295,8 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[IsDisputed],
                        [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
-                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc]
+                       [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc],
+                       [invoice].[Invoice].[LeadRequestId]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[QuotationId] = @QuotationId";
 

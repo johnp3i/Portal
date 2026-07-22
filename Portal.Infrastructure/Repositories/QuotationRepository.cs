@@ -26,7 +26,7 @@ public class QuotationRepository : GenericStoredProcedureRepository<Quotation>
                        [quotation].[Quotation].[Notes], [quotation].[Quotation].[CreatedAtUtc],
                        [quotation].[Quotation].[UpdatedAtUtc], [quotation].[Quotation].[QuotationContactId],
                        [quotation].[Quotation].[IsGrandTotalShown], [quotation].[Quotation].[IsDeleted],
-                       [quotation].[Quotation].[DeletedAtUtc]
+                       [quotation].[Quotation].[DeletedAtUtc], [quotation].[Quotation].[LeadRequestId]
                 FROM [quotation].[Quotation]
                 WHERE [quotation].[Quotation].[BusinessId] = @BusinessId
                   AND [quotation].[Quotation].[IsDeleted] = 0";
@@ -51,7 +51,7 @@ public class QuotationRepository : GenericStoredProcedureRepository<Quotation>
                        [quotation].[Quotation].[Notes], [quotation].[Quotation].[CreatedAtUtc],
                        [quotation].[Quotation].[UpdatedAtUtc], [quotation].[Quotation].[QuotationContactId],
                        [quotation].[Quotation].[IsGrandTotalShown], [quotation].[Quotation].[IsDeleted],
-                       [quotation].[Quotation].[DeletedAtUtc]
+                       [quotation].[Quotation].[DeletedAtUtc], [quotation].[Quotation].[LeadRequestId]
                 FROM [quotation].[Quotation]
                 WHERE [quotation].[Quotation].[Id] = @Id AND [quotation].[Quotation].[BusinessId] = @BusinessId";
 

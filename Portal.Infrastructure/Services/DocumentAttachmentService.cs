@@ -269,7 +269,7 @@ public class DocumentAttachmentService : IDocumentAttachmentService
                 FileSizeBytes = a.FileSizeBytes,
                 EntityType = a.EntityType,
                 EntityId = a.EntityId,
-                EntityReference = $"{a.EntityType} #{a.EntityId}",
+                EntityReference = $"{FormatEntityTypeName(a.EntityType)} #{a.EntityId}",
                 CreatedAtUtc = a.CreatedAtUtc,
                 UploadedByDisplayName = _userNameResolver.GetDisplayName(names, a.UploadedByUserId),
                 IsOwnedByCurrentUser = !string.IsNullOrEmpty(currentUserId) &&
@@ -309,5 +309,16 @@ public class DocumentAttachmentService : IDocumentAttachmentService
         {
             throw;
         }
+    }
+
+    private static string FormatEntityTypeName(string entityType)
+    {
+        return entityType switch
+        {
+            "CreditNote" => "Credit Note",
+            "RevenueSummary" => "Revenue Summary",
+            "PaymentSchedule" => "Payment Schedule",
+            _ => System.Text.RegularExpressions.Regex.Replace(entityType, "([a-z])([A-Z])", "$1 $2")
+        };
     }
 }

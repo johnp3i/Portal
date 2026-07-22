@@ -62,6 +62,8 @@ public class RecurringExpenseController : Controller
                 .OrderByDescending(p => p.PeriodStartDate)
                 .ToListAsync();
 
+            var profile = await _dbContext.BusinessProfiles.FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+            ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
             ViewBag.VatPeriods = vatPeriods;
 
             return View();
@@ -106,6 +108,8 @@ public class RecurringExpenseController : Controller
 
             var rules = await _validationService.GetRulesForBusinessAsync(businessId);
 
+            var profile = await _dbContext.BusinessProfiles.FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+            ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
             ViewBag.Suppliers = suppliers;
             ViewBag.Categories = categories;
             ViewBag.Rules = rules;

@@ -1,0 +1,334 @@
+using System.Text;
+using Portal.Infrastructure.Entities.Sales;
+using Portal.Infrastructure.Models;
+using Portal.Infrastructure.Models.Sales;
+using Portal.Infrastructure.Repositories.Sales;
+
+namespace Portal.Infrastructure.Services.Sales;
+
+/// <summary>
+/// Business logic for meeting management.
+/// </summary>
+public class MeetingService : IMeetingService
+{
+    private readonly MeetingRepository _meetingRepository;
+    private readonly MeetingProductRequestRepository _productRequestRepository;
+    private readonly MeetingOpportunityRepository _opportunityRepository;
+    private readonly SalesContactRepository _contactRepository;
+    private readonly SalesProductRepository _productRepository;
+    private readonly MeetingTypeRepository _meetingTypeRepository;
+    private readonly ILeadRequestService _leadRequestService;
+    private readonly ICurrentTenantService _tenantService;
+
+    public MeetingService(
+        MeetingRepository meetingRepository,
+        MeetingProductRequestRepository productRequestRepository,
+        MeetingOpportunityRepository opportunityRepository,
+        SalesContactRepository contactRepository,
+        SalesProductRepository productRepository,
+        MeetingTypeRepository meetingTypeRepository,
+        ILeadRequestService leadRequestService,
+        ICurrentTenantService tenantService)
+    {
+        _meetingRepository = meetingRepository;
+        _productRequestRepository = productRequestRepository;
+        _opportunityRepository = opportunityRepository;
+        _contactRepository = contactRepository;
+        _productRepository = productRepository;
+        _meetingTypeRepository = meetingTypeRepository;
+        _leadRequestService = leadRequestService;
+        _tenantService = tenantService;
+    }
+
+    public async Task<ServiceResult> CreateMeetingAsync(CreateMeetingRequest request, string userId)
+    {
+        try
+        {
+            var entity = new Meeting
+            {
+                BusinessId = _tenantService.CurrentBusinessId,
+                LeadRequestId = request.LeadRequestId,
+                ContactId = request.ContactId,
+                MeetingTypeId = request.MeetingTypeId,
+                Subject = request.Subject,
+                ScheduledAtUtc = request.ScheduledAtUtc,
+                DurationMinutes = request.DurationMinutes,
+                Location = request.Location,
+                Notes = request.Notes,
+                IsCancelled = false,
+                IsActive = true,
+                CreatedByUserId = userId
+            };
+
+            var id = await _meetingRepository.InsertAsync(entity);
+
+            // Suggest stage transition when linked to a lead
+            if (request.LeadRequestId.HasValue)
+            {
+                await _leadRequestService.SuggestStageTransitionAsync(request.LeadRequestId.Value, "meeting_scheduled");
+            }
+
+            return ServiceResult.Ok(id);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> UpdateMeetingAsync(UpdateMeetingRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var existing = await _meetingRepository.GetByIdAsync(request.Id, businessId);
+            if (existing == null)
+                return ServiceResult.Fail("Meeting not found.");
+
+            existing.MeetingTypeId = request.MeetingTypeId;
+            existing.Subject = request.Subject;
+            existing.ScheduledAtUtc = request.ScheduledAtUtc;
+            existing.DurationMinutes = request.DurationMinutes;
+            existing.Location = request.Location;
+            existing.Notes = request.Notes;
+            existing.Outcome = request.Outcome;
+
+            await _meetingRepository.UpdateAsync(existing);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> CancelMeetingAsync(int id, string? description)
+    {
+        try
+        {
+            await _meetingRepository.CancelAsync(id, _tenantService.CurrentBusinessId, description);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<MeetingDetailDto?> GetByIdAsync(int id)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var meeting = await _meetingRepository.GetByIdAsync(id, businessId);
+            if (meeting == null) return null;
+
+            var contact = await _contactRepository.GetByIdAsync(meeting.ContactId, businessId);
+            var meetingTypes = await _meetingTypeRepository.GetAllAsync();
+            var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == meeting.MeetingTypeId);
+
+            var productRequests = await _productRequestRepository.GetByMeetingIdAsync(id);
+            var opportunities = await _opportunityRepository.GetByMeetingIdAsync(id);
+
+            var productRequestDtos = new List<MeetingProductRequestDto>();
+            foreach (var pr in productRequests)
+            {
+                var product = await _productRepository.GetByIdAsync(pr.ProductId, businessId);
+                productRequestDtos.Add(new MeetingProductRequestDto
+                {
+                    Id = pr.Id,
+                    ProductName = product?.Name ?? "Unknown",
+                    RequestText = pr.RequestText,
+                    CreatedAtUtc = pr.CreatedAtUtc
+                });
+            }
+
+            return new MeetingDetailDto
+            {
+                Id = meeting.Id,
+                LeadRequestId = meeting.LeadRequestId,
+                ContactId = meeting.ContactId,
+                ContactName = contact != null
+                    ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
+                    : "Unknown",
+                MeetingTypeId = meeting.MeetingTypeId,
+                MeetingTypeName = meetingType?.Name ?? "Unknown",
+                Subject = meeting.Subject,
+                ScheduledAtUtc = meeting.ScheduledAtUtc,
+                DurationMinutes = meeting.DurationMinutes,
+                Location = meeting.Location,
+                Notes = meeting.Notes,
+                Outcome = meeting.Outcome,
+                IsCancelled = meeting.IsCancelled,
+                CreatedAtUtc = meeting.CreatedAtUtc,
+                ProductRequests = productRequestDtos,
+                Opportunities = opportunities.Select(o => new MeetingOpportunityDto
+                {
+                    Id = o.Id,
+                    Title = o.Title,
+                    Description = o.Description,
+                    EstimatedValue = o.EstimatedValue,
+                    CreatedAtUtc = o.CreatedAtUtc
+                }).ToList()
+            };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<MeetingListDto>> GetMeetingsForLeadAsync(int leadRequestId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var meetings = await _meetingRepository.GetByLeadRequestIdAsync(leadRequestId, businessId);
+            return await MapToListDtos(meetings, businessId);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<MeetingListDto>> GetAllMeetingsAsync()
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var meetings = await _meetingRepository.GetAllByBusinessIdAsync(businessId);
+            return await MapToListDtos(meetings, businessId);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<byte[]> GenerateIcsFileAsync(int id)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var meeting = await _meetingRepository.GetByIdAsync(id, businessId);
+            if (meeting == null)
+                return Array.Empty<byte>();
+
+            var contact = await _contactRepository.GetByIdAsync(meeting.ContactId, businessId);
+            var contactName = contact != null
+                ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
+                : "Unknown";
+
+            var endTime = meeting.ScheduledAtUtc.AddMinutes(meeting.DurationMinutes);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("BEGIN:VCALENDAR");
+            sb.AppendLine("VERSION:2.0");
+            sb.AppendLine("PRODID:-//3Inventors//Portal//EN");
+            sb.AppendLine("CALSCALE:GREGORIAN");
+            sb.AppendLine("METHOD:REQUEST");
+            sb.AppendLine("BEGIN:VEVENT");
+            sb.AppendLine($"DTSTART:{meeting.ScheduledAtUtc:yyyyMMdd'T'HHmmss'Z'}");
+            sb.AppendLine($"DTEND:{endTime:yyyyMMdd'T'HHmmss'Z'}");
+            sb.AppendLine($"SUMMARY:{EscapeIcs(meeting.Subject)}");
+            sb.AppendLine($"DESCRIPTION:{EscapeIcs(meeting.Notes ?? string.Empty)}");
+            sb.AppendLine($"LOCATION:{EscapeIcs(meeting.Location ?? string.Empty)}");
+            sb.AppendLine($"UID:{meeting.Id}@portal.3inventors.com");
+            sb.AppendLine($"DTSTAMP:{DateTime.UtcNow:yyyyMMdd'T'HHmmss'Z'}");
+            sb.AppendLine($"ORGANIZER:CN={contactName}");
+            sb.AppendLine("STATUS:CONFIRMED");
+            sb.AppendLine("END:VEVENT");
+            sb.AppendLine("END:VCALENDAR");
+
+            return Encoding.UTF8.GetBytes(sb.ToString());
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> CreateProductRequestAsync(CreateMeetingProductRequestDto request)
+    {
+        try
+        {
+            var entity = new MeetingProductRequest
+            {
+                MeetingId = request.MeetingId,
+                ProductId = request.ProductId,
+                RequestText = request.RequestText,
+                IsActive = true,
+                IsCancelled = false
+            };
+
+            var id = await _productRequestRepository.InsertAsync(entity);
+            return ServiceResult.Ok(id);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> CreateOpportunityAsync(CreateMeetingOpportunityDto request)
+    {
+        try
+        {
+            var entity = new MeetingOpportunity
+            {
+                MeetingId = request.MeetingId,
+                Title = request.Title,
+                Description = request.Description,
+                EstimatedValue = request.EstimatedValue,
+                IsActive = true
+            };
+
+            var id = await _opportunityRepository.InsertAsync(entity);
+            return ServiceResult.Ok(id);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    private async Task<List<MeetingListDto>> MapToListDtos(List<Meeting> meetings, int businessId)
+    {
+        var meetingTypes = await _meetingTypeRepository.GetAllAsync();
+        var dtos = new List<MeetingListDto>();
+
+        foreach (var m in meetings)
+        {
+            var contact = await _contactRepository.GetByIdAsync(m.ContactId, businessId);
+            var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId);
+
+            dtos.Add(new MeetingListDto
+            {
+                Id = m.Id,
+                Subject = m.Subject,
+                MeetingTypeName = meetingType?.Name ?? "Unknown",
+                ContactName = contact != null
+                    ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
+                    : "Unknown",
+                ScheduledAtUtc = m.ScheduledAtUtc,
+                DurationMinutes = m.DurationMinutes,
+                Outcome = m.Outcome,
+                IsCancelled = m.IsCancelled,
+                CreatedAtUtc = m.CreatedAtUtc
+            });
+        }
+
+        return dtos;
+    }
+
+    private static string EscapeIcs(string value)
+    {
+        return value
+            .Replace("\\", "\\\\")
+            .Replace(";", "\\;")
+            .Replace(",", "\\,")
+            .Replace("\n", "\\n")
+            .Replace("\r", string.Empty);
+    }
+}

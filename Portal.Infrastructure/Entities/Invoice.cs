@@ -56,6 +56,8 @@ public class Invoice
 
     public DateTime? DeletedAtUtc { get; set; }
 
+    public int? LeadRequestId { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 

@@ -1,0 +1,118 @@
+@using Portal.Infrastructure.Models.Sales
+@using Portal.Infrastructure.Entities.Sales
+@model List<MeetingListDto>
+@{
+    ViewData["Title"] = "Meetings";
+    var meetingTypes = (List<MeetingType>)ViewBag.MeetingTypes;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
+        <h1 class="topbar-heading">Meetings</h1>
+        <p class="topbar-subtitle">Scheduled meetings with contacts and leads.</p>
+    </div>
+    <div>
+        <button class="btn btn-primary" onclick="openCreateMeetingModal()">Schedule Meeting</button>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <!-- Calendar Task info banner -->
+    <details style="margin-bottom:18px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);border-radius:12px;overflow:hidden;">
+        <summary style="padding:12px 16px;cursor:pointer;font-size:13px;font-weight:600;color:#0D5EA6;display:flex;align-items:center;gap:8px;list-style:none;">
+            <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+            What does "Calendar Task" do?
+        </summary>
+        <div style="padding:0 16px 14px;font-size:13px;color:#5E7385;line-height:1.7;">
+            Clicking <strong>Calendar Task</strong> downloads a calendar file (.ics) for the meeting. Open it to add the meeting directly to your calendar app (Google Calendar, Outlook, Apple Calendar, etc.) with the correct date, time, duration, and location pre-filled.
+        </div>
+    </details>
+
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state"><p>No meetings scheduled yet.</p></div>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Type</th>
+                    <th>Contact</th>
+                    <th>Scheduled</th>
+                    <th>Duration</th>
+                    <th>Outcome</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var meeting in Model)
+                {
+                    <tr>
+                        <td style="font-weight:600;">@meeting.Subject</td>
+                        <td>@meeting.MeetingTypeName</td>
+                        <td>@meeting.ContactName</td>
+                        <td>@meeting.ScheduledAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>@meeting.DurationMinutes min</td>
+                        <td>@(meeting.Outcome?.Length > 100 ? meeting.Outcome.Substring(0, 100) + "…" : meeting.Outcome ?? "—")</td>
+                        <td>
+                            @if (meeting.IsCancelled)
+                            {
+                                <span class="pill pill-red">Cancelled</span>
+                            }
+                            else if (meeting.ScheduledAtUtc > DateTime.UtcNow)
+                            {
+                                <span class="pill pill-blue">Upcoming</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-green">Completed</span>
+                            }
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <a href="/Sales/AxGetDownloadIcs?id=@meeting.Id" class="tbl-action tbl-action--secondary">Calendar Task</a>
+                            @if (!meeting.IsCancelled)
+                            {
+                                <button class="tbl-action tbl-action--danger" onclick="cancelMeeting(@meeting.Id, '@meeting.Subject.Replace("'", "\\'")'))">Cancel</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<!-- Create Meeting Modal -->
+<div id="meetingModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:520px;">
+        <h3 style="margin-bottom:16px;">Schedule Meeting</h3>
+        <div class="field"><label>Contact</label><select id="meetingContactId" required></select></div>
+        <div class="field"><label>Subject *</label><input type="text" id="meetingSubject" required /></div>
+        <div class="field"><label>Meeting Type</label>
+            <select id="meetingTypeId">
+                @foreach (var mt in meetingTypes)
+                {
+                    <option value="@mt.Id">@mt.Name</option>
+                }
+            </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field"><label>Date & Time</label><input type="datetime-local" id="meetingScheduledAt" required /></div>
+            <div class="field"><label>Duration (min)</label><input type="number" id="meetingDuration" value="60" min="15" step="15" /></div>
+        </div>
+        <div class="field"><label>Location</label><input type="text" id="meetingLocation" /></div>
+        <div class="field"><label>Notes</label><textarea id="meetingNotes" rows="2"></textarea></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+            <button class="btn btn-secondary" onclick="closeMeetingModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitMeeting()">Schedule</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/meetings.js"></script>
+}

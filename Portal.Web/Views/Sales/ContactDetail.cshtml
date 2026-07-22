@@ -1,0 +1,67 @@
+@using Portal.Infrastructure.Models.Sales
+@model ContactDetailDto
+@{
+    ViewData["Title"] = $"Contact: {Model.FullName}";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Pipeline / Contacts</div>
+        <h1 class="topbar-heading">@Model.FullName</h1>
+        <p class="topbar-subtitle">@(Model.CompanyName ?? "No company") · @(Model.IsActive ? "Active" : "Inactive")</p>
+    </div>
+    <div>
+        <a href="/Sales/Contacts" class="btn btn-secondary">Back to Contacts</a>
+    </div>
+</div>
+
+<!-- Contact Info -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h4 style="margin-bottom:12px;">Contact Information</h4>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Email</span><span>@(Model.Email ?? "—")</span></div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Phone</span><span>@(Model.PhoneNumber ?? "—")</span></div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Job Title</span><span>@(Model.JobTitle ?? "—")</span></div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Country</span><span>@(Model.Country ?? "—")</span></div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Created</span><span>@Model.CreatedAtUtc.ToString("dd MMM yyyy")</span></div>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    {
+        <div style="margin-top:12px;"><span style="font-size:12px;color:#5a6a7a;display:block;">Notes</span><p>@Model.Notes</p></div>
+    }
+</section>
+
+<!-- Interest History -->
+<section class="glass card-pad">
+    <h4 style="margin-bottom:12px;">Interest History (@Model.InterestHistory.Count leads)</h4>
+    @if (Model.InterestHistory.Count == 0)
+    {
+        <div class="empty-state"><p>No leads associated with this contact yet.</p></div>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Stage</th>
+                    <th>Request</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var interest in Model.InterestHistory)
+                {
+                    <tr>
+                        <td>@(interest.ProductName ?? "—")</td>
+                        <td><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;background:@(interest.StageColour ?? "#8a9bab")12;color:@(interest.StageColour ?? "#8a9bab");border:1.5px solid @(interest.StageColour ?? "#8a9bab")30;"><span style="width:7px;height:7px;border-radius:50%;background:@(interest.StageColour ?? "#8a9bab");display:inline-block;"></span>@interest.StageName</span></td>
+                        <td>@(interest.RequestText?.Length > 60 ? interest.RequestText.Substring(0, 60) + "…" : interest.RequestText ?? "—")</td>
+                        <td>@interest.CreatedAtUtc.ToString("dd MMM yyyy")</td>
+                        <td><a href="/Sales/LeadDetail/@interest.LeadRequestId" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

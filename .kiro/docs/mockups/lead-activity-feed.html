@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Activity Feed — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#F7FAFC;--bg2:#EEF4F8;--blue:#0D5EA6;--cyan:#57B8E8;--green:#129867;--red:#C24A4A;--gold:#C8912E;--muted:#5E7385;--text:#0B1B28;--line:rgba(13,94,166,.10);--shadow:0 2px 16px rgba(13,94,166,.07); }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+  .container{max-width:720px;margin:40px auto;padding:0 24px;}
+  .glass{background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:var(--shadow);}
+  .card-pad{padding:22px;}
+  h2{font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;}
+  .subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;}
+
+  /* Timeline */
+  .timeline{position:relative;padding-left:28px;}
+  .timeline::before{content:'';position:absolute;left:9px;top:8px;bottom:8px;width:2px;background:var(--line);border-radius:2px;}
+  .timeline-item{position:relative;padding-bottom:20px;}
+  .timeline-item:last-child{padding-bottom:0;}
+  .timeline-dot{position:absolute;left:-28px;top:4px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;}
+  .dot-blue{background:var(--blue);}
+  .dot-green{background:var(--green);}
+  .dot-red{background:var(--red);}
+  .dot-gold{background:var(--gold);}
+  .dot-cyan{background:var(--cyan);}
+  .dot-muted{background:#8a9bab;}
+
+  .timeline-content{background:var(--bg2);border-radius:12px;padding:14px 16px;}
+  .timeline-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .timeline-action{font-size:13px;font-weight:700;color:var(--text);}
+  .timeline-time{font-size:11px;color:var(--muted);}
+  .timeline-desc{font-size:13px;color:var(--muted);line-height:1.6;}
+  .timeline-desc strong{color:var(--text);}
+  .timeline-user{font-size:11px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;}
+  .timeline-user .avatar{width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+
+  /* Cancelled banner */
+  .cancelled-banner{display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(194,74,74,.04);border:1.5px solid rgba(194,74,74,.2);border-radius:14px;margin-bottom:20px;}
+  .cancelled-banner .icon{width:36px;height:36px;border-radius:10px;background:rgba(194,74,74,.1);display:flex;align-items:center;justify-content:center;}
+  .cancelled-banner .info{flex:1;}
+  .cancelled-banner .info h4{font-size:14px;font-weight:700;color:var(--red);margin-bottom:2px;}
+  .cancelled-banner .info p{font-size:12px;color:var(--muted);}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:all .15s;}
+  .btn-reactivate{background:rgba(13,94,166,.08);color:var(--blue);border:1.5px solid rgba(13,94,166,.15);}
+  .btn-reactivate:hover{background:rgba(13,94,166,.14);}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Cancelled Lead Banner with Reactivate -->
+  <div class="cancelled-banner">
+    <div class="icon">
+      <svg width="18" height="18" fill="none" stroke="#C24A4A" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg>
+    </div>
+    <div class="info">
+      <h4>Lead Cancelled</h4>
+      <p>Reason: "Client went with competitor" — Cancelled by John P. on 22 Jul 2026</p>
+    </div>
+    <button class="btn btn-reactivate">Reactivate Lead</button>
+  </div>
+
+  <!-- Activity Feed -->
+  <section class="glass card-pad">
+    <h2>Activity Feed</h2>
+    <p class="subtitle">All actions and events for this lead, newest first.</p>
+
+    <div class="timeline">
+
+      <!-- Cancelled -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-red">✕</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Lead Cancelled</span>
+            <span class="timeline-time">22 Jul 2026 · 14:32</span>
+          </div>
+          <div class="timeline-desc">Reason: <strong>"Client went with competitor"</strong></div>
+          <div class="timeline-user"><span class="avatar">J</span> John P.</div>
+        </div>
+      </div>
+
+      <!-- Proposal Linked -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-cyan">📄</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Proposal Linked</span>
+            <span class="timeline-time">20 Jul 2026 · 10:15</span>
+          </div>
+          <div class="timeline-desc">Quotation <strong>QUO-2026-07-00007</strong> linked · €2,975.00</div>
+          <div class="timeline-user"><span class="avatar">J</span> John P.</div>
+        </div>
+      </div>
+
+      <!-- Stage Changed -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-blue">→</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Stage Changed</span>
+            <span class="timeline-time">20 Jul 2026 · 10:15</span>
+          </div>
+          <div class="timeline-desc">Moved from <strong>Meeting Scheduled</strong> to <strong>Proposal Sent</strong></div>
+          <div class="timeline-user"><span class="avatar">S</span> System (auto)</div>
+        </div>
+      </div>
+
+      <!-- Meeting Scheduled -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-gold">📅</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Meeting Scheduled</span>
+            <span class="timeline-time">18 Jul 2026 · 09:00</span>
+          </div>
+          <div class="timeline-desc"><strong>Discovery Call</strong> — Phone Call · 30 min · 21 Jul 2026 at 10:00</div>
+          <div class="timeline-user"><span class="avatar">J</span> John P.</div>
+        </div>
+      </div>
+
+      <!-- Stage Changed -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-blue">→</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Stage Changed</span>
+            <span class="timeline-time">18 Jul 2026 · 09:00</span>
+          </div>
+          <div class="timeline-desc">Moved from <strong>Contacted</strong> to <strong>Meeting Scheduled</strong></div>
+          <div class="timeline-user"><span class="avatar">S</span> System (auto)</div>
+        </div>
+      </div>
+
+      <!-- Response Logged -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-green">💬</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Response Logged</span>
+            <span class="timeline-time">16 Jul 2026 · 11:45</span>
+          </div>
+          <div class="timeline-desc">Channel: <strong>Email</strong> — "Hi Maria, thanks for your interest in Website Redesign..."</div>
+          <div class="timeline-user"><span class="avatar">J</span> John P.</div>
+        </div>
+      </div>
+
+      <!-- Stage Changed -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-blue">→</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Stage Changed</span>
+            <span class="timeline-time">16 Jul 2026 · 11:45</span>
+          </div>
+          <div class="timeline-desc">Moved from <strong>New</strong> to <strong>Contacted</strong></div>
+          <div class="timeline-user"><span class="avatar">S</span> System (auto)</div>
+        </div>
+      </div>
+
+      <!-- Lead Created -->
+      <div class="timeline-item">
+        <div class="timeline-dot dot-muted">+</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Lead Created</span>
+            <span class="timeline-time">15 Jul 2026 · 08:30</span>
+          </div>
+          <div class="timeline-desc">Contact: <strong>Maria Costa</strong> · Product: <strong>Website Redesign</strong> · Source: <strong>Website</strong></div>
+          <div class="timeline-user"><span class="avatar">J</span> John P.</div>
+        </div>
+      </div>
+
+      <!-- Reactivation example (if reactivated) -->
+      <!--
+      <div class="timeline-item">
+        <div class="timeline-dot dot-green">↺</div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-action">Lead Reactivated</span>
+            <span class="timeline-time">23 Jul 2026 · 09:15</span>
+          </div>
+          <div class="timeline-desc">Lead reactivated and returned to <strong>New</strong> stage.</div>
+          <div class="timeline-user"><span class="avatar">J</span> John P.</div>
+        </div>
+      </div>
+      -->
+
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

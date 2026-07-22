@@ -34,6 +34,8 @@ public class Customer
 
     public bool IsReminderOptedOut { get; set; }
 
+    public int? ContactId { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime UpdatedAtUtc { get; set; }

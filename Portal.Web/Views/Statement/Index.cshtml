@@ -478,17 +478,13 @@
                     var receiptBtn = document.createElement('button');
                     receiptBtn.textContent = 'Receipt';
                     receiptBtn.className = 'tbl-action tbl-action--primary';
-                    receiptBtn.style.fontSize = '11px';
-                    receiptBtn.style.padding = '3px 8px';
-                    receiptBtn.style.marginRight = '4px';
                     receiptBtn.onclick = function() { generateReceiptFromStatement(line.paymentId); };
                     tdActions.appendChild(receiptBtn);
 
                     var voidBtn = document.createElement('button');
                     voidBtn.textContent = 'Void';
                     voidBtn.className = 'tbl-action tbl-action--danger';
-                    voidBtn.style.fontSize = '11px';
-                    voidBtn.style.padding = '3px 8px';
+                    voidBtn.style.marginLeft = '6px';
                     voidBtn.setAttribute('data-payment-id', line.paymentId);
                     voidBtn.onclick = function() { voidPaymentFromStatement(line.paymentId, line.credit); };
                     tdActions.appendChild(voidBtn);

@@ -6,6 +6,7 @@ using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Infrastructure.Services.Sales;
 using Portal.Web.Models;
 using Portal.Web.Security;
 
@@ -29,6 +30,7 @@ public class QuotationController : Controller
     private readonly ProductRepository _productRepository;
     private readonly IProposalAcceptanceService _acceptanceService;
     private readonly IProposalPdfService _proposalPdfService;
+    private readonly ILeadRequestService _leadRequestService;
     private readonly ILogger<QuotationController> _logger;
 
     public QuotationController(
@@ -46,6 +48,7 @@ public class QuotationController : Controller
         ProductRepository productRepository,
         IProposalAcceptanceService acceptanceService,
         IProposalPdfService proposalPdfService,
+        ILeadRequestService leadRequestService,
         ILogger<QuotationController> logger)
     {
         _quotationService = quotationService;
@@ -62,6 +65,7 @@ public class QuotationController : Controller
         _productRepository = productRepository;
         _acceptanceService = acceptanceService;
         _proposalPdfService = proposalPdfService;
+        _leadRequestService = leadRequestService;
         _logger = logger;
     }
 
@@ -120,12 +124,13 @@ public class QuotationController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(int? leadRequestId)
     {
         var customers = await _customerService.GetCustomersAsync(null, true);
         var viewModel = new QuotationCreateViewModel
         {
-            Customers = customers
+            Customers = customers,
+            LeadRequestId = leadRequestId
         };
         return View(viewModel);
     }
@@ -144,6 +149,13 @@ public class QuotationController : Controller
         try
         {
             var quotation = await _quotationService.CreateQuotationAsync(model.CustomerId, model.ValidUntil, model.Notes);
+
+            // Link to lead if created from Lead Detail
+            if (model.LeadRequestId.HasValue)
+            {
+                await _leadRequestService.LinkProposalAsync(model.LeadRequestId.Value, quotation.Id);
+            }
+
             return RedirectToAction(nameof(Edit), new { id = quotation.Id });
         }
         catch (ArgumentException ex)

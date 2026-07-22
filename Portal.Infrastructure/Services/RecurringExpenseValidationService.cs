@@ -111,6 +111,8 @@ public class RecurringExpenseValidationService : IRecurringExpenseValidationServ
                     ActualCount = actualCount,
                     Status = overallStatus,
                     ExpectedAmount = rule.ExpectedAmount,
+                    AmountTolerancePercent = rule.AmountTolerancePercent,
+                    GracePeriodDays = rule.GracePeriodDays,
                     IsAmountMatched = isAmountMatched,
                     AmountMatchCount = amountMatchCount
                 };

@@ -1,54 +1,54 @@
-# Implementation Plan: Sales Pipeline (Phase 1)
+# Implementation Plan: Sales Leads (Opportunities Module — Phase 1)
 
 ## Overview
 
-Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[sales]` schema, following the existing Portal platform patterns (GenericStoredProcedureRepository, ServiceResult, ICurrentTenantService, IPlanCheckService). The implementation proceeds bottom-up: database migrations → entities → repositories → services → controller → views → client-side JS.
+Implement the Sales Leads module (Opportunities) as an ASP.NET Core MVC feature under the `[sales]` schema, following the existing Portal platform patterns (GenericStoredProcedureRepository, ServiceResult, ICurrentTenantService, IPlanCheckService). The implementation proceeds bottom-up: database migrations → entities → repositories → services → controller → views → client-side JS.
 
 ## Tasks
 
 - [ ] 1. Database migrations and schema setup
-  - [-] 1.1 Create sales schema and lookup tables (migrations 120–126)
+  - [x] 1.1 Create sales schema and lookup tables (migrations 120–126)
     - Create `[sales]` schema
     - Create `[sales].[Product]` table
     - Create and seed `[sales].[LeadSourceType]`, `[sales].[LeadSourceReferenceType]`, `[sales].[LeadStatusType]`, `[sales].[LeadResponseType]`, `[sales].[MeetingType]`
     - _Requirements: 1.1, 2.1, 3.2, 3.3, 3.4, 5.2, 7.2_
 
-  - [~] 1.2 Create contact and lead request tables (migrations 127–128)
+  - [x] 1.2 Create contact and lead request tables (migrations 127–128)
     - Create `[sales].[Contact]` with partial unique indexes on (BusinessId, Email) and (BusinessId, PhoneNumber)
     - Create `[sales].[LeadRequest]` with all FK relationships
     - _Requirements: 1.2, 1.3, 1.4, 3.1_
 
-  - [~] 1.3 Create response and template tables (migrations 129–130)
+  - [x] 1.3 Create response and template tables (migrations 129–130)
     - Create `[sales].[LeadResponseTemplate]` table
     - Create `[sales].[LeadResponse]` table
     - _Requirements: 5.1, 6.1_
 
-  - [~] 1.4 Create meeting tables (migrations 131–133)
+  - [x] 1.4 Create meeting tables (migrations 131–133)
     - Create `[sales].[Meeting]` table
     - Create `[sales].[MeetingProductRequest]` table
     - Create `[sales].[MeetingOpportunity]` table
     - _Requirements: 7.1, 8.1, 8.2_
 
-  - [~] 1.5 Add FK columns to existing tables (migrations 134–136)
+  - [x] 1.5 Add FK columns to existing tables (migrations 134–136)
     - ALTER `[dbo].[Quotation]` ADD nullable LeadRequestId FK
     - ALTER `[dbo].[Invoice]` ADD nullable LeadRequestId FK
     - ALTER `[dbo].[Customer]` ADD nullable ContactId FK
     - _Requirements: 9.1, 9.2, 10.1_
 
 - [ ] 2. Entity classes and DbContext configuration
-  - [~] 2.1 Create core entity classes
+  - [x] 2.1 Create core entity classes
     - Create `SalesContact`, `SalesProduct`, `LeadRequest`, `LeadResponse`, `LeadResponseTemplate`, `Meeting`, `MeetingProductRequest`, `MeetingOpportunity` in `Portal.Infrastructure/Entities/`
     - Create lookup entities: `LeadSourceType`, `LeadSourceReferenceType`, `LeadStatusType`, `LeadResponseType`, `MeetingType`
     - _Requirements: 1.2, 2.1, 3.1, 5.1, 6.1, 7.1, 8.1, 8.2_
 
-  - [~] 2.2 Configure DbContext mappings for sales schema
+  - [x] 2.2 Configure DbContext mappings for sales schema
     - Add `DbSet<T>` for all 13 sales entities
     - Configure schema mapping (`[sales]`) in `OnModelCreating`
     - Configure partial unique indexes, FK relationships, and default values
     - _Requirements: 1.3, 1.4, 2.1, 3.1_
 
 - [ ] 3. DTOs and request/response models
-  - [~] 3.1 Create all DTOs and view models
+  - [x] 3.1 Create all DTOs and view models
     - Create `ContactListDto`, `CreateContactRequest`, `UpdateContactRequest`
     - Create `LeadCardDto`, `LeadTableRowDto`, `LeadRequestDetailDto`, `LeadFilterDto`, `CreateLeadRequest`
     - Create `MeetingListDto`, `CreateMeetingRequest`, `UpdateMeetingRequest`
@@ -60,37 +60,37 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - _Requirements: 4.3, 4.7, 6.7, 7.9, 9.6, 12.1, 13.1_
 
 - [ ] 4. Repositories
-  - [~] 4.1 Implement ContactRepository
+  - [x] 4.1 Implement ContactRepository
     - Insert, Update, Deactivate, GetPaged (with search), GetById, CheckDuplicateAsync
     - All queries scoped by BusinessId, full table names in SQL
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6, 12.3_
 
-  - [~] 4.2 Implement LeadRequestRepository
+  - [x] 4.2 Implement LeadRequestRepository
     - Insert, UpdateStage, UpdateAssignment, Cancel, Deactivate, GetPaged, GetById, GetGroupedByStage
     - _Requirements: 3.1, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10_
 
-  - [~] 4.3 Implement lookup repositories (5 total)
+  - [x] 4.3 Implement lookup repositories (5 total)
     - LeadSourceTypeRepository, LeadSourceReferenceTypeRepository, LeadStatusTypeRepository, LeadResponseTypeRepository, MeetingTypeRepository
     - Each with GetAll method
     - _Requirements: 3.2, 3.3, 3.4, 5.2, 7.2_
 
-  - [~] 4.4 Implement LeadResponseRepository and LeadResponseTemplateRepository
+  - [x] 4.4 Implement LeadResponseRepository and LeadResponseTemplateRepository
     - LeadResponseRepository: Insert, GetByLeadRequestId
     - LeadResponseTemplateRepository: Insert, Update, Deactivate, GetPaged, GetById, FindMatchingTemplate
     - _Requirements: 5.1, 6.1, 6.2, 6.3, 6.4_
 
-  - [~] 4.5 Implement MeetingRepository, MeetingProductRequestRepository, MeetingOpportunityRepository
+  - [x] 4.5 Implement MeetingRepository, MeetingProductRequestRepository, MeetingOpportunityRepository
     - MeetingRepository: Insert, Update, Cancel, GetById, GetByLeadRequestId
     - MeetingProductRequestRepository: Insert, GetByMeetingId
     - MeetingOpportunityRepository: Insert, GetByMeetingId
     - _Requirements: 7.1, 7.3, 7.5, 7.6, 8.1, 8.2, 8.3, 8.4_
 
-  - [~] 4.6 Implement SalesProductRepository
+  - [x] 4.6 Implement SalesProductRepository
     - Insert, Update, Deactivate, GetPaged (with search), GetById, GetAllActive
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
 - [ ] 5. Service layer — Contact and Product
-  - [~] 5.1 Implement IContactService and ContactService
+  - [x] 5.1 Implement IContactService and ContactService
     - CreateContactAsync with dedup check (email + phone uniqueness), validation (email or phone required)
     - UpdateContactAsync, DeactivateContactAsync, GetByIdAsync, GetContactsPagedAsync
     - GetContactInterestHistoryAsync, ConvertToCustomerAsync
@@ -103,7 +103,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Property 4: Contact Requires Email or Phone**
     - **Validates: Requirements 1.3, 1.4, 1.5, 1.6, 1.7**
 
-  - [~] 5.3 Implement ISalesProductService and SalesProductService
+  - [x] 5.3 Implement ISalesProductService and SalesProductService
     - CreateProductAsync, UpdateProductAsync, DeactivateProductAsync
     - GetByIdAsync, GetProductsPagedAsync, GetActiveProductsAsync
     - All methods scoped by BusinessId
@@ -115,7 +115,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Validates: Requirements 2.2, 2.4, 3.5, 3.9, 6.2, 6.4, 7.3, 8.3, 8.4**
 
 - [ ] 6. Service layer — Lead Request
-  - [~] 6.1 Implement ILeadRequestService and LeadRequestService
+  - [x] 6.1 Implement ILeadRequestService and LeadRequestService
     - CreateLeadRequestAsync (default status New, IsCancelled false, IsActive true)
     - ChangeStageAsync (manual transitions between any stages)
     - AssignLeadAsync, CancelLeadAsync, DeactivateLeadAsync
@@ -141,7 +141,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Validates: Requirements 9.3, 9.5**
 
 - [ ] 7. Service layer — Response and Templates
-  - [~] 7.1 Implement IResponseService and ResponseService
+  - [x] 7.1 Implement IResponseService and ResponseService
     - PrepareResponseAsync (find matching template by ProductId or fallback, render placeholders)
     - SendResponseAsync (record LeadResponse, trigger stage suggestion if status is New)
     - RenderTemplate (replace all 4 placeholders with values or empty string)
@@ -155,7 +155,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Validates: Requirements 5.4, 6.5, 6.6**
 
 - [ ] 8. Service layer — Meeting
-  - [~] 8.1 Implement IMeetingService and MeetingService
+  - [x] 8.1 Implement IMeetingService and MeetingService
     - CreateMeetingAsync (with stage suggestion when linked to lead)
     - UpdateMeetingAsync, CancelMeetingAsync
     - GetByIdAsync, GetMeetingsForLeadAsync
@@ -169,11 +169,11 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Property 12: ICS File Contains Required VEVENT Fields**
     - **Validates: Requirements 7.7**
 
-- [~] 9. Checkpoint — Core services complete
+- [x] 9. Checkpoint — Core services complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. DI registration and module wiring
-  - [~] 10.1 Register services and repositories in DI container
+  - [x] 10.1 Register services and repositories in DI container
     - Register all 5 service interfaces and implementations
     - Register all 13 repositories
     - Register PortalModules.Sales module identifier
@@ -185,27 +185,27 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Validates: Requirements 1.8, 2.5, 3.10, 6.8, 7.10, 8.6, 14.1–14.7**
 
 - [ ] 11. SalesController — Page actions and AJAX endpoints
-  - [~] 11.1 Implement SalesController page actions
-    - Pipeline, Contacts, Products, Meetings, Templates, LeadDetail, ContactDetail
+  - [x] 11.1 Implement SalesController page actions
+    - Lead Board (Pipeline), Contacts, Products, Meetings, Templates, LeadDetail, ContactDetail
     - Each action resolves BusinessId via ICurrentTenantService
     - Each action checks IPlanCheckService (redirect to upgrade if not in plan)
     - _Requirements: 4.1, 12.1, 2.6, 7.9, 6.7, 13.1, 12.7, 15.1, 15.2, 15.3_
 
-  - [~] 11.2 Implement SalesController AJAX endpoints — Contact and Product
+  - [x] 11.2 Implement SalesController AJAX endpoints — Contact and Product
     - AxPostCreateContact, AxPostUpdateContact, AxPostDeactivateContact
     - AxPostCreateProduct, AxPostUpdateProduct, AxPostDeactivateProduct
     - AxGetContactsSearch (paginated search)
     - All return Json(new { success, message, data? })
     - _Requirements: 1.5, 1.6, 1.7, 2.2, 2.3, 2.4, 12.2, 12.3, 12.4, 12.5, 12.6_
 
-  - [~] 11.3 Implement SalesController AJAX endpoints — Lead management
+  - [x] 11.3 Implement SalesController AJAX endpoints — Lead management
     - AxPostCreateLeadRequest, AxPostChangeLeadStage, AxPostAssignLead, AxPostUnassignLead
     - AxPostCancelLead, AxPostDeactivateLead, AxPostMarkAsWon
     - AxGetPipelineData (grouped by stage for Kanban)
     - AxGetLeadDetail
     - _Requirements: 3.5, 3.6, 3.7, 3.8, 3.9, 4.1, 4.5, 4.6, 10.2, 11.1, 11.2, 13.5_
 
-  - [~] 11.4 Implement SalesController AJAX endpoints — Meeting and Response
+  - [x] 11.4 Implement SalesController AJAX endpoints — Meeting and Response
     - AxPostCreateMeeting, AxPostUpdateMeeting, AxPostCancelMeeting
     - AxGetDownloadIcs (return File with text/calendar content type)
     - AxPostCreateMeetingProductRequest, AxPostCreateMeetingOpportunity
@@ -213,17 +213,17 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - AxPostCreateTemplate, AxPostUpdateTemplate, AxPostDeactivateTemplate
     - _Requirements: 5.3, 5.6, 7.3, 7.5, 7.6, 7.7, 7.8, 8.3, 8.4, 6.2, 6.3, 6.4, 13.6, 13.7_
 
-  - [~] 11.5 Implement proposal and invoice linking endpoints
+  - [x] 11.5 Implement proposal and invoice linking endpoints
     - "Create Proposal" action navigating to quotation creation with LeadRequestId pre-populated
     - "Create Invoice" action navigating to invoice creation with LeadRequestId pre-populated
     - Display linked documents on lead detail view
     - _Requirements: 9.3, 9.4, 9.5, 9.6, 9.7, 9.8_
 
-- [~] 12. Checkpoint — Controller complete
+- [x] 12. Checkpoint — Controller complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 13. Razor views — Pipeline and Contacts
-  - [~] 13.1 Implement Pipeline view (Kanban board + table toggle)
+  - [x] 13.1 Implement Lead Board view (Kanban board + table toggle)
     - Kanban board with columns per LeadStatusType (ordered by DisplayOrder)
     - Lead cards showing: Contact name, Product name, Assigned user, CreatedAtUtc (relative)
     - Stage count in column headers
@@ -231,14 +231,14 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - Filter controls: AssignedToUserId dropdown, ProductId dropdown
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 11.4, 11.5_
 
-  - [~] 13.2 Implement Contacts view and ContactDetail view
+  - [x] 13.2 Implement Contacts view and ContactDetail view
     - Contacts: searchable, paginated list (Page_Size 15) with Name, Email, Phone, Company, Lead Count, IsActive, CreatedAtUtc
     - Create/Edit contact form with SweetAlert2 confirmation for deactivation
     - ContactDetail: contact info + interest history (all LeadRequests ordered by CreatedAtUtc desc)
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
 
 - [ ] 14. Razor views — Lead Detail and Meetings
-  - [~] 14.1 Implement LeadDetail view
+  - [x] 14.1 Implement LeadDetail view
     - Contact info, Product name, Lead Source, Current stage, Assigned user, RequestText, CreatedAtUtc
     - Response history section (ordered by SentAtUtc desc)
     - Meetings section (ordered by ScheduledAtUtc desc)
@@ -248,7 +248,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - Terminal stage visual indicator with reopen capability
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 10.7_
 
-  - [~] 14.2 Implement Meetings view
+  - [x] 14.2 Implement Meetings view
     - List meetings with: Subject, Meeting Type, Scheduled Date, Duration, Outcome (truncated 100 chars), IsCancelled
     - Create/Edit meeting form, Cancel with SweetAlert2 confirmation
     - Meeting product requests and opportunities display
@@ -256,12 +256,12 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - _Requirements: 7.3, 7.5, 7.6, 7.7, 7.8, 7.9, 8.5_
 
 - [ ] 15. Razor views — Products and Templates
-  - [~] 15.1 Implement Products view
+  - [x] 15.1 Implement Products view
     - Searchable, paginated product list (Page_Size 15) with Name, Description, IsActive, CreatedAtUtc
     - Create/Edit product form, Deactivate with SweetAlert2 confirmation
     - _Requirements: 2.6, 2.7_
 
-  - [~] 15.2 Implement Templates view
+  - [x] 15.2 Implement Templates view
     - Template list with: Name, Product (or "All Products"), Response Type, ResponseTimeInHours, IsActive
     - Create/Edit template form with placeholder guide
     - Template preview functionality
@@ -269,8 +269,8 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - _Requirements: 6.7, 6.2, 6.3, 6.4_
 
 - [ ] 16. Client-side JavaScript
-  - [~] 16.1 Implement Pipeline Kanban board interactions
-    - Fetch pipeline data via AxGetPipelineData
+  - [x] 16.1 Implement Lead Board Kanban interactions
+    - Fetch lead data via AxGetPipelineData
     - Render Kanban columns dynamically
     - Lead card click navigates to LeadDetail
     - Filter application (assigned user, product)
@@ -278,7 +278,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - BlockUI for all AJAX calls, SweetAlert2 for errors
     - _Requirements: 4.1, 4.2, 4.5, 4.6, 4.8_
 
-  - [~] 16.2 Implement Contact and Product form interactions
+  - [x] 16.2 Implement Contact and Product form interactions
     - Create/Edit contact with dedup error handling (display existing contact name)
     - Deactivate contact/product with SweetAlert2 confirmation dialog
     - Contact search with debounced input
@@ -286,7 +286,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - BlockUI + SweetAlert2 pattern for all AJAX
     - _Requirements: 1.5, 1.6, 12.3, 12.4, 12.5, 12.6_
 
-  - [~] 16.3 Implement Lead Detail interactions
+  - [x] 16.3 Implement Lead Detail interactions
     - Stage change via dropdown/button group (AxPostChangeLeadStage)
     - Assign/Unassign lead (AxPostAssignLead, AxPostUnassignLead)
     - Respond action: load suggested response (AxGetPrepareResponse), review, send (AxPostSendResponse)
@@ -296,7 +296,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - BlockUI + SweetAlert2 pattern for all AJAX
     - _Requirements: 5.3, 5.6, 5.8, 10.7, 11.3, 13.5, 13.6, 13.7, 13.8_
 
-  - [~] 16.4 Implement Meeting and Template form interactions
+  - [x] 16.4 Implement Meeting and Template form interactions
     - Create/Edit/Cancel meeting forms with SweetAlert2 confirmation
     - ICS download via AxGetDownloadIcs
     - Meeting product request and opportunity creation forms
@@ -305,17 +305,17 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - _Requirements: 7.3, 7.5, 7.6, 7.7, 8.3, 8.4, 6.2, 6.3, 6.4_
 
 - [ ] 17. Sidebar navigation and module registration
-  - [~] 17.1 Register Sales module in sidebar and configure navigation
-    - Add "Sales" top-level sidebar item with appropriate icon
-    - Add sub-navigation: Pipeline (default), Contacts, Products, Meetings, Templates
+  - [x] 17.1 Register Sales module in sidebar and configure navigation
+    - Add "Opportunities" section with "Lead Board" as the primary nav item
+    - Add sub-navigation: Contacts, Products, Meetings, Templates
     - Configure subscription tier check (display upgrade prompt when plan does not include Sales)
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
 
-- [~] 18. Checkpoint — Views and navigation complete
+- [x] 18. Checkpoint — Views and navigation complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 19. Integration and cross-cutting concerns
-  - [~] 19.1 Wire Contact-to-Customer conversion end-to-end
+  - [x] 19.1 Wire Contact-to-Customer conversion end-to-end
     - Mark as Won → check existing Customer (email/name match) → create or link
     - SweetAlert2 confirmation dialog showing contact details before conversion
     - Handle "customer already exists" message display
@@ -325,7 +325,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Property 14: Contact-to-Customer Conversion Correctness**
     - **Validates: Requirements 10.3, 10.4, 10.5**
 
-  - [~] 19.3 Wire proposal and invoice linking end-to-end
+  - [x] 19.3 Wire proposal and invoice linking end-to-end
     - "Create Proposal" from lead detail → quotation creation with LeadRequestId
     - "Create Invoice" from lead detail → invoice creation with LeadRequestId
     - Stage suggestion on proposal link (→ Proposal Sent)
@@ -338,7 +338,7 @@ Implement the Sales Pipeline module as an ASP.NET Core MVC feature under the `[s
     - **Property 17: Pipeline Stage Count Accuracy**
     - **Validates: Requirements 4.4, 4.5, 4.6, 11.5, 12.3**
 
-- [~] 20. Final checkpoint — Full integration
+- [x] 20. Final checkpoint — Full integration
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

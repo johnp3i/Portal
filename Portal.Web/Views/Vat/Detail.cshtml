@@ -319,6 +319,7 @@
     <script>
         var submissionId = @Model.SubmissionId;
         var periodId = @Model.PeriodId;
+        var currencySymbol = '@Html.Raw(Model.CurrencySymbol)';
         var invoicePage = 1;
         var purchasePage = 1;
         var invoiceSearch = '';
@@ -748,52 +749,76 @@
 
             // Update header badge
             var badge = document.getElementById('recurringBadge');
-            if (s.failCount > 0) {
-                badge.innerHTML = '<span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(194,74,74,.12);color:#C24A4A;">' + s.failCount + ' missing</span>';
-                badge.style.display = 'inline-block';
-            } else if (s.warningCount > 0) {
-                badge.innerHTML = '<span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(200,145,46,.12);color:#C8912E;">' + s.warningCount + ' warning' + (s.warningCount > 1 ? 's' : '') + '</span>';
+            var badgeParts = [];
+            if (s.failCount > 0) badgeParts.push('<span style="font-size:12px;font-weight:700;color:#C24A4A;">' + s.failCount + ' missing</span>');
+            if (s.warningCount > 0) badgeParts.push('<span style="font-size:12px;font-weight:700;color:#C8912E;">' + s.warningCount + ' warning</span>');
+            if (badgeParts.length > 0) {
+                badge.innerHTML = badgeParts.join(' <span style="color:#5E7385;margin:0 4px;">&middot;</span> ');
                 badge.style.display = 'inline-block';
             } else {
-                badge.innerHTML = '<span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(18,152,103,.12);color:#129867;">All clear</span>';
+                badge.innerHTML = '<span style="font-size:12px;font-weight:700;color:#129867;">All clear</span>';
                 badge.style.display = 'inline-block';
             }
 
-            // Summary strip
-            var html = '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">';
-            html += '<div style="font-size:13px;color:#5E7385;"><strong>' + s.totalRules + '</strong> rules checked</div>';
-            if (s.passCount > 0) html += '<div style="font-size:13px;color:#129867;"><strong>' + s.passCount + '</strong> pass</div>';
-            if (s.warningCount > 0) html += '<div style="font-size:13px;color:#C8912E;"><strong>' + s.warningCount + '</strong> warning</div>';
-            if (s.failCount > 0) html += '<div style="font-size:13px;color:#C24A4A;"><strong>' + s.failCount + '</strong> fail</div>';
+            // Summary dots strip
+            var html = '<div style="display:flex;gap:18px;align-items:center;padding:12px 16px;background:#EEF4F8;border-radius:12px;margin-bottom:18px;">';
+            if (s.passCount > 0) html += '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;"><span style="width:8px;height:8px;border-radius:50%;background:#129867;display:inline-block;"></span> ' + s.passCount + ' Pass</div>';
+            if (s.warningCount > 0) html += '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;"><span style="width:8px;height:8px;border-radius:50%;background:#C8912E;display:inline-block;"></span> ' + s.warningCount + ' Warning</div>';
+            if (s.failCount > 0) html += '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;"><span style="width:8px;height:8px;border-radius:50%;background:#C24A4A;display:inline-block;"></span> ' + s.failCount + ' Missing</div>';
             html += '</div>';
 
-            // Results table
-            html += '<div class="table-responsive"><table><thead><tr>'
-                + '<th>Supplier</th>'
-                + '<th>Category</th>'
-                + '<th>Description</th>'
-                + '<th>Expected</th>'
-                + '<th>Actual</th>'
-                + '<th>Status</th>'
-                + '</tr></thead><tbody>';
-
+            // Result rows (mockup style)
             data.ruleResults.forEach(function(r) {
-                var statusBadge = '';
-                if (r.status === 'pass') statusBadge = '<span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(18,152,103,.12);color:#129867;">Pass</span>';
-                else if (r.status === 'warning') statusBadge = '<span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(200,145,46,.12);color:#C8912E;">Warning</span>';
-                else statusBadge = '<span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(194,74,74,.12);color:#C24A4A;">Fail</span>';
+                var statusIcon = '';
+                var statusColor = '';
+                if (r.status === 'fail') { statusIcon = '&#10007;'; statusColor = '#C24A4A'; }
+                else if (r.status === 'warning') { statusIcon = '&#9650;'; statusColor = '#C8912E'; }
+                else { statusIcon = '&#10003;'; statusColor = '#129867'; }
 
-                html += '<tr>'
-                    + '<td>' + escapeHtml(r.supplierName) + '</td>'
-                    + '<td>' + (r.categoryName ? escapeHtml(r.categoryName) : '<span style="color:#5E7385;">Any</span>') + '</td>'
-                    + '<td style="font-size:13px;">' + escapeHtml(r.description) + '</td>'
-                    + '<td style="text-align:center;">' + r.expectedCount + '</td>'
-                    + '<td style="text-align:center;">' + r.actualCount + '</td>'
-                    + '<td>' + statusBadge + '</td>'
-                    + '</tr>';
+                var title = escapeHtml(r.supplierName) + ' &mdash; ' + (r.categoryName ? escapeHtml(r.categoryName) : '<span style="font-style:italic;color:#5E7385;">Any category</span>');
+
+                var detail = escapeHtml(r.description);
+                if (r.expectedAmount && r.expectedAmount > 0) {
+                    var tolerance = r.amountTolerancePercent || 5;
+                    detail += ' &middot; Expected ' + currencySymbol + r.expectedAmount.toFixed(2) + ' (&plusmn;' + tolerance + '%)';
+                    if (r.status === 'fail' || (r.isAmountMatched === false)) {
+                        detail += ' &middot; <span style="color:#C24A4A;font-weight:600;">Amount not found</span>';
+                    } else if (r.isAmountMatched === true) {
+                        detail += ' &middot; <span style="color:#129867;font-weight:600;">Amount matched</span>';
+                    }
+                }
+                if (r.gracePeriodDays && r.gracePeriodDays > 0) {
+                    detail += ' &middot; Grace: ' + r.gracePeriodDays + ' days';
+                }
+
+                var freqLabel = r.frequencyMonths === 1 ? 'months' : r.frequencyMonths === 3 ? 'quarter' : 'expected';
+                var countText = '<span style="font-weight:700;color:' + statusColor + ';">' + r.actualCount + '</span> <span style="color:#5E7385;">/ ' + r.expectedCount + ' ' + freqLabel + '</span>';
+
+                html += '<div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid rgba(13,94,166,.05);">';
+                html += '<div style="flex-shrink:0;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;';
+                if (r.status === 'fail') html += 'background:rgba(194,74,74,.1);color:#C24A4A;';
+                else if (r.status === 'warning') html += 'background:rgba(200,145,46,.1);color:#C8912E;';
+                else html += 'background:rgba(18,152,103,.1);color:#129867;';
+                html += '">' + statusIcon + '</div>';
+                html += '<div style="flex:1;min-width:0;">';
+                html += '<div style="font-size:13px;font-weight:600;color:#0B1B28;">' + title + '</div>';
+                html += '<div style="font-size:12px;color:#5E7385;margin-top:2px;">' + detail + '</div>';
+                html += '</div>';
+                html += '<div style="text-align:right;font-size:13px;white-space:nowrap;">' + countText + '</div>';
+                html += '</div>';
             });
 
-            html += '</tbody></table></div>';
+            // Advisory note
+            html += '<div style="margin-top:16px;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);font-size:12px;color:#5E7385;">';
+            html += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>';
+            html += 'This check is advisory only and does not block VAT submission. Record missing purchases and click Re-validate.';
+            html += '</div>';
+
+            // Manage Rules link
+            html += '<div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;">';
+            html += '<a href="/RecurringExpense/Rules" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;">Manage Rules &rarr;</a>';
+            html += '</div>';
+
             container.innerHTML = html;
         }
 

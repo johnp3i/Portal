@@ -1,0 +1,146 @@
+@using Portal.Infrastructure.Models.Sales
+@using Portal.Infrastructure.Models
+@using Portal.Infrastructure.Entities.Sales
+@model PagedResult<TemplateListDto>
+@{
+    ViewData["Title"] = "Response Templates";
+    var responseTypes = (List<LeadResponseType>)ViewBag.ResponseTypes;
+    var products = (List<SalesProduct>)ViewBag.Products;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
+        <h1 class="topbar-heading">Response Templates</h1>
+        <p class="topbar-subtitle">Manage reusable templates for responding to leads.</p>
+    </div>
+    <div>
+        <button class="btn btn-primary" onclick="openCreateTemplateModal()">New Template</button>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state"><p>No templates created yet.</p></div>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Product</th>
+                    <th>Channel</th>
+                    <th>Response Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var template in Model.Items)
+                {
+                    <tr>
+                        <td style="font-weight:600;">@template.Name</td>
+                        <td>@(template.ProductName ?? "All Products")</td>
+                        <td>@template.ResponseTypeName</td>
+                        <td>@template.ResponseTimeInHours hrs</td>
+                        <td>
+                            @if (template.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-red">Inactive</span>
+                            }
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <button class="tbl-action tbl-action--primary" onclick="editTemplate(@template.Id)">Edit</button>
+                            @if (template.IsActive)
+                            {
+                                <button class="tbl-action tbl-action--danger" onclick="deactivateTemplate(@template.Id, '@(template.Name.Replace("'", "\\'"))')">Deactivate</button>
+                            }
+                            else
+                            {
+                                <button class="tbl-action tbl-action--secondary" onclick="activateTemplate(@template.Id, '@(template.Name.Replace("'", "\\'"))')">Activate</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div style="font-size:14px;color:#5a6a7a;">Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)–@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount</div>
+            <div>
+                @if (Model.HasPreviousPage)
+                {
+                    <a href="/Sales/Templates?page=@(Model.CurrentPage - 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Previous</a>
+                }
+                @if (Model.HasNextPage)
+                {
+                    <a href="/Sales/Templates?page=@(Model.CurrentPage + 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Next</a>
+                }
+            </div>
+        </div>
+    }
+</section>
+
+<!-- Create/Edit Template Modal -->
+<div id="templateModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:600px;">
+        <h3 id="templateModalTitle" style="margin-bottom:16px;">New Template</h3>
+        <input type="hidden" id="templateId" />
+        <div class="field"><label>Name *</label><input type="text" id="templateName" required /></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field"><label>Product</label>
+                <select id="templateProductId">
+                    <option value="">All Products (Generic)</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.Id">@p.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field"><label>Channel</label>
+                <select id="templateResponseTypeId" required>
+                    @foreach (var rt in responseTypes)
+                    {
+                        <option value="@rt.Id">@rt.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="field"><label>Subject</label><input type="text" id="templateSubject" /></div>
+        <div class="field">
+            <label>Body Template *</label>
+            <div id="templateBodyEditor" style="height:180px;border:1px solid rgba(13,94,166,.15);border-radius:12px;overflow:hidden;"></div>
+            <small style="color:#5a6a7a;margin-top:6px;display:block;">Placeholders: <code>@("{{ContactName}}")</code>, <code>@("{{ProductName}}")</code>, <code>@("{{BusinessName}}")</code>, <code>@("{{ResponseTime}}")</code></small>
+        </div>
+        <div class="field"><label>Response Time (hours)</label><input type="number" id="templateResponseTime" value="24" min="1" /></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+            <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitTemplate()">Save</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script>
+        var templateQuill = new Quill('#templateBodyEditor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Write your email template body here...'
+        });
+    </script>
+    <script src="~/js/sales/templates.js?v=4"></script>
+}

@@ -38,6 +38,8 @@ public class Quotation
 
     public bool IsGrandTotalShown { get; set; } = true;
 
+    public int? LeadRequestId { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 

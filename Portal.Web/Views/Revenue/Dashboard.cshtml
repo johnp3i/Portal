@@ -123,7 +123,7 @@
         <h3 style="font-size:16px;color:var(--red);margin:0;">⚠ Overdue Invoices</h3>
         <div class="filter-panel" style="display:flex;gap:12px;align-items:flex-end;">
             <input type="text" id="overdueSearch" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
-            <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;" onclick="searchOverdueInvoices()">Search</button>
+            <button class="btn btn-primary" onclick="searchOverdueInvoices()">Search</button>
         </div>
     </div>
     <div class="scroll-hint">← Scroll horizontally →</div>
@@ -148,7 +148,7 @@
                     <td>@item.DueDate.ToString("yyyy-MM-dd")</td>
                     <td><span class="pill pill-red">@item.DaysOverdue days</span></td>
                     <td style="text-align:right;font-weight:700;color:var(--red);">@currency@item.OutstandingBalance.ToString("N2")</td>
-                    <td><a asp-action="InvoiceDetail" asp-controller="Revenue" asp-route-id="@item.Id" style="color:var(--blue);font-weight:700;font-size:13px;">View</a></td>
+                    <td><a asp-action="InvoiceDetail" asp-controller="Revenue" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">View</a></td>
                 </tr>
             }
         </tbody>
@@ -173,7 +173,7 @@
         <h3 style="font-size:16px;color:var(--green);margin:0;">✓ Recent Payments</h3>
         <div class="filter-panel" style="display:flex;gap:12px;align-items:flex-end;">
             <input type="text" id="paymentsSearch" placeholder="Search invoice # or customer..." style="padding:8px 14px;border-radius:10px;border:1px solid rgba(13,94,166,.12);font:inherit;font-size:13px;min-width:220px;" />
-            <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;" onclick="searchRecentPayments()">Search</button>
+            <button class="btn btn-primary" onclick="searchRecentPayments()">Search</button>
         </div>
     </div>
     <div class="scroll-hint">← Scroll horizontally →</div>
@@ -216,8 +216,8 @@
                     <td style="white-space:nowrap;">
                         @if (!item.IsVoided)
                         {
-                            <button type="button" class="tbl-action tbl-action--primary" style="font-size:11px;padding:3px 8px;margin-right:4px;" onclick="generateReceiptFromDashboard(@item.PaymentId)">Receipt</button>
-                            <button type="button" class="tbl-action tbl-action--danger" style="font-size:11px;padding:3px 8px;" onclick="voidPayment(@item.PaymentId)">Void</button>
+                            <button type="button" class="tbl-action tbl-action--primary" onclick="generateReceiptFromDashboard(@item.PaymentId)">Receipt</button>
+                            <button type="button" class="tbl-action tbl-action--danger" onclick="voidPayment(@item.PaymentId)">Void</button>
                         }
                         else
                         {

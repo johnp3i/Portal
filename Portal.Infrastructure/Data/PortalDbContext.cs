@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Entities.Billing;
+using Portal.Infrastructure.Entities.Sales;
 using Portal.Infrastructure.Entities.Stripe;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
@@ -140,6 +141,23 @@ public class PortalDbContext : DbContext
     public DbSet<RevenueSummaryLine> RevenueSummaryLines { get; set; } = null!;
     public DbSet<ExternalSalesRecord> ExternalSalesRecords { get; set; } = null!;
 
+    // Sales pipeline schema
+    public DbSet<SalesProduct> SalesProducts { get; set; } = null!;
+    public DbSet<SalesContact> SalesContacts { get; set; } = null!;
+    public DbSet<LeadRequest> LeadRequests { get; set; } = null!;
+    public DbSet<LeadResponse> LeadResponses { get; set; } = null!;
+    public DbSet<LeadResponseTemplate> LeadResponseTemplates { get; set; } = null!;
+    public DbSet<Meeting> Meetings { get; set; } = null!;
+    public DbSet<MeetingProductRequest> MeetingProductRequests { get; set; } = null!;
+    public DbSet<MeetingOpportunity> MeetingOpportunities { get; set; } = null!;
+    public DbSet<TeamMember> TeamMembers { get; set; } = null!;
+    public DbSet<ActivityFeedEntry> ActivityFeedEntries { get; set; } = null!;
+    public DbSet<Entities.Sales.LeadSourceType> LeadSourceTypes { get; set; } = null!;
+    public DbSet<LeadSourceReferenceType> LeadSourceReferenceTypes { get; set; } = null!;
+    public DbSet<Entities.Sales.LeadStatusType> LeadStatusTypes { get; set; } = null!;
+    public DbSet<Entities.Sales.LeadResponseType> LeadResponseTypes { get; set; } = null!;
+    public DbSet<Entities.Sales.MeetingType> MeetingTypes { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -219,6 +237,23 @@ public class PortalDbContext : DbContext
         ConfigureRevenueSummary(modelBuilder);
         ConfigureRevenueSummaryLine(modelBuilder);
         ConfigureExternalSalesRecord(modelBuilder);
+
+        // Sales pipeline
+        ConfigureSalesProduct(modelBuilder);
+        ConfigureSalesContact(modelBuilder);
+        ConfigureLeadSourceType(modelBuilder);
+        ConfigureLeadSourceReferenceType(modelBuilder);
+        ConfigureLeadStatusType(modelBuilder);
+        ConfigureLeadResponseType(modelBuilder);
+        ConfigureMeetingType(modelBuilder);
+        ConfigureLeadRequest(modelBuilder);
+        ConfigureLeadResponseTemplate(modelBuilder);
+        ConfigureLeadResponse(modelBuilder);
+        ConfigureMeeting(modelBuilder);
+        ConfigureMeetingProductRequest(modelBuilder);
+        ConfigureMeetingOpportunity(modelBuilder);
+        ConfigureTeamMember(modelBuilder);
+        ConfigureActivityFeed(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -439,6 +474,8 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsReminderOptedOut)
                 .IsRequired()
                 .HasDefaultValue(false);
+
+            entity.Property(e => e.ContactId).IsRequired(false);
         });
     }
 
@@ -492,6 +529,8 @@ public class PortalDbContext : DbContext
                 .HasForeignKey(e => e.QuotationContactId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            entity.Property(e => e.LeadRequestId).IsRequired(false);
 
             entity.HasIndex(e => e.BusinessId)
                 .HasDatabaseName("IX_Quotation_BusinessId");
@@ -693,6 +732,8 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.PaymentInstructionsOverride)
                 .IsRequired(false);
+
+            entity.Property(e => e.LeadRequestId).IsRequired(false);
         });
     }
 
@@ -3073,6 +3114,378 @@ public class PortalDbContext : DbContext
         });
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // SALES PIPELINE SCHEMA
+    // ═══════════════════════════════════════════════════════════
+
+    private static void ConfigureSalesProduct(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SalesProduct>(entity =>
+        {
+            entity.ToTable("Product", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureSalesContact(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SalesContact>(entity =>
+        {
+            entity.ToTable("Contact", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(320);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(30);
+            entity.Property(e => e.CompanyName).HasMaxLength(200);
+            entity.Property(e => e.JobTitle).HasMaxLength(100);
+            entity.Property(e => e.Country).HasMaxLength(100);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.BusinessId, e.Email })
+                .IsUnique()
+                .HasDatabaseName("UX_SalesContact_BusinessId_Email")
+                .HasFilter("[Email] IS NOT NULL");
+
+            entity.HasIndex(e => new { e.BusinessId, e.PhoneNumber })
+                .IsUnique()
+                .HasDatabaseName("UX_SalesContact_BusinessId_PhoneNumber")
+                .HasFilter("[PhoneNumber] IS NOT NULL");
+        });
+    }
+
+    private static void ConfigureLeadSourceType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Sales.LeadSourceType>(entity =>
+        {
+            entity.ToTable("LeadSourceType", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+        });
+    }
+
+    private static void ConfigureLeadSourceReferenceType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<LeadSourceReferenceType>(entity =>
+        {
+            entity.ToTable("LeadSourceReferenceType", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+        });
+    }
+
+    private static void ConfigureLeadStatusType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Sales.LeadStatusType>(entity =>
+        {
+            entity.ToTable("LeadStatusType", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.Property(e => e.Colour).HasMaxLength(7);
+            entity.Property(e => e.IsTerminal).IsRequired().HasDefaultValue(false);
+        });
+    }
+
+    private static void ConfigureLeadResponseType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Sales.LeadResponseType>(entity =>
+        {
+            entity.ToTable("LeadResponseType", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+        });
+    }
+
+    private static void ConfigureMeetingType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Sales.MeetingType>(entity =>
+        {
+            entity.ToTable("MeetingType", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+        });
+    }
+
+    private static void ConfigureLeadRequest(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<LeadRequest>(entity =>
+        {
+            entity.ToTable("LeadRequest", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.SourceUrl).HasMaxLength(500);
+            entity.Property(e => e.AssignedToUserId).HasMaxLength(450);
+            entity.Property(e => e.IsCancelled).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.CancellationDescription).HasMaxLength(500);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.LeadStatusTypeId).IsRequired().HasDefaultValue(1);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Contact)
+                .WithMany(c => c.LeadRequests)
+                .HasForeignKey(e => e.ContactId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.LeadRequests)
+                .HasForeignKey(e => e.ProductId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadSourceType)
+                .WithMany()
+                .HasForeignKey(e => e.LeadSourceTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadSourceReferenceType)
+                .WithMany()
+                .HasForeignKey(e => e.LeadSourceReferenceTypeId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadStatusType)
+                .WithMany()
+                .HasForeignKey(e => e.LeadStatusTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureLeadResponseTemplate(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<LeadResponseTemplate>(entity =>
+        {
+            entity.ToTable("LeadResponseTemplate", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Subject).HasMaxLength(300);
+            entity.Property(e => e.BodyTemplate).IsRequired();
+            entity.Property(e => e.ResponseTimeInHours).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.Templates)
+                .HasForeignKey(e => e.ProductId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadResponseType)
+                .WithMany()
+                .HasForeignKey(e => e.LeadResponseTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureLeadResponse(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<LeadResponse>(entity =>
+        {
+            entity.ToTable("LeadResponse", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.RespondedByUserId).HasMaxLength(450);
+            entity.Property(e => e.IsAutomated).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.SentAtUtc).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.LeadRequest)
+                .WithMany(lr => lr.Responses)
+                .HasForeignKey(e => e.LeadRequestId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadResponseType)
+                .WithMany()
+                .HasForeignKey(e => e.LeadResponseTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadResponseTemplate)
+                .WithMany()
+                .HasForeignKey(e => e.LeadResponseTemplateId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureMeeting(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Meeting>(entity =>
+        {
+            entity.ToTable("Meeting", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Subject).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.ScheduledAtUtc).IsRequired();
+            entity.Property(e => e.DurationMinutes).IsRequired().HasDefaultValue(60);
+            entity.Property(e => e.Location).HasMaxLength(300);
+            entity.Property(e => e.IsCancelled).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.CancellationDescription).HasMaxLength(500);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedByUserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadRequest)
+                .WithMany(lr => lr.Meetings)
+                .HasForeignKey(e => e.LeadRequestId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.Contact)
+                .WithMany(c => c.Meetings)
+                .HasForeignKey(e => e.ContactId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.MeetingType)
+                .WithMany()
+                .HasForeignKey(e => e.MeetingTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureMeetingProductRequest(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<MeetingProductRequest>(entity =>
+        {
+            entity.ToTable("MeetingProductRequest", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.IsCancelled).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.CancellationDescription).HasMaxLength(500);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.ProductRequests)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.MeetingProductRequests)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureMeetingOpportunity(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<MeetingOpportunity>(entity =>
+        {
+            entity.ToTable("MeetingOpportunity", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.EstimatedValue).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.Opportunities)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureTeamMember(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TeamMember>(entity =>
+        {
+            entity.ToTable("TeamMember", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(200);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(50);
+            entity.Property(e => e.Role).HasMaxLength(100);
+            entity.Property(e => e.UserId).HasMaxLength(450);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId).HasDatabaseName("IX_TeamMember_BusinessId");
+        });
+    }
+
+    private static void ConfigureActivityFeed(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ActivityFeedEntry>(entity =>
+        {
+            entity.ToTable("ActivityFeed", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.PerformedByUserId).HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadRequest)
+                .WithMany()
+                .HasForeignKey(e => e.LeadRequestId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.PerformedByTeamMember)
+                .WithMany()
+                .HasForeignKey(e => e.PerformedByTeamMemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .IsRequired(false);
+
+            entity.HasIndex(e => new { e.LeadRequestId, e.CreatedAtUtc })
+                .HasDatabaseName("IX_ActivityFeed_LeadRequestId_CreatedAtUtc")
+                .IsDescending(false, true);
+
+            entity.HasIndex(e => e.BusinessId).HasDatabaseName("IX_ActivityFeed_BusinessId");
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -3179,6 +3592,22 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<RevenueSummary>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        // Sales pipeline entities
+        modelBuilder.Entity<SalesProduct>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<SalesContact>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<LeadRequest>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<LeadResponseTemplate>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<Meeting>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

@@ -7,8 +7,10 @@ using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Interceptors;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Repositories.Import;
+using Portal.Infrastructure.Repositories.Sales;
 using Portal.Infrastructure.Services;
 using Portal.Infrastructure.Services.Import;
+using Portal.Infrastructure.Services.Sales;
 using Portal.Web.Extensions;
 using Portal.Web.Security;
 using Portal.Web.Services;
@@ -263,6 +265,45 @@ builder.Services.AddScoped<IZReportImportService, ZReportImportService>();
 builder.Services.AddScoped<ExternalSalesRecordRepository>(sp =>
     new ExternalSalesRecordRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ISalesImportService, SalesImportService>();
+
+// --- Sales Pipeline ---
+builder.Services.AddScoped<SalesContactRepository>(sp =>
+    new SalesContactRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<SalesProductRepository>(sp =>
+    new SalesProductRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadRequestRepository>(sp =>
+    new LeadRequestRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadResponseRepository>(sp =>
+    new LeadResponseRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadResponseTemplateRepository>(sp =>
+    new LeadResponseTemplateRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<MeetingRepository>(sp =>
+    new MeetingRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<MeetingProductRequestRepository>(sp =>
+    new MeetingProductRequestRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<MeetingOpportunityRepository>(sp =>
+    new MeetingOpportunityRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadSourceTypeRepository>(sp =>
+    new LeadSourceTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadSourceReferenceTypeRepository>(sp =>
+    new LeadSourceReferenceTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadStatusTypeRepository>(sp =>
+    new LeadStatusTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadResponseTypeRepository>(sp =>
+    new LeadResponseTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<MeetingTypeRepository>(sp =>
+    new MeetingTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<Portal.Infrastructure.Services.Sales.IContactService, Portal.Infrastructure.Services.Sales.ContactService>();
+builder.Services.AddScoped<ISalesProductService, SalesProductService>();
+builder.Services.AddScoped<ILeadRequestService, LeadRequestService>();
+builder.Services.AddScoped<IResponseService, ResponseService>();
+builder.Services.AddScoped<IMeetingService, MeetingService>();
+builder.Services.AddScoped<ITeamMemberService, TeamMemberService>();
+builder.Services.AddScoped<IActivityFeedService, ActivityFeedService>();
+builder.Services.AddScoped<TeamMemberRepository>(sp =>
+    new TeamMemberRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ActivityFeedRepository>(sp =>
+    new ActivityFeedRepository(sp.GetRequiredService<PortalDbContext>()));
 
 // P&L services
 builder.Services.AddScoped<IPnlService, PnlService>();

@@ -13,5 +13,7 @@ public class QuotationCreateViewModel
     [MaxLength(4000)]
     public string? Notes { get; set; }
 
+    public int? LeadRequestId { get; set; }
+
     public List<Customer> Customers { get; set; } = new();
 }

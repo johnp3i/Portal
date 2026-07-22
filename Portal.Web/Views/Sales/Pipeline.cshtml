@@ -1,0 +1,170 @@
+@using Portal.Infrastructure.Entities.Sales
+@{
+    ViewData["Title"] = "Sales Pipeline";
+    var statuses = (List<LeadStatusType>)ViewBag.Statuses;
+    var products = (List<SalesProduct>)ViewBag.Products;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
+        <h1 class="topbar-heading">Pipeline</h1>
+        <p class="topbar-subtitle">Track leads through your sales pipeline from enquiry to conversion.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="openCreateLeadModal()">New Lead</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <button id="btnKanbanView" class="btn btn-secondary active" onclick="switchView('kanban')">Board</button>
+            <button id="btnTableView" class="btn btn-secondary" onclick="switchView('table')">Table</button>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label for="filterProduct">Product</label>
+            <select id="filterProduct">
+                <option value="">All Products</option>
+                @foreach (var product in products)
+                {
+                    <option value="@product.Id">@product.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="filterAssigned">Assigned To</label>
+            <select id="filterAssigned">
+                <option value="">All Users</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="applyFilters()">Filter</button>
+            <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Kanban Board -->
+<div id="kanbanView">
+    <section class="glass card-pad" style="padding:16px;">
+        <div class="pipeline-board" id="pipelineBoard" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;">
+            <!-- Columns rendered by JS -->
+        </div>
+    </section>
+
+    <!-- Cancelled Leads Section -->
+    <div id="cancelledLeadsSection" style="display:none;margin-top:22px;">
+        <section class="glass card-pad">
+            <details>
+                <summary style="cursor:pointer;font-size:14px;font-weight:700;color:#C24A4A;display:flex;align-items:center;gap:8px;list-style:none;">
+                    <svg width="16" height="16" fill="none" stroke="#C24A4A" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg>
+                    Cancelled Leads <span id="cancelledCount" style="font-size:12px;font-weight:700;background:rgba(194,74,74,.1);color:#C24A4A;padding:2px 8px;border-radius:8px;margin-left:4px;">0</span>
+                </summary>
+                <div id="cancelledLeadsList" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;">
+                    <!-- Cards rendered by JS -->
+                </div>
+            </details>
+        </section>
+    </div>
+</div>
+
+<!-- Table View (hidden by default) -->
+<div id="tableView" style="display:none;">
+    <section class="glass card-pad">
+        <table class="data-table" id="leadsTable">
+            <thead>
+                <tr>
+                    <th>Contact</th>
+                    <th>Company</th>
+                    <th>Product</th>
+                    <th>Stage</th>
+                    <th>Source</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="leadsTableBody">
+                <!-- Rows rendered by JS -->
+            </tbody>
+        </table>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+            <div id="paginationControls"></div>
+        </div>
+    </section>
+</div>
+
+<!-- Pipeline KPI Footer -->
+<section class="glass card-pad" style="margin-top:22px;">
+    <div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:16px;text-align:center;">
+        <div>
+            <div id="kpiTotalLeads" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Total Active Leads</div>
+        </div>
+        <div>
+            <div id="kpiThisMonth" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">This Month</div>
+        </div>
+        <div>
+            <div id="kpiConversionRate" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0%</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Conversion Rate</div>
+        </div>
+        <div>
+            <div id="kpiAvgDaysToWon" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">—</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Avg. Days to Won</div>
+        </div>
+    </div>
+</section>
+
+<!-- Global Activity Feed -->
+<section class="glass card-pad" style="margin-top:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h4 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;">Recent Activity</h4>
+    </div>
+    <div id="globalActivityFeed">
+        <p class="muted" style="font-size:14px;">Loading...</p>
+    </div>
+    <div id="globalFeedPaging" style="display:none;margin-top:14px;display:flex;justify-content:center;gap:8px;">
+    </div>
+</section>
+
+<!-- Create Lead Modal -->
+<div id="createLeadModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15);margin:auto;flex-shrink:0;">
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#0B1B28;margin:0 0 24px 0;">New Lead</h2>
+        <div class="field" style="margin-bottom:18px;">
+            <label for="leadContactId" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Contact *</label>
+            <select id="leadContactId" required style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:#fff;appearance:auto;"></select>
+        </div>
+        <div class="field" style="margin-bottom:18px;">
+            <label for="leadProductId" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Product</label>
+            <select id="leadProductId" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:#fff;appearance:auto;"><option value="">None</option></select>
+        </div>
+        <div class="field" style="margin-bottom:18px;">
+            <label for="leadSourceTypeId" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Source *</label>
+            <select id="leadSourceTypeId" required style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:#fff;appearance:auto;"></select>
+        </div>
+        <div class="field" style="margin-bottom:18px;">
+            <label for="leadSourceRefTypeId" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Source Reference</label>
+            <select id="leadSourceRefTypeId" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:#fff;appearance:auto;"><option value="">None</option></select>
+        </div>
+        <div class="field" style="margin-bottom:18px;">
+            <label for="leadSourceUrl" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Source URL</label>
+            <input type="text" id="leadSourceUrl" placeholder="https://..." style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;" />
+        </div>
+        <div class="field" style="margin-bottom:18px;">
+            <label for="leadRequestText" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Request Details</label>
+            <textarea id="leadRequestText" rows="3" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+            <button class="btn btn-secondary" onclick="closeCreateLeadModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitCreateLead()">Create Lead</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/pipeline.js"></script>
+}

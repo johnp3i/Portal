@@ -21,7 +21,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
             const string query = @"
                 SELECT [Id], [BusinessId], [Name], [ContactPerson], [Email], [TelephoneNumber], [MobileNumber],
                        [AddressLine1], [AddressLine2], [City], [PostalCode], [Country],
-                       [IsActive], [IsReminderOptedOut], [CreatedAtUtc], [UpdatedAtUtc]
+                       [IsActive], [IsReminderOptedOut], [ContactId], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [customer].[Customer]
                 WHERE [BusinessId] = @BusinessId";
 
@@ -41,7 +41,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
             const string query = @"
                 SELECT [Id], [BusinessId], [Name], [ContactPerson], [Email], [TelephoneNumber], [MobileNumber],
                        [AddressLine1], [AddressLine2], [City], [PostalCode], [Country],
-                       [IsActive], [IsReminderOptedOut], [CreatedAtUtc], [UpdatedAtUtc]
+                       [IsActive], [IsReminderOptedOut], [ContactId], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [customer].[Customer]
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
@@ -62,7 +62,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
             const string query = @"
                 SELECT [Id], [BusinessId], [Name], [ContactPerson], [Email], [TelephoneNumber], [MobileNumber],
                        [AddressLine1], [AddressLine2], [City], [PostalCode], [Country],
-                       [IsActive], [IsReminderOptedOut], [CreatedAtUtc], [UpdatedAtUtc]
+                       [IsActive], [IsReminderOptedOut], [ContactId], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [customer].[Customer]
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
@@ -84,11 +84,11 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
                 INSERT INTO [customer].[Customer]
                     ([BusinessId], [Name], [ContactPerson], [Email], [TelephoneNumber], [MobileNumber],
                      [AddressLine1], [AddressLine2], [City], [PostalCode], [Country],
-                     [IsActive], [CreatedAtUtc], [UpdatedAtUtc])
+                     [IsActive], [ContactId], [CreatedAtUtc], [UpdatedAtUtc])
                 VALUES
                     (@BusinessId, @Name, @ContactPerson, @Email, @TelephoneNumber, @MobileNumber,
                      @AddressLine1, @AddressLine2, @City, @PostalCode, @Country,
-                     @IsActive, @CreatedAtUtc, @UpdatedAtUtc);
+                     @IsActive, @ContactId, @CreatedAtUtc, @UpdatedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
@@ -115,6 +115,7 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
             command.Parameters.Add(new SqlParameter("@PostalCode", entity.PostalCode ?? (object)DBNull.Value));
             command.Parameters.Add(new SqlParameter("@Country", entity.Country ?? (object)DBNull.Value));
             command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
+            command.Parameters.Add(new SqlParameter("@ContactId", entity.ContactId ?? (object)DBNull.Value));
             command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
             command.Parameters.Add(new SqlParameter("@UpdatedAtUtc", entity.UpdatedAtUtc));
 
