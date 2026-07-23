@@ -32,4 +32,14 @@ public interface IPromoCodeService
     /// Returns null if the promo code does not exist.
     /// </summary>
     Task<PromoCodeListItem?> GetByIdAsync(int id);
+
+    /// <summary>
+    /// Increments the sent count for a promo code after it is emailed.
+    /// </summary>
+    Task IncrementSentCountAsync(int promoCodeId);
+
+    /// <summary>
+    /// Resets the sent count to zero for a promo code.
+    /// </summary>
+    Task ResetSentCountAsync(int promoCodeId);
 }

@@ -20,13 +20,16 @@ public class PromoCodeService : IPromoCodeService
     private const int MaxCollisionRetries = 5;
 
     private readonly PromoCodeRepository _promoCodeRepository;
+    private readonly IPlanRepository _planRepository;
     private readonly ILogger<PromoCodeService> _logger;
 
     public PromoCodeService(
         PromoCodeRepository promoCodeRepository,
+        IPlanRepository planRepository,
         ILogger<PromoCodeService> logger)
     {
         _promoCodeRepository = promoCodeRepository;
+        _planRepository = planRepository;
         _logger = logger;
     }
 
@@ -87,6 +90,7 @@ public class PromoCodeService : IPromoCodeService
                 ExpiresAtUtc = request.ExpiresAtUtc,
                 BoundEmail = string.IsNullOrWhiteSpace(request.BoundEmail) ? null : request.BoundEmail.Trim(),
                 IsRevoked = false,
+                PlanId = request.PlanId,
                 CreatedByUserId = createdByUserId,
                 CreatedAtUtc = DateTime.UtcNow
             };
@@ -147,8 +151,18 @@ public class PromoCodeService : IPromoCodeService
 
             var pagedResult = await _promoCodeRepository.GetFilteredAsync(infraFilter);
 
+            // Load plans for name resolution
+            var plans = await _planRepository.GetAllActiveAsync();
+            var planLookup = plans.ToDictionary(p => p.Id, p => p.Name);
+
             // Map entities to list item DTOs with status derivation
-            var items = pagedResult.Items.Select(MapToListItem).ToList();
+            var items = pagedResult.Items.Select(entity =>
+            {
+                var item = MapToListItem(entity);
+                if (entity.PlanId.HasValue && planLookup.TryGetValue(entity.PlanId.Value, out var name))
+                    item.PlanName = name;
+                return item;
+            }).ToList();
 
             return new PagedResult<PromoCodeListItem>
             {
@@ -176,6 +190,32 @@ public class PromoCodeService : IPromoCodeService
             return MapToListItem(entity);
         }
         catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task IncrementSentCountAsync(int promoCodeId)
+    {
+        try
+        {
+            await _promoCodeRepository.IncrementSentCountAsync(promoCodeId);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task ResetSentCountAsync(int promoCodeId)
+    {
+        try
+        {
+            await _promoCodeRepository.ResetSentCountAsync(promoCodeId);
+        }
+        catch (Exception ex)
         {
             throw;
         }
@@ -265,12 +305,15 @@ public class PromoCodeService : IPromoCodeService
             Id = entity.Id,
             Code = entity.Code,
             Type = entity.BoundEmail != null ? "Email-Bound" : "Generic",
+            PlanId = entity.PlanId,
+            PlanName = null, // Resolved below if plans are loaded
             DurationMonths = entity.DurationMonths,
             CurrentRedemptions = entity.CurrentRedemptions,
             MaxRedemptions = entity.MaxRedemptions,
             ExpiresAtUtc = entity.ExpiresAtUtc,
             BoundEmail = entity.BoundEmail,
             Status = DeriveStatus(entity),
+            SentCount = entity.SentCount,
             CreatedAtUtc = entity.CreatedAtUtc
         };
     }

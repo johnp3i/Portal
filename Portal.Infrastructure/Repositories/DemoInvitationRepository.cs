@@ -35,6 +35,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                        [portal].[DemoInvitation].[LastAccessedAtUtc],
                        [portal].[DemoInvitation].[AccessCount],
                        [portal].[DemoInvitation].[RevokedAtUtc],
+                       [portal].[DemoInvitation].[ConvertedAtUtc],
                        [portal].[DemoInvitation].[CreatedAtUtc]
                 FROM [portal].[DemoInvitation]
                 WHERE [portal].[DemoInvitation].[Token] = @Token";
@@ -68,6 +69,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                        [portal].[DemoInvitation].[LastAccessedAtUtc],
                        [portal].[DemoInvitation].[AccessCount],
                        [portal].[DemoInvitation].[RevokedAtUtc],
+                       [portal].[DemoInvitation].[ConvertedAtUtc],
                        [portal].[DemoInvitation].[CreatedAtUtc]
                 FROM [portal].[DemoInvitation]
                 ORDER BY [portal].[DemoInvitation].[CreatedAtUtc] DESC";
@@ -103,6 +105,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                        [portal].[DemoInvitation].[LastAccessedAtUtc],
                        [portal].[DemoInvitation].[AccessCount],
                        [portal].[DemoInvitation].[RevokedAtUtc],
+                       [portal].[DemoInvitation].[ConvertedAtUtc],
                        [portal].[DemoInvitation].[CreatedAtUtc]
                 FROM [portal].[DemoInvitation]
                 ORDER BY [portal].[DemoInvitation].[CreatedAtUtc] DESC
@@ -409,6 +412,33 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
             }
         }
         catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Marks the most recent demo invitation for the given email as converted.
+    /// </summary>
+    public async Task MarkConvertedByEmailAsync(string recipientEmail)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [portal].[DemoInvitation]
+                SET [ConvertedAtUtc] = GETUTCDATE()
+                WHERE [Id] = (
+                    SELECT TOP 1 [Id]
+                    FROM [portal].[DemoInvitation]
+                    WHERE [RecipientEmail] = @RecipientEmail
+                      AND [ConvertedAtUtc] IS NULL
+                    ORDER BY [CreatedAtUtc] DESC
+                )";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@RecipientEmail", recipientEmail));
+        }
+        catch (Exception ex)
         {
             throw;
         }

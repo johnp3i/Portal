@@ -2,6 +2,10 @@
 @model PagedResult<DemoInvitationListItem>
 @{
     ViewData["Title"] = "Demo Invitations";
+    var totalSent = Model.Items?.Count(i => i.Status == "sent" || i.Status == "accessed" || i.Status == "converted") ?? 0;
+    var totalAccessed = Model.Items?.Count(i => i.Status == "accessed" || i.Status == "converted") ?? 0;
+    var totalConverted = Model.Items?.Count(i => i.Status == "converted") ?? 0;
+    var conversionRate = totalAccessed > 0 ? Math.Round((double)totalConverted / totalAccessed * 100) : 0;
 }
 
 <div class="topbar">
@@ -11,6 +15,28 @@
         <p class="topbar-subtitle">Create, manage, and track demo access invitations for prospects.</p>
     </div>
 </div>
+
+<!-- KPIs -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:16px;text-align:center;">
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">@Model.TotalCount</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Total Invitations</div>
+        </div>
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0D5EA6;">@totalAccessed</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Accessed</div>
+        </div>
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#129867;">@totalConverted</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Converted</div>
+        </div>
+        <div>
+            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:@(conversionRate > 0 ? "#129867" : "#0B1B28");">@conversionRate%</div>
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Conversion Rate</div>
+        </div>
+    </div>
+</section>
 
 <!-- Action Bar -->
 <section class="glass card-pad" style="margin-bottom:22px;">
@@ -55,7 +81,11 @@
                         <td>@(item.RecipientName ?? "—")</td>
                         <td>@item.BusinessName</td>
                         <td>
-                            @if (item.Status == "sent")
+                            @if (item.Status == "converted")
+                            {
+                                <span class="pill pill-green">Converted</span>
+                            }
+                            else if (item.Status == "sent")
                             {
                                 <span class="pill pill-demo-sent">Sent</span>
                             }
@@ -211,25 +241,32 @@
 @section Scripts {
 <!-- Permissions Modal -->
 <div id="permissionsModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,0.15);">
-        <h3 style="margin:0 0 20px 0;font-size:18px;font-weight:700;color:#1a2b3c;">Edit Module Permissions</h3>
-        <table class="permissions-grid" style="width:100%;border-collapse:collapse;">
-            <thead>
-                <tr>
-                    <th style="text-align:left;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">Module</th>
-                    <th style="text-align:center;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">Full</th>
-                    <th style="text-align:center;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">Read Only</th>
-                    <th style="text-align:center;font-size:12px;font-weight:700;color:#5a6b7c;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid #e2eaf2;">None</th>
-                </tr>
-            </thead>
-            <tbody id="permissionsModalBody"></tbody>
-        </table>
-        <div style="margin-top:24px;display:flex;justify-content:flex-end;gap:12px;">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:780px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,0.15);max-height:85vh;display:flex;flex-direction:column;">
+        <h3 style="margin:0 0 12px 0;font-size:18px;font-weight:700;color:#1a2b3c;flex-shrink:0;">Edit Module Permissions</h3>
+        <div style="margin-bottom:16px;padding:10px 14px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);border-radius:10px;font-size:12px;color:#5E7385;line-height:1.6;flex-shrink:0;">
+            <strong>F</strong> = Full access &nbsp;|&nbsp; <strong>R</strong> = Read Only (view only, no editing) &nbsp;|&nbsp; <strong>N</strong> = None (hidden from menu)
+        </div>
+        <div id="permissionsModalBody" style="overflow-y:auto;flex:1;min-height:0;padding-right:12px;"></div>
+        <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:12px;flex-shrink:0;">
             <button type="button" class="btn btn-secondary" onclick="closePermissionsModal()">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
         </div>
     </div>
 </div>
+<style>
+    .perm-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 28px; }
+    @@media (max-width:640px) { .perm-grid { grid-template-columns:1fr; } }
+    .perm-section-title { grid-column:1/-1; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#5a6b7c; padding:14px 0 6px; border-bottom:1px solid rgba(13,94,166,.08); margin-bottom:2px; }
+    .perm-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f4f7fa; }
+    .perm-row-label { display:flex; align-items:center; gap:6px; font-weight:600; font-size:13px; color:#1a2b3c; }
+    .perm-tier-badge { font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; letter-spacing:.03em; }
+    .perm-tier-foundation { background:rgba(18,152,103,.08); color:#0C734B; }
+    .perm-tier-professional { background:rgba(13,94,166,.08); color:#0D5EA6; }
+    .perm-tier-enterprise { background:rgba(200,145,46,.1); color:#8B6914; }
+    .perm-radios { display:flex; gap:12px; align-items:center; }
+    .perm-radios label { display:flex; align-items:center; gap:3px; font-size:11px; color:#5a6b7c; cursor:pointer; }
+    .perm-radios input[type="radio"] { width:15px; height:15px; accent-color:#0D5EA6; cursor:pointer; }
+</style>
 
 <script>
 (function() {
@@ -346,9 +383,35 @@
     var moduleLabels = {
         customer: 'Customers', quotation: 'Quotations', invoice: 'Invoices',
         revenue: 'Revenue', purchase: 'Purchases', vat: 'VAT',
-        credit: 'Credit Notes', audit: 'Audit', products: 'Products'
+        credit: 'Credit Notes', audit: 'Audit', products: 'Products',
+        sales: 'Opportunities', pnl: 'Profit & Loss', cashflow: 'Cash Flow',
+        expense_insights: 'Expense Insights', schedule_payments: 'Payment Schedules',
+        payment_link_manual: 'Payment Links (Manual)', payment_reminder_manual: 'Payment Reminders (Manual)',
+        payment_link_auto: 'Payment Links (Auto)', payment_reminder_auto: 'Payment Reminders (Auto)',
+        recurring_expense_validation: 'Recurring Expense Validation',
+        purchase_import: 'Purchase Import', zreport_import: 'Sales Invoice Import',
+        attachments: 'Attachments', audit_log: 'Activity Log',
+        activity_timeline: 'Activity Timeline', client_portal: 'Client Portal',
+        api: 'API Access', webhooks: 'Webhooks', multi_currency: 'Multi-Currency'
     };
-    var modules = ['customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'audit', 'products'];
+    var modules = ['customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'audit', 'products',
+        'sales', 'pnl', 'cashflow', 'expense_insights', 'schedule_payments',
+        'payment_link_manual', 'payment_reminder_manual', 'payment_link_auto', 'payment_reminder_auto',
+        'recurring_expense_validation', 'purchase_import', 'zreport_import', 'attachments', 'audit_log',
+        'activity_timeline', 'client_portal', 'api', 'webhooks', 'multi_currency'];
+
+    var moduleGroups = [
+        { title: 'Core (Foundation)', tier: 'foundation', modules: ['customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'products', 'audit'] },
+        { title: 'Intelligence (Professional)', tier: 'professional', modules: ['sales', 'pnl', 'cashflow', 'expense_insights', 'schedule_payments', 'recurring_expense_validation'] },
+        { title: 'Automation (Professional)', tier: 'professional', modules: ['payment_link_manual', 'payment_reminder_manual', 'payment_link_auto', 'payment_reminder_auto', 'purchase_import', 'zreport_import'] },
+        { title: 'Documents (Professional)', tier: 'professional', modules: ['attachments', 'audit_log'] },
+        { title: 'Enterprise', tier: 'enterprise', modules: ['activity_timeline', 'client_portal', 'api', 'webhooks', 'multi_currency'] }
+    ];
+
+    var moduleTiers = {};
+    moduleGroups.forEach(function(g) {
+        g.modules.forEach(function(m) { moduleTiers[m] = g.tier; });
+    });
 
     document.querySelectorAll('.btn-permissions-invitation').forEach(function(btn) {
         btn.addEventListener('click', async function() {
@@ -375,19 +438,33 @@
     });
 
     function renderPermissionsModal(permissions) {
-        var tbody = document.getElementById('permissionsModalBody');
-        tbody.innerHTML = '';
-        for (var i = 0; i < modules.length; i++) {
-            var m = modules[i];
-            var level = permissions[m] || 'none';
-            var row = '<tr>'
-                + '<td style="font-weight:600;padding:10px 12px;border-bottom:1px solid #eef4f8;">' + moduleLabels[m] + '</td>'
-                + '<td style="text-align:center;padding:10px 12px;border-bottom:1px solid #eef4f8;"><input type="radio" name="modal_perm_' + m + '" value="full" ' + (level === 'full' ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#0D5EA6;cursor:pointer;" /></td>'
-                + '<td style="text-align:center;padding:10px 12px;border-bottom:1px solid #eef4f8;"><input type="radio" name="modal_perm_' + m + '" value="readonly" ' + (level === 'readonly' ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#0D5EA6;cursor:pointer;" /></td>'
-                + '<td style="text-align:center;padding:10px 12px;border-bottom:1px solid #eef4f8;"><input type="radio" name="modal_perm_' + m + '" value="none" ' + (level === 'none' ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#0D5EA6;cursor:pointer;" /></td>'
-                + '</tr>';
-            tbody.innerHTML += row;
-        }
+        var container = document.getElementById('permissionsModalBody');
+        var html = '<div class="perm-grid">';
+
+        moduleGroups.forEach(function(group) {
+            // Section header spans both columns
+            html += '<div class="perm-section-title">' + group.title + '</div>';
+
+            group.modules.forEach(function(m) {
+                var level = permissions[m] || 'none';
+                var tierClass = 'perm-tier-' + group.tier;
+                var tierLabel = group.tier === 'foundation' ? 'Found' : (group.tier === 'professional' ? 'Pro' : 'Ent');
+
+                html += '<div class="perm-row">'
+                    + '<div class="perm-row-label">'
+                    + '<span>' + moduleLabels[m] + '</span>'
+                    + '<span class="perm-tier-badge ' + tierClass + '">' + tierLabel + '</span>'
+                    + '</div>'
+                    + '<div class="perm-radios">'
+                    + '<label><input type="radio" name="modal_perm_' + m + '" value="full" ' + (level === 'full' ? 'checked' : '') + ' />F</label>'
+                    + '<label><input type="radio" name="modal_perm_' + m + '" value="readonly" ' + (level === 'readonly' ? 'checked' : '') + ' />R</label>'
+                    + '<label><input type="radio" name="modal_perm_' + m + '" value="none" ' + (level === 'none' ? 'checked' : '') + ' />N</label>'
+                    + '</div></div>';
+            });
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
     }
 
     window.closePermissionsModal = function() {

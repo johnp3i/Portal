@@ -6,4 +6,5 @@ public class CreatePromoCodeRequest
     public int MaxRedemptions { get; set; }
     public DateTime ExpiresAtUtc { get; set; }
     public string? BoundEmail { get; set; }
+    public int? PlanId { get; set; }
 }

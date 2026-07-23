@@ -31,6 +31,8 @@ public class DemoInvitation
 
     public DateTime? RevokedAtUtc { get; set; }
 
+    public DateTime? ConvertedAtUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties

@@ -6,4 +6,6 @@ public class PromoCodeValidationResult
     public string? ErrorMessage { get; set; }
     public int? PromoCodeId { get; set; }
     public int? DurationMonths { get; set; }
+    public int? PlanId { get; set; }
+    public string? PlanName { get; set; }
 }

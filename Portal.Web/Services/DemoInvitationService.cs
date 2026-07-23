@@ -336,10 +336,11 @@ public class DemoInvitationService : IDemoInvitationService
                 RecipientEmail = inv.RecipientEmail,
                 RecipientName = inv.RecipientName,
                 BusinessName = businessLookup.GetValueOrDefault(inv.BusinessId, "Unknown"),
-                Status = inv.Status,
+                Status = inv.ConvertedAtUtc.HasValue ? "converted" : inv.Status,
                 ExpiresAtUtc = inv.ExpiresAtUtc,
                 AccessCount = inv.AccessCount,
                 FirstAccessedAtUtc = inv.FirstAccessedAtUtc,
+                ConvertedAtUtc = inv.ConvertedAtUtc,
                 CreatedAtUtc = inv.CreatedAtUtc
             }).ToList();
 

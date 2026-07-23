@@ -104,6 +104,9 @@ public class ProvisioningService : IProvisioningService
                 // 1. Create Business
                 var businessId = await InsertBusinessAsync(businessName, now);
 
+                // 1b. Clear IsDefault on existing UserBusiness records (demo business links)
+                await ClearDefaultUserBusinessAsync(request.UserId);
+
                 // 2. Create UserBusiness in MembershipDbContext
                 var userBusinessId = await InsertUserBusinessAsync(request.UserId, businessId, now);
 
@@ -262,6 +265,9 @@ public class ProvisioningService : IProvisioningService
                 // 1. Create Business
                 var businessId = await InsertBusinessAsync(businessName, now);
 
+                // 1b. Clear IsDefault on existing UserBusiness records (demo business links)
+                await ClearDefaultUserBusinessAsync(request.UserId);
+
                 // 2. Create UserBusiness in MembershipDbContext
                 var userBusinessId = await InsertUserBusinessAsync(request.UserId, businessId, now);
 
@@ -277,6 +283,9 @@ public class ProvisioningService : IProvisioningService
                     CancelledAtUtc = null,
                     CreatedAtUtc = now
                 });
+
+                // 3b. Create BusinessPlan (required for PlanPermissionFilter access checks)
+                await InsertBusinessPlanAsync(businessId, request.PlanId, now, now.AddMonths(request.DurationMonths));
 
                 // 4. Create UserBusinessPermissions (all Business plan module permissions)
                 var planFeatures = await GetIncludedPlanFeaturesAsync(request.PlanId);
@@ -502,6 +511,53 @@ public class ProvisioningService : IProvisioningService
 
         var result = await command.ExecuteScalarAsync();
         return (int)result!;
+    }
+
+    /// <summary>
+    /// Clears IsDefault on all existing UserBusiness records for a user.
+    /// Called before creating a new UserBusiness with IsDefault = true.
+    /// </summary>
+    private async Task ClearDefaultUserBusinessAsync(string userId)
+    {
+        const string query = @"
+            UPDATE [membership].[UserBusiness]
+            SET [IsDefault] = 0
+            WHERE [UserId] = @UserId AND [IsDefault] = 1";
+
+        var connection = _membershipDbContext.Database.GetDbConnection();
+
+        if (connection.State != System.Data.ConnectionState.Open)
+            await connection.OpenAsync();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = query;
+
+        var transaction = _membershipDbContext.Database.CurrentTransaction;
+        if (transaction != null)
+            command.Transaction = transaction.GetDbTransaction();
+
+        command.Parameters.Add(new SqlParameter("@UserId", userId));
+        await command.ExecuteNonQueryAsync();
+    }
+
+    /// <summary>
+    /// Inserts a BusinessPlan record (required for PlanPermissionFilter to grant module access).
+    /// For promo trials: Status = 'trial', TrialEndsAtUtc = end date.
+    /// </summary>
+    private async Task InsertBusinessPlanAsync(int businessId, int planId, DateTime startDate, DateTime trialEndDate)
+    {
+        const string query = @"
+            INSERT INTO [dbo].[BusinessPlan]
+                ([BusinessId], [PlanId], [StartDateUtc], [EndDateUtc], [IsActive], [Status], [TrialEndsAtUtc], [CreatedAtUtc])
+            VALUES
+                (@BusinessId, @PlanId, @StartDateUtc, NULL, 1, 'trial', @TrialEndsAtUtc, @CreatedAtUtc)";
+
+        await _portalDbContext.Database.ExecuteSqlRawAsync(query,
+            new SqlParameter("@BusinessId", businessId),
+            new SqlParameter("@PlanId", planId),
+            new SqlParameter("@StartDateUtc", startDate),
+            new SqlParameter("@TrialEndsAtUtc", trialEndDate),
+            new SqlParameter("@CreatedAtUtc", startDate));
     }
 
     /// <summary>

@@ -26,6 +26,12 @@ public class PromoCode
 
     public DateTime CreatedAtUtc { get; set; }
 
+    public int? PlanId { get; set; }
+
+    public int SentCount { get; set; }
+
     // Navigation properties
+    public Plan? Plan { get; set; }
+
     public ICollection<PromoCodeRedemption> Redemptions { get; set; } = new List<PromoCodeRedemption>();
 }

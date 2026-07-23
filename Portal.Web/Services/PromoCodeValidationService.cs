@@ -19,10 +19,12 @@ namespace Portal.Web.Services;
 public class PromoCodeValidationService : IPromoCodeValidationService
 {
     private readonly PromoCodeRepository _promoCodeRepository;
+    private readonly IPlanRepository _planRepository;
 
-    public PromoCodeValidationService(PromoCodeRepository promoCodeRepository)
+    public PromoCodeValidationService(PromoCodeRepository promoCodeRepository, IPlanRepository planRepository)
     {
         _promoCodeRepository = promoCodeRepository;
+        _planRepository = planRepository;
     }
 
     /// <inheritdoc />
@@ -92,15 +94,36 @@ public class PromoCodeValidationService : IPromoCodeValidationService
                 }
             }
 
-            // All checks passed — return valid result
+            // All checks passed — resolve plan name
+            string? planName = null;
+            int? planId = promoCode.PlanId;
+            if (planId.HasValue)
+            {
+                var plan = await _planRepository.GetByIdAsync(planId.Value);
+                planName = plan?.Name;
+            }
+            else
+            {
+                // Fallback to Professional for codes without PlanId
+                var professionalPlan = await _planRepository.GetBySlugAsync("professional");
+                if (professionalPlan != null)
+                {
+                    planId = professionalPlan.Id;
+                    planName = professionalPlan.Name;
+                }
+            }
+
+            // Return valid result with plan info
             return new PromoCodeValidationResult
             {
                 IsValid = true,
                 PromoCodeId = promoCode.Id,
-                DurationMonths = promoCode.DurationMonths
+                DurationMonths = promoCode.DurationMonths,
+                PlanId = planId,
+                PlanName = planName
             };
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }

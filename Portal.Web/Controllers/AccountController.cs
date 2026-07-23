@@ -248,6 +248,31 @@ public class AccountController : Controller
         return View(model);
     }
 
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostValidatePromoCode([FromForm] string code, [FromForm] string email)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+            return Json(new { success = false, message = "Please enter a promo code." });
+
+        var result = await _promoCodeValidationService.ValidateForRegistrationAsync(code, email ?? string.Empty);
+
+        if (result.IsValid)
+        {
+            return Json(new
+            {
+                success = true,
+                promoCodeId = result.PromoCodeId,
+                durationMonths = result.DurationMonths,
+                planId = result.PlanId,
+                planName = result.PlanName
+            });
+        }
+
+        return Json(new { success = false, message = result.ErrorMessage });
+    }
+
     [HttpGet]
     [AllowAnonymous]
     public IActionResult RegisterConfirmation()

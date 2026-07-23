@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Portal.Infrastructure.Repositories;
 using Portal.Web.Models.PromoCode;
 using Portal.Web.Services;
 using Serilog;
@@ -13,13 +14,16 @@ public class PromoCodeController : Controller
 {
     private readonly IPromoCodeService _promoCodeService;
     private readonly IPromoEmailService _promoEmailService;
+    private readonly IPlanRepository _planRepository;
 
     public PromoCodeController(
         IPromoCodeService promoCodeService,
-        IPromoEmailService promoEmailService)
+        IPromoEmailService promoEmailService,
+        IPlanRepository planRepository)
     {
         _promoCodeService = promoCodeService;
         _promoEmailService = promoEmailService;
+        _planRepository = planRepository;
     }
 
     // GET /Admin/PromoCodes
@@ -36,6 +40,8 @@ public class PromoCodeController : Controller
         var pagedResult = await _promoCodeService.GetAllAsync(filter);
 
         ViewBag.StatusFilter = status;
+        ViewBag.Plans = await _planRepository.GetAllActiveAsync();
+        ViewBag.MaxSendCount = MaxSendCount;
 
         return View(pagedResult);
     }
@@ -91,6 +97,8 @@ public class PromoCodeController : Controller
     }
 
     // POST /Admin/PromoCodes/SendCode
+    private const int MaxSendCount = 3;
+
     [HttpPost("SendCode")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SendCode([FromForm] int promoCodeId, [FromForm] string? recipientEmail)
@@ -106,6 +114,11 @@ public class PromoCodeController : Controller
             if (promoCode.Status != "Active")
             {
                 return Json(new { success = false, message = "Only active promo codes can be sent." });
+            }
+
+            if (promoCode.SentCount >= MaxSendCount)
+            {
+                return Json(new { success = false, message = $"Send limit reached ({MaxSendCount}). Reset the counter to send again." });
             }
 
             // Determine recipient: BoundEmail for email-bound codes, or provided email for generic codes
@@ -125,6 +138,7 @@ public class PromoCodeController : Controller
 
             if (sent)
             {
+                await _promoCodeService.IncrementSentCountAsync(promoCodeId);
                 return Json(new { success = true, message = $"Promo code email sent to {emailTo}." });
             }
 
@@ -134,6 +148,23 @@ public class PromoCodeController : Controller
         {
             Log.Error(ex, "Error sending promo code email for PromoCodeId={PromoCodeId}", promoCodeId);
             return Json(new { success = false, message = "An unexpected error occurred. Please try again." });
+        }
+    }
+
+    // POST /Admin/PromoCodes/ResetSentCount
+    [HttpPost("ResetSentCount")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetSentCount([FromForm] int promoCodeId)
+    {
+        try
+        {
+            await _promoCodeService.ResetSentCountAsync(promoCodeId);
+            return Json(new { success = true, message = "Send counter reset." });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error resetting sent count for PromoCodeId={PromoCodeId}", promoCodeId);
+            return Json(new { success = false, message = "An unexpected error occurred." });
         }
     }
 }

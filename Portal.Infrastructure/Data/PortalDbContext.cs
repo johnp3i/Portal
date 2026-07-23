@@ -2319,7 +2319,7 @@ public class PortalDbContext : DbContext
 
             entity.ToTable(t => t.HasCheckConstraint(
                 "CK_DemoInvitationPermission_Module",
-                "[Module] IN ('customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'audit', 'products')"));
+                "[Module] IN ('customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'audit', 'products', 'payment_link_manual', 'payment_reminder_manual', 'payment_link_auto', 'payment_reminder_auto', 'cashflow', 'pnl', 'expense_insights', 'attachments', 'client_portal', 'activity_timeline', 'audit_log', 'api', 'webhooks', 'multi_currency', 'schedule_payments', 'recurring_expense_validation', 'purchase_import', 'zreport_import', 'sales')"));
 
             entity.ToTable(t => t.HasCheckConstraint(
                 "CK_DemoInvitationPermission_AccessLevel",

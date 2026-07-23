@@ -88,10 +88,24 @@ public class IdentityEmailService : IIdentityEmailService
                             </p>
                             <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:28px 0 0 0;"">
                                 <tr>
-                                    <td align=""center"" bgcolor=""#0D5EA6"" style=""background-color:#0D5EA6;border-radius:8px;"">
-                                        <a href=""{System.Net.WebUtility.HtmlEncode(confirmationLink)}"" target=""_blank"" style=""display:inline-block;padding:14px 32px;font-size:16px;font-weight:700;font-family:'Inter',Arial,sans-serif;color:#FFFFFF;text-decoration:none;border-radius:8px;text-align:center;"">
+                                    <td align=""center"">
+                                        <!--[if mso]>
+                                        <v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word""
+                                            href=""{System.Net.WebUtility.HtmlEncode(confirmationLink)}""
+                                            style=""height:48px;v-text-anchor:middle;width:220px;""
+                                            arcsize=""14%"" strokecolor=""#0D5EA6"" fillcolor=""#0D5EA6"">
+                                            <w:anchorlock/>
+                                            <center style=""color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;"">
+                                                Confirm Email
+                                            </center>
+                                        </v:roundrect>
+                                        <![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <a href=""{System.Net.WebUtility.HtmlEncode(confirmationLink)}"" target=""_blank""
+                                           style=""display:inline-block;padding:14px 32px;background-color:#0D5EA6;color:#ffffff;font-size:16px;font-weight:700;font-family:'Inter',Arial,sans-serif;text-decoration:none;border-radius:8px;text-align:center;"">
                                             Confirm Email
                                         </a>
+                                        <!--<![endif]-->
                                     </td>
                                 </tr>
                             </table>
@@ -150,10 +164,24 @@ public class IdentityEmailService : IIdentityEmailService
                             </p>
                             <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:28px 0 0 0;"">
                                 <tr>
-                                    <td align=""center"" bgcolor=""#0D5EA6"" style=""background-color:#0D5EA6;border-radius:8px;"">
-                                        <a href=""{System.Net.WebUtility.HtmlEncode(resetLink)}"" target=""_blank"" style=""display:inline-block;padding:14px 32px;font-size:16px;font-weight:700;font-family:'Inter',Arial,sans-serif;color:#FFFFFF;text-decoration:none;border-radius:8px;text-align:center;"">
+                                    <td align=""center"">
+                                        <!--[if mso]>
+                                        <v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word""
+                                            href=""{System.Net.WebUtility.HtmlEncode(resetLink)}""
+                                            style=""height:48px;v-text-anchor:middle;width:220px;""
+                                            arcsize=""14%"" strokecolor=""#0D5EA6"" fillcolor=""#0D5EA6"">
+                                            <w:anchorlock/>
+                                            <center style=""color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;"">
+                                                Reset Password
+                                            </center>
+                                        </v:roundrect>
+                                        <![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <a href=""{System.Net.WebUtility.HtmlEncode(resetLink)}"" target=""_blank""
+                                           style=""display:inline-block;padding:14px 32px;background-color:#0D5EA6;color:#ffffff;font-size:16px;font-weight:700;font-family:'Inter',Arial,sans-serif;text-decoration:none;border-radius:8px;text-align:center;"">
                                             Reset Password
                                         </a>
+                                        <!--<![endif]-->
                                     </td>
                                 </tr>
                             </table>

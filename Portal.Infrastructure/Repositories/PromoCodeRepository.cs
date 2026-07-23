@@ -25,11 +25,11 @@ public class PromoCodeRepository : GenericStoredProcedureRepository<PromoCode>
             const string query = @"
                 INSERT INTO [dbo].[PromoCode]
                     ([Code], [DurationMonths], [MaxRedemptions], [CurrentRedemptions],
-                     [ExpiresAtUtc], [BoundEmail], [IsRevoked], [CreatedByUserId], [CreatedAtUtc])
+                     [ExpiresAtUtc], [BoundEmail], [IsRevoked], [CreatedByUserId], [CreatedAtUtc], [PlanId], [SentCount])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@Code, @DurationMonths, @MaxRedemptions, @CurrentRedemptions,
-                     @ExpiresAtUtc, @BoundEmail, @IsRevoked, @CreatedByUserId, @CreatedAtUtc)";
+                     @ExpiresAtUtc, @BoundEmail, @IsRevoked, @CreatedByUserId, @CreatedAtUtc, @PlanId, @SentCount)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -54,6 +54,8 @@ public class PromoCodeRepository : GenericStoredProcedureRepository<PromoCode>
                 command.Parameters.Add(new SqlParameter("@IsRevoked", entity.IsRevoked));
                 command.Parameters.Add(new SqlParameter("@CreatedByUserId", entity.CreatedByUserId));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
+                command.Parameters.Add(new SqlParameter("@PlanId", entity.PlanId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@SentCount", entity.SentCount));
 
                 var result = await command.ExecuteScalarAsync();
                 return (int)result!;
@@ -88,7 +90,9 @@ public class PromoCodeRepository : GenericStoredProcedureRepository<PromoCode>
                        [dbo].[PromoCode].[BoundEmail],
                        [dbo].[PromoCode].[IsRevoked],
                        [dbo].[PromoCode].[CreatedByUserId],
-                       [dbo].[PromoCode].[CreatedAtUtc]
+                       [dbo].[PromoCode].[CreatedAtUtc],
+                       [dbo].[PromoCode].[PlanId],
+                       [dbo].[PromoCode].[SentCount]
                 FROM [dbo].[PromoCode]
                 WHERE [dbo].[PromoCode].[Id] = @Id";
 
@@ -119,7 +123,9 @@ public class PromoCodeRepository : GenericStoredProcedureRepository<PromoCode>
                        [dbo].[PromoCode].[BoundEmail],
                        [dbo].[PromoCode].[IsRevoked],
                        [dbo].[PromoCode].[CreatedByUserId],
-                       [dbo].[PromoCode].[CreatedAtUtc]
+                       [dbo].[PromoCode].[CreatedAtUtc],
+                       [dbo].[PromoCode].[PlanId],
+                       [dbo].[PromoCode].[SentCount]
                 FROM [dbo].[PromoCode]
                 WHERE UPPER([dbo].[PromoCode].[Code]) = UPPER(@Code)";
 
@@ -228,6 +234,48 @@ public class PromoCodeRepository : GenericStoredProcedureRepository<PromoCode>
     }
 
     /// <summary>
+    /// Increments SentCount by 1 for the given promo code.
+    /// </summary>
+    public virtual async Task IncrementSentCountAsync(int id)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [dbo].[PromoCode]
+                SET [SentCount] = [SentCount] + 1
+                WHERE [dbo].[PromoCode].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Resets SentCount to 0 for the given promo code.
+    /// </summary>
+    public virtual async Task ResetSentCountAsync(int id)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [dbo].[PromoCode]
+                SET [SentCount] = 0
+                WHERE [dbo].[PromoCode].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Gets a paginated, filtered list of promo codes.
     /// Supports optional status filter (Active, Redeemed, Expired, Revoked).
     /// Results are ordered by CreatedAtUtc descending (newest first).
@@ -253,7 +301,9 @@ public class PromoCodeRepository : GenericStoredProcedureRepository<PromoCode>
                        [dbo].[PromoCode].[BoundEmail],
                        [dbo].[PromoCode].[IsRevoked],
                        [dbo].[PromoCode].[CreatedByUserId],
-                       [dbo].[PromoCode].[CreatedAtUtc]
+                       [dbo].[PromoCode].[CreatedAtUtc],
+                       [dbo].[PromoCode].[PlanId],
+                       [dbo].[PromoCode].[SentCount]
                 FROM [dbo].[PromoCode]
                 {statusCondition}
                 ORDER BY [dbo].[PromoCode].[CreatedAtUtc] DESC
@@ -329,7 +379,9 @@ public class PromoCodeRepository : GenericStoredProcedureRepository<PromoCode>
                             BoundEmail = reader.IsDBNull(reader.GetOrdinal("BoundEmail")) ? null : reader.GetString(reader.GetOrdinal("BoundEmail")),
                             IsRevoked = reader.GetBoolean(reader.GetOrdinal("IsRevoked")),
                             CreatedByUserId = reader.GetString(reader.GetOrdinal("CreatedByUserId")),
-                            CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+                            CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc")),
+                            PlanId = reader.IsDBNull(reader.GetOrdinal("PlanId")) ? null : reader.GetInt32(reader.GetOrdinal("PlanId")),
+                            SentCount = reader.GetInt32(reader.GetOrdinal("SentCount"))
                         });
                     }
                 }

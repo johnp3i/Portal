@@ -10,5 +10,6 @@ public class DemoInvitationListItem
     public DateTime ExpiresAtUtc { get; set; }
     public int AccessCount { get; set; }
     public DateTime? FirstAccessedAtUtc { get; set; }
+    public DateTime? ConvertedAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

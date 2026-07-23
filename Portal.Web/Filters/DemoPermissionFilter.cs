@@ -70,8 +70,8 @@ public class DemoPermissionFilter : IAsyncAuthorizationFilter
         // Block non-GET requests for readonly modules
         if (accessLevel == AccessLevels.ReadOnly && context.HttpContext.Request.Method != "GET")
         {
-            // Allow AJAX data-fetching POST endpoints (action names starting with "Get") for readonly access
-            if (actionName != null && actionName.StartsWith("Get", StringComparison.OrdinalIgnoreCase))
+            // Allow AJAX data-fetching POST endpoints (action names starting with "Get" or "Generate") for readonly access
+            if (actionName != null && (actionName.StartsWith("Get", StringComparison.OrdinalIgnoreCase) || actionName.StartsWith("Generate", StringComparison.OrdinalIgnoreCase)))
             {
                 // Data retrieval action — allow even for readonly
                 context.HttpContext.Items["DemoReadOnly"] = true;

@@ -25,6 +25,15 @@
     <div id="createFormSection" style="display:none;margin-top:18px;">
         <form id="createPromoCodeForm" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
             @Html.AntiForgeryToken()
+            <div class="field" style="min-width:180px;">
+                <label for="planId">Plan / Tier</label>
+                <select id="planId" name="PlanId">
+                    @foreach (var plan in (List<Portal.Infrastructure.Entities.Plan>)ViewBag.Plans)
+                    {
+                        <option value="@plan.Id" selected="@(plan.Slug == "professional")">@plan.Name</option>
+                    }
+                </select>
+            </div>
             <div class="field" style="min-width:160px;">
                 <label for="durationMonths">Duration (Months)</label>
                 <input type="number" id="durationMonths" name="DurationMonths" min="1" max="24" value="3" required />
@@ -80,11 +89,13 @@
             <thead>
                 <tr>
                     <th>Code</th>
+                    <th>Plan</th>
                     <th>Type</th>
                     <th>Duration</th>
                     <th>Redemptions</th>
                     <th>Expiry</th>
                     <th>Bound Email</th>
+                    <th>Sent</th>
                     <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -95,11 +106,13 @@
                 {
                     <tr>
                         <td><code style="font-weight:700;font-size:13px;letter-spacing:0.5px;">@item.Code</code></td>
+                        <td>@(item.PlanName ?? "Professional")</td>
                         <td>@item.Type</td>
                         <td>@item.DurationMonths month@(item.DurationMonths != 1 ? "s" : "")</td>
                         <td>@item.CurrentRedemptions / @item.MaxRedemptions</td>
                         <td>@item.ExpiresAtUtc.ToString("dd MMM yyyy")</td>
                         <td>@(item.BoundEmail ?? "—")</td>
+                        <td style="text-align:center;font-weight:600;">@item.SentCount / @ViewBag.MaxSendCount</td>
                         <td>
                             @if (item.Status == "Active")
                             {
@@ -132,9 +145,17 @@
                                     data-type="@item.Type"
                                     data-email="@item.BoundEmail"
                                     data-code="@item.Code"
-                                    @(item.Status != "Active" ? "disabled" : "")>
+                                    @(item.Status != "Active" || item.SentCount >= (int)ViewBag.MaxSendCount ? "disabled" : "")>
                                 Send Code
                             </button>
+                            @if (item.SentCount > 0)
+                            {
+                                <button type="button"
+                                        class="tbl-action tbl-action--secondary btn-reset-sent"
+                                        data-id="@item.Id">
+                                    Reset
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
@@ -454,7 +475,7 @@
                     text: data.message || 'Promo code email sent successfully.',
                     icon: 'success',
                     confirmButtonColor: '#0D5EA6'
-                });
+                }).then(function() { window.location.reload(); });
             } else {
                 Swal.fire({ title: 'Error', text: data.message || 'Email could not be sent.', icon: 'error', confirmButtonColor: '#0D5EA6' });
             }
@@ -463,6 +484,50 @@
             Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
         }
     }
+
+    // =========================================================================
+    // Reset Sent Counter
+    // =========================================================================
+    document.querySelectorAll('.btn-reset-sent').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var promoCodeId = this.getAttribute('data-id');
+
+            var result = await Swal.fire({
+                title: 'Reset Send Counter?',
+                text: 'This will reset the sent count to 0, allowing the code to be emailed again.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, reset',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#0D5EA6'
+            });
+
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Resetting...');
+            try {
+                var formData = new FormData();
+                formData.append('promoCodeId', promoCodeId);
+
+                var response = await fetch('/Admin/PromoCodes/ResetSentCount', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({ title: 'Reset', text: 'Send counter has been reset.', icon: 'success', confirmButtonColor: '#0D5EA6' }).then(function() { window.location.reload(); });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        });
+    });
 })();
 </script>
 }
