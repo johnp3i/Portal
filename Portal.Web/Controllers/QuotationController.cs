@@ -481,13 +481,22 @@ public class QuotationController : Controller
         try
         {
             await _quotationService.RemoveLineAsync(lineId);
+
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            if (isAjax)
+                return Json(new { success = true });
+
+            return RedirectToAction(nameof(Edit), new { id = quotationId });
         }
         catch (InvalidOperationException ex)
         {
-            TempData["LineError"] = ex.Message;
-        }
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            if (isAjax)
+                return Json(new { success = false, message = ex.Message });
 
-        return RedirectToAction(nameof(Edit), new { id = quotationId });
+            TempData["LineError"] = ex.Message;
+            return RedirectToAction(nameof(Edit), new { id = quotationId });
+        }
     }
 
     [HttpPost]

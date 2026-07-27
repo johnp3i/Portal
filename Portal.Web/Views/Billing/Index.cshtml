@@ -119,17 +119,33 @@
     }
 </section>
 
+<!-- Promo Trial Banner -->
+@if (hasSubscription && overview!.SubscriptionStatus.Equals("trialing", StringComparison.OrdinalIgnoreCase) && !hasInvoices)
+{
+    <section style="margin-bottom:22px;padding:16px 20px;background:rgba(18,152,103,.04);border:1.5px solid rgba(18,152,103,.15);border-radius:14px;display:flex;align-items:center;gap:14px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(18,152,103,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" fill="none" stroke="#129867" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#0B1B28;">Promotional Trial</div>
+            <div style="font-size:13px;color:#5E7385;margin-top:2px;">
+                You're on a free trial of the <strong>@overview.PlanName</strong> plan until <strong>@overview.CurrentPeriodEnd.ToString("d MMM yyyy")</strong>. No payment required during the trial period.
+            </div>
+        </div>
+    </section>
+}
+
 <!-- KPI Summary -->
-<div style="display:flex;gap:24px;margin-bottom:22px;">
-    <div style="flex:1;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
+<div style="display:flex;gap:24px;margin-bottom:22px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:140px;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;margin-bottom:6px;">Total Paid</div>
         <div style="font-size:22px;font-weight:800;font-family:'Manrope',sans-serif;color:#0B1B28;">€@totalPaid.ToString("N2")</div>
     </div>
-    <div style="flex:1;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
+    <div style="flex:1;min-width:140px;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;margin-bottom:6px;">Invoices</div>
         <div style="font-size:22px;font-weight:800;font-family:'Manrope',sans-serif;color:#0B1B28;">@invoiceCount</div>
     </div>
-    <div style="flex:1;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
+    <div style="flex:1;min-width:140px;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;margin-bottom:6px;">Last Payment</div>
         <div style="font-size:22px;font-weight:800;font-family:'Manrope',sans-serif;color:#0B1B28;">
             @if (lastPaymentDate.HasValue)
@@ -139,6 +155,23 @@
             else
             {
                 <text>—</text>
+            }
+        </div>
+    </div>
+    @{
+        var billingMaxUsers = ViewData["MaxUsers"] as int? ?? -1;
+        var billingActiveUsers = ViewData["ActiveUsers"] as int? ?? 0;
+    }
+    <div style="flex:1;min-width:140px;background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 2px 8px rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a6a7a;margin-bottom:6px;">User Seats</div>
+        <div style="font-size:22px;font-weight:800;font-family:'Manrope',sans-serif;color:#0B1B28;">
+            @if (billingMaxUsers == -1)
+            {
+                <text>@billingActiveUsers / ∞</text>
+            }
+            else
+            {
+                <text>@billingActiveUsers / @billingMaxUsers</text>
             }
         </div>
     </div>
@@ -208,7 +241,14 @@
     else
     {
         <div class="empty-state">
-            <p>No payment history available yet. Your invoices will appear here once your first payment is processed.</p>
+            @if (hasSubscription && overview!.SubscriptionStatus.Equals("trialing", StringComparison.OrdinalIgnoreCase))
+            {
+                <p>You're on a promotional trial. Payment history will appear here after your trial period ends and billing begins.</p>
+            }
+            else
+            {
+                <p>No payment history available yet. Your invoices will appear here once your first payment is processed.</p>
+            }
         </div>
     }
 </section>

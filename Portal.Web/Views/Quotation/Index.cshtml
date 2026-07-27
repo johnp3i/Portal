@@ -95,7 +95,7 @@
                                     {
                                         <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>
                                     }
-                                    else if (quotation.AcceptanceStatus == "awaiting")
+                                    else if (quotation.AcceptanceStatus == "awaiting" && quotation.QuotationStatusTypeId == 2)
                                     {
                                         <div style="font-size:11px;color:#C8912E;font-weight:600;margin-top:3px;">⏳ Awaiting acceptance</div>
                                     }
@@ -109,7 +109,7 @@
                                             2 => "pill-blue",
                                             3 => "pill-green",
                                             4 => "pill-blue",
-                                            5 => "pill-red",
+                                            5 => "pill-slate",
                                             _ => "pill-gold"
                                         };
                                     }
@@ -132,7 +132,10 @@
                                 <td data-mobile="hide" style="white-space:nowrap;">
                                     @await Component.InvokeAsync("AttachmentCount", new { entityType = "Quotation", entityId = quotation.Id })
                                     <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Detail</a>
-                                    <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                    @if (quotation.QuotationStatusTypeId == 1 || quotation.QuotationStatusTypeId == 2)
+                                    {
+                                        <a asp-action="Edit" asp-controller="Quotation" asp-route-id="@quotation.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                    }
                                     <a asp-action="Preview" asp-controller="Quotation" asp-route-id="@quotation.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>
                                     <a href="javascript:void(0)" onclick="downloadQuotationPdf(@quotation.Id)" class="tbl-action tbl-action--secondary">PDF</a>
                                     @if (quotation.QuotationStatusTypeId == 1)

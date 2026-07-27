@@ -29,6 +29,32 @@ public class InvitationService : IInvitationService
 
     public async Task<Invitation> CreateInvitationAsync(string email, int businessId, string createdByUserId, List<InvitationModulePermission>? modulePermissions = null)
     {
+        // --- Duplicate Invitation Check ---
+        var existingPendingInvitation = await _membershipDbContext.Invitations
+            .AnyAsync(i => i.Email == email && i.BusinessId == businessId && !i.IsUsed && i.ExpiresAtUtc > DateTime.UtcNow);
+
+        if (existingPendingInvitation)
+        {
+            throw new InvalidOperationException("An invitation has already been sent to this email address.");
+        }
+
+        // --- Already a Member Check ---
+        var userWithEmail = await _membershipDbContext.Users
+            .Where(u => u.NormalizedEmail == email.ToUpper())
+            .Select(u => u.Id)
+            .FirstOrDefaultAsync();
+
+        if (userWithEmail != null)
+        {
+            var alreadyMember = await _membershipDbContext.UserBusinesses
+                .AnyAsync(ub => ub.UserId == userWithEmail && ub.BusinessId == businessId && ub.IsActive);
+
+            if (alreadyMember)
+            {
+                throw new InvalidOperationException("This user already has access to your business.");
+            }
+        }
+
         // --- User Limit Enforcement ---
         var activePlan = await _businessPlanRepository.GetActiveByBusinessIdAsync(businessId);
         if (activePlan == null)

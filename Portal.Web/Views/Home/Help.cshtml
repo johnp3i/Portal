@@ -1,0 +1,131 @@
+@{
+    ViewData["Title"] = "Help & Getting Started";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Help</div>
+        <h1 class="topbar-heading">Help & Getting Started</h1>
+        <p class="topbar-subtitle">A quick overview of how Portal works and where to find what you need.</p>
+    </div>
+</div>
+
+<!-- Workflow Overview -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;">How It Works</h2>
+    <p style="font-size:14px;color:#5E7385;line-height:1.7;margin-bottom:20px;">
+        Portal manages your business operations from quotation to payment collection. Here's the typical workflow:
+    </p>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:20px;background:rgba(13,94,166,.03);border-radius:14px;border:1px solid rgba(13,94,166,.06);">
+        <div style="text-align:center;min-width:100px;">
+            <div style="font-size:24px;">📄</div>
+            <div style="font-size:12px;font-weight:700;color:#0B1B28;margin-top:4px;">Quotation</div>
+            <div style="font-size:11px;color:#5E7385;">Propose pricing</div>
+        </div>
+        <div style="color:#0D5EA6;font-size:18px;font-weight:700;">→</div>
+        <div style="text-align:center;min-width:100px;">
+            <div style="font-size:24px;">🧾</div>
+            <div style="font-size:12px;font-weight:700;color:#0B1B28;margin-top:4px;">Invoice</div>
+            <div style="font-size:11px;color:#5E7385;">Bill customer</div>
+        </div>
+        <div style="color:#0D5EA6;font-size:18px;font-weight:700;">→</div>
+        <div style="text-align:center;min-width:100px;">
+            <div style="font-size:24px;">💰</div>
+            <div style="font-size:12px;font-weight:700;color:#0B1B28;margin-top:4px;">Payment</div>
+            <div style="font-size:11px;color:#5E7385;">Record receipt</div>
+        </div>
+        <div style="color:#0D5EA6;font-size:18px;font-weight:700;">→</div>
+        <div style="text-align:center;min-width:100px;">
+            <div style="font-size:24px;">📊</div>
+            <div style="font-size:12px;font-weight:700;color:#0B1B28;margin-top:4px;">VAT</div>
+            <div style="font-size:11px;color:#5E7385;">Submit returns</div>
+        </div>
+    </div>
+</section>
+
+<!-- Sections Guide -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;">Platform Sections</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">🎯 Opportunities</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Track sales leads from first contact to conversion. Manage contacts, schedule meetings, and use email templates to respond consistently.</p>
+            <a href="/Sales/Pipeline" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to Lead Board →</a>
+        </div>
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">📄 Quotations</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Create professional proposals with line items, sections, and branding. Share with customers via secure links and track acceptance.</p>
+            <a href="/Quotation" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to Quotations →</a>
+        </div>
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">🧾 Invoices</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Issue invoices from quotations or standalone. Track financial status (unpaid, partially paid, paid, overdue) and share with customers.</p>
+            <a href="/Invoice" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to Invoices →</a>
+        </div>
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">💰 Revenue</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Record payments against invoices, allocate globally across multiple invoices, generate receipts, and track outstanding balances.</p>
+            <a href="/Revenue" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to Revenue →</a>
+        </div>
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">🛒 Purchases</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Record business expenses, categorise by type, assign to VAT periods, and track spending against budgets. Supports bulk entry and CSV import.</p>
+            <a href="/Purchase" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to Purchases →</a>
+        </div>
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">📊 VAT</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Manage VAT submission periods, assign purchases and invoices, and calculate your net VAT payable for each period.</p>
+            <a href="/Vat" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to VAT →</a>
+        </div>
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">👥 Customers</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Maintain your customer database with contact details, addresses, and communication history. Generate statements per customer.</p>
+            <a href="/Customer" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to Customers →</a>
+        </div>
+
+        <div style="padding:16px;border-radius:12px;background:rgba(13,94,166,.02);border:1px solid rgba(13,94,166,.06);">
+            <h4 style="font-size:14px;font-weight:700;color:#0B1B28;margin-bottom:6px;">⚙️ My Business</h4>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Configure your business profile, upload logos, manage bank details, and set up payment instructions for shared documents.</p>
+            <a href="/MyBusiness" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:inline-block;margin-top:8px;">Go to My Business →</a>
+        </div>
+
+    </div>
+</section>
+
+<!-- Tips -->
+<section class="glass card-pad">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;">Tips</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">💡</span>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;"><strong style="color:#0B1B28;">Start with My Business</strong> — complete your business profile, upload your logo, and add bank details. This information appears on quotations, invoices, and receipts.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">💡</span>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;"><strong style="color:#0B1B28;">Quotation → Invoice in one click</strong> — once a quotation is accepted, click "Convert to Invoice" to instantly create an invoice with all line items transferred.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">💡</span>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;"><strong style="color:#0B1B28;">Use Bulk Entry for purchases</strong> — if you have multiple supplier invoices to record at once, use the Bulk Entry page instead of creating them one by one.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">💡</span>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;"><strong style="color:#0B1B28;">Assign purchases to VAT periods</strong> — before filing VAT, make sure all purchases are assigned to the correct period. Check the "Unassigned Purchases" panel on any VAT period detail page.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">💡</span>
+            <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;"><strong style="color:#0B1B28;">Track leads with Opportunities</strong> — use the Lead Board to track sales enquiries from first contact through to conversion. Schedule meetings, log responses, and link proposals directly.</p>
+        </div>
+    </div>
+</section>
+
+<div style="margin-top:24px;text-align:center;">
+    <a href="/" class="btn btn-outline">← Back to Dashboard</a>
+</div>

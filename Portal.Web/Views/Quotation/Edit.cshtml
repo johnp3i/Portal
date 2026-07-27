@@ -117,10 +117,15 @@
     </div>
 </div>
 
-<!-- Bottom Actions -->
-<div style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;">
-    <button type="submit" form="quotationForm" class="btn btn-primary">Save Quotation</button>
-    <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
+<!-- Bottom spacer for sticky action bar -->
+<div style="height:80px;"></div>
+
+<!-- Sticky Action Bar -->
+<div class="sticky-action-bar">
+    <div class="sticky-action-bar__inner">
+        <a asp-action="Index" asp-controller="Quotation" class="btn btn-secondary">Cancel</a>
+        <button type="submit" form="quotationForm" class="btn btn-primary">Save Quotation</button>
+    </div>
 </div>
 
 @await Html.PartialAsync("_CustomerModal")
@@ -129,6 +134,23 @@
 <link rel="stylesheet" href="~/css/quotation-line-save.css" />
 <link rel="stylesheet" href="~/css/quotation-line-modal.css" />
 <style>
+.sticky-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #d6e6f0;
+    border-top: 1.5px solid rgba(13,94,166,.15);
+    box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+    padding: 14px 32px;
+}
+.sticky-action-bar__inner {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+}
 .section-card .line-card:nth-child(even) {
     background: rgba(13,94,166,.1);
 }

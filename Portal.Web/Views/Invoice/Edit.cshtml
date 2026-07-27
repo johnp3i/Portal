@@ -27,7 +27,7 @@
         </div>
     }
 
-    <form method="post" asp-action="Edit" asp-controller="Invoice" asp-route-id="@Model.Id" asp-antiforgery="true">
+    <form id="invoiceEditForm" method="post" asp-action="Edit" asp-controller="Invoice" asp-route-id="@Model.Id" asp-antiforgery="true">
         <div class="form-grid">
             <div class="field">
                 <label for="invoiceNumber">Invoice Number *</label>
@@ -72,9 +72,6 @@
             </div>
         </div>
 
-        <div style="margin-top:24px;">
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
     </form>
 </section>
 
@@ -229,9 +226,37 @@
 @await Html.PartialAsync("_CustomerModal")
 @await Html.PartialAsync("_InvoiceLineItemModal", Model)
 
+<!-- Bottom spacer for sticky action bar -->
+<div style="height:80px;"></div>
+
+<!-- Sticky Action Bar -->
+<div class="sticky-action-bar">
+    <div class="sticky-action-bar__inner">
+        <a asp-action="Index" asp-controller="Invoice" class="btn btn-secondary">Cancel</a>
+        <button type="submit" form="invoiceEditForm" class="btn btn-primary">Save Invoice</button>
+    </div>
+</div>
+
 @section Scripts {
     <link rel="stylesheet" href="~/css/invoice-line-modal.css" />
     <style>
+.sticky-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #d6e6f0;
+    border-top: 1.5px solid rgba(13,94,166,.15);
+    box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+    padding: 14px 32px;
+}
+.sticky-action-bar__inner {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+}
         .catalog-autocomplete {
             position: absolute;
             top: 100%;

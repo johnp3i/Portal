@@ -20,7 +20,7 @@
 
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <form method="get" asp-action="Index">
+    <form id="filterForm" method="get" asp-action="Index">
         <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="purchaseFilterPanel">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
             Filters
@@ -109,6 +109,16 @@
                     <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
                     <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
                 </div>
+            </div>
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;margin-right:4px;">Quick:</span>
+                <button type="button" class="period-shortcut" onclick="setQuickPeriod('this_month')">This Month</button>
+                <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_month')">Last Month</button>
+                <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_3')">Last 3 Months</button>
+                <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_6')">Last 6 Months</button>
+                <button type="button" class="period-shortcut" onclick="setQuickPeriod('this_year')">This Year</button>
+                <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_year')">Last Year</button>
+                <button type="button" class="period-shortcut" onclick="setQuickPeriod('all')">All Time</button>
             </div>
         </div>
     </form>
@@ -234,6 +244,7 @@
                     <th>Supplier</th>
                     <th>Date</th>
                     <th>Category</th>
+                    <th>File</th>
                     <th style="text-align:right;">Excl. VAT</th>
                     <th style="text-align:right;">VAT</th>
                     <th style="text-align:right;">Total</th>
@@ -268,6 +279,9 @@
                         <td>@purchase.Supplier?.Name</td>
                         <td data-mobile="hide">@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
                         <td data-mobile="hide">@purchase.ExpenseCategory?.Name</td>
+                        <td data-mobile="hide" style="cursor:pointer;text-decoration:none;" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
+                            @await Component.InvokeAsync("AttachmentCount", new { entityType = "Purchase", entityId = purchase.Id })
+                        </td>
                         <td data-mobile="hide" style="text-align:right;font-weight:600;">@Model.CurrencySymbol@purchase.AmountExcludingVat.ToString("N2")</td>
                         <td data-mobile="hide" style="text-align:right;">@Model.CurrencySymbol@purchase.VatAmount.ToString("N2")</td>
                         <td data-mobile="amount" style="text-align:right;font-weight:700;">@Model.CurrencySymbol@purchase.TotalAmount.ToString("N2")</td>
@@ -324,7 +338,6 @@
                             }
                         </td>
                         <td data-mobile="hide" style="white-space:nowrap;">
-                            @await Component.InvokeAsync("AttachmentCount", new { entityType = "Purchase", entityId = purchase.Id })
                             <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
                             @if (!purchase.IsCancelled)
                             {
@@ -409,6 +422,97 @@
 </style>
 
 @section Scripts {
+<style>
+.period-shortcut {
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(13,94,166,.12);
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: #5E7385;
+    cursor: pointer;
+    transition: all .15s;
+}
+.period-shortcut:hover {
+    background: rgba(13,94,166,.06);
+    border-color: rgba(13,94,166,.25);
+    color: #0D5EA6;
+}
+.period-shortcut.active {
+    background: rgba(13,94,166,.08);
+    border-color: #0D5EA6;
+    color: #0D5EA6;
+}
+</style>
+<script>
+async function showAttachmentModal(entityId, label) {
+    BlockUI.show('Loading...');
+    try {
+        var response = await fetch('/Attachment/AxGetList?entityType=Purchase&entityId=' + entityId);
+        var result = await response.json();
+        BlockUI.hide();
+
+        if (!result.success || !result.data || result.data.length === 0) {
+            Swal.fire({ title: 'No Attachments', text: 'No files attached to this purchase.', icon: 'info', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var files = result.data;
+        var html = '<div style="text-align:left;">';
+        files.forEach(function(file) {
+            var sizeKb = (file.fileSizeBytes / 1024).toFixed(1);
+            var uploadDate = new Date(file.createdAtUtc);
+            if (!file.createdAtUtc.endsWith('Z')) uploadDate = new Date(file.createdAtUtc + 'Z');
+            var dateStr = uploadDate.toLocaleDateString() + ' ' + uploadDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            html += '<div style="padding:12px 0;border-bottom:1px solid #f0f4f7;display:flex;justify-content:space-between;align-items:center;gap:12px;">';
+            html += '<div style="min-width:0;">';
+            html += '<div style="font-weight:600;font-size:14px;color:#0B1B28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + file.originalFileName + '</div>';
+            html += '<div style="font-size:12px;color:#5E7385;margin-top:3px;">' + sizeKb + ' KB &middot; ' + dateStr + '</div>';
+            html += '</div>';
+            html += '<a href="/Attachment/AxGetDownload?id=' + file.id + '" class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;flex-shrink:0;">Download</a>';
+            html += '</div>';
+        });
+        html += '</div>';
+
+        Swal.fire({
+            title: 'Attachments \u2014 ' + label,
+            html: html,
+            width: 540,
+            showConfirmButton: true,
+            confirmButtonText: 'Close',
+            confirmButtonColor: '#0D5EA6'
+        });
+    } catch (e) {
+        BlockUI.hide();
+        Swal.fire({ title: 'Error', text: 'Failed to load attachments.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+    }
+}
+
+function setQuickPeriod(preset) {
+    var now = new Date();
+    var from, to;
+    switch (preset) {
+        case 'this_month': from = new Date(now.getFullYear(), now.getMonth(), 1); to = now; break;
+        case 'last_month': from = new Date(now.getFullYear(), now.getMonth() - 1, 1); to = new Date(now.getFullYear(), now.getMonth(), 0); break;
+        case 'last_3': from = new Date(now.getFullYear(), now.getMonth() - 3, 1); to = now; break;
+        case 'last_6': from = new Date(now.getFullYear(), now.getMonth() - 6, 1); to = now; break;
+        case 'this_year': from = new Date(now.getFullYear(), 0, 1); to = now; break;
+        case 'last_year': from = new Date(now.getFullYear() - 1, 0, 1); to = new Date(now.getFullYear() - 1, 11, 31); break;
+        case 'all': from = null; to = null; break;
+    }
+    document.getElementById('dateFrom').value = from ? formatDateISO(from) : '';
+    document.getElementById('dateTo').value = to ? formatDateISO(to) : '';
+    document.querySelectorAll('.period-shortcut').forEach(function(b) { b.classList.remove('active'); });
+    event.target.classList.add('active');
+    document.getElementById('filterForm').submit();
+}
+
+function formatDateISO(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+</script>
 <script>
 (function() {
     // =========================================================================

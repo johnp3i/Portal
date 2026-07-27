@@ -15,22 +15,37 @@
         <h1 class="topbar-heading">@invoice.InvoiceNumber &middot; @ViewBag.CustomerName</h1>
         <p class="topbar-subtitle">Review status, financial details, and manage this invoice.</p>
     </div>
-    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
-        @if (invoice.InvoiceStatusTypeId == 1)
-        {
-            <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
-        }
-        <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
-        <button type="button" class="btn btn-secondary" onclick="downloadInvoicePdf(@invoice.Id)">Download PDF</button>
-        <button type="button" class="btn btn-secondary" onclick="printInvoice(@invoice.Id)">Print</button>
-        <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
-        <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
-        @if (invoice.InvoiceStatusTypeId == 1)
-        {
-            <button type="button" class="btn btn-danger" onclick="deleteInvoice(@invoice.Id)">Delete</button>
-        }
+    <div>
+        <a asp-action="Index" asp-controller="Invoice" class="btn btn-outline">&larr; Back to Invoices</a>
     </div>
 </div>
+
+<!-- Action Bar -->
+<section class="glass card-pad" style="margin-bottom:22px;padding:14px 20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <!-- Status Actions -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            @if (invoice.InvoiceStatusTypeId == 1)
+            {
+                <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
+            }
+            <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
+            <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
+        </div>
+        <!-- Divider -->
+        <div style="width:1px;height:28px;background:rgba(13,94,166,.1);flex-shrink:0;"></div>
+        <!-- Document Actions -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
+            <button type="button" class="btn btn-secondary" onclick="downloadInvoicePdf(@invoice.Id)">Download PDF</button>
+            <button type="button" class="btn btn-secondary" onclick="printInvoice(@invoice.Id)">Print</button>
+            @if (invoice.InvoiceStatusTypeId == 1)
+            {
+                <button type="button" class="btn btn-danger" onclick="deleteInvoice(@invoice.Id)">Delete</button>
+            }
+        </div>
+    </div>
+</section>
 
 <!-- Invoice Overview -->
 <section class="glass card-pad">

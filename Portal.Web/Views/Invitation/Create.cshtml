@@ -21,13 +21,55 @@
 
 <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
-<!-- Invite Form -->
-<section class="glass card-pad" style="margin-bottom:24px;">
-    <div class="label">Send Invitation</div>
-    <h2 style="margin-top:8px;font-size:24px;">Invite a new user</h2>
+<!-- Seat Usage Banner -->
+@{
+    var maxUsers = (int?)ViewBag.MaxUsers ?? -1;
+    var activeUsers = (int?)ViewBag.ActiveUsers ?? 0;
+    var pendingInvitations = (int?)ViewBag.PendingInvitations ?? 0;
+    var seatsRemaining = (int?)ViewBag.SeatsRemaining ?? -1;
+    var isUnlimited = maxUsers == -1;
+    var isFull = !isUnlimited && seatsRemaining <= 0;
+    var canInvite = isUnlimited || seatsRemaining > 0;
+}
+<section style="margin-bottom:22px;padding:16px 20px;border-radius:12px;background:@(isFull ? "rgba(194,74,74,.04)" : "rgba(13,94,166,.03)");border:1.5px solid @(isFull ? "rgba(194,74,74,.15)" : "rgba(13,94,166,.08)");">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <svg width="20" height="20" fill="none" stroke="@(isFull ? "#C24A4A" : "#0D5EA6")" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <div style="flex:1;">
+            @if (isUnlimited)
+            {
+                <div style="font-size:14px;font-weight:700;color:#0B1B28;">Unlimited user seats</div>
+                <div style="font-size:12px;color:#5E7385;margin-top:3px;">Currently @activeUsers active user@(activeUsers != 1 ? "s" : "") (including you). You can invite as many team members as you need.</div>
+            }
+            else
+            {
+                <div style="font-size:14px;font-weight:700;color:@(isFull ? "#C24A4A" : "#0B1B28");">@(activeUsers + pendingInvitations) of @maxUsers user seats used</div>
+                <div style="font-size:12px;color:#5E7385;margin-top:3px;">
+                    Your plan allows up to @maxUsers users (including yourself).
+                    Currently: @activeUsers active user@(activeUsers != 1 ? "s" : "")@(pendingInvitations > 0 ? $" + {pendingInvitations} pending invitation" + (pendingInvitations != 1 ? "s" : "") : "").
+                </div>
+                @if (isFull)
+                {
+                    <div style="font-size:12px;color:#C24A4A;margin-top:6px;font-weight:600;">All seats are occupied. Upgrade your plan to add more team members.</div>
+                }
+                else
+                {
+                    <div style="font-size:12px;color:#129867;margin-top:6px;font-weight:600;">@seatsRemaining invitation@(seatsRemaining != 1 ? "s" : "") available.</div>
+                }
+            }
+        </div>
+    </div>
+</section>
 
-    <form method="post" asp-action="Create" asp-controller="Invitation" style="margin-top:18px;">
-        @Html.AntiForgeryToken()
+<!-- Invite Form (collapsible) -->
+<section class="glass card-pad" style="margin-bottom:24px;">
+    <details @(isFull ? "" : "")>
+        <summary style="cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;">
+            <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+            <span style="font-size:15px;font-weight:700;color:#0B1B28;">Invite a new user</span>
+        </summary>
+        <div style="margin-top:18px;">
+            <form method="post" asp-action="Create" asp-controller="Invitation">
+                @Html.AntiForgeryToken()
         <div class="form-grid">
             <div class="field">
                 <label>Email Address *</label>
@@ -45,39 +87,65 @@
             </div>
         </div>
         <div class="field" style="grid-column: 1 / -1; margin-top:18px;">
-            <label>Module Permissions</label>
-            <div style="display:grid;gap:10px;margin-top:8px;">
-                @{
-                    var modules = new[] { "customer", "quotation", "invoice", "revenue", "purchase", "vat", "audit" };
-                    var moduleLabels = new Dictionary<string, string>
-                    {
-                        { "customer", "Customers" },
-                        { "quotation", "Quotations" },
-                        { "invoice", "Invoices" },
-                        { "revenue", "Revenue" },
-                        { "purchase", "Purchases" },
-                        { "vat", "VAT" },
-                        { "audit", "Audit" }
-                    };
-                }
-                @for (int i = 0; i < modules.Length; i++)
+            <label style="font-weight:700;font-size:14px;color:#0B1B28;display:block;margin-bottom:10px;">Module Permissions</label>
+            <div style="margin-bottom:12px;padding:10px 14px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);border-radius:10px;font-size:12px;color:#5E7385;line-height:1.6;">
+                <strong>Full</strong> = Full access &nbsp;|&nbsp; <strong>Read Only</strong> = View only &nbsp;|&nbsp; <strong>None</strong> = Hidden from user
+            </div>
+            @{
+                var moduleGroups = new[] {
+                    new { Title = "Core", Modules = new[] { "customer", "quotation", "invoice", "revenue", "purchase", "vat", "credit", "products", "audit" } },
+                    new { Title = "Intelligence", Modules = new[] { "sales", "pnl", "cashflow", "expense_insights", "schedule_payments", "recurring_expense_validation" } },
+                    new { Title = "Automation", Modules = new[] { "payment_link_manual", "payment_reminder_manual", "payment_link_auto", "payment_reminder_auto", "purchase_import", "zreport_import" } },
+                    new { Title = "Documents", Modules = new[] { "attachments", "audit_log" } },
+                    new { Title = "Enterprise", Modules = new[] { "activity_timeline", "client_portal", "api", "webhooks", "multi_currency" } }
+                };
+
+                var moduleLabels = new Dictionary<string, string>
                 {
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <input type="hidden" name="modulePermissions[@i].Module" value="@modules[i]" />
-                        <span style="min-width:100px;font-weight:600;">@moduleLabels[modules[i]]</span>
-                        <select name="modulePermissions[@i].AccessLevel">
-                            <option value="none" selected>None</option>
-                            <option value="readonly">Read Only</option>
-                            <option value="full">Full Access</option>
-                        </select>
-                    </div>
+                    { "customer", "Customers" }, { "quotation", "Quotations" }, { "invoice", "Invoices" },
+                    { "revenue", "Revenue" }, { "purchase", "Purchases" }, { "vat", "VAT" },
+                    { "credit", "Credit Notes" }, { "products", "Products" }, { "audit", "Audit" },
+                    { "sales", "Opportunities" }, { "pnl", "Profit & Loss" }, { "cashflow", "Cash Flow" },
+                    { "expense_insights", "Expense Insights" }, { "schedule_payments", "Payment Schedules" },
+                    { "recurring_expense_validation", "Recurring Expense Validation" },
+                    { "payment_link_manual", "Payment Links (Manual)" }, { "payment_reminder_manual", "Payment Reminders (Manual)" },
+                    { "payment_link_auto", "Payment Links (Auto)" }, { "payment_reminder_auto", "Payment Reminders (Auto)" },
+                    { "purchase_import", "Purchase Import" }, { "zreport_import", "Sales Invoice Import" },
+                    { "attachments", "Attachments" }, { "audit_log", "Activity Log" },
+                    { "activity_timeline", "Activity Timeline" }, { "client_portal", "Client Portal" },
+                    { "api", "API Access" }, { "webhooks", "Webhooks" }, { "multi_currency", "Multi-Currency" }
+                };
+
+                var moduleIndex = 0;
+            }
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 28px;">
+                @foreach (var group in moduleGroups)
+                {
+                    <div style="grid-column:1/-1;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#5a6b7c;padding:12px 0 6px;border-bottom:1px solid rgba(13,94,166,.08);">@group.Title</div>
+                    @foreach (var module in group.Modules)
+                    {
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f4f7fa;">
+                            <span style="font-size:13px;font-weight:600;color:#1a2b3c;">@moduleLabels[module]</span>
+                            <div style="display:flex;gap:6px;align-items:center;">
+                                <input type="hidden" name="modulePermissions[@(moduleIndex)].Module" value="@module" />
+                                <select name="modulePermissions[@(moduleIndex)].AccessLevel" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(13,94,166,.12);font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#5E7385;">
+                                    <option value="none" selected>None</option>
+                                    <option value="readonly">Read Only</option>
+                                    <option value="full">Full</option>
+                                </select>
+                            </div>
+                        </div>
+                        moduleIndex++;
+                    }
                 }
             </div>
         </div>
-        <div style="margin-top:18px;">
-            <button type="submit" class="btn btn-primary">Send Invitation</button>
+            <div style="margin-top:18px;">
+                <button type="submit" class="btn btn-primary">Send Invitation</button>
+            </div>
+            </form>
         </div>
-    </form>
+    </details>
 </section>
 
 <!-- Invitations Table -->

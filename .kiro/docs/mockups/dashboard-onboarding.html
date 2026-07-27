@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Onboarding & Quick Actions Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --green: #129867;
+            --gold: #C8912E;
+            --red: #C24A4A;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --bg: #F7FAFC;
+            --card: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 32px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .topbar {
+            margin-bottom: 24px;
+        }
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .eyebrow .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--blue);
+        }
+        .topbar-heading {
+            font-family: 'Manrope', sans-serif;
+            font-size: 30px;
+            font-weight: 800;
+            margin-top: 10px;
+        }
+        .topbar-subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .glass {
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid rgba(13,94,166,.06);
+            box-shadow: 0 4px 20px rgba(13,94,166,.04);
+            padding: 24px;
+            margin-bottom: 22px;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .kpi-card {
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(13,94,166,.06);
+            background: rgba(13,94,166,.02);
+        }
+        .kpi-card__label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+        }
+        .kpi-card__value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            margin-top: 6px;
+        }
+
+        /* Quick Actions */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .section-title h3 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        .quick-action-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 20px 12px;
+            border-radius: 14px;
+            background: rgba(13,94,166,.03);
+            border: 1.5px solid rgba(13,94,166,.08);
+            text-decoration: none;
+            transition: all .15s;
+            cursor: pointer;
+        }
+        .quick-action-card:hover {
+            background: rgba(13,94,166,.07);
+            border-color: rgba(13,94,166,.18);
+            box-shadow: 0 4px 12px rgba(13,94,166,.06);
+            transform: translateY(-2px);
+        }
+        .quick-action-card__icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(13,94,166,.08), rgba(87,184,232,.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .quick-action-card__label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            text-align: center;
+        }
+
+        /* Getting Started */
+        .getting-started {
+            border-left: 4px solid var(--blue);
+        }
+        .getting-started summary {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            list-style: none;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .getting-started summary::marker { display: none; }
+        .getting-started summary::-webkit-details-marker { display: none; }
+        .checklist {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: rgba(13,94,166,.02);
+            text-decoration: none;
+            transition: background .15s;
+        }
+        .checklist-item:hover {
+            background: rgba(13,94,166,.05);
+        }
+        .checklist-item__check {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid rgba(13,94,166,.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .checklist-item__check.done {
+            background: var(--green);
+            border-color: var(--green);
+            color: #fff;
+        }
+        .checklist-item__check.pending {
+            background: #fff;
+            border-color: rgba(13,94,166,.2);
+        }
+        .checklist-item__text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .checklist-item__text.done {
+            color: var(--muted);
+            text-decoration: line-through;
+        }
+        .dismiss-btn {
+            margin-top: 14px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            background: none;
+            border: 1px solid rgba(13,94,166,.1);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .dismiss-btn:hover {
+            background: rgba(13,94,166,.04);
+        }
+
+        /* Sidebar Help link mockup */
+        .sidebar-help {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(13,94,166,.08);
+        }
+        .help-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--muted);
+            font-weight: 700;
+            font-size: 14px;
+            transition: background .15s, color .15s;
+        }
+        .help-link:hover {
+            background: rgba(13,94,166,.04);
+            color: var(--text);
+        }
+
+        .mockup-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--muted);
+            background: rgba(13,94,166,.06);
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="eyebrow"><span class="dot"></span> Dashboard</div>
+        <h1 class="topbar-heading">Welcome back, John</h1>
+        <p class="topbar-subtitle">Here's an overview of your business activity.</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <span class="mockup-label">KPI Section (existing)</span>
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-card__label">Revenue (This Month)</div>
+            <div class="kpi-card__value">€4,280</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-card__label">Outstanding</div>
+            <div class="kpi-card__value" style="color: var(--gold);">€1,450</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-card__label">Overdue Invoices</div>
+            <div class="kpi-card__value" style="color: var(--red);">3</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-card__label">This Month Expenses</div>
+            <div class="kpi-card__value">€1,820</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <span class="mockup-label">Quick Actions (redesigned)</span>
+    <section class="glass">
+        <div class="section-title">
+            <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <h3>Quick Actions</h3>
+        </div>
+        <div class="quick-actions-grid">
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                </div>
+                <div class="quick-action-card__label">New Quotation</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8m-8 4h8m-8 4h4"/></svg>
+                </div>
+                <div class="quick-action-card__label">Create Invoice</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
+                </div>
+                <div class="quick-action-card__label">New Customer</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M17.2 7A7 7 0 006 12a7 7 0 0011.2 5"/><path d="M4 10h10M4 14h10"/></svg>
+                </div>
+                <div class="quick-action-card__label">Record Payment</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                </div>
+                <div class="quick-action-card__label">Record Purchase</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
+                </div>
+                <div class="quick-action-card__label">Bulk Entry</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div class="quick-action-card__label">New Lead</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg>
+                </div>
+                <div class="quick-action-card__label">Customer Statement</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+                </div>
+                <div class="quick-action-card__label">New Credit Note</div>
+            </a>
+            <a href="#" class="quick-action-card">
+                <div class="quick-action-card__icon">
+                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <div class="quick-action-card__label">New Supplier</div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Getting Started -->
+    <span class="mockup-label">Getting Started (new users only)</span>
+    <section class="glass getting-started">
+        <details open>
+            <summary>
+                <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                Getting Started
+            </summary>
+            <div class="checklist">
+                <a href="#" class="checklist-item">
+                    <div class="checklist-item__check done">✓</div>
+                    <span class="checklist-item__text done">Complete your business profile</span>
+                </a>
+                <a href="#" class="checklist-item">
+                    <div class="checklist-item__check done">✓</div>
+                    <span class="checklist-item__text done">Create your first customer</span>
+                </a>
+                <a href="#" class="checklist-item">
+                    <div class="checklist-item__check pending"></div>
+                    <span class="checklist-item__text">Create your first quotation</span>
+                </a>
+                <a href="#" class="checklist-item">
+                    <div class="checklist-item__check pending"></div>
+                    <span class="checklist-item__text">Issue your first invoice</span>
+                </a>
+                <a href="#" class="checklist-item">
+                    <div class="checklist-item__check pending"></div>
+                    <span class="checklist-item__text">Record a payment</span>
+                </a>
+            </div>
+            <button class="dismiss-btn" onclick="this.closest('section').style.display='none'">Dismiss — I know my way around</button>
+        </details>
+    </section>
+
+    <!-- Sidebar Help Link (mockup representation) -->
+    <span class="mockup-label">Sidebar Help Link (bottom of nav)</span>
+    <div style="max-width: 240px; background: #fff; border-radius: 16px; padding: 12px; border: 1px solid rgba(13,94,166,.08);">
+        <div class="sidebar-help">
+            <a href="#" class="help-link">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                Help & Getting Started
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

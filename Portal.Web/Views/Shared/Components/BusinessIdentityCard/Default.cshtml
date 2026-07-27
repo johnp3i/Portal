@@ -1,0 +1,25 @@
+@{
+    var businessName = (string)ViewBag.BusinessName;
+    var planName = (string)ViewBag.PlanName;
+    var initial = (string)ViewBag.BusinessInitial;
+
+    var planColour = planName?.ToLower() switch
+    {
+        "professional" => "#0D5EA6",
+        "enterprise" => "#8B6914",
+        _ => "#129867" // Foundation / Starter / default
+    };
+    var planBg = planName?.ToLower() switch
+    {
+        "professional" => "rgba(13,94,166,.08)",
+        "enterprise" => "rgba(200,145,46,.1)",
+        _ => "rgba(18,152,103,.08)"
+    };
+}
+
+<a href="/MyBusiness" class="business-identity-card" title="@businessName — @planName plan">
+    <div class="business-identity-card__content nav-text">
+        <span class="business-identity-card__name">@businessName</span>
+        <span class="business-identity-card__plan" style="background:@planBg;color:@planColour;">@planName</span>
+    </div>
+</a>

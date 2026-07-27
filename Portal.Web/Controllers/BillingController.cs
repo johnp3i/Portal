@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Portal.Infrastructure.Data;
+using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
 using Portal.Web.Services.Stripe;
 
@@ -16,6 +19,9 @@ public class BillingController : Controller
 {
     private readonly IBillingService _billingService;
     private readonly ICurrentTenantService _tenantService;
+    private readonly IBusinessPlanRepository _businessPlanRepository;
+    private readonly IPlanRepository _planRepository;
+    private readonly MembershipDbContext _membershipDbContext;
     private readonly ILogger<BillingController> _logger;
 
     private const int DefaultPageSize = 10;
@@ -23,10 +29,16 @@ public class BillingController : Controller
     public BillingController(
         IBillingService billingService,
         ICurrentTenantService tenantService,
+        IBusinessPlanRepository businessPlanRepository,
+        IPlanRepository planRepository,
+        MembershipDbContext membershipDbContext,
         ILogger<BillingController> logger)
     {
         _billingService = billingService;
         _tenantService = tenantService;
+        _businessPlanRepository = businessPlanRepository;
+        _planRepository = planRepository;
+        _membershipDbContext = membershipDbContext;
         _logger = logger;
     }
 
@@ -53,6 +65,18 @@ public class BillingController : Controller
             ViewData["Title"] = "Billing";
             ViewData["Overview"] = overview;
             ViewData["Invoices"] = invoices;
+
+            // Seat usage
+            var activePlan = await _businessPlanRepository.GetActiveByBusinessIdAsync(businessId);
+            if (activePlan != null)
+            {
+                var plan = await _planRepository.GetByIdAsync(activePlan.PlanId);
+                var maxUsers = plan?.MaxUsers ?? -1;
+                var activeUsers = await _membershipDbContext.UserBusinesses
+                    .CountAsync(ub => ub.BusinessId == businessId && ub.IsActive);
+                ViewData["MaxUsers"] = maxUsers;
+                ViewData["ActiveUsers"] = activeUsers;
+            }
 
             return View();
         }

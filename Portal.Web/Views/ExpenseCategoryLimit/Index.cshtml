@@ -9,6 +9,9 @@
         <h1 class="topbar-heading">Spending Limits</h1>
         <p class="topbar-subtitle">Configure advisory spending thresholds per expense category. Limits are soft warnings only — they never block purchases.</p>
     </div>
+    <div>
+        <button type="button" class="btn btn-secondary" onclick="openCreateCategoryModal()">Create Category</button>
+    </div>
 </div>
 
 <section class="glass card-pad" style="margin-bottom:22px;">
@@ -94,6 +97,29 @@
 <form id="antiforgery-form" style="display:none;">
     @Html.AntiForgeryToken()
 </form>
+
+<!-- Create Category Modal -->
+<div id="createCategoryModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.15);margin:auto;flex-shrink:0;">
+        <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#0B1B28;margin:0 0 24px 0;">Create Category</h2>
+        <div class="field" style="margin-bottom:24px;">
+            <label for="newCategoryName" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Name</label>
+            <input type="text" id="newCategoryName" placeholder="Enter category name" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;" />
+        </div>
+        <div class="field" style="margin-bottom:24px;">
+            <label for="newExpenseTypeId" style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:6px;display:block;">Expense Type</label>
+            <select id="newExpenseTypeId" style="width:100%;padding:12px 16px;border:1px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:#fff;appearance:auto;">
+                <option value="">-- Select Expense Type --</option>
+                <option value="1">Services</option>
+                <option value="2">Goods</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeCreateCategoryModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveNewCategory()">Create</button>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <style>
@@ -403,5 +429,61 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadProgressData();
         });
+
+        // ─── Create Category Modal ─────────────────────────────────────────
+        function openCreateCategoryModal() {
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newExpenseTypeId').value = '';
+            document.getElementById('createCategoryModal').style.display = 'flex';
+            document.getElementById('newCategoryName').focus();
+        }
+
+        function closeCreateCategoryModal() {
+            document.getElementById('createCategoryModal').style.display = 'none';
+        }
+
+        document.getElementById('createCategoryModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCreateCategoryModal();
+        });
+
+        async function saveNewCategory() {
+            var name = document.getElementById('newCategoryName').value.trim();
+            if (!name) {
+                Swal.fire({ title: 'Validation', text: 'Category name is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var expenseTypeId = document.getElementById('newExpenseTypeId').value;
+            if (!expenseTypeId) {
+                Swal.fire({ title: 'Validation', text: 'Expense Type is required. Select Services or Goods.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('Name', name);
+            formData.append('expenseTypeId', expenseTypeId);
+
+            BlockUI.show('Creating category...');
+            closeCreateCategoryModal();
+
+            try {
+                var response = await fetch('/ExpenseCategory/Create', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: formData
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    Swal.fire({ title: 'Created', text: 'Category created. Reload to configure its spending limit.', icon: 'success', confirmButtonColor: '#0D5EA6' }).then(function() { window.location.reload(); });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message || 'Failed to create category.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
     </script>
 }

@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Constants;
+using Portal.Infrastructure.Data;
+using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Models;
+using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
 
 namespace Portal.Web.Controllers;
@@ -15,33 +19,79 @@ public class InvitationController : Controller
     private readonly IBusinessService _businessService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IBusinessPlanRepository _businessPlanRepository;
+    private readonly IPlanRepository _planRepository;
+    private readonly MembershipDbContext _membershipDbContext;
 
     public InvitationController(
         IInvitationService invitationService,
         IEmailService emailService,
         IBusinessService businessService,
         UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager)
+        SignInManager<ApplicationUser> signInManager,
+        IBusinessPlanRepository businessPlanRepository,
+        IPlanRepository planRepository,
+        MembershipDbContext membershipDbContext)
     {
         _invitationService = invitationService;
         _emailService = emailService;
         _businessService = businessService;
         _userManager = userManager;
         _signInManager = signInManager;
+        _businessPlanRepository = businessPlanRepository;
+        _planRepository = planRepository;
+        _membershipDbContext = membershipDbContext;
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Create()
     {
-        var businesses = await _businessService.GetAllBusinessesAsync();
+        var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+        if (isSuperAdmin)
+        {
+            var businesses = await _businessService.GetAllBusinessesAsync();
+            ViewBag.Businesses = businesses;
+        }
+        else
+        {
+            // Regular owner — can only invite to their own business
+            var businessIdClaim = User.FindFirst("BusinessId");
+            if (businessIdClaim == null || !int.TryParse(businessIdClaim.Value, out var businessId))
+                return Forbid();
+
+            var business = await _businessService.GetBusinessByIdAsync(businessId);
+            ViewBag.Businesses = business != null ? new List<Portal.Infrastructure.Entities.Business> { business } : new List<Portal.Infrastructure.Entities.Business>();
+        }
+
         var invitations = await _invitationService.GetAllInvitationsAsync();
-        ViewBag.Businesses = businesses;
         ViewBag.Invitations = invitations;
+
+        // Seat usage info
+        var bizIdClaim = User.FindFirst("BusinessId");
+        if (bizIdClaim != null && int.TryParse(bizIdClaim.Value, out var bizId))
+        {
+            var activePlan = await _businessPlanRepository.GetActiveByBusinessIdAsync(bizId);
+            if (activePlan != null)
+            {
+                var plan = await _planRepository.GetByIdAsync(activePlan.PlanId);
+                var maxUsers = plan?.MaxUsers ?? -1;
+                var activeUsers = await _membershipDbContext.UserBusinesses
+                    .CountAsync(ub => ub.BusinessId == bizId && ub.IsActive);
+                var pendingInvitations = invitations?.Count(i => i.BusinessId == bizId && !i.IsUsed && i.ExpiresAtUtc > DateTime.UtcNow) ?? 0;
+
+                ViewBag.MaxUsers = maxUsers;
+                ViewBag.ActiveUsers = activeUsers;
+                ViewBag.PendingInvitations = pendingInvitations;
+                ViewBag.SeatsRemaining = maxUsers == -1 ? -1 : maxUsers - (activeUsers + pendingInvitations);
+            }
+        }
+
         return View();
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(string email, int businessId, List<InvitationModulePermission>? modulePermissions)
@@ -91,7 +141,7 @@ public class InvitationController : Controller
         return RedirectToAction(nameof(Create));
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(int id)

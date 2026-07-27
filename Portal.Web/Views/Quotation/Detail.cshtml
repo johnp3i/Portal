@@ -12,65 +12,108 @@
         <h1 class="topbar-heading">@Model.Quotation.Reference &middot; @Model.CustomerName</h1>
         <p class="topbar-subtitle">Review status, pricing structure, and conversion readiness.</p>
     </div>
-    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
-        @if (Model.Quotation.QuotationStatusTypeId == 1 || Model.Quotation.QuotationStatusTypeId == 2)
-        {
-            <a class="btn btn-secondary" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id">Edit</a>
-        }
-
-        @if (Model.AvailableTransitions.Contains(3))
-        {
-            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="newStatusId" value="3" />
-                <button type="submit" class="btn btn-green">Mark Accepted</button>
-            </form>
-        }
-
-        @if (Model.AvailableTransitions.Contains(5))
-        {
-            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="newStatusId" value="5" />
-                <button type="submit" class="btn btn-secondary">Archive</button>
-            </form>
-        }
-
-        @if (Model.AvailableTransitions.Contains(1))
-        {
-            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="newStatusId" value="1" />
-                <button type="submit" class="btn btn-primary">Unarchive</button>
-            </form>
-        }
-
-        <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview Proposal</a>
-
-        @if (Model.AvailableTransitions.Contains(2))
-        {
-            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;" id="sendQuotationForm">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="newStatusId" value="2" />
-                <button type="button" class="btn btn-primary" onclick="confirmSendQuotation()">Send Quotation</button>
-            </form>
-        }
-        @if (Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
-        {
-            <form method="post" asp-action="ConvertToInvoice" asp-controller="Quotation" style="display:inline;" id="convertToInvoiceForm">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="quotationId" value="@Model.Quotation.Id" />
-                <button type="button" class="btn btn-green" onclick="confirmConvertToInvoice()">Convert to Invoice</button>
-            </form>
-        }
-        <button type="button" class="btn btn-secondary" onclick="downloadQuotationPdf(@Model.Quotation.Id)">Download PDF</button>
-        <button type="button" class="btn btn-secondary" onclick="duplicateQuotation(@Model.Quotation.Id)">Duplicate</button>
-        @if (Model.Quotation.QuotationStatusTypeId == 1)
-        {
-            <button type="button" class="btn btn-danger" onclick="deleteQuotation(@Model.Quotation.Id, '@Html.Raw(Model.Quotation.Reference)')">Delete</button>
-        }
+    <div>
+        <a asp-action="Index" asp-controller="Quotation" class="btn btn-outline">&larr; Back to Quotations</a>
     </div>
 </div>
+
+<!-- Action Bar -->
+<section class="glass card-pad" style="margin-bottom:22px;padding:14px 20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <!-- Status Actions -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            @if (Model.Quotation.QuotationStatusTypeId == 1 || Model.Quotation.QuotationStatusTypeId == 2)
+            {
+                <a class="btn btn-secondary" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id">Edit</a>
+            }
+            @if (Model.AvailableTransitions.Contains(2))
+            {
+                <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;" id="sendQuotationForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStatusId" value="2" />
+                    <button type="button" class="btn btn-primary" onclick="confirmSendQuotation()">Send Quotation</button>
+                </form>
+            }
+            @if (Model.AvailableTransitions.Contains(3))
+            {
+                <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStatusId" value="3" />
+                    <button type="submit" class="btn btn-green">Mark Accepted</button>
+                </form>
+            }
+            @if (Model.AvailableTransitions.Contains(5))
+            {
+                <form id="archiveForm" method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStatusId" value="5" />
+                    <button type="button" class="btn btn-secondary" onclick="confirmArchive()">Archive</button>
+                </form>
+            }
+            @if (Model.AvailableTransitions.Contains(1))
+            {
+                <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStatusId" value="1" />
+                    <button type="submit" class="btn btn-primary">Unarchive</button>
+                </form>
+            }
+            @if (Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
+            {
+                <form method="post" asp-action="ConvertToInvoice" asp-controller="Quotation" style="display:inline;" id="convertToInvoiceForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="quotationId" value="@Model.Quotation.Id" />
+                    <button type="button" class="btn btn-green" onclick="confirmConvertToInvoice()">Convert to Invoice</button>
+                </form>
+            }
+        </div>
+        <!-- Divider -->
+        <div style="width:1px;height:28px;background:rgba(13,94,166,.1);flex-shrink:0;"></div>
+        <!-- Document Actions -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview Proposal</a>
+            <button type="button" class="btn btn-secondary" onclick="downloadQuotationPdf(@Model.Quotation.Id)">Download PDF</button>
+            <button type="button" class="btn btn-secondary" onclick="duplicateQuotation(@Model.Quotation.Id)">Duplicate</button>
+            @if (Model.Quotation.QuotationStatusTypeId == 1)
+            {
+                <button type="button" class="btn btn-danger" onclick="deleteQuotation(@Model.Quotation.Id, '@Html.Raw(Model.Quotation.Reference)')">Delete</button>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Status Help Banner -->
+<details style="margin-bottom:22px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);border-radius:12px;overflow:hidden;">
+    <summary style="padding:12px 16px;cursor:pointer;font-size:13px;font-weight:600;color:#0D5EA6;display:flex;align-items:center;gap:8px;list-style:none;">
+        <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+        Understanding quotation statuses
+    </summary>
+    <div style="padding:0 16px 14px;font-size:13px;color:#5E7385;line-height:1.7;">
+        <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+            <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                <td style="padding:6px 0;font-weight:700;width:100px;">Draft</td>
+                <td style="padding:6px 0;">The quotation is being prepared. Not yet visible to the customer.</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                <td style="padding:6px 0;font-weight:700;">Sent</td>
+                <td style="padding:6px 0;">Shared with the customer and awaiting their response.</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                <td style="padding:6px 0;font-weight:700;">Accepted</td>
+                <td style="padding:6px 0;">The customer accepted the quotation. Ready to convert to an invoice.</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                <td style="padding:6px 0;font-weight:700;">Converted</td>
+                <td style="padding:6px 0;">An invoice has been generated from this quotation.</td>
+            </tr>
+            <tr>
+                <td style="padding:6px 0;font-weight:700;">Archived</td>
+                <td style="padding:6px 0;">Closed without further action — use this for expired quotations, proposals the customer didn't respond to, or quotations superseded by a newer version.</td>
+            </tr>
+        </table>
+        <p style="margin:12px 0 0;font-size:12px;color:#8a9bab;">Tip: If a quotation has passed its "Valid Until" date without a response, archiving it keeps your active list clean.</p>
+    </div>
+</details>
 
 <!-- Quotation Overview (full width) -->
 <section class="glass card-pad">
@@ -85,7 +128,7 @@
                         2 => "pill-blue",
                         3 => "pill-green",
                         4 => "pill-blue",
-                        5 => "pill-red",
+                        5 => "pill-slate",
                         _ => "pill-gold"
                     };
                 }
@@ -367,6 +410,21 @@
 
 @section Scripts {
     <script>
+        async function confirmArchive() {
+            var result = await Swal.fire({
+                title: 'Archive this quotation?',
+                text: 'This will close the quotation without further action. You can unarchive it later if needed.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, archive it',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#C8912E'
+            });
+            if (result.isConfirmed) {
+                document.getElementById('archiveForm').submit();
+            }
+        }
+
         async function confirmSendQuotation() {
             var result = await Swal.fire({
                 title: 'Mark as Sent?',
