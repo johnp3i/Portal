@@ -65,7 +65,24 @@ public class InvitationController : Controller
             ViewBag.Businesses = business != null ? new List<Portal.Infrastructure.Entities.Business> { business } : new List<Portal.Infrastructure.Entities.Business>();
         }
 
-        var invitations = await _invitationService.GetAllInvitationsAsync();
+        List<Portal.Infrastructure.Entities.Identity.Invitation> invitations;
+        if (isSuperAdmin)
+        {
+            invitations = await _invitationService.GetAllInvitationsAsync();
+        }
+        else
+        {
+            var allInvitations = await _invitationService.GetAllInvitationsAsync();
+            var bizIdForFilter = User.FindFirst("BusinessId");
+            if (bizIdForFilter != null && int.TryParse(bizIdForFilter.Value, out var filterBizId))
+            {
+                invitations = allInvitations.Where(i => i.BusinessId == filterBizId).ToList();
+            }
+            else
+            {
+                invitations = new List<Portal.Infrastructure.Entities.Identity.Invitation>();
+            }
+        }
         ViewBag.Invitations = invitations;
 
         // Seat usage info
@@ -96,14 +113,19 @@ public class InvitationController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(string email, int businessId, List<InvitationModulePermission>? modulePermissions)
     {
+        // Security: non-SuperAdmin can only invite to their own business
+        var isSuperAdmin = User.IsInRole("SuperAdmin");
+        if (!isSuperAdmin)
+        {
+            var userBizClaim = User.FindFirst("BusinessId");
+            if (userBizClaim == null || !int.TryParse(userBizClaim.Value, out var userBizId) || userBizId != businessId)
+                return Forbid();
+        }
+
         if (string.IsNullOrWhiteSpace(email))
         {
             ModelState.AddModelError(string.Empty, "Email is required.");
-            var businesses = await _businessService.GetAllBusinessesAsync();
-            var invitations = await _invitationService.GetAllInvitationsAsync();
-            ViewBag.Businesses = businesses;
-            ViewBag.Invitations = invitations;
-            return View();
+            return RedirectToAction(nameof(Create));
         }
 
         if (modulePermissions != null)
@@ -122,11 +144,7 @@ public class InvitationController : Controller
 
             if (!ModelState.IsValid)
             {
-                var businesses = await _businessService.GetAllBusinessesAsync();
-                var invitations = await _invitationService.GetAllInvitationsAsync();
-                ViewBag.Businesses = businesses;
-                ViewBag.Invitations = invitations;
-                return View();
+                return RedirectToAction(nameof(Create));
             }
         }
 
@@ -146,6 +164,17 @@ public class InvitationController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(int id)
     {
+        // Security: validate the invitation belongs to the user's business
+        var isSuperAdmin = User.IsInRole("SuperAdmin");
+        if (!isSuperAdmin)
+        {
+            var allInvitations = await _invitationService.GetAllInvitationsAsync();
+            var invitation = allInvitations.FirstOrDefault(i => i.Id == id);
+            var userBizClaim = User.FindFirst("BusinessId");
+            if (invitation == null || userBizClaim == null || !int.TryParse(userBizClaim.Value, out var userBizId) || invitation.BusinessId != userBizId)
+                return Forbid();
+        }
+
         await _invitationService.CancelInvitationAsync(id);
         TempData["SuccessMessage"] = "Invitation cancelled.";
         return RedirectToAction(nameof(Create));
