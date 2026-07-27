@@ -48,12 +48,16 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
         if (context.HttpContext.User.Identity?.IsAuthenticated != true)
             return;
 
-        // 3. Get controller name from route
+        // 3. Skip if user is SuperAdmin — full platform access
+        if (context.HttpContext.User.IsInRole("SuperAdmin"))
+            return;
+
+        // 4. Get controller name from route
         var controllerName = context.RouteData.Values["controller"]?.ToString();
         if (string.IsNullOrEmpty(controllerName))
             return;
 
-        // 4. Skip if controller is non-module (exempt list)
+        // 5. Skip if controller is non-module (exempt list)
         if (NonModuleControllers.Contains(controllerName))
             return;
 
