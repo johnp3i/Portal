@@ -12,4 +12,7 @@ public class UserAdminDto
     public string Role { get; set; } = null!;
     public bool IsActive { get; set; }
     public DateTime? LastLoginUtc { get; set; }
+    public int BusinessId { get; set; }
+    public string BusinessName { get; set; } = null!;
+    public bool IsDemoUser { get; set; }
 }

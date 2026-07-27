@@ -425,6 +425,10 @@ builder.Services.AddScoped<DemoInvitationRepository>(sp =>
     new DemoInvitationRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IDemoInvitationService, DemoInvitationService>();
 
+// --- Business Insights (SuperAdmin) ---
+builder.Services.AddScoped<BusinessInsightsRepository>();
+builder.Services.AddScoped<IBusinessInsightsService, BusinessInsightsService>();
+
 // --- MVC ---
 var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {

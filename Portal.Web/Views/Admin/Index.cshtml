@@ -4,13 +4,14 @@
     var currentUserId = ViewBag.CurrentUserId as string ?? string.Empty;
     var searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
     var statusFilter = ViewBag.StatusFilter as string ?? string.Empty;
+    var userTypeFilter = ViewBag.UserTypeFilter as string ?? string.Empty;
 }
 
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Administration</div>
         <h1 class="topbar-heading">Users</h1>
-        <p class="topbar-subtitle">Manage user access and permissions for your business.</p>
+        <p class="topbar-subtitle">Manage all registered users across the platform.</p>
     </div>
 </div>
 
@@ -34,6 +35,15 @@
                 }
                 @Html.Raw($"<select id=\"statusFilter\" name=\"statusFilter\">{optAll}{optActive}{optInactive}</select>")
             </div>
+            <div class="field" style="min-width:160px;">
+                <label for="userTypeFilter">User Type</label>
+                @{
+                    var optTypeAll  = userTypeFilter == ""     ? "<option value=\"\" selected>All</option>"      : "<option value=\"\">All</option>";
+                    var optTypeReal = userTypeFilter == "Real" ? "<option value=\"Real\" selected>Real Users</option>" : "<option value=\"Real\">Real Users</option>";
+                    var optTypeDemo = userTypeFilter == "Demo" ? "<option value=\"Demo\" selected>Demo Users</option>" : "<option value=\"Demo\">Demo Users</option>";
+                }
+                @Html.Raw($"<select id=\"userTypeFilter\" name=\"userTypeFilter\">{optTypeAll}{optTypeReal}{optTypeDemo}</select>")
+            </div>
             <div style="padding-bottom:2px;">
                 <button type="submit" class="btn btn-primary">Filter</button>
                 <a href="/Admin/Users" class="btn btn-secondary">Clear</a>
@@ -55,6 +65,7 @@
                     <tr>
                         <th>Full Name</th>
                         <th>Email</th>
+                        <th>Business</th>
                         <th>Role</th>
                         <th>Status</th>
                         <th>Last Login</th>
@@ -66,8 +77,15 @@
                     {
                         var isSelf = user.UserId == currentUserId;
                         <tr style="cursor:pointer;" onclick="window.location.href='/Admin/Users/ModuleAccess/@user.UserBusinessId'">
-                            <td><strong>@user.FullName</strong></td>
+                            <td>
+                                <strong>@user.FullName</strong>
+                                @if (user.IsDemoUser)
+                                {
+                                    <span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#f0e6d2;color:#8a6d3b;">Demo</span>
+                                }
+                            </td>
                             <td>@user.Email</td>
+                            <td><span style="font-size:13px;color:#5a6b7c;">@user.BusinessName</span></td>
                             <td>@user.Role</td>
                             <td>
                                 @if (user.IsActive)
@@ -120,19 +138,19 @@
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
                     @if (Model.CurrentPage > 1)
                     {
-                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&page=@(Model.CurrentPage - 1)"
+                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&userTypeFilter=@userTypeFilter&page=@(Model.CurrentPage - 1)"
                            class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;text-decoration:none;color:inherit;">← Prev</a>
                     }
                     @for (int p = 1; p <= Model.TotalPages; p++)
                     {
                         var isActive = p == Model.CurrentPage;
-                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&page=@p"
+                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&userTypeFilter=@userTypeFilter&page=@p"
                            class="page-btn @(isActive ? "page-btn--active" : "")"
                            style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid @(isActive ? "#0D5EA6" : "#d0dce8");background:@(isActive ? "#0D5EA6" : "#fff");color:@(isActive ? "#fff" : "inherit");text-decoration:none;">@p</a>
                     }
                     @if (Model.CurrentPage < Model.TotalPages)
                     {
-                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&page=@(Model.CurrentPage + 1)"
+                        <a href="/Admin/Users?searchTerm=@searchTerm&statusFilter=@statusFilter&userTypeFilter=@userTypeFilter&page=@(Model.CurrentPage + 1)"
                            class="page-btn" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;text-decoration:none;color:inherit;">Next →</a>
                     }
                 </div>

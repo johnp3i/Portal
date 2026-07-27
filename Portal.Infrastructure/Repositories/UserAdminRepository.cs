@@ -18,13 +18,18 @@ public class UserAdminRepository : GenericStoredProcedureRepository<UserBusiness
     /// with optional search (case-insensitive full name or email) and active status filter.
     /// </summary>
     public async Task<(List<UserBusiness> Items, int TotalCount)> GetUsersPagedAsync(
-        int businessId, string? searchTerm, bool? isActive, int skip, int take)
+        int? businessId, string? searchTerm, bool? isActive, int skip, int take)
     {
         try
         {
             var query = _context.Set<UserBusiness>()
                 .Include(ub => ub.User)
-                .Where(ub => ub.BusinessId == businessId);
+                .AsQueryable();
+
+            if (businessId.HasValue)
+            {
+                query = query.Where(ub => ub.BusinessId == businessId.Value);
+            }
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {

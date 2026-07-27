@@ -1,0 +1,223 @@
+@model List<Portal.Infrastructure.Models.BusinessInsightDto>
+@{
+    ViewData["Title"] = "Business Insights";
+    var summary = ViewBag.Summary as Portal.Infrastructure.Models.BusinessInsightSummaryDto;
+    var searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
+    var planFilter = ViewBag.PlanFilter as string ?? string.Empty;
+    var statusFilter = ViewBag.StatusFilter as string ?? string.Empty;
+    var activityFilter = ViewBag.ActivityFilter as string ?? string.Empty;
+    var currentPage = (int)ViewBag.CurrentPage;
+    var totalPages = (int)ViewBag.TotalPages;
+    var totalCount = (int)ViewBag.TotalCount;
+    var pageSize = (int)ViewBag.PageSize;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Business Insights</h1>
+        <p class="topbar-subtitle">Platform-wide activity overview across all registered businesses. Demo accounts are excluded.</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+@if (summary != null)
+{
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:22px;">
+        <div class="glass" style="padding:20px 22px;border-radius:16px;">
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">Total Businesses</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:32px;font-weight:800;color:#1a2b3c;letter-spacing:-1px;margin-top:4px;">@summary.TotalBusinesses</div>
+            <div style="font-size:13px;color:#5a6b7c;">Registered on platform</div>
+        </div>
+        <div class="glass" style="padding:20px 22px;border-radius:16px;">
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">Confirmed</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:32px;font-weight:800;color:#129867;letter-spacing:-1px;margin-top:4px;">@summary.ConfirmedAccounts</div>
+            <div style="font-size:13px;color:#5a6b7c;">Email verified owners</div>
+        </div>
+        <div class="glass" style="padding:20px 22px;border-radius:16px;">
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">Active (30 days)</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:32px;font-weight:800;color:#0D5EA6;letter-spacing:-1px;margin-top:4px;">@summary.ActiveLast30Days</div>
+            <div style="font-size:13px;color:#5a6b7c;">At least 1 action</div>
+        </div>
+        <div class="glass" style="padding:20px 22px;border-radius:16px;">
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">On Trial</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:32px;font-weight:800;color:#C8912E;letter-spacing:-1px;margin-top:4px;">@summary.OnTrial</div>
+            <div style="font-size:13px;color:#5a6b7c;">Trial period active</div>
+        </div>
+    </div>
+}
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" action="/Admin/BusinessInsights">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:220px;">
+                <label for="searchTerm">Search</label>
+                <input type="text" id="searchTerm" name="searchTerm" value="@searchTerm" placeholder="Business name or owner..." maxlength="200" />
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="planFilter">Plan</label>
+                @{
+                    var planAll = planFilter == "" ? "<option value=\"\" selected>All Plans</option>" : "<option value=\"\">All Plans</option>";
+                    var planFoundation = planFilter == "Foundation" ? "<option value=\"Foundation\" selected>Foundation</option>" : "<option value=\"Foundation\">Foundation</option>";
+                    var planProfessional = planFilter == "Professional" ? "<option value=\"Professional\" selected>Professional</option>" : "<option value=\"Professional\">Professional</option>";
+                    var planEnterprise = planFilter == "Enterprise" ? "<option value=\"Enterprise\" selected>Enterprise</option>" : "<option value=\"Enterprise\">Enterprise</option>";
+                }
+                @Html.Raw($"<select id=\"planFilter\" name=\"planFilter\">{planAll}{planFoundation}{planProfessional}{planEnterprise}</select>")
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="statusFilter">Status</label>
+                @{
+                    var stAll = statusFilter == "" ? "<option value=\"\" selected>All</option>" : "<option value=\"\">All</option>";
+                    var stActive = statusFilter == "active" ? "<option value=\"active\" selected>Active</option>" : "<option value=\"active\">Active</option>";
+                    var stTrial = statusFilter == "trial" ? "<option value=\"trial\" selected>Trial</option>" : "<option value=\"trial\">Trial</option>";
+                    var stExpired = statusFilter == "expired" ? "<option value=\"expired\" selected>Expired</option>" : "<option value=\"expired\">Expired</option>";
+                }
+                @Html.Raw($"<select id=\"statusFilter\" name=\"statusFilter\">{stAll}{stActive}{stTrial}{stExpired}</select>")
+            </div>
+            <div class="field" style="min-width:180px;">
+                <label for="activityFilter">Activity</label>
+                @{
+                    var actAll = activityFilter == "" ? "<option value=\"\" selected>All</option>" : "<option value=\"\">All</option>";
+                    var actActive30 = activityFilter == "Active30" ? "<option value=\"Active30\" selected>Active last 30 days</option>" : "<option value=\"Active30\">Active last 30 days</option>";
+                    var actInactive30 = activityFilter == "Inactive30" ? "<option value=\"Inactive30\" selected>Inactive 30+ days</option>" : "<option value=\"Inactive30\">Inactive 30+ days</option>";
+                    var actNever = activityFilter == "Never" ? "<option value=\"Never\" selected>Never used</option>" : "<option value=\"Never\">Never used</option>";
+                }
+                @Html.Raw($"<select id=\"activityFilter\" name=\"activityFilter\">{actAll}{actActive30}{actInactive30}{actNever}</select>")
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="/Admin/BusinessInsights" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    @if (Model.Any())
+    {
+        <div class="scroll-hint">← Scroll horizontally →</div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Business</th>
+                        <th>Owner</th>
+                        <th>Plan</th>
+                        <th>Status</th>
+                        <th>Confirmed</th>
+                        <th>Quotations</th>
+                        <th>Invoices</th>
+                        <th>Purchases</th>
+                        <th>Revenue</th>
+                        <th>Last Activity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var biz in Model)
+                    {
+                        var now = DateTime.UtcNow;
+                        var activityClass = "color:#C24A4A;";
+                        var activityText = "Never";
+
+                        if (biz.LastActivityUtc.HasValue)
+                        {
+                            var daysSince = (now - biz.LastActivityUtc.Value).TotalDays;
+                            if (daysSince < 7)
+                            {
+                                activityClass = "color:#129867;font-weight:600;";
+                                activityText = daysSince < 1 ? "Today" : $"{(int)daysSince} days ago";
+                            }
+                            else if (daysSince < 30)
+                            {
+                                activityClass = "color:#C8912E;";
+                                activityText = $"{(int)daysSince} days ago";
+                            }
+                            else
+                            {
+                                activityClass = "color:#C24A4A;";
+                                activityText = $"{(int)daysSince} days ago";
+                            }
+                        }
+
+                        var statusBadgeClass = biz.Status switch
+                        {
+                            "active" => "background:#e6f7f0;color:#129867;",
+                            "trial" => "background:#fef6e8;color:#C8912E;",
+                            _ => "background:#fdeaea;color:#C24A4A;"
+                        };
+
+                        var statusLabel = biz.Status switch
+                        {
+                            "active" => "Active",
+                            "trial" => "Trial",
+                            "expired" => "Expired",
+                            _ => biz.Status
+                        };
+                        <tr>
+                            <td><strong style="color:#0D5EA6;">@biz.BusinessName</strong></td>
+                            <td>
+                                <div style="display:flex;flex-direction:column;gap:2px;">
+                                    <span style="font-weight:600;font-size:13px;">@biz.OwnerFullName</span>
+                                    <span style="font-size:12px;color:#8a9bac;">@biz.OwnerEmail</span>
+                                </div>
+                            </td>
+                            <td><span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#e6f0fa;color:#0D5EA6;">@biz.PlanName</span></td>
+                            <td><span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;@statusBadgeClass">@statusLabel</span></td>
+                            <td>
+                                @if (biz.IsEmailConfirmed)
+                                {
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#e6f7f0;color:#129867;">Confirmed</span>
+                                }
+                                else
+                                {
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#fef6e8;color:#C8912E;">Pending</span>
+                                }
+                            </td>
+                            <td><span style="font-weight:700;font-family:'Manrope',sans-serif;font-size:14px;@(biz.QuotationCount == 0 ? "color:#8a9bac;font-weight:500;" : "")">@biz.QuotationCount</span></td>
+                            <td><span style="font-weight:700;font-family:'Manrope',sans-serif;font-size:14px;@(biz.InvoiceCount == 0 ? "color:#8a9bac;font-weight:500;" : "")">@biz.InvoiceCount</span></td>
+                            <td><span style="font-weight:700;font-family:'Manrope',sans-serif;font-size:14px;@(biz.PurchaseCount == 0 ? "color:#8a9bac;font-weight:500;" : "")">@biz.PurchaseCount</span></td>
+                            <td><span style="font-weight:700;font-family:'Manrope',sans-serif;font-size:14px;@(biz.RevenueTotal == 0 ? "color:#8a9bac;font-weight:500;" : "")">@biz.RevenueTotal.ToString("C0", new System.Globalization.CultureInfo("en-IE"))</span></td>
+                            <td><span style="font-size:12px;@activityClass">@activityText</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* Pagination *@
+        @if (totalPages > 1)
+        {
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+                <div style="font-size:14px;color:#5a6a7a;">
+                    Showing @((currentPage - 1) * pageSize + 1)–@(Math.Min(currentPage * pageSize, totalCount)) of @totalCount
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    @if (currentPage > 1)
+                    {
+                        <a href="/Admin/BusinessInsights?searchTerm=@searchTerm&planFilter=@planFilter&statusFilter=@statusFilter&activityFilter=@activityFilter&page=@(currentPage - 1)"
+                           style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;text-decoration:none;color:inherit;">← Prev</a>
+                    }
+                    @for (int p = 1; p <= totalPages; p++)
+                    {
+                        var isActivePage = p == currentPage;
+                        <a href="/Admin/BusinessInsights?searchTerm=@searchTerm&planFilter=@planFilter&statusFilter=@statusFilter&activityFilter=@activityFilter&page=@p"
+                           style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid @(isActivePage ? "#0D5EA6" : "#d0dce8");background:@(isActivePage ? "#0D5EA6" : "#fff");color:@(isActivePage ? "#fff" : "inherit");text-decoration:none;">@p</a>
+                    }
+                    @if (currentPage < totalPages)
+                    {
+                        <a href="/Admin/BusinessInsights?searchTerm=@searchTerm&planFilter=@planFilter&statusFilter=@statusFilter&activityFilter=@activityFilter&page=@(currentPage + 1)"
+                           style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #d0dce8;background:#fff;text-decoration:none;color:inherit;">Next →</a>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No businesses found matching the selected filters.</p>
+        </div>
+    }
+</section>

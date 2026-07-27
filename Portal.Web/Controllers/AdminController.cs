@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Constants;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
@@ -18,21 +20,30 @@ public class AdminController : Controller
     private readonly IUserAdminService _userAdminService;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly PortalDbContext _portalDbContext;
 
     public AdminController(
         IUserAdminService userAdminService,
         ICurrentTenantService currentTenantService,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        PortalDbContext portalDbContext)
     {
         _userAdminService = userAdminService;
         _currentTenantService = currentTenantService;
         _userManager = userManager;
+        _portalDbContext = portalDbContext;
     }
 
     // GET /Admin/Users
     [HttpGet("")]
-    public async Task<IActionResult> Index(string? searchTerm, string? statusFilter, int page = 1)
+    public async Task<IActionResult> Index(string? searchTerm, string? statusFilter, string? userTypeFilter, int page = 1)
     {
+        // First, get all demo business IDs from Portal DB
+        var demoBusinessIds = await _portalDbContext.Businesses
+            .Where(b => b.IsDemoAccount)
+            .Select(b => b.Id)
+            .ToListAsync();
+
         var filter = new UserAdminFilter
         {
             SearchTerm = searchTerm,
@@ -43,11 +54,44 @@ public class AdminController : Controller
 
         var pagedResult = await _userAdminService.GetUsersAsync(filter);
 
+        // Resolve business names and demo status from Portal DB
+        var businessIds = pagedResult.Items.Select(u => u.BusinessId).Distinct().ToList();
+        var businesses = await _portalDbContext.Businesses
+            .Where(b => businessIds.Contains(b.Id))
+            .ToDictionaryAsync(b => b.Id, b => new { b.Name, b.IsDemoAccount });
+
+        foreach (var user in pagedResult.Items)
+        {
+            if (businesses.TryGetValue(user.BusinessId, out var biz))
+            {
+                user.BusinessName = biz.Name;
+                user.IsDemoUser = biz.IsDemoAccount;
+            }
+            else
+            {
+                user.BusinessName = "Unknown";
+                user.IsDemoUser = false;
+            }
+        }
+
+        // Apply user type filter (done post-query since demo status is cross-database)
+        if (userTypeFilter == "Real")
+        {
+            pagedResult.Items = pagedResult.Items.Where(u => !u.IsDemoUser).ToList();
+            pagedResult.TotalCount = pagedResult.Items.Count;
+        }
+        else if (userTypeFilter == "Demo")
+        {
+            pagedResult.Items = pagedResult.Items.Where(u => u.IsDemoUser).ToList();
+            pagedResult.TotalCount = pagedResult.Items.Count;
+        }
+
         // Resolve the current user's UserBusinessId so the view can disable self-action buttons
         var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         ViewBag.CurrentUserId = currentUserId;
         ViewBag.SearchTerm = searchTerm;
         ViewBag.StatusFilter = statusFilter;
+        ViewBag.UserTypeFilter = userTypeFilter;
 
         return View(pagedResult);
     }

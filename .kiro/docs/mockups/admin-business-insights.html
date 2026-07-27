@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Insights - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0D5EA6;
+            --primary-light: rgba(13,94,166,.06);
+            --accent: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --text-muted: #8a9bac;
+            --border: #e2eaf2;
+            --radius: 20px;
+            --shadow: 0 2px 12px rgba(13,94,166,.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            padding: 32px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Topbar */
+        .topbar {
+            margin-bottom: 28px;
+        }
+        .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .eyebrow .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: inline-block;
+        }
+        .topbar-heading {
+            font-family: 'Manrope', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .topbar-subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        /* Glass card */
+        .glass {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .card-pad {
+            padding: 24px 28px;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+        .summary-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .summary-card .label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+        }
+        .summary-card .value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -1px;
+        }
+        .summary-card .sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .summary-card.highlight-success .value { color: var(--success); }
+        .summary-card.highlight-warning .value { color: var(--warning); }
+        .summary-card.highlight-primary .value { color: var(--primary); }
+
+        /* Filter section */
+        .filter-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .field select,
+        .field input {
+            padding: 9px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background: #fff;
+            min-width: 180px;
+        }
+        .field select:focus,
+        .field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(13,94,166,.08);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        /* Table */
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 4px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .data-table thead th {
+            text-align: left;
+            padding: 12px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+        .data-table tbody td {
+            padding: 14px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .data-table tbody tr:hover {
+            background: var(--primary-light);
+        }
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-active { background: #e6f7f0; color: var(--success); }
+        .badge-trial { background: #fef6e8; color: var(--warning); }
+        .badge-expired { background: #fdeaea; color: var(--danger); }
+        .badge-confirmed { background: #e6f7f0; color: var(--success); }
+        .badge-pending { background: #fef6e8; color: var(--warning); }
+
+        /* Activity bar */
+        .activity-bar {
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+            height: 24px;
+        }
+        .activity-bar .bar {
+            width: 6px;
+            border-radius: 3px;
+            background: var(--accent);
+            min-height: 3px;
+        }
+
+        /* Pagination */
+        .pagination-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .pagination-buttons {
+            display: flex;
+            gap: 6px;
+        }
+        .page-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            background: #fff;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+        }
+        .page-btn--active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Metric cell */
+        .metric {
+            font-weight: 700;
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+        }
+        .metric-zero {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Last activity */
+        .last-activity {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .last-activity.recent {
+            color: var(--success);
+            font-weight: 600;
+        }
+        .last-activity.stale {
+            color: var(--warning);
+        }
+        .last-activity.inactive {
+            color: var(--danger);
+        }
+
+        /* Business name link */
+        .business-link {
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .business-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Owner info */
+        .owner-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .owner-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .owner-email {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="eyebrow"><span class="dot"></span> Administration</div>
+    <h1 class="topbar-heading">Business Insights</h1>
+    <p class="topbar-subtitle">Platform-wide activity overview across all registered businesses. Demo accounts are excluded.</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <span class="label">Total Businesses</span>
+        <span class="value">3</span>
+        <span class="sub">Registered on platform</span>
+    </div>
+    <div class="summary-card highlight-success">
+        <span class="label">Confirmed</span>
+        <span class="value">2</span>
+        <span class="sub">Email verified owners</span>
+    </div>
+    <div class="summary-card highlight-primary">
+        <span class="label">Active (30 days)</span>
+        <span class="value">2</span>
+        <span class="sub">At least 1 action</span>
+    </div>
+    <div class="summary-card highlight-warning">
+        <span class="label">On Trial</span>
+        <span class="value">1</span>
+        <span class="sub">Trial period active</span>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="filter-row">
+        <div class="field" style="min-width:220px;">
+            <label>Search</label>
+            <input type="text" placeholder="Business name or owner..." />
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>Plan</label>
+            <select>
+                <option value="" selected>All Plans</option>
+                <option>Foundation</option>
+                <option>Professional</option>
+                <option>Enterprise</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>Status</label>
+            <select>
+                <option value="" selected>All</option>
+                <option>Active</option>
+                <option>Trial</option>
+                <option>Expired</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Activity</label>
+            <select>
+                <option value="" selected>All</option>
+                <option>Active last 30 days</option>
+                <option>Inactive 30+ days</option>
+                <option>Never used</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary">Filter</button>
+            <button class="btn btn-secondary">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Business</th>
+                    <th>Owner</th>
+                    <th>Plan</th>
+                    <th>Status</th>
+                    <th>Confirmed</th>
+                    <th>Quotations</th>
+                    <th>Invoices</th>
+                    <th>Purchases</th>
+                    <th>Revenue</th>
+                    <th>Last Activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Row 1: Active business with good usage -->
+                <tr>
+                    <td><a href="#" class="business-link">3 Inventors Ltd</a></td>
+                    <td>
+                        <div class="owner-info">
+                            <span class="owner-name">Bili Marios</span>
+                            <span class="owner-email">bili@3inventors.com</span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-active">Professional</span></td>
+                    <td><span class="badge badge-active">Active</span></td>
+                    <td><span class="badge badge-confirmed">Confirmed</span></td>
+                    <td><span class="metric">24</span></td>
+                    <td><span class="metric">18</span></td>
+                    <td><span class="metric">67</span></td>
+                    <td><span class="metric">&euro;14,520</span></td>
+                    <td><span class="last-activity recent">Today</span></td>
+                </tr>
+
+                <!-- Row 2: Trial business with moderate usage -->
+                <tr>
+                    <td><a href="#" class="business-link">Le Paris Roasting Co.</a></td>
+                    <td>
+                        <div class="owner-info">
+                            <span class="owner-name">Marie Laurent</span>
+                            <span class="owner-email">marie@leparisroasting.fr</span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-trial">Professional</span></td>
+                    <td><span class="badge badge-trial">Trial</span></td>
+                    <td><span class="badge badge-confirmed">Confirmed</span></td>
+                    <td><span class="metric">5</span></td>
+                    <td><span class="metric">3</span></td>
+                    <td><span class="metric">12</span></td>
+                    <td><span class="metric">&euro;2,180</span></td>
+                    <td><span class="last-activity recent">2 days ago</span></td>
+                </tr>
+
+                <!-- Row 3: Registered but not yet active -->
+                <tr>
+                    <td><a href="#" class="business-link">North Coast Supplies</a></td>
+                    <td>
+                        <div class="owner-info">
+                            <span class="owner-name">James O'Brien</span>
+                            <span class="owner-email">james@northcoast.ie</span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-trial">Foundation</span></td>
+                    <td><span class="badge badge-trial">Trial</span></td>
+                    <td><span class="badge badge-pending">Pending</span></td>
+                    <td><span class="metric metric-zero">0</span></td>
+                    <td><span class="metric metric-zero">0</span></td>
+                    <td><span class="metric metric-zero">0</span></td>
+                    <td><span class="metric metric-zero">&euro;0</span></td>
+                    <td><span class="last-activity inactive">Never</span></td>
+                </tr>
+
+                <!-- Row 4: Active business, slightly stale -->
+                <tr>
+                    <td><a href="#" class="business-link">Bloom & Brew Cafe</a></td>
+                    <td>
+                        <div class="owner-info">
+                            <span class="owner-name">Sarah Chen</span>
+                            <span class="owner-email">sarah@bloomandbrew.co.uk</span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-active">Professional</span></td>
+                    <td><span class="badge badge-active">Active</span></td>
+                    <td><span class="badge badge-confirmed">Confirmed</span></td>
+                    <td><span class="metric">11</span></td>
+                    <td><span class="metric">9</span></td>
+                    <td><span class="metric">34</span></td>
+                    <td><span class="metric">&euro;6,450</span></td>
+                    <td><span class="last-activity stale">18 days ago</span></td>
+                </tr>
+
+                <!-- Row 5: Very new, just getting started -->
+                <tr>
+                    <td><a href="#" class="business-link">Delphi Consulting</a></td>
+                    <td>
+                        <div class="owner-info">
+                            <span class="owner-name">Andreas Papadopoulos</span>
+                            <span class="owner-email">andreas@delphiconsulting.gr</span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-trial">Professional</span></td>
+                    <td><span class="badge badge-trial">Trial</span></td>
+                    <td><span class="badge badge-confirmed">Confirmed</span></td>
+                    <td><span class="metric">2</span></td>
+                    <td><span class="metric metric-zero">0</span></td>
+                    <td><span class="metric">4</span></td>
+                    <td><span class="metric metric-zero">&euro;0</span></td>
+                    <td><span class="last-activity recent">5 days ago</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-row">
+        <div class="pagination-info">Showing 1-5 of 5 businesses</div>
+        <div class="pagination-buttons">
+            <span class="page-btn page-btn--active">1</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

@@ -48,7 +48,7 @@ public class UserAdminService : IUserAdminService
         var skip = (pageNumber - 1) * pageSize;
 
         var (items, totalCount) = await _userAdminRepository.GetUsersPagedAsync(
-            _currentTenantService.CurrentBusinessId,
+            null,
             filter.SearchTerm,
             isActive,
             skip,
@@ -62,7 +62,8 @@ public class UserAdminService : IUserAdminService
             Email = ub.User.Email ?? string.Empty,
             Role = "User",
             IsActive = ub.IsActive,
-            LastLoginUtc = null
+            LastLoginUtc = null,
+            BusinessId = ub.BusinessId
         }).ToList();
 
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);

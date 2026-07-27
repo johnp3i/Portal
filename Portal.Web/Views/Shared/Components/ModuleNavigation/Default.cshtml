@@ -418,6 +418,10 @@
                 <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></span>
                 <span class="nav-text">Subscriptions</span>
             </a>
+            <a class="nav-item @(ViewContext.HttpContext.Request.Path.StartsWithSegments("/Admin/BusinessInsights") ? "active" : "")" href="/Admin/BusinessInsights">
+                <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></span>
+                <span class="nav-text">Business Insights</span>
+            </a>
         }
     </div>
 }
