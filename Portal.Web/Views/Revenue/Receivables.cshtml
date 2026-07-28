@@ -117,7 +117,7 @@
                             @if (item.HasOutstandingBalance)
                             {
                                 <a href="javascript:void(0)"
-                                   onclick="openPaymentModal(@item.Id, '@item.InvoiceNumber', '@item.CustomerName.Replace("'", "\\'")' , @item.OutstandingBalance)"
+                                   onclick="openPaymentModal(@item.Id, '@Html.Raw(item.InvoiceNumber)', '@Html.Raw(item.CustomerName.Replace("'", "\\'"))', @item.OutstandingBalance.ToString(System.Globalization.CultureInfo.InvariantCulture))"
                                    style="color:var(--blue);font-weight:700;font-size:13px;margin-left:12px;">Pay</a>
                             }
                         </td>

@@ -429,6 +429,9 @@ builder.Services.AddScoped<IDemoInvitationService, DemoInvitationService>();
 builder.Services.AddScoped<BusinessInsightsRepository>();
 builder.Services.AddScoped<IBusinessInsightsService, BusinessInsightsService>();
 
+// --- User Impersonation (SuperAdmin) ---
+builder.Services.AddScoped<Portal.Web.Services.ImpersonationService>();
+
 // --- MVC ---
 var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {

@@ -338,8 +338,9 @@ public class PaymentService : IPaymentService
                         WHERE [BusinessId] = {0}
                           AND [CustomerId] = {1}
                           AND [IsVoided] = 0
-                          AND [CreditAmount] > 0
-                        ORDER BY [CreatedAtUtc] ASC", businessId, customerId)
+                          AND [CreditAmount] > 0", businessId, customerId)
+                    .IgnoreQueryFilters()
+                    .OrderBy(p => p.CreatedAtUtc)
                     .ToListAsync();
 
                 if (creditPayments.Count == 0 || creditPayments.Sum(p => p.CreditAmount) == 0)

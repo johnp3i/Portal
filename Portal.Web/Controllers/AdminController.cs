@@ -8,6 +8,7 @@ using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
 using Portal.Web.Models;
+using Portal.Web.Services;
 using Serilog;
 using System.Security.Claims;
 
@@ -21,17 +22,20 @@ public class AdminController : Controller
     private readonly ICurrentTenantService _currentTenantService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly PortalDbContext _portalDbContext;
+    private readonly ImpersonationService _impersonationService;
 
     public AdminController(
         IUserAdminService userAdminService,
         ICurrentTenantService currentTenantService,
         UserManager<ApplicationUser> userManager,
-        PortalDbContext portalDbContext)
+        PortalDbContext portalDbContext,
+        ImpersonationService impersonationService)
     {
         _userAdminService = userAdminService;
         _currentTenantService = currentTenantService;
         _userManager = userManager;
         _portalDbContext = portalDbContext;
+        _impersonationService = impersonationService;
     }
 
     // GET /Admin/Users
@@ -187,4 +191,58 @@ public class AdminController : Controller
             return Json(new { success = false, message = "The operation could not be completed. Please try again." });
         }
     }
+
+    // POST /Admin/Users/Impersonate
+    [HttpPost("Impersonate")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Impersonate([FromBody] ImpersonateRequest request)
+    {
+        try
+        {
+            var result = await _impersonationService.StartImpersonationAsync(request.UserBusinessId, User);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            return Json(new { success = true, message = result.Message, redirectUrl = "/" });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Impersonation failed for UserBusinessId={UserBusinessId}", request.UserBusinessId);
+            return Json(new { success = false, message = "Failed to impersonate user. Please try again." });
+        }
+    }
+
+    // POST /Admin/Users/EndImpersonation
+    [HttpPost("EndImpersonation")]
+    [AllowAnonymous]
+    public async Task<IActionResult> EndImpersonation()
+    {
+        try
+        {
+            // Allow this action if user has the IsImpersonating claim (not role-based)
+            if (!User.HasClaim(ImpersonationService.IsImpersonatingClaim, "true"))
+                return RedirectToAction("Index");
+
+            var result = await _impersonationService.EndImpersonationAsync(User);
+
+            if (!result.Success)
+            {
+                Log.Warning("EndImpersonation failed: {Message}", result.Message);
+                return RedirectToAction("Index");
+            }
+
+            return Redirect("/Admin/Users");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "EndImpersonation threw an exception");
+            return Redirect("/Admin/Users");
+        }
+    }
+}
+
+public class ImpersonateRequest
+{
+    public int UserBusinessId { get; set; }
 }

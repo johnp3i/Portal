@@ -6,6 +6,7 @@ using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
 using Portal.Web.Models;
 using Portal.Web.Security;
+using Serilog;
 
 namespace Portal.Web.Controllers;
 
@@ -408,7 +409,8 @@ public class RevenueController : Controller
         }
         catch (Exception ex)
         {
-            return Json(new { success = false, message = "Failed to apply credit." });
+            Log.Error(ex, "AxPostApplyCredit failed for customerId={CustomerId}", customerId);
+            return Json(new { success = false, message = "Failed to apply credit. Please try again or contact support." });
         }
     }
 
