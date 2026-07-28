@@ -30,6 +30,7 @@ public static class PortalModules
     public const string PurchaseImport = "purchase_import";
     public const string ZReportImport = "zreport_import";
     public const string Sales = "sales";
+    public const string StripeConnect = "stripe_connect";
 
     public static readonly string[] All =
     {
@@ -37,7 +38,7 @@ public static class PortalModules
         PaymentLinkManual, PaymentReminderManual, PaymentLinkAuto, PaymentReminderAuto,
         Cashflow, Pnl, ExpenseInsights, Attachments, ClientPortal,
         ActivityTimeline, AuditLog, Api, Webhooks, MultiCurrency, SchedulePayments,
-        RecurringExpenseValidation, PurchaseImport, ZReportImport, Sales
+        RecurringExpenseValidation, PurchaseImport, ZReportImport, Sales, StripeConnect
     };
 
     public static bool IsValid(string module) => module is not null && All.Contains(module);

@@ -117,6 +117,7 @@
             </a>
             @await Component.InvokeAsync("SubscriptionStatusIndicator")
         </aside>
+        <script>try{var _sb=document.querySelector('.sidebar'),_sp=sessionStorage.getItem('sidebar-scroll-pos');if(_sb&&_sp!==null)_sb.scrollTop=parseInt(_sp,10);}catch(e){}</script>
         <div class="mobile-backdrop" aria-hidden="true"></div>
         <main class="content" style="position:relative;">
             @if (User.Identity?.IsAuthenticated == true)
@@ -187,6 +188,16 @@
             app.classList.toggle('sidebar-collapsed');
             localStorage.setItem('sidebar-collapsed', app.classList.contains('sidebar-collapsed'));
         }
+    </script>
+    <script>
+    (function(){
+        var sb=document.querySelector('.sidebar');
+        if(!sb)return;
+        sb.addEventListener('click',function(e){
+            var a=e.target.closest('a[href]');
+            if(a){try{sessionStorage.setItem('sidebar-scroll-pos',sb.scrollTop);}catch(e){}}
+        });
+    })();
     </script>
     @RenderSection("Scripts", required: false)
     @await Html.PartialAsync("_GraceAccessModal")

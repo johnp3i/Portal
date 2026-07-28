@@ -7,6 +7,7 @@ using Moq;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Infrastructure.Services.Sales;
 using Portal.Web.Controllers;
 using Xunit;
 
@@ -74,6 +75,7 @@ public class QuotationControllerDownloadPdfTests
             productRepository,
             _acceptanceServiceMock.Object,
             _proposalPdfServiceMock.Object,
+            Mock.Of<ILeadRequestService>(),
             _loggerMock.Object);
 
         _controller.TempData = new TempDataDictionary(

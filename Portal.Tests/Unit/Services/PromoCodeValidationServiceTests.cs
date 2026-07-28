@@ -30,7 +30,7 @@ public class PromoCodeValidationServiceTests
         var portalDbContext = new PortalDbContext(options, tenantServiceMock.Object);
 
         _promoCodeRepoMock = new Mock<PromoCodeRepository>(MockBehavior.Loose, portalDbContext);
-        _service = new PromoCodeValidationService(_promoCodeRepoMock.Object);
+        _service = new PromoCodeValidationService(_promoCodeRepoMock.Object, Mock.Of<IPlanRepository>());
     }
 
     #region Helpers

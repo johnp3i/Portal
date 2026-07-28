@@ -102,6 +102,8 @@ public class PortalDbContext : DbContext
     // Stripe schema
     public DbSet<StripeCustomer> StripeCustomers { get; set; } = null!;
     public DbSet<WebhookEvent> WebhookEvents { get; set; } = null!;
+    public DbSet<StripeConnectedAccount> StripeConnectedAccounts { get; set; } = null!;
+    public DbSet<StripeCheckoutSession> StripeCheckoutSessions { get; set; } = null!;
 
     // Platform configuration
     public DbSet<PlatformConfig> PlatformConfigs { get; set; } = null!;
@@ -212,6 +214,8 @@ public class PortalDbContext : DbContext
         ConfigureSupplierRecurringRule(modelBuilder);
         ConfigureStripeCustomer(modelBuilder);
         ConfigureWebhookEvent(modelBuilder);
+        ConfigureStripeConnectedAccount(modelBuilder);
+        ConfigureStripeCheckoutSession(modelBuilder);
         ConfigurePromoCode(modelBuilder);
         ConfigurePromoCodeRedemption(modelBuilder);
         ConfigurePlatformConfig(modelBuilder);
@@ -2040,6 +2044,106 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureStripeConnectedAccount(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StripeConnectedAccount>(entity =>
+        {
+            entity.ToTable("ConnectedAccount", "stripe");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId)
+                .IsUnique()
+                .HasDatabaseName("UX_ConnectedAccount_BusinessId");
+
+            entity.Property(e => e.StripeAccountId)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.ConnectedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureStripeCheckoutSession(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StripeCheckoutSession>(entity =>
+        {
+            entity.ToTable("CheckoutSession", "stripe");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Invoice)
+                .WithMany()
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.StripeSessionId)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.HasIndex(e => e.StripeSessionId)
+                .IsUnique()
+                .HasDatabaseName("UX_CheckoutSession_StripeSessionId");
+
+            entity.Property(e => e.Amount)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.StripeFeeAmount)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.NetAmount)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.Currency)
+                .IsRequired()
+                .HasMaxLength(3)
+                .HasDefaultValue("EUR");
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("pending");
+
+            entity.Property(e => e.StripePaymentIntentId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.StripeChargeId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CustomerName)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => e.BusinessId)
+                .HasDatabaseName("IX_CheckoutSession_BusinessId");
+
+            entity.HasIndex(e => e.InvoiceId)
+                .HasDatabaseName("IX_CheckoutSession_InvoiceId");
         });
     }
 

@@ -197,7 +197,19 @@
                     <td>@item.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
                     <td><strong>@item.InvoiceNumber</strong></td>
                     <td>@item.CustomerName</td>
-                    <td>@item.PaymentMethodName</td>
+                    <td>
+                        @if (item.PaymentMethodName == "Card")
+                        {
+                            <span style="display:inline-flex;align-items:center;gap:5px;">
+                                <svg width="16" height="16" fill="none" stroke="#635bff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                                <span style="font-size:12px;font-weight:600;color:#635bff;">Stripe</span>
+                            </span>
+                        }
+                        else
+                        {
+                            @item.PaymentMethodName
+                        }
+                    </td>
                     <td style="text-align:right;font-weight:700;color:@(item.IsVoided ? "#999" : item.IsFullPayment ? "var(--green)" : "var(--gold)");">@currency@item.Amount.ToString("N2")</td>
                     <td>
                         @if (item.IsVoided)

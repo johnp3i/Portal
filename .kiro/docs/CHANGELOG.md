@@ -4,6 +4,42 @@ All notable feature updates to the Portal platform are documented here. Organize
 
 ---
 
+## [2026-07-28] — Stripe Connect (Card Payments via Connect)
+
+**Enables businesses to accept card payments from customers on shared invoice links, processed via Stripe Connect (destination charges) with automatic webhook reconciliation.**
+
+### Added
+- Business onboarding: OAuth Standard Connect flow from Business Settings (Connect/Disconnect)
+- "Pay by Card" button on shared invoice pages (visible when business connected + outstanding balance > 0)
+- Stripe Checkout Session creation with destination charge to connected account (no platform fee)
+- Webhook endpoint (`/stripe/connect-webhook`) with signature verification
+- `checkout.session.completed` handler: creates Payment record, recalculates financial status, captures Stripe fee from BalanceTransaction
+- `checkout.session.expired` handler: marks session as expired
+- Idempotency: duplicate webhook events are safely skipped (unique constraint on StripeSessionId)
+- Receipt auto-generation triggered on webhook payment creation (if enabled)
+- **Card Payments view** at `/Revenue/CardPayments` — fee transparency dashboard
+  - Summary cards: Total Received (Gross), Total Stripe Fees, Net Received, Transaction Count
+  - Transaction table with Date, Invoice, Customer, Gross, Fee, Net, Status
+  - Date range filters (This Month, Last Month, Last 3 Months, Custom)
+  - CSV export for accounting reconciliation
+- Stripe payment badge/icon in Invoice Detail payment history
+- Error handling: graceful fallback when checkout creation fails (account restricted, Stripe down)
+- Plan permission gating: `stripe_connect` module key (Professional and Enterprise only)
+- Owner-only access control for Connect/Disconnect actions
+
+### Database Migrations
+- `153_CreateStripeConnectedAccountTable.sql` (creates `[stripe]` schema + ConnectedAccount table)
+- `154_CreateStripeCheckoutSessionTable.sql` (CheckoutSession table for tracking)
+- `155_SeedCardPaymentMethodType.sql` (adds "Card" to PaymentMethodType)
+
+### Configuration
+- `Stripe:SecretKey` — Platform secret key (User Secrets)
+- `Stripe:ConnectClientId` — Connect platform client ID (User Secrets)
+- `Stripe:ConnectWebhookSecret` — Webhook signing secret (User Secrets)
+- `Stripe:ConnectOAuthRedirectUri` — OAuth callback URL (User Secrets)
+
+---
+
 ## [2026-07-09] — Module 7: Payment Schedules (Instalment Plans)
 
 **Structured instalment plan management for invoice payments with auto-matching, status tracking, and VAT advisory.**

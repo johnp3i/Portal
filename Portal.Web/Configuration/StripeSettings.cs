@@ -9,5 +9,10 @@ namespace Portal.Web.Configuration
         public string WebhookSigningSecret { get; set; } = null!;
         public string? DefaultTaxRateId { get; set; }
         public string? BaseUrl { get; set; }
+
+        // Stripe Connect settings
+        public string? ConnectClientId { get; set; }
+        public string? ConnectWebhookSecret { get; set; }
+        public string? ConnectOAuthRedirectUri { get; set; }
     }
 }

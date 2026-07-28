@@ -371,8 +371,29 @@
                             <tr style="@(payment.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
                                 <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;">@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
                                 <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;font-weight:600;">@(cs)@payment.Amount.ToString("N2")</td>
-                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;">@payment.PaymentMethodName</td>
-                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;color:#5E7385;">@(payment.Reference ?? "—")</td>
+                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;">
+                                    @if (payment.PaymentMethodName == "Card")
+                                    {
+                                        <span style="display:inline-flex;align-items:center;gap:5px;">
+                                            <svg width="16" height="16" fill="none" stroke="#635bff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                                            <span style="font-size:12px;font-weight:600;color:#635bff;">Stripe</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        @payment.PaymentMethodName
+                                    }
+                                </td>
+                                <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;color:#5E7385;">
+                                    @if (!string.IsNullOrEmpty(payment.Reference) && payment.Reference.StartsWith("ch_"))
+                                    {
+                                        <span style="font-size:11px;color:#635bff;font-family:monospace;">@(payment.Reference.Length > 14 ? payment.Reference[..7] + "..." + payment.Reference[^4..] : payment.Reference)</span>
+                                    }
+                                    else
+                                    {
+                                        @(payment.Reference ?? "—")
+                                    }
+                                </td>
                                 <td style="padding:10px;font-size:13px;border-bottom:1px solid #E2EBF3;">
                                     @if (payment.IsVoided)
                                     {

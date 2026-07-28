@@ -114,11 +114,32 @@
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;">
         <div>
             <p style="font-size:13px;color:var(--muted);margin-bottom:4px;">Payment Method</p>
-            <p style="font-weight:600;">@Model.PaymentMethodName</p>
+            <p style="font-weight:600;">
+                @if (Model.PaymentMethodName == "Card")
+                {
+                    <span style="display:inline-flex;align-items:center;gap:5px;">
+                        <svg width="16" height="16" fill="none" stroke="#635bff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                        <span style="font-size:12px;font-weight:600;color:#635bff;">Stripe</span>
+                    </span>
+                }
+                else
+                {
+                    @Model.PaymentMethodName
+                }
+            </p>
             @if (!string.IsNullOrEmpty(Model.PaymentReference))
             {
                 <p style="font-size:13px;color:var(--muted);margin-top:8px;">Reference</p>
-                <p style="font-weight:600;">@Model.PaymentReference</p>
+                <p style="font-weight:600;">
+                    @if (Model.PaymentReference.StartsWith("ch_"))
+                    {
+                        <span style="font-size:11px;color:#635bff;font-family:monospace;">@(Model.PaymentReference.Length > 14 ? Model.PaymentReference[..7] + "..." + Model.PaymentReference[^4..] : Model.PaymentReference)</span>
+                    }
+                    else
+                    {
+                        @Model.PaymentReference
+                    }
+                </p>
             }
             @if (!string.IsNullOrEmpty(Model.Notes))
             {

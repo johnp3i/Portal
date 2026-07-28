@@ -594,7 +594,19 @@ else if (Model.ShowRevenue)
                         <tr>
                             <td>@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
                             <td>@payment.CustomerName</td>
-                            <td><span class="pill @methodPillClass">@payment.PaymentMethodName</span></td>
+                            <td>
+                                @if (payment.PaymentMethodName == "Card")
+                                {
+                                    <span style="display:inline-flex;align-items:center;gap:4px;">
+                                        <svg width="14" height="14" fill="none" stroke="#635bff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                                        <span class="pill pill-blue" style="margin:0;">Card</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="pill @methodPillClass">@payment.PaymentMethodName</span>
+                                }
+                            </td>
                             <td class="right" style="color:#129867;font-weight:700;">@Model.CurrencySymbol@payment.Amount.ToString("N2")</td>
                         </tr>
                     }
@@ -695,7 +707,19 @@ else if (Model.ShowRevenue)
                         <tr>
                             <td>@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
                             <td>@payment.CustomerName</td>
-                            <td><span class="pill @methodPillClass">@payment.PaymentMethodName</span></td>
+                            <td>
+                                @if (payment.PaymentMethodName == "Card")
+                                {
+                                    <span style="display:inline-flex;align-items:center;gap:4px;">
+                                        <svg width="14" height="14" fill="none" stroke="#635bff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                                        <span class="pill pill-blue" style="margin:0;">Card</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="pill @methodPillClass">@payment.PaymentMethodName</span>
+                                }
+                            </td>
                             <td class="right" style="color:#129867;font-weight:700;">@Model.CurrencySymbol@payment.Amount.ToString("N2")</td>
                         </tr>
                     }

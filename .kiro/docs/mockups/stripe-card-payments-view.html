@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Payments - Revenue</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0D5EA6;
+            --primary-light: rgba(13,94,166,.06);
+            --accent: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --text-muted: #8a9bac;
+            --border: #e2eaf2;
+            --radius: 20px;
+            --shadow: 0 2px 12px rgba(13,94,166,.06);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            padding: 32px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .topbar { margin-bottom: 28px; }
+        .eyebrow {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.2px; color: var(--primary); margin-bottom: 6px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+        .topbar-heading {
+            font-family: 'Manrope', sans-serif; font-size: 42px; font-weight: 800;
+            letter-spacing: -1.5px; color: var(--text-primary); margin-bottom: 4px;
+        }
+        .topbar-subtitle { font-size: 15px; color: var(--text-secondary); }
+        .glass {
+            background: #fff; border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        .card-pad { padding: 24px 28px; }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px; margin-bottom: 22px;
+        }
+        .summary-card {
+            background: #fff; border-radius: 16px; border: 1px solid var(--border);
+            box-shadow: var(--shadow); padding: 20px 22px;
+        }
+        .summary-card .label {
+            font-size: 12px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.8px; color: var(--text-muted);
+        }
+        .summary-card .value {
+            font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800;
+            color: var(--text-primary); letter-spacing: -1px; margin-top: 4px;
+        }
+        .summary-card .sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .summary-card.green .value { color: var(--success); }
+        .summary-card.red .value { color: var(--danger); }
+        .summary-card.blue .value { color: var(--primary); }
+
+        /* Stripe badge */
+        .stripe-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #f0f4ff; border-radius: 8px; padding: 4px 10px;
+            font-size: 11px; font-weight: 700; color: #635bff;
+        }
+        .stripe-badge svg { height: 14px; }
+
+        /* Filter */
+        .filter-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label {
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .field select, .field input {
+            padding: 9px 14px; border: 1px solid var(--border); border-radius: 10px;
+            font-size: 14px; font-family: 'Inter', sans-serif; color: var(--text-primary);
+            background: #fff; min-width: 180px;
+        }
+        .btn {
+            padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;
+            border: none; cursor: pointer; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+
+        /* Table */
+        .table-responsive { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table thead th {
+            text-align: left; padding: 12px 14px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);
+            border-bottom: 2px solid var(--border); white-space: nowrap;
+        }
+        .data-table tbody td {
+            padding: 14px 14px; border-bottom: 1px solid var(--border); vertical-align: middle;
+        }
+        .data-table tbody tr:hover { background: var(--primary-light); }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 10px;
+            font-size: 11px; font-weight: 700;
+        }
+        .badge-success { background: #e6f7f0; color: var(--success); }
+        .badge-muted { background: #f0f2f5; color: var(--text-muted); }
+
+        .fee-cell { color: var(--danger); font-weight: 600; }
+        .net-cell { color: var(--success); font-weight: 700; }
+        .gross-cell { font-weight: 700; font-family: 'Manrope', sans-serif; }
+
+        .charge-link {
+            font-size: 11px; color: #635bff; text-decoration: none;
+            font-family: monospace; letter-spacing: -0.3px;
+        }
+        .charge-link:hover { text-decoration: underline; }
+
+        /* Connected status */
+        .connected-bar {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 22px;
+            padding: 14px 20px; background: #f8fdf9; border: 1px solid #d4edda;
+            border-radius: 14px;
+        }
+        .connected-bar .status-dot {
+            width: 10px; height: 10px; border-radius: 50%; background: var(--success);
+        }
+        .connected-bar .text { font-size: 13px; color: var(--text-secondary); }
+        .connected-bar .text strong { color: var(--text-primary); }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Revenue Control</div>
+        <h1 class="topbar-heading">Card Payments</h1>
+        <p class="topbar-subtitle">Track all card payments received via Stripe, including fees and net amounts.</p>
+    </div>
+</div>
+
+<!-- Connected Status Bar -->
+<div class="connected-bar">
+    <div class="status-dot"></div>
+    <div class="text">
+        <strong>Stripe Connected</strong> — Payments are deposited directly to your bank account via Stripe.
+    </div>
+    <div style="margin-left:auto;">
+        <span class="stripe-badge">
+            <svg viewBox="0 0 60 25" xmlns="http://www.w3.org/2000/svg"><path d="M5 0h50a5 5 0 015 5v15a5 5 0 01-5 5H5a5 5 0 01-5-5V5a5 5 0 015-5z" fill="#635bff"/><path d="M29 8.4c0-1.6 1.3-2.2 2.3-2.2 1.2 0 2.2.5 3 1.2l.9-2.1c-.9-.7-2.3-1.3-3.8-1.3-3.1 0-5.2 1.6-5.2 4.4 0 4.4 6 3.6 6 5.5 0 .7-.6 1.3-1.7 1.3-1.5 0-2.8-.7-3.5-1.4l-1 2.1c1 .9 2.6 1.5 4.4 1.5 3.2 0 4.6-1.6 4.6-4.3 0-4.7-6-3.9-6-5.7z" fill="#fff"/></svg>
+            Connected
+        </span>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <span class="label">Total Received (Gross)</span>
+        <span class="value">&euro;4,872.55</span>
+        <span class="sub">12 transactions this month</span>
+    </div>
+    <div class="summary-card red">
+        <span class="label">Stripe Fees</span>
+        <span class="value">&minus;&euro;76.09</span>
+        <span class="sub">Avg 1.56% per transaction</span>
+    </div>
+    <div class="summary-card green">
+        <span class="label">Net Received</span>
+        <span class="value">&euro;4,796.46</span>
+        <span class="sub">Deposited to your bank</span>
+    </div>
+    <div class="summary-card blue">
+        <span class="label">Transactions</span>
+        <span class="value">12</span>
+        <span class="sub">This month</span>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="filter-row">
+        <div class="field" style="min-width:180px;">
+            <label>Period</label>
+            <select>
+                <option selected>This Month</option>
+                <option>Last Month</option>
+                <option>Last 3 Months</option>
+                <option>This Year</option>
+                <option>Custom Range</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary">Filter</button>
+        </div>
+        <div style="padding-bottom:2px;margin-left:auto;">
+            <button class="btn btn-outline">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                Export CSV
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th>Gross</th>
+                    <th>Stripe Fee</th>
+                    <th>Net</th>
+                    <th>Charge ID</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>11 Jul 2026</td>
+                    <td><a href="#" style="color:var(--primary);font-weight:600;text-decoration:none;">INV-0047</a></td>
+                    <td>Rust n' Roast SP Ltd</td>
+                    <td class="gross-cell">&euro;2,000.00</td>
+                    <td class="fee-cell">&minus;&euro;30.25</td>
+                    <td class="net-cell">&euro;1,969.75</td>
+                    <td><a href="#" class="charge-link">ch_3Nxy...q8kR</a></td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                </tr>
+                <tr>
+                    <td>09 Jul 2026</td>
+                    <td><a href="#" style="color:var(--primary);font-weight:600;text-decoration:none;">INV-0044</a></td>
+                    <td>Bloom & Brew Cafe</td>
+                    <td class="gross-cell">&euro;845.00</td>
+                    <td class="fee-cell">&minus;&euro;12.93</td>
+                    <td class="net-cell">&euro;832.07</td>
+                    <td><a href="#" class="charge-link">ch_3Nab...m2pL</a></td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                </tr>
+                <tr>
+                    <td>07 Jul 2026</td>
+                    <td><a href="#" style="color:var(--primary);font-weight:600;text-decoration:none;">INV-0042</a></td>
+                    <td>North Coast Supplies</td>
+                    <td class="gross-cell">&euro;312.50</td>
+                    <td class="fee-cell">&minus;&euro;4.94</td>
+                    <td class="net-cell">&euro;307.56</td>
+                    <td><a href="#" class="charge-link">ch_3Ncd...k9wQ</a></td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                </tr>
+                <tr>
+                    <td>05 Jul 2026</td>
+                    <td><a href="#" style="color:var(--primary);font-weight:600;text-decoration:none;">INV-0039</a></td>
+                    <td>Delphi Consulting</td>
+                    <td class="gross-cell">&euro;1,250.00</td>
+                    <td class="fee-cell">&minus;&euro;19.00</td>
+                    <td class="net-cell">&euro;1,231.00</td>
+                    <td><a href="#" class="charge-link">ch_3Nef...j4tR</a></td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                </tr>
+                <tr>
+                    <td>02 Jul 2026</td>
+                    <td><a href="#" style="color:var(--primary);font-weight:600;text-decoration:none;">INV-0036</a></td>
+                    <td>Le Paris Roasting Co.</td>
+                    <td class="gross-cell">&euro;465.05</td>
+                    <td class="fee-cell">&minus;&euro;7.23</td>
+                    <td class="net-cell">&euro;457.82</td>
+                    <td><a href="#" class="charge-link">ch_3Ngh...p1sM</a></td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div style="font-size:14px;color:#5a6a7a;">Showing 1-5 of 12 transactions</div>
+        <div style="display:flex;gap:6px;">
+            <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid var(--primary);background:var(--primary);color:#fff;">1</span>
+            <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid var(--border);background:#fff;cursor:pointer;">2</span>
+            <span style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid var(--border);background:#fff;cursor:pointer;">3</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

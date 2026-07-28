@@ -8,6 +8,7 @@ using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
 using Portal.Web.Models;
+using Portal.Web.Services.Stripe;
 using System.Security.Claims;
 
 namespace Portal.Web.Controllers;
@@ -28,11 +29,13 @@ public class MyBusinessController : Controller
     private readonly MembershipDbContext _membershipDbContext;
     private readonly IPaymentInstructionsService _paymentInstructionsService;
     private readonly PortalDbContext _dbContext;
+    private readonly IStripeConnectService _stripeConnectService;
 
     public MyBusinessController(IBusinessService businessService, ILogoService logoService,
         ICurrentTenantService tenantService, BusinessPaymentDetailRepository paymentDetailRepository,
         IPlanCheckService planCheckService, MembershipDbContext membershipDbContext,
-        IPaymentInstructionsService paymentInstructionsService, PortalDbContext dbContext)
+        IPaymentInstructionsService paymentInstructionsService, PortalDbContext dbContext,
+        IStripeConnectService stripeConnectService)
     {
         _businessService = businessService;
         _logoService = logoService;
@@ -42,6 +45,7 @@ public class MyBusinessController : Controller
         _membershipDbContext = membershipDbContext;
         _paymentInstructionsService = paymentInstructionsService;
         _dbContext = dbContext;
+        _stripeConnectService = stripeConnectService;
     }
 
     private bool CanEdit()
@@ -69,6 +73,9 @@ public class MyBusinessController : Controller
 
         // Z-Report feature flag
         ViewBag.IsZReportEnabled = profile?.IsZReportEnabled ?? false;
+
+        // Stripe Connect status
+        ViewBag.IsStripeConnected = await _stripeConnectService.IsConnectedAsync(businessId);
 
         if (profile == null)
         {
@@ -545,6 +552,84 @@ public class MyBusinessController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to update Z-Report setting." });
+        }
+    }
+
+    // ═══ STRIPE CONNECT ═══════════════════════════════════════════════════
+
+    /// <summary>
+    /// Redirects the business owner to Stripe's OAuth page to connect their account.
+    /// GET /MyBusiness/StripeConnect
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> StripeConnect()
+    {
+        if (!CanEdit())
+            return Forbid();
+
+        var businessId = _tenantService.CurrentBusinessId;
+        var oauthUrl = await _stripeConnectService.GetOAuthConnectUrlAsync(businessId);
+        return Redirect(oauthUrl);
+    }
+
+    /// <summary>
+    /// OAuth callback from Stripe after user authorizes the connection.
+    /// GET /MyBusiness/StripeConnectCallback?code=xxx&state=xxx
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> StripeConnectCallback(string? code, string? state, string? error, string? error_description)
+    {
+        if (!CanEdit())
+            return Forbid();
+
+        // Handle user denying access
+        if (!string.IsNullOrEmpty(error))
+        {
+            TempData["StripeConnectError"] = error_description ?? "Stripe connection was cancelled.";
+            return RedirectToAction("Index");
+        }
+
+        if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
+        {
+            TempData["StripeConnectError"] = "Invalid callback parameters.";
+            return RedirectToAction("Index");
+        }
+
+        var businessId = _tenantService.CurrentBusinessId;
+        var result = await _stripeConnectService.CompleteOAuthAsync(businessId, code, state);
+
+        if (result.Success)
+        {
+            TempData["StripeConnectSuccess"] = "Stripe account connected successfully! You can now accept card payments.";
+        }
+        else
+        {
+            TempData["StripeConnectError"] = result.Message;
+        }
+
+        return RedirectToAction("Index");
+    }
+
+    /// <summary>
+    /// Disconnects the business from Stripe Connect.
+    /// POST /MyBusiness/AxPostDisconnectStripe
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostDisconnectStripe()
+    {
+        try
+        {
+            if (!CanEdit())
+                return Json(new { success = false, message = "Only the business owner can manage Stripe connection." });
+
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _stripeConnectService.DisconnectAsync(businessId);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to disconnect Stripe. Please try again." });
         }
     }
 }

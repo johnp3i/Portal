@@ -77,17 +77,11 @@ Business receives:       €169.71
 | Platform account | Free | No monthly fee for Stripe Connect |
 | Per-transaction (on application fee only) | 0.5% of application fee | Only if you charge a fee |
 
-### Optional Platform Application Fee
+### Platform Fee Decision
 
-3 Inventors can charge a per-transaction fee on top of Stripe's processing fee:
+**Decision: No application fee.** Stripe Connect card payments are a platform value add-on that drives subscription retention. The feature justifies the subscription cost — businesses stay because they can accept card payments from their invoices. Revenue comes from subscriptions, not from transaction fees.
 
-| Strategy | Amount | Revenue Example (€10,000 monthly volume) |
-|----------|--------|------------------------------------------|
-| Launch (no fee) | €0 | €0/month — drives adoption |
-| Growth (flat) | €0.15 per transaction | ~€15/month per 100 transactions |
-| Mature (percentage) | 0.5% | €50/month per €10,000 volume |
-
-**Recommendation:** Launch without application fee. Introduce 0.5% after proving value.
+This can be revisited later if transaction volume justifies it.
 
 ---
 
@@ -153,12 +147,43 @@ POST /api/stripe/webhook (Portal endpoint)
 | Idempotency | Store Stripe session ID, reject duplicate webhook deliveries |
 | Access control | Only business owner (or SuperAdmin) can connect/disconnect gateway |
 | Demo users | Payment gateway configuration blocked for demo sessions |
+| OAuth CSRF | Use `state` parameter with random token, verify on callback |
+
+---
+
+## Configuration (User Secrets)
+
+Stored in User Secrets — never committed to source control:
+
+```json
+{
+    "Stripe": {
+        "SecretKey": "sk_live_...",
+        "PublishableKey": "pk_live_...",
+        "ConnectClientId": "ca_...",
+        "ConnectWebhookSecret": "whsec_...",
+        "ConnectOAuthRedirectUri": "https://portal.3inventors.com/MyBusiness/StripeConnectCallback"
+    }
+}
+```
+
+**Note:** `SecretKey` and `PublishableKey` are already configured for subscription billing. `ConnectClientId` and `ConnectWebhookSecret` are new additions for Connect.
+
+The `ConnectClientId` is found in Stripe Dashboard → Settings → Connect → Platform settings.
+
+---
+
+## NuGet Package
+
+The `Stripe.net` NuGet package is already referenced in the project (used by subscription billing). No additional packages needed for Connect — the same SDK covers all Stripe APIs.
 
 ---
 
 ## Data Model
 
-### `[portal].[BusinessPaymentGateway]`
+### Option A: Provider-Agnostic (Supports future JCC/PayPal)
+
+#### `[portal].[BusinessPaymentGateway]`
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -171,7 +196,7 @@ POST /api/stripe/webhook (Portal endpoint)
 | ConnectedByUserId | NVARCHAR(450) FK → AspNetUsers | Who connected it |
 | CreatedAtUtc | DATETIME2 DEFAULT GETUTCDATE() | |
 
-### `[portal].[InvoicePaymentLink]`
+#### `[portal].[InvoicePaymentLink]`
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -186,6 +211,54 @@ POST /api/stripe/webhook (Portal endpoint)
 | PaidAtUtc | DATETIME2 NULL | When payment was confirmed |
 | ExpiresAtUtc | DATETIME2 NULL | Stripe sessions expire after 24h by default |
 | CreatedAtUtc | DATETIME2 DEFAULT GETUTCDATE() | |
+
+### Option B: Stripe-Specific (Chosen for Phase 1)
+
+For Phase 1, we use Stripe-specific tables in the `[stripe]` schema. This is simpler and avoids premature abstraction. If JCC is added later, we either migrate to Option A or add a `[jcc]` schema.
+
+#### `[stripe].[ConnectedAccount]`
+
+```sql
+CREATE TABLE [stripe].[ConnectedAccount]
+(
+    [Id]                        INT IDENTITY(1,1) NOT NULL,
+    [BusinessId]                INT NOT NULL,
+    [StripeAccountId]           NVARCHAR(255) NOT NULL,
+    [IsActive]                  BIT NOT NULL DEFAULT 1,
+    [ConnectedAtUtc]            DATETIME NOT NULL DEFAULT GETUTCDATE(),
+    [DisconnectedAtUtc]         DATETIME NULL,
+    [CreatedAtUtc]              DATETIME NOT NULL DEFAULT GETUTCDATE(),
+
+    CONSTRAINT [PK_ConnectedAccount] PRIMARY KEY CLUSTERED ([Id]),
+    CONSTRAINT [FK_ConnectedAccount_Business] FOREIGN KEY ([BusinessId])
+        REFERENCES [portal].[Business]([Id]),
+    CONSTRAINT [UQ_ConnectedAccount_Business] UNIQUE ([BusinessId])
+);
+```
+
+#### `[stripe].[CheckoutSession]`
+
+```sql
+CREATE TABLE [stripe].[CheckoutSession]
+(
+    [Id]                        INT IDENTITY(1,1) NOT NULL,
+    [BusinessId]                INT NOT NULL,
+    [InvoiceId]                 INT NOT NULL,
+    [StripeSessionId]           NVARCHAR(255) NOT NULL,
+    [Amount]                    DECIMAL(18,2) NOT NULL,
+    [Currency]                  NVARCHAR(3) NOT NULL DEFAULT 'EUR',
+    [Status]                    NVARCHAR(50) NOT NULL DEFAULT 'pending',
+    [StripePaymentIntentId]     NVARCHAR(255) NULL,
+    [PaymentId]                 INT NULL,
+    [CreatedAtUtc]              DATETIME NOT NULL DEFAULT GETUTCDATE(),
+    [CompletedAtUtc]            DATETIME NULL,
+
+    CONSTRAINT [PK_CheckoutSession] PRIMARY KEY CLUSTERED ([Id]),
+    CONSTRAINT [UQ_CheckoutSession_StripeSessionId] UNIQUE ([StripeSessionId])
+);
+```
+
+**Note:** The `[stripe]` schema already exists (for `StripeCustomer` and `WebhookEvent` used by subscription billing). These new tables coexist in the same schema.
 
 ---
 
@@ -287,3 +360,154 @@ JCC doesn't support a Connect-equivalent, so the integration is simpler but less
 - Application fee configuration (per-business or global)
 - Payment analytics (conversion rate, average time to pay)
 - Refund processing via Portal
+
+---
+
+## Charge Type: Destination Charges
+
+Portal uses **destination charges** (not direct charges). This means:
+
+- The platform (Portal) creates the Checkout Session on its own Stripe account
+- The `PaymentIntentData.TransferData.Destination` specifies the connected account
+- Funds are transferred to the connected account after successful payment
+- The platform can optionally deduct an application fee (not used in Phase 1)
+
+```csharp
+PaymentIntentData = new SessionPaymentIntentDataOptions
+{
+    TransferData = new SessionPaymentIntentDataTransferDataOptions
+    {
+        Destination = connectedAccountId  // "acct_xxx"
+    }
+    // No ApplicationFeeAmount — zero platform fee
+}
+```
+
+**Why destination charges over direct charges:**
+- Portal controls the checkout experience and branding
+- Simpler error handling (one API key for all sessions)
+- Application fee can be added later without changing the integration pattern
+- Webhook events come to the platform account (not each connected account)
+
+---
+
+## Checkout Session — Full API Parameters
+
+```csharp
+var options = new SessionCreateOptions
+{
+    PaymentMethodTypes = new List<string> { "card" },
+    LineItems = new List<SessionLineItemOptions>
+    {
+        new SessionLineItemOptions
+        {
+            PriceData = new SessionLineItemPriceDataOptions
+            {
+                UnitAmount = (long)(outstandingBalance * 100), // convert to cents
+                Currency = "eur",
+                ProductData = new SessionLineItemPriceDataProductDataOptions
+                {
+                    Name = $"Invoice {invoiceNumber}",
+                    Description = $"Payment for invoice {invoiceNumber} — {customerName}"
+                }
+            },
+            Quantity = 1
+        }
+    },
+    Mode = "payment",
+    SuccessUrl = $"{baseUrl}/Invoice/Shared/{shareToken}?payment=success",
+    CancelUrl = $"{baseUrl}/Invoice/Shared/{shareToken}",
+    PaymentIntentData = new SessionPaymentIntentDataOptions
+    {
+        TransferData = new SessionPaymentIntentDataTransferDataOptions
+        {
+            Destination = connectedAccountId
+        }
+    },
+    Metadata = new Dictionary<string, string>
+    {
+        { "invoiceId", invoiceId.ToString() },
+        { "businessId", businessId.ToString() },
+        { "shareToken", shareToken },
+        { "platform", "portal" }
+    },
+    ExpiresAt = DateTime.UtcNow.AddMinutes(30) // shorter expiry for invoice payments
+};
+```
+
+---
+
+## Webhook Events to Handle
+
+| Event | Action |
+|-------|--------|
+| `checkout.session.completed` | Create Payment record, recalculate invoice status, trigger receipt |
+| `checkout.session.expired` | Update CheckoutSession status to "expired" — no other action |
+| `charge.refunded` | (Phase 2) Void the corresponding Payment record |
+| `account.updated` | (Future) Update connected account health status |
+
+### Webhook Signature Verification
+
+```csharp
+var payload = await new StreamReader(Request.Body).ReadToEndAsync();
+var signature = Request.Headers["Stripe-Signature"];
+var stripeEvent = EventUtility.ConstructEvent(payload, signature, webhookSecret);
+```
+
+If verification fails → return 400. Never process unverified events.
+
+---
+
+## Idempotency Strategy
+
+Stripe may deliver the same webhook event multiple times. The handler must be idempotent:
+
+1. **CheckoutSession table** has a `UNIQUE` constraint on `StripeSessionId`
+2. Before processing `checkout.session.completed`:
+   - Check: does a `CheckoutSession` record exist with `Status = 'completed'` for this `StripeSessionId`?
+   - If yes → return 200 OK immediately (already processed)
+   - If no → process and update status to 'completed'
+3. The Payment record creation is wrapped in a transaction with the CheckoutSession status update — atomic operation
+
+---
+
+## Tier Gating
+
+| Plan | Card Payment Access |
+|------|-------------------|
+| Foundation | Bank transfer only (no Stripe Connect) |
+| Professional | Bank transfer + Stripe Connect card payments |
+| Enterprise | Bank transfer + Stripe Connect card payments |
+
+Module key: `stripe_connect`
+
+- The "Connect with Stripe" button in Business Settings is hidden for Foundation tier
+- The "Pay by Card" button on shared invoices is hidden if the business doesn't have Stripe connected
+- A soft-gate teaser is shown to Foundation users: "Accept card payments instantly — upgrade to Professional"
+
+---
+
+## Existing Infrastructure Reused
+
+| Component | How It's Reused |
+|-----------|----------------|
+| `StripeCustomer` table | Different — that's for Portal subscription billing, not Connect |
+| Payment recording service | Webhook creates payments using the same `PaymentService.RecordPaymentAsync` |
+| Financial status engine | `RecalculateStatusAsync` is called after webhook payment creation |
+| Receipt auto-generation | Triggered same as manual payments |
+| Shared invoice page | "Pay by Card" button added alongside existing "Pay by Bank Transfer" |
+| Payment method types | New seed: "Card" added to `PaymentMethodType` table |
+| User Secrets | Stripe keys already stored there for subscriptions — Connect keys added alongside |
+
+---
+
+## Edge Cases & Race Conditions
+
+| Scenario | Handling |
+|----------|----------|
+| Invoice paid manually while Checkout Session is open | Check outstanding balance before creating session. If 0 → reject with message. |
+| Two customers open checkout for same invoice simultaneously | Only first webhook creates payment. Second hits idempotency check (session already completed) or balance check (outstanding = 0). |
+| Business disconnects Stripe while checkout is in progress | Payment still completes (Stripe processes independently). Webhook still fires. Portal records it normally. |
+| Invoice voided after checkout created but before payment | Webhook fires → Portal checks invoice status → if cancelled/voided, still record payment but flag for review. |
+| Webhook arrives before success redirect | Normal — webhook is faster than redirect. Customer sees updated status on success page. |
+| Customer refreshes success page | Idempotent — page just shows current invoice status. |

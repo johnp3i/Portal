@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Services;
+using Portal.Web.Services.Stripe;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 
@@ -23,6 +24,7 @@ public class InvoiceViewController : Controller
     private readonly IPaymentInstructionsService _paymentInstructionsService;
     private readonly PortalDbContext _dbContext;
     private readonly ILogger<InvoiceViewController> _logger;
+    private readonly IStripeConnectService _stripeConnectService;
 
     public InvoiceViewController(
         IInvoiceSharingService sharingService,
@@ -32,7 +34,8 @@ public class InvoiceViewController : Controller
         ILogoService logoService,
         IPaymentInstructionsService paymentInstructionsService,
         PortalDbContext dbContext,
-        ILogger<InvoiceViewController> logger)
+        ILogger<InvoiceViewController> logger,
+        IStripeConnectService stripeConnectService)
     {
         _sharingService = sharingService;
         _acceptanceService = acceptanceService;
@@ -42,6 +45,7 @@ public class InvoiceViewController : Controller
         _paymentInstructionsService = paymentInstructionsService;
         _dbContext = dbContext;
         _logger = logger;
+        _stripeConnectService = stripeConnectService;
     }
 
     [HttpGet("/invoice-view/{token}")]
@@ -344,6 +348,94 @@ public class InvoiceViewController : Controller
                 var piInsertPos = acceptanceInsertPos + acceptanceHtml.Length;
                 html = html.Insert(piInsertPos, paymentInstructionsHtml);
             }
+
+            // Stripe Connect — "Pay by Card" button
+            if (invoiceForPI != null)
+            {
+                var eligibleForCardPayment = new[] { 1, 2, 4 }; // Unpaid, PartiallyPaid, Overdue
+                if (eligibleForCardPayment.Contains(invoiceForPI.InvoiceFinancialStatusTypeId))
+                {
+                    var isStripeConnected = await _stripeConnectService.IsConnectedAsync(share.BusinessId);
+                    if (isStripeConnected)
+                    {
+                        var payByCardHtml = $@"
+            <div class=""no-print"" style=""margin-top:12px;margin-bottom:20px;text-align:center;"">
+                <form method=""post"" action=""/invoice-view/{token}/pay-by-card"" style=""display:inline;"">
+                    <button type=""submit"" style=""display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:400px;padding:14px 28px;background:#0D5EA6;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;"" onmouseover=""this.style.opacity='0.9'"" onmouseout=""this.style.opacity='1'"">
+                        <svg width=""20"" height=""20"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" viewBox=""0 0 24 24""><rect x=""2"" y=""5"" width=""20"" height=""14"" rx=""2""/><path d=""M2 10h20""/></svg>
+                        Pay by Card
+                    </button>
+                </form>
+                <p style=""font-size:12px;color:#8a9bac;margin-top:8px;"">Visa, Mastercard, American Express — instant confirmation</p>
+            </div>";
+
+                        // Insert after the last payment-related injection
+                        var payByCardInsertPos = html.IndexOf("</div>", html.IndexOf("no-print") > 0 ? html.LastIndexOf("Pay by Bank Transfer") : 0);
+                        if (payByCardInsertPos < 0)
+                        {
+                            // Fallback: insert before </body>
+                            var bodyClose = html.LastIndexOf("</body>");
+                            if (bodyClose >= 0)
+                                html = html.Insert(bodyClose, payByCardHtml);
+                        }
+                        else
+                        {
+                            // Insert after the bank transfer section's closing div
+                            var afterBankTransfer = html.IndexOf("</div>", html.LastIndexOf("Pay by Bank Transfer"));
+                            if (afterBankTransfer >= 0)
+                            {
+                                // Find the end of the containing div (the no-print wrapper)
+                                var endOfSection = html.IndexOf("</div>", afterBankTransfer + 6);
+                                if (endOfSection >= 0)
+                                    html = html.Insert(endOfSection + 6, payByCardHtml);
+                                else
+                                    html = html.Insert(afterBankTransfer + 6, payByCardHtml);
+                            }
+                            else
+                            {
+                                // No bank transfer button — insert after acceptance/download buttons
+                                var bodyClose = html.LastIndexOf("</body>");
+                                if (bodyClose >= 0)
+                                    html = html.Insert(bodyClose, payByCardHtml);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Show payment success message if redirected from Stripe
+        if (Request.Query.ContainsKey("payment") && Request.Query["payment"] == "success")
+        {
+            var successBanner = @"<div class=""no-print"" style=""text-align:center;margin-bottom:20px;"">
+                <div style=""display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#e6f7f1;border:1px solid #129867;border-radius:12px;color:#129867;font-size:14px;font-weight:700;font-family:inherit;"">
+                    &#x2713; Payment received — thank you!
+                </div>
+            </div>";
+            var pageDiv2 = html.IndexOf("<div class=\"page\">");
+            if (pageDiv2 >= 0)
+            {
+                var insertAfterPage = html.IndexOf(">", pageDiv2) + 1;
+                html = html.Insert(insertAfterPage, successBanner);
+            }
+        }
+
+        // Show payment error message if checkout failed
+        if (TempData["PaymentError"] != null)
+        {
+            var errorMessage = TempData["PaymentError"]?.ToString() ?? "An error occurred.";
+            var errorBanner = $@"<div class=""no-print"" style=""text-align:center;margin-bottom:20px;"">
+                <div style=""display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#fdeaea;border:1px solid #f5c6c6;border-radius:12px;color:#C24A4A;font-size:14px;font-weight:700;font-family:inherit;"">
+                    {errorMessage}
+                </div>
+                <p style=""font-size:12px;color:#8a9bac;margin-top:8px;"">You can try again or choose bank transfer below.</p>
+            </div>";
+            var pageDiv3 = html.IndexOf("<div class=\"page\">");
+            if (pageDiv3 >= 0)
+            {
+                var insertAfterPage = html.IndexOf(">", pageDiv3) + 1;
+                html = html.Insert(insertAfterPage, errorBanner);
+            }
         }
 
         return Content(html, "text/html");
@@ -447,6 +539,62 @@ public class InvoiceViewController : Controller
         {
             return Json(new { success = false, message = "An unexpected error occurred. Please try again." });
         }
+    }
+
+    /// <summary>
+    /// Creates a Stripe Checkout Session for the invoice and redirects the customer to Stripe.
+    /// POST /invoice-view/{token}/pay-by-card
+    /// </summary>
+    [HttpPost("/invoice-view/{token}/pay-by-card")]
+    public async Task<IActionResult> CreateCheckoutSession(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return NotFound();
+
+        // Validate share token and get invoice
+        var share = await _sharingService.GetByTokenAsync(token);
+        if (share == null || !share.IsActive || share.ExpiresAtUtc <= DateTimeOffset.UtcNow)
+            return NotFound();
+
+        var invoice = await _dbContext.Invoices
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(i => i.Id == share.InvoiceId);
+
+        if (invoice == null)
+            return NotFound();
+
+        // Check business has Stripe connected
+        var isConnected = await _stripeConnectService.IsConnectedAsync(invoice.BusinessId);
+        if (!isConnected)
+        {
+            TempData["PaymentError"] = "Card payments are not available for this business.";
+            return Redirect($"/invoice-view/{token}");
+        }
+
+        // Get customer name for checkout description
+        var customer = await _dbContext.Customers
+            .IgnoreQueryFilters()
+            .Where(c => c.Id == invoice.CustomerId)
+            .Select(c => c.Name)
+            .FirstOrDefaultAsync();
+
+        // Build success and cancel URLs
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var successUrl = $"{baseUrl}/invoice-view/{token}?payment=success";
+        var cancelUrl = $"{baseUrl}/invoice-view/{token}";
+
+        // Create checkout session
+        var result = await _stripeConnectService.CreateCheckoutSessionAsync(
+            invoice.Id, invoice.BusinessId, successUrl, cancelUrl, customer);
+
+        if (!result.Success)
+        {
+            TempData["PaymentError"] = result.Message;
+            return Redirect($"/invoice-view/{token}");
+        }
+
+        // Redirect customer to Stripe Checkout
+        return Redirect(result.Data!);
     }
 
     private async Task<string> EmbedLogoAsBase64Async(string html, int businessId)

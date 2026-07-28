@@ -173,8 +173,29 @@
                     <tr style="@rowStyle">
                         <td>@payment.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
                         <td style="text-align:right;font-weight:700;color:@(payment.IsVoided ? "var(--muted)" : "var(--green)");">@(currencySymbol)@payment.Amount.ToString("N2")</td>
-                        <td>@payment.PaymentMethodName</td>
-                        <td>@(payment.Reference ?? "—")</td>
+                        <td>
+                            @if (payment.PaymentMethodName == "Card")
+                            {
+                                <span style="display:inline-flex;align-items:center;gap:5px;">
+                                    <svg width="16" height="16" fill="none" stroke="#635bff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                                    <span style="font-size:12px;font-weight:600;color:#635bff;">Stripe</span>
+                                </span>
+                            }
+                            else
+                            {
+                                @payment.PaymentMethodName
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(payment.Reference) && payment.Reference.StartsWith("ch_"))
+                            {
+                                <span style="font-size:11px;color:#635bff;font-family:monospace;">@(payment.Reference.Length > 14 ? payment.Reference[..7] + "..." + payment.Reference[^4..] : payment.Reference)</span>
+                            }
+                            else
+                            {
+                                @(payment.Reference ?? "—")
+                            }
+                        </td>
                         <td style="color:var(--muted);font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(payment.Notes ?? "—")</td>
                         <td>
                             @if (!payment.IsVoided)

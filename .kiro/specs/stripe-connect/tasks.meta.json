@@ -1,0 +1,532 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Create database migration: `[stripe].[ConnectedAccount]` table": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250753824
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250763321
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250903755
+      }
+    ],
+    "2. Create database migration: `[stripe].[CheckoutSession]` table": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754298
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250906854
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250910031
+      }
+    ],
+    "3. Create database migration: Seed \"Card\" payment method type": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754422
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250913811
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250917613
+      }
+    ],
+    "4. Create EF Core entities: `StripeConnectedAccount`, `StripeCheckoutSession`": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754491
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250922315
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250926997
+      }
+    ],
+    "5. Register entities in PortalDbContext with configuration": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754578
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250930255
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250933528
+      }
+    ],
+    "6. Create `IStripeConnectService` interface": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754697
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250937425
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250940809
+      }
+    ],
+    "7. Create `StripeConnectService` implementation (OAuth, Checkout, Webhook handling)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754767
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250944257
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250947750
+      }
+    ],
+    "8. Create `StripeConnectRepository` for data access": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754877
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250951718
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250954935
+      }
+    ],
+    "9. Register services in Program.cs DI": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250754958
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250958316
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250961591
+      }
+    ],
+    "10. Add Stripe configuration to User Secrets structure": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755021
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250965217
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250968388
+      }
+    ],
+    "11. Add OAuth connect URL generation endpoint (`GET /MyBusiness/StripeConnect`)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755086
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250971925
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250975329
+      }
+    ],
+    "12. Add OAuth callback handler (`GET /MyBusiness/StripeConnectCallback`)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755154
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250979516
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250982931
+      }
+    ],
+    "13. Add disconnect endpoint (`POST /MyBusiness/AxPostDisconnectStripe`)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755230
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250986516
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250989846
+      }
+    ],
+    "14. Add Stripe Connect section to Business Settings view (status, connect/disconnect buttons)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755286
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250993310
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250996853
+      }
+    ],
+    "15. Add `CreateCheckoutSession` endpoint to InvoiceViewController": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755355
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251000213
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251003564
+      }
+    ],
+    "16. Add \"Pay by Card\" button to shared invoice page (conditional on Stripe connected)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755405
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251007052
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251010945
+      }
+    ],
+    "17. Add success/cancel URL handling on shared invoice page": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755473
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251015115
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251018527
+      }
+    ],
+    "18. Create `StripeConnectWebhookController` with signature verification": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755554
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251027092
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251030517
+      }
+    ],
+    "19. Implement `checkout.session.completed` handler (create Payment, recalculate status)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755647
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251033808
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251037351
+      }
+    ],
+    "20. Implement Stripe fee retrieval from BalanceTransaction (store on CheckoutSession)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755737
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251041053
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251044627
+      }
+    ],
+    "21. Add idempotency check (prevent duplicate payment creation)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755805
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251049571
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251053279
+      }
+    ],
+    "22. Trigger receipt auto-generation on webhook payment creation": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755869
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251102822
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785252210560
+      }
+    ],
+    "23. Create CardPayments controller action (`/Revenue/CardPayments`)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250755948
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251057783
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251060959
+      }
+    ],
+    "24. Create CardPayments Razor view (summary cards + table)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756021
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251065078
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251068657
+      }
+    ],
+    "25. Add date range filter and pagination": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756101
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251072393
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251076279
+      }
+    ],
+    "26. Add CSV export for card payment transactions": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756162
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251082589
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251087357
+      }
+    ],
+    "27. Add \"Card Payments\" nav link in Revenue section (conditional on Stripe connected)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756222
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251092415
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785251095718
+      }
+    ],
+    "28. Add plan permission gate (`stripe_connect` module key — Professional+)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756284
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785252218470
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785252622834
+      }
+    ],
+    "29. Add Stripe payment badge/icon in payment history views": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756352
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785252630410
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785252773767
+      }
+    ],
+    "30. Handle error states (account restricted, checkout creation failure)": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756432
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785252780909
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785255135228
+      }
+    ],
+    "31. Build verify and end-to-end test flow": [
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785250756489
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785255144376
+      },
+      {
+        "executionId": "b2ba3519-460d-4c54-a887-a3d16f165a05",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785257097912
+      }
+    ]
+  }
+}

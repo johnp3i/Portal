@@ -164,7 +164,8 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
             ["vat"] = "VAT",
             ["api"] = "API",
             ["zreport_import"] = "Z-Report Import",
-            ["sales"] = "Opportunities"
+            ["sales"] = "Opportunities",
+            ["stripe_connect"] = "Card Payments (Stripe Connect)"
         };
 
         if (overrides.TryGetValue(moduleKey, out var displayName))
@@ -217,6 +218,7 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
             "zreport_import" => "Bulk-import Z-Reports from CSV and import transaction-level sales records from your POS system.",
             "recurring_expense_validation" => "Define expected recurring purchases per supplier, validate that all expected expenses are recorded before VAT submission, and catch missing invoices automatically.",
             "sales" => "Manage your sales pipeline, track leads from enquiry to conversion, schedule meetings, and use response templates.",
+            "stripe_connect" => "Accept card payments on your invoices via Stripe Connect with automatic payment reconciliation and fee transparency.",
             _ => "Access advanced features to enhance your business operations."
         };
     }

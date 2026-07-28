@@ -1,0 +1,111 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Restructure sidebar positioning from grid-based to fixed": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259520108
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259531123
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259668745
+      }
+    ],
+    "1.2 Update collapsed state CSS": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259520179
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259673659
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259747874
+      }
+    ],
+    "2.1 Add scroll save/restore script to _Layout.cshtml": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259520287
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259674449
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259748692
+      }
+    ],
+    "3.1 Confirm mobile.css overrides take precedence": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259520328
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259758952
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259840293
+      }
+    ],
+    "4. Build verification checkpoint": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259520369
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259844774
+      },
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259886879
+      }
+    ],
+    "1. Update site.css with fixed sidebar and independent content scrolling": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259747985
+      }
+    ],
+    "2. Add sidebar scroll position persistence JavaScript": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259748741
+      }
+    ],
+    "3. Verify mobile responsiveness is unaffected": [
+      {
+        "executionId": "06433f96-82e4-4948-9412-2b0a5a6ea444",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785259840348
+      }
+    ]
+  }
+}

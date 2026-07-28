@@ -40,6 +40,7 @@ public class PromoCodeServiceTests
 
         _service = new PromoCodeService(
             _promoCodeRepoMock.Object,
+            Mock.Of<IPlanRepository>(),
             _loggerMock.Object);
     }
 

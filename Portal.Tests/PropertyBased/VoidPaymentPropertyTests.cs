@@ -41,7 +41,7 @@ public class VoidPaymentPropertyTests
 
         // Setup RecalculateStatusAsync to complete successfully
         mockFinancialStatusEngine
-            .Setup(e => e.RecalculateStatusAsync(paymentToReturn.InvoiceId, paymentToReturn.BusinessId))
+            .Setup(e => e.RecalculateStatusAsync(paymentToReturn.InvoiceId!.Value, paymentToReturn.BusinessId))
             .Returns(Task.CompletedTask);
 
         var service = new PaymentService(

@@ -432,6 +432,10 @@ builder.Services.AddScoped<IBusinessInsightsService, BusinessInsightsService>();
 // --- User Impersonation (SuperAdmin) ---
 builder.Services.AddScoped<Portal.Web.Services.ImpersonationService>();
 
+// --- Stripe Connect (Card Payments) ---
+builder.Services.AddScoped<StripeConnectRepository>();
+builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
+
 // --- MVC ---
 var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {

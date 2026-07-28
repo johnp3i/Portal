@@ -56,7 +56,7 @@ public class DashboardTopCustomersPropertyTests
                 // Sum payments against this customer's invoices
                 var customerInvoiceIds = g.Select(i => i.Id).ToHashSet();
                 var totalPaid = validPayments
-                    .Where(p => customerInvoiceIds.Contains(p.InvoiceId))
+                    .Where(p => p.InvoiceId.HasValue && customerInvoiceIds.Contains(p.InvoiceId.Value))
                     .Sum(p => p.Amount);
 
                 return new TopCustomerDto
@@ -327,7 +327,7 @@ public class DashboardTopCustomersPropertyTests
             var expectedPaid = payments
                 .Where(p => p.BusinessId == TestBusinessId
                             && !p.IsVoided
-                            && customerInvoiceIds.Contains(p.InvoiceId))
+                            && p.InvoiceId.HasValue && customerInvoiceIds.Contains(p.InvoiceId.Value))
                 .Sum(p => p.Amount);
 
             if (customerResult.TotalPaid != expectedPaid)
@@ -567,7 +567,7 @@ public class DashboardTopCustomersPropertyTests
             var expectedPaid = payments
                 .Where(p => p.BusinessId == TestBusinessId
                             && !p.IsVoided
-                            && customerInvoiceIds.Contains(p.InvoiceId))
+                            && p.InvoiceId.HasValue && customerInvoiceIds.Contains(p.InvoiceId.Value))
                 .Sum(p => p.Amount);
 
             if (customerResult.TotalInvoiced != expectedInvoiced ||

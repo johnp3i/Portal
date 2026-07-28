@@ -8,6 +8,7 @@ using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Services;
 using Portal.Web.Controllers;
+using Portal.Web.Services.Stripe;
 using Xunit;
 
 namespace Portal.Tests.Unit.Controllers;
@@ -50,7 +51,8 @@ public class InvoiceViewControllerDownloadPdfTests
             _logoServiceMock.Object,
             Mock.Of<IPaymentInstructionsService>(),
             portalDbContext,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            Mock.Of<IStripeConnectService>());
 
         // Set up default HttpContext
         var httpContext = new DefaultHttpContext();

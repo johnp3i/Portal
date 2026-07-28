@@ -8,6 +8,7 @@ using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Infrastructure.Services.Sales;
 using Portal.Web.Controllers;
 using Portal.Web.Models;
 using Xunit;
@@ -78,6 +79,7 @@ public class QuotationControllerAcceptanceStatusTests
             productRepository,
             _acceptanceServiceMock.Object,
             Mock.Of<IProposalPdfService>(),
+            Mock.Of<ILeadRequestService>(),
             Mock.Of<ILogger<QuotationController>>());
 
         // Set up TempData to avoid null reference exceptions
