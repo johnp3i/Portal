@@ -4,7 +4,7 @@
 --              for storing Stripe Connect linked accounts per business.
 -- ============================================================
 
-USE [Guardian]
+USE [Portal]
 GO
 
 IF NOT EXISTS (

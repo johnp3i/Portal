@@ -104,6 +104,7 @@ public class PortalDbContext : DbContext
     public DbSet<WebhookEvent> WebhookEvents { get; set; } = null!;
     public DbSet<StripeConnectedAccount> StripeConnectedAccounts { get; set; } = null!;
     public DbSet<StripeCheckoutSession> StripeCheckoutSessions { get; set; } = null!;
+    public DbSet<BusinessApiKey> BusinessApiKeys { get; set; } = null!;
 
     // Platform configuration
     public DbSet<PlatformConfig> PlatformConfigs { get; set; } = null!;
@@ -216,6 +217,7 @@ public class PortalDbContext : DbContext
         ConfigureWebhookEvent(modelBuilder);
         ConfigureStripeConnectedAccount(modelBuilder);
         ConfigureStripeCheckoutSession(modelBuilder);
+        ConfigureBusinessApiKey(modelBuilder);
         ConfigurePromoCode(modelBuilder);
         ConfigurePromoCodeRedemption(modelBuilder);
         ConfigurePlatformConfig(modelBuilder);
@@ -2144,6 +2146,27 @@ public class PortalDbContext : DbContext
 
             entity.HasIndex(e => e.InvoiceId)
                 .HasDatabaseName("IX_CheckoutSession_InvoiceId");
+        });
+    }
+
+    private static void ConfigureBusinessApiKey(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BusinessApiKey>(entity =>
+        {
+            entity.ToTable("BusinessApiKeys", "stripe");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.BusinessId).IsRequired();
+            entity.Property(e => e.KeyType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.EncryptedValue).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.KeyType }).IsUnique();
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

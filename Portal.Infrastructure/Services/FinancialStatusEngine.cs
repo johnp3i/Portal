@@ -13,6 +13,7 @@ public class FinancialStatusEngine : IFinancialStatusEngine
     private readonly PaymentRepository _paymentRepository;
     private readonly InvoiceRepository _invoiceRepository;
     private readonly CreditNoteRepository _creditNoteRepository;
+    private readonly ICheckoutSessionExpireService? _checkoutSessionExpireService;
 
     // Financial Status Type IDs
     private const int StatusUnpaid = 1;
@@ -24,11 +25,13 @@ public class FinancialStatusEngine : IFinancialStatusEngine
     public FinancialStatusEngine(
         PaymentRepository paymentRepository,
         InvoiceRepository invoiceRepository,
-        CreditNoteRepository creditNoteRepository)
+        CreditNoteRepository creditNoteRepository,
+        ICheckoutSessionExpireService? checkoutSessionExpireService = null)
     {
         _paymentRepository = paymentRepository;
         _invoiceRepository = invoiceRepository;
         _creditNoteRepository = creditNoteRepository;
+        _checkoutSessionExpireService = checkoutSessionExpireService;
     }
 
     /// <inheritdoc />
@@ -82,7 +85,11 @@ public class FinancialStatusEngine : IFinancialStatusEngine
     }
 
     /// <inheritdoc />
-    public async Task RecalculateStatusAsync(int invoiceId, int businessId)
+    public Task RecalculateStatusAsync(int invoiceId, int businessId)
+        => RecalculateStatusAsync(invoiceId, businessId, null);
+
+    /// <inheritdoc />
+    public async Task RecalculateStatusAsync(int invoiceId, int businessId, string? excludeStripeSessionId)
     {
         // Fetch the invoice to get TotalAmount, DueDate, and current status
         var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
@@ -111,6 +118,21 @@ public class FinancialStatusEngine : IFinancialStatusEngine
         if (newStatusId != invoice.InvoiceFinancialStatusTypeId)
         {
             await _invoiceRepository.UpdateFinancialStatusAsync(invoiceId, newStatusId);
+        }
+
+        // If the invoice is now fully paid, expire any pending checkout sessions
+        if (newStatusId == StatusPaid && _checkoutSessionExpireService != null)
+        {
+            try
+            {
+                await _checkoutSessionExpireService.TryExpirePendingSessionsAsync(invoiceId, businessId, excludeStripeSessionId);
+            }
+            catch (Exception ex)
+            {
+                // Never let expire failure block payment recording
+                // The expire service itself should never throw, but guard here too
+                _ = ex;
+            }
         }
     }
 }

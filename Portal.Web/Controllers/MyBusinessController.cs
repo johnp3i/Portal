@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
@@ -9,6 +10,7 @@ using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
 using Portal.Web.Models;
 using Portal.Web.Services.Stripe;
+using Serilog;
 using System.Security.Claims;
 
 namespace Portal.Web.Controllers;
@@ -30,12 +32,15 @@ public class MyBusinessController : Controller
     private readonly IPaymentInstructionsService _paymentInstructionsService;
     private readonly PortalDbContext _dbContext;
     private readonly IStripeConnectService _stripeConnectService;
+    private readonly BusinessApiKeysRepository _businessApiKeysRepository;
+    private readonly IStripeKeyEncryptionService _stripeKeyEncryptionService;
 
     public MyBusinessController(IBusinessService businessService, ILogoService logoService,
         ICurrentTenantService tenantService, BusinessPaymentDetailRepository paymentDetailRepository,
         IPlanCheckService planCheckService, MembershipDbContext membershipDbContext,
         IPaymentInstructionsService paymentInstructionsService, PortalDbContext dbContext,
-        IStripeConnectService stripeConnectService)
+        IStripeConnectService stripeConnectService, BusinessApiKeysRepository businessApiKeysRepository,
+        IStripeKeyEncryptionService stripeKeyEncryptionService)
     {
         _businessService = businessService;
         _logoService = logoService;
@@ -46,6 +51,8 @@ public class MyBusinessController : Controller
         _paymentInstructionsService = paymentInstructionsService;
         _dbContext = dbContext;
         _stripeConnectService = stripeConnectService;
+        _businessApiKeysRepository = businessApiKeysRepository;
+        _stripeKeyEncryptionService = stripeKeyEncryptionService;
     }
 
     private bool CanEdit()
@@ -556,6 +563,198 @@ public class MyBusinessController : Controller
     }
 
     // ═══ STRIPE CONNECT ═══════════════════════════════════════════════════
+
+    // ─── Stripe API Key Management ───────────────────────────────────────
+
+    /// <summary>
+    /// Returns masked key status for display. Owners see masked values; team members see only whether keys are configured.
+    /// GET /MyBusiness/AxGetStripeKeyStatus
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetStripeKeyStatus()
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var isOwner = User.HasClaim("IsOwner", "true");
+
+            var keys = await _businessApiKeysRepository.GetByBusinessIdAsync(businessId);
+            var isConfigured = keys.Count > 0;
+
+            if (!isOwner)
+            {
+                return Json(new { success = true, isConfigured, isOwner = false });
+            }
+
+            // Owner: return masked values
+            string? connectClientIdMasked = null;
+            string? secretKeyMasked = null;
+            string? webhookSecretMasked = null;
+
+            foreach (var key in keys)
+            {
+                var decrypted = _stripeKeyEncryptionService.Decrypt(key.EncryptedValue);
+                var masked = _stripeKeyEncryptionService.Mask(decrypted);
+                switch (key.KeyType)
+                {
+                    case "connect_client_id": connectClientIdMasked = masked; break;
+                    case "secret_key": secretKeyMasked = masked; break;
+                    case "webhook_secret": webhookSecretMasked = masked; break;
+                }
+            }
+
+            return Json(new { success = true, isConfigured, isOwner = true, connectClientIdMasked, secretKeyMasked, webhookSecretMasked });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load key status." });
+        }
+    }
+
+    /// <summary>
+    /// Validates and saves Stripe API keys. Validates the Secret Key by calling Stripe before persisting.
+    /// POST /MyBusiness/AxPostSaveStripeKeys
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSaveStripeKeys([FromBody] SaveStripeKeysRequest request)
+    {
+        try
+        {
+            if (!CanEdit())
+                return Json(new { success = false, message = "Only the business owner can manage API keys." });
+
+            if (string.IsNullOrWhiteSpace(request?.SecretKey))
+                return Json(new { success = false, message = "Secret Key is required." });
+
+            // Validate the secret key by calling Stripe
+            try
+            {
+                var accountService = new Stripe.AccountService(new Stripe.StripeClient(request.SecretKey));
+                await accountService.GetSelfAsync();
+            }
+            catch (Stripe.StripeException ex)
+            {
+                return Json(new { success = false, message = "Invalid Secret Key. Stripe returned: " + ex.Message });
+            }
+            catch (HttpRequestException)
+            {
+                return Json(new { success = false, message = "Could not reach Stripe to validate keys. Please try again." });
+            }
+
+            var businessId = _tenantService.CurrentBusinessId;
+
+            // Encrypt and save each key
+            if (!string.IsNullOrWhiteSpace(request.ConnectClientId))
+            {
+                await _businessApiKeysRepository.UpsertAsync(new BusinessApiKey
+                {
+                    BusinessId = businessId,
+                    KeyType = "connect_client_id",
+                    EncryptedValue = _stripeKeyEncryptionService.Encrypt(request.ConnectClientId.Trim())
+                });
+            }
+
+            await _businessApiKeysRepository.UpsertAsync(new BusinessApiKey
+            {
+                BusinessId = businessId,
+                KeyType = "secret_key",
+                EncryptedValue = _stripeKeyEncryptionService.Encrypt(request.SecretKey.Trim())
+            });
+
+            if (!string.IsNullOrWhiteSpace(request.WebhookSecret))
+            {
+                await _businessApiKeysRepository.UpsertAsync(new BusinessApiKey
+                {
+                    BusinessId = businessId,
+                    KeyType = "webhook_secret",
+                    EncryptedValue = _stripeKeyEncryptionService.Encrypt(request.WebhookSecret.Trim())
+                });
+            }
+
+            Log.Information("Stripe API keys saved for business {BusinessId} by user {UserId}", businessId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            return Json(new { success = true, message = "Stripe API keys saved and validated successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to save keys. Please try again." });
+        }
+    }
+
+    /// <summary>
+    /// Reveals the full decrypted value of a specific key type. Rate-limited to 10 requests/minute/user.
+    /// POST /MyBusiness/AxPostRevealStripeKey
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRevealStripeKey([FromBody] RevealStripeKeyRequest request)
+    {
+        try
+        {
+            if (!CanEdit())
+                return Json(new { success = false, message = "Only the business owner can reveal API keys." });
+
+            if (string.IsNullOrWhiteSpace(request?.KeyType) || !StripeKeyTypes.IsValid(request.KeyType))
+                return Json(new { success = false, message = "Invalid key type." });
+
+            // Rate limiting (10 per minute) using IMemoryCache
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var rateLimitKey = $"stripe_reveal_{userId}_{DateTime.UtcNow:yyyyMMddHHmm}";
+            var cache = HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+            var count = cache.GetOrCreate(rateLimitKey, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+                return 0;
+            });
+            if (count >= 10)
+                return StatusCode(429, new { success = false, message = "Too many reveal requests. Please wait a minute." });
+            cache.Set(rateLimitKey, count + 1, TimeSpan.FromMinutes(1));
+
+            var businessId = _tenantService.CurrentBusinessId;
+            var key = await _businessApiKeysRepository.GetByBusinessIdAndKeyTypeAsync(businessId, request.KeyType);
+            if (key == null)
+                return Json(new { success = false, message = "Key not found." });
+
+            var decrypted = _stripeKeyEncryptionService.Decrypt(key.EncryptedValue);
+
+            Log.Information("Stripe API key revealed: {KeyType} for business {BusinessId} by user {UserId}", request.KeyType, businessId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            return Json(new { success = true, value = decrypted });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to reveal key." });
+        }
+    }
+
+    /// <summary>
+    /// Removes all per-business Stripe API keys. Platform defaults will be used if available.
+    /// POST /MyBusiness/AxPostDeleteStripeKeys
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostDeleteStripeKeys()
+    {
+        try
+        {
+            if (!CanEdit())
+                return Json(new { success = false, message = "Only the business owner can manage API keys." });
+
+            var businessId = _tenantService.CurrentBusinessId;
+            await _businessApiKeysRepository.DeleteAllByBusinessIdAsync(businessId);
+
+            Log.Information("Stripe API keys deleted for business {BusinessId} by user {UserId}", businessId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            return Json(new { success = true, message = "API keys removed. Platform defaults will be used if available." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to remove keys." });
+        }
+    }
+
+    // ─── Stripe Connect OAuth ────────────────────────────────────────────
 
     /// <summary>
     /// Redirects the business owner to Stripe's OAuth page to connect their account.

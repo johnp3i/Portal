@@ -4,7 +4,7 @@
 --              for Stripe Connect card payments.
 -- ============================================================
 
-USE [Guardian]
+USE [Portal]
 GO
 
 IF NOT EXISTS (SELECT 1 FROM [revenue].[PaymentMethodType] WHERE [Name] = 'Card')

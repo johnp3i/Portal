@@ -1,0 +1,549 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create SQL migration script `Portal.Database/Migrations/XXX_CreateStripeBusinessApiKeysTable.sql`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647070
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265656874
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265710241
+      }
+    ],
+    "1.2 Create `Portal.Infrastructure/Entities/BusinessApiKey.cs` entity class with navigation property to Business": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647129
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265720045
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265852496
+      }
+    ],
+    "1.3 Create `Portal.Infrastructure/Constants/StripeKeyTypes.cs` static class with `ConnectClientId`, `SecretKey`, `WebhookSecret` constants": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647179
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265853598
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265858092
+      }
+    ],
+    "1.4 Add `DbSet<BusinessApiKey>` to `PortalDbContext` and configure EF Core mapping (unique index, FK relationship, default value for CreatedAtUtc)": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647290
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265864516
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265869441
+      }
+    ],
+    "2.1 Create `Portal.Web/Services/Stripe/IStripeKeyEncryptionService.cs` interface with `Encrypt(string)`, `Decrypt(string)`, and `Mask(string)` methods": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647328
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265876446
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265977424
+      }
+    ],
+    "2.2 Create `Portal.Web/Services/Stripe/StripeKeyEncryptionService.cs` implementation:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647372
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265978384
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265984640
+      }
+    ],
+    "2.3 Register `IStripeKeyEncryptionService` as scoped in DI (Program.cs or service extension)": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647413
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265986060
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265993803
+      }
+    ],
+    "3.1 Create `Portal.Infrastructure/Repositories/BusinessApiKeysRepository.cs`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647462
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266001097
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266076913
+      }
+    ],
+    "3.2 Register `BusinessApiKeysRepository` in DI": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647504
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266085358
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266092176
+      }
+    ],
+    "4.1 Create `Portal.Web/Services/Stripe/IStripeKeyResolutionService.cs` interface with `ResolveKeysAsync(int businessId)` and `HasBusinessKeysAsync(int businessId)`": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647546
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266098306
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266276564
+      }
+    ],
+    "4.2 Create `Portal.Web/Services/Stripe/ResolvedStripeKeys.cs` model class": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647586
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266277467
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266284335
+      }
+    ],
+    "4.3 Create `Portal.Web/Services/Stripe/StripeKeyResolutionService.cs` implementation:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647626
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266285361
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266291560
+      }
+    ],
+    "4.4 Register `IStripeKeyResolutionService` as scoped in DI": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647672
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266292498
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266299994
+      }
+    ],
+    "4.5 Refactor `StripeConnectService` to inject `IStripeKeyResolutionService` instead of reading directly from `IOptions<StripeSettings>`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647709
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266301472
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266309188
+      }
+    ],
+    "5.1 Add `AxGetStripeKeyStatus` endpoint to `MyBusinessController`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647746
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266322914
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266484688
+      }
+    ],
+    "5.2 Add `AxPostSaveStripeKeys` endpoint to `MyBusinessController`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647786
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266489548
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266496584
+      }
+    ],
+    "5.3 Add `AxPostRevealStripeKey` endpoint to `MyBusinessController`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647821
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266497444
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266505764
+      }
+    ],
+    "5.4 Add `AxPostDeleteStripeKeys` endpoint to `MyBusinessController`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647903
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266506607
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266514158
+      }
+    ],
+    "6.1 Add audit log entries for key management actions using existing `AuditLog` table or `SystemLoggerExtensions`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647960
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266524756
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266626369
+      }
+    ],
+    "7.1 Add Stripe API Keys section to the Automation tab view (above existing \"Card Payments (Stripe Connect)\" section):": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265647994
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266634730
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266827100
+      }
+    ],
+    "7.2 Implement JavaScript for Save Keys:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648030
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266834456
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266839147
+      }
+    ],
+    "7.3 Implement JavaScript for Reveal Key:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648075
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266840036
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266846968
+      }
+    ],
+    "7.4 Implement JavaScript for Delete Keys:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648117
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266847026
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266851754
+      }
+    ],
+    "7.5 Add Connect button enable/disable logic:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648153
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266852763
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266857685
+      }
+    ],
+    "8.1 Implement rate limiting for the reveal endpoint:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648192
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266863579
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266867877
+      }
+    ],
+    "9.1 Register all new services in DI container (Program.cs or a `StripeServiceExtensions.cs`):": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648232
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266874705
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266879987
+      }
+    ],
+    "9.2 Update `StripeConnectService` constructor to accept `IStripeKeyResolutionService` and use resolved keys in `GetOAuthConnectUrlAsync` and webhook handling": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648269
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266882010
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266888991
+      }
+    ],
+    "9.3 Ensure the `[stripe]` schema migration runs before application startup (add to migration sequence)": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648302
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266890518
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266896800
+      }
+    ],
+    "10.1 Write unit tests for `StripeKeyEncryptionService`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648337
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785266903198
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785267006577
+      }
+    ],
+    "10.2 Write unit tests for `StripeKeyResolutionService`:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648372
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785267013591
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785267020090
+      }
+    ],
+    "10.3 Write unit tests for controller endpoints:": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648408
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785267020843
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785267027319
+      }
+    ],
+    "10.4 Write integration test for save → retrieve → reveal → delete flow": [
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785265648477
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785267028675
+      },
+      {
+        "executionId": "31df3678-10e3-40ea-9648-555e4c204275",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785267035978
+      }
+    ]
+  }
+}

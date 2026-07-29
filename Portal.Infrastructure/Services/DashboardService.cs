@@ -137,6 +137,7 @@ public class DashboardService : IDashboardService
                     FROM [revenue].[Payment]
                     WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                       AND [revenue].[Payment].[IsVoided] = 0
+                      AND [revenue].[Payment].[ParentPaymentId] IS NULL
                       AND [revenue].[Payment].[PaymentDateUtc] >= @MonthStart
                       AND [revenue].[Payment].[PaymentDateUtc] < @MonthEnd";
 
@@ -300,6 +301,7 @@ public class DashboardService : IDashboardService
                         FROM [revenue].[Payment]
                         WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                           AND [revenue].[Payment].[IsVoided] = 0
+                          AND [revenue].[Payment].[ParentPaymentId] IS NULL
                           AND [revenue].[Payment].[PaymentDateUtc] >= @FromDateUtc
                     ) AS Months
                     LEFT JOIN (
@@ -320,6 +322,7 @@ public class DashboardService : IDashboardService
                         FROM [revenue].[Payment]
                         WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                           AND [revenue].[Payment].[IsVoided] = 0
+                          AND [revenue].[Payment].[ParentPaymentId] IS NULL
                           AND [revenue].[Payment].[PaymentDateUtc] >= @FromDateUtc
                         GROUP BY YEAR([revenue].[Payment].[PaymentDateUtc]), MONTH([revenue].[Payment].[PaymentDateUtc])
                     ) AS CollectedData ON Months.[Year] = CollectedData.[Year] AND Months.[Month] = CollectedData.[Month]
@@ -435,6 +438,7 @@ public class DashboardService : IDashboardService
                         INNER JOIN [invoice].[Invoice] AS Inv
                             ON [revenue].[Payment].[InvoiceId] = Inv.[Id]
                         WHERE [revenue].[Payment].[IsVoided] = 0
+                          AND [revenue].[Payment].[ParentPaymentId] IS NULL
                           AND [revenue].[Payment].[BusinessId] = @BusinessId
                           AND DATEDIFF(DAY, Inv.[InvoiceDate], [revenue].[Payment].[PaymentDateUtc]) <= 30
                         GROUP BY [revenue].[Payment].[InvoiceId]
@@ -719,6 +723,7 @@ public class DashboardService : IDashboardService
                     FROM [revenue].[Payment]
                     WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                       AND [revenue].[Payment].[IsVoided] = 0
+                      AND [revenue].[Payment].[ParentPaymentId] IS NULL
                       AND [revenue].[Payment].[PaymentDateUtc] >= @SixMonthsAgo
                     GROUP BY YEAR([revenue].[Payment].[PaymentDateUtc]), MONTH([revenue].[Payment].[PaymentDateUtc])";
 

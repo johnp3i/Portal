@@ -4,7 +4,7 @@
 --              for tracking Stripe Checkout Sessions and fees.
 -- ============================================================
 
-USE [Guardian]
+USE [Portal]
 GO
 
 IF NOT EXISTS (

@@ -25,6 +25,7 @@ public class StripeConnectService : IStripeConnectService
     private readonly IFinancialStatusEngine _financialStatusEngine;
     private readonly IPaymentReceiptService _receiptService;
     private readonly StripeSettings _stripeSettings;
+    private readonly IStripeKeyResolutionService _keyResolutionService;
 
     public StripeConnectService(
         StripeConnectRepository repository,
@@ -32,7 +33,8 @@ public class StripeConnectService : IStripeConnectService
         PaymentRepository paymentRepository,
         IFinancialStatusEngine financialStatusEngine,
         IPaymentReceiptService receiptService,
-        IOptions<StripeSettings> stripeSettings)
+        IOptions<StripeSettings> stripeSettings,
+        IStripeKeyResolutionService keyResolutionService)
     {
         _repository = repository;
         _portalDbContext = portalDbContext;
@@ -40,6 +42,7 @@ public class StripeConnectService : IStripeConnectService
         _financialStatusEngine = financialStatusEngine;
         _receiptService = receiptService;
         _stripeSettings = stripeSettings.Value;
+        _keyResolutionService = keyResolutionService;
     }
 
     // ─── Onboarding ──────────────────────────────────────────────────────
@@ -48,8 +51,10 @@ public class StripeConnectService : IStripeConnectService
     public async Task<string> GetOAuthConnectUrlAsync(int businessId)
     {
         var state = $"{businessId}_{Guid.NewGuid():N}";
-        var clientId = _stripeSettings.ConnectClientId;
-        var redirectUri = _stripeSettings.ConnectOAuthRedirectUri;
+
+        var resolvedKeys = await _keyResolutionService.ResolveKeysAsync(businessId);
+        var clientId = resolvedKeys.ConnectClientId;
+        var redirectUri = resolvedKeys.ConnectOAuthRedirectUri;
 
         var url = $"https://connect.stripe.com/oauth/authorize" +
                   $"?response_type=code" +
@@ -58,7 +63,7 @@ public class StripeConnectService : IStripeConnectService
                   $"&state={state}" +
                   $"&redirect_uri={Uri.EscapeDataString(redirectUri ?? "")}";
 
-        return await Task.FromResult(url);
+        return url;
     }
 
     /// <inheritdoc />
@@ -178,7 +183,10 @@ public class StripeConnectService : IStripeConnectService
             if (outstandingBalance <= 0)
                 return ServiceResult<string>.Fail("This invoice has no outstanding balance.");
 
-            // 3. Create Stripe Checkout Session (destination charge, no application fee)
+            // 3. Resolve Stripe keys for this business
+            var resolvedKeys = await _keyResolutionService.ResolveKeysAsync(businessId);
+
+            // 4. Create Stripe Checkout Session (destination charge, no application fee)
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
@@ -220,10 +228,13 @@ public class StripeConnectService : IStripeConnectService
                 ExpiresAt = DateTime.UtcNow.AddMinutes(30)
             };
 
-            var sessionService = new SessionService();
-            var session = await sessionService.CreateAsync(options);
+            // Use resolved secret key for this API call
+            var requestOptions = new global::Stripe.RequestOptions { ApiKey = resolvedKeys.SecretKey };
 
-            // 4. Store checkout session record for idempotency and fee tracking
+            var sessionService = new SessionService();
+            var session = await sessionService.CreateAsync(options, requestOptions);
+
+            // 5. Store checkout session record for idempotency and fee tracking
             var checkoutSession = new StripeCheckoutSession
             {
                 BusinessId = businessId,
@@ -239,7 +250,7 @@ public class StripeConnectService : IStripeConnectService
 
             await _repository.InsertCheckoutSessionAsync(checkoutSession);
 
-            // 5. Return the checkout URL
+            // 6. Return the checkout URL
             return ServiceResult<string>.Ok(session.Url);
         }
         catch (StripeException ex)
@@ -334,7 +345,7 @@ public class StripeConnectService : IStripeConnectService
             var paymentId = await _paymentRepository.InsertAsync(payment);
 
             // 5. Recalculate invoice financial status
-            await _financialStatusEngine.RecalculateStatusAsync(checkoutSession.InvoiceId, checkoutSession.BusinessId);
+            await _financialStatusEngine.RecalculateStatusAsync(checkoutSession.InvoiceId, checkoutSession.BusinessId, stripeSessionId);
 
             // 5b. Auto-generate receipt if enabled for this business
             try

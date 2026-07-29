@@ -131,6 +131,7 @@ public class PnlService : IPnlService
         var revenue = await _dbContext.Payments
             .Where(p => p.BusinessId == businessId
                         && !p.IsVoided
+                        && p.ParentPaymentId == null
                         && p.PaymentDateUtc >= startDateTime
                         && p.PaymentDateUtc < endDateTime)
             .SumAsync(p => (decimal?)p.Amount) ?? 0m;

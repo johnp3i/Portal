@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Search — Portal Mockup</title>
+    <!--
+    ============================================================
+    GLOBAL SEARCH MOCKUP — Interaction Patterns
+    ============================================================
+    1. Click the search input or press Ctrl+K to focus
+    2. Type to filter results from hardcoded sample data
+    3. Arrow Up/Down to navigate results, Enter to "select"
+    4. Escape or click outside to close the dropdown
+    5. States demonstrated:
+       - Empty (dropdown open, no query yet — shows recent/suggested)
+       - Results found (grouped by entity type)
+       - No results found
+       - Loading (simulated 500ms delay on first keystroke)
+    ============================================================
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --primary-blue: #0D5EA6;
+    --accent-cyan: #57B8E8;
+    --bg-base: #F7FAFC;
+    --bg-secondary: #EEF4F8;
+    --text-primary: #0B1B28;
+    --text-secondary: #5E7385;
+    --section-header: #8a9bac;
+    --hover-bg: rgba(13,94,166,.04);
+    --dropdown-shadow: 0 20px 50px rgba(13,94,166,.15);
+    --sidebar-width: 280px;
+    --topbar-height: 70px;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+}
+
+/* === SIDEBAR === */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: linear-gradient(180deg, #0a4a82 0%, #0D5EA6 100%);
+    padding: 28px 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-logo {
+    color: #fff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 40px;
+    padding-left: 8px;
+    letter-spacing: -0.02em;
+}
+
+.sidebar-nav { list-style: none; flex: 1; }
+
+.sidebar-nav li {
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: rgba(255,255,255,.7);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 4px;
+    transition: all .15s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sidebar-nav li:hover { background: rgba(255,255,255,.08); color: #fff; }
+.sidebar-nav li.active { background: rgba(255,255,255,.12); color: #fff; font-weight: 600; }
+
+.sidebar-nav li svg { width: 18px; height: 18px; opacity: .8; }
+
+/* === MAIN AREA === */
+.main-area {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+}
+
+/* === TOPBAR === */
+.topbar {
+    height: var(--topbar-height);
+    background: #fff;
+    border-bottom: 1px solid #e8eff5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.topbar-left h2 {
+    font-size: 18px;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+}
+
+/* === SEARCH === */
+.search-wrapper {
+    position: relative;
+}
+
+.search-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    width: 280px;
+    height: 40px;
+    border: 1.5px solid #dce6ef;
+    border-radius: 10px;
+    padding: 0 40px 0 38px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    background: var(--bg-base);
+    transition: all .2s ease;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: var(--accent-cyan);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(87,184,232,.12);
+    width: 340px;
+}
+
+.search-input::placeholder { color: #a0b0be; }
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 16px;
+    color: #8a9bac;
+    pointer-events: none;
+}
+
+.search-shortcut {
+    position: absolute;
+    right: 10px;
+    background: #eef3f8;
+    border: 1px solid #dce6ef;
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8a9bac;
+    pointer-events: none;
+    transition: opacity .15s;
+}
+
+.search-input:focus ~ .search-shortcut { opacity: 0; }
+
+/* === DROPDOWN === */
+.search-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 500px;
+    max-height: 460px;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: var(--dropdown-shadow);
+    border: 1px solid #e8eff5;
+    display: none;
+    z-index: 200;
+}
+
+.search-dropdown.visible { display: block; }
+
+.search-dropdown::-webkit-scrollbar { width: 6px; }
+.search-dropdown::-webkit-scrollbar-track { background: transparent; }
+.search-dropdown::-webkit-scrollbar-thumb { background: #d0dbe5; border-radius: 3px; }
+
+.dropdown-section-header {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--section-header);
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    padding: 14px 18px 6px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: background .1s ease;
+    border-radius: 0;
+}
+
+.dropdown-item:hover,
+.dropdown-item.highlighted {
+    background: var(--hover-bg);
+}
+
+.dropdown-item-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.dropdown-item-icon.invoice { background: #e8f4fd; color: var(--primary-blue); }
+.dropdown-item-icon.customer { background: #e6f9f1; color: #129867; }
+.dropdown-item-icon.quotation { background: #fef5e7; color: #C8912E; }
+.dropdown-item-icon.purchase { background: #fce8e8; color: #C24A4A; }
+.dropdown-item-icon.supplier { background: #f0e8fc; color: #7c3aed; }
+.dropdown-item-icon.product { background: #e8f4fd; color: var(--accent-cyan); }
+
+.dropdown-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.dropdown-item-primary {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-item-secondary {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-item-arrow {
+    color: #c0cdd8;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity .1s;
+}
+
+.dropdown-item:hover .dropdown-item-arrow,
+.dropdown-item.highlighted .dropdown-item-arrow {
+    opacity: 1;
+}
+
+/* Empty state */
+.dropdown-empty {
+    padding: 40px 18px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.dropdown-empty svg {
+    width: 40px;
+    height: 40px;
+    color: #c0cdd8;
+    margin-bottom: 12px;
+}
+
+/* Loading state */
+.dropdown-loading {
+    padding: 40px 18px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #e8eff5;
+    border-top-color: var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    margin: 0 auto 12px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Account button */
+.account-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-blue);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* === CONTENT === */
+.content {
+    padding: 32px;
+}
+
+.content-header {
+    margin-bottom: 24px;
+}
+
+.content-header .eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.content-header h1 {
+    font-size: 32px;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #e8eff5;
+}
+
+.stat-card .label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.stat-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'Manrope', sans-serif;
+    color: var(--text-primary);
+}
+
+.stat-card .change {
+    font-size: 12px;
+    margin-top: 6px;
+    color: #129867;
+    font-weight: 600;
+}
+
+.glass-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #e8eff5;
+}
+
+.glass-card h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.placeholder-row {
+    height: 14px;
+    background: #eef3f8;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.placeholder-row:nth-child(even) { width: 75%; }
+.placeholder-row:last-child { width: 50%; margin-bottom: 0; }
+</style>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-logo">Portal</div>
+    <ul class="sidebar-nav">
+        <li class="active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Dashboard
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Invoices
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Customers
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+            Quotations
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+            Purchases
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Revenue
+        </li>
+    </ul>
+</aside>
+
+<!-- MAIN AREA -->
+<div class="main-area">
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h2>Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+            <!-- Search -->
+            <div class="search-wrapper" id="searchWrapper">
+                <div class="search-input-container">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search..." autocomplete="off">
+                    <span class="search-shortcut" id="searchShortcut">Ctrl+K</span>
+                </div>
+                <div class="search-dropdown" id="searchDropdown"></div>
+            </div>
+            <!-- Account -->
+            <div class="account-btn">JD</div>
+        </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="content">
+        <div class="content-header">
+            <div class="eyebrow">Overview</div>
+            <h1>Dashboard</h1>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="label">Total Revenue</div>
+                <div class="value">&euro;47,820</div>
+                <div class="change">+12.5% this month</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Open Invoices</div>
+                <div class="value">14</div>
+                <div class="change">3 overdue</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Active Quotations</div>
+                <div class="value">8</div>
+                <div class="change">2 pending approval</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Customers</div>
+                <div class="value">52</div>
+                <div class="change">+3 this week</div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h3>Recent Activity</h3>
+            <div class="placeholder-row"></div>
+            <div class="placeholder-row"></div>
+            <div class="placeholder-row"></div>
+            <div class="placeholder-row"></div>
+            <div class="placeholder-row"></div>
+        </div>
+    </main>
+</div>
+
+<script>
+// ============================================================
+// GLOBAL SEARCH — Interactive Logic
+// ============================================================
+
+const searchData = [
+    { type: 'invoice', icon: 'INV', primary: 'INV-1002-00001', secondary: '€2,772.00 — Rust n\' Roast', keywords: 'inv invoice 1002 00001 rust roast 2772' },
+    { type: 'invoice', icon: 'INV', primary: 'INV-1002-00003', secondary: '€2,000.00 — Box in a Flash', keywords: 'inv invoice 1002 00003 box flash 2000' },
+    { type: 'customer', icon: 'CU', primary: 'Rust n\' Roast sp ltd', secondary: 'Customer since Jan 2024', keywords: 'rust roast customer' },
+    { type: 'customer', icon: 'CU', primary: 'Box in a Flash Services LTD', secondary: 'Customer since Mar 2024', keywords: 'box flash services customer' },
+    { type: 'customer', icon: 'CU', primary: 'Tech Solutions Ltd', secondary: 'Customer since Nov 2023', keywords: 'tech solutions customer' },
+    { type: 'quotation', icon: 'QUO', primary: 'QUO-2024-0045', secondary: '€5,400.00 — Cloud Migration', keywords: 'quo quotation 2024 0045 cloud migration 5400' },
+    { type: 'quotation', icon: 'QUO', primary: 'QUO-2024-0052', secondary: '€12,000.00 — Enterprise Software', keywords: 'quo quotation 2024 0052 enterprise software 12000' },
+    { type: 'purchase', icon: 'PUR', primary: 'PUR-0066', secondary: 'Advertising — €450.00', keywords: 'pur purchase 0066 advertising 450' },
+    { type: 'purchase', icon: 'PUR', primary: 'PUR-0071', secondary: 'Office Supplies — €120.00', keywords: 'pur purchase 0071 office supplies 120' },
+    { type: 'supplier', icon: 'SUP', primary: 'Amazon Web Services', secondary: 'Cloud Infrastructure', keywords: 'amazon aws supplier cloud' },
+    { type: 'supplier', icon: 'SUP', primary: 'Office Depot', secondary: 'Office Supplies', keywords: 'office depot supplier supplies' },
+    { type: 'supplier', icon: 'SUP', primary: 'Telecom Malta', secondary: 'Telecommunications', keywords: 'telecom malta supplier' },
+    { type: 'product', icon: 'PRD', primary: 'Cloud Hosting Setup', secondary: 'Service — Setup & Configuration', keywords: 'cloud hosting setup product service' },
+    { type: 'product', icon: 'PRD', primary: 'Security Audit Package', secondary: 'Service — Security Review', keywords: 'security audit package product service' },
+    { type: 'product', icon: 'PRD', primary: 'Mobile App Development', secondary: 'Service — Custom Development', keywords: 'mobile app development product service' },
+];
+
+const typeLabels = {
+    invoice: 'Invoices',
+    customer: 'Customers',
+    quotation: 'Quotations',
+    purchase: 'Purchases',
+    supplier: 'Suppliers',
+    product: 'Products'
+};
+
+const typeOrder = ['invoice', 'customer', 'quotation', 'purchase', 'supplier', 'product'];
+
+const searchInput = document.getElementById('searchInput');
+const searchDropdown = document.getElementById('searchDropdown');
+const searchWrapper = document.getElementById('searchWrapper');
+
+let highlightedIndex = -1;
+let currentResults = [];
+let isLoading = false;
+let loadingTimeout = null;
+let isFirstKeystroke = true;
+
+function showDropdown() {
+    searchDropdown.classList.add('visible');
+}
+
+function hideDropdown() {
+    searchDropdown.classList.remove('visible');
+    highlightedIndex = -1;
+}
+
+function renderLoading() {
+    searchDropdown.innerHTML = `
+        <div class="dropdown-loading">
+            <div class="spinner"></div>
+            <div>Searching...</div>
+        </div>
+    `;
+    showDropdown();
+}
+
+function renderEmpty() {
+    searchDropdown.innerHTML = `
+        <div class="dropdown-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <div>No results found</div>
+            <div style="font-size:12px;margin-top:4px;color:#a0b0be;">Try a different search term</div>
+        </div>
+    `;
+    showDropdown();
+}
+
+function renderResults(results) {
+    currentResults = results;
+    highlightedIndex = -1;
+
+    if (results.length === 0) {
+        renderEmpty();
+        return;
+    }
+
+    // Group by type
+    const grouped = {};
+    results.forEach(item => {
+        if (!grouped[item.type]) grouped[item.type] = [];
+        grouped[item.type].push(item);
+    });
+
+    let html = '';
+    let globalIdx = 0;
+
+    typeOrder.forEach(type => {
+        if (!grouped[type]) return;
+        html += `<div class="dropdown-section-header">${typeLabels[type]}</div>`;
+        grouped[type].forEach(item => {
+            html += `
+                <div class="dropdown-item" data-index="${globalIdx}">
+                    <div class="dropdown-item-icon ${item.type}">${item.icon}</div>
+                    <div class="dropdown-item-content">
+                        <div class="dropdown-item-primary">${item.primary}</div>
+                        <div class="dropdown-item-secondary">${item.secondary}</div>
+                    </div>
+                    <svg class="dropdown-item-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            `;
+            globalIdx++;
+        });
+    });
+
+    searchDropdown.innerHTML = html;
+    showDropdown();
+
+    // Add click listeners
+    searchDropdown.querySelectorAll('.dropdown-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const idx = parseInt(el.dataset.index);
+            selectResult(idx);
+        });
+    });
+}
+
+function filterResults(query) {
+    if (!query.trim()) {
+        // Show all results when dropdown is open but query is empty
+        renderResults(searchData);
+        return;
+    }
+    const q = query.toLowerCase();
+    const filtered = searchData.filter(item =>
+        item.primary.toLowerCase().includes(q) ||
+        item.secondary.toLowerCase().includes(q) ||
+        item.keywords.includes(q)
+    );
+    renderResults(filtered);
+}
+
+function updateHighlight() {
+    const items = searchDropdown.querySelectorAll('.dropdown-item');
+    items.forEach((el, idx) => {
+        el.classList.toggle('highlighted', idx === highlightedIndex);
+    });
+    // Scroll into view
+    if (highlightedIndex >= 0 && items[highlightedIndex]) {
+        items[highlightedIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function selectResult(index) {
+    const results = currentResults.length > 0 ? currentResults : searchData;
+    if (index >= 0 && index < results.length) {
+        // Simulate navigation
+        searchInput.value = results[index].primary;
+        hideDropdown();
+        searchInput.blur();
+    }
+}
+
+// Events
+searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim()) {
+        filterResults(searchInput.value);
+    } else {
+        renderResults(searchData);
+    }
+});
+
+searchInput.addEventListener('input', () => {
+    const val = searchInput.value;
+
+    // Simulate loading on first keystroke
+    if (isFirstKeystroke && val.length === 1) {
+        isFirstKeystroke = false;
+        isLoading = true;
+        renderLoading();
+        clearTimeout(loadingTimeout);
+        loadingTimeout = setTimeout(() => {
+            isLoading = false;
+            filterResults(val);
+        }, 500);
+        return;
+    }
+
+    if (isLoading) {
+        clearTimeout(loadingTimeout);
+        loadingTimeout = setTimeout(() => {
+            isLoading = false;
+            filterResults(val);
+        }, 300);
+        return;
+    }
+
+    filterResults(val);
+});
+
+searchInput.addEventListener('keydown', (e) => {
+    if (!searchDropdown.classList.contains('visible')) return;
+
+    const items = searchDropdown.querySelectorAll('.dropdown-item');
+    const count = items.length;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex + 1) % count;
+        updateHighlight();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex - 1 + count) % count;
+        updateHighlight();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (highlightedIndex >= 0) {
+            selectResult(highlightedIndex);
+        }
+    } else if (e.key === 'Escape') {
+        hideDropdown();
+        searchInput.blur();
+    }
+});
+
+// Click outside to close
+document.addEventListener('click', (e) => {
+    if (!searchWrapper.contains(e.target)) {
+        hideDropdown();
+    }
+});
+
+// Ctrl+K shortcut
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+    }
+});
+</script>
+</body>
+</html>

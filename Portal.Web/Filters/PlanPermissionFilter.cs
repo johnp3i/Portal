@@ -27,7 +27,8 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
         "MyBusiness",
         "Billing",
         "SetupWizard",
-        "Dashboard"
+        "Dashboard",
+        "Search"
     };
 
     public int Order => 1;

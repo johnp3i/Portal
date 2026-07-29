@@ -327,11 +327,13 @@ builder.Services.AddHttpClient<IReCaptchaService, ReCaptchaService>();
 // --- Revenue Control ---
 builder.Services.AddScoped<PaymentRepository>(sp =>
     new PaymentRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ICheckoutSessionExpireService, CheckoutSessionExpireService>();
 builder.Services.AddScoped<IFinancialStatusEngine>(sp =>
     new FinancialStatusEngine(
         sp.GetRequiredService<PaymentRepository>(),
         sp.GetRequiredService<InvoiceRepository>(),
-        sp.GetRequiredService<CreditNoteRepository>()));
+        sp.GetRequiredService<CreditNoteRepository>(),
+        sp.GetRequiredService<ICheckoutSessionExpireService>()));
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Services.AddScoped<IPaymentAllocationEngine>(sp =>
@@ -434,7 +436,13 @@ builder.Services.AddScoped<Portal.Web.Services.ImpersonationService>();
 
 // --- Stripe Connect (Card Payments) ---
 builder.Services.AddScoped<StripeConnectRepository>();
+builder.Services.AddScoped<BusinessApiKeysRepository>();
 builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
+builder.Services.AddScoped<IStripeKeyEncryptionService, StripeKeyEncryptionService>();
+builder.Services.AddScoped<IStripeKeyResolutionService, StripeKeyResolutionService>();
+
+// --- Global Search ---
+builder.Services.AddScoped<IGlobalSearchService, GlobalSearchService>();
 
 // --- MVC ---
 var mvcBuilder = builder.Services.AddControllersWithViews(options =>

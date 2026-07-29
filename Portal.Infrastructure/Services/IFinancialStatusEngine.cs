@@ -34,4 +34,13 @@ public interface IFinancialStatusEngine
     /// Fetches payments and applied credit totals, computes balance, determines status, updates invoice.
     /// </summary>
     Task RecalculateStatusAsync(int invoiceId, int businessId);
+
+    /// <summary>
+    /// Recalculates and persists the financial status for an invoice.
+    /// If the new status is Paid, expires all pending checkout sessions except the excluded one.
+    /// </summary>
+    /// <param name="invoiceId">The invoice to recalculate.</param>
+    /// <param name="businessId">The business owning the invoice.</param>
+    /// <param name="excludeStripeSessionId">Optional Stripe session ID to exclude from auto-expire (the session that just completed).</param>
+    Task RecalculateStatusAsync(int invoiceId, int businessId, string? excludeStripeSessionId);
 }

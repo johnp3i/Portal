@@ -416,6 +416,64 @@ else if (activeTab == "payment")
             </div>
         </section>
 
+        <!-- Stripe API Keys Configuration -->
+        <section class="glass card-pad" style="margin-top:22px;" id="stripeKeysSection">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;">Stripe API Configuration</h3>
+
+            @if (User.HasClaim("IsOwner", "true"))
+            {
+                <div id="stripeKeysLoading" style="color:#5E7385;font-size:13px;">Loading configuration...</div>
+                <div id="stripeKeysPanel" style="display:none;">
+                    <p style="font-size:13px;color:#5E7385;margin-bottom:16px;">Enter your Stripe API keys to enable card payment processing. Keys are encrypted and stored securely.</p>
+
+                    <div style="display:grid;gap:16px;">
+                        <!-- Connect Client ID -->
+                        <div class="field">
+                            <label style="font-size:13px;font-weight:600;">Connect Client ID <span style="color:#5E7385;font-weight:400;">(ca_...)</span> <button type="button" onclick="showKeyInfo('clientId')" style="background:none;border:none;cursor:pointer;padding:0 4px;vertical-align:middle;"><svg width="15" height="15" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg></button></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="text" id="stripeKeyClientId" placeholder="ca_..." style="flex:1;" />
+                                <button type="button" class="btn btn-outline" style="padding:8px 12px;font-size:11px;white-space:nowrap;" onclick="revealKey('connect_client_id', 'stripeKeyClientId')">Reveal</button>
+                            </div>
+                        </div>
+
+                        <!-- Secret Key -->
+                        <div class="field">
+                            <label style="font-size:13px;font-weight:600;">Secret Key * <span style="color:#5E7385;font-weight:400;">(sk_...)</span> <button type="button" onclick="showKeyInfo('secretKey')" style="background:none;border:none;cursor:pointer;padding:0 4px;vertical-align:middle;"><svg width="15" height="15" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg></button></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="text" id="stripeKeySecret" placeholder="sk_test_... or sk_live_..." style="flex:1;" />
+                                <button type="button" class="btn btn-outline" style="padding:8px 12px;font-size:11px;white-space:nowrap;" onclick="revealKey('secret_key', 'stripeKeySecret')">Reveal</button>
+                            </div>
+                        </div>
+
+                        <!-- Webhook Secret -->
+                        <div class="field">
+                            <label style="font-size:13px;font-weight:600;">Webhook Secret <span style="color:#5E7385;font-weight:400;">(whsec_...)</span> <button type="button" onclick="showKeyInfo('webhookSecret')" style="background:none;border:none;cursor:pointer;padding:0 4px;vertical-align:middle;"><svg width="15" height="15" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg></button></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="text" id="stripeKeyWebhook" placeholder="whsec_..." style="flex:1;" />
+                                <button type="button" class="btn btn-outline" style="padding:8px 12px;font-size:11px;white-space:nowrap;" onclick="revealKey('webhook_secret', 'stripeKeyWebhook')">Reveal</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status indicator -->
+                    <div id="stripeKeysStatus" style="margin-top:14px;display:none;"></div>
+
+                    <!-- Action buttons -->
+                    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+                        <button type="button" class="btn btn-secondary" style="font-size:12px;display:none;" id="stripeKeysDeleteBtn" onclick="deleteStripeKeys()">Remove Keys</button>
+                        <button type="button" class="btn btn-primary" onclick="saveStripeKeys()">Save & Validate Keys</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Non-owner view: status badge only -->
+                <div id="stripeKeysNonOwner" style="display:flex;align-items:center;gap:10px;">
+                    <span id="stripeKeysBadge" style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#EEF4F8;color:#5E7385;">Loading...</span>
+                </div>
+            }
+        </section>
+
         <!-- Stripe Connect Section -->
         <section class="glass card-pad" style="margin-top:22px;">
             <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;">Card Payments (Stripe Connect)</h3>
@@ -624,5 +682,251 @@ else if (activeTab == "payment")
                 Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
             }
         }
+
+        // ─── Stripe API Keys Management ────────────────────────────────────────
+        (function() {
+            var isOwner = @(User.HasClaim("IsOwner", "true") ? "true" : "false");
+
+            // Load key status on page load (only on automation tab)
+            if (document.getElementById('stripeKeysSection')) {
+                loadKeyStatus();
+            }
+
+            async function loadKeyStatus() {
+                try {
+                    var response = await fetch('/MyBusiness/AxGetStripeKeyStatus');
+                    var data = await response.json();
+                    if (!data.success) return;
+
+                    if (isOwner) {
+                        document.getElementById('stripeKeysLoading').style.display = 'none';
+                        document.getElementById('stripeKeysPanel').style.display = '';
+
+                        if (data.isConfigured) {
+                            // Show masked values as placeholders
+                            if (data.connectClientIdMasked) document.getElementById('stripeKeyClientId').value = data.connectClientIdMasked;
+                            if (data.secretKeyMasked) document.getElementById('stripeKeySecret').value = data.secretKeyMasked;
+                            if (data.webhookSecretMasked) document.getElementById('stripeKeyWebhook').value = data.webhookSecretMasked;
+                            document.getElementById('stripeKeysDeleteBtn').style.display = '';
+                            showStatus('success', 'Keys configured and validated.');
+                        }
+                    } else {
+                        // Non-owner: just show badge
+                        var badge = document.getElementById('stripeKeysBadge');
+                        if (data.isConfigured) {
+                            badge.textContent = 'Stripe: Configured \u2713';
+                            badge.style.background = '#e6f7f0';
+                            badge.style.color = '#129867';
+                        } else {
+                            badge.textContent = 'Stripe: Not configured';
+                            badge.style.background = '#FEF6E8';
+                            badge.style.color = '#C8912E';
+                        }
+                    }
+
+                    // Update Connect button state
+                    updateConnectButton(data.isConfigured);
+                } catch (e) {
+                    if (isOwner) {
+                        document.getElementById('stripeKeysLoading').textContent = 'Failed to load key status.';
+                    }
+                }
+            }
+
+            window.saveStripeKeys = async function() {
+                var clientId = document.getElementById('stripeKeyClientId').value.trim();
+                var secretKey = document.getElementById('stripeKeySecret').value.trim();
+                var webhookSecret = document.getElementById('stripeKeyWebhook').value.trim();
+
+                // Don't send masked values back as actual keys
+                if (secretKey.includes('****')) {
+                    Swal.fire({ title: 'Info', text: 'Enter your actual key values (not the masked display). Click "Reveal" to see saved keys.', icon: 'info', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                if (!secretKey) {
+                    Swal.fire({ title: 'Validation', text: 'Secret Key is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                BlockUI.show('Validating with Stripe...');
+                try {
+                    var response = await fetch('/MyBusiness/AxPostSaveStripeKeys', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify({
+                            connectClientId: clientId.includes('****') ? null : clientId || null,
+                            secretKey: secretKey,
+                            webhookSecret: webhookSecret.includes('****') ? null : webhookSecret || null
+                        })
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ title: 'Keys Saved', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' }).then(function() {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({ title: 'Validation Failed', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            };
+
+            window.revealKey = async function(keyType, inputId) {
+                BlockUI.show('Decrypting...');
+                try {
+                    var response = await fetch('/MyBusiness/AxPostRevealStripeKey', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify({ keyType: keyType })
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        document.getElementById(inputId).value = data.value;
+                        // Auto-mask after 30 seconds
+                        setTimeout(function() { loadKeyStatus(); }, 30000);
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ title: 'Error', text: 'Failed to reveal key.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            };
+
+            window.deleteStripeKeys = function() {
+                Swal.fire({
+                    title: 'Remove API Keys?',
+                    text: 'This will remove all stored Stripe keys. The Connect integration will stop working unless platform defaults exist.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, remove keys',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#C24A4A'
+                }).then(async function(result) {
+                    if (!result.isConfirmed) return;
+                    BlockUI.show('Removing...');
+                    try {
+                        var response = await fetch('/MyBusiness/AxPostDeleteStripeKeys', {
+                            method: 'POST',
+                            headers: {
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            }
+                        });
+                        var data = await response.json();
+                        BlockUI.hide();
+                        if (data.success) {
+                            Swal.fire({ title: 'Removed', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' }).then(function() { location.reload(); });
+                        } else {
+                            Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                        }
+                    } catch (e) {
+                        BlockUI.hide();
+                        Swal.fire({ title: 'Error', text: 'Failed to remove keys.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+                    }
+                });
+            };
+
+            window.showKeyInfo = function(keyType) {
+                var info = {
+                    clientId: {
+                        title: 'Connect Client ID',
+                        html: '<div style="text-align:left;font-size:14px;line-height:1.8;">' +
+                            '<p><strong>What is it?</strong></p>' +
+                            '<p>The Connect Client ID identifies your Stripe Connect platform. It starts with <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;">ca_</code>.</p>' +
+                            '<p style="margin-top:12px;"><strong>How to find it:</strong></p>' +
+                            '<ol style="padding-left:20px;margin-top:8px;">' +
+                            '<li>Log in to your <a href="https://dashboard.stripe.com" target="_blank" style="color:#0D5EA6;font-weight:600;">Stripe Dashboard</a></li>' +
+                            '<li>Go to <strong>Settings</strong> \u2192 <strong>Connect</strong> \u2192 <strong>Settings</strong></li>' +
+                            '<li>Under "Integration", find your <strong>Platform Client ID</strong></li>' +
+                            '<li>It looks like: <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;">ca_ABC123XYZ789</code></li>' +
+                            '</ol>' +
+                            '<p style="margin-top:12px;color:#5E7385;font-size:12px;">Note: Make sure you\'re using your <strong>test mode</strong> client ID for testing, or <strong>live mode</strong> for production.</p>' +
+                            '</div>'
+                    },
+                    secretKey: {
+                        title: 'Secret Key',
+                        html: '<div style="text-align:left;font-size:14px;line-height:1.8;">' +
+                            '<p><strong>What is it?</strong></p>' +
+                            '<p>The Secret Key authenticates your server-side API calls to Stripe. It starts with <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;">sk_test_</code> (test mode) or <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;">sk_live_</code> (production).</p>' +
+                            '<p style="margin-top:12px;"><strong>How to find or create it:</strong></p>' +
+                            '<ol style="padding-left:20px;margin-top:8px;">' +
+                            '<li>Log in to your <a href="https://dashboard.stripe.com/apikeys" target="_blank" style="color:#0D5EA6;font-weight:600;">Stripe Dashboard \u2192 API Keys</a></li>' +
+                            '<li>Under "Standard keys", find your <strong>Secret key</strong></li>' +
+                            '<li>Click "Reveal test key" (or "Reveal live key") to copy it</li>' +
+                            '<li>It looks like: <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;">sk_test_51abc...xyz</code></li>' +
+                            '</ol>' +
+                            '<p style="margin-top:12px;color:#C24A4A;font-size:12px;font-weight:600;">\u26A0 Never share your secret key publicly. It gives full access to your Stripe account.</p>' +
+                            '</div>'
+                    },
+                    webhookSecret: {
+                        title: 'Webhook Secret',
+                        html: '<div style="text-align:left;font-size:14px;line-height:1.8;">' +
+                            '<p><strong>What is it?</strong></p>' +
+                            '<p>The Webhook Secret verifies that incoming webhook events are genuinely from Stripe. It starts with <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;">whsec_</code>.</p>' +
+                            '<p style="margin-top:12px;"><strong>How to create it:</strong></p>' +
+                            '<ol style="padding-left:20px;margin-top:8px;">' +
+                            '<li>Log in to your <a href="https://dashboard.stripe.com/webhooks" target="_blank" style="color:#0D5EA6;font-weight:600;">Stripe Dashboard \u2192 Webhooks</a></li>' +
+                            '<li>Click <strong>"Add endpoint"</strong></li>' +
+                            '<li>Set the URL to: <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">https://portal.3inventors.com/stripe/connect-webhook</code></li>' +
+                            '<li>Select events: <code>checkout.session.completed</code> and <code>checkout.session.expired</code></li>' +
+                            '<li>Click "Add endpoint"</li>' +
+                            '<li>On the endpoint page, click <strong>"Reveal"</strong> under Signing secret</li>' +
+                            '<li>Copy the value \u2014 it looks like: <code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;">whsec_abc123...</code></li>' +
+                            '</ol>' +
+                            '<p style="margin-top:12px;color:#5E7385;font-size:12px;">Tip: For Connect webhooks, make sure you select "Events on Connected accounts" when creating the endpoint.</p>' +
+                            '</div>'
+                    }
+                };
+
+                var data = info[keyType];
+                if (!data) return;
+
+                Swal.fire({
+                    title: data.title,
+                    html: data.html,
+                    icon: 'info',
+                    confirmButtonText: 'Got it',
+                    confirmButtonColor: '#0D5EA6',
+                    width: 520
+                });
+            };
+
+            function showStatus(type, message) {
+                var el = document.getElementById('stripeKeysStatus');
+                el.style.display = '';
+                if (type === 'success') {
+                    el.innerHTML = '<div style="padding:8px 14px;background:#e6f7f0;border:1px solid #b8e6d4;border-radius:10px;color:#129867;font-size:12px;font-weight:600;">' + message + '</div>';
+                } else {
+                    el.innerHTML = '<div style="padding:8px 14px;background:#fdeaea;border:1px solid #f5c6c6;border-radius:10px;color:#C24A4A;font-size:12px;font-weight:600;">' + message + '</div>';
+                }
+            }
+
+            function updateConnectButton(isConfigured) {
+                // Disable/enable the "Connect with Stripe" button based on key configuration
+                var connectBtn = document.querySelector('a[href*="StripeConnect"]');
+                if (connectBtn && !isConfigured) {
+                    connectBtn.style.opacity = '0.5';
+                    connectBtn.style.pointerEvents = 'none';
+                    connectBtn.title = 'Configure API keys above first';
+                } else if (connectBtn) {
+                    connectBtn.style.opacity = '';
+                    connectBtn.style.pointerEvents = '';
+                    connectBtn.title = '';
+                }
+            }
+        })();
     </script>
 }

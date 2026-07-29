@@ -247,6 +247,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                 FROM [revenue].[Payment]
                 WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                   AND [revenue].[Payment].[IsVoided] = 0
+                  AND [revenue].[Payment].[ParentPaymentId] IS NULL
                   AND [revenue].[Payment].[PaymentDateUtc] >= @FromUtc
                   AND [revenue].[Payment].[PaymentDateUtc] < @ToUtc";
 
@@ -297,6 +298,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                 FROM [revenue].[Payment]
                 WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                   AND [revenue].[Payment].[IsVoided] = 0
+                  AND [revenue].[Payment].[ParentPaymentId] IS NULL
                   AND [revenue].[Payment].[PaymentDateUtc] >= @FromUtc
                 GROUP BY YEAR([revenue].[Payment].[PaymentDateUtc]),
                          MONTH([revenue].[Payment].[PaymentDateUtc])
