@@ -1,0 +1,180 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create SQL migration to add `IsOnboardingDismissed` BIT column to `[portal].[Business]`": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330891804
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330904795
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332002449
+      }
+    ],
+    "1.2 Update `Business.cs` entity with `IsOnboardingDismissed` property and EF configuration": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330891915
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330905751
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332003178
+      }
+    ],
+    "2.1 Create `OnboardingStateDto` model in `Portal.Infrastructure/Models/`": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330891981
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330906672
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332004030
+      }
+    ],
+    "2.2 Create `IOnboardingService` interface and `OnboardingService` implementation": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892034
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332004927
+      }
+    ],
+    "3. Checkpoint - Ensure service builds and tests pass": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892083
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332005992
+      }
+    ],
+    "4.1 Register `IOnboardingService` in DI (`Program.cs`)": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892144
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332006943
+      }
+    ],
+    "4.2 Update `HomeController.Index()` to use `IOnboardingService`": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892252
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332007927
+      }
+    ],
+    "4.3 Add `AxPostDismissOnboarding` endpoint to HomeController": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892481
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332008807
+      }
+    ],
+    "5.1 Replace existing Getting Started section in `Index.cshtml` with new onboarding panel": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892633
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332009735
+      }
+    ],
+    "5.2 Add dismiss JavaScript function using fetch + BlockUI + SweetAlert2": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892701
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332011003
+      }
+    ],
+    "6. Final checkpoint - Verify end-to-end": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785330892783
+      },
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332012038
+      }
+    ],
+    "1. Database schema and entity update": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332003292
+      }
+    ],
+    "2. Onboarding service": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332004988
+      }
+    ],
+    "4. Controller integration": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332008935
+      }
+    ],
+    "5. View update": [
+      {
+        "executionId": "d02a048c-01df-4dad-9687-132012188c51",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785332011084
+      }
+    ]
+  }
+}

@@ -345,6 +345,7 @@ builder.Services.AddScoped<IPaymentAllocationEngine>(sp =>
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IDashboardBriefingService, DashboardBriefingService>();
 builder.Services.AddScoped<ISystemBriefingService, SystemBriefingService>();
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 builder.Services.AddScoped<IReceivablesQueryService, ReceivablesQueryService>();
 builder.Services.AddScoped<IVatIntegrationService, VatIntegrationService>();
 builder.Services.AddSingleton<IInstalmentStatusEngine>(sp =>

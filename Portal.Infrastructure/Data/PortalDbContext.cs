@@ -306,6 +306,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsAutoInvoiceSignatureEnabled)
                 .IsRequired()
                 .HasDefaultValue(false);
+
+            entity.Property(e => e.IsOnboardingDismissed)
+                .IsRequired()
+                .HasDefaultValue(false);
         });
     }
 

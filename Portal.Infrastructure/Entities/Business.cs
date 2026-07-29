@@ -24,6 +24,8 @@ public class Business
 
     public bool IsAutoInvoiceSignatureEnabled { get; set; }
 
+    public bool IsOnboardingDismissed { get; set; }
+
     // Navigation properties
     public BusinessProfile? BusinessProfile { get; set; }
 

@@ -1,8 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
@@ -20,7 +18,7 @@ public class HomeController : Controller
     private readonly IPermissionService _permissionService;
     private readonly IDashboardBriefingService _briefingService;
     private readonly ISystemBriefingService _systemBriefingService;
-    private readonly PortalDbContext _dbContext;
+    private readonly IOnboardingService _onboardingService;
 
     public HomeController(
         IQuotationService quotationService,
@@ -31,7 +29,7 @@ public class HomeController : Controller
         IPermissionService permissionService,
         IDashboardBriefingService briefingService,
         ISystemBriefingService systemBriefingService,
-        PortalDbContext dbContext)
+        IOnboardingService onboardingService)
 
     {
         _quotationService = quotationService;
@@ -42,7 +40,7 @@ public class HomeController : Controller
         _permissionService = permissionService;
         _briefingService = briefingService;
         _systemBriefingService = systemBriefingService;
-        _dbContext = dbContext;
+        _onboardingService = onboardingService;
     }
 
     [HttpGet]
@@ -229,14 +227,26 @@ public class HomeController : Controller
             catch { ViewBag.SystemBriefing = null; }
         }
 
-        // Getting Started completion flags
-        ViewBag.HasBusinessProfile = await _dbContext.BusinessProfiles.AnyAsync(bp => bp.BusinessId == businessId);
-        ViewBag.HasCustomers = await _dbContext.Customers.AnyAsync();
-        ViewBag.HasQuotations = await _dbContext.Quotations.AnyAsync();
-        ViewBag.HasInvoices = await _dbContext.Invoices.AnyAsync();
-        ViewBag.HasPayments = await _dbContext.Payments.AnyAsync();
+        // Onboarding state
+        var onboardingState = await _onboardingService.GetOnboardingStateAsync(businessId);
+        ViewBag.Onboarding = onboardingState;
 
         return View(model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AxPostDismissOnboarding()
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            await _onboardingService.DismissOnboardingAsync(businessId);
+            return Json(new { success = true, message = "Onboarding dismissed." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
     }
 
     [HttpGet("/Help")]

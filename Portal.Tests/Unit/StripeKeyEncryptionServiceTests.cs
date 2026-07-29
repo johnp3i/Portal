@@ -17,7 +17,7 @@ public class StripeKeyEncryptionServiceTests
     [Fact]
     public void Encrypt_Decrypt_RoundTrip_ReturnsOriginalValue()
     {
-        var original = "sk_test_4eC39HqLyjWDarjtT1zdp7dc";
+        var original = "sk_test_FAKE_KEY_FOR_UNIT_TEST_ONLY";
         var encrypted = _service.Encrypt(original);
         var decrypted = _service.Decrypt(encrypted);
         Assert.Equal(original, decrypted);
@@ -26,7 +26,7 @@ public class StripeKeyEncryptionServiceTests
     [Fact]
     public void Encrypt_ProducesDifferentCiphertext()
     {
-        var original = "sk_test_abc123";
+        var original = "sk_test_FAKE_NOT_REAL_12345";
         var encrypted = _service.Encrypt(original);
         Assert.NotEqual(original, encrypted);
     }
@@ -50,27 +50,27 @@ public class StripeKeyEncryptionServiceTests
     [Fact]
     public void Mask_StandardSecretKey_ShowsPrefixAndLastFour()
     {
-        var result = _service.Mask("sk_test_4eC39HqLyjWDarjtT1zdp7dc");
+        var result = _service.Mask("sk_test_FAKE_KEY_FOR_UNIT_TEST_ONLY");
         Assert.StartsWith("sk_test_", result);
-        Assert.EndsWith("p7dc", result);
+        Assert.EndsWith("ONLY", result);
         Assert.Contains("****", result);
     }
 
     [Fact]
     public void Mask_ConnectClientId_ShowsPrefixAndLastFour()
     {
-        var result = _service.Mask("ca_ABC123XYZ789");
+        var result = _service.Mask("ca_FAKE_TEST_VALUE_1234");
         Assert.StartsWith("ca_", result);
-        Assert.EndsWith("Z789", result);
+        Assert.EndsWith("1234", result);
         Assert.Contains("****", result);
     }
 
     [Fact]
     public void Mask_WebhookSecret_ShowsPrefixAndLastFour()
     {
-        var result = _service.Mask("whsec_testvalue12345abcdef");
+        var result = _service.Mask("whsec_FAKE_TEST_VALUE_ONLY");
         Assert.Contains("****", result);
-        Assert.EndsWith("cdef", result);
+        Assert.EndsWith("ONLY", result);
     }
 
     [Fact]
