@@ -96,12 +96,41 @@ Phase 2 delivers the **Enterprise tier** features — operational completeness t
 
 ---
 
+## Module 11: Business Applications Tracker (Compliance Filings)
+
+**Effort:** Medium | **Dependencies:** None (standalone module)
+
+- [ ] 11.1 Design compliance filings data model (`ApplicationType` templates, `BusinessApplication` per-business instances)
+- [ ] 11.2 Create `[compliance]` schema with tables: `ApplicationType`, `ApplicationCategory`, `BusinessApplication`, `ApplicationAttachment`
+- [ ] 11.3 Create `ApplicationType` entity (Name, Description, Country, Category FK, Frequency, DefaultDueMonth, DefaultDueDay, IsTemplate, CreatedByAdmin)
+- [ ] 11.4 Create `ApplicationCategory` entity (Name, Description — e.g., "Tax", "Employee", "Regulatory", "Business Registration")
+- [ ] 11.5 Create `BusinessApplication` entity (BusinessId, ApplicationTypeId, DueDate, Status, ReferenceNumber, Notes, SubmittedAtUtc, ApprovedAtUtc)
+- [ ] 11.6 Create `ApplicationAttachment` entity (ApplicationId, FileName, FilePath, ContentType, UploadedAtUtc)
+- [ ] 11.7 Seed default application types for Cyprus (IR7 Annual Tax Return, Social Insurance Monthly, VAT Return, Annual Levy, Employer's Declaration)
+- [ ] 11.8 Create SuperAdmin template management UI (CRUD for ApplicationType + ApplicationCategory)
+- [ ] 11.9 Create business-facing "Import from Templates" flow (select country/category → pick relevant applications → import to business)
+- [ ] 11.10 Create business applications list view (filterable by category, status, due date)
+- [ ] 11.11 Create business application detail/edit view (status updates, notes, attachments, reference number)
+- [ ] 11.12 Implement status workflow: Pending → In Progress → Submitted → Approved / Rejected
+- [ ] 11.13 Create dashboard widget: "Upcoming Filings" — applications due in next 30/60/90 days
+- [ ] 11.14 Add notification/warning for applications approaching due date (7 days, 3 days, overdue)
+- [ ] 11.15 Add calendar year view showing all filing deadlines
+- [ ] 11.16 Add attachment upload per application (PDF evidence of submission)
+- [ ] 11.17 Add plan permission gate (`compliance` module key — Professional+)
+- [ ] 11.18 Add soft-gate teaser for Foundation users
+- [ ] 11.19 Mobile responsive design
+- [ ] 11.20 End-to-end testing: import template → create application → update status → attach evidence
+
+---
+
 ## Build Order & Dependencies
 
 ```
 Module 8 (Document Attachments) ←── Independent, can start immediately
     │
 Module 10 (Audit Log Access) ←── Quick win, mostly permission gating
+    │
+Module 11 (Business Applications) ←── Standalone, no dependencies
     │
 Module 7 (Client Portal) ←── Benefits from Stripe integration (Phase 1)
     │
@@ -111,8 +140,9 @@ Module 9 (Activity Timeline) ←── Most complex, benefits from all other mod
 **Recommended sequence:**
 1. Module 10 (Audit Log) — quick win, mostly permission gating on existing feature
 2. Module 8 (Attachments) — independent, medium effort
-3. Module 7 (Client Portal) — high effort, high value
-4. Module 9 (Activity Timeline) — highest effort, benefits from all modules emitting events
+3. Module 11 (Business Applications) — medium effort, standalone, high compliance value
+4. Module 7 (Client Portal) — high effort, high value
+5. Module 9 (Activity Timeline) — highest effort, benefits from all modules emitting events
 
 ---
 
@@ -130,11 +160,12 @@ Each module is considered complete when:
 
 ## Post-Phase 2 Milestones
 
-- [ ] All 4 modules complete and verified
+- [ ] All 5 modules complete and verified
 - [ ] Landing page updated with Enterprise tier features
 - [ ] Enterprise tier available for purchase/activation
 - [ ] Client Portal demo-ready for prospect presentations
-- [ ] Phase 3 planning begins (Multi-Currency, API/Integrations Layer)
+- [ ] Business Applications Tracker demo-ready for compliance-focused businesses
+- [ ] Phase 3 planning begins (Multi-Currency, API/Integrations Layer, Payroll)
 
 ---
 
@@ -145,5 +176,6 @@ When Phase 2 is complete, proceed to:
 **→ Phase 3: Market Expansion** (`.kiro/docs/Phase3_Development_Timetable.md`)
 - Multi-Currency Support
 - API / Integrations Layer (REST API, Webhooks, Stripe advanced, Bank Feeds)
+- Payroll / Payslips (employee management, payslip generation, deductions, P&L integration)
 
-Phase 3 positions the Portal for international markets and third-party ecosystem connectivity.
+Phase 3 positions the Portal for international markets, third-party ecosystem connectivity, and operational completeness.

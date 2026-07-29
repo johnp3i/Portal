@@ -1,0 +1,387 @@
+@{
+    ViewData["Title"] = "Filing Calendar";
+    var year = (int)ViewBag.Year;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Compliance</div>
+        <h1 class="topbar-heading">Filing Calendar</h1>
+        <p class="topbar-subtitle">Year-at-a-glance view of all filing deadlines and their statuses.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a asp-action="Index" asp-controller="Compliance" class="btn btn-secondary">Back to Applications</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <!-- Year Navigator -->
+    <div class="calendar-year-nav">
+        <button type="button" class="btn btn-secondary calendar-nav-btn" id="btnPrevYear" aria-label="Previous year">&larr;</button>
+        <span class="calendar-year-label" id="calendarYearLabel">@year</span>
+        <button type="button" class="btn btn-secondary calendar-nav-btn" id="btnNextYear" aria-label="Next year">&rarr;</button>
+    </div>
+
+    <!-- 12-Month Grid -->
+    <div class="calendar-grid" id="calendarGrid">
+        <!-- Months rendered by JavaScript -->
+    </div>
+
+    <!-- Month Detail Panel -->
+    <div class="calendar-detail-panel" id="calendarDetailPanel" style="display:none;">
+        <div class="calendar-detail-header">
+            <h3 id="detailMonthName"></h3>
+            <button type="button" class="btn btn-secondary" id="btnCloseDetail" style="font-size:12px;padding:6px 14px;">Close</button>
+        </div>
+        <div id="detailFilingsList"></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="calendar-legend">
+        <div class="calendar-legend-item">
+            <span class="calendar-dot dot-pending"></span> Pending
+        </div>
+        <div class="calendar-legend-item">
+            <span class="calendar-dot dot-inprogress"></span> In Progress
+        </div>
+        <div class="calendar-legend-item">
+            <span class="calendar-dot dot-submitted"></span> Submitted
+        </div>
+        <div class="calendar-legend-item">
+            <span class="calendar-dot dot-approved"></span> Approved
+        </div>
+        <div class="calendar-legend-item">
+            <span class="calendar-dot dot-rejected"></span> Rejected
+        </div>
+        <div class="calendar-legend-item">
+            <span class="calendar-dot dot-overdue"></span> Overdue
+        </div>
+    </div>
+</section>
+
+<style>
+    .calendar-year-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        margin-bottom: 28px;
+    }
+    .calendar-year-label {
+        font-family: 'Manrope', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        color: #1a2a3a;
+        min-width: 80px;
+        text-align: center;
+    }
+    .calendar-nav-btn {
+        padding: 8px 16px;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    /* 12-Month Grid */
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .calendar-month-box {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        min-height: 100px;
+    }
+    .calendar-month-box:hover {
+        border-color: #0D5EA6;
+        box-shadow: 0 2px 12px rgba(13, 94, 166, 0.08);
+        transform: translateY(-1px);
+    }
+    .calendar-month-box.active {
+        border-color: #0D5EA6;
+        background: #f0f7ff;
+    }
+    .calendar-month-name {
+        font-family: 'Manrope', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a2a3a;
+        margin-bottom: 10px;
+    }
+    .calendar-month-dots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    /* Dots */
+    .calendar-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .dot-pending { background: #9ca3af; }
+    .dot-inprogress { background: #0D5EA6; }
+    .dot-submitted { background: #C8912E; }
+    .dot-approved { background: #129867; }
+    .dot-rejected { background: #C24A4A; }
+    .dot-overdue {
+        background: #C24A4A;
+        animation: dot-pulse 2s infinite;
+    }
+    @@keyframes dot-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    /* Detail Panel */
+    .calendar-detail-panel {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 28px;
+    }
+    .calendar-detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+    .calendar-detail-header h3 {
+        font-family: 'Manrope', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a2a3a;
+        margin: 0;
+    }
+    .calendar-detail-filing {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+    .calendar-detail-filing-name {
+        font-weight: 600;
+        color: #1a2a3a;
+        flex: 1;
+    }
+    .calendar-detail-filing-date {
+        font-size: 13px;
+        color: #5a6a7a;
+    }
+
+    /* Legend */
+    .calendar-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+    }
+    .calendar-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #5a6a7a;
+        font-weight: 500;
+    }
+
+    /* Responsive */
+    @@media (max-width: 900px) {
+        .calendar-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    @@media (max-width: 600px) {
+        .calendar-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+@section Scripts {
+<script>
+    (function () {
+        var currentYear = @year;
+        var calendarData = [];
+        var selectedMonth = null;
+
+        var monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        function init() {
+            document.getElementById('btnPrevYear').addEventListener('click', function () {
+                currentYear--;
+                updateYearLabel();
+                loadCalendarData(currentYear);
+            });
+
+            document.getElementById('btnNextYear').addEventListener('click', function () {
+                currentYear++;
+                updateYearLabel();
+                loadCalendarData(currentYear);
+            });
+
+            document.getElementById('btnCloseDetail').addEventListener('click', function () {
+                closeDetailPanel();
+            });
+
+            loadCalendarData(currentYear);
+        }
+
+        function updateYearLabel() {
+            document.getElementById('calendarYearLabel').textContent = currentYear;
+        }
+
+        function loadCalendarData(year) {
+            BlockUI.show('Loading calendar...');
+
+            fetch('/Compliance/AxGetCalendarData?year=' + year)
+                .then(function (response) { return response.json(); })
+                .then(function (result) {
+                    BlockUI.hide();
+                    if (result.success) {
+                        calendarData = result.data;
+                        renderCalendar();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load calendar data.', confirmButtonColor: '#0D5EA6' });
+                    }
+                })
+                .catch(function () {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                });
+        }
+
+        function getFilingsForMonth(monthIndex) {
+            return calendarData.filter(function (filing) {
+                var dueDate = new Date(filing.dueDate);
+                return dueDate.getMonth() === monthIndex;
+            });
+        }
+
+        function getDotClass(filing) {
+            if (filing.dueStatus === 'overdue') return 'dot-overdue';
+
+            switch (filing.status) {
+                case 'Pending': return 'dot-pending';
+                case 'InProgress': return 'dot-inprogress';
+                case 'Submitted': return 'dot-submitted';
+                case 'Approved': return 'dot-approved';
+                case 'Rejected': return 'dot-rejected';
+                default: return 'dot-pending';
+            }
+        }
+
+        function renderCalendar() {
+            var grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            for (var i = 0; i < 12; i++) {
+                var monthFilings = getFilingsForMonth(i);
+                var box = document.createElement('div');
+                box.className = 'calendar-month-box' + (selectedMonth === i ? ' active' : '');
+                box.setAttribute('data-month', i);
+
+                var nameEl = document.createElement('div');
+                nameEl.className = 'calendar-month-name';
+                nameEl.textContent = monthNames[i];
+                box.appendChild(nameEl);
+
+                var dotsEl = document.createElement('div');
+                dotsEl.className = 'calendar-month-dots';
+
+                for (var j = 0; j < monthFilings.length; j++) {
+                    var dot = document.createElement('span');
+                    dot.className = 'calendar-dot ' + getDotClass(monthFilings[j]);
+                    dot.title = monthFilings[j].applicationName;
+                    dotsEl.appendChild(dot);
+                }
+
+                box.appendChild(dotsEl);
+                box.addEventListener('click', (function (monthIndex) {
+                    return function () {
+                        toggleDetailPanel(monthIndex);
+                    };
+                })(i));
+
+                grid.appendChild(box);
+            }
+        }
+
+        function toggleDetailPanel(monthIndex) {
+            if (selectedMonth === monthIndex) {
+                closeDetailPanel();
+                return;
+            }
+
+            selectedMonth = monthIndex;
+            renderCalendar();
+
+            var panel = document.getElementById('calendarDetailPanel');
+            var monthFilings = getFilingsForMonth(monthIndex);
+
+            document.getElementById('detailMonthName').textContent = monthNames[monthIndex] + ' ' + currentYear;
+
+            var listEl = document.getElementById('detailFilingsList');
+            listEl.innerHTML = '';
+
+            if (monthFilings.length === 0) {
+                listEl.innerHTML = '<p style="color:#5a6a7a;font-size:14px;">No filings due this month.</p>';
+            } else {
+                for (var i = 0; i < monthFilings.length; i++) {
+                    var filing = monthFilings[i];
+                    var item = document.createElement('div');
+                    item.className = 'calendar-detail-filing';
+
+                    var dot = document.createElement('span');
+                    dot.className = 'calendar-dot ' + getDotClass(filing);
+                    item.appendChild(dot);
+
+                    var name = document.createElement('span');
+                    name.className = 'calendar-detail-filing-name';
+                    name.textContent = filing.applicationName;
+                    item.appendChild(name);
+
+                    var date = document.createElement('span');
+                    date.className = 'calendar-detail-filing-date';
+                    var dueDate = new Date(filing.dueDate);
+                    date.textContent = dueDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    item.appendChild(date);
+
+                    listEl.appendChild(item);
+                }
+            }
+
+            panel.style.display = 'block';
+        }
+
+        function closeDetailPanel() {
+            selectedMonth = null;
+            document.getElementById('calendarDetailPanel').style.display = 'none';
+            renderCalendar();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+</script>
+}

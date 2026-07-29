@@ -445,6 +445,11 @@ builder.Services.AddScoped<IStripeKeyResolutionService, StripeKeyResolutionServi
 // --- Global Search ---
 builder.Services.AddScoped<IGlobalSearchService, GlobalSearchService>();
 
+// --- Compliance Filings ---
+builder.Services.AddScoped<ComplianceRepository>(sp =>
+    new ComplianceRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IComplianceService, ComplianceService>();
+
 // --- MVC ---
 var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {

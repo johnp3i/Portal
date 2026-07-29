@@ -3,171 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — Onboarding & Quick Actions Mockup</title>
+    <title>Dashboard — Onboarding Wizard Mockup</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --blue: #0D5EA6;
-            --green: #129867;
-            --gold: #C8912E;
-            --red: #C24A4A;
-            --text: #0B1B28;
-            --muted: #5E7385;
-            --bg: #F7FAFC;
-            --card: #ffffff;
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success-green: #129867;
+            --warning-gold: #C8912E;
+            --danger-red: #C24A4A;
+            --bg-base: #F7FAFC;
+            --text-primary: #0B1B28;
+            --text-secondary: #5E7385;
+            --card-bg: #ffffff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background: var(--bg-base);
+            color: var(--text-primary);
             padding: 32px;
-            max-width: 1000px;
+            max-width: 1060px;
             margin: 0 auto;
         }
 
-        .topbar {
-            margin-bottom: 24px;
+        /* Toggle Controls */
+        .state-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
         }
-        .eyebrow {
-            font-size: 11px;
+        .state-toggle button {
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            border: 2px solid rgba(13,94,166,.15);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .state-toggle button:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+        .state-toggle button.active {
+            background: var(--primary-blue);
+            border-color: var(--primary-blue);
+            color: #fff;
+        }
+
+        .mockup-label {
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: .08em;
-            color: var(--blue);
+            letter-spacing: .1em;
+            color: var(--text-secondary);
+            background: rgba(13,94,166,.06);
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        /* Onboarding Panel */
+        .onboarding-panel {
+            background: var(--card-bg);
+            border-radius: 30px;
+            border: 1px solid rgba(13,94,166,.06);
+            box-shadow: 0 4px 24px rgba(13,94,166,.05), 0 1px 3px rgba(0,0,0,.03);
+            padding: 22px;
+            margin-bottom: 22px;
+            border-left: 4px solid var(--primary-blue);
+            position: relative;
+            backdrop-filter: blur(8px);
+        }
+        .onboarding-panel.celebration {
+            border-left-color: var(--success-green);
+        }
+
+        .onboarding-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        .eyebrow .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--blue);
-        }
-        .topbar-heading {
-            font-family: 'Manrope', sans-serif;
-            font-size: 30px;
-            font-weight: 800;
-            margin-top: 10px;
-        }
-        .topbar-subtitle {
-            font-size: 15px;
-            color: var(--muted);
-            margin-top: 4px;
-        }
-
-        .glass {
-            background: var(--card);
-            border-radius: 20px;
-            border: 1px solid rgba(13,94,166,.06);
-            box-shadow: 0 4px 20px rgba(13,94,166,.04);
-            padding: 24px;
-            margin-bottom: 22px;
-        }
-
-        /* KPI Cards */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 22px;
-        }
-        .kpi-card {
-            padding: 18px;
-            border-radius: 14px;
-            border: 1px solid rgba(13,94,166,.06);
-            background: rgba(13,94,166,.02);
-        }
-        .kpi-card__label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            color: var(--muted);
-        }
-        .kpi-card__value {
-            font-family: 'Manrope', sans-serif;
-            font-size: 26px;
-            font-weight: 800;
-            margin-top: 6px;
-        }
-
-        /* Quick Actions */
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            justify-content: space-between;
             margin-bottom: 16px;
         }
-        .section-title h3 {
-            font-family: 'Manrope', sans-serif;
-            font-size: 16px;
-            font-weight: 700;
-        }
-        .quick-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        .onboarding-header-left {
+            display: flex;
+            align-items: center;
             gap: 12px;
         }
-        .quick-action-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            padding: 20px 12px;
-            border-radius: 14px;
-            background: rgba(13,94,166,.03);
-            border: 1.5px solid rgba(13,94,166,.08);
-            text-decoration: none;
-            transition: all .15s;
-            cursor: pointer;
+        .onboarding-icon {
+            font-size: 22px;
+            line-height: 1;
         }
-        .quick-action-card:hover {
-            background: rgba(13,94,166,.07);
-            border-color: rgba(13,94,166,.18);
-            box-shadow: 0 4px 12px rgba(13,94,166,.06);
-            transform: translateY(-2px);
-        }
-        .quick-action-card__icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(13,94,166,.08), rgba(87,184,232,.1));
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .onboarding-title {
+            font-family: 'Manrope', sans-serif;
             font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
         }
-        .quick-action-card__label {
+        .onboarding-badge {
             font-size: 12px;
             font-weight: 700;
-            color: var(--text);
-            text-align: center;
+            color: var(--primary-blue);
+            background: rgba(13,94,166,.08);
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+        .dismiss-btn {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-secondary);
+            background: none;
+            border: 1px solid rgba(13,94,166,.12);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .dismiss-btn:hover {
+            background: rgba(13,94,166,.04);
         }
 
-        /* Getting Started */
-        .getting-started {
-            border-left: 4px solid var(--blue);
+        /* Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(13,94,166,.08);
+            border-radius: 3px;
+            margin-bottom: 18px;
+            overflow: hidden;
         }
-        .getting-started summary {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            list-style: none;
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text);
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--accent-cyan));
+            border-radius: 3px;
+            transition: width .4s ease;
         }
-        .getting-started summary::marker { display: none; }
-        .getting-started summary::-webkit-details-marker { display: none; }
+
+        /* Checklist */
         .checklist {
-            margin-top: 16px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
         }
         .checklist-item {
             display: flex;
@@ -183,231 +169,294 @@
             background: rgba(13,94,166,.05);
         }
         .checklist-item__check {
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            border: 2px solid rgba(13,94,166,.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 700;
             flex-shrink: 0;
+            transition: all .2s;
         }
         .checklist-item__check.done {
-            background: var(--green);
-            border-color: var(--green);
+            background: var(--success-green);
+            border: 2px solid var(--success-green);
             color: #fff;
         }
         .checklist-item__check.pending {
             background: #fff;
-            border-color: rgba(13,94,166,.2);
+            border: 2px solid rgba(13,94,166,.2);
+            color: transparent;
         }
         .checklist-item__text {
             font-size: 14px;
             font-weight: 600;
-            color: var(--text);
+            color: var(--primary-blue);
+            text-decoration: none;
         }
         .checklist-item__text.done {
-            color: var(--muted);
+            color: var(--text-secondary);
             text-decoration: line-through;
         }
-        .dismiss-btn {
-            margin-top: 14px;
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--muted);
-            background: none;
-            border: 1px solid rgba(13,94,166,.1);
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .dismiss-btn:hover {
-            background: rgba(13,94,166,.04);
-        }
 
-        /* Sidebar Help link mockup */
-        .sidebar-help {
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(13,94,166,.08);
+        /* Celebration State */
+        .celebration-content {
+            text-align: center;
+            padding: 24px 0;
         }
-        .help-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            border-radius: 12px;
-            text-decoration: none;
-            color: var(--muted);
-            font-weight: 700;
+        .celebration-icon {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+        .celebration-heading {
+            font-family: 'Manrope', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--success-green);
+            margin-bottom: 8px;
+        }
+        .celebration-message {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .got-it-btn {
+            padding: 10px 28px;
             font-size: 14px;
-            transition: background .15s, color .15s;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            background: var(--success-green);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: opacity .15s;
         }
-        .help-link:hover {
-            background: rgba(13,94,166,.04);
-            color: var(--text);
+        .got-it-btn:hover {
+            opacity: .9;
         }
 
-        .mockup-label {
-            font-size: 10px;
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(13,94,166,.06);
+            box-shadow: 0 2px 12px rgba(13,94,166,.03);
+        }
+        .kpi-card__label {
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: .1em;
-            color: var(--muted);
-            background: rgba(13,94,166,.06);
-            padding: 4px 10px;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            display: inline-block;
+            letter-spacing: .06em;
+            color: var(--text-secondary);
+        }
+        .kpi-card__value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            margin-top: 6px;
+        }
+
+        /* State visibility */
+        .state-partial,
+        .state-complete,
+        .state-new {
+            display: none;
+        }
+        .state-partial.visible,
+        .state-complete.visible,
+        .state-new.visible {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            body {
+                padding: 16px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- Topbar -->
-    <div class="topbar">
-        <div class="eyebrow"><span class="dot"></span> Dashboard</div>
-        <h1 class="topbar-heading">Welcome back, John</h1>
-        <p class="topbar-subtitle">Here's an overview of your business activity.</p>
+    <!-- State Toggle Controls -->
+    <div style="margin-bottom: 8px;">
+        <span class="mockup-label">Interactive State Toggle</span>
+    </div>
+    <div class="state-toggle">
+        <button class="active" onclick="switchState('partial')">Partial Completion (3/6)</button>
+        <button onclick="switchState('complete')">All Complete (Celebration)</button>
+        <button onclick="switchState('new')">New User (0/6)</button>
     </div>
 
-    <!-- KPI Cards -->
-    <span class="mockup-label">KPI Section (existing)</span>
+    <!-- ===== PARTIAL COMPLETION STATE (3 of 6) ===== -->
+    <div class="state-partial visible" id="state-partial">
+        <span class="mockup-label">Onboarding Panel — Partial Completion</span>
+        <div class="onboarding-panel">
+            <div class="onboarding-header">
+                <div class="onboarding-header-left">
+                    <span class="onboarding-icon">&#x1F680;</span>
+                    <span class="onboarding-title">Getting Started</span>
+                    <span class="onboarding-badge">3 of 6 completed</span>
+                </div>
+                <button class="dismiss-btn">Dismiss</button>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: 50%;"></div>
+            </div>
+            <div class="checklist">
+                <a href="/MyBusiness" class="checklist-item">
+                    <div class="checklist-item__check done">&#10003;</div>
+                    <span class="checklist-item__text done">Complete your business profile</span>
+                </a>
+                <a href="/MyBusiness?tab=logos" class="checklist-item">
+                    <div class="checklist-item__check done">&#10003;</div>
+                    <span class="checklist-item__text done">Upload your logo</span>
+                </a>
+                <a href="/MyBusiness?tab=payment" class="checklist-item">
+                    <div class="checklist-item__check done">&#10003;</div>
+                    <span class="checklist-item__text done">Add payment details</span>
+                </a>
+                <a href="/Customer" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Create your first customer</span>
+                </a>
+                <a href="/Quotation/Create" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Create a quotation or invoice</span>
+                </a>
+                <a href="/Invoice" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Issue your first invoice</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ALL COMPLETE STATE (Celebration) ===== -->
+    <div class="state-complete" id="state-complete">
+        <span class="mockup-label">Onboarding Panel — Celebration State</span>
+        <div class="onboarding-panel celebration">
+            <div class="onboarding-header">
+                <div class="onboarding-header-left">
+                    <span class="onboarding-icon">&#x1F389;</span>
+                    <span class="onboarding-title" style="color: var(--success-green);">Setup Complete!</span>
+                </div>
+                <button class="dismiss-btn">Got it</button>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: 100%; background: var(--success-green);"></div>
+            </div>
+            <div class="celebration-content">
+                <div class="celebration-icon">&#x1F389;</div>
+                <h2 class="celebration-heading">Setup Complete!</h2>
+                <p class="celebration-message">
+                    Congratulations! You've completed all the setup steps. Your business is ready to go. Start creating quotations and invoices to grow your revenue.
+                </p>
+                <button class="got-it-btn">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== NEW USER STATE (0 of 6) ===== -->
+    <div class="state-new" id="state-new">
+        <span class="mockup-label">Onboarding Panel — New User (0 completed)</span>
+        <div class="onboarding-panel">
+            <div class="onboarding-header">
+                <div class="onboarding-header-left">
+                    <span class="onboarding-icon">&#x1F680;</span>
+                    <span class="onboarding-title">Getting Started</span>
+                    <span class="onboarding-badge">0 of 6 completed</span>
+                </div>
+                <button class="dismiss-btn">Dismiss</button>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+            <div class="checklist">
+                <a href="/MyBusiness" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Complete your business profile</span>
+                </a>
+                <a href="/MyBusiness?tab=logos" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Upload your logo</span>
+                </a>
+                <a href="/MyBusiness?tab=payment" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Add payment details</span>
+                </a>
+                <a href="/Customer" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Create your first customer</span>
+                </a>
+                <a href="/Quotation/Create" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Create a quotation or invoice</span>
+                </a>
+                <a href="/Invoice" class="checklist-item">
+                    <div class="checklist-item__check pending">&#9675;</div>
+                    <span class="checklist-item__text">Issue your first invoice</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards (context below onboarding) -->
+    <span class="mockup-label">KPI Cards (below onboarding panel)</span>
     <div class="kpi-grid">
         <div class="kpi-card">
             <div class="kpi-card__label">Revenue (This Month)</div>
-            <div class="kpi-card__value">€4,280</div>
+            <div class="kpi-card__value">&#8364;4,280</div>
         </div>
         <div class="kpi-card">
             <div class="kpi-card__label">Outstanding</div>
-            <div class="kpi-card__value" style="color: var(--gold);">€1,450</div>
+            <div class="kpi-card__value" style="color: var(--warning-gold);">&#8364;1,450</div>
         </div>
         <div class="kpi-card">
             <div class="kpi-card__label">Overdue Invoices</div>
-            <div class="kpi-card__value" style="color: var(--red);">3</div>
+            <div class="kpi-card__value" style="color: var(--danger-red);">3</div>
         </div>
         <div class="kpi-card">
             <div class="kpi-card__label">This Month Expenses</div>
-            <div class="kpi-card__value">€1,820</div>
+            <div class="kpi-card__value">&#8364;1,820</div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <span class="mockup-label">Quick Actions (redesigned)</span>
-    <section class="glass">
-        <div class="section-title">
-            <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            <h3>Quick Actions</h3>
-        </div>
-        <div class="quick-actions-grid">
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
-                </div>
-                <div class="quick-action-card__label">New Quotation</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8m-8 4h8m-8 4h4"/></svg>
-                </div>
-                <div class="quick-action-card__label">Create Invoice</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
-                </div>
-                <div class="quick-action-card__label">New Customer</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M17.2 7A7 7 0 006 12a7 7 0 0011.2 5"/><path d="M4 10h10M4 14h10"/></svg>
-                </div>
-                <div class="quick-action-card__label">Record Payment</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-                </div>
-                <div class="quick-action-card__label">Record Purchase</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
-                </div>
-                <div class="quick-action-card__label">Bulk Entry</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                </div>
-                <div class="quick-action-card__label">New Lead</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg>
-                </div>
-                <div class="quick-action-card__label">Customer Statement</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
-                </div>
-                <div class="quick-action-card__label">New Credit Note</div>
-            </a>
-            <a href="#" class="quick-action-card">
-                <div class="quick-action-card__icon">
-                    <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                </div>
-                <div class="quick-action-card__label">New Supplier</div>
-            </a>
-        </div>
-    </section>
+    <script>
+        function switchState(state) {
+            // Hide all states
+            document.getElementById('state-partial').classList.remove('visible');
+            document.getElementById('state-complete').classList.remove('visible');
+            document.getElementById('state-new').classList.remove('visible');
 
-    <!-- Getting Started -->
-    <span class="mockup-label">Getting Started (new users only)</span>
-    <section class="glass getting-started">
-        <details open>
-            <summary>
-                <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-                Getting Started
-            </summary>
-            <div class="checklist">
-                <a href="#" class="checklist-item">
-                    <div class="checklist-item__check done">✓</div>
-                    <span class="checklist-item__text done">Complete your business profile</span>
-                </a>
-                <a href="#" class="checklist-item">
-                    <div class="checklist-item__check done">✓</div>
-                    <span class="checklist-item__text done">Create your first customer</span>
-                </a>
-                <a href="#" class="checklist-item">
-                    <div class="checklist-item__check pending"></div>
-                    <span class="checklist-item__text">Create your first quotation</span>
-                </a>
-                <a href="#" class="checklist-item">
-                    <div class="checklist-item__check pending"></div>
-                    <span class="checklist-item__text">Issue your first invoice</span>
-                </a>
-                <a href="#" class="checklist-item">
-                    <div class="checklist-item__check pending"></div>
-                    <span class="checklist-item__text">Record a payment</span>
-                </a>
-            </div>
-            <button class="dismiss-btn" onclick="this.closest('section').style.display='none'">Dismiss — I know my way around</button>
-        </details>
-    </section>
+            // Show selected state
+            document.getElementById('state-' + state).classList.add('visible');
 
-    <!-- Sidebar Help Link (mockup representation) -->
-    <span class="mockup-label">Sidebar Help Link (bottom of nav)</span>
-    <div style="max-width: 240px; background: #fff; border-radius: 16px; padding: 12px; border: 1px solid rgba(13,94,166,.08);">
-        <div class="sidebar-help">
-            <a href="#" class="help-link">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                Help & Getting Started
-            </a>
-        </div>
-    </div>
+            // Update toggle buttons
+            var buttons = document.querySelectorAll('.state-toggle button');
+            buttons.forEach(function(btn) { btn.classList.remove('active'); });
+
+            // Find and activate the correct button
+            if (state === 'partial') buttons[0].classList.add('active');
+            if (state === 'complete') buttons[1].classList.add('active');
+            if (state === 'new') buttons[2].classList.add('active');
+        }
+    </script>
 
 </body>
 </html>

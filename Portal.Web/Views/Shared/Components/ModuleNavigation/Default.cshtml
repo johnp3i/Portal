@@ -46,6 +46,7 @@
     var hasCatalogSection = hasProductAccess;
 
     var hasSalesPipelineAccess = Model.TryGetValue("sales", out var salesAccess) && salesAccess != "none";
+    var hasComplianceAccess = Model.TryGetValue("compliance", out var compAccess) && compAccess != "none";
 }
 
 @* ═══ PIPELINE ═══ *@
@@ -380,6 +381,38 @@
     </div>
 }
 
+@* ═══ COMPLIANCE ═══ *@
+@if (hasComplianceAccess)
+{
+    var complianceIcon = "<svg width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2\"/><rect x=\"9\" y=\"3\" width=\"6\" height=\"4\" rx=\"1\"/><path d=\"M9 12h6M9 16h6\"/></svg>";
+    <div class="nav-section">
+        <div class="nav-title">Compliance</div>
+        @{
+            var isComplianceActive = currentController.Equals("Compliance", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-item @(isComplianceActive && currentAction != "Calendar" && currentAction != "Import" ? "active" : "")" asp-controller="Compliance" asp-action="Index">
+            <span class="nav-icon">@Html.Raw(complianceIcon)</span>
+            <span class="nav-text">Business Applications</span>
+        </a>
+        @{
+            var isCalendarActive = currentController.Equals("Compliance", StringComparison.OrdinalIgnoreCase)
+                && currentAction.Equals("Calendar", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-sub-item @(isCalendarActive ? "active" : "")" asp-controller="Compliance" asp-action="Calendar">
+            <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+            <span class="nav-text">Filing Calendar</span>
+        </a>
+        @{
+            var isImportActive = currentController.Equals("Compliance", StringComparison.OrdinalIgnoreCase)
+                && currentAction.Equals("Import", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-sub-item @(isImportActive ? "active" : "")" asp-controller="Compliance" asp-action="Import">
+            <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg></span>
+            <span class="nav-text">Import Templates</span>
+        </a>
+    </div>
+}
+
 @* ═══ ADMINISTRATION ═══ *@
 @{
     var isDemoSession = ViewContext.HttpContext.User.HasClaim("IsDemoSession", "true");
@@ -426,6 +459,10 @@
             <a class="nav-item @(ViewContext.HttpContext.Request.Path.StartsWithSegments("/Admin/BusinessInsights") ? "active" : "")" href="/Admin/BusinessInsights">
                 <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></span>
                 <span class="nav-text">Business Insights</span>
+            </a>
+            <a class="nav-item @(currentController.Equals("AdminCompliance", StringComparison.OrdinalIgnoreCase) ? "active" : "")" asp-controller="AdminCompliance" asp-action="Index">
+                <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></span>
+                <span class="nav-text">Compliance Templates</span>
             </a>
         }
     </div>

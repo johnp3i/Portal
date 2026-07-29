@@ -1,0 +1,54 @@
+@model List<Portal.Infrastructure.Models.Compliance.UpcomingFilingDto>
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="margin:0;font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;color:#1a2a3a;">Upcoming Filings</h3>
+            <a href="/Compliance" style="font-size:13px;font-weight:600;color:#0D5EA6;text-decoration:none;">View All</a>
+        </div>
+        @foreach (var filing in Model)
+        {
+            var statusClass = filing.Status switch
+            {
+                "Pending" => "pill pill-grey",
+                "InProgress" => "pill pill-blue",
+                _ => "pill pill-grey"
+            };
+            var dueColor = filing.DueStatus switch
+            {
+                "overdue" => "color:#C24A4A;font-weight:700;",
+                "urgent" => "color:#C24A4A;font-weight:600;",
+                "warning" => "color:#C8912E;font-weight:600;",
+                _ => "color:#5a6a7a;"
+            };
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f7;">
+                <div style="min-width:0;">
+                    <div style="font-size:14px;font-weight:600;color:#1a2a3a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@filing.ApplicationName</div>
+                    <div style="font-size:12px;@dueColor">
+                        @if (filing.DueStatus == "overdue")
+                        {
+                            <span>Overdue — @filing.DueDate.ToString("dd MMM yyyy")</span>
+                        }
+                        else
+                        {
+                            <span>Due @filing.DueDate.ToString("dd MMM yyyy")</span>
+                        }
+                    </div>
+                </div>
+                <span class="@statusClass" style="font-size:10px;padding:3px 8px;white-space:nowrap;">@(filing.Status == "InProgress" ? "IN PROGRESS" : filing.Status.ToUpper())</span>
+            </div>
+        }
+    </div>
+}
+else if (Model != null && Model.Count == 0)
+{
+    <div class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;color:#1a2a3a;">Upcoming Filings</h3>
+            <a href="/Compliance" style="font-size:13px;font-weight:600;color:#0D5EA6;text-decoration:none;">View All</a>
+        </div>
+        <p style="font-size:13px;color:#7a8a9a;margin:0;">No filings due in the next 30 days.</p>
+    </div>
+}

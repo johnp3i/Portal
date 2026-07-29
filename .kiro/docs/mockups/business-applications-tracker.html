@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Applications Tracker — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F7FAFC;
+            color: #0B1B28;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #0B1B28;
+            --text-secondary: #5E7385;
+            --text-muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11, 27, 40, 0.06);
+            --card-radius: 30px;
+            --inner-radius: 20px;
+        }
+
+        .page-container { max-width: 1260px; margin: 0 auto; padding: 40px 32px; }
+
+        /* ===== Page Header ===== */
+        .page-header { margin-bottom: 28px; }
+        .page-header__eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px; font-weight: 700;
+            letter-spacing: 1.2px; text-transform: uppercase;
+            color: var(--primary-blue); margin-bottom: 4px;
+        }
+        .page-header__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 36px; font-weight: 800;
+            letter-spacing: -0.5px; color: var(--text-primary); margin-bottom: 4px;
+        }
+        .page-header__subtitle { font-size: 15px; color: var(--text-secondary); }
+
+        /* ===== View Toggle ===== */
+        .view-toggle {
+            display: flex; gap: 6px; background: #fff;
+            border-radius: 16px; padding: 6px;
+            box-shadow: 0 2px 12px rgba(11,27,40,0.06);
+            margin-bottom: 28px; flex-wrap: wrap;
+        }
+        .view-toggle button {
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            padding: 10px 20px; border: none; border-radius: 12px;
+            cursor: pointer; transition: all 0.2s;
+            background: transparent; color: var(--text-secondary);
+        }
+        .view-toggle button.active {
+            background: var(--primary-blue); color: #fff;
+            box-shadow: 0 4px 12px rgba(13,94,166,0.25);
+        }
+        .view-toggle button:hover:not(.active) { background: var(--bg-secondary); color: var(--text-primary); }
+
+        /* ===== Glass Card ===== */
+        .glass {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: var(--card-radius);
+            box-shadow: var(--card-shadow);
+        }
+        .card-pad { padding: 28px 32px; }
+        .card-mb { margin-bottom: 22px; }
+
+        /* ===== Badges ===== */
+        .badge {
+            display: inline-block; padding: 4px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
+        }
+        .badge-pending { background: #eef1f4; color: #5E7385; }
+        .badge-inprogress { background: #e8f4fd; color: #0D5EA6; }
+        .badge-submitted { background: #fef3e2; color: #C8912E; }
+        .badge-approved { background: #e6f7f1; color: #129867; }
+        .badge-rejected { background: #fde8e8; color: #C24A4A; }
+        .badge-overdue {
+            background: #C24A4A; color: #fff;
+            animation: pulse-badge 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-badge { 0%,100%{ opacity:1; } 50%{ opacity:0.7; } }
+
+        .badge-cat-tax { background: #eef0fd; color: #4a5cc5; }
+        .badge-cat-employee { background: #e8f8f4; color: #0e7c5a; }
+        .badge-cat-regulatory { background: #fdf4e8; color: #a06b1a; }
+
+        /* ===== Table ===== */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table thead th {
+            font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 700;
+            letter-spacing: 0.6px; text-transform: uppercase;
+            color: var(--text-secondary); padding: 12px 14px;
+            border-bottom: 2px solid var(--border); text-align: left;
+        }
+        .data-table tbody td {
+            padding: 14px; border-bottom: 1px solid #f0f4f7;
+            color: var(--text-primary); vertical-align: middle;
+        }
+        .data-table tbody tr:hover { background: #f8fbfd; }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+
+        /* ===== Forms & Inputs ===== */
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field label {
+            font-size: 11px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .field select, .field input, .field textarea {
+            font-family: 'Inter', sans-serif; font-size: 13px;
+            padding: 9px 14px; border: 1.5px solid var(--border);
+            border-radius: 10px; background: #fff; color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+        .field select:focus, .field input:focus, .field textarea:focus {
+            outline: none; border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(13,94,166,0.08);
+        }
+        .field textarea { resize: vertical; min-height: 80px; }
+
+        /* ===== Buttons ===== */
+        .btn {
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            padding: 10px 20px; border: none; border-radius: 10px;
+            cursor: pointer; transition: all 0.2s; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4e8c; box-shadow: 0 4px 12px rgba(13,94,166,0.25); }
+        .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); }
+        .btn-secondary:hover { background: #dfe8ef; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #0e7c55; }
+        .btn-warning { background: var(--warning); color: #fff; }
+        .btn-warning:hover { background: #a87826; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #a33d3d; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+        .btn-outline {
+            background: transparent; border: 1.5px solid var(--border); color: var(--text-secondary);
+        }
+        .btn-outline:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+
+        /* ===== Filter Row ===== */
+        .filter-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-row .field { min-width: 160px; }
+        .filter-actions { padding-bottom: 2px; display: flex; gap: 8px; }
+
+        /* ===== Date Shortcuts ===== */
+        .date-shortcuts { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+        .date-shortcuts button {
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+            padding: 6px 14px; border: 1.5px solid var(--border);
+            border-radius: 20px; background: #fff; color: var(--text-secondary);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .date-shortcuts button.active,
+        .date-shortcuts button:hover {
+            border-color: var(--primary-blue); color: var(--primary-blue);
+            background: rgba(13,94,166,0.04);
+        }
+
+        /* ===== Pagination ===== */
+        .pagination {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 18px; flex-wrap: wrap; gap: 12px;
+        }
+        .pagination-info { font-size: 13px; color: var(--text-secondary); }
+        .pagination-controls { display: flex; gap: 4px; }
+        .pagination-controls button {
+            padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+            border: 1.5px solid var(--border); background: #fff; color: var(--text-secondary);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .pagination-controls button.active { background: var(--primary-blue); color: #fff; border-color: var(--primary-blue); }
+        .pagination-controls button:hover:not(.active) { border-color: var(--primary-blue); color: var(--primary-blue); }
+
+        /* ===== Due Date Indicators ===== */
+        .due-overdue { color: var(--danger); font-weight: 600; }
+        .due-warning { color: var(--warning); font-weight: 600; }
+        .due-normal { color: var(--text-primary); }
+
+        /* ===== Import View ===== */
+        .template-group { margin-bottom: 24px; }
+        .template-group h4 {
+            font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+        .template-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0; font-size: 14px; color: var(--text-primary);
+        }
+        .template-item input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--primary-blue); cursor: pointer;
+        }
+        .preview-box {
+            background: var(--bg-secondary); border-radius: var(--inner-radius);
+            padding: 18px 22px; margin-top: 20px;
+            border: 1px dashed var(--border);
+        }
+        .preview-box p { font-size: 14px; color: var(--text-secondary); }
+        .preview-box strong { color: var(--primary-blue); }
+
+        /* ===== Detail View ===== */
+        .detail-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; }
+        .detail-header h2 {
+            font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 800;
+            color: var(--text-primary);
+        }
+        .status-section {
+            background: var(--bg-secondary); border-radius: var(--inner-radius);
+            padding: 18px 22px; margin-bottom: 20px;
+        }
+        .status-section label {
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 8px; display: block;
+        }
+        .status-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .detail-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
+        .timestamps { display: flex; gap: 24px; font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .timestamps span { display: flex; align-items: center; gap: 6px; }
+        .attachments-section { border-top: 1px solid var(--border); padding-top: 20px; }
+        .attachment-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; background: #fff; border: 1px solid var(--border);
+            border-radius: 10px; margin-bottom: 8px;
+        }
+        .attachment-item .name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+        .overdue-banner {
+            background: linear-gradient(135deg, #C24A4A, #d65c5c);
+            color: #fff; padding: 14px 22px; border-radius: var(--inner-radius);
+            margin-bottom: 20px; font-size: 14px; font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        /* ===== Calendar View ===== */
+        .calendar-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 16px; margin-top: 20px;
+        }
+        @media (max-width: 900px) { .calendar-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 600px) { .calendar-grid { grid-template-columns: repeat(2, 1fr); } }
+        .month-box {
+            background: #fff; border: 1.5px solid var(--border);
+            border-radius: var(--inner-radius); padding: 16px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .month-box:hover { border-color: var(--primary-blue); box-shadow: 0 4px 16px rgba(13,94,166,0.1); }
+        .month-box.today { border-color: var(--accent-cyan); background: rgba(87,184,232,0.04); }
+        .month-box h5 {
+            font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 10px;
+        }
+        .month-dots { display: flex; gap: 5px; flex-wrap: wrap; }
+        .dot {
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .dot-pending { background: #c4cdd6; }
+        .dot-inprogress { background: var(--primary-blue); }
+        .dot-submitted { background: var(--warning); }
+        .dot-approved { background: var(--success); }
+        .dot-overdue { background: var(--danger); animation: pulse-badge 1.5s ease-in-out infinite; }
+
+        .calendar-legend {
+            display: flex; gap: 18px; flex-wrap: wrap; margin-top: 18px;
+            padding: 14px 0; border-top: 1px solid var(--border);
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+
+        .month-detail {
+            margin-top: 16px; background: var(--bg-secondary);
+            border-radius: var(--inner-radius); padding: 18px;
+            display: none;
+        }
+        .month-detail.visible { display: block; }
+        .month-detail h4 {
+            font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700;
+            margin-bottom: 10px; color: var(--text-primary);
+        }
+        .month-detail ul { list-style: none; }
+        .month-detail li {
+            padding: 6px 0; font-size: 13px; color: var(--text-primary);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* ===== Dashboard Widget ===== */
+        .widget-preview {
+            margin-top: 32px; padding-top: 28px; border-top: 2px dashed var(--border);
+        }
+        .widget-preview h3 {
+            font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700;
+            color: var(--text-secondary); margin-bottom: 14px; text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .widget-card {
+            background: #fff; border-radius: var(--inner-radius);
+            box-shadow: 0 4px 16px rgba(11,27,40,0.05);
+            padding: 20px 24px; max-width: 380px;
+            border: 1px solid var(--border);
+        }
+        .widget-card h4 {
+            font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 12px;
+        }
+        .widget-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid #f4f7f9;
+            font-size: 13px;
+        }
+        .widget-item:last-child { border-bottom: none; }
+        .widget-item .name { color: var(--text-primary); font-weight: 500; }
+        .widget-item .due { font-size: 12px; color: var(--text-secondary); }
+
+        /* ===== Utility ===== */
+        .hidden { display: none !important; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .back-link {
+            font-size: 13px; font-weight: 600; color: var(--primary-blue);
+            cursor: pointer; text-decoration: none; display: inline-flex;
+            align-items: center; gap: 4px;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .year-selector {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .year-selector span {
+            font-family: 'Manrope', sans-serif; font-size: 20px; font-weight: 700;
+            color: var(--text-primary);
+        }
+        .year-selector button {
+            width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border);
+            background: #fff; cursor: pointer; font-size: 16px; font-weight: 700;
+            color: var(--text-secondary); transition: all 0.15s;
+        }
+        .year-selector button:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header__eyebrow">Compliance</div>
+        <div class="page-header__title">Business Applications</div>
+        <div class="page-header__subtitle">Track and manage all statutory filings, tax returns, and regulatory obligations</div>
+    </div>
+
+    <!-- View Toggle -->
+    <div class="view-toggle">
+        <button class="active" onclick="showView('list')">Filing List</button>
+        <button onclick="showView('import')">Import Templates</button>
+        <button onclick="showView('detail')">Filing Detail</button>
+        <button onclick="showView('calendar')">Calendar View</button>
+    </div>
+
+    <!-- =============== VIEW 1: LIST VIEW =============== -->
+    <div id="view-list">
+        <!-- Filter Panel -->
+        <section class="glass card-pad card-mb">
+            <div class="filter-row">
+                <div class="field" style="min-width:180px;">
+                    <label>Category</label>
+                    <select>
+                        <option>All Categories</option>
+                        <option>Tax</option>
+                        <option>Employee</option>
+                        <option>Regulatory</option>
+                    </select>
+                </div>
+                <div class="field" style="min-width:180px;">
+                    <label>Status</label>
+                    <select>
+                        <option>All Statuses</option>
+                        <option>Pending</option>
+                        <option>In Progress</option>
+                        <option>Submitted</option>
+                        <option>Approved</option>
+                        <option>Rejected</option>
+                    </select>
+                </div>
+                <div class="field" style="min-width:140px;">
+                    <label>Due From</label>
+                    <input type="date" value="2027-01-01">
+                </div>
+                <div class="field" style="min-width:140px;">
+                    <label>Due To</label>
+                    <input type="date" value="2027-12-31">
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-primary btn-sm">Filter</button>
+                    <button class="btn btn-secondary btn-sm">Clear</button>
+                </div>
+            </div>
+            <div class="date-shortcuts">
+                <button>This Month</button>
+                <button>Last 3 Months</button>
+                <button class="active">This Year</button>
+                <button>All</button>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="glass card-pad">
+            <div class="flex-between" style="margin-bottom:18px;">
+                <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:var(--text-primary);">Compliance Filings</h3>
+                <button class="btn btn-primary btn-sm" onclick="showView('import')">Import Templates</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Filing Name</th>
+                        <th>Category</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Reference</th>
+                        <th>Attachments</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight:600;">Social Insurance Dec</td>
+                        <td><span class="badge badge-cat-employee">Employee</span></td>
+                        <td><span class="due-overdue">10 Jan 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span> <span class="badge badge-overdue">OVERDUE</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Social Insurance Jan</td>
+                        <td><span class="badge badge-cat-employee">Employee</span></td>
+                        <td><span class="due-normal">10 Feb 2027</span></td>
+                        <td><span class="badge badge-submitted">Submitted</span></td>
+                        <td style="font-weight:500;">SI-2027-01</td>
+                        <td style="color:var(--text-secondary);">1</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">VAT Return Q4 2026</td>
+                        <td><span class="badge badge-cat-tax">Tax</span></td>
+                        <td><span class="due-warning">10 Feb 2027</span></td>
+                        <td><span class="badge badge-inprogress">In Progress</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+
+                    <tr>
+                        <td style="font-weight:600;">Social Insurance Feb</td>
+                        <td><span class="badge badge-cat-employee">Employee</span></td>
+                        <td><span class="due-normal">10 Mar 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">IR7 Annual Tax Return</td>
+                        <td><span class="badge badge-cat-tax">Tax</span></td>
+                        <td><span class="due-normal">31 Mar 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Social Insurance Mar</td>
+                        <td><span class="badge badge-cat-employee">Employee</span></td>
+                        <td><span class="due-normal">10 Apr 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Employer's Declaration</td>
+                        <td><span class="badge badge-cat-employee">Employee</span></td>
+                        <td><span class="due-normal">30 Apr 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">VAT Return Q1 2027</td>
+                        <td><span class="badge badge-cat-tax">Tax</span></td>
+                        <td><span class="due-normal">10 May 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+
+                    <tr>
+                        <td style="font-weight:600;">Annual Levy 2027</td>
+                        <td><span class="badge badge-cat-regulatory">Regulatory</span></td>
+                        <td><span class="due-normal">30 Jun 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">VAT Return Q2 2027</td>
+                        <td><span class="badge badge-cat-tax">Tax</span></td>
+                        <td><span class="due-normal">10 Aug 2027</span></td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td style="color:var(--text-muted);">—</td>
+                        <td style="color:var(--text-secondary);">0</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">VAT Return Q3 2026</td>
+                        <td><span class="badge badge-cat-tax">Tax</span></td>
+                        <td><span class="due-normal">10 Nov 2026</span></td>
+                        <td><span class="badge badge-approved">Approved</span></td>
+                        <td style="font-weight:500;">VAT-Q3-2026</td>
+                        <td style="color:var(--text-secondary);">2</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Social Insurance Nov</td>
+                        <td><span class="badge badge-cat-employee">Employee</span></td>
+                        <td><span class="due-normal">10 Dec 2026</span></td>
+                        <td><span class="badge badge-approved">Approved</span></td>
+                        <td style="font-weight:500;">SI-2026-11</td>
+                        <td style="color:var(--text-secondary);">1</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showView('detail')">View</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pagination">
+                <div class="pagination-info">Showing 1–12 of 19 filings</div>
+                <div class="pagination-controls">
+                    <button class="active">1</button>
+                    <button>2</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- =============== VIEW 2: IMPORT FLOW =============== -->
+    <div id="view-import" class="hidden">
+        <section class="glass card-pad">
+            <div class="flex-between" style="margin-bottom:24px;">
+                <h3 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:var(--text-primary);">Import Filing Templates</h3>
+                <a class="back-link" onclick="showView('list')">&#8592; Back to list</a>
+            </div>
+
+            <div style="display:flex;gap:18px;margin-bottom:24px;flex-wrap:wrap;">
+                <div class="field" style="min-width:200px;">
+                    <label>Country</label>
+                    <select>
+                        <option selected>Cyprus</option>
+                        <option>Greece</option>
+                        <option>Malta</option>
+                    </select>
+                </div>
+                <div class="field" style="min-width:120px;">
+                    <label>Year</label>
+                    <select>
+                        <option>2026</option>
+                        <option selected>2027</option>
+                        <option>2028</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="template-group">
+                <h4><span class="badge badge-cat-tax" style="margin-right:8px;">Tax</span> Tax Filings</h4>
+                <div class="template-item">
+                    <input type="checkbox" checked id="t1"><label for="t1">IR7 Annual Tax Return</label>
+                    <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">Annual — 1 record</span>
+                </div>
+                <div class="template-item">
+                    <input type="checkbox" checked id="t2"><label for="t2">VAT Return (Quarterly)</label>
+                    <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">Quarterly — 4 records</span>
+                </div>
+            </div>
+
+            <div class="template-group">
+                <h4><span class="badge badge-cat-employee" style="margin-right:8px;">Employee</span> Employee Filings</h4>
+                <div class="template-item">
+                    <input type="checkbox" checked id="t3"><label for="t3">Social Insurance (Monthly)</label>
+                    <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">Monthly — 12 records</span>
+                </div>
+                <div class="template-item">
+                    <input type="checkbox" checked id="t4"><label for="t4">Employer's Declaration</label>
+                    <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">Annual — 1 record</span>
+                </div>
+            </div>
+
+            <div class="template-group">
+                <h4><span class="badge badge-cat-regulatory" style="margin-right:8px;">Regulatory</span> Regulatory Filings</h4>
+                <div class="template-item">
+                    <input type="checkbox" id="t5"><label for="t5">Annual Levy</label>
+                    <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">Annual — 1 record</span>
+                </div>
+            </div>
+
+            <div class="preview-box">
+                <p>This will create <strong>19 filing records</strong> for 2027</p>
+                <p style="margin-top:6px;font-size:12px;color:var(--text-muted);">12 monthly Social Insurance + 4 quarterly VAT + 1 IR7 + 1 Employer's Declaration + 1 Annual Levy (if checked)</p>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:24px;">
+                <button class="btn btn-primary">Import Selected</button>
+                <button class="btn btn-secondary" onclick="showView('list')">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- =============== VIEW 3: DETAIL VIEW =============== -->
+    <div id="view-detail" class="hidden">
+        <section class="glass card-pad">
+            <a class="back-link" onclick="showView('list')" style="margin-bottom:18px;display:inline-flex;">&#8592; Back to filings list</a>
+
+            <div class="overdue-banner">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                This filing is overdue. Due date was 10 January 2027.
+            </div>
+
+            <div class="detail-header">
+                <h2>Social Insurance — December 2026</h2>
+                <span class="badge badge-cat-employee">Employee</span>
+                <span class="badge badge-pending" style="font-size:12px;padding:5px 14px;">Monthly</span>
+            </div>
+
+            <div class="status-section">
+                <label>Current Status</label>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="badge badge-pending" style="font-size:13px;padding:6px 16px;">Pending</span>
+                    <span style="font-size:13px;color:var(--text-muted);">&#8594; Transition to:</span>
+                </div>
+                <div class="status-actions">
+                    <button class="btn btn-sm" style="background:#e8f4fd;color:#0D5EA6;border:1.5px solid #0D5EA6;">Mark as In Progress</button>
+                    <button class="btn btn-sm" style="background:#fef3e2;color:#C8912E;border:1.5px solid #C8912E;">Mark as Submitted</button>
+                </div>
+            </div>
+
+            <div class="detail-fields">
+                <div class="field">
+                    <label>Due Date</label>
+                    <input type="text" value="10 January 2027" disabled style="background:#f8f9fa;color:var(--text-secondary);">
+                </div>
+                <div class="field">
+                    <label>Reference Number</label>
+                    <input type="text" placeholder="e.g. SI-2026-12">
+                </div>
+            </div>
+
+            <div class="field" style="margin-bottom:20px;">
+                <label>Notes</label>
+                <textarea placeholder="Add any notes about this filing..."></textarea>
+            </div>
+
+            <div class="timestamps">
+                <span><strong>Submitted At:</strong> —</span>
+                <span><strong>Approved At:</strong> —</span>
+            </div>
+
+            <div class="attachments-section">
+                <div class="flex-between" style="margin-bottom:14px;">
+                    <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);">Attachments (0/3)</label>
+                    <button class="btn btn-sm btn-outline">Upload PDF</button>
+                </div>
+                <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;background:var(--bg-secondary);border-radius:12px;">
+                    No attachments yet. Upload up to 3 PDF files.
+                </div>
+            </div>
+        </section>
+
+        <!-- Example with attachments -->
+        <section class="glass card-pad" style="margin-top:22px;">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Example: Filing with Attachments (VAT Q3 2026)</div>
+            <div class="attachments-section" style="border-top:none;padding-top:0;">
+                <div class="flex-between" style="margin-bottom:14px;">
+                    <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);">Attachments (2/3)</label>
+                    <button class="btn btn-sm btn-outline">Upload PDF</button>
+                </div>
+                <div class="attachment-item">
+                    <div class="name">VAT_Q3_2026_Return.pdf</div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-sm btn-outline" style="padding:4px 10px;">Download</button>
+                        <button class="btn btn-sm btn-danger" style="padding:4px 10px;">Delete</button>
+                    </div>
+                </div>
+                <div class="attachment-item">
+                    <div class="name">Supporting_Invoices_Q3.pdf</div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-sm btn-outline" style="padding:4px 10px;">Download</button>
+                        <button class="btn btn-sm btn-danger" style="padding:4px 10px;">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- =============== VIEW 4: CALENDAR VIEW =============== -->
+    <div id="view-calendar" class="hidden">
+        <section class="glass card-pad">
+            <div class="flex-between" style="margin-bottom:20px;">
+                <div class="year-selector">
+                    <button>&#8249;</button>
+                    <span>2027</span>
+                    <button>&#8250;</button>
+                </div>
+                <a class="back-link" onclick="showView('list')">&#8592; Back to list</a>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="month-box" onclick="toggleMonthDetail('jan')">
+                    <h5>January</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-overdue" title="Social Insurance Dec (overdue)"></div>
+                    </div>
+                </div>
+                <div class="month-box today" onclick="toggleMonthDetail('feb')">
+                    <h5>February</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-submitted" title="Social Insurance Jan"></div>
+                        <div class="dot dot-inprogress" title="VAT Return Q4"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('mar')">
+                    <h5>March</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Feb"></div>
+                        <div class="dot dot-pending" title="IR7 Annual Tax Return"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('apr')">
+                    <h5>April</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Mar"></div>
+                        <div class="dot dot-pending" title="Employer's Declaration"></div>
+                    </div>
+                </div>
+
+                <div class="month-box" onclick="toggleMonthDetail('may')">
+                    <h5>May</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Apr"></div>
+                        <div class="dot dot-pending" title="VAT Return Q1"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('jun')">
+                    <h5>June</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance May"></div>
+                        <div class="dot dot-pending" title="Annual Levy"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('jul')">
+                    <h5>July</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Jun"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('aug')">
+                    <h5>August</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Jul"></div>
+                        <div class="dot dot-pending" title="VAT Return Q2"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('sep')">
+                    <h5>September</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Aug"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('oct')">
+                    <h5>October</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Sep"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('nov')">
+                    <h5>November</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Oct"></div>
+                        <div class="dot dot-pending" title="VAT Return Q3"></div>
+                    </div>
+                </div>
+                <div class="month-box" onclick="toggleMonthDetail('dec')">
+                    <h5>December</h5>
+                    <div class="month-dots">
+                        <div class="dot dot-pending" title="Social Insurance Nov"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="calendar-legend">
+                <div class="legend-item"><div class="dot dot-pending"></div> Pending</div>
+                <div class="legend-item"><div class="dot dot-inprogress"></div> In Progress</div>
+                <div class="legend-item"><div class="dot dot-submitted"></div> Submitted</div>
+                <div class="legend-item"><div class="dot dot-approved"></div> Approved</div>
+                <div class="legend-item"><div class="dot dot-overdue"></div> Overdue</div>
+            </div>
+
+            <!-- Month Detail Panels -->
+            <div id="month-jan" class="month-detail">
+                <h4>January 2027</h4>
+                <ul>
+                    <li><div class="dot dot-overdue"></div> <strong>10 Jan</strong> — Social Insurance Dec <span class="badge badge-overdue" style="margin-left:8px;font-size:10px;">OVERDUE</span></li>
+                </ul>
+            </div>
+            <div id="month-feb" class="month-detail">
+                <h4>February 2027</h4>
+                <ul>
+                    <li><div class="dot dot-submitted"></div> <strong>10 Feb</strong> — Social Insurance Jan</li>
+                    <li><div class="dot dot-inprogress"></div> <strong>10 Feb</strong> — VAT Return Q4 2026</li>
+                </ul>
+            </div>
+            <div id="month-mar" class="month-detail">
+                <h4>March 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Mar</strong> — Social Insurance Feb</li>
+                    <li><div class="dot dot-pending"></div> <strong>31 Mar</strong> — IR7 Annual Tax Return</li>
+                </ul>
+            </div>
+            <div id="month-apr" class="month-detail">
+                <h4>April 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Apr</strong> — Social Insurance Mar</li>
+                    <li><div class="dot dot-pending"></div> <strong>30 Apr</strong> — Employer's Declaration</li>
+                </ul>
+            </div>
+            <div id="month-may" class="month-detail">
+                <h4>May 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 May</strong> — Social Insurance Apr</li>
+                    <li><div class="dot dot-pending"></div> <strong>10 May</strong> — VAT Return Q1 2027</li>
+                </ul>
+            </div>
+            <div id="month-jun" class="month-detail">
+                <h4>June 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Jun</strong> — Social Insurance May</li>
+                    <li><div class="dot dot-pending"></div> <strong>30 Jun</strong> — Annual Levy 2027</li>
+                </ul>
+            </div>
+
+            <div id="month-jul" class="month-detail">
+                <h4>July 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Jul</strong> — Social Insurance Jun</li>
+                </ul>
+            </div>
+            <div id="month-aug" class="month-detail">
+                <h4>August 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Aug</strong> — Social Insurance Jul</li>
+                    <li><div class="dot dot-pending"></div> <strong>10 Aug</strong> — VAT Return Q2 2027</li>
+                </ul>
+            </div>
+            <div id="month-sep" class="month-detail">
+                <h4>September 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Sep</strong> — Social Insurance Aug</li>
+                </ul>
+            </div>
+            <div id="month-oct" class="month-detail">
+                <h4>October 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Oct</strong> — Social Insurance Sep</li>
+                </ul>
+            </div>
+            <div id="month-nov" class="month-detail">
+                <h4>November 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Nov</strong> — Social Insurance Oct</li>
+                    <li><div class="dot dot-pending"></div> <strong>10 Nov</strong> — VAT Return Q3 2027</li>
+                </ul>
+            </div>
+            <div id="month-dec" class="month-detail">
+                <h4>December 2027</h4>
+                <ul>
+                    <li><div class="dot dot-pending"></div> <strong>10 Dec</strong> — Social Insurance Nov</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <!-- =============== DASHBOARD WIDGET PREVIEW =============== -->
+    <div class="widget-preview">
+        <h3>Dashboard Widget Preview</h3>
+        <div class="widget-card">
+            <h4>Upcoming Filings</h4>
+            <div class="widget-item">
+                <div>
+                    <div class="name">Social Insurance Dec</div>
+                    <div class="due" style="color:var(--danger);font-weight:600;">Overdue — 10 Jan 2027</div>
+                </div>
+                <span class="badge badge-overdue" style="font-size:9px;">OVERDUE</span>
+            </div>
+            <div class="widget-item">
+                <div>
+                    <div class="name">Social Insurance Jan</div>
+                    <div class="due">Due 10 Feb 2027</div>
+                </div>
+                <span class="badge badge-submitted" style="font-size:9px;">SUBMITTED</span>
+            </div>
+            <div class="widget-item">
+                <div>
+                    <div class="name">VAT Return Q4 2026</div>
+                    <div class="due">Due 10 Feb 2027</div>
+                </div>
+                <span class="badge badge-inprogress" style="font-size:9px;">IN PROGRESS</span>
+            </div>
+            <div class="widget-item">
+                <div>
+                    <div class="name">Social Insurance Feb</div>
+                    <div class="due">Due 10 Mar 2027</div>
+                </div>
+                <span class="badge badge-pending" style="font-size:9px;">PENDING</span>
+            </div>
+            <div class="widget-item">
+                <div>
+                    <div class="name">IR7 Annual Tax Return</div>
+                    <div class="due">Due 31 Mar 2027</div>
+                </div>
+                <span class="badge badge-pending" style="font-size:9px;">PENDING</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // View switching
+    function showView(view) {
+        var views = ['list', 'import', 'detail', 'calendar'];
+        views.forEach(function(v) {
+            var el = document.getElementById('view-' + v);
+            if (el) el.classList.toggle('hidden', v !== view);
+        });
+
+        // Update toggle buttons
+        var buttons = document.querySelectorAll('.view-toggle button');
+        var labels = ['list', 'import', 'detail', 'calendar'];
+        buttons.forEach(function(btn, i) {
+            btn.classList.toggle('active', labels[i] === view);
+        });
+    }
+
+    // Calendar month detail toggle
+    function toggleMonthDetail(month) {
+        var allDetails = document.querySelectorAll('.month-detail');
+        var target = document.getElementById('month-' + month);
+
+        allDetails.forEach(function(d) {
+            if (d !== target) d.classList.remove('visible');
+        });
+
+        if (target) {
+            target.classList.toggle('visible');
+        }
+    }
+
+    // Date shortcut toggle
+    document.querySelectorAll('.date-shortcuts button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.date-shortcuts button').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+        });
+    });
+</script>
+</body>
+</html>
+

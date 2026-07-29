@@ -1,0 +1,331 @@
+@model List<Portal.Infrastructure.Models.Compliance.ApplicationTypeDto>
+@{
+    ViewData["Title"] = "Compliance Template Catalog";
+
+    var categories = ViewBag.Categories as List<Portal.Infrastructure.Models.Compliance.ApplicationCategoryDto> ?? new();
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Admin</div>
+        <h1 class="topbar-heading">Compliance Template Catalog</h1>
+        <p class="topbar-subtitle">Manage application types available for business import. Configure templates, frequencies, and due dates.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button id="btnShowCreate" class="btn btn-primary" onclick="toggleCreateForm()">Create Template</button>
+        <a asp-action="Categories" asp-controller="AdminCompliance" class="btn btn-secondary">Manage Categories</a>
+    </div>
+</div>
+
+<!-- Create/Edit Form (hidden by default) -->
+<section id="templateFormSection" class="glass card-pad" style="margin-bottom:22px;display:none;">
+    <h3 id="formTitle" style="margin:0 0 16px 0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#1a2a3a;">Create Template</h3>
+    <input type="hidden" id="editTypeId" value="" />
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+        <div class="field" style="min-width:200px;">
+            <label for="typeName">Name</label>
+            <input type="text" id="typeName" placeholder="e.g. Annual Return" />
+        </div>
+        <div class="field" style="min-width:200px;">
+            <label for="typeDescription">Description</label>
+            <input type="text" id="typeDescription" placeholder="Brief description" />
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="typeCountry">Country</label>
+            <input type="text" id="typeCountry" placeholder="e.g. South Africa" />
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label for="typeCategoryId">Category</label>
+            <select id="typeCategoryId">
+                <option value="">Select Category</option>
+                @foreach (var cat in categories.Where(c => c.IsActive).OrderBy(c => c.Name))
+                {
+                    <option value="@cat.Id">@cat.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="typeFrequency">Frequency</label>
+            <select id="typeFrequency">
+                <option value="">Select</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Annual">Annual</option>
+                <option value="One-off">One-off</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:120px;">
+            <label for="typeDueMonth">Due Month</label>
+            <select id="typeDueMonth">
+                <option value="">Optional</option>
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i">@(new DateTime(2024, i, 1).ToString("MMMM"))</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:100px;">
+            <label for="typeDueDay">Due Day</label>
+            <input type="number" id="typeDueDay" min="1" max="31" placeholder="1-31" />
+        </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+        <button id="btnSubmitTemplate" class="btn btn-primary" onclick="submitTemplate()">Save Template</button>
+        <button class="btn btn-secondary" onclick="cancelForm()">Cancel</button>
+    </div>
+</section>
+
+<!-- Templates Table -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Country</th>
+                        <th>Category</th>
+                        <th>Frequency</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr id="row-@item.Id" class="@(!item.IsActive ? "row-inactive" : "")"
+                            data-id="@item.Id"
+                            data-name="@item.Name"
+                            data-description="@item.Description"
+                            data-country="@item.Country"
+                            data-categoryid="@item.ApplicationCategoryId"
+                            data-frequency="@item.Frequency"
+                            data-duemonth="@item.DefaultDueMonth"
+                            data-dueday="@item.DefaultDueDay">
+                            <td><strong>@item.Name</strong></td>
+                            <td>@item.Country</td>
+                            <td>@item.CategoryName</td>
+                            <td>@item.Frequency</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="pill pill-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-grey">Inactive</span>
+                                }
+                            </td>
+                            <td style="display:flex;gap:8px;">
+                                <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;" onclick="editTemplate(@item.Id)">Edit</button>
+                                @if (item.IsActive)
+                                {
+                                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;color:#C24A4A;" onclick="deactivateTemplate(@item.Id, '@item.Name.Replace("'", "\\'")' )">Deactivate</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;color:#129867;" onclick="activateTemplate(@item.Id, '@item.Name.Replace("'", "\\'")' )">Activate</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No templates found. Create a template to get started.</p>
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    function toggleCreateForm() {
+        var section = document.getElementById('templateFormSection');
+        document.getElementById('formTitle').textContent = 'Create Template';
+        document.getElementById('editTypeId').value = '';
+        clearFormFields();
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function cancelForm() {
+        document.getElementById('templateFormSection').style.display = 'none';
+        clearFormFields();
+    }
+
+    function clearFormFields() {
+        document.getElementById('typeName').value = '';
+        document.getElementById('typeDescription').value = '';
+        document.getElementById('typeCountry').value = '';
+        document.getElementById('typeCategoryId').value = '';
+        document.getElementById('typeFrequency').value = '';
+        document.getElementById('typeDueMonth').value = '';
+        document.getElementById('typeDueDay').value = '';
+    }
+
+    function editTemplate(id) {
+        var row = document.getElementById('row-' + id);
+        document.getElementById('editTypeId').value = id;
+        document.getElementById('typeName').value = row.dataset.name;
+        document.getElementById('typeDescription').value = row.dataset.description || '';
+        document.getElementById('typeCountry').value = row.dataset.country;
+        document.getElementById('typeCategoryId').value = row.dataset.categoryid;
+        document.getElementById('typeFrequency').value = row.dataset.frequency;
+        document.getElementById('typeDueMonth').value = row.dataset.duemonth || '';
+        document.getElementById('typeDueDay').value = row.dataset.dueday || '';
+        document.getElementById('formTitle').textContent = 'Edit Template';
+        document.getElementById('templateFormSection').style.display = 'block';
+        document.getElementById('templateFormSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function submitTemplate() {
+        var editId = document.getElementById('editTypeId').value;
+        var isEdit = editId !== '';
+        var url = isEdit ? '/AdminCompliance/AxPostUpdateType' : '/AdminCompliance/AxPostCreateType';
+
+        var payload = {
+            name: document.getElementById('typeName').value.trim(),
+            description: document.getElementById('typeDescription').value.trim() || null,
+            country: document.getElementById('typeCountry').value.trim(),
+            applicationCategoryId: parseInt(document.getElementById('typeCategoryId').value) || 0,
+            frequency: document.getElementById('typeFrequency').value,
+            defaultDueMonth: parseInt(document.getElementById('typeDueMonth').value) || null,
+            defaultDueDay: parseInt(document.getElementById('typeDueDay').value) || null
+        };
+
+        if (isEdit) {
+            payload.id = parseInt(editId);
+        }
+
+        if (!payload.name || !payload.country || !payload.frequency || !payload.applicationCategoryId) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please fill in Name, Country, Category and Frequency.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving template...');
+        try {
+            var response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify(payload)
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function deactivateTemplate(id, name) {
+        Swal.fire({
+            title: 'Deactivate Template?',
+            text: 'Are you sure you want to deactivate "' + name + '"? Businesses that already imported this template will not be affected.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, deactivate',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#C24A4A'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                BlockUI.show('Deactivating...');
+                try {
+                    var formData = new FormData();
+                    formData.append('id', id);
+
+                    var response = await fetch('/AdminCompliance/AxPostDeactivateType', {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        },
+                        body: formData
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    }
+
+    function activateTemplate(id, name) {
+        Swal.fire({
+            title: 'Activate Template?',
+            text: 'Reactivate "' + name + '"? It will become available for business import again.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, activate',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                BlockUI.show('Activating...');
+                try {
+                    var formData = new FormData();
+                    formData.append('id', id);
+
+                    var response = await fetch('/AdminCompliance/AxPostActivateType', {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        },
+                        body: formData
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    }
+</script>
+
+<style>
+    .row-inactive {
+        opacity: 0.5;
+    }
+    .row-inactive td strong {
+        text-decoration: line-through;
+        color: #7a8a9a;
+    }
+</style>

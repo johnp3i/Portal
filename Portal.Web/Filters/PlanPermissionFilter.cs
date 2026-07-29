@@ -220,6 +220,7 @@ public class PlanPermissionFilter : IAsyncAuthorizationFilter, IOrderedFilter
             "recurring_expense_validation" => "Define expected recurring purchases per supplier, validate that all expected expenses are recorded before VAT submission, and catch missing invoices automatically.",
             "sales" => "Manage your sales pipeline, track leads from enquiry to conversion, schedule meetings, and use response templates.",
             "stripe_connect" => "Accept card payments on your invoices via Stripe Connect with automatic payment reconciliation and fee transparency.",
+            "compliance" => "Track statutory filing deadlines, manage submissions, and maintain compliance evidence.",
             _ => "Access advanced features to enhance your business operations."
         };
     }

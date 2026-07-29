@@ -250,6 +250,16 @@
 - Cancelled leads section (separate from kanban)
 - Tier-gated: available on Professional and Enterprise plans
 
+### Module 11: Business Applications Tracker (Compliance Filings)
+- Track statutory filing deadlines (tax returns, social insurance, annual levy, etc.)
+- Status workflow: Pending → In Progress → Submitted → Approved / Rejected
+- Country-specific templates (Cyprus: IR7, Social Insurance Monthly, VAT Returns, Annual Levy, Employer's Declaration)
+- SuperAdmin-managed template catalog — businesses import relevant applications
+- Dashboard widget: upcoming filings due in 30/60/90 days
+- Attachment support: upload submission evidence (PDF)
+- Calendar year view of all filing deadlines
+- Overdue warnings at 7 days, 3 days, and past-due
+
 ### Activity Log
 - Timeline-style feed of all business activity
 - Plain-English summaries with coloured timeline dots (created/edited/deleted/status changed)
@@ -259,6 +269,22 @@
 - User name resolution from membership database
 - Relative timestamps ("Just now", "2 min ago", "Yesterday at 14:32")
 - Entity links: invoice numbers, customer names link to detail pages
+
+---
+
+## Enterprise Tier Features
+
+### Module 14: Payroll / Payslips
+- Employee management: personal details, salary, social insurance number, bank account
+- Deduction configuration: employee contributions (Social Insurance, GHS, PAYE) and employer contributions (Social Insurance, Redundancy Fund, Industrial Training, Cohesion Fund)
+- Country-specific deduction templates (Cyprus default, extensible to Malta, UK)
+- Monthly payslip generation: gross → deductions → net salary, with employer contribution breakdown
+- Payslip PDF generation (branded, A4, print-ready) with email delivery to employees
+- Employee payslip history and annual summary (for tax returns: IR63, IR7)
+- Business-level payroll summary per period (total salary cost for budgeting)
+- P&L integration: finalised payslips auto-create Operating Expense entries
+- Employer contribution reports (for Social Insurance monthly filing — links to Business Applications module)
+- Employee statement export (all payslips for a date range)
 
 ---
 
@@ -384,7 +410,6 @@ Invoicing tools are **transactional** — create invoice, send, get paid. Portal
 
 ## Current Status
 
-- **Phase 1:** Complete (7 modules + infrastructure + Global Payment Allocation + Document Attachments + Purchase Import + Payment Receipts & Signatures + Opportunities)
-- **Phase 2:** Planned (Client Portal, Activity Timeline expansion)
-- **Subscription Management:** Live (Stripe integration for billing)
-- **Production Readiness:** All modules end-to-end tested
+- **Phase 1:** Complete (7 modules + infrastructure + Global Payment Allocation + Document Attachments + Purchase Import + Payment Receipts & Signatures + Opportunities + Global Search + Dashboard Onboarding)
+- **Phase 2:** In Progress (Client Portal, Activity Timeline, Business Applications Tracker)
+- **Phase 3:** Planned (Multi-Currency, API/Integrations, Payroll)

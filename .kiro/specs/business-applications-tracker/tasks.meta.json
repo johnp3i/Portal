@@ -1,0 +1,562 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create SQL migration script for `[compliance]` schema and all 4 tables": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351021565
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351030713
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351334463
+      }
+    ],
+    "1.2 Create SQL seed data script for categories and Cyprus templates": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351021637
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351031422
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351335210
+      }
+    ],
+    "1.3 Create PlanFeature seed migration for Professional and Enterprise plans": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351021749
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351032249
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351335891
+      }
+    ],
+    "2.1 Create entity classes for compliance tables": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351021803
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351336774
+      }
+    ],
+    "2.2 Add EF Core DbContext configuration for compliance entities": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351021858
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351337676
+      }
+    ],
+    "3.1 Create all DTO classes for compliance module": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351021939
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351338512
+      }
+    ],
+    "3.2 Create request model classes for compliance operations": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022021
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351339317
+      }
+    ],
+    "4.1 Add `Compliance` module constant and controller mappings": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022119
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351340198
+      }
+    ],
+    "5. Checkpoint - Ensure project compiles": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022254
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351341476
+      }
+    ],
+    "6.1 Create ComplianceRepository with category and type data access methods": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022324
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351457752
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351839127
+      }
+    ],
+    "6.2 Add business application data access methods to ComplianceRepository": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022392
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351861318
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351864771
+      }
+    ],
+    "6.3 Add dashboard, calendar, and attachment data access methods to ComplianceRepository": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022469
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351868420
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351872045
+      }
+    ],
+    "7.1 Create IComplianceService interface and ComplianceService class with category/type management": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022541
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351876066
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352099997
+      }
+    ],
+    "7.2 Add import logic and due date calculation to ComplianceService": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022607
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352104391
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352107873
+      }
+    ],
+    "7.3 Add status workflow and detail operations to ComplianceService": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022657
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352111739
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352115336
+      }
+    ],
+    "7.4 Add attachment operations and dashboard/calendar methods to ComplianceService": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022703
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352118954
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352122672
+      }
+    ],
+    "8. Checkpoint - Ensure service layer compiles and logic is correct": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022755
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352127656
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352131564
+      }
+    ],
+    "9.1 Create ComplianceController with page actions and AJAX endpoints": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022809
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352160783
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352266887
+      }
+    ],
+    "9.2 Create AdminComplianceController with template management endpoints": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022928
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352161735
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352267771
+      }
+    ],
+    "10.1 Create compliance Index view (list view with filters and pagination)": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351022992
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352298674
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352876667
+      }
+    ],
+    "10.2 Create compliance Import view (template selection and import)": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023043
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352877649
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352881494
+      }
+    ],
+    "10.3 Create compliance Detail view (single application detail/edit)": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023094
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352881979
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352885563
+      }
+    ],
+    "10.4 Create compliance Calendar view (year overview)": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023152
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352886303
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352890078
+      }
+    ],
+    "11.1 Create AdminCompliance Index view (template catalog management)": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023194
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352895142
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353106782
+      }
+    ],
+    "11.2 Create AdminCompliance Categories view (category management)": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023243
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352895895
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353107361
+      }
+    ],
+    "12.1 Create UpcomingFilingsViewComponent and its partial view": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023291
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352896742
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353108393
+      }
+    ],
+    "12.2 Integrate UpcomingFilings widget into Home/Index.cshtml": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023341
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353112794
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353270419
+      }
+    ],
+    "13.1 Register ComplianceService and ComplianceRepository in Program.cs": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023404
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353113820
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353271403
+      }
+    ],
+    "14. Checkpoint - Full build verification": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023457
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353275846
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353280750
+      }
+    ],
+    "16. Final checkpoint - Full build and test verification": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351023503
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353285168
+      },
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353288835
+      }
+    ],
+    "1. Database migration and schema setup": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351335995
+      }
+    ],
+    "2. Entity classes and EF Core configuration": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351337725
+      }
+    ],
+    "3. DTO and request model classes": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351339403
+      }
+    ],
+    "4. Constants and permission wiring": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351340307
+      }
+    ],
+    "6. Repository layer": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785351872116
+      }
+    ],
+    "7. Service layer": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352122724
+      }
+    ],
+    "9. Controllers": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352267821
+      }
+    ],
+    "10. Razor views": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785352890137
+      }
+    ],
+    "11. Admin views": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353107422
+      }
+    ],
+    "12. Dashboard integration": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353270519
+      }
+    ],
+    "13. Dependency injection registration": [
+      {
+        "executionId": "e736fb51-3574-4e2b-b3fd-8e8564b15d2f",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785353271457
+      }
+    ]
+  }
+}

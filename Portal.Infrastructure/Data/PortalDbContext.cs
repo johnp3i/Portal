@@ -161,6 +161,12 @@ public class PortalDbContext : DbContext
     public DbSet<Entities.Sales.LeadResponseType> LeadResponseTypes { get; set; } = null!;
     public DbSet<Entities.Sales.MeetingType> MeetingTypes { get; set; } = null!;
 
+    // Compliance schema
+    public DbSet<ApplicationCategory> ApplicationCategories { get; set; } = null!;
+    public DbSet<ApplicationType> ApplicationTypes { get; set; } = null!;
+    public DbSet<BusinessApplication> BusinessApplications { get; set; } = null!;
+    public DbSet<ApplicationAttachment> ApplicationAttachments { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -260,6 +266,12 @@ public class PortalDbContext : DbContext
         ConfigureMeetingOpportunity(modelBuilder);
         ConfigureTeamMember(modelBuilder);
         ConfigureActivityFeed(modelBuilder);
+
+        // Compliance
+        ConfigureApplicationCategory(modelBuilder);
+        ConfigureApplicationType(modelBuilder);
+        ConfigureBusinessApplication(modelBuilder);
+        ConfigureApplicationAttachment(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -3617,6 +3629,167 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureApplicationCategory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationCategory>(entity =>
+        {
+            entity.ToTable("ApplicationCategory", "compliance");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => e.Name)
+                .IsUnique()
+                .HasDatabaseName("UQ_ApplicationCategory_Name");
+        });
+    }
+
+    private static void ConfigureApplicationType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationType>(entity =>
+        {
+            entity.ToTable("ApplicationType", "compliance");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(e => e.Country)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Frequency)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne<ApplicationCategory>()
+                .WithMany()
+                .HasForeignKey(e => e.ApplicationCategoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.Name, e.Country })
+                .IsUnique()
+                .HasDatabaseName("UQ_ApplicationType_NameCountry");
+        });
+    }
+
+    private static void ConfigureBusinessApplication(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BusinessApplication>(entity =>
+        {
+            entity.ToTable("BusinessApplication", "compliance");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.BusinessId)
+                .IsRequired();
+
+            entity.Property(e => e.ApplicationTypeId)
+                .IsRequired();
+
+            entity.Property(e => e.DueDate)
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Pending");
+
+            entity.Property(e => e.ReferenceNumber)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Notes)
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne<ApplicationType>()
+                .WithMany()
+                .HasForeignKey(e => e.ApplicationTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.BusinessId, e.DueDate })
+                .HasDatabaseName("IX_BusinessApplication_BusinessId_DueDate");
+
+            entity.HasIndex(e => new { e.BusinessId, e.Status })
+                .HasDatabaseName("IX_BusinessApplication_BusinessId_Status");
+        });
+    }
+
+    private static void ConfigureApplicationAttachment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationAttachment>(entity =>
+        {
+            entity.ToTable("ApplicationAttachment", "compliance");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.BusinessApplicationId)
+                .IsRequired();
+
+            entity.Property(e => e.FileName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.OriginalFileName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.FilePath)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.ContentType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.FileSizeBytes)
+                .IsRequired();
+
+            entity.Property(e => e.UploadedByUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne<BusinessApplication>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessApplicationId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
     /// <summary>
     /// Applies global query filters on BusinessId for all tenant-scoped entities.
     /// Reference tables (QuotationStatusType, InvoiceStatusType, InvoiceFinancialStatusType, PaymentMethodType)
@@ -3739,6 +3912,10 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<Meeting>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        // Compliance entities
+        modelBuilder.Entity<BusinessApplication>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
     }
 }

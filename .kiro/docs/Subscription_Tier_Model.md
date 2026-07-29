@@ -77,6 +77,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 -   Sales Invoice Import (bulk CSV/Excel upload for POS transaction data with optional customer tracking)
 -   Opportunities (sales pipeline: lead board, contacts, team, meetings, templates, activity feed)
 -   Document Attachments (attach PDFs/images to purchases, invoices, quotations)
+-   Business Applications Tracker (compliance filings: tax, employee, regulatory — with country-specific templates)
 -   Activity Log (readonly — view history of operations)
 -   Up to 5 users with granular permissions
 -   Priority email support
@@ -99,6 +100,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 -   API Access (REST API for external integrations)
 -   Webhook subscriptions (real-time event notifications to external systems)
 -   Multi-Currency Support (invoice in customer's currency, report in base)
+-   Payroll / Payslips (employee management, payslip generation, deductions, employer contributions, annual summaries, P&L integration)
 -   Unlimited users with role-based access
 -   Custom branding on client-facing pages
 -   Dedicated account support
@@ -145,6 +147,8 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Activity Log                              | ❌                   | ✅ (readonly)        | ✅ (full)            |
 | Client Portal (customer self-service)     | ❌                   | ❌                   | ✅                   |
 | Activity Timeline & Notifications         | ❌                   | ❌                   | ✅                   |
+| Business Applications Tracker           | ❌                   | ✅                   | ✅                   |
+| Payroll / Payslips                      | ❌                   | ❌                   | ✅                   |
 | **Integrations**                          |                      |                      |                      |
 | API Access                                | ❌                   | ❌                   | ✅                   |
 | Webhooks                                  | ❌                   | ❌                   | ✅                   |
@@ -260,6 +264,8 @@ Request arrives
 | `api`                          | API Access                                                  | Enterprise     |
 | `webhooks`                     | Webhook Subscriptions                                       | Enterprise     |
 | `multi_currency`               | Multi-Currency                                              | Enterprise     |
+| `compliance`                   | Business Applications Tracker (compliance filings)          | Professional   |
+| `payroll`                      | Payroll / Payslips                                          | Enterprise     |
 
 ***
 
@@ -333,6 +339,59 @@ The existing Demo Invitations system can serve as the Enterprise trial mechanism
 
 ***
 
+## Enterprise Early Access Strategy
+
+**Effective:** From Enterprise tier launch until all Phase 3 modules are shipped.
+
+### Pricing
+
+| Phase | Monthly | Annual | Trigger |
+|-------|---------|--------|---------|
+| Early Access (current) | €129/mo | €1,290/year | Enterprise tier launches with available features |
+| Full Price | €169/mo | €1,690/year | All Phase 3 modules shipped (Payroll, Multi-Currency, API) |
+
+### Rationale
+
+The Enterprise tier launches before all exclusive features are complete. Rather than waiting (delaying revenue) or charging full price for incomplete value, the Early Access model:
+
+1. **Rewards early adopters** — subscribers who join before Payroll ships get a permanent or extended discount
+2. **Justifies the gap** — €129 vs €89 (Professional) = €40/month for unlimited users + full audit log + upcoming features. This is a reasonable premium.
+3. **Avoids the "€80 for 2 features" problem** — at €169, the delta from Professional would be hard to justify with only unlimited seats and audit export
+4. **Builds commitment** — subscribers are invested before features ship, reducing churn risk on launch
+
+### What Enterprise Gets Today (Live)
+
+- ✅ All Professional features (full Phase 1 suite)
+- ✅ Unlimited users (vs 5 on Professional)
+- ✅ Full Audit Log (edit, export, advanced filtering — vs readonly on Professional)
+- ✅ Stripe Connect (card payments — if configured)
+
+### What Enterprise Gets Next (Coming Soon — included in early access price)
+
+- 🔜 Business Applications Tracker (Phase 2 — compliance filings)
+- 🔜 Client Portal (Phase 2 — customer self-service)
+- 🔜 Activity Timeline & Notifications (Phase 2 — real-time feed)
+- 🔜 Payroll / Payslips (Phase 3 — employee management, P&L integration)
+- 🔜 Multi-Currency (Phase 3 — international invoicing)
+- 🔜 API Access & Webhooks (Phase 3 — integrations)
+
+### Price Transition Rules
+
+1. Early Access subscribers keep €129/mo pricing for **12 months** after full price takes effect (loyalty reward)
+2. After 12 months, early access subscribers transition to €169/mo with 30 days notice
+3. New subscribers after Phase 3 completion pay €169/mo immediately
+4. Annual subscribers who paid €1,290/year keep their rate until renewal
+
+### Landing Page Presentation
+
+The Enterprise card on the landing page should show:
+- Price: **€129/mo** with a strikethrough on "€169" and an "Early Access" badge
+- "Save €40/mo — early access pricing while we build the complete suite"
+- Feature list with ✅ for live features and "Coming Soon" badges for upcoming ones
+- CTA: "Start Enterprise Early Access"
+
+***
+
 ## Migration Path (Existing Users)
 
 When this system launches, existing users transition as follows:
@@ -367,7 +426,8 @@ All three share the same module key vocabulary and access level concept ('full',
 |--------------|--------------------|---------------|----------------------------------------------------------|
 | Foundation   | €39/mo             | €390/year     | The base — complete business management for any business |
 | Professional | €89/mo             | €890/year     | Automation — the platform works for you                  |
-| Enterprise   | €169/mo            | €1,690/year   | Scale — teams, integrations, self-service                |
+| Enterprise (Early Access) | €129/mo | €1,290/year | Scale — teams, integrations, self-service (early-bird pricing) |
+| Enterprise (Full)         | €169/mo | €1,690/year | Full pricing when all Phase 3 modules ship                     |
 
 ### Annual Discount Model
 
@@ -377,7 +437,8 @@ All tiers use a "pay for 10, get 12" annual billing model:
 |--------------|--------------|---------------|----------------------|
 | Foundation   | €39          | €390          | €78 (2 months free)  |
 | Professional | €89          | €890          | €178 (2 months free) |
-| Enterprise   | €169         | €1,690        | €338 (2 months free) |
+| Enterprise (Early Access) | €129 | €1,290 | €258 (2 months free) |
+| Enterprise (Full)         | €169 | €1,690 | €338 (2 months free) |
 
 This model prioritises operational continuity over monthly billing — a business should never lose access to its platform because of a missed payment.
 
@@ -387,7 +448,7 @@ This model prioritises operational continuity over monthly billing — a busines
 
 **Professional (€89/mo)** — The highest-value tier. A business paying €89/mo for fully automated payment chasing, auto-generated payment links, cash flow forecasting, and P&L summaries is getting capabilities that would cost them €200+/month with a part-time bookkeeper. The automation pipeline alone (remind → pay link → auto-record) eliminates hours of manual work every week.
 
-**Enterprise (€169/mo)** — For businesses running serious operations with multiple team members, customer self-service needs, and integration requirements. At €149/mo, still well below the cost of fragmented tools covering the same scope (separate invoicing + accounting + CRM + payment platform).
+**Enterprise (€129/mo early access, €169/mo full)** — For businesses that need unlimited users, full audit capabilities, and want first access to upcoming features (Payroll, Client Portal, Multi-Currency, API). At €129/mo during early access, the premium over Professional (€40/month) is justified by unlimited seats alone for businesses with 6+ team members. When Payroll ships, the full €169/mo price delivers capabilities that would cost €500+/month with a payroll service + separate tools.
 
 ### Strategic Positioning
 

@@ -1,0 +1,307 @@
+@model List<Portal.Infrastructure.Models.Compliance.ApplicationTypeDto>
+@{
+    ViewData["Title"] = "Import Filing Templates";
+
+    var categories = ViewBag.Categories as List<Portal.Infrastructure.Models.Compliance.ApplicationCategoryDto> ?? new();
+    var currentYear = DateTime.Now.Year;
+    var countries = Model.Select(t => t.Country).Distinct().OrderBy(c => c).ToList();
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Compliance</div>
+        <h1 class="topbar-heading">Import Filing Templates</h1>
+        <p class="topbar-subtitle">Select templates to generate filing records for the chosen year.</p>
+    </div>
+    <div>
+        <a asp-action="Index" asp-controller="Compliance" class="btn btn-secondary">Back to Applications</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <!-- Country & Year Filters -->
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:24px;">
+        <div class="field" style="min-width:200px;">
+            <label for="countryFilter">Country</label>
+            <select id="countryFilter">
+                <option value="">All Countries</option>
+                @foreach (var country in countries)
+                {
+                    <option value="@country">@country</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="yearSelect">Year</label>
+            <select id="yearSelect">
+                @for (int y = currentYear - 1; y <= currentYear + 2; y++)
+                {
+                    <option value="@y" selected="@(y == currentYear)">@y</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <!-- Template Groups by Category -->
+    <div id="templateGroups">
+        @foreach (var group in Model.Where(t => t.IsActive).GroupBy(t => t.CategoryName).OrderBy(g => g.Key))
+        {
+            <div class="template-group" data-category="@group.Key">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a2b3c;">@group.Key</h3>
+                    <span class="pill pill-blue" style="font-size:11px;">@group.Count() templates</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+                    @foreach (var template in group.OrderBy(t => t.Name))
+                    {
+                        var recordCount = template.Frequency switch
+                        {
+                            "Monthly" => 12,
+                            "Quarterly" => 4,
+                            "Annual" => 1,
+                            "One-off" => 1,
+                            _ => 1
+                        };
+                        var frequencyLabel = $"{template.Frequency} — {recordCount} record{(recordCount > 1 ? "s" : "")}";
+
+                        <label class="template-item" data-country="@template.Country" data-frequency="@template.Frequency" data-records="@recordCount">
+                            <input type="checkbox" class="template-checkbox" value="@template.Id" />
+                            <span class="template-name">@template.Name</span>
+                            <input type="number" class="template-dueday" data-template-id="@template.Id" min="1" max="31" placeholder="@(template.DefaultDueDay ?? 1)" value="@template.DefaultDueDay" style="width:60px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;text-align:center;" title="Due day (1-31)" />
+                            <span class="template-frequency">@frequencyLabel</span>
+                            <span class="template-country">@template.Country</span>
+                        </label>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Preview & Actions -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;">
+        <div id="previewBox" style="font-size:14px;color:#5a6a7a;">
+            <strong id="previewCount">0</strong> records will be created
+        </div>
+        <div style="display:flex;gap:10px;">
+            <a asp-action="Index" asp-controller="Compliance" class="btn btn-secondary">Cancel</a>
+            <button type="button" id="btnImport" class="btn btn-primary" disabled>Import Selected</button>
+        </div>
+    </div>
+</section>
+
+<style>
+    .template-group[data-hidden="true"] {
+        display: none;
+    }
+    .template-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .template-item:hover {
+        background: #EEF4F8;
+        border-color: #0D5EA6;
+    }
+    .template-item[data-hidden="true"] {
+        display: none;
+    }
+    .template-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #0D5EA6;
+        cursor: pointer;
+    }
+    .template-name {
+        font-weight: 600;
+        color: #1a2b3c;
+        flex: 1;
+    }
+    .template-frequency {
+        font-size: 13px;
+        color: #5a6a7a;
+    }
+    .template-country {
+        font-size: 12px;
+        color: #7a8a9a;
+        background: #eef4f8;
+        padding: 3px 8px;
+        border-radius: 6px;
+    }
+    #btnImport:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+
+<script>
+    (function () {
+        var countryFilter = document.getElementById('countryFilter');
+        var yearSelect = document.getElementById('yearSelect');
+        var btnImport = document.getElementById('btnImport');
+        var previewCount = document.getElementById('previewCount');
+        var checkboxes = document.querySelectorAll('.template-checkbox');
+        var templateItems = document.querySelectorAll('.template-item');
+        var templateGroups = document.querySelectorAll('.template-group');
+
+        function getAntiForgeryToken() {
+            var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            return tokenInput ? tokenInput.value : '';
+        }
+
+        function applyCountryFilter() {
+            var selectedCountry = countryFilter.value;
+
+            templateItems.forEach(function (item) {
+                var country = item.getAttribute('data-country');
+                if (!selectedCountry || country === selectedCountry) {
+                    item.setAttribute('data-hidden', 'false');
+                    item.style.display = '';
+                } else {
+                    item.setAttribute('data-hidden', 'true');
+                    item.style.display = 'none';
+                    // Uncheck hidden items
+                    var cb = item.querySelector('.template-checkbox');
+                    if (cb) cb.checked = false;
+                }
+            });
+
+            // Hide empty groups
+            templateGroups.forEach(function (group) {
+                var visibleItems = group.querySelectorAll('.template-item:not([data-hidden="true"])');
+                group.setAttribute('data-hidden', visibleItems.length === 0 ? 'true' : 'false');
+            });
+
+            updatePreview();
+        }
+
+        function updatePreview() {
+            var total = 0;
+            var anyChecked = false;
+
+            checkboxes.forEach(function (cb) {
+                if (cb.checked) {
+                    anyChecked = true;
+                    var item = cb.closest('.template-item');
+                    var records = parseInt(item.getAttribute('data-records')) || 1;
+                    total += records;
+                }
+            });
+
+            previewCount.textContent = total;
+            btnImport.disabled = !anyChecked;
+        }
+
+        function getSelectedTemplateIds() {
+            var ids = [];
+            checkboxes.forEach(function (cb) {
+                if (cb.checked) {
+                    ids.push(parseInt(cb.value));
+                }
+            });
+            return ids;
+        }
+
+        function getDueDayOverrides() {
+            var overrides = {};
+            document.querySelectorAll('.template-dueday').forEach(function (input) {
+                var templateId = parseInt(input.getAttribute('data-template-id'));
+                var val = parseInt(input.value);
+                if (!isNaN(val) && val >= 1 && val <= 31) {
+                    overrides[templateId] = val;
+                }
+            });
+            return overrides;
+        }
+
+        async function doImport() {
+            var templateIds = getSelectedTemplateIds();
+            var year = parseInt(yearSelect.value);
+
+            if (templateIds.length === 0) return;
+
+            BlockUI.show('Importing templates...');
+
+            try {
+                // Check for duplicates first
+                var checkUrl = '/Compliance/AxGetCheckDuplicates?year=' + year + '&' + templateIds.map(function (id) { return 'templateIds=' + id; }).join('&');
+                var checkResponse = await fetch(checkUrl);
+                var checkResult = await checkResponse.json();
+
+                BlockUI.hide();
+
+                if (checkResult.hasDuplicates) {
+                    var confirmResult = await Swal.fire({
+                        title: 'Duplicates Found',
+                        text: 'Some templates have already been imported for ' + year + '. Do you want to import them again?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, import anyway',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+
+                    if (!confirmResult.isConfirmed) return;
+                }
+
+                BlockUI.show('Importing templates...');
+
+                var importResponse = await fetch('/Compliance/AxPostImportTemplates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ templateIds: templateIds, year: year, dueDayOverrides: getDueDayOverrides() })
+                });
+
+                var importResult = await importResponse.json();
+                BlockUI.hide();
+
+                if (importResult.success) {
+                    await Swal.fire({
+                        title: 'Templates Imported',
+                        text: importResult.message || 'Filing records have been created successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                    window.location.href = '/Compliance';
+                } else {
+                    Swal.fire({
+                        title: 'Import Failed',
+                        text: importResult.message || 'Something went wrong. Please try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            } catch (ex) {
+                BlockUI.hide();
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D5EA6'
+                });
+            }
+        }
+
+        // Event listeners
+        countryFilter.addEventListener('change', applyCountryFilter);
+
+        checkboxes.forEach(function (cb) {
+            cb.addEventListener('change', updatePreview);
+        });
+
+        btnImport.addEventListener('click', doImport);
+
+        // Initial state
+        updatePreview();
+    })();
+</script>

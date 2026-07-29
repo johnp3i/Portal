@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Applications Tracker — Testing Scenarios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F7FAFC; color: #0B1B28; line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #0B1B28;
+            --text-secondary: #5E7385;
+            --text-muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11, 27, 40, 0.06);
+            --card-radius: 24px;
+        }
+        .page-container { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+        /* Page Header */
+        .page-header { margin-bottom: 32px; }
+        .page-header__eyebrow {
+            font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700;
+            letter-spacing: 1.2px; text-transform: uppercase;
+            color: var(--primary-blue); margin-bottom: 6px;
+        }
+        .page-header__title {
+            font-family: 'Manrope', sans-serif; font-size: 34px; font-weight: 800;
+            letter-spacing: -0.5px; color: var(--text-primary); margin-bottom: 6px;
+        }
+        .page-header__subtitle { font-size: 15px; color: var(--text-secondary); }
+
+        /* Glass Card */
+        .glass {
+            background: rgba(255,255,255,0.95); border: 1px solid rgba(255,255,255,0.7);
+            border-radius: var(--card-radius); box-shadow: var(--card-shadow);
+        }
+        .card-pad { padding: 28px 32px; }
+        .card-mb { margin-bottom: 22px; }
+
+        /* Section Title */
+        .section-title {
+            font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 16px;
+        }
+
+        /* Prerequisites */
+        .prereq-list { list-style: none; padding: 0; }
+        .prereq-list li {
+            padding: 8px 0; font-size: 14px; color: var(--text-primary);
+            border-bottom: 1px solid #f0f4f7;
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .prereq-list li:last-child { border-bottom: none; }
+        .check-icon { font-size: 16px; color: var(--text-muted); flex-shrink: 0; }
+        /* Scenario Card */
+        .scenario-card { position: relative; overflow: hidden; }
+        .scenario-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 5px; height: 100%; border-radius: 24px 0 0 24px;
+        }
+        .scenario-card[data-difficulty="quick"]::before { background: var(--success); }
+        .scenario-card[data-difficulty="moderate"]::before { background: var(--primary-blue); }
+        .scenario-card[data-difficulty="complex"]::before { background: var(--warning); }
+
+        .scenario-header {
+            display: flex; align-items: center; gap: 16px;
+            margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f0f4f7;
+        }
+        .scenario-number {
+            font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800;
+            color: var(--text-muted); min-width: 48px;
+        }
+        .scenario-meta { flex: 1; }
+        .scenario-title {
+            font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 4px;
+        }
+
+        /* Difficulty Badges */
+        .difficulty-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
+        }
+        .difficulty-quick { background: #e6f7f1; color: var(--success); }
+        .difficulty-moderate { background: #e8f0fd; color: var(--primary-blue); }
+        .difficulty-complex { background: #fef3e2; color: var(--warning); }
+
+        /* Scenario Body */
+        .scenario-body h4 {
+            font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase;
+            color: var(--text-secondary); margin: 18px 0 10px;
+        }
+        .scenario-body h4:first-child { margin-top: 0; }
+        /* Step List */
+        .step-list { list-style: none; padding: 0; margin: 0 0 8px; }
+        .step-list > li {
+            padding: 6px 0; font-size: 14px;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .step-list > li label {
+            display: flex; align-items: flex-start; gap: 8px; cursor: pointer;
+        }
+        .step-list > li label input[type="checkbox"] {
+            margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px;
+            accent-color: var(--primary-blue);
+        }
+        .sub-steps { list-style: disc; padding-left: 24px; margin-top: 6px; font-size: 13px; color: var(--text-secondary); }
+        .sub-steps li { padding: 2px 0; }
+
+        /* Result List */
+        .result-list { list-style: none; padding: 0; }
+        .result-list li {
+            padding: 5px 0 5px 24px; font-size: 13px;
+            position: relative; color: var(--text-primary);
+        }
+        .result-list li::before {
+            content: '\2713'; position: absolute; left: 0; top: 5px;
+            font-weight: 700; font-size: 14px;
+        }
+        .result-pass::before { color: var(--success); }
+
+        /* Edge List */
+        .edge-list { list-style: none; padding: 0; }
+        .edge-list li {
+            padding: 5px 0 5px 24px; font-size: 13px;
+            position: relative; color: var(--text-secondary);
+        }
+        .edge-list li::before { content: '\26A0'; position: absolute; left: 0; top: 5px; font-size: 13px; }
+
+        /* Code */
+        code {
+            background: var(--bg-secondary); padding: 2px 7px; border-radius: 6px;
+            font-size: 12.5px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            color: var(--primary-blue);
+        }
+
+        /* Footer */
+        .test-footer { text-align: center; padding: 32px 0 16px; font-size: 13px; color: var(--text-muted); }
+        .footer-meta { margin-top: 4px; font-size: 12px; }
+
+        /* Print Styles */
+        @media print {
+            body { background: #fff; }
+            .glass { box-shadow: none; border: 1px solid #e2e8f0; break-inside: avoid; }
+            .scenario-card { page-break-inside: avoid; }
+            .page-container { max-width: 100%; padding: 20px; }
+            input[type="checkbox"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-container { padding: 20px 16px; }
+            .page-header__title { font-size: 26px; }
+            .card-pad { padding: 20px; }
+            .scenario-number { font-size: 22px; min-width: 36px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+
+    <!-- Page Header -->
+    <header class="page-header">
+        <div class="page-header__eyebrow">QA &middot; Compliance Filings</div>
+        <h1 class="page-header__title">Business Applications Tracker — Testing Scenarios</h1>
+        <p class="page-header__subtitle">Step-by-step testing guide for QA engineers. Open in browser, follow each scenario, and check off steps as you go.</p>
+    </header>
+
+    <!-- Legend -->
+    <section class="glass card-pad card-mb" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Difficulty:</span>
+        <span class="difficulty-badge difficulty-quick">Quick</span>
+        <span class="difficulty-badge difficulty-moderate">Moderate</span>
+        <span class="difficulty-badge difficulty-complex">Complex</span>
+    </section>
+
+    <!-- Prerequisites -->
+    <section class="glass card-pad card-mb">
+        <h2 class="section-title">Prerequisites</h2>
+        <ul class="prereq-list">
+            <li><span class="check-icon">&#9744;</span> SQL Server running with Portal database accessible</li>
+            <li><span class="check-icon">&#9744;</span> Application deployed and running (Development or Staging environment)</li>
+            <li><span class="check-icon">&#9744;</span> SuperAdmin account credentials available</li>
+            <li><span class="check-icon">&#9744;</span> At least 2 tenant businesses set up (Business A, Business B)</li>
+            <li><span class="check-icon">&#9744;</span> Professional-tier subscription active on Business A</li>
+            <li><span class="check-icon">&#9744;</span> Foundation-tier subscription active on Business B (for gating tests)</li>
+            <li><span class="check-icon">&#9744;</span> Enterprise-tier subscription on a third business (optional, for tier verification)</li>
+            <li><span class="check-icon">&#9744;</span> Test PDF files: valid-small.pdf (&lt;1MB), valid-5mb.pdf (exactly 5MB), oversized.pdf (6MB), test.docx</li>
+            <li><span class="check-icon">&#9744;</span> Browser DevTools accessible for network inspection</li>
+        </ul>
+    </section>
+
+    <!-- Scenario 1 -->
+    <section class="glass card-pad card-mb scenario-card" data-difficulty="quick">
+        <div class="scenario-header">
+            <span class="scenario-number">01</span>
+            <div class="scenario-meta">
+                <h3 class="scenario-title">Database Setup &amp; Seed Verification</h3>
+                <span class="difficulty-badge difficulty-quick">Quick</span>
+            </div>
+        </div>
+        <div class="scenario-body">
+            <h4>Steps</h4>
+            <ol class="step-list">
+                <li><label><input type="checkbox"> Execute migration script <code>162_CreateComplianceSchema.sql</code> against the Portal database</label></li>
+                <li><label><input type="checkbox"> Execute seed script <code>163_SeedComplianceData.sql</code></label></li>
+                <li><label><input type="checkbox"> Execute plan feature seed <code>164_SeedCompliancePlanFeature.sql</code></label></li>
+                <li><label><input type="checkbox"> Query <code>[Compliance].[Categories]</code> — verify 4 rows exist</label></li>
+                <li><label><input type="checkbox"> Query <code>[Compliance].[Templates]</code> — verify 5 rows exist (all Cyprus)</label></li>
+                <li><label><input type="checkbox"> Query <code>[dbo].[PlanFeatures]</code> — verify Compliance feature records exist</label></li>
+            </ol>
+            <h4>Expected Results</h4>
+            <ul class="result-list">
+                <li class="result-pass">4 categories: Tax, Employee, Regulatory, Business Registration</li>
+                <li class="result-pass">5 templates: Social Insurance Monthly, VAT Return Quarterly, IR7 Annual, Employer's Declaration, Annual Levy</li>
+                <li class="result-pass">PlanFeature records link Compliance to Professional and Enterprise tiers</li>
+                <li class="result-pass">All scripts execute without errors</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Scenario 2 -->
+    <section class="glass card-pad card-mb scenario-card" data-difficulty="moderate">
+        <div class="scenario-header">
+            <span class="scenario-number">02</span>
+            <div class="scenario-meta">
+                <h3 class="scenario-title">SuperAdmin Template Management</h3>
+                <span class="difficulty-badge difficulty-moderate">Moderate</span>
+            </div>
+        </div>
+        <div class="scenario-body">
+            <h4>Steps</h4>
+            <ol class="step-list">
+                <li><label><input type="checkbox"> Log in as SuperAdmin</label></li>
+                <li><label><input type="checkbox"> Navigate to <code>/AdminCompliance</code></label></li>
+                <li><label><input type="checkbox"> Verify 5 seeded Cyprus templates are displayed in the list</label></li>
+                <li><label><input type="checkbox"> Click "Create Template" — fill in: Name, Country (Cyprus), Category (Tax), Frequency (Monthly), DueMonth (1), DueDay (15)</label></li>
+                <li><label><input type="checkbox"> Submit the form — verify success SweetAlert2 and new template appears in list</label></li>
+                <li><label><input type="checkbox"> Click "Edit" on the newly created template — change DueDay to 20</label></li>
+                <li><label><input type="checkbox"> Save — verify success feedback and value persisted on reload</label></li>
+                <li><label><input type="checkbox"> Click "Deactivate" on the same template — confirm via SweetAlert2 dialog</label></li>
+                <li><label><input type="checkbox"> Verify deactivated template shows visual indicator (greyed out or badge)</label></li>
+                <li><label><input type="checkbox"> Navigate to <code>/Compliance/Import</code> as a business user — confirm deactivated template is NOT listed</label></li>
+            </ol>
+            <h4>Expected Results</h4>
+            <ul class="result-list">
+                <li class="result-pass">Template CRUD operations work with proper BlockUI + SweetAlert2 feedback</li>
+                <li class="result-pass">Deactivation uses SweetAlert2 confirmation dialog (not native confirm)</li>
+                <li class="result-pass">Deactivated templates are excluded from business-facing import list</li>
+                <li class="result-pass">All form fields validate (required fields, numeric constraints)</li>
+            </ul>
+            <h4>Edge Cases</h4>
+            <ul class="edge-list">
+                <li>Try creating a template with empty Name — should show validation error</li>
+                <li>Try DueDay = 32 — should reject</li>
+                <li>Try DueMonth = 0 or 13 — should reject</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Scenario 3 -->
+    <section class="glass card-pad card-mb scenario-card" data-difficulty="quick">
+        <div class="scenario-header">
+            <span class="scenario-number">03</span>
+            <div class="scenario-meta">
+                <h3 class="scenario-title">Category Management</h3>
+                <span class="difficulty-badge difficulty-quick">Quick</span>
+            </div>
+        </div>
+        <div class="scenario-body">
+            <h4>Steps</h4>
+            <ol class="step-list">
+                <li><label><input type="checkbox"> Log in as SuperAdmin</label></li>
+                <li><label><input type="checkbox"> Navigate to <code>/AdminCompliance/Categories</code></label></li>
+                <li><label><input type="checkbox"> Verify 4 seeded categories displayed: Tax, Employee, Regulatory, Business Registration</label></li>
+                <li><label><input type="checkbox"> Click "Create Category" — enter Name: "Insurance", Description: "Insurance-related filings"</label></li>
+                <li><label><input type="checkbox"> Submit — verify success feedback and category appears in list</label></li>
+                <li><label><input type="checkbox"> Click "Edit" on "Insurance" — change description to "All insurance filings and returns"</label></li>
+                <li><label><input type="checkbox"> Save — verify success and reload shows updated description</label></li>
+            </ol>
+            <h4>Expected Results</h4>
+            <ul class="result-list">
+                <li class="result-pass">4 seeded categories visible on initial load</li>
+                <li class="result-pass">New category created successfully with BlockUI + SweetAlert2 flow</li>
+                <li class="result-pass">Edit persists name and description changes</li>
+                <li class="result-pass">Categories appear in template create/edit dropdowns</li>
+            </ul>
+            <h4>Edge Cases</h4>
+            <ul class="edge-list">
+                <li>Try creating a category with a duplicate name — should show error</li>
+                <li>Try empty name — validation should prevent submission</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Scenario 4 -->
+    <section class="glass card-pad card-mb scenario-card" data-difficulty="complex">
+        <div class="scenario-header">
+            <span class="scenario-number">04</span>
+            <div class="scenario-meta">
+                <h3 class="scenario-title">Template Import</h3>
+                <span class="difficulty-badge difficulty-complex">Complex</span>
+            </div>
+        </div>
+        <div class="scenario-body">
+            <h4>Steps</h4>
+            <ol class="step-list">
+                <li><label><input type="checkbox"> Log in as a Professional-tier business user</label></li>
+                <li><label><input type="checkbox"> Navigate to <code>/Compliance/Import</code></label></li>
+                <li><label><input type="checkbox"> Select Country filter: "Cyprus"</label></li>
+                <li><label><input type="checkbox"> Select Year: current year (e.g., 2025)</label></li>
+                <li><label><input type="checkbox"> Verify 5 templates listed with their frequencies</label></li>
+                <li><label><input type="checkbox"> Check all templates — verify preview summary:</label>
+                    <ul class="sub-steps">
+                        <li>Social Insurance Monthly &rarr; 12 records</li>
+                        <li>VAT Return Quarterly &rarr; 4 records</li>
+                        <li>IR7 Annual &rarr; 1 record</li>
+                        <li>Employer's Declaration &rarr; 1 record</li>
+                        <li>Annual Levy &rarr; 1 record</li>
+                        <li><strong>Total: 19 filings will be created</strong></li>
+                    </ul>
+                </li>
+                <li><label><input type="checkbox"> Click "Import" — observe BlockUI overlay appears</label></li>
+                <li><label><input type="checkbox"> Wait for completion — SweetAlert2 success message shown</label></li>
+                <li><label><input type="checkbox"> Verify automatic redirect to <code>/Compliance</code> (filing list)</label></li>
+                <li><label><input type="checkbox"> Verify 19 filings now appear in the list</label></li>
+            </ol>
+            <h4>Expected Results</h4>
+            <ul class="result-list">
+                <li class="result-pass">Preview correctly calculates total filing count (19)</li>
+                <li class="result-pass">Import creates all filings with correct due dates based on frequency</li>
+                <li class="result-pass">BlockUI shown during import, SweetAlert2 on completion</li>
+                <li class="result-pass">Redirect to filing list after successful import</li>
+                <li class="result-pass">All filings start with "Pending" status</li>
+            </ul>
+            <h4>Edge Cases</h4>
+            <ul class="edge-list">
+                <li><strong>Duplicate import:</strong> Navigate back to /Compliance/Import, select same templates + year — system shows duplicate warning via SweetAlert2 and allows cancel</li>
+                <li>Import with no templates selected — Import button should be disabled</li>
+                <li>Selecting a past year — should still work (backfilling)</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Scenario 5 -->
+    <section class="glass card-pad card-mb scenario-card" data-difficulty="moderate">
+        <div class="scenario-header">
+            <span class="scenario-number">05</span>
+            <div class="scenario-meta">
+                <h3 class="scenario-title">Filing List &amp; Filters</h3>
+                <span class="difficulty-badge difficulty-moderate">Moderate</span>
+            </div>
+        </div>
+        <div class="scenario-body">
+            <h4>Steps</h4>
+            <ol class="step-list">
+                <li><label><input type="checkbox"> Navigate to <code>/Compliance</code> (after completing Scenario 4)</label></li>
+                <li><label><input type="checkbox"> Verify 19 filings displayed, paginated at 15 per page (page 1: 15, page 2: 4)</label></li>
+                <li><label><input type="checkbox"> Filter by Category: select "Tax"</label></li>
+                <li><label><input type="checkbox"> Verify results: 5 filings shown (4 VAT Quarterly + 1 IR7 Annual)</label></li>
+                <li><label><input type="checkbox"> Clear filter — verify full list returns</label></li>
+                <li><label><input type="checkbox"> Filter by Status: select "Pending"</label></li>
+                <li><label><input type="checkbox"> Verify all 19 filings shown (all are Pending after fresh import)</label></li>
+                <li><label><input type="checkbox"> Filter by date range: select a 3-month window</label></li>
+                <li><label><input type="checkbox"> Verify only filings with due dates in that range appear</label></li>
+                <li><label><input type="checkbox"> Click "Clear" button — verify all filters reset and full list shown</label></li>
+            </ol>
+            <h4>Expected Results</h4>
+            <ul class="result-list">
+                <li class="result-pass">Pagination shows "Showing 1-15 of 19" on page 1</li>
+                <li class="result-pass">Category filter correctly narrows results</li>
+                <li class="result-pass">Status filter works independently and in combination</li>
+                <li class="result-pass">Date range filter respects DueDate field</li>
+                <li class="result-pass">Clear button resets all active filters</li>
+            </ul>
+            <h4>Edge Cases</h4>
+            <ul class="edge-list">
+                <li>Filter with no matching results — show "No filings found" empty state</li>
+                <li>Combine Category + Status + Date range — all three apply simultaneously</li>
+            </ul>
+        </div>
+    </section>

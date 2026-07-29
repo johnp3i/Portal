@@ -1,0 +1,337 @@
+@model Portal.Infrastructure.Models.PagedResult<Portal.Infrastructure.Models.Compliance.BusinessApplicationDto>
+@{
+    ViewData["Title"] = "Business Applications";
+
+    var categories = ViewBag.Categories as List<Portal.Infrastructure.Models.Compliance.ApplicationCategoryDto> ?? new();
+    var currentCategory = ViewBag.CurrentCategory as string;
+    var currentStatus = ViewBag.CurrentStatus as string;
+    var dateFrom = ViewBag.DateFrom as DateTime?;
+    var dateTo = ViewBag.DateTo as DateTime?;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Compliance</div>
+        <h1 class="topbar-heading">Business Applications</h1>
+        <p class="topbar-subtitle">Track your regulatory filings, deadlines, and submission statuses.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" onclick="toggleCreateFilingForm()">Create Filing</button>
+        <a asp-action="Import" asp-controller="Compliance" class="btn btn-secondary">Import Templates</a>
+        <a asp-action="Calendar" asp-controller="Compliance" class="btn btn-secondary">Calendar View</a>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Create Filing Form (hidden by default) -->
+<section id="createFilingForm" class="glass card-pad" style="margin-bottom:22px;display:none;border-left:4px solid #0D5EA6;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#1a2a3a;">Create Custom Filing</h3>
+        <button type="button" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="toggleCreateFilingForm()">Close</button>
+    </div>
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:200px;">
+            <label for="newFilingName">Filing Name</label>
+            <input type="text" id="newFilingName" placeholder="e.g. Annual Levy Payment" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label for="newFilingCategory">Category</label>
+            <select id="newFilingCategory">
+                <option value="">Select Category</option>
+                @foreach (var cat in categories.Where(c => c.IsActive).OrderBy(c => c.Name))
+                {
+                    <option value="@cat.Id">@cat.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label for="newFilingDueDate">Due Date</label>
+            <input type="date" id="newFilingDueDate" />
+        </div>
+        <div class="field" style="min-width:200px;">
+            <label for="newFilingNotes">Notes (optional)</label>
+            <input type="text" id="newFilingNotes" placeholder="Any notes..." />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="button" class="btn btn-primary" onclick="submitCreateFiling()">Create</button>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" asp-action="Index" asp-controller="Compliance">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:180px;">
+                <label for="category">Category</label>
+                <select id="category" name="category">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in categories.Where(c => c.IsActive).OrderBy(c => c.Name))
+                    {
+                        <option value="@cat.Name" selected="@(currentCategory == cat.Name)">@cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="min-width:180px;">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="Pending" selected="@(currentStatus == "Pending")">Pending</option>
+                    <option value="InProgress" selected="@(currentStatus == "InProgress")">In Progress</option>
+                    <option value="Submitted" selected="@(currentStatus == "Submitted")">Submitted</option>
+                    <option value="Approved" selected="@(currentStatus == "Approved")">Approved</option>
+                    <option value="Rejected" selected="@(currentStatus == "Rejected")">Rejected</option>
+                </select>
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateFrom">Date From</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="@(dateFrom?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label for="dateTo">Date To</label>
+                <input type="date" id="dateTo" name="dateTo" value="@(dateTo?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div style="display:flex;gap:10px;padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
+                <a asp-action="Index" asp-controller="Compliance" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Data Table -->
+<section class="glass card-pad">
+    @if (Model.Items != null && Model.Items.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Filing Name</th>
+                        <th>Category</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th class="col-reference">Reference</th>
+                        <th>Attachments</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var dueDateClass = item.DueStatus switch
+                        {
+                            "overdue" => "due-overdue",
+                            "urgent" => "due-urgent",
+                            "warning" => "due-warning",
+                            _ => ""
+                        };
+
+                        var statusBadgeClass = item.Status switch
+                        {
+                            "Pending" => "pill pill-grey",
+                            "InProgress" => "pill pill-blue",
+                            "Submitted" => "pill pill-amber",
+                            "Approved" => "pill pill-green",
+                            "Rejected" => "pill pill-red",
+                            _ => "pill pill-grey"
+                        };
+
+                        <tr>
+                            <td><strong>@item.ApplicationName</strong></td>
+                            <td>@item.CategoryName</td>
+                            <td>
+                                <span class="@dueDateClass">
+                                    @item.DueDate.ToString("dd MMM yyyy")
+                                </span>
+                                @if (item.DueStatus == "overdue")
+                                {
+                                    <span class="overdue-badge">OVERDUE</span>
+                                }
+                            </td>
+                            <td><span class="@statusBadgeClass">@(item.Status == "InProgress" ? "In Progress" : item.Status)</span></td>
+                            <td class="col-reference">@(item.ReferenceNumber ?? "—")</td>
+                            <td>@item.AttachmentCount</td>
+                            <td>
+                                <a href="/Compliance/Detail/@item.Id" class="btn btn-primary" style="font-size:12px;padding:6px 14px;">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+                <div style="font-size:14px;color:#5a6a7a;">
+                    Showing @(((Model.CurrentPage - 1) * Model.PageSize) + 1)–@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount)) of @Model.TotalCount
+                </div>
+                <div style="display:flex;gap:4px;align-items:center;">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a href="@BuildPageUrl(Model.CurrentPage - 1)" class="pagination-btn">Previous</a>
+                    }
+
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        if (i == Model.CurrentPage)
+                        {
+                            <span class="pagination-btn active">@i</span>
+                        }
+                        else if (i == 1 || i == Model.TotalPages || (i >= Model.CurrentPage - 2 && i <= Model.CurrentPage + 2))
+                        {
+                            <a href="@BuildPageUrl(i)" class="pagination-btn">@i</a>
+                        }
+                        else if (i == Model.CurrentPage - 3 || i == Model.CurrentPage + 3)
+                        {
+                            <span style="padding:0 6px;color:#5a6a7a;">...</span>
+                        }
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a href="@BuildPageUrl(Model.CurrentPage + 1)" class="pagination-btn">Next</a>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No filings found. Import templates to get started, or adjust your filters.</p>
+            <a asp-action="Import" asp-controller="Compliance" class="btn btn-primary" style="margin-top:12px;">Import Templates</a>
+        </div>
+    }
+</section>
+
+<style>
+    .due-overdue { color: #C24A4A; font-weight: 700; }
+    .due-urgent { color: #C24A4A; font-weight: 600; }
+    .due-warning { color: #C8912E; font-weight: 600; }
+    .overdue-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        color: #fff;
+        background: #C24A4A;
+        padding: 2px 7px;
+        border-radius: 6px;
+        margin-left: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        animation: overdue-pulse 2s infinite;
+    }
+    @@keyframes overdue-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+    .pagination-btn {
+        padding: 6px 12px;
+        border: 1px solid #d0d9e2;
+        border-radius: 8px;
+        background: #fff;
+        color: #0D5EA6;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s ease;
+        display: inline-block;
+    }
+    .pagination-btn:hover {
+        background: #EEF4F8;
+        border-color: #0D5EA6;
+    }
+    .pagination-btn.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+        cursor: default;
+    }
+    @@media (max-width: 576px) {
+        .col-reference { display: none; }
+    }
+</style>
+
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    function toggleCreateFilingForm() {
+        var form = document.getElementById('createFilingForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function submitCreateFiling() {
+        var name = document.getElementById('newFilingName').value.trim();
+        var categoryId = parseInt(document.getElementById('newFilingCategory').value);
+        var dueDate = document.getElementById('newFilingDueDate').value;
+        var notes = document.getElementById('newFilingNotes').value.trim() || null;
+
+        if (!name) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please enter a filing name.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+        if (!categoryId) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please select a category.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+        if (!dueDate) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please select a due date.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Creating filing...');
+        try {
+            var response = await fetch('/Compliance/AxPostCreateFiling', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    name: name,
+                    applicationCategoryId: categoryId,
+                    dueDate: dueDate,
+                    notes: notes
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({ icon: 'success', title: 'Created', text: data.message, confirmButtonColor: '#0D5EA6' });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
+
+@functions {
+    string BuildPageUrl(int page)
+    {
+        var query = new List<string> { $"page={page}" };
+        var cat = ViewBag.CurrentCategory as string;
+        var stat = ViewBag.CurrentStatus as string;
+        var df = ViewBag.DateFrom as DateTime?;
+        var dt = ViewBag.DateTo as DateTime?;
+
+        if (!string.IsNullOrEmpty(cat)) query.Add($"category={Uri.EscapeDataString(cat)}");
+        if (!string.IsNullOrEmpty(stat)) query.Add($"status={Uri.EscapeDataString(stat)}");
+        if (df.HasValue) query.Add($"dateFrom={df.Value:yyyy-MM-dd}");
+        if (dt.HasValue) query.Add($"dateTo={dt.Value:yyyy-MM-dd}");
+
+        return $"?{string.Join("&", query)}";
+    }
+}
