@@ -1,0 +1,66 @@
+@model Portal.Infrastructure.Models.UpdateAnnouncementRequest
+@{
+    ViewData["Title"] = "Edit Announcement";
+    var error = ViewBag.Error as string;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration / What's New</div>
+        <h1 class="topbar-heading">Edit Announcement</h1>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div style="background:#fef2f2;color:#C24A4A;padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600;">@error</div>
+}
+
+<section class="glass card-pad">
+    <form method="post" asp-action="Edit">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" value="@Model.Id" />
+
+        <div class="field"><label>Title *</label><input type="text" name="Title" value="@Model.Title" required maxlength="200" /></div>
+        <div class="field"><label>Summary *</label><textarea name="Summary" rows="2" required maxlength="500">@Model.Summary</textarea></div>
+        <div class="field"><label>Detail HTML *</label><textarea name="DetailHtml" rows="8" required style="font-family:monospace;font-size:13px;">@Model.DetailHtml</textarea></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="field"><label>Module Key</label><input type="text" name="ModuleKey" value="@Model.ModuleKey" maxlength="100" /></div>
+            <div class="field">
+                <label>Target Plan Tier</label>
+                <select name="TargetPlanTier">
+                    <option value="" selected="@(Model.TargetPlanTier == null)">All (visible to everyone)</option>
+                    <option value="Starter" selected="@(Model.TargetPlanTier == "Starter")">Starter</option>
+                    <option value="Professional" selected="@(Model.TargetPlanTier == "Professional")">Professional</option>
+                    <option value="Enterprise" selected="@(Model.TargetPlanTier == "Enterprise")">Enterprise</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="field"><label>CTA Label</label><input type="text" name="CtaLabel" value="@Model.CtaLabel" maxlength="100" /></div>
+            <div class="field"><label>CTA URL</label><input type="text" name="CtaUrl" value="@Model.CtaUrl" maxlength="500" /></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="field"><label>Publish Date (UTC) *</label><input type="datetime-local" name="PublishedAtUtc" value="@Model.PublishedAtUtc.ToString("yyyy-MM-ddTHH:mm")" required /></div>
+            <div class="field"><label>Expires (UTC)</label><input type="datetime-local" name="ExpiresAtUtc" value="@(Model.ExpiresAtUtc?.ToString("yyyy-MM-ddTHH:mm"))" /></div>
+        </div>
+
+        <div class="field" style="margin-top:8px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" name="IsActive" value="true" checked="@Model.IsActive" style="width:18px;height:18px;" />
+                Active (visible to users)
+            </label>
+        </div>
+
+        <div style="margin-top:20px;display:flex;gap:12px;">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</section>

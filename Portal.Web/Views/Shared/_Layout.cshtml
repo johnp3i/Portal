@@ -123,7 +123,9 @@
             @if (User.Identity?.IsAuthenticated == true)
             {
                 <!-- Global Search Bar -->
-                <div id="globalSearchContainer" style="position:absolute;top:25px;right:200px;z-index:100;width:350px;">
+                <div style="position:absolute;top:25px;right:200px;z-index:100;display:flex;align-items:center;gap:12px;">
+                    @await Component.InvokeAsync("WhatsNew")
+                    <div id="globalSearchContainer" style="width:350px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                         <div style="position:relative;flex:1;">
                             <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;" width="15" height="15" fill="none" stroke="#8899A6" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -139,8 +141,9 @@
                     </div>
                     <div id="globalSearchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:6px;background:#fff;border:1px solid rgba(13,94,166,.10);border-radius:14px;box-shadow:0 12px 32px rgba(13,94,166,.12);max-height:420px;overflow-y:auto;z-index:1001;"></div>
                 </div>
+                </div>
 
-                <div style="position:absolute;top:25px;right:24px;z-index:100;" id="accountMenu">
+                <div style="position:absolute;top:25px;right:24px;z-index:100;display:flex;align-items:center;gap:14px;" id="accountMenu">
                     <button type="button" onclick="var d=document.getElementById('accountDropdown');d.style.display=d.style.display==='none'?'block':'none';" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.10);border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;color:#334155;font-family:inherit;">
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
                         My Account
@@ -154,6 +157,10 @@
                         @if (User.HasClaim("IsOwner", "true"))
                         {
                             <a href="/Account/Billing" style="display:block;padding:12px 18px;font-size:13px;font-weight:600;color:#334155;text-decoration:none;border-bottom:1px solid rgba(13,94,166,.06);">Billing</a>
+                        }
+                        @if (User.IsInRole("SuperAdmin"))
+                        {
+                            <a href="/AdminWhatsNew" style="display:block;padding:12px 18px;font-size:13px;font-weight:600;color:#334155;text-decoration:none;border-bottom:1px solid rgba(13,94,166,.06);">What's New (Admin)</a>
                         }
                         <form method="post" asp-controller="Account" asp-action="Logout" style="margin:0;">
                             @Html.AntiForgeryToken()

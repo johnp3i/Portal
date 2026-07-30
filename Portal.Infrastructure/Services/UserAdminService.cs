@@ -62,7 +62,7 @@ public class UserAdminService : IUserAdminService
             Email = ub.User.Email ?? string.Empty,
             Role = "User",
             IsActive = ub.IsActive,
-            LastLoginUtc = null,
+            LastLoginUtc = ub.User.LastLoginUtc,
             BusinessId = ub.BusinessId
         }).ToList();
 

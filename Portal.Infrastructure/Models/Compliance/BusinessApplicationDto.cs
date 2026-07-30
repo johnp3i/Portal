@@ -11,6 +11,7 @@ public class BusinessApplicationDto
     public DateTime DueDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? ReferenceNumber { get; set; }
+    public decimal? EstimatedAmount { get; set; }
     public int AttachmentCount { get; set; }
     public string DueStatus { get; set; } = string.Empty;
     public int? DaysUntilDue { get; set; }

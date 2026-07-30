@@ -194,7 +194,13 @@
             @foreach (var item in recentPayments.Items)
             {
                 <tr style="vertical-align:middle;@(item.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
-                    <td>@item.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        @item.PaymentDateUtc.ToString("yyyy-MM-dd")
+                        @if (item.IsUpcoming)
+                        {
+                            <span style="display:inline-block;margin-left:6px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#FEF3CD;color:#8A6D3B;">Upcoming</span>
+                        }
+                    </td>
                     <td><strong>@item.InvoiceNumber</strong></td>
                     <td>@item.CustomerName</td>
                     <td>
@@ -208,6 +214,10 @@
                         else
                         {
                             @item.PaymentMethodName
+                        }
+                        @if (!string.IsNullOrEmpty(item.Reference))
+                        {
+                            <div style="font-size:11px;color:#5a6a7a;margin-top:3px;font-family:monospace;">@(item.Reference.Length > 20 ? item.Reference[..10] + "…" + item.Reference[^6..] : item.Reference)</div>
                         }
                     </td>
                     <td style="text-align:right;font-weight:700;color:@(item.IsVoided ? "#999" : item.IsFullPayment ? "var(--green)" : "var(--gold)");">@currency@item.Amount.ToString("N2")</td>
@@ -223,6 +233,10 @@
                         else
                         {
                             <span class="pill pill-gold">Partial</span>
+                        }
+                        @if (item.IsScheduled && !item.IsVoided)
+                        {
+                            <span class="pill" style="background:rgba(13,94,166,.08);color:#0D5EA6;font-weight:700;margin-left:4px;">Scheduled</span>
                         }
                     </td>
                     <td style="white-space:nowrap;">
@@ -297,6 +311,9 @@
     </a>
 </section>
 }
+
+<!-- Bottom spacer for smaller screens -->
+<div style="height:60px;"></div>
 
 <!-- Payment Modal Partial -->
 @await Html.PartialAsync("_PaymentModal")

@@ -10,15 +10,18 @@ public class ModuleNavigationViewComponent : ViewComponent
     private readonly IPermissionService _permissionService;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly IBusinessService _businessService;
+    private readonly IPlanCheckService _planCheckService;
 
     public ModuleNavigationViewComponent(
         IPermissionService permissionService,
         ICurrentTenantService currentTenantService,
-        IBusinessService businessService)
+        IBusinessService businessService,
+        IPlanCheckService planCheckService)
     {
         _permissionService = permissionService;
         _currentTenantService = currentTenantService;
         _businessService = businessService;
+        _planCheckService = planCheckService;
     }
 
     public async Task<IViewComponentResult> InvokeAsync()
@@ -41,7 +44,20 @@ public class ModuleNavigationViewComponent : ViewComponent
         }
         else if (!string.IsNullOrEmpty(userId))
         {
-            permissions = await _permissionService.GetAllAccessLevelsAsync(userId);
+            // Check if user is the business owner
+            var isOwner = await _planCheckService.IsOwnerAsync(userId);
+
+            if (isOwner)
+            {
+                // Owner sees all modules included in their plan with full access
+                var planModules = await _planCheckService.GetPlanModulesAsync();
+                permissions = planModules.ToDictionary(m => m, _ => AccessLevels.Full);
+            }
+            else
+            {
+                // Team members see only explicitly granted modules
+                permissions = await _permissionService.GetAllAccessLevelsAsync(userId);
+            }
         }
         else
         {

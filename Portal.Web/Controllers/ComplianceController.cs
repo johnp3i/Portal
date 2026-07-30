@@ -134,12 +134,12 @@ public class ComplianceController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AxPostUpdateDetails(int id, string? referenceNumber, string? notes)
+    public async Task<IActionResult> AxPostUpdateDetails(int id, string? referenceNumber, string? notes, decimal? estimatedAmount)
     {
         try
         {
             var businessId = _tenantService.CurrentBusinessId;
-            var result = await _complianceService.UpdateDetailsAsync(id, referenceNumber, notes, businessId);
+            var result = await _complianceService.UpdateDetailsAsync(id, referenceNumber, notes, estimatedAmount, businessId);
 
             if (result.Success)
                 return Json(new { success = true, message = "Details saved successfully." });

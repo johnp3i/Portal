@@ -1,0 +1,147 @@
+@model Portal.Web.Models.ViewComponents.WhatsNewViewModel
+
+@* Sparkle icon + badge in topbar *@
+<div id="whats-new-trigger" style="position:relative;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.10);border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;color:#334155;font-family:Inter,sans-serif;" onclick="toggleWhatsNewPanel()">
+    <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 2l2.09 6.26L20.5 9l-5 4.74L17 20l-5-3.5L7 20l1.5-6.26L3.5 9l6.41-.74L12 2z"/>
+    </svg>
+    <span>What's New</span>
+    @if (Model.UnreadCount > 0)
+    {
+        <span id="whats-new-badge" style="background:#C24A4A;color:#fff;font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 4px;">@Model.BadgeText</span>
+    }
+    else
+    {
+        <span id="whats-new-badge" style="display:none;"></span>
+    }
+</div>
+
+@* Slide-out panel (hidden by default) *@
+<div id="whats-new-panel" style="display:none;position:fixed;top:0;right:0;bottom:0;width:400px;max-width:90vw;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.12);z-index:10000;overflow-y:auto;padding:24px;transition:transform .2s ease;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h3 style="margin:0;font-family:Manrope,sans-serif;font-size:18px;">What's New</h3>
+        <div style="display:flex;gap:12px;align-items:center;">
+            @if (Model.UnreadCount > 0)
+            {
+                <button type="button" onclick="dismissAllAnnouncements()" style="border:none;background:none;color:var(--blue);font-size:12px;font-weight:700;cursor:pointer;">Mark all as read</button>
+            }
+            <button type="button" onclick="toggleWhatsNewPanel()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#5a6a7a;">&times;</button>
+        </div>
+    </div>
+
+    <div id="whats-new-list">
+        @if (Model.Announcements.Count == 0)
+        {
+            <p style="color:var(--muted);text-align:center;padding:40px 0;">No announcements yet.</p>
+        }
+        else
+        {
+            @foreach (var item in Model.Announcements)
+            {
+                var unreadDot = item.IsDismissed ? "" : "background:#0D5EA6;";
+                var fontWeight = item.IsDismissed ? "400" : "600";
+                <div class="wn-item" id="wn-item-@item.Id" style="padding:14px;border-radius:12px;margin-bottom:10px;background:#f7fafc;cursor:pointer;border-left:3px solid @(item.IsDismissed ? "transparent" : "#0D5EA6");" onclick="toggleAnnouncementDetail(@item.Id)">
+                    <div style="display:flex;align-items:flex-start;gap:10px;">
+                        @if (!item.IsDismissed)
+                        {
+                            <span style="min-width:8px;height:8px;border-radius:50%;margin-top:6px;@unreadDot"></span>
+                        }
+                        <div style="flex:1;">
+                            <div style="font-weight:@fontWeight;font-size:14px;color:#1a2b3c;">@item.Title</div>
+                            <div style="font-size:12px;color:#5a6a7a;margin-top:2px;">@item.Summary</div>
+                            <div style="font-size:11px;color:#8a9bab;margin-top:4px;">@FormatRelativeDate(item.PublishedAtUtc)</div>
+                        </div>
+                    </div>
+                    <div id="wn-detail-@item.Id" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(13,94,166,.08);">
+                        <div style="font-size:13px;color:#334155;line-height:1.6;">@Html.Raw(item.DetailHtml)</div>
+                        @if (item.HasCta)
+                        {
+                            <a href="@item.CtaUrl" style="display:inline-block;margin-top:10px;padding:8px 16px;border-radius:8px;background:var(--blue);color:#fff;font-size:13px;font-weight:700;text-decoration:none;">@item.CtaLabel</a>
+                        }
+                        @if (!item.IsDismissed)
+                        {
+                            <button type="button" onclick="event.stopPropagation();dismissAnnouncement(@item.Id)" style="display:block;margin-top:8px;border:none;background:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;padding:0;">Dismiss</button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@* Backdrop overlay *@
+<div id="whats-new-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:9999;" onclick="toggleWhatsNewPanel()"></div>
+
+<script>
+    function toggleWhatsNewPanel() {
+        var panel = document.getElementById('whats-new-panel');
+        var backdrop = document.getElementById('whats-new-backdrop');
+        var isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        backdrop.style.display = isOpen ? 'none' : 'block';
+    }
+
+    function toggleAnnouncementDetail(id) {
+        var detail = document.getElementById('wn-detail-' + id);
+        detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function dismissAnnouncement(id) {
+        fetch('/Home/AxPostDismissAnnouncement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getWhatsNewToken() },
+            body: 'announcementId=' + id
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                updateWhatsNewBadge(data.unreadCount);
+                var item = document.getElementById('wn-item-' + id);
+                if (item) { item.style.borderLeftColor = 'transparent'; }
+            }
+        });
+    }
+
+    function dismissAllAnnouncements() {
+        fetch('/Home/AxPostDismissAllAnnouncements', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getWhatsNewToken() }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                updateWhatsNewBadge(0);
+                document.querySelectorAll('.wn-item').forEach(function(el) {
+                    el.style.borderLeftColor = 'transparent';
+                });
+            }
+        });
+    }
+
+    function updateWhatsNewBadge(count) {
+        var badge = document.getElementById('whats-new-badge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = count > 9 ? '9+' : count.toString();
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function getWhatsNewToken() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+</script>
+
+@functions {
+    string FormatRelativeDate(DateTime utc)
+    {
+        var diff = DateTime.UtcNow - utc;
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        return utc.ToString("dd MMM yyyy");
+    }
+}

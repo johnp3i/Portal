@@ -116,6 +116,13 @@ public class ModuleAccessAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
 
+        // Business owners bypass user-level permission checks — they have full access to all plan-included modules
+        var planCheckService = context.HttpContext.RequestServices
+            .GetRequiredService<IPlanCheckService>();
+        var isOwner = await planCheckService.IsOwnerAsync(userIdForPermission);
+        if (isOwner)
+            return;
+
         var permissionService = context.HttpContext.RequestServices
             .GetRequiredService<IPermissionService>();
 

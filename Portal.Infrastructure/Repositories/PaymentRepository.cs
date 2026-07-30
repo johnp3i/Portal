@@ -152,7 +152,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                 FROM [revenue].[Payment]
                 WHERE [revenue].[Payment].[InvoiceId] = @InvoiceId
                   AND [revenue].[Payment].[BusinessId] = @BusinessId
-                  AND [revenue].[Payment].[IsVoided] = 0";
+                  AND [revenue].[Payment].[IsVoided] = 0
+                  AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()";
 
             return await ExecuteStoredProcedure(query,
                 new SqlParameter("@InvoiceId", invoiceId),
@@ -201,7 +202,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                 FROM [revenue].[Payment]
                 WHERE [revenue].[Payment].[InvoiceId] = @InvoiceId
                   AND [revenue].[Payment].[BusinessId] = @BusinessId
-                  AND [revenue].[Payment].[IsVoided] = 0";
+                  AND [revenue].[Payment].[IsVoided] = 0
+                  AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -249,7 +251,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                   AND [revenue].[Payment].[IsVoided] = 0
                   AND [revenue].[Payment].[ParentPaymentId] IS NULL
                   AND [revenue].[Payment].[PaymentDateUtc] >= @FromUtc
-                  AND [revenue].[Payment].[PaymentDateUtc] < @ToUtc";
+                  AND [revenue].[Payment].[PaymentDateUtc] < @ToUtc
+                  AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -389,7 +392,12 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                             THEN CAST(1 AS BIT)
                             ELSE CAST(0 AS BIT)
                        END AS [IsFullPayment],
-                       [revenue].[Payment].[IsVoided]
+                       [revenue].[Payment].[IsVoided],
+                       [revenue].[Payment].[Reference],
+                       CASE WHEN [revenue].[PaymentScheduleInstalment].[Id] IS NOT NULL
+                            THEN CAST(1 AS BIT)
+                            ELSE CAST(0 AS BIT)
+                       END AS [IsScheduled]
                 FROM [revenue].[Payment]
                 INNER JOIN [invoice].[Invoice]
                     ON [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
@@ -397,6 +405,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     ON [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
                 INNER JOIN [revenue].[PaymentMethodType]
                     ON [revenue].[Payment].[PaymentMethodTypeId] = [revenue].[PaymentMethodType].[Id]
+                LEFT JOIN [revenue].[PaymentScheduleInstalment]
+                    ON [revenue].[Payment].[Id] = [revenue].[PaymentScheduleInstalment].[PaymentId]
                 WHERE [revenue].[Payment].[BusinessId] = @BusinessId{searchFilter}
                 ORDER BY [revenue].[Payment].[PaymentDateUtc] DESC
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
@@ -438,16 +448,20 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                     using var reader = await dataCommand.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {
+                        var paymentDate = reader.GetDateTime(1);
                         items.Add(new RecentPaymentDto
                         {
                             Id = reader.GetInt32(0),
-                            PaymentDateUtc = reader.GetDateTime(1),
+                            PaymentDateUtc = paymentDate,
                             InvoiceNumber = reader.GetString(2),
                             CustomerName = reader.GetString(3),
                             PaymentMethodName = reader.GetString(4),
                             Amount = reader.GetDecimal(5),
                             IsFullPayment = reader.GetBoolean(6),
-                            IsVoided = reader.GetBoolean(7)
+                            IsVoided = reader.GetBoolean(7),
+                            Reference = reader.IsDBNull(8) ? null : reader.GetString(8),
+                            IsScheduled = reader.GetBoolean(9),
+                            IsUpcoming = paymentDate > DateTime.UtcNow
                         });
                     }
                 }

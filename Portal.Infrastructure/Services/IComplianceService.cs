@@ -33,7 +33,7 @@ public interface IComplianceService
         DateTime? dateFrom, DateTime? dateTo, int page, int pageSize);
     Task<BusinessApplicationDetailDto?> GetApplicationDetailAsync(int id, int businessId);
     Task<ServiceResult> UpdateStatusAsync(int id, string newStatus, int businessId);
-    Task<ServiceResult> UpdateDetailsAsync(int id, string? referenceNumber, string? notes, int businessId);
+    Task<ServiceResult> UpdateDetailsAsync(int id, string? referenceNumber, string? notes, decimal? estimatedAmount, int businessId);
     Task<ServiceResult> CreateFilingAsync(int businessId, CreateFilingRequest request);
 
     // Attachments

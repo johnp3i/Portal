@@ -305,6 +305,11 @@ builder.Services.AddScoped<TeamMemberRepository>(sp =>
 builder.Services.AddScoped<ActivityFeedRepository>(sp =>
     new ActivityFeedRepository(sp.GetRequiredService<PortalDbContext>()));
 
+// --- What's New Announcements ---
+builder.Services.AddScoped<AnnouncementRepository>(sp =>
+    new AnnouncementRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+
 // P&L services
 builder.Services.AddScoped<IPnlService, PnlService>();
 builder.Services.AddScoped<IPnlPdfService, PnlPdfService>();

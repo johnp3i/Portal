@@ -167,6 +167,10 @@ public class PortalDbContext : DbContext
     public DbSet<BusinessApplication> BusinessApplications { get; set; } = null!;
     public DbSet<ApplicationAttachment> ApplicationAttachments { get; set; } = null!;
 
+    // What's New Announcements
+    public DbSet<FeatureAnnouncement> FeatureAnnouncements { get; set; } = null!;
+    public DbSet<UserAnnouncementDismissal> UserAnnouncementDismissals { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -272,6 +276,10 @@ public class PortalDbContext : DbContext
         ConfigureApplicationType(modelBuilder);
         ConfigureBusinessApplication(modelBuilder);
         ConfigureApplicationAttachment(modelBuilder);
+
+        // What's New Announcements
+        ConfigureFeatureAnnouncement(modelBuilder);
+        ConfigureUserAnnouncementDismissal(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -3681,6 +3689,11 @@ public class PortalDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(20);
 
+            entity.Property(e => e.EstimatedAmount)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.FrequencyInterval);
+
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
@@ -3727,6 +3740,9 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.Notes)
                 .HasMaxLength(2000);
+
+            entity.Property(e => e.EstimatedAmount)
+                .HasColumnType("decimal(18,2)");
 
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
@@ -3787,6 +3803,48 @@ public class PortalDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BusinessApplicationId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureFeatureAnnouncement(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FeatureAnnouncement>(entity =>
+        {
+            entity.ToTable("FeatureAnnouncements", "dbo");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Summary).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.DetailHtml).IsRequired();
+            entity.Property(e => e.ModuleKey).HasMaxLength(100);
+            entity.Property(e => e.CtaLabel).HasMaxLength(100);
+            entity.Property(e => e.CtaUrl).HasMaxLength(500);
+            entity.Property(e => e.TargetPlanTier).HasMaxLength(50);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.PublishedAtUtc).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureUserAnnouncementDismissal(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserAnnouncementDismissal>(entity =>
+        {
+            entity.ToTable("UserAnnouncementDismissals", "dbo");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.DismissedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.FeatureAnnouncement)
+                .WithMany()
+                .HasForeignKey(e => e.FeatureAnnouncementId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.UserId, e.FeatureAnnouncementId })
+                .IsUnique()
+                .HasDatabaseName("UQ_UserAnnouncementDismissals_UserAnnouncement");
         });
     }
 

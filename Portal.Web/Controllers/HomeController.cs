@@ -19,6 +19,7 @@ public class HomeController : Controller
     private readonly IDashboardBriefingService _briefingService;
     private readonly ISystemBriefingService _systemBriefingService;
     private readonly IOnboardingService _onboardingService;
+    private readonly IAnnouncementService _announcementService;
 
     public HomeController(
         IQuotationService quotationService,
@@ -29,7 +30,8 @@ public class HomeController : Controller
         IPermissionService permissionService,
         IDashboardBriefingService briefingService,
         ISystemBriefingService systemBriefingService,
-        IOnboardingService onboardingService)
+        IOnboardingService onboardingService,
+        IAnnouncementService announcementService)
 
     {
         _quotationService = quotationService;
@@ -41,6 +43,7 @@ public class HomeController : Controller
         _briefingService = briefingService;
         _systemBriefingService = systemBriefingService;
         _onboardingService = onboardingService;
+        _announcementService = announcementService;
     }
 
     [HttpGet]
@@ -246,6 +249,42 @@ public class HomeController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AxPostDismissAnnouncement(int announcementId)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Not authenticated." });
+
+            var updatedCount = await _announcementService.DismissAsync(userId, announcementId);
+            return Json(new { success = true, unreadCount = updatedCount });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to dismiss announcement." });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AxPostDismissAllAnnouncements()
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Not authenticated." });
+
+            var updatedCount = await _announcementService.DismissAllAsync(userId);
+            return Json(new { success = true, unreadCount = updatedCount });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to dismiss announcements." });
         }
     }
 

@@ -267,6 +267,29 @@ This plan implements the Compliance Filings module end-to-end: database schema a
 - [x] 16. Final checkpoint - Full build and test verification
   - Run `dotnet build` and `dotnet test` (if test project configured). Ensure all tests pass. Ask the user if questions arise.
 
+- [x] 17. EstimatedAmount and Multi-Year frequency enhancement
+  - [x] 17.1 Create SQL migration 165 for EstimatedAmount and FrequencyInterval columns
+    - ALTER TABLE ApplicationType ADD EstimatedAmount DECIMAL(18,2) NULL, FrequencyInterval INT NULL
+    - ALTER TABLE BusinessApplication ADD EstimatedAmount DECIMAL(18,2) NULL
+    - Update CK_ApplicationType_Frequency to include 'Multi-Year'
+  - [x] 17.2 Update entities, DTOs, request models with new properties
+    - ApplicationType: EstimatedAmount, FrequencyInterval
+    - BusinessApplication: EstimatedAmount
+    - All DTOs: ApplicationTypeDto, BusinessApplicationDto, BusinessApplicationDetailDto, UpcomingFilingDto, CalendarFilingDto
+    - Request models: CreateApplicationTypeRequest, UpdateApplicationTypeRequest, CreateFilingRequest
+  - [x] 17.3 Update repository SELECT/INSERT/UPDATE queries and mapping methods
+    - Add EstimatedAmount to all BusinessApplication queries
+    - Add EstimatedAmount + FrequencyInterval to all ApplicationType queries
+    - Update UpdateDetailsAsync to persist EstimatedAmount
+  - [x] 17.4 Update service layer with Multi-Year frequency calculation and amount propagation
+    - CalculateDueDates handles Multi-Year (same as Annual — 1 record per year)
+    - ImportTemplatesAsync copies EstimatedAmount from template to filing
+    - CreateFilingAsync accepts EstimatedAmount
+    - UpdateDetailsAsync passes EstimatedAmount through
+  - [x] 17.5 Update controller endpoint signature
+    - AxPostUpdateDetails accepts decimal? estimatedAmount parameter
+  - [x] 17.6 Update DbContext configuration for new decimal columns
+
 ## Notes
 
 - Tasks marked with `*` are optional and can be skipped for faster MVP delivery

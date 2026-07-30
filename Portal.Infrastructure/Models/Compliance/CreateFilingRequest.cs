@@ -9,4 +9,5 @@ public class CreateFilingRequest
     public int ApplicationCategoryId { get; set; }
     public DateTime DueDate { get; set; }
     public string? Notes { get; set; }
+    public decimal? EstimatedAmount { get; set; }
 }

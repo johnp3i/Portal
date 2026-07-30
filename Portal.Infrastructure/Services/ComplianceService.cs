@@ -119,6 +119,8 @@ public class ComplianceService : IComplianceService
                 Frequency = t.Frequency,
                 DefaultDueMonth = t.DefaultDueMonth,
                 DefaultDueDay = t.DefaultDueDay,
+                EstimatedAmount = t.EstimatedAmount,
+                FrequencyInterval = t.FrequencyInterval,
                 IsActive = t.IsActive
             }).ToList();
         }
@@ -150,7 +152,9 @@ public class ComplianceService : IComplianceService
                 ApplicationCategoryId = request.ApplicationCategoryId,
                 Frequency = request.Frequency,
                 DefaultDueMonth = request.DefaultDueMonth,
-                DefaultDueDay = request.DefaultDueDay
+                DefaultDueDay = request.DefaultDueDay,
+                EstimatedAmount = request.EstimatedAmount,
+                FrequencyInterval = request.FrequencyInterval
             };
 
             var id = await _repository.InsertTypeAsync(entity);
@@ -185,7 +189,9 @@ public class ComplianceService : IComplianceService
                 ApplicationCategoryId = request.ApplicationCategoryId,
                 Frequency = request.Frequency,
                 DefaultDueMonth = request.DefaultDueMonth,
-                DefaultDueDay = request.DefaultDueDay
+                DefaultDueDay = request.DefaultDueDay,
+                EstimatedAmount = request.EstimatedAmount,
+                FrequencyInterval = request.FrequencyInterval
             };
 
             await _repository.UpdateTypeAsync(entity);
@@ -250,6 +256,8 @@ public class ComplianceService : IComplianceService
                 Frequency = t.Frequency,
                 DefaultDueMonth = t.DefaultDueMonth,
                 DefaultDueDay = t.DefaultDueDay,
+                EstimatedAmount = t.EstimatedAmount,
+                FrequencyInterval = t.FrequencyInterval,
                 IsActive = t.IsActive
             }).ToList();
         }
@@ -314,7 +322,8 @@ public class ComplianceService : IComplianceService
                         BusinessId = businessId,
                         ApplicationTypeId = type.Id,
                         DueDate = dueDate,
-                        Status = "Pending"
+                        Status = "Pending",
+                        EstimatedAmount = type.EstimatedAmount
                     });
                 }
             }
@@ -363,6 +372,7 @@ public class ComplianceService : IComplianceService
                     DueDate = a.DueDate,
                     Status = a.Status,
                     ReferenceNumber = a.ReferenceNumber,
+                    EstimatedAmount = a.EstimatedAmount,
                     AttachmentCount = 0,
                     DueStatus = dueStatus,
                     DaysUntilDue = daysUntilDue
@@ -412,6 +422,7 @@ public class ComplianceService : IComplianceService
                 Status = record.Status,
                 ReferenceNumber = record.ReferenceNumber,
                 Notes = record.Notes,
+                EstimatedAmount = record.EstimatedAmount,
                 SubmittedAtUtc = record.SubmittedAtUtc,
                 ApprovedAtUtc = record.ApprovedAtUtc,
                 CreatedAtUtc = record.CreatedAtUtc,
@@ -466,7 +477,7 @@ public class ComplianceService : IComplianceService
         }
     }
 
-    public async Task<ServiceResult> UpdateDetailsAsync(int id, string? referenceNumber, string? notes, int businessId)
+    public async Task<ServiceResult> UpdateDetailsAsync(int id, string? referenceNumber, string? notes, decimal? estimatedAmount, int businessId)
     {
         try
         {
@@ -474,7 +485,7 @@ public class ComplianceService : IComplianceService
             if (record == null)
                 return ServiceResult.Fail("Application not found.");
 
-            await _repository.UpdateDetailsAsync(id, referenceNumber?.Trim(), notes?.Trim());
+            await _repository.UpdateDetailsAsync(id, referenceNumber?.Trim(), notes?.Trim(), estimatedAmount);
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -512,7 +523,8 @@ public class ComplianceService : IComplianceService
                 ApplicationTypeId = typeId,
                 DueDate = request.DueDate,
                 Status = "Pending",
-                Notes = request.Notes?.Trim()
+                Notes = request.Notes?.Trim(),
+                EstimatedAmount = request.EstimatedAmount
             };
 
             await _repository.InsertSingleAsync(application);
@@ -646,7 +658,8 @@ public class ComplianceService : IComplianceService
                     DueDate = a.DueDate,
                     Status = a.Status,
                     DueStatus = dueStatus,
-                    DaysUntilDue = daysUntilDue
+                    DaysUntilDue = daysUntilDue,
+                    EstimatedAmount = a.EstimatedAmount
                 };
             }).ToList();
         }
@@ -676,7 +689,8 @@ public class ComplianceService : IComplianceService
                     ApplicationName = typeLookup.GetValueOrDefault(a.ApplicationTypeId, string.Empty),
                     DueDate = a.DueDate,
                     Status = a.Status,
-                    DueStatus = dueStatus
+                    DueStatus = dueStatus,
+                    EstimatedAmount = a.EstimatedAmount
                 };
             }).ToList();
         }
@@ -720,6 +734,10 @@ public class ComplianceService : IComplianceService
                 .Select(m => new DateTime(year, m, Math.Min(dueDay, DateTime.DaysInMonth(year, m))))
                 .ToList(),
             "Annual" => new List<DateTime>
+            {
+                new DateTime(year, defaultDueMonth ?? 1, Math.Min(dueDay, DateTime.DaysInMonth(year, defaultDueMonth ?? 1)))
+            },
+            "Multi-Year" => new List<DateTime>
             {
                 new DateTime(year, defaultDueMonth ?? 1, Math.Min(dueDay, DateTime.DaysInMonth(year, defaultDueMonth ?? 1)))
             },

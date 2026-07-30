@@ -27,4 +27,9 @@ public class PaymentHistoryDto
     /// The parent payment's reference (for display: "Auto-allocated from Payment [REF]").
     /// </summary>
     public string? ParentReference { get; set; }
+
+    /// <summary>
+    /// True when PaymentDateUtc is in the future — payment is recorded but not yet counted toward paid totals.
+    /// </summary>
+    public bool IsUpcoming { get; set; }
 }

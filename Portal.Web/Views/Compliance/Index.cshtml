@@ -24,6 +24,34 @@
 
 @Html.AntiForgeryToken()
 
+<!-- Info Section (collapsible) -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleInfoSection()">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span style="font-size:14px;font-weight:600;color:#0D5EA6;">What is Business Applications?</span>
+        </div>
+        <svg id="infoChevron" width="16" height="16" fill="none" stroke="#5a6a7a" stroke-width="2" viewBox="0 0 24 24" style="transition:transform 0.2s;transform:rotate(0deg);"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div id="infoContent" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0;">
+        <p style="font-size:14px;color:#3a4a5a;line-height:1.7;margin:0 0 12px 0;">
+            Business Applications helps you track all your statutory filings, regulatory obligations, and compliance deadlines in one place. 
+            Whether it's tax returns, social insurance declarations, annual levies, or licencing renewals — you can import standard templates or create custom filings with due dates, estimated costs, and status tracking.
+        </p>
+        <div style="background:#f8fafc;border-radius:10px;padding:14px 18px;border:1px solid #e2e8f0;">
+            <p style="font-size:13px;font-weight:600;color:#1a2a3a;margin:0 0 8px 0;">Example</p>
+            <p style="font-size:13px;color:#5a6a7a;line-height:1.6;margin:0;">
+                A café in Cyprus would import the standard Cyprus templates — generating 12 monthly Social Insurance filings, 4 quarterly VAT returns, and the annual company levy. 
+                They could also create a custom filing for their <strong>Ministry of Tourism licence</strong> (due every 4 years, estimated cost €80). 
+                As each deadline approaches, the filing turns amber (7 days) then red (overdue), keeping the team on track.
+            </p>
+        </div>
+        <p style="font-size:13px;color:#7a8a9a;margin:12px 0 0 0;">
+            <strong>Tip:</strong> Use "Import Templates" to get started with your country's standard filings, then add any custom obligations specific to your business.
+        </p>
+    </div>
+</section>
+
 <!-- Create Filing Form (hidden by default) -->
 <section id="createFilingForm" class="glass card-pad" style="margin-bottom:22px;display:none;border-left:4px solid #0D5EA6;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -261,6 +289,18 @@
     function getAntiForgeryToken() {
         var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
         return tokenInput ? tokenInput.value : '';
+    }
+
+    function toggleInfoSection() {
+        var content = document.getElementById('infoContent');
+        var chevron = document.getElementById('infoChevron');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            chevron.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.display = 'none';
+            chevron.style.transform = 'rotate(0deg)';
+        }
     }
 
     function toggleCreateFilingForm() {

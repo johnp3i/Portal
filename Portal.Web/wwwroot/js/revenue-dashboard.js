@@ -358,24 +358,65 @@
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No recent payments found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No recent payments found.</td></tr>';
             return;
         }
 
         var html = '';
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
-            var amountColor = item.isFullPayment ? 'var(--green)' : 'var(--gold)';
-            var pillClass = item.isFullPayment ? 'pill pill-green' : 'pill pill-gold';
-            var pillText = item.isFullPayment ? 'Full Payment' : 'Partial';
+            var amountColor = item.isVoided ? '#999' : item.isFullPayment ? 'var(--green)' : 'var(--gold)';
+            var rowStyle = item.isVoided ? 'opacity:0.5;text-decoration:line-through;' : '';
 
-            html += '<tr>';
-            html += '<td>' + formatDate(item.paymentDateUtc) + '</td>';
+            // Status pills
+            var statusHtml = '';
+            if (item.isVoided) {
+                statusHtml = '<span class="pill" style="background:#fdeaea;color:#C24A4A;font-weight:700;">Voided</span>';
+            } else if (item.isFullPayment) {
+                statusHtml = '<span class="pill pill-green">Full Payment</span>';
+            } else {
+                statusHtml = '<span class="pill pill-gold">Partial</span>';
+            }
+            if (item.isScheduled && !item.isVoided) {
+                statusHtml += ' <span class="pill" style="background:rgba(13,94,166,.08);color:#0D5EA6;font-weight:700;">Scheduled</span>';
+            }
+
+            // Upcoming badge
+            var upcomingHtml = '';
+            if (item.isUpcoming) {
+                upcomingHtml = ' <span style="display:inline-block;margin-left:6px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#FEF3CD;color:#8A6D3B;">Upcoming</span>';
+            }
+
+            // Reference beneath method
+            var referenceHtml = '';
+            if (item.reference) {
+                var refDisplay = item.reference.length > 20 ? item.reference.substring(0, 10) + '…' + item.reference.slice(-6) : item.reference;
+                referenceHtml = '<div style="font-size:11px;color:#5a6a7a;margin-top:3px;font-family:monospace;">' + escapeHtml(refDisplay) + '</div>';
+            }
+
+            // Method display
+            var methodHtml = '';
+            if (item.paymentMethodName === 'Card') {
+                methodHtml = '<span style="display:inline-flex;align-items:center;gap:5px;"><svg width="16" height="16" fill="none" stroke="#635bff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span style="font-size:12px;font-weight:600;color:#635bff;">Stripe</span></span>';
+            } else {
+                methodHtml = escapeHtml(item.paymentMethodName);
+            }
+
+            html += '<tr style="vertical-align:middle;' + rowStyle + '">';
+            html += '<td>' + formatDate(item.paymentDateUtc) + upcomingHtml + '</td>';
             html += '<td><strong>' + escapeHtml(item.invoiceNumber) + '</strong></td>';
             html += '<td>' + escapeHtml(item.customerName) + '</td>';
-            html += '<td>' + escapeHtml(item.paymentMethodName) + '</td>';
+            html += '<td>' + methodHtml + referenceHtml + '</td>';
             html += '<td style="text-align:right;font-weight:700;color:' + amountColor + ';">' + currencySymbol + formatAmount(item.amount) + '</td>';
-            html += '<td><span class="' + pillClass + '">' + pillText + '</span></td>';
+            html += '<td>' + statusHtml + '</td>';
+            html += '<td style="white-space:nowrap;">';
+            if (!item.isVoided) {
+                html += '<button type="button" class="tbl-action tbl-action--primary" onclick="generateReceiptFromDashboard(' + item.id + ')">Receipt</button> ';
+                html += '<button type="button" class="tbl-action tbl-action--danger" onclick="voidPayment(' + item.id + ')">Void</button>';
+            } else {
+                html += '<span style="font-size:10px;font-weight:700;color:#C24A4A;">—</span>';
+            }
+            html += '</td>';
             html += '</tr>';
         }
         tbody.innerHTML = html;

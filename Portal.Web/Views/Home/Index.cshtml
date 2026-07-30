@@ -29,6 +29,9 @@
 
 @if (Model.HasAnyKpiSection)
 {
+<!-- What's New Banner -->
+@await Component.InvokeAsync("WhatsNewBanner")
+
 <!-- Operational Briefing -->
 var briefing = ViewBag.Briefing as Portal.Infrastructure.Models.BriefingViewModel;
 if (briefing != null)
@@ -635,7 +638,13 @@ else if (Model.ShowRevenue)
                             _ => "pill-grey"
                         };
                         <tr>
-                            <td>@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @payment.PaymentDateUtc.ToString("dd MMM yyyy")
+                                @if (payment.IsUpcoming)
+                                {
+                                    <div style="margin-top:3px;"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#FEF3CD;color:#8A6D3B;">Upcoming</span></div>
+                                }
+                            </td>
                             <td>@payment.CustomerName</td>
                             <td>
                                 @if (payment.PaymentMethodName == "Card")
@@ -649,8 +658,18 @@ else if (Model.ShowRevenue)
                                 {
                                     <span class="pill @methodPillClass">@payment.PaymentMethodName</span>
                                 }
+                                @if (!string.IsNullOrEmpty(payment.Reference))
+                                {
+                                    <div style="font-size:11px;color:#5a6a7a;margin-top:3px;font-family:monospace;">@(payment.Reference.Length > 20 ? payment.Reference[..10] + "…" + payment.Reference[^6..] : payment.Reference)</div>
+                                }
                             </td>
-                            <td class="right" style="color:#129867;font-weight:700;">@Model.CurrencySymbol@payment.Amount.ToString("N2")</td>
+                            <td class="right" style="font-weight:700;color:@(payment.IsUpcoming ? "var(--gold)" : "#129867");">
+                                @Model.CurrencySymbol@payment.Amount.ToString("N2")
+                                @if (payment.IsScheduled)
+                                {
+                                    <div style="margin-top:3px;"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(13,94,166,.08);color:#0D5EA6;">Scheduled</span></div>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -748,7 +767,13 @@ else if (Model.ShowRevenue)
                             _ => "pill-grey"
                         };
                         <tr>
-                            <td>@payment.PaymentDateUtc.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @payment.PaymentDateUtc.ToString("dd MMM yyyy")
+                                @if (payment.IsUpcoming)
+                                {
+                                    <div style="margin-top:3px;"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#FEF3CD;color:#8A6D3B;">Upcoming</span></div>
+                                }
+                            </td>
                             <td>@payment.CustomerName</td>
                             <td>
                                 @if (payment.PaymentMethodName == "Card")
@@ -762,8 +787,18 @@ else if (Model.ShowRevenue)
                                 {
                                     <span class="pill @methodPillClass">@payment.PaymentMethodName</span>
                                 }
+                                @if (!string.IsNullOrEmpty(payment.Reference))
+                                {
+                                    <div style="font-size:11px;color:#5a6a7a;margin-top:3px;font-family:monospace;">@(payment.Reference.Length > 20 ? payment.Reference[..10] + "…" + payment.Reference[^6..] : payment.Reference)</div>
+                                }
                             </td>
-                            <td class="right" style="color:#129867;font-weight:700;">@Model.CurrencySymbol@payment.Amount.ToString("N2")</td>
+                            <td class="right" style="font-weight:700;color:@(payment.IsUpcoming ? "var(--gold)" : "#129867");">
+                                @Model.CurrencySymbol@payment.Amount.ToString("N2")
+                                @if (payment.IsScheduled)
+                                {
+                                    <div style="margin-top:3px;"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(13,94,166,.08);color:#0D5EA6;">Scheduled</span></div>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>

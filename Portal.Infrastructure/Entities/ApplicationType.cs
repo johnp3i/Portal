@@ -22,6 +22,10 @@ public class ApplicationType
 
     public int? DefaultDueDay { get; set; }
 
+    public decimal? EstimatedAmount { get; set; }
+
+    public int? FrequencyInterval { get; set; }
+
     public bool IsActive { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }

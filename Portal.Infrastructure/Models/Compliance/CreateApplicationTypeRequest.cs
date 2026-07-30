@@ -12,4 +12,6 @@ public class CreateApplicationTypeRequest
     public string Frequency { get; set; } = string.Empty;
     public int? DefaultDueMonth { get; set; }
     public int? DefaultDueDay { get; set; }
+    public decimal? EstimatedAmount { get; set; }
+    public int? FrequencyInterval { get; set; }
 }

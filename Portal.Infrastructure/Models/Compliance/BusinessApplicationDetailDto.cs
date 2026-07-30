@@ -13,6 +13,7 @@ public class BusinessApplicationDetailDto
     public string Status { get; set; } = string.Empty;
     public string? ReferenceNumber { get; set; }
     public string? Notes { get; set; }
+    public decimal? EstimatedAmount { get; set; }
     public DateTime? SubmittedAtUtc { get; set; }
     public DateTime? ApprovedAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; }

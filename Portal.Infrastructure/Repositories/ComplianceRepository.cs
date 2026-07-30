@@ -137,7 +137,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT [Id], [Name], [Description], [Country], [ApplicationCategoryId],
-                           [Frequency], [DefaultDueMonth], [DefaultDueDay], [IsActive], [CreatedAtUtc]
+                           [Frequency], [DefaultDueMonth], [DefaultDueDay], [EstimatedAmount], [FrequencyInterval], [IsActive], [CreatedAtUtc]
                     FROM [compliance].[ApplicationType]
                     ORDER BY [compliance].[ApplicationType].[Name]";
 
@@ -175,10 +175,12 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
             const string query = @"
                 INSERT INTO [compliance].[ApplicationType]
                     ([Name], [Description], [Country], [ApplicationCategoryId],
-                     [Frequency], [DefaultDueMonth], [DefaultDueDay], [IsActive])
+                     [Frequency], [DefaultDueMonth], [DefaultDueDay], [IsActive],
+                     [EstimatedAmount], [FrequencyInterval])
                 VALUES
                     (@Name, @Description, @Country, @ApplicationCategoryId,
-                     @Frequency, @DefaultDueMonth, @DefaultDueDay, @IsActive);
+                     @Frequency, @DefaultDueMonth, @DefaultDueDay, @IsActive,
+                     @EstimatedAmount, @FrequencyInterval);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var result = await _context.Database.SqlQueryRaw<int>(query,
@@ -189,7 +191,9 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                 new SqlParameter("@Frequency", entity.Frequency),
                 new SqlParameter("@DefaultDueMonth", entity.DefaultDueMonth ?? (object)DBNull.Value),
                 new SqlParameter("@DefaultDueDay", entity.DefaultDueDay ?? (object)DBNull.Value),
-                new SqlParameter("@IsActive", entity.IsActive)
+                new SqlParameter("@IsActive", entity.IsActive),
+                new SqlParameter("@EstimatedAmount", entity.EstimatedAmount ?? (object)DBNull.Value),
+                new SqlParameter("@FrequencyInterval", entity.FrequencyInterval ?? (object)DBNull.Value)
             ).ToListAsync();
 
             return result.FirstOrDefault();
@@ -215,7 +219,9 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                     [ApplicationCategoryId] = @ApplicationCategoryId,
                     [Frequency] = @Frequency,
                     [DefaultDueMonth] = @DefaultDueMonth,
-                    [DefaultDueDay] = @DefaultDueDay
+                    [DefaultDueDay] = @DefaultDueDay,
+                    [EstimatedAmount] = @EstimatedAmount,
+                    [FrequencyInterval] = @FrequencyInterval
                 WHERE [compliance].[ApplicationType].[Id] = @Id";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -226,7 +232,9 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                 new SqlParameter("@ApplicationCategoryId", entity.ApplicationCategoryId),
                 new SqlParameter("@Frequency", entity.Frequency),
                 new SqlParameter("@DefaultDueMonth", entity.DefaultDueMonth ?? (object)DBNull.Value),
-                new SqlParameter("@DefaultDueDay", entity.DefaultDueDay ?? (object)DBNull.Value));
+                new SqlParameter("@DefaultDueDay", entity.DefaultDueDay ?? (object)DBNull.Value),
+                new SqlParameter("@EstimatedAmount", entity.EstimatedAmount ?? (object)DBNull.Value),
+                new SqlParameter("@FrequencyInterval", entity.FrequencyInterval ?? (object)DBNull.Value));
         }
         catch (Exception ex)
         {
@@ -329,7 +337,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT [Id], [Name], [Description], [Country], [ApplicationCategoryId],
-                           [Frequency], [DefaultDueMonth], [DefaultDueDay], [IsActive], [CreatedAtUtc]
+                           [Frequency], [DefaultDueMonth], [DefaultDueDay], [EstimatedAmount], [FrequencyInterval], [IsActive], [CreatedAtUtc]
                     FROM [compliance].[ApplicationType]
                     WHERE [compliance].[ApplicationType].[Id] = @Id";
 
@@ -390,7 +398,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                 using var command = connection.CreateCommand();
                 command.CommandText = $@"
                     SELECT [Id], [Name], [Description], [Country], [ApplicationCategoryId],
-                           [Frequency], [DefaultDueMonth], [DefaultDueDay], [IsActive], [CreatedAtUtc]
+                           [Frequency], [DefaultDueMonth], [DefaultDueDay], [EstimatedAmount], [FrequencyInterval], [IsActive], [CreatedAtUtc]
                     FROM [compliance].[ApplicationType]
                     WHERE [compliance].[ApplicationType].[Id] IN ({string.Join(", ", idParams)})";
 
@@ -478,6 +486,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                        [compliance].[BusinessApplication].[Status],
                        [compliance].[BusinessApplication].[ReferenceNumber],
                        [compliance].[BusinessApplication].[Notes],
+                       [compliance].[BusinessApplication].[EstimatedAmount],
                        [compliance].[BusinessApplication].[SubmittedAtUtc],
                        [compliance].[BusinessApplication].[ApprovedAtUtc],
                        [compliance].[BusinessApplication].[CreatedAtUtc],
@@ -546,6 +555,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                        [compliance].[BusinessApplication].[Status],
                        [compliance].[BusinessApplication].[ReferenceNumber],
                        [compliance].[BusinessApplication].[Notes],
+                       [compliance].[BusinessApplication].[EstimatedAmount],
                        [compliance].[BusinessApplication].[SubmittedAtUtc],
                        [compliance].[BusinessApplication].[ApprovedAtUtc],
                        [compliance].[BusinessApplication].[CreatedAtUtc]
@@ -573,10 +583,10 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
             const string query = @"
                 INSERT INTO [compliance].[BusinessApplication]
                     ([BusinessId], [ApplicationTypeId], [DueDate], [Status],
-                     [ReferenceNumber], [Notes], [SubmittedAtUtc], [ApprovedAtUtc])
+                     [ReferenceNumber], [Notes], [EstimatedAmount], [SubmittedAtUtc], [ApprovedAtUtc])
                 VALUES
                     (@BusinessId, @ApplicationTypeId, @DueDate, @Status,
-                     @ReferenceNumber, @Notes, @SubmittedAtUtc, @ApprovedAtUtc)";
+                     @ReferenceNumber, @Notes, @EstimatedAmount, @SubmittedAtUtc, @ApprovedAtUtc)";
 
             foreach (var entity in entities)
             {
@@ -587,6 +597,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                     new SqlParameter("@Status", entity.Status),
                     new SqlParameter("@ReferenceNumber", entity.ReferenceNumber ?? (object)DBNull.Value),
                     new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value),
+                    new SqlParameter("@EstimatedAmount", entity.EstimatedAmount ?? (object)DBNull.Value),
                     new SqlParameter("@SubmittedAtUtc", entity.SubmittedAtUtc ?? (object)DBNull.Value),
                     new SqlParameter("@ApprovedAtUtc", entity.ApprovedAtUtc ?? (object)DBNull.Value));
             }
@@ -607,10 +618,10 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
             const string query = @"
                 INSERT INTO [compliance].[BusinessApplication]
                     ([BusinessId], [ApplicationTypeId], [DueDate], [Status],
-                     [ReferenceNumber], [Notes], [SubmittedAtUtc], [ApprovedAtUtc])
+                     [ReferenceNumber], [Notes], [EstimatedAmount], [SubmittedAtUtc], [ApprovedAtUtc])
                 VALUES
                     (@BusinessId, @ApplicationTypeId, @DueDate, @Status,
-                     @ReferenceNumber, @Notes, @SubmittedAtUtc, @ApprovedAtUtc);
+                     @ReferenceNumber, @Notes, @EstimatedAmount, @SubmittedAtUtc, @ApprovedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var result = await _context.Database.SqlQueryRaw<int>(query,
@@ -620,6 +631,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                 new SqlParameter("@Status", entity.Status),
                 new SqlParameter("@ReferenceNumber", entity.ReferenceNumber ?? (object)DBNull.Value),
                 new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value),
+                new SqlParameter("@EstimatedAmount", entity.EstimatedAmount ?? (object)DBNull.Value),
                 new SqlParameter("@SubmittedAtUtc", entity.SubmittedAtUtc ?? (object)DBNull.Value),
                 new SqlParameter("@ApprovedAtUtc", entity.ApprovedAtUtc ?? (object)DBNull.Value)
             ).ToListAsync();
@@ -659,22 +671,24 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
     }
 
     /// <summary>
-    /// Updates the reference number and notes of a business application.
+    /// Updates the reference number, notes, and estimated amount of a business application.
     /// </summary>
-    public async Task UpdateDetailsAsync(int id, string? referenceNumber, string? notes)
+    public async Task UpdateDetailsAsync(int id, string? referenceNumber, string? notes, decimal? estimatedAmount)
     {
         try
         {
             const string query = @"
                 UPDATE [compliance].[BusinessApplication]
                 SET [ReferenceNumber] = @ReferenceNumber,
-                    [Notes] = @Notes
+                    [Notes] = @Notes,
+                    [EstimatedAmount] = @EstimatedAmount
                 WHERE [compliance].[BusinessApplication].[Id] = @Id";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", id),
                 new SqlParameter("@ReferenceNumber", referenceNumber ?? (object)DBNull.Value),
-                new SqlParameter("@Notes", notes ?? (object)DBNull.Value));
+                new SqlParameter("@Notes", notes ?? (object)DBNull.Value),
+                new SqlParameter("@EstimatedAmount", estimatedAmount ?? (object)DBNull.Value));
         }
         catch (Exception ex)
         {
@@ -733,6 +747,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                        [compliance].[BusinessApplication].[Status],
                        [compliance].[BusinessApplication].[ReferenceNumber],
                        [compliance].[BusinessApplication].[Notes],
+                       [compliance].[BusinessApplication].[EstimatedAmount],
                        [compliance].[BusinessApplication].[SubmittedAtUtc],
                        [compliance].[BusinessApplication].[ApprovedAtUtc],
                        [compliance].[BusinessApplication].[CreatedAtUtc]
@@ -769,6 +784,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
                        [compliance].[BusinessApplication].[Status],
                        [compliance].[BusinessApplication].[ReferenceNumber],
                        [compliance].[BusinessApplication].[Notes],
+                       [compliance].[BusinessApplication].[EstimatedAmount],
                        [compliance].[BusinessApplication].[SubmittedAtUtc],
                        [compliance].[BusinessApplication].[ApprovedAtUtc],
                        [compliance].[BusinessApplication].[CreatedAtUtc]
@@ -1004,6 +1020,8 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
             Frequency = reader.GetString(reader.GetOrdinal("Frequency")),
             DefaultDueMonth = reader.IsDBNull(reader.GetOrdinal("DefaultDueMonth")) ? null : reader.GetInt32(reader.GetOrdinal("DefaultDueMonth")),
             DefaultDueDay = reader.IsDBNull(reader.GetOrdinal("DefaultDueDay")) ? null : reader.GetInt32(reader.GetOrdinal("DefaultDueDay")),
+            EstimatedAmount = reader.IsDBNull(reader.GetOrdinal("EstimatedAmount")) ? null : reader.GetDecimal(reader.GetOrdinal("EstimatedAmount")),
+            FrequencyInterval = reader.IsDBNull(reader.GetOrdinal("FrequencyInterval")) ? null : reader.GetInt32(reader.GetOrdinal("FrequencyInterval")),
             IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
             CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
         };
@@ -1020,6 +1038,7 @@ public class ComplianceRepository : GenericStoredProcedureRepository<BusinessApp
             Status = reader.GetString(reader.GetOrdinal("Status")),
             ReferenceNumber = reader.IsDBNull(reader.GetOrdinal("ReferenceNumber")) ? null : reader.GetString(reader.GetOrdinal("ReferenceNumber")),
             Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
+            EstimatedAmount = reader.IsDBNull(reader.GetOrdinal("EstimatedAmount")) ? null : reader.GetDecimal(reader.GetOrdinal("EstimatedAmount")),
             SubmittedAtUtc = reader.IsDBNull(reader.GetOrdinal("SubmittedAtUtc")) ? null : reader.GetDateTime(reader.GetOrdinal("SubmittedAtUtc")),
             ApprovedAtUtc = reader.IsDBNull(reader.GetOrdinal("ApprovedAtUtc")) ? null : reader.GetDateTime(reader.GetOrdinal("ApprovedAtUtc")),
             CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))

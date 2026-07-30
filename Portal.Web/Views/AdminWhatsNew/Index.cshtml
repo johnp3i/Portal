@@ -1,0 +1,92 @@
+@model List<Portal.Infrastructure.Models.AdminAnnouncementDto>
+@{
+    ViewData["Title"] = "What's New — Management";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">What's New Announcements</h1>
+        <p class="topbar-subtitle">Create and manage feature announcements shown to users.</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary">New Announcement</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state"><p>No announcements created yet.</p></div>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Plan Tier</th>
+                    <th>Published</th>
+                    <th>Expires</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var statusColour = item.Status switch
+                    {
+                        "Active" => "background:#f0fdf4;color:#129867;",
+                        "Scheduled" => "background:rgba(13,94,166,.08);color:#0D5EA6;",
+                        "Expired" => "background:#f5f5f5;color:#8a9bab;",
+                        "Inactive" => "background:#fef2f2;color:#C24A4A;",
+                        _ => ""
+                    };
+                    <tr>
+                        <td style="font-weight:600;">@item.Title</td>
+                        <td><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;@statusColour">@item.Status</span></td>
+                        <td>@(item.TargetPlanTier ?? "All")</td>
+                        <td>@item.PublishedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>@(item.ExpiresAtUtc.HasValue ? item.ExpiresAtUtc.Value.ToString("dd MMM yyyy") : "Never")</td>
+                        <td style="white-space:nowrap;">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Edit</a>
+                            @if (item.IsActive)
+                            {
+                                <button type="button" class="tbl-action tbl-action--danger" onclick="toggleActive(@item.Id, false)">Deactivate</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="tbl-action tbl-action--primary" onclick="toggleActive(@item.Id, true)">Activate</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    function toggleActive(id, isActive) {
+        BlockUI.show(isActive ? 'Activating...' : 'Deactivating...');
+        fetch('/AdminWhatsNew/AxPostToggleActive?id=' + id + '&isActive=' + isActive, {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            BlockUI.hide();
+            if (data.success) { window.location.reload(); }
+            else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+        })
+        .catch(function() {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        });
+    }
+</script>
+}

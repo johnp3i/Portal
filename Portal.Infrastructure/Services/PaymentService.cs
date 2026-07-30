@@ -145,7 +145,8 @@ public class PaymentService : IPaymentService
             Notes = p.Notes,
             IsVoided = p.IsVoided,
             IsAutoAllocated = p.IsAutoAllocated,
-            ParentPaymentId = p.ParentPaymentId
+            ParentPaymentId = p.ParentPaymentId,
+            IsUpcoming = p.PaymentDateUtc > DateTime.UtcNow
         }).ToList();
     }
 

@@ -89,6 +89,10 @@ public class AccountController : Controller
         var result = await _signInManager.PasswordSignInAsync(user, password, isPersistent: false, lockoutOnFailure: true);
         if (result.Succeeded)
         {
+            // Record last login timestamp
+            user.LastLoginUtc = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
             // If user has no business, redirect to checkout to complete payment
             if (!user.BusinessId.HasValue && !roles.Contains("SuperAdmin") && !roles.Contains("DemoUser"))
             {

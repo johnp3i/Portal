@@ -32,4 +32,9 @@ public class ApplicationUser : IdentityUser
     /// Account creation timestamp.
     /// </summary>
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Timestamp of the user's most recent successful login.
+    /// </summary>
+    public DateTime? LastLoginUtc { get; set; }
 }

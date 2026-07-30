@@ -64,6 +64,7 @@ public class DashboardService : IDashboardService
                         FROM [revenue].[Payment]
                         WHERE [revenue].[Payment].[IsVoided] = 0
                           AND [revenue].[Payment].[BusinessId] = @BusinessId
+                          AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()
                         GROUP BY [revenue].[Payment].[InvoiceId]
                     ) AS ValidPayments ON [invoice].[Invoice].[Id] = ValidPayments.[InvoiceId]
                     WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
@@ -101,6 +102,7 @@ public class DashboardService : IDashboardService
                         FROM [revenue].[Payment]
                         WHERE [revenue].[Payment].[IsVoided] = 0
                           AND [revenue].[Payment].[BusinessId] = @BusinessId
+                          AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()
                         GROUP BY [revenue].[Payment].[InvoiceId]
                     ) AS ValidPayments ON [invoice].[Invoice].[Id] = ValidPayments.[InvoiceId]
                     WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
@@ -139,7 +141,8 @@ public class DashboardService : IDashboardService
                       AND [revenue].[Payment].[IsVoided] = 0
                       AND [revenue].[Payment].[ParentPaymentId] IS NULL
                       AND [revenue].[Payment].[PaymentDateUtc] >= @MonthStart
-                      AND [revenue].[Payment].[PaymentDateUtc] < @MonthEnd";
+                      AND [revenue].[Payment].[PaymentDateUtc] < @MonthEnd
+                      AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()";
 
                 using (var command = connection.CreateCommand())
                 {
@@ -169,6 +172,7 @@ public class DashboardService : IDashboardService
                         FROM [revenue].[Payment]
                         WHERE [revenue].[Payment].[IsVoided] = 0
                           AND [revenue].[Payment].[BusinessId] = @BusinessId
+                          AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()
                         GROUP BY [revenue].[Payment].[InvoiceId]
                     ) AS ValidPayments ON [invoice].[Invoice].[Id] = ValidPayments.[InvoiceId]
                     WHERE [invoice].[Invoice].[BusinessId] = @BusinessId

@@ -231,3 +231,32 @@ This document defines the requirements for the Business Applications Tracker (Co
 3. THE dashboard widget SHALL render as a full-width card on mobile viewports
 4. THE attachment upload control SHALL support the mobile device file picker and camera access for capturing PDF documents
 5. THE detail/edit page SHALL stack form fields vertically on narrow viewports with adequate touch target sizing (minimum 44px height)
+
+
+### Requirement 18: Estimated Amount per Filing
+
+**User Story:** As a business user, I want to record the estimated cost of each compliance filing, so that I can forecast expenses and track compliance-related costs.
+
+#### Acceptance Criteria
+
+1. WHEN an ApplicationType template is created by a SuperAdmin, THEN they SHALL be able to specify an optional `EstimatedAmount` (decimal, nullable) representing the typical cost of the filing.
+2. WHEN a business user imports templates, THEN each generated BusinessApplication SHALL inherit the template's `EstimatedAmount` as the default.
+3. WHEN a business user views the filing detail page, THEN the `EstimatedAmount` SHALL be displayed as an editable field that can be overridden per filing.
+4. WHEN a business user saves filing details, THEN the system SHALL persist the `EstimatedAmount` alongside ReferenceNumber and Notes.
+5. WHEN the filing list is displayed, THEN the `EstimatedAmount` SHALL appear as a column showing the cost (or "—" if null).
+6. WHEN a business user creates a custom filing, THEN they SHALL be able to specify an optional `EstimatedAmount`.
+7. THE `EstimatedAmount` column SHALL be of type DECIMAL(18,2) NULL on both `[compliance].[ApplicationType]` and `[compliance].[BusinessApplication]`.
+
+### Requirement 19: Multi-Year Filing Frequency
+
+**User Story:** As a business user, I want to track compliance filings that recur every multiple years (e.g., every 4 years for a tourism licence), so that I can manage long-cycle obligations alongside annual/monthly ones.
+
+#### Acceptance Criteria
+
+1. WHEN a SuperAdmin creates an ApplicationType template, THEN they SHALL be able to select "Multi-Year" as a frequency option.
+2. WHEN "Multi-Year" frequency is selected, THEN a `FrequencyInterval` field SHALL become required (integer, e.g., 2, 3, 4, 5 years).
+3. WHEN a business user imports a Multi-Year template, THEN the system SHALL generate one filing record for the selected import year (same as Annual behaviour during import).
+4. THE frequency label for Multi-Year templates SHALL display as "Every X years" (e.g., "Every 4 years") in the UI.
+5. WHEN displayed in the Import view, Multi-Year templates SHALL show "Multi-Year — 1 record" with the interval noted.
+6. THE `FrequencyInterval` column SHALL be of type INT NULL on `[compliance].[ApplicationType]`.
+7. THE existing frequency CHECK constraint SHALL be updated to include 'Multi-Year' as a valid value.

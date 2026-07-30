@@ -171,8 +171,14 @@
                 {
                     var rowStyle = payment.IsVoided ? "text-decoration:line-through;opacity:0.5;" : "";
                     <tr style="@rowStyle">
-                        <td>@payment.PaymentDateUtc.ToString("yyyy-MM-dd")</td>
-                        <td style="text-align:right;font-weight:700;color:@(payment.IsVoided ? "var(--muted)" : "var(--green)");">@(currencySymbol)@payment.Amount.ToString("N2")</td>
+                        <td>
+                            @payment.PaymentDateUtc.ToString("yyyy-MM-dd")
+                            @if (payment.IsUpcoming)
+                            {
+                                <span style="display:inline-block;margin-left:6px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#FEF3CD;color:#8A6D3B;">Upcoming</span>
+                            }
+                        </td>
+                        <td style="text-align:right;font-weight:700;color:@(payment.IsVoided ? "var(--muted)" : payment.IsUpcoming ? "var(--gold)" : "var(--green)");">@(currencySymbol)@payment.Amount.ToString("N2")</td>
                         <td>
                             @if (payment.PaymentMethodName == "Card")
                             {

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's New Announcements — Portal Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --warning: #C8912E;
+            --red: #C24A4A;
+            --bg: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text: #1e293b;
+            --muted: #5a6a7a;
+            --card-radius: 22px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 30px 40px;
+            min-height: 100vh;
+        }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+        .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+        /* View Toggle */
+        .view-toggle { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px; }
+        .view-toggle button {
+            padding: 9px 18px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(13,94,166,.15);
+            background: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .view-toggle button.active,
+        .view-toggle button:hover {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Cards */
+        .glass {
+            background: #fff;
+            border-radius: var(--card-radius);
+            border: 1px solid rgba(13,94,166,.07);
+            box-shadow: 0 4px 24px rgba(13,94,166,.04);
+        }
+        .card-pad { padding: 24px 28px; }
+
+        /* Topbar Simulation */
+        .sim-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            border-radius: 14px;
+            padding: 14px 24px;
+            border: 1px solid rgba(13,94,166,.08);
+            box-shadow: 0 2px 12px rgba(13,94,166,.04);
+        }
+        .sim-topbar .left { display: flex; align-items: center; gap: 14px; }
+        .sim-topbar .left .logo {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--blue);
+        }
+        .sim-topbar .right { display: flex; align-items: center; gap: 20px; }
+        .whats-new-trigger {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            padding: 7px 12px;
+            border-radius: 10px;
+            transition: background .2s;
+        }
+        .whats-new-trigger:hover { background: var(--bg-secondary); }
+        .whats-new-trigger .badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .whats-new-trigger .label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        /* Panel */
+        .announcement-panel {
+            width: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid rgba(13,94,166,.1);
+            box-shadow: 0 12px 48px rgba(13,94,166,.12);
+            margin-top: 12px;
+            margin-left: auto;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 22px 14px;
+            border-bottom: 1px solid rgba(13,94,166,.06);
+        }
+        .panel-header h3 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+        }
+        .panel-header a {
+            font-size: 12px;
+            color: var(--blue);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .panel-header a:hover { text-decoration: underline; }
+
+        .announcement-item {
+            padding: 16px 22px;
+            border-bottom: 1px solid rgba(13,94,166,.04);
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .announcement-item:hover { background: var(--bg); }
+        .announcement-item .item-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .unread-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--blue);
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+        .read-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: transparent;
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+        .item-content { flex: 1; }
+        .item-content .title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+        .item-content .summary {
+            font-size: 12.5px;
+            color: var(--muted);
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+        .item-content .meta {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .tier-badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+        .tier-pro { background: rgba(13,94,166,.08); color: var(--blue); }
+        .tier-all { background: rgba(18,152,103,.08); color: var(--green); }
+
+        /* Expanded Detail */
+        .detail-expanded {
+            background: var(--bg);
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin: 10px 22px 16px;
+            border: 1px solid rgba(13,94,166,.06);
+        }
+        .detail-expanded p {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .detail-expanded .module-link {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: opacity .2s;
+        }
+        .btn:hover { opacity: .85; }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--muted); border: 1px solid rgba(13,94,166,.1); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        /* Dashboard Banner */
+        .dashboard-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(13,94,166,.08);
+            border-left: 4px solid var(--blue);
+            box-shadow: 0 4px 20px rgba(13,94,166,.05);
+            padding: 18px 24px;
+        }
+        .dashboard-banner .icon-wrap {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(13,94,166,.08), rgba(87,184,232,.08));
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .dashboard-banner .banner-content { flex: 1; }
+        .dashboard-banner .banner-content .title {
+            font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px;
+        }
+        .dashboard-banner .banner-content .summary {
+            font-size: 12.5px; color: var(--muted); line-height: 1.4;
+        }
+        .dashboard-banner .banner-actions {
+            display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+        }
+        .dismiss-btn {
+            width: 28px; height: 28px; border-radius: 8px;
+            border: 1px solid rgba(13,94,166,.1); background: #fff;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); font-size: 14px;
+            transition: background .2s;
+        }
+        .dismiss-btn:hover { background: var(--bg-secondary); }
+
+        /* Admin Table */
+        .admin-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+        }
+        .admin-table th {
+            text-align: left;
+            padding: 12px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--muted);
+            border-bottom: 1px solid rgba(13,94,166,.08);
+        }
+        .admin-table td {
+            padding: 14px 14px;
+            border-bottom: 1px solid rgba(13,94,166,.04);
+            vertical-align: middle;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .status-active { background: rgba(18,152,103,.1); color: var(--green); }
+        .status-expired { background: rgba(90,106,122,.1); color: var(--muted); }
+        .status-scheduled { background: rgba(13,94,166,.08); color: var(--blue); }
+
+        .action-link {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--blue);
+            text-decoration: none;
+            margin-right: 12px;
+        }
+        .action-link:hover { text-decoration: underline; }
+        .action-link.danger { color: var(--red); }
+
+        /* Admin Form */
+        .admin-form {
+            display: none;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(13,94,166,.08);
+        }
+        .admin-form.visible { display: block; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(13,94,166,.12);
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            background: #fff;
+            transition: border-color .2s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .toggle-wrap {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .toggle {
+            width: 40px; height: 22px; border-radius: 11px;
+            background: var(--green); position: relative; cursor: pointer;
+        }
+        .toggle::after {
+            content: '';
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #fff; position: absolute; top: 3px; right: 3px;
+            transition: transform .2s;
+        }
+        .form-actions {
+            display: flex; gap: 10px; margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(13,94,166,.06);
+        }
+
+        /* Topbar module heading */
+        .topbar-section {
+            margin-bottom: 8px;
+        }
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--blue);
+            margin-bottom: 4px;
+        }
+        .heading {
+            font-family: 'Manrope', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .heading-desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>What's New — Announcements Feature</h1>
+<p class="subtitle">Feature notification system for the Portal. Toggle views below to preview each component.</p>
+
+<div class="view-toggle">
+    <button class="active" onclick="showView('topbar')">1. Topbar Badge</button>
+    <button onclick="showView('panel')">2. Announcement Panel</button>
+    <button onclick="showView('banner')">3. Dashboard Banner</button>
+    <button onclick="showView('admin')">4. Admin Management</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- VIEW 1: Topbar with What's New Badge -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="view-topbar" class="view active">
+    <div class="sim-topbar">
+        <div class="left">
+            <div class="logo">MyChair</div>
+            <span style="font-size:13px;color:var(--muted);">Dashboard</span>
+        </div>
+        <div class="right">
+            <!-- What's New Trigger -->
+            <div class="whats-new-trigger">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l2.09 4.26L19 7.27l-3.5 3.41.82 4.82L12 13.4l-4.32 2.1.82-4.82L5 7.27l4.91-1.01L12 2z"/>
+                </svg>
+                <span class="label">What's New</span>
+                <span class="badge">3</span>
+            </div>
+            <!-- Other topbar items for context -->
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;">
+                <svg width="16" height="16" fill="none" stroke="#5a6a7a" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            </div>
+            <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg, var(--blue), var(--cyan));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;">JP</div>
+        </div>
+    </div>
+    <div style="margin-top:20px;padding:16px 20px;background:var(--bg-secondary);border-radius:12px;font-size:13px;color:var(--muted);">
+        <strong>How it works:</strong> The sparkle icon sits in the topbar utility area. The blue badge with "3" indicates 3 unread announcements. Clicking it opens the announcement panel (see View 2).
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- VIEW 2: Announcement Panel -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="view-panel" class="view">
+    <!-- Simulated topbar -->
+    <div class="sim-topbar" style="margin-bottom:0;border-radius:14px 14px 0 0;">
+        <div class="left">
+            <div class="logo">MyChair</div>
+            <span style="font-size:13px;color:var(--muted);">Dashboard</span>
+        </div>
+        <div class="right">
+            <div class="whats-new-trigger" style="background:var(--bg-secondary);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l2.09 4.26L19 7.27l-3.5 3.41.82 4.82L12 13.4l-4.32 2.1.82-4.82L5 7.27l4.91-1.01L12 2z"/>
+                </svg>
+                <span class="label">What's New</span>
+                <span class="badge">3</span>
+            </div>
+            <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg, var(--blue), var(--cyan));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;">JP</div>
+        </div>
+    </div>
+
+    <!-- Panel dropdown -->
+    <div class="announcement-panel">
+        <div class="panel-header">
+            <h3>What's New</h3>
+            <a href="#">Mark all as read</a>
+        </div>
+
+        <!-- Item 1: Unread, Expanded -->
+        <div class="announcement-item" style="background:rgba(13,94,166,.02);">
+            <div class="item-header">
+                <div class="unread-dot"></div>
+                <div class="item-content">
+                    <div class="title">Business Applications Tracker <span class="tier-badge tier-pro">Professional+</span></div>
+                    <div class="summary">Track statutory filings, deadlines, and compliance submissions</div>
+                    <div class="meta">3 days ago</div>
+                </div>
+            </div>
+        </div>
+        <!-- Expanded Detail for Item 1 -->
+        <div class="detail-expanded">
+            <p>Stay on top of your regulatory obligations with the new Business Applications Tracker. Import standard templates for your country (Cyprus supported), create custom filings, track status from Pending to Approved, and attach submission evidence.</p>
+            <p><strong>Example:</strong> A Cyprus caf&eacute; can import all Social Insurance, VAT, and annual levy templates in one click &mdash; generating 19 filing records with calculated due dates.</p>
+            <div class="module-link">Related module: <strong>Compliance</strong></div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <a href="/Compliance" class="btn btn-primary btn-sm">Try it now</a>
+                <button class="btn btn-secondary btn-sm">Dismiss</button>
+            </div>
+        </div>
+
+        <!-- Item 2: Unread -->
+        <div class="announcement-item" style="background:rgba(13,94,166,.02);">
+            <div class="item-header">
+                <div class="unread-dot"></div>
+                <div class="item-content">
+                    <div class="title">Cash Flow Forecasting <span class="tier-badge tier-pro">Professional+</span></div>
+                    <div class="summary">Visualise projected income and expenses for the next 3–12 months</div>
+                    <div class="meta">2 weeks ago</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item 3: Unread -->
+        <div class="announcement-item" style="background:rgba(13,94,166,.02);">
+            <div class="item-header">
+                <div class="unread-dot"></div>
+                <div class="item-content">
+                    <div class="title">Quick Date Filter Shortcuts <span class="tier-badge tier-all">All Plans</span></div>
+                    <div class="summary">Filter by 'This Month', 'Last 3 Months', or 'This Year' with a single click on Purchase, Revenue, and Invoice pages</div>
+                    <div class="meta">1 month ago</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item 4: Read, Expired -->
+        <div class="announcement-item">
+            <div class="item-header">
+                <div class="read-dot"></div>
+                <div class="item-content">
+                    <div class="title" style="color:var(--muted);">Document Attachments <span class="tier-badge tier-pro">Professional+</span> <span class="status-badge status-expired" style="margin-left:6px;">Expired</span></div>
+                    <div class="summary">Attach PDF, PNG, and JPG files to invoices, purchases, quotations, and suppliers</div>
+                    <div class="meta">6 weeks ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- VIEW 3: Dashboard Banner -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="view-banner" class="view">
+    <div style="margin-bottom:16px;">
+        <div class="eyebrow">Dashboard</div>
+        <div class="heading">Good morning, John</div>
+        <div class="heading-desc">Here's your operational briefing for today.</div>
+    </div>
+
+    <!-- Dismissible Banner -->
+    <div class="dashboard-banner" style="margin-bottom:22px;">
+        <div class="icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l2.09 4.26L19 7.27l-3.5 3.41.82 4.82L12 13.4l-4.32 2.1.82-4.82L5 7.27l4.91-1.01L12 2z"/>
+            </svg>
+        </div>
+        <div class="banner-content">
+            <div class="title">New: Business Applications Tracker</div>
+            <div class="summary">Track statutory filings, deadlines, and compliance submissions. Import templates for Cyprus in one click.</div>
+        </div>
+        <div class="banner-actions">
+            <a href="#" class="btn btn-primary btn-sm">Learn More</a>
+            <div class="dismiss-btn" title="Dismiss">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulated dashboard cards below -->
+    <section class="glass card-pad" style="opacity:.5;">
+        <div style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;margin-bottom:12px;">KPI Summary</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+            <div style="padding:16px;border-radius:14px;background:var(--bg-secondary);text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:var(--blue);">&euro;12,400</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Revenue MTD</div>
+            </div>
+            <div style="padding:16px;border-radius:14px;background:var(--bg-secondary);text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:var(--green);">94%</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Collection Rate</div>
+            </div>
+            <div style="padding:16px;border-radius:14px;background:var(--bg-secondary);text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:var(--warning);">5</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Pending Invoices</div>
+            </div>
+        </div>
+    </section>
+
+    <div style="margin-top:16px;padding:16px 20px;background:var(--bg-secondary);border-radius:12px;font-size:13px;color:var(--muted);">
+        <strong>How it works:</strong> The banner appears at the top of the Dashboard when there's a new announcement. The left blue border uses the same accent pattern as the Compliance module. Users can click "Learn More" to open the panel or dismiss with the X button.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- VIEW 4: Admin Management -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="view-admin" class="view">
+    <div class="topbar-section" style="margin-bottom:22px;">
+        <div class="eyebrow">Admin</div>
+        <div class="heading">Feature Announcements</div>
+        <div class="heading-desc">Manage What's New announcements shown to portal users.</div>
+    </div>
+
+    <section class="glass card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+            <div style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;">All Announcements</div>
+            <button class="btn btn-primary btn-sm" onclick="toggleForm()">+ Create Announcement</button>
+        </div>
+
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Plan Tier</th>
+                    <th>Published</th>
+                    <th>Expires</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight:600;">Business Applications Tracker</td>
+                    <td><span class="status-badge status-active">Active</span></td>
+                    <td>Professional+</td>
+                    <td>10 Jul 2026</td>
+                    <td>10 Aug 2026</td>
+                    <td>
+                        <a href="#" class="action-link">Edit</a>
+                        <a href="#" class="action-link danger">Deactivate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;">Cash Flow Forecasting</td>
+                    <td><span class="status-badge status-active">Active</span></td>
+                    <td>Professional+</td>
+                    <td>28 Jun 2026</td>
+                    <td>28 Aug 2026</td>
+                    <td>
+                        <a href="#" class="action-link">Edit</a>
+                        <a href="#" class="action-link danger">Deactivate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;">Quick Date Filter Shortcuts</td>
+                    <td><span class="status-badge status-active">Active</span></td>
+                    <td>All</td>
+                    <td>13 Jun 2026</td>
+                    <td>13 Sep 2026</td>
+                    <td>
+                        <a href="#" class="action-link">Edit</a>
+                        <a href="#" class="action-link danger">Deactivate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;color:var(--muted);">Document Attachments</td>
+                    <td><span class="status-badge status-expired">Expired</span></td>
+                    <td>Professional+</td>
+                    <td>01 May 2026</td>
+                    <td>01 Jun 2026</td>
+                    <td>
+                        <a href="#" class="action-link">Edit</a>
+                        <a href="#" class="action-link" style="color:var(--green);">Reactivate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;">Mobile App Launch</td>
+                    <td><span class="status-badge status-scheduled">Scheduled</span></td>
+                    <td>All</td>
+                    <td>01 Aug 2026</td>
+                    <td>01 Oct 2026</td>
+                    <td>
+                        <a href="#" class="action-link">Edit</a>
+                        <a href="#" class="action-link danger">Cancel</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Create/Edit Form -->
+        <div class="admin-form" id="adminForm">
+            <div style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;margin-bottom:16px;">Create Announcement</div>
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Title</label>
+                    <input type="text" placeholder="e.g., Business Applications Tracker">
+                </div>
+                <div class="form-group full">
+                    <label>Summary (short description)</label>
+                    <textarea rows="2" placeholder="One-line summary shown in the panel list..."></textarea>
+                </div>
+                <div class="form-group full">
+                    <label>Detail HTML (rich content)</label>
+                    <textarea rows="5" placeholder="Full announcement content with HTML formatting..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Module (optional)</label>
+                    <select>
+                        <option value="">None</option>
+                        <option>Compliance</option>
+                        <option>Cash Flow</option>
+                        <option>Invoicing</option>
+                        <option>Revenue</option>
+                        <option>Purchases</option>
+                        <option>Quotations</option>
+                        <option>Suppliers</option>
+                        <option>VAT</option>
+                        <option>Dashboard</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Target Plan Tier</label>
+                    <select>
+                        <option>All</option>
+                        <option>Starter</option>
+                        <option selected>Professional</option>
+                        <option>Enterprise</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>CTA Label</label>
+                    <input type="text" placeholder="e.g., Try it now">
+                </div>
+                <div class="form-group">
+                    <label>CTA URL</label>
+                    <input type="text" placeholder="e.g., /Compliance">
+                </div>
+                <div class="form-group">
+                    <label>Publish Date</label>
+                    <input type="date" value="2026-07-13">
+                </div>
+                <div class="form-group">
+                    <label>Expiry Date</label>
+                    <input type="date" value="2026-08-13">
+                </div>
+                <div class="form-group">
+                    <label>Active</label>
+                    <div class="toggle-wrap">
+                        <div class="toggle"></div>
+                        <span style="font-size:12px;color:var(--muted);">Yes</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary">Save Announcement</button>
+                <button class="btn btn-secondary" onclick="toggleForm()">Cancel</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + id).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function toggleForm() {
+    const form = document.getElementById('adminForm');
+    form.classList.toggle('visible');
+}
+</script>
+</body>
+</html>

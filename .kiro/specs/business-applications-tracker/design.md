@@ -223,6 +223,11 @@ private List<DateTime> CalculateDueDates(string frequency, int year, int? defaul
             new DateTime(year, defaultDueMonth ?? 1, Math.Min(dueDay, DateTime.DaysInMonth(year, defaultDueMonth ?? 1)))
         },
 
+        "Multi-Year" => new List<DateTime>
+        {
+            new DateTime(year, defaultDueMonth ?? 1, Math.Min(dueDay, DateTime.DaysInMonth(year, defaultDueMonth ?? 1)))
+        },
+
         _ => new List<DateTime>() // One-off: date provided by user
     };
 }
@@ -335,6 +340,8 @@ CREATE TABLE [compliance].[ApplicationType] (
     [Frequency]             NVARCHAR(20) NOT NULL,
     [DefaultDueMonth]       INT NULL,
     [DefaultDueDay]         INT NULL,
+    [EstimatedAmount]       DECIMAL(18,2) NULL,
+    [FrequencyInterval]     INT NULL,
     [IsActive]              BIT NOT NULL DEFAULT 1,
     [CreatedAtUtc]          DATETIME NOT NULL DEFAULT GETUTCDATE(),
     CONSTRAINT [PK_ApplicationType] PRIMARY KEY CLUSTERED ([Id]),
@@ -342,7 +349,7 @@ CREATE TABLE [compliance].[ApplicationType] (
         REFERENCES [compliance].[ApplicationCategory]([Id]),
     CONSTRAINT [UQ_ApplicationType_NameCountry] UNIQUE ([Name], [Country]),
     CONSTRAINT [CK_ApplicationType_Frequency]
-        CHECK ([Frequency] IN ('Monthly', 'Quarterly', 'Annual', 'One-off')),
+        CHECK ([Frequency] IN ('Monthly', 'Quarterly', 'Annual', 'One-off', 'Multi-Year')),
     CONSTRAINT [CK_ApplicationType_DueMonth]
         CHECK ([DefaultDueMonth] IS NULL OR ([DefaultDueMonth] >= 1 AND [DefaultDueMonth] <= 12)),
     CONSTRAINT [CK_ApplicationType_DueDay]
@@ -358,6 +365,7 @@ CREATE TABLE [compliance].[BusinessApplication] (
     [Status]            NVARCHAR(20) NOT NULL DEFAULT 'Pending',
     [ReferenceNumber]   NVARCHAR(100) NULL,
     [Notes]             NVARCHAR(2000) NULL,
+    [EstimatedAmount]   DECIMAL(18,2) NULL,
     [SubmittedAtUtc]    DATETIME NULL,
     [ApprovedAtUtc]     DATETIME NULL,
     [CreatedAtUtc]      DATETIME NOT NULL DEFAULT GETUTCDATE(),
@@ -392,6 +400,19 @@ CREATE TABLE [compliance].[ApplicationAttachment] (
 );
 ```
 
+
+### Migration 165: EstimatedAmount and Multi-Year Frequency
+
+```sql
+ALTER TABLE [compliance].[ApplicationType] ADD [EstimatedAmount] DECIMAL(18,2) NULL;
+ALTER TABLE [compliance].[ApplicationType] ADD [FrequencyInterval] INT NULL;
+ALTER TABLE [compliance].[BusinessApplication] ADD [EstimatedAmount] DECIMAL(18,2) NULL;
+
+-- Update CHECK constraint
+ALTER TABLE [compliance].[ApplicationType] DROP CONSTRAINT [CK_ApplicationType_Frequency];
+ALTER TABLE [compliance].[ApplicationType] ADD CONSTRAINT [CK_ApplicationType_Frequency]
+    CHECK ([Frequency] IN ('Monthly', 'Quarterly', 'Annual', 'One-off', 'Multi-Year'));
+```
 
 ### Seed Data
 
@@ -438,6 +459,8 @@ public class ApplicationType
     public string Frequency { get; set; } = string.Empty;
     public int? DefaultDueMonth { get; set; }
     public int? DefaultDueDay { get; set; }
+    public decimal? EstimatedAmount { get; set; }
+    public int? FrequencyInterval { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }
@@ -452,6 +475,7 @@ public class BusinessApplication
     public string Status { get; set; } = "Pending";
     public string? ReferenceNumber { get; set; }
     public string? Notes { get; set; }
+    public decimal? EstimatedAmount { get; set; }
     public DateTime? SubmittedAtUtc { get; set; }
     public DateTime? ApprovedAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; }
