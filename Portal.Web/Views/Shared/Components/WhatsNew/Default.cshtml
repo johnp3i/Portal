@@ -79,6 +79,12 @@
         var isOpen = panel.style.display !== 'none';
         panel.style.display = isOpen ? 'none' : 'block';
         backdrop.style.display = isOpen ? 'none' : 'block';
+
+        // Raise the parent stacking context above the account menu when panel is open
+        var trigger = document.getElementById('whats-new-trigger');
+        if (trigger && trigger.closest('[style*="position:absolute"]')) {
+            trigger.closest('[style*="position:absolute"]').style.zIndex = isOpen ? '100' : '10001';
+        }
     }
 
     function toggleAnnouncementDetail(id) {
