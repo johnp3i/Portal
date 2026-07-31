@@ -66,6 +66,24 @@ public class RecurringExpenseController : Controller
             ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
             ViewBag.VatPeriods = vatPeriods;
 
+            // Load active rules for the left-panel summary
+            var rules = await _dbContext.SupplierRecurringRules
+                .Include(r => r.Supplier)
+                .Include(r => r.ExpenseCategory)
+                .Where(r => r.BusinessId == businessId && !r.IsDeleted)
+                .OrderBy(r => r.Supplier.Name)
+                .Select(r => new {
+                    r.Id,
+                    SupplierName = r.Supplier.Name,
+                    CategoryName = r.ExpenseCategory != null ? r.ExpenseCategory.Name : null,
+                    r.FrequencyMonths,
+                    r.Description,
+                    r.IsActive
+                })
+                .ToListAsync();
+
+            ViewBag.Rules = rules;
+
             return View();
         }
         catch (Exception ex)

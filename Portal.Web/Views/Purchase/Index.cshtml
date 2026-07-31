@@ -107,7 +107,7 @@
                 </div>
                 <div style="display:flex;gap:10px;padding-bottom:2px;margin-left:auto;">
                     <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
-                    <a asp-action="Index" class="btn btn-secondary" style="padding:14px 20px;">Clear</a>
+                    <a href="/Purchase" class="btn btn-secondary" style="padding:14px 20px;" onclick="sessionStorage.removeItem('purchase_filter_state');">Clear</a>
                 </div>
             </div>
             <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -421,31 +421,19 @@
     }
 </style>
 
-@section Scripts {
-<style>
-.period-shortcut {
-    padding: 5px 12px;
-    border-radius: 8px;
-    border: 1.5px solid rgba(13,94,166,.12);
-    background: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    color: #5E7385;
-    cursor: pointer;
-    transition: all .15s;
-}
-.period-shortcut:hover {
-    background: rgba(13,94,166,.06);
-    border-color: rgba(13,94,166,.25);
-    color: #0D5EA6;
-}
-.period-shortcut.active {
-    background: rgba(13,94,166,.08);
-    border-color: #0D5EA6;
-    color: #0D5EA6;
-}
-</style>
+<script>
+    // ─── Filter State Persistence ──────────────────────────────────────────
+    // Saves the current filter query string to sessionStorage so Edit/Create pages
+    // can link back with filters preserved. No redirect — just save.
+    (function() {
+        var STORAGE_KEY = 'purchase_filter_state';
+        var search = window.location.search;
+
+        if (search && search !== '?') {
+            sessionStorage.setItem(STORAGE_KEY, search);
+        }
+    })();
+</script>
 <script>
 async function showAttachmentModal(entityId, label) {
     BlockUI.show('Loading...');
@@ -706,4 +694,3 @@ function formatDateISO(d) {
     });
 })();
 </script>
-}

@@ -93,10 +93,38 @@ public class VatController : Controller
                 .ToList()
         };
 
-        // Compute unassigned purchase counts for unsubmitted periods
-        foreach (var periodRow in viewModel.Periods.Where(p => p.Status != "Submitted"))
+        // Compute unassigned purchase counts for unsubmitted periods (optimised: single query)
+        var unsubmittedPeriods = viewModel.Periods.Where(p => p.Status != "Submitted").ToList();
+        if (unsubmittedPeriods.Count > 0)
         {
-            periodRow.UnassignedPurchaseCount = await _purchaseService.CountUnassignedForPeriodAsync(businessId, periodRow.PeriodId);
+            // Single query: get all unassigned purchases within the full date range, then partition in memory
+            var periodLookup = periods.ToDictionary(p => p.Id);
+            var earliestStart = unsubmittedPeriods
+                .Select(p => periodLookup.TryGetValue(p.PeriodId, out var per) ? per.PeriodStartDate : DateOnly.MaxValue)
+                .Min();
+            var latestEnd = unsubmittedPeriods
+                .Select(p => periodLookup.TryGetValue(p.PeriodId, out var per) ? per.PeriodEndDate : DateOnly.MinValue)
+                .Max();
+
+            // Fetch all unassigned purchase dates in the full range (single query, only dates needed)
+            var unassignedDates = await _dbContext.Purchases
+                .Where(p => p.BusinessId == businessId
+                    && p.VatSubmissionPeriodId == null
+                    && !p.IsCancelled
+                    && p.InvoiceDate >= earliestStart
+                    && p.InvoiceDate <= latestEnd)
+                .Select(p => p.InvoiceDate)
+                .ToListAsync();
+
+            // Partition counts by period date ranges in memory
+            foreach (var periodRow in unsubmittedPeriods)
+            {
+                if (periodLookup.TryGetValue(periodRow.PeriodId, out var period))
+                {
+                    periodRow.UnassignedPurchaseCount = unassignedDates
+                        .Count(d => d >= period.PeriodStartDate && d <= period.PeriodEndDate);
+                }
+            }
         }
 
         return View(viewModel);

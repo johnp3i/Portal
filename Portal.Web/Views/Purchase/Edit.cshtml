@@ -207,15 +207,48 @@
             <div id="limitWarningMessages" style="font-size:13px;line-height:1.6;"></div>
         </div>
 
-        <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:none;">
             <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a asp-action="Index" asp-controller="Purchase" class="btn btn-outline">&larr; Back to Purchases</a>
         </div>
     </form>
 </section>
 
 <!-- Document Attachments -->
 @await Component.InvokeAsync("AttachmentPanel", new { entityType = "Purchase", entityId = Model.Id })
+
+<!-- Bottom spacer for sticky action bar -->
+<div style="height:80px;"></div>
+
+<!-- Sticky Action Bar -->
+@if (!Model.IsVatPeriodLocked)
+{
+    <div class="sticky-action-bar">
+        <div class="sticky-action-bar__inner">
+            <a href="/Purchase" class="btn btn-secondary purchase-back-link">Cancel</a>
+            <button type="submit" form="purchaseForm" class="btn btn-primary">Save Purchase</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="sticky-action-bar">
+        <div class="sticky-action-bar__inner">
+            <a href="/Purchase" class="btn btn-secondary purchase-back-link">Back to Purchases</a>
+        </div>
+    </div>
+}
+
+<script>
+    // Restore filter params on back/cancel links
+    (function() {
+        var saved = sessionStorage.getItem('purchase_filter_state');
+        if (saved) {
+            document.querySelectorAll('.purchase-back-link').forEach(function(link) {
+                link.href = '/Purchase' + saved;
+            });
+        }
+    })();
+</script>
 
 @section Scripts {
     <style>

@@ -2,7 +2,7 @@ namespace Portal.Infrastructure.Entities;
 
 /// <summary>
 /// A recurring expense rule defining expected purchase frequency and optional amount for a supplier.
-/// Schema: [billing].SupplierRecurringRule
+/// Schema: [purchase].SupplierRecurringRule
 /// </summary>
 public class SupplierRecurringRule
 {

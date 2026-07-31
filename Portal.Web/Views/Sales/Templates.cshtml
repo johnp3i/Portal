@@ -19,6 +19,59 @@
     </div>
 </div>
 
+<!-- Instructions (collapsible) -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <button type="button" onclick="var el=document.getElementById('templateInstructions');el.style.display=el.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=el.style.display==='none'?'':'rotate(180deg)';" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#0D5EA6;padding:0;font-family:inherit;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        How to write templates — Placeholder Guide
+    </button>
+    <div id="templateInstructions" style="display:none;margin-top:14px;">
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;margin-bottom:12px;">
+            Use placeholders in your template body to personalise responses automatically. When a response is prepared, placeholders are replaced with real values from the lead and contact.
+        </p>
+        <table style="width:100%;font-size:13px;border-collapse:collapse;">
+            <thead>
+                <tr style="text-align:left;border-bottom:1px solid rgba(13,94,166,.1);">
+                    <th style="padding:8px 12px;font-weight:700;color:#334155;">Placeholder</th>
+                    <th style="padding:8px 12px;font-weight:700;color:#334155;">Replaced With</th>
+                    <th style="padding:8px 12px;font-weight:700;color:#334155;">Example Usage</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{ContactName}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The contact's full name</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">Hi @("{{ContactName}}"), thank you for reaching out.</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{ProductName}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The product linked to the lead</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">Your enquiry about @("{{ProductName}}") has been received.</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{BusinessName}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">Your business name</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">The team at @("{{BusinessName}}") will be in touch shortly.</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{ResponseTime}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The template's response time (e.g. "4 hours")</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">We aim to respond within @("{{ResponseTime}}").</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="margin-top:14px;padding:12px 16px;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.12);border-radius:10px;">
+            <p style="font-size:13px;color:#129867;font-weight:600;margin:0 0 6px;">Example template body:</p>
+            <p style="font-size:13px;color:#334155;margin:0;line-height:1.7;font-family:monospace;white-space:pre-wrap;">Hi @("{{ContactName}}"),
+
+Thank you for your interest in @("{{ProductName}}"). A member of our team at @("{{BusinessName}}") will review your enquiry and get back to you within @("{{ResponseTime}}").
+
+Best regards,
+The @("{{BusinessName}}") Team</p>
+        </div>
+    </div>
+</section>
+
 <section class="glass card-pad">
     @if (Model.Items.Count == 0)
     {
@@ -88,7 +141,7 @@
 
 <!-- Create/Edit Template Modal -->
 <div id="templateModal" class="modal-overlay" style="display:none;">
-    <div class="modal-content" style="max-width:600px;">
+    <div class="modal-content" style="max-width:700px;">
         <h3 id="templateModalTitle" style="margin-bottom:16px;">New Template</h3>
         <input type="hidden" id="templateId" />
         <div class="field"><label>Name *</label><input type="text" id="templateName" required /></div>
@@ -111,36 +164,227 @@
                 </select>
             </div>
         </div>
-        <div class="field"><label>Subject</label><input type="text" id="templateSubject" /></div>
+        <div class="field"><label>Subject</label><input type="text" id="templateSubject" placeholder="e.g. Re: {{ProductName}} enquiry" /></div>
         <div class="field">
             <label>Body Template *</label>
-            <div id="templateBodyEditor" style="height:180px;border:1px solid rgba(13,94,166,.15);border-radius:12px;overflow:hidden;"></div>
-            <small style="color:#5a6a7a;margin-top:6px;display:block;">Placeholders: <code>@("{{ContactName}}")</code>, <code>@("{{ProductName}}")</code>, <code>@("{{BusinessName}}")</code>, <code>@("{{ResponseTime}}")</code></small>
+            <!-- Custom Quill Toolbar -->
+            <div id="templateToolbar" style="border:1px solid rgba(13,94,166,.15);border-bottom:none;border-radius:12px 12px 0 0;background:#f8fafc;">
+                <span class="ql-formats">
+                    <button class="ql-bold"></button>
+                    <button class="ql-italic"></button>
+                    <button class="ql-underline"></button>
+                </span>
+                <span class="ql-formats">
+                    <button class="ql-list" value="ordered"></button>
+                    <button class="ql-list" value="bullet"></button>
+                </span>
+                <span class="ql-formats">
+                    <button class="ql-link"></button>
+                    <button class="ql-clean"></button>
+                </span>
+                <span class="ql-formats" style="border-left:1px solid rgba(13,94,166,.12);padding-left:8px;">
+                    <button type="button" onclick="insertPlaceholder('ContactName')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert contact name">Contact</button>
+                    <button type="button" onclick="insertPlaceholder('ProductName')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert product name">Product</button>
+                    <button type="button" onclick="insertPlaceholder('BusinessName')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert business name">Business</button>
+                    <button type="button" onclick="insertPlaceholder('ResponseTime')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert response time">Time</button>
+                </span>
+            </div>
+            <div id="templateBodyEditor" style="height:200px;border:1px solid rgba(13,94,166,.15);border-top:none;border-radius:0 0 12px 12px;"></div>
         </div>
         <div class="field"><label>Response Time (hours)</label><input type="number" id="templateResponseTime" value="24" min="1" /></div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
-            <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="submitTemplate()">Save</button>
+        <div style="display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:16px;">
+            <button type="button" class="btn btn-secondary" onclick="previewTemplate()" style="font-size:13px;">Preview</button>
+            <div style="display:flex;gap:12px;">
+                <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitTemplate()">Save</button>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
-    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script>
-        var templateQuill = new Quill('#templateBodyEditor', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    ['bold', 'italic', 'underline'],
-                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                    ['link'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Write your email template body here...'
+        var templateQuill = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            templateQuill = new Quill('#templateBodyEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: {
+                        container: '#templateToolbar'
+                    }
+                },
+                placeholder: 'Write your email template body here...'
+            });
         });
+
+        // ─── Placeholder Insertion ────────────────────────────────────────
+        function insertPlaceholder(placeholder) {
+            if (!templateQuill) return;
+            var range = templateQuill.getSelection(true);
+            templateQuill.insertText(range.index, '{{' + placeholder + '}}');
+            templateQuill.setSelection(range.index + placeholder.length + 4);
+        }
+
+        // ─── Preview ──────────────────────────────────────────────────────
+        function previewTemplate() {
+            var html = templateQuill ? templateQuill.root.innerHTML : '';
+            // Replace placeholders with sample values for preview
+            var rendered = html
+                .replace(/\{\{ContactName\}\}/g, '<strong>Maria Costa</strong>')
+                .replace(/\{\{ProductName\}\}/g, '<strong>Website Redesign</strong>')
+                .replace(/\{\{BusinessName\}\}/g, '<strong>Your Company</strong>')
+                .replace(/\{\{ResponseTime\}\}/g, '<strong>4 hours</strong>');
+
+            Swal.fire({
+                title: 'Template Preview',
+                html: '<div style="text-align:left;font-size:14px;line-height:1.7;border:1px solid rgba(13,94,166,.1);border-radius:12px;padding:18px;background:#fafcfe;">' + rendered + '</div>',
+                width: 640,
+                confirmButtonText: 'Close',
+                confirmButtonColor: '#0D5EA6'
+            });
+        }
+
+        // ─── Modal Operations ─────────────────────────────────────────────
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        window.openCreateTemplateModal = function () {
+            document.getElementById('templateModalTitle').textContent = 'New Template';
+            document.getElementById('templateId').value = '';
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateProductId').value = '';
+            document.getElementById('templateResponseTypeId').value = '1';
+            document.getElementById('templateSubject').value = '';
+            document.getElementById('templateResponseTime').value = '24';
+            if (templateQuill) templateQuill.root.innerHTML = '';
+            document.getElementById('templateModal').style.display = 'flex';
+        };
+
+        window.editTemplate = async function (id) {
+            BlockUI.show('Loading template...');
+            try {
+                var response = await fetch('/Sales/AxGetTemplateById?id=' + id);
+                var result = await response.json();
+                BlockUI.hide();
+
+                if (result.success && result.data) {
+                    var t = result.data;
+                    document.getElementById('templateModalTitle').textContent = 'Edit Template';
+                    document.getElementById('templateId').value = t.id;
+                    document.getElementById('templateName').value = t.name || '';
+                    document.getElementById('templateProductId').value = t.productId || '';
+                    document.getElementById('templateResponseTypeId').value = t.leadResponseTypeId || '1';
+                    document.getElementById('templateSubject').value = t.subject || '';
+                    document.getElementById('templateResponseTime').value = t.responseTimeInHours || 24;
+
+                    if (templateQuill) {
+                        templateQuill.root.innerHTML = t.bodyTemplate || '';
+                    }
+
+                    document.getElementById('templateModal').style.display = 'flex';
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Failed to load template.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        };
+
+        window.closeTemplateModal = function () {
+            document.getElementById('templateModal').style.display = 'none';
+        };
+
+        window.submitTemplate = async function () {
+            var id = document.getElementById('templateId').value;
+            var bodyHtml = templateQuill ? templateQuill.root.innerHTML : '';
+
+            // Strip empty Quill content
+            if (bodyHtml === '<p><br></p>' || bodyHtml.trim() === '') bodyHtml = '';
+
+            var payload = {
+                name: document.getElementById('templateName').value,
+                productId: document.getElementById('templateProductId').value ? parseInt(document.getElementById('templateProductId').value) : null,
+                leadResponseTypeId: parseInt(document.getElementById('templateResponseTypeId').value),
+                subject: document.getElementById('templateSubject').value || null,
+                bodyTemplate: bodyHtml,
+                responseTimeInHours: parseInt(document.getElementById('templateResponseTime').value) || 24
+            };
+
+            if (!payload.name || !payload.bodyTemplate) {
+                Swal.fire({ icon: 'warning', title: 'Validation', text: 'Name and body template are required.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var url = id ? '/Sales/AxPostUpdateTemplate' : '/Sales/AxPostCreateTemplate';
+            if (id) payload.id = parseInt(id);
+
+            BlockUI.show('Saving...');
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: JSON.stringify(payload)
+                });
+                var result = await response.json();
+                BlockUI.hide();
+
+                if (result.success) {
+                    closeTemplateModal();
+                    Swal.fire({ icon: 'success', title: 'Saved', text: 'Template saved successfully.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        };
+
+        window.deactivateTemplate = function (id, name) {
+            Swal.fire({
+                title: 'Deactivate Template?',
+                text: 'Are you sure you want to deactivate "' + name + '"?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, deactivate',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#C24A4A'
+            }).then(async function (result) {
+                if (result.isConfirmed) {
+                    BlockUI.show('Deactivating...');
+                    try {
+                        var response = await fetch('/Sales/AxPostDeactivateTemplate?id=' + id, {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                        });
+                        var data = await response.json();
+                        BlockUI.hide();
+                        if (data.success) {
+                            Swal.fire({ icon: 'success', title: 'Done', text: 'Template deactivated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                        }
+                    } catch (e) {
+                        BlockUI.hide();
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                    }
+                }
+            });
+        };
+
+        window.activateTemplate = function (id, name) {
+            BlockUI.show('Activating...');
+            fetch('/Sales/AxPostActivateTemplate?id=' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                BlockUI.hide();
+                if (data.success) { window.location.reload(); }
+                else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+            }).catch(function() { BlockUI.hide(); });
+        };
     </script>
-    <script src="~/js/sales/templates.js?v=4"></script>
 }

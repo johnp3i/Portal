@@ -63,21 +63,88 @@
     </div>
 </section>
 
-<!-- Results -->
-<section class="glass card-pad">
-    <div id="validationResults">
-        <div class="empty-state">
-            <p>Select a period or date range and click Validate to check recurring expenses.</p>
+<!-- Two-Column Layout: Rules (left) + Validation Results (right) -->
+<div style="display:grid;grid-template-columns:320px 1fr;gap:22px;">
+    <!-- Left: Active Rules Summary -->
+    <section class="glass card-pad">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <h3 style="margin:0;font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#1a2a3a;">Active Rules</h3>
+            <span style="font-size:11px;font-weight:600;color:#5E7385;">@(((IEnumerable<dynamic>)ViewBag.Rules).Count(r => r.IsActive)) active</span>
         </div>
-    </div>
-</section>
+        @{
+            var rules = (IEnumerable<dynamic>)ViewBag.Rules;
+            var activeRules = rules.Where(r => (bool)r.IsActive);
+            var inactiveRules = rules.Where(r => !(bool)r.IsActive);
+        }
+        @if (activeRules.Any())
+        {
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                @foreach (var rule in activeRules)
+                {
+                    var freqLabel = (int)rule.FrequencyMonths == 1 ? "Monthly" : (int)rule.FrequencyMonths == 3 ? "Quarterly" : (int)rule.FrequencyMonths == 6 ? "Biannual" : (int)rule.FrequencyMonths == 12 ? "Annual" : $"Every {rule.FrequencyMonths}mo";
+                    <div style="padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e8eef3;">
+                        <div style="font-size:13px;font-weight:600;color:#1a2a3a;">@rule.SupplierName</div>
+                        <div style="font-size:11px;color:#5E7385;margin-top:2px;">
+                            @freqLabel
+                            @if (!string.IsNullOrEmpty((string)rule.CategoryName))
+                            {
+                                <span>&middot; @rule.CategoryName</span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty((string)rule.Description))
+                        {
+                            <div style="font-size:11px;color:#7a8a9a;margin-top:3px;font-style:italic;">@rule.Description</div>
+                        }
+                    </div>
+                }
+            </div>
+            @if (inactiveRules.Any())
+            {
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e8eef3;">
+                    <div style="font-size:11px;font-weight:600;color:#8a9bac;margin-bottom:8px;">DISABLED (@inactiveRules.Count())</div>
+                    @foreach (var rule in inactiveRules)
+                    {
+                        <div style="padding:6px 12px;font-size:12px;color:#8a9bac;opacity:0.7;">
+                            @rule.SupplierName
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div style="text-align:center;padding:20px 10px;color:#7a8a9a;font-size:13px;">
+                <p style="margin:0 0 10px;">No rules configured yet.</p>
+                <a href="/RecurringExpense/Rules" style="color:#0D5EA6;font-weight:600;text-decoration:none;font-size:12px;">Create your first rule →</a>
+            </div>
+        }
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e8eef3;">
+            <a href="/RecurringExpense/Rules" style="font-size:12px;font-weight:600;color:#0D5EA6;text-decoration:none;display:flex;align-items:center;gap:6px;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h.09a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.09a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                Manage Rules
+            </a>
+        </div>
+    </section>
+
+    <!-- Right: Validation Results -->
+    <section class="glass card-pad">
+        <div id="validationResults">
+            <div class="empty-state">
+                <p>Select a period or date range and click Validate to check recurring expenses.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    @@media (max-width: 768px) {
+        div[style*="grid-template-columns:320px"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
 
 @section Scripts {
-    <style>
-        .period-shortcut{padding:5px 12px;border-radius:8px;border:1.5px solid rgba(13,94,166,.12);background:#fff;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#5E7385;cursor:pointer;transition:all .15s}
-        .period-shortcut:hover{background:rgba(13,94,166,.06);border-color:rgba(13,94,166,.25);color:#0D5EA6}
-        .period-shortcut.active{background:rgba(13,94,166,.08);border-color:#0D5EA6;color:#0D5EA6}
-    </style>
     <script>
         var dateFromField = document.getElementById('dateFromField');
         var dateToField = document.getElementById('dateToField');

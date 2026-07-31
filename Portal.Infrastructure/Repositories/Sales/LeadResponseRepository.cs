@@ -27,27 +27,36 @@ public class LeadResponseRepository : GenericStoredProcedureRepository<LeadRespo
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var command = connection.CreateCommand();
-            command.CommandText = query;
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-            var transaction = _context.Database.CurrentTransaction;
-            if (transaction != null)
-                command.Transaction = transaction.GetDbTransaction();
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
 
-            command.Parameters.Add(new SqlParameter("@LeadRequestId", entity.LeadRequestId));
-            command.Parameters.Add(new SqlParameter("@LeadResponseTypeId", entity.LeadResponseTypeId));
-            command.Parameters.Add(new SqlParameter("@LeadResponseTemplateId", entity.LeadResponseTemplateId ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@RespondedByUserId", entity.RespondedByUserId ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@ResponseText", entity.ResponseText ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@IsAutomated", entity.IsAutomated));
-            command.Parameters.Add(new SqlParameter("@SentAtUtc", entity.SentAtUtc));
-            command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
 
-            var result = await command.ExecuteScalarAsync();
-            return (int)result!;
+                command.Parameters.Add(new SqlParameter("@LeadRequestId", entity.LeadRequestId));
+                command.Parameters.Add(new SqlParameter("@LeadResponseTypeId", entity.LeadResponseTypeId));
+                command.Parameters.Add(new SqlParameter("@LeadResponseTemplateId", entity.LeadResponseTemplateId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@RespondedByUserId", entity.RespondedByUserId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ResponseText", entity.ResponseText ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@IsAutomated", entity.IsAutomated));
+                command.Parameters.Add(new SqlParameter("@SentAtUtc", entity.SentAtUtc));
+                command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+
+                var result = await command.ExecuteScalarAsync();
+                return (int)result!;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {

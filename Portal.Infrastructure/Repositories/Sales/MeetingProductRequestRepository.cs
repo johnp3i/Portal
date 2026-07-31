@@ -25,23 +25,32 @@ public class MeetingProductRequestRepository : GenericStoredProcedureRepository<
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var command = connection.CreateCommand();
-            command.CommandText = query;
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-            var transaction = _context.Database.CurrentTransaction;
-            if (transaction != null)
-                command.Transaction = transaction.GetDbTransaction();
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
 
-            command.Parameters.Add(new SqlParameter("@MeetingId", entity.MeetingId));
-            command.Parameters.Add(new SqlParameter("@ProductId", entity.ProductId));
-            command.Parameters.Add(new SqlParameter("@RequestText", entity.RequestText ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
 
-            var result = await command.ExecuteScalarAsync();
-            return (int)result!;
+                command.Parameters.Add(new SqlParameter("@MeetingId", entity.MeetingId));
+                command.Parameters.Add(new SqlParameter("@ProductId", entity.ProductId));
+                command.Parameters.Add(new SqlParameter("@RequestText", entity.RequestText ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+
+                var result = await command.ExecuteScalarAsync();
+                return (int)result!;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {

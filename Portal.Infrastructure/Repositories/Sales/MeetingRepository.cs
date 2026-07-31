@@ -29,30 +29,39 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var command = connection.CreateCommand();
-            command.CommandText = query;
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-            var transaction = _context.Database.CurrentTransaction;
-            if (transaction != null)
-                command.Transaction = transaction.GetDbTransaction();
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
 
-            command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
-            command.Parameters.Add(new SqlParameter("@LeadRequestId", entity.LeadRequestId ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@ContactId", entity.ContactId));
-            command.Parameters.Add(new SqlParameter("@MeetingTypeId", entity.MeetingTypeId));
-            command.Parameters.Add(new SqlParameter("@Subject", entity.Subject));
-            command.Parameters.Add(new SqlParameter("@ScheduledAtUtc", entity.ScheduledAtUtc));
-            command.Parameters.Add(new SqlParameter("@DurationMinutes", entity.DurationMinutes));
-            command.Parameters.Add(new SqlParameter("@Location", entity.Location ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@CreatedByUserId", entity.CreatedByUserId));
-            command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
 
-            var result = await command.ExecuteScalarAsync();
-            return (int)result!;
+                command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
+                command.Parameters.Add(new SqlParameter("@LeadRequestId", entity.LeadRequestId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ContactId", entity.ContactId));
+                command.Parameters.Add(new SqlParameter("@MeetingTypeId", entity.MeetingTypeId));
+                command.Parameters.Add(new SqlParameter("@Subject", entity.Subject));
+                command.Parameters.Add(new SqlParameter("@ScheduledAtUtc", entity.ScheduledAtUtc));
+                command.Parameters.Add(new SqlParameter("@DurationMinutes", entity.DurationMinutes));
+                command.Parameters.Add(new SqlParameter("@Location", entity.Location ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CreatedByUserId", entity.CreatedByUserId));
+                command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+
+                var result = await command.ExecuteScalarAsync();
+                return (int)result!;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {

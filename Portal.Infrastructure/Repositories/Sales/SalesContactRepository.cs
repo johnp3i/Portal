@@ -28,30 +28,39 @@ public class SalesContactRepository : GenericStoredProcedureRepository<SalesCont
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var command = connection.CreateCommand();
-            command.CommandText = query;
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-            var transaction = _context.Database.CurrentTransaction;
-            if (transaction != null)
-                command.Transaction = transaction.GetDbTransaction();
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
 
-            command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
-            command.Parameters.Add(new SqlParameter("@FirstName", entity.FirstName));
-            command.Parameters.Add(new SqlParameter("@LastName", entity.LastName ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Email", entity.Email ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@PhoneNumber", entity.PhoneNumber ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@CompanyName", entity.CompanyName ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@JobTitle", entity.JobTitle ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Country", entity.Country ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
-            command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
 
-            var result = await command.ExecuteScalarAsync();
-            return (int)result!;
+                command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
+                command.Parameters.Add(new SqlParameter("@FirstName", entity.FirstName));
+                command.Parameters.Add(new SqlParameter("@LastName", entity.LastName ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Email", entity.Email ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@PhoneNumber", entity.PhoneNumber ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CompanyName", entity.CompanyName ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@JobTitle", entity.JobTitle ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Country", entity.Country ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
+                command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+
+                var result = await command.ExecuteScalarAsync();
+                return (int)result!;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -231,86 +240,95 @@ public class SalesContactRepository : GenericStoredProcedureRepository<SalesCont
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            var searchTermParam = string.IsNullOrWhiteSpace(searchTerm) ? (object)DBNull.Value : searchTerm;
-            var searchPatternParam = string.IsNullOrWhiteSpace(searchTerm) ? (object)DBNull.Value : $"%{searchTerm}%";
-
-            int totalCount;
-            using (var countCommand = connection.CreateCommand())
+            try
             {
-                countCommand.CommandText = countQuery;
-                var transaction = _context.Database.CurrentTransaction;
-                if (transaction != null)
-                    countCommand.Transaction = transaction.GetDbTransaction();
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-                countCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
-                countCommand.Parameters.Add(new SqlParameter("@SearchTerm", searchTermParam));
-                countCommand.Parameters.Add(new SqlParameter("@SearchPattern", searchPatternParam));
+                var searchTermParam = string.IsNullOrWhiteSpace(searchTerm) ? (object)DBNull.Value : searchTerm;
+                var searchPatternParam = string.IsNullOrWhiteSpace(searchTerm) ? (object)DBNull.Value : $"%{searchTerm}%";
 
-                var countResult = await countCommand.ExecuteScalarAsync();
-                totalCount = countResult != null && countResult != DBNull.Value ? (int)countResult : 0;
-            }
+                int totalCount;
+                using (var countCommand = connection.CreateCommand())
+                {
+                    countCommand.CommandText = countQuery;
+                    var transaction = _context.Database.CurrentTransaction;
+                    if (transaction != null)
+                        countCommand.Transaction = transaction.GetDbTransaction();
 
-            if (totalCount == 0)
-            {
+                    countCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                    countCommand.Parameters.Add(new SqlParameter("@SearchTerm", searchTermParam));
+                    countCommand.Parameters.Add(new SqlParameter("@SearchPattern", searchPatternParam));
+
+                    var countResult = await countCommand.ExecuteScalarAsync();
+                    totalCount = countResult != null && countResult != DBNull.Value ? (int)countResult : 0;
+                }
+
+                if (totalCount == 0)
+                {
+                    return new PagedResult<SalesContact>
+                    {
+                        Items = new List<SalesContact>(),
+                        CurrentPage = 1,
+                        PageSize = pageSize,
+                        TotalCount = 0
+                    };
+                }
+
+                int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                if (page > totalPages) page = totalPages;
+                if (page < 1) page = 1;
+                int offset = (page - 1) * pageSize;
+
+                var results = new List<SalesContact>();
+                using (var dataCommand = connection.CreateCommand())
+                {
+                    dataCommand.CommandText = dataQuery;
+                    var transaction = _context.Database.CurrentTransaction;
+                    if (transaction != null)
+                        dataCommand.Transaction = transaction.GetDbTransaction();
+
+                    dataCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                    dataCommand.Parameters.Add(new SqlParameter("@SearchTerm", searchTermParam));
+                    dataCommand.Parameters.Add(new SqlParameter("@SearchPattern", searchPatternParam));
+                    dataCommand.Parameters.Add(new SqlParameter("@Offset", offset));
+                    dataCommand.Parameters.Add(new SqlParameter("@PageSize", pageSize));
+
+                    using var reader = await dataCommand.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        results.Add(new SalesContact
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            BusinessId = reader.GetInt32(reader.GetOrdinal("BusinessId")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.IsDBNull(reader.GetOrdinal("LastName")) ? null : reader.GetString(reader.GetOrdinal("LastName")),
+                            Email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString(reader.GetOrdinal("Email")),
+                            PhoneNumber = reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString(reader.GetOrdinal("PhoneNumber")),
+                            CompanyName = reader.IsDBNull(reader.GetOrdinal("CompanyName")) ? null : reader.GetString(reader.GetOrdinal("CompanyName")),
+                            JobTitle = reader.IsDBNull(reader.GetOrdinal("JobTitle")) ? null : reader.GetString(reader.GetOrdinal("JobTitle")),
+                            Country = reader.IsDBNull(reader.GetOrdinal("Country")) ? null : reader.GetString(reader.GetOrdinal("Country")),
+                            Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
+                            IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
+                            CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+                        });
+                    }
+                }
+
                 return new PagedResult<SalesContact>
                 {
-                    Items = new List<SalesContact>(),
-                    CurrentPage = 1,
+                    Items = results,
+                    CurrentPage = page,
                     PageSize = pageSize,
-                    TotalCount = 0
+                    TotalCount = totalCount
                 };
             }
-
-            int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-            if (page > totalPages) page = totalPages;
-            if (page < 1) page = 1;
-            int offset = (page - 1) * pageSize;
-
-            var results = new List<SalesContact>();
-            using (var dataCommand = connection.CreateCommand())
+            finally
             {
-                dataCommand.CommandText = dataQuery;
-                var transaction = _context.Database.CurrentTransaction;
-                if (transaction != null)
-                    dataCommand.Transaction = transaction.GetDbTransaction();
-
-                dataCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
-                dataCommand.Parameters.Add(new SqlParameter("@SearchTerm", searchTermParam));
-                dataCommand.Parameters.Add(new SqlParameter("@SearchPattern", searchPatternParam));
-                dataCommand.Parameters.Add(new SqlParameter("@Offset", offset));
-                dataCommand.Parameters.Add(new SqlParameter("@PageSize", pageSize));
-
-                using var reader = await dataCommand.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    results.Add(new SalesContact
-                    {
-                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                        BusinessId = reader.GetInt32(reader.GetOrdinal("BusinessId")),
-                        FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                        LastName = reader.IsDBNull(reader.GetOrdinal("LastName")) ? null : reader.GetString(reader.GetOrdinal("LastName")),
-                        Email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString(reader.GetOrdinal("Email")),
-                        PhoneNumber = reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString(reader.GetOrdinal("PhoneNumber")),
-                        CompanyName = reader.IsDBNull(reader.GetOrdinal("CompanyName")) ? null : reader.GetString(reader.GetOrdinal("CompanyName")),
-                        JobTitle = reader.IsDBNull(reader.GetOrdinal("JobTitle")) ? null : reader.GetString(reader.GetOrdinal("JobTitle")),
-                        Country = reader.IsDBNull(reader.GetOrdinal("Country")) ? null : reader.GetString(reader.GetOrdinal("Country")),
-                        Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
-                        IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
-                        CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
-                    });
-                }
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
             }
-
-            return new PagedResult<SalesContact>
-            {
-                Items = results,
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalCount = totalCount
-            };
         }
         catch (Exception ex)
         {

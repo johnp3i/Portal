@@ -6,8 +6,8 @@ This plan implements the What's New Announcements feature following the establis
 
 ## Tasks
 
-- [ ] 1. Database migration and EF Core entity configuration
-  - [ ] 1.1 Create SQL migration: FeatureAnnouncements and UserAnnouncementDismissals tables
+- [x] 1. Database migration and EF Core entity configuration
+  - [x] 1.1 Create SQL migration: FeatureAnnouncements and UserAnnouncementDismissals tables
     - Create migration file `Portal.Database/Migrations/XXX_CreateFeatureAnnouncementsTables.sql`
     - `USE [Portal]` header
     - Create `[dbo].[FeatureAnnouncements]` table with columns: Id (INT IDENTITY PK), Title (NVARCHAR(200) NOT NULL), Summary (NVARCHAR(500) NOT NULL), DetailHtml (NVARCHAR(MAX) NOT NULL), ModuleKey (NVARCHAR(100) NULL), CtaLabel (NVARCHAR(100) NULL), CtaUrl (NVARCHAR(500) NULL), TargetPlanTier (NVARCHAR(50) NULL), IsActive (BIT NOT NULL DEFAULT 1), PublishedAtUtc (DATETIME NOT NULL), ExpiresAtUtc (DATETIME NULL), CreatedAtUtc (DATETIME NOT NULL DEFAULT GETUTCDATE())
@@ -17,30 +17,30 @@ This plan implements the What's New Announcements feature following the establis
     - Create nonclustered index IX_FeatureAnnouncements_Visibility on (IsActive, PublishedAtUtc, ExpiresAtUtc) INCLUDE (TargetPlanTier)
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 1.2 Create EF Core entity classes
+  - [x] 1.2 Create EF Core entity classes
     - Create `Portal.Infrastructure/Entities/FeatureAnnouncement.cs` with all properties per design
     - Create `Portal.Infrastructure/Entities/UserAnnouncementDismissal.cs` with all properties per design
     - _Requirements: 1.1, 1.2_
 
-  - [ ] 1.3 Add DbContext configuration for new entities
+  - [x] 1.3 Add DbContext configuration for new entities
     - Add `DbSet<FeatureAnnouncement>` and `DbSet<UserAnnouncementDismissal>` to PortalDbContext
     - Configure entity mappings in `OnModelCreating`: table names, column types, precision, defaults (GETUTCDATE()), FK relationship, unique constraint
     - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 2. DTOs and request models
-  - [ ] 2.1 Create AnnouncementDto, AdminAnnouncementDto, and WhatsNewViewModel
+- [x] 2. DTOs and request models
+  - [x] 2.1 Create AnnouncementDto, AdminAnnouncementDto, and WhatsNewViewModel
     - Create `Portal.Infrastructure/Models/AnnouncementDto.cs` with properties: Id, Title, Summary, DetailHtml, ModuleKey, CtaLabel, CtaUrl, TargetPlanTier, PublishedAtUtc, IsDismissed, HasCta (computed)
     - Create `Portal.Infrastructure/Models/AdminAnnouncementDto.cs` with properties: Id, Title, Summary, DetailHtml, ModuleKey, CtaLabel, CtaUrl, TargetPlanTier, IsActive, PublishedAtUtc, ExpiresAtUtc, CreatedAtUtc, Status (computed: Active/Inactive/Expired/Scheduled)
     - Create `Portal.Web/Models/ViewComponents/WhatsNewViewModel.cs` with properties: Announcements (List<AnnouncementDto>), UnreadCount, BadgeText
     - _Requirements: 2.5, 3.2, 3.3, 6.1, 8.2_
 
-  - [ ] 2.2 Create CreateAnnouncementRequest and UpdateAnnouncementRequest
+  - [x] 2.2 Create CreateAnnouncementRequest and UpdateAnnouncementRequest
     - Create `Portal.Infrastructure/Models/CreateAnnouncementRequest.cs` with fields: Title, Summary, DetailHtml, ModuleKey, CtaLabel, CtaUrl, TargetPlanTier, IsActive, PublishedAtUtc, ExpiresAtUtc
     - Create `Portal.Infrastructure/Models/UpdateAnnouncementRequest.cs` with same fields plus Id
     - _Requirements: 6.2, 6.6_
 
-- [ ] 3. Repository layer
-  - [ ] 3.1 Create AnnouncementRepository
+- [x] 3. Repository layer
+  - [x] 3.1 Create AnnouncementRepository
     - Create `Portal.Infrastructure/Repositories/AnnouncementRepository.cs`
     - Extend `GenericStoredProcedureRepository<FeatureAnnouncement>`
     - Methods: `GetVisibleAsync(DateTime utcNow, string? userPlanTier)` — returns active, published, non-expired announcements filtered by plan tier
@@ -54,31 +54,31 @@ This plan implements the What's New Announcements feature following the establis
     - All queries use full table names (no aliases), SqlParameter with null-safety (`?? (object)DBNull.Value`)
     - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 5.1, 5.2, 5.3_
 
-- [ ] 4. Service layer
-  - [ ] 4.1 Create IAnnouncementService interface and AnnouncementService class
+- [x] 4. Service layer
+  - [x] 4.1 Create IAnnouncementService interface and AnnouncementService class
     - Create `Portal.Infrastructure/Services/IAnnouncementService.cs` with methods per design: GetVisibleForUserAsync, GetUnreadCountAsync, GetBannerAnnouncementAsync, DismissAsync, DismissAllAsync, GetAllForAdminAsync, GetByIdForAdminAsync, CreateAsync, UpdateAsync, ToggleActiveAsync
     - Create `Portal.Infrastructure/Services/AnnouncementService.cs`
     - Inject: AnnouncementRepository, IPlanCheckService
     - _Requirements: 2.1–2.5, 5.1–5.3, 6.1–6.6, 9.1–9.5_
 
-  - [ ] 4.2 Implement visibility filtering and plan tier logic
+  - [x] 4.2 Implement visibility filtering and plan tier logic
     - Implement `GetVisibleForUserAsync(string userId)` — resolve user plan tier via `IPlanCheckService.GetCurrentPlanNameAsync()`, call repository GetVisibleAsync, join with dismissals to set IsDismissed flag, order by PublishedAtUtc descending
     - Implement private `IsTierVisible(string? targetTier, string userTier)` — tier hierarchy: Starter/Foundation=1, Professional=2, Enterprise=3; NULL/All target = visible to all; user rank >= target rank = visible
     - Default to "Starter" if plan tier cannot be resolved
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [ ] 4.3 Implement unread count and banner logic
+  - [x] 4.3 Implement unread count and banner logic
     - Implement `GetUnreadCountAsync(string userId)` — visible minus dismissed count
     - Implement `GetBannerAnnouncementAsync(string userId)` — returns most recent visible undismissed announcement or null
     - _Requirements: 3.2, 3.3, 3.4, 7.1, 7.4_
 
-  - [ ] 4.4 Implement dismiss methods
+  - [x] 4.4 Implement dismiss methods
     - Implement `DismissAsync(string userId, int announcementId)` — calls repository DismissAsync, returns updated unread count
     - Implement `DismissAllAsync(string userId)` — gets all visible undismissed IDs, calls repository DismissAllAsync, returns 0
     - Both methods are idempotent (unique constraint handles duplicates gracefully)
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ] 4.5 Implement admin CRUD methods
+  - [x] 4.5 Implement admin CRUD methods
     - Implement `GetAllForAdminAsync()` — maps to AdminAnnouncementDto with computed Status
     - Implement `GetByIdForAdminAsync(int id)` — returns single item or null
     - Implement `CreateAsync(CreateAnnouncementRequest request)` — validates Title/Summary/PublishedAtUtc, maps to entity, inserts, returns ServiceResult<int>
@@ -86,18 +86,18 @@ This plan implements the What's New Announcements feature following the establis
     - Implement `ToggleActiveAsync(int id, bool isActive)` — updates IsActive flag
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 8.1, 8.2, 8.3_
 
-- [ ] 5. Checkpoint — Database + Service layer build verification
+- [x] 5. Checkpoint — Database + Service layer build verification
   - Ensure all migrations are syntactically correct, EF entities compile, service and repository methods build successfully.
   - Ask the user if questions arise.
 
-- [ ] 6. ViewComponents
-  - [ ] 6.1 Create WhatsNewViewComponent
+- [x] 6. ViewComponents
+  - [x] 6.1 Create WhatsNewViewComponent
     - Create `Portal.Web/ViewComponents/WhatsNewViewComponent.cs`
     - Inject IAnnouncementService, check authentication, get visible announcements, compute unread count, set BadgeText (">9" → "9+"), return View(model)
     - Return `Content(string.Empty)` if not authenticated or on exception (never break page layout)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-  - [ ] 6.2 Create WhatsNew ViewComponent Razor view (Default.cshtml)
+  - [x] 6.2 Create WhatsNew ViewComponent Razor view (Default.cshtml)
     - Create `Views/Shared/Components/WhatsNew/Default.cshtml`
     - Render sparkle icon with numeric badge (hidden when 0)
     - Render slide-out panel (hidden by default) with announcement list: Title, Summary, relative date, read/unread visual distinction
@@ -107,20 +107,20 @@ This plan implements the What's New Announcements feature following the establis
     - AJAX pattern: BlockUI → fetch POST → BlockUI hide → update badge count (no SweetAlert2 for dismiss — quick operation)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 5.4, 5.5, 10.1, 10.2, 10.3, 10.4_
 
-  - [ ] 6.3 Create WhatsNewBannerViewComponent
+  - [x] 6.3 Create WhatsNewBannerViewComponent
     - Create `Portal.Web/ViewComponents/WhatsNewBannerViewComponent.cs`
     - Inject IAnnouncementService, check authentication, get banner announcement, return View(banner) or Content(string.Empty)
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [ ] 6.4 Create WhatsNewBanner ViewComponent Razor view (Default.cshtml)
+  - [x] 6.4 Create WhatsNewBanner ViewComponent Razor view (Default.cshtml)
     - Create `Views/Shared/Components/WhatsNewBanner/Default.cshtml`
     - Render dismissible banner card: Title, Summary, "Learn More" link (opens panel)
     - Dismiss button triggers AJAX POST to /Home/AxPostDismissAnnouncement with the banner announcement Id
     - AJAX pattern: BlockUI → fetch POST → BlockUI hide → hide banner element from DOM
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 7. Admin controller and views
-  - [ ] 7.1 Create AdminWhatsNewController
+- [x] 7. Admin controller and views
+  - [x] 7.1 Create AdminWhatsNewController
     - Create `Portal.Web/Controllers/AdminWhatsNewController.cs`
     - `[Authorize(Roles = "SuperAdmin")]` attribute
     - Page actions: `Index()` (list all announcements), `Create()` (show form), `Edit(int id)` (show form with data)
@@ -129,7 +129,7 @@ This plan implements the What's New Announcements feature following the establis
     - All form POST actions redirect back to Index on success, re-display form with validation errors on failure
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 8.1, 8.2, 8.3, 11.1, 11.2_
 
-  - [ ] 7.2 Create Admin Index view (list)
+  - [x] 7.2 Create Admin Index view (list)
     - Create `Views/AdminWhatsNew/Index.cshtml`
     - Follow AdminCompliance pattern: table listing all announcements with columns: Title, Status badge (Active/Inactive/Expired/Scheduled), TargetPlanTier, PublishedAtUtc, ExpiresAtUtc
     - Toggle IsActive via AJAX (AxPostToggleActive) — BlockUI + reload (quick toggle operation)
@@ -137,7 +137,7 @@ This plan implements the What's New Announcements feature following the establis
     - "Create New Announcement" button linking to Create action
     - _Requirements: 6.1, 8.2_
 
-  - [ ] 7.3 Create Admin Create/Edit view (form)
+  - [x] 7.3 Create Admin Create/Edit view (form)
     - Create `Views/AdminWhatsNew/Create.cshtml` and `Views/AdminWhatsNew/Edit.cshtml` (or shared partial)
     - Follow AdminCompliance table + form toggle pattern
     - Form fields: Title (text, required), Summary (textarea, required), DetailHtml (rich text editor / textarea), ModuleKey (dropdown of known modules), CtaLabel (text), CtaUrl (text), TargetPlanTier (dropdown: All/Starter/Professional/Enterprise), PublishedAtUtc (datetime picker, required), ExpiresAtUtc (datetime picker, optional), IsActive (checkbox/toggle)
@@ -146,8 +146,8 @@ This plan implements the What's New Announcements feature following the establis
     - Form submission is standard POST (not AJAX) since it has rich HTML content
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6_
 
-- [ ] 8. Dismiss AJAX endpoints on HomeController
-  - [ ] 8.1 Add AxPostDismissAnnouncement endpoint to HomeController
+- [x] 8. Dismiss AJAX endpoints on HomeController
+  - [x] 8.1 Add AxPostDismissAnnouncement endpoint to HomeController
     - Add `[HttpPost][Authorize]` method `AxPostDismissAnnouncement(int announcementId)`
     - Extract userId from `User.FindFirstValue(ClaimTypes.NameIdentifier)`
     - Call `IAnnouncementService.DismissAsync(userId, announcementId)`
@@ -156,7 +156,7 @@ This plan implements the What's New Announcements feature following the establis
     - try/catch with `(Exception ex)` pattern
     - _Requirements: 5.1, 5.3, 5.4, 11.4_
 
-  - [ ] 8.2 Add AxPostDismissAllAnnouncements endpoint to HomeController
+  - [x] 8.2 Add AxPostDismissAllAnnouncements endpoint to HomeController
     - Add `[HttpPost][Authorize]` method `AxPostDismissAllAnnouncements()`
     - Extract userId from claims principal
     - Call `IAnnouncementService.DismissAllAsync(userId)`
@@ -164,29 +164,29 @@ This plan implements the What's New Announcements feature following the establis
     - Return error JSON on failure
     - _Requirements: 5.2, 5.4, 11.4_
 
-- [ ] 9. UI integration
-  - [ ] 9.1 Integrate WhatsNewViewComponent into _Layout.cshtml
+- [x] 9. UI integration
+  - [x] 9.1 Integrate WhatsNewViewComponent into _Layout.cshtml
     - Add `@await Component.InvokeAsync("WhatsNew")` in the topbar right section near existing utility icons
     - Badge and panel render server-side (no layout shift)
     - _Requirements: 3.1, 3.5_
 
-  - [ ] 9.2 Integrate WhatsNewBannerViewComponent into Home/Index.cshtml
+  - [x] 9.2 Integrate WhatsNewBannerViewComponent into Home/Index.cshtml
     - Add `@await Component.InvokeAsync("WhatsNewBanner")` above existing Briefing Card / KPI cards on the Dashboard
     - Banner renders server-side, hidden when no undismissed announcements exist
     - _Requirements: 7.1, 7.5_
 
-  - [ ] 9.3 Add admin navigation link for What's New management
+  - [x] 9.3 Add admin navigation link for What's New management
     - Add "What's New" link to `/AdminWhatsNew` in admin sidebar/menu, visible only to SuperAdmin users
     - Position with other admin management links
     - _Requirements: 11.1_
 
-- [ ] 10. DI registration
-  - [ ] 10.1 Register AnnouncementRepository and IAnnouncementService in DI container
+- [x] 10. DI registration
+  - [x] 10.1 Register AnnouncementRepository and IAnnouncementService in DI container
     - Add `services.AddScoped<AnnouncementRepository>()` in Program.cs or service registration extension
     - Add `services.AddScoped<IAnnouncementService, AnnouncementService>()` in Program.cs or service registration extension
     - _Requirements: 2.1, 3.1_
 
-- [ ] 11. Checkpoint — Full feature build verification
+- [x] 11. Checkpoint — Full feature build verification
   - Ensure all components compile, views render without errors, DI container resolves correctly.
   - Verify: admin list loads, create form saves, dismiss endpoint returns JSON, badge renders on layout, banner renders on dashboard.
   - Ensure all tests pass, ask the user if questions arise.
@@ -275,7 +275,7 @@ This plan implements the What's New Announcements feature following the establis
     - Assert: dismissal record uses authenticated userId from claims, never user-supplied input
     - **Validates: Requirements 11.4**
 
-- [ ] 13. Final checkpoint — Ensure all tests pass
+- [x] 13. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

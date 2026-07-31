@@ -196,23 +196,6 @@ else
 @Html.AntiForgeryToken()
 
 <style>
-    .sticky-action-bar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        background: #d6e6f0;
-        border-top: 1.5px solid rgba(13,94,166,.15);
-        box-shadow: 0 -4px 20px rgba(0,0,0,.08);
-        padding: 14px 32px;
-    }
-    .sticky-action-bar__inner {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 12px;
-    }
     .field-hint-icon {
         display: inline-flex;
         cursor: help;
@@ -340,7 +323,7 @@ else
             row.innerHTML =
                 '<div class="field"><label>VAT Rate %</label><input type="number" step="0.01" min="0" max="100" id="vatRate_' + idx + '" placeholder="5.00" oninput="recalculateTotals()" value="' + (vatRate != null ? vatRate : '') + '" /></div>' +
                 '<div class="field"><label>Net Amount</label><input type="number" step="0.01" min="0" id="netAmount_' + idx + '" placeholder="0.00" oninput="recalculateTotals()" value="' + (netAmount != null ? netAmount : '') + '" /></div>' +
-                '<div class="field"><label>VAT Amount</label><input type="number" step="0.01" min="0" id="vatAmount_' + idx + '" placeholder="0.00" oninput="recalculateTotals()" value="' + (vatAmount != null ? vatAmount : '') + '" /></div>' +
+                '<div class="field"><label>VAT Amount</label><input type="number" step="0.01" min="0" id="vatAmount_' + idx + '" placeholder="0.00" oninput="recalculateTotals()" value="' + (vatAmount != null ? vatAmount : '') + '" /><span id="vatWarning_' + idx + '" style="display:none;font-size:11px;color:#C8912E;margin-top:3px;font-weight:600;"></span></div>' +
                 '<div class="field"><label>Total</label><input type="text" id="lineTotal_' + idx + '" readonly style="background:#f8fafc;font-weight:700;" value="0.00" /></div>' +
                 '<div class="field"><label>Discount</label><input type="number" step="0.01" min="0" id="discount_' + idx + '" placeholder="0.00" oninput="recalculateTotals()" value="' + (discountAmount != null ? discountAmount : '') + '" /></div>' +
                 '<div class="field"><label>Description</label><input type="text" id="desc_' + idx + '" placeholder="Optional" maxlength="200" value="' + (description != null ? description : '') + '" /></div>' +
@@ -375,6 +358,7 @@ else
 
             rows.forEach(function (row) {
                 var idx = row.id.replace('vat-line-', '');
+                var rate = parseFloat(document.getElementById('vatRate_' + idx)?.value) || 0;
                 var net = parseFloat(document.getElementById('netAmount_' + idx)?.value) || 0;
                 var vat = parseFloat(document.getElementById('vatAmount_' + idx)?.value) || 0;
                 var disc = parseFloat(document.getElementById('discount_' + idx)?.value) || 0;
@@ -382,6 +366,19 @@ else
 
                 var lineTotalField = document.getElementById('lineTotal_' + idx);
                 if (lineTotalField) lineTotalField.value = lineTotal.toFixed(2);
+
+                // Validate VAT amount against expected (Net × Rate%)
+                var expectedVat = net * (rate / 100);
+                var diff = Math.abs(vat - expectedVat);
+                var warningEl = document.getElementById('vatWarning_' + idx);
+                if (warningEl) {
+                    if (net > 0 && rate > 0 && vat > 0 && diff > 0.02) {
+                        warningEl.textContent = 'Expected: ' + expectedVat.toFixed(2) + ' (diff: ' + diff.toFixed(2) + ')';
+                        warningEl.style.display = 'block';
+                    } else {
+                        warningEl.style.display = 'none';
+                    }
+                }
 
                 totalNet += net;
                 totalVat += vat;
@@ -494,6 +491,41 @@ else
             if (data.lines.length === 0) {
                 Swal.fire({ title: 'Validation', text: 'At least one VAT line is required.', icon: 'warning', confirmButtonColor: '#0D5EA6' });
                 return;
+            }
+
+            // VAT amount validation — check for discrepancies
+            var vatWarnings = [];
+            data.lines.forEach(function (line, i) {
+                if (line.netAmount > 0 && line.vatRate > 0 && line.vatAmount > 0) {
+                    var expected = line.netAmount * (line.vatRate / 100);
+                    var diff = Math.abs(line.vatAmount - expected);
+                    if (diff > 0.02) {
+                        vatWarnings.push('Line ' + (i + 1) + ' (Rate ' + line.vatRate + '%): entered VAT €' + line.vatAmount.toFixed(2) + ', expected €' + expected.toFixed(2) + ' (diff €' + diff.toFixed(2) + ')');
+                    }
+                }
+                // Also check if Total != Net + VAT
+                var expectedTotal = line.netAmount + line.vatAmount;
+                if (Math.abs(expectedTotal - (line.netAmount + line.vatAmount)) > 0.01) {
+                    vatWarnings.push('Line ' + (i + 1) + ': Total mismatch.');
+                }
+            });
+
+            if (vatWarnings.length > 0) {
+                var proceed = await Swal.fire({
+                    title: 'VAT Amount Discrepancy',
+                    html: '<p style="text-align:left;margin-bottom:12px;">The following VAT amounts don\'t match the expected calculation (Net × Rate%):</p>' +
+                          '<ul style="text-align:left;font-size:13px;line-height:1.8;color:#C8912E;">' +
+                          vatWarnings.map(function(w) { return '<li>' + w + '</li>'; }).join('') +
+                          '</ul>' +
+                          '<p style="text-align:left;margin-top:12px;font-size:13px;color:#5a6a7a;">This can be normal for POS rounding differences. Continue only if the amounts are correct.</p>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Save Anyway',
+                    cancelButtonText: 'Go Back & Fix',
+                    confirmButtonColor: '#C8912E',
+                    cancelButtonColor: '#0D5EA6'
+                });
+                if (!proceed.isConfirmed) return;
             }
 
             var isEdit = data.id > 0;

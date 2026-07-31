@@ -103,30 +103,39 @@ public class AnnouncementRepository : GenericStoredProcedureRepository<FeatureAn
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var command = connection.CreateCommand();
-            command.CommandText = query;
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-            var transaction = _context.Database.CurrentTransaction;
-            if (transaction != null)
-                command.Transaction = transaction.GetDbTransaction();
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
 
-            command.Parameters.Add(new SqlParameter("@Title", entity.Title));
-            command.Parameters.Add(new SqlParameter("@Summary", entity.Summary));
-            command.Parameters.Add(new SqlParameter("@DetailHtml", entity.DetailHtml));
-            command.Parameters.Add(new SqlParameter("@ModuleKey", entity.ModuleKey ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@CtaLabel", entity.CtaLabel ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@CtaUrl", entity.CtaUrl ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@TargetPlanTier", entity.TargetPlanTier ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
-            command.Parameters.Add(new SqlParameter("@PublishedAtUtc", entity.PublishedAtUtc));
-            command.Parameters.Add(new SqlParameter("@ExpiresAtUtc", entity.ExpiresAtUtc ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
 
-            var result = await command.ExecuteScalarAsync();
-            return (int)result!;
+                command.Parameters.Add(new SqlParameter("@Title", entity.Title));
+                command.Parameters.Add(new SqlParameter("@Summary", entity.Summary));
+                command.Parameters.Add(new SqlParameter("@DetailHtml", entity.DetailHtml));
+                command.Parameters.Add(new SqlParameter("@ModuleKey", entity.ModuleKey ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CtaLabel", entity.CtaLabel ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CtaUrl", entity.CtaUrl ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@TargetPlanTier", entity.TargetPlanTier ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
+                command.Parameters.Add(new SqlParameter("@PublishedAtUtc", entity.PublishedAtUtc));
+                command.Parameters.Add(new SqlParameter("@ExpiresAtUtc", entity.ExpiresAtUtc ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+
+                var result = await command.ExecuteScalarAsync();
+                return (int)result!;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -188,33 +197,42 @@ public class AnnouncementRepository : GenericStoredProcedureRepository<FeatureAn
                 WHERE [dbo].[UserAnnouncementDismissals].[UserId] = @UserId";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var command = connection.CreateCommand();
-            command.CommandText = query;
-
-            var transaction = _context.Database.CurrentTransaction;
-            if (transaction != null)
-                command.Transaction = transaction.GetDbTransaction();
-
-            command.Parameters.Add(new SqlParameter("@UserId", userId));
-
-            var results = new List<UserAnnouncementDismissal>();
-            using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                results.Add(new UserAnnouncementDismissal
-                {
-                    Id = reader.GetInt32(0),
-                    UserId = reader.GetString(1),
-                    FeatureAnnouncementId = reader.GetInt32(2),
-                    DismissedAtUtc = reader.GetDateTime(3),
-                    CreatedAtUtc = reader.GetDateTime(4)
-                });
-            }
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-            return results;
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@UserId", userId));
+
+                var results = new List<UserAnnouncementDismissal>();
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new UserAnnouncementDismissal
+                    {
+                        Id = reader.GetInt32(0),
+                        UserId = reader.GetString(1),
+                        FeatureAnnouncementId = reader.GetInt32(2),
+                        DismissedAtUtc = reader.GetDateTime(3),
+                        CreatedAtUtc = reader.GetDateTime(4)
+                    });
+                }
+
+                return results;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {

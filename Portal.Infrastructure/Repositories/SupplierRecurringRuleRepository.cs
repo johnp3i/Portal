@@ -5,7 +5,7 @@ using Portal.Infrastructure.Entities;
 namespace Portal.Infrastructure.Repositories;
 
 /// <summary>
-/// Repository for SupplierRecurringRule entity CRUD operations against the [billing].[SupplierRecurringRule] table.
+/// Repository for SupplierRecurringRule entity CRUD operations against the [purchase].[SupplierRecurringRule] table.
 /// </summary>
 public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<SupplierRecurringRule>
 {
@@ -19,7 +19,7 @@ public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [FrequencyMonths],
                        [ExpectedAmount], [AmountTolerancePercent], [GracePeriodDays],
                        [Description], [IsActive], [IsDeleted], [CreatedAtUtc]
-                FROM [billing].[SupplierRecurringRule]
+                FROM [purchase].[SupplierRecurringRule]
                 WHERE SupplierRecurringRule.IsActive = 1
                   AND SupplierRecurringRule.IsDeleted = 0
                   AND SupplierRecurringRule.BusinessId = @BusinessId";
@@ -40,7 +40,7 @@ public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [FrequencyMonths],
                        [ExpectedAmount], [AmountTolerancePercent], [GracePeriodDays],
                        [Description], [IsActive], [IsDeleted], [CreatedAtUtc]
-                FROM [billing].[SupplierRecurringRule]
+                FROM [purchase].[SupplierRecurringRule]
                 WHERE SupplierRecurringRule.IsDeleted = 0
                   AND SupplierRecurringRule.BusinessId = @BusinessId";
 
@@ -60,7 +60,7 @@ public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [FrequencyMonths],
                        [ExpectedAmount], [AmountTolerancePercent], [GracePeriodDays],
                        [Description], [IsActive], [IsDeleted], [CreatedAtUtc]
-                FROM [billing].[SupplierRecurringRule]
+                FROM [purchase].[SupplierRecurringRule]
                 WHERE SupplierRecurringRule.Id = @Id
                   AND SupplierRecurringRule.BusinessId = @BusinessId
                   AND SupplierRecurringRule.IsDeleted = 0";
@@ -80,7 +80,7 @@ public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<
         try
         {
             const string query = @"
-                INSERT INTO [billing].[SupplierRecurringRule]
+                INSERT INTO [purchase].[SupplierRecurringRule]
                     ([BusinessId], [SupplierId], [ExpenseCategoryId], [FrequencyMonths],
                      [ExpectedAmount], [AmountTolerancePercent], [GracePeriodDays],
                      [Description], [IsActive], [IsDeleted])
@@ -113,7 +113,7 @@ public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<
         try
         {
             const string query = @"
-                UPDATE [billing].[SupplierRecurringRule]
+                UPDATE [purchase].[SupplierRecurringRule]
                 SET
                     [SupplierId] = @SupplierId,
                     [ExpenseCategoryId] = @ExpenseCategoryId,
@@ -147,7 +147,7 @@ public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<
         try
         {
             const string query = @"
-                UPDATE [billing].[SupplierRecurringRule]
+                UPDATE [purchase].[SupplierRecurringRule]
                 SET [IsDeleted] = 1
                 WHERE SupplierRecurringRule.Id = @Id AND SupplierRecurringRule.BusinessId = @BusinessId";
 
@@ -166,7 +166,7 @@ public class SupplierRecurringRuleRepository : GenericStoredProcedureRepository<
         try
         {
             const string query = @"
-                UPDATE [billing].[SupplierRecurringRule]
+                UPDATE [purchase].[SupplierRecurringRule]
                 SET [IsActive] = @IsActive
                 WHERE SupplierRecurringRule.Id = @Id AND SupplierRecurringRule.BusinessId = @BusinessId";
 

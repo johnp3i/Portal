@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Phase A — Portal Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11,27,40,0.06);
+            --card-radius: 22px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 36px 32px 80px;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4 { font-family: 'Manrope', sans-serif; }
+
+        /* Page Header */
+        .page-header { margin-bottom: 28px; }
+        .page-header__eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px; font-weight: 700;
+            letter-spacing: 1.2px; text-transform: uppercase;
+            color: var(--primary-blue); margin-bottom: 4px;
+        }
+        .page-header__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px; font-weight: 800;
+            letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px;
+        }
+        .page-header__subtitle { font-size: 14px; color: var(--text-secondary); }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex; gap: 6px; flex-wrap: wrap;
+            background: #fff; border-radius: 16px; padding: 6px;
+            box-shadow: var(--card-shadow); margin-bottom: 32px;
+        }
+        .view-toggle button {
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+            padding: 9px 16px; border: none; border-radius: 12px;
+            cursor: pointer; background: transparent; color: var(--text-secondary);
+            transition: all .2s;
+        }
+        .view-toggle button.active {
+            background: var(--primary-blue); color: #fff;
+            box-shadow: 0 4px 12px rgba(13,94,166,0.25);
+        }
+        .view-toggle button:hover:not(.active) {
+            background: var(--bg-secondary); color: var(--text);
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Glass Card */
+        .glass {
+            background: #fff; border-radius: var(--card-radius);
+            border: 1px solid rgba(13,94,166,0.06);
+            box-shadow: var(--card-shadow);
+        }
+        .card-pad { padding: 28px 32px; }
+
+        /* Data Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table thead th {
+            font-family: 'Manrope', sans-serif;
+            font-size: 11px; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase;
+            color: var(--muted); padding: 12px 14px;
+            text-align: left; border-bottom: 2px solid var(--border);
+        }
+        .data-table tbody tr { transition: background .15s; }
+        .data-table tbody tr:hover { background: var(--bg); }
+        .data-table tbody td {
+            padding: 14px; border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table .text-right { text-align: right; }
+        .data-table .totals-row td { font-weight: 700; border-top: 2px solid var(--border); }
+
+        /* Badges */
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+        }
+        .badge--active { background: rgba(18,152,103,0.1); color: var(--success); }
+        .badge--inactive { background: rgba(138,155,172,0.12); color: var(--muted); }
+        .badge--draft { background: rgba(138,155,172,0.12); color: var(--muted); }
+        .badge--preview { background: rgba(13,94,166,0.1); color: var(--primary-blue); }
+        .badge--finalised { background: rgba(18,152,103,0.1); color: var(--success); }
+        .badge--current { background: rgba(18,152,103,0.1); color: var(--success); }
+        .badge--historical { background: rgba(138,155,172,0.12); color: var(--muted); }
+        .badge--employee { background: rgba(13,94,166,0.1); color: var(--primary-blue); }
+        .badge--employer { background: rgba(18,152,103,0.1); color: var(--success); }
+
+        /* Buttons */
+        .btn {
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            padding: 10px 20px; border-radius: 10px; border: none;
+            cursor: pointer; transition: all .2s; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--primary-blue); }
+        .btn-secondary:hover { background: #dce8f0; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-link {
+            background: none; border: none; color: var(--primary-blue);
+            font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;
+            text-decoration: underline;
+        }
+
+        /* Forms */
+        .field { margin-bottom: 18px; }
+        .field label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 5px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .field input, .field select, .field textarea {
+            width: 100%; padding: 10px 14px; font-size: 14px;
+            border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'Inter', sans-serif; color: var(--text);
+            background: #fff; transition: border-color .2s;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus {
+            outline: none; border-color: var(--primary-blue);
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        /* Summary Cards */
+        .summary-cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .summary-card {
+            background: #fff; border-radius: 16px; padding: 20px 22px;
+            border: 1px solid rgba(13,94,166,0.06);
+            box-shadow: 0 4px 16px rgba(11,27,40,0.04);
+        }
+        .summary-card__label {
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 6px;
+        }
+        .summary-card__value {
+            font-family: 'Manrope', sans-serif; font-size: 24px;
+            font-weight: 800; color: var(--text);
+        }
+        .summary-card--blue { border-left: 4px solid var(--primary-blue); }
+        .summary-card--green { border-left: 4px solid var(--success); }
+        .summary-card--amber { border-left: 4px solid var(--warning); }
+        .summary-card--cyan { border-left: 4px solid var(--cyan); }
+
+        /* Section Headers */
+        .section-title {
+            font-family: 'Manrope', sans-serif; font-size: 16px;
+            font-weight: 700; margin-bottom: 16px; color: var(--text);
+        }
+
+        /* Filter Row */
+        .filter-row {
+            display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;
+        }
+        .filter-row .field { margin-bottom: 0; min-width: 160px; }
+
+        /* Pagination */
+        .pagination {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 18px; flex-wrap: wrap; gap: 12px;
+        }
+        .pagination__info { font-size: 13px; color: var(--text-secondary); }
+
+        /* Actions */
+        .actions-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+
+        /* Inline actions in table */
+        .table-actions { display: flex; gap: 8px; }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 600; color: var(--primary-blue);
+            text-decoration: none; margin-bottom: 16px; cursor: pointer;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        /* Warning box */
+        .warning-box {
+            background: rgba(194,74,74,0.06); border: 1.5px solid var(--danger);
+            border-radius: 12px; padding: 14px 18px; margin-top: 18px;
+            font-size: 13px; color: var(--danger);
+        }
+
+        /* Info text */
+        .info-text {
+            font-size: 12px; color: var(--text-secondary); font-style: italic;
+            margin-top: 10px;
+        }
+
+        /* Rate history panel */
+        .rate-history-panel {
+            background: var(--bg-secondary); border-radius: 14px;
+            padding: 20px 24px; margin-top: 20px;
+        }
+
+        /* Greyed row */
+        .row-inactive td { opacity: 0.5; }
+
+        /* Textarea */
+        .field textarea { min-height: 80px; resize: vertical; }
+
+        /* Net highlight */
+        .net-highlight {
+            font-family: 'Manrope', sans-serif; font-size: 18px;
+            font-weight: 800; color: var(--success); margin-top: 8px;
+        }
+        .cost-highlight {
+            font-family: 'Manrope', sans-serif; font-size: 18px;
+            font-weight: 800; color: var(--warning); margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div style="max-width:1200px;margin:0 auto;">
+
+    <!-- View Toggle -->
+    <div class="view-toggle">
+        <button class="active" onclick="showView('employees')">1. Employee List</button>
+        <button onclick="showView('employee-form')">2. Employee Form</button>
+        <button onclick="showView('deductions')">3. Deduction Types</button>
+        <button onclick="showView('periods')">4. Payslip Periods</button>
+        <button onclick="showView('batch')">5. Batch Generation</button>
+        <button onclick="showView('payslip')">6. Payslip Detail</button>
+        <button onclick="showView('departments')">7. Departments</button>
+    </div>
+
+    <!-- ===== VIEW 1: Employee List ===== -->
+    <div id="view-employees" class="view active">
+        <div class="page-header">
+            <div class="page-header__eyebrow">Payroll</div>
+            <div class="page-header__title">Employees</div>
+            <div class="page-header__subtitle">Manage your team and salary configurations</div>
+        </div>
+
+        <div class="actions-row">
+            <div style="display:flex;gap:12px;align-items:center;">
+                <button class="btn btn-primary">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    Add Employee
+                </button>
+                <button class="btn-link">Manage Departments</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <section class="glass card-pad" style="margin-bottom:22px;">
+            <div class="filter-row">
+                <div class="field">
+                    <label>Department</label>
+                    <select>
+                        <option>All Departments</option>
+                        <option>Kitchen</option>
+                        <option>Service</option>
+                        <option>Admin</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Status</label>
+                    <select>
+                        <option>Active</option>
+                        <option>All</option>
+                    </select>
+                </div>
+                <div class="field" style="min-width:220px;">
+                    <label>Search</label>
+                    <input type="text" placeholder="Search by name or position...">
+                </div>
+            </div>
+        </section>
+
+        <!-- Employee Table -->
+        <section class="glass card-pad">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Position</th>
+                        <th>Department</th>
+                        <th>Salary Type</th>
+                        <th class="text-right">Base Salary</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Giannis Papamichael</strong></td>
+                        <td>Barista</td>
+                        <td>Service</td>
+                        <td>Full-time</td>
+                        <td class="text-right">&euro;1,000.00</td>
+                        <td><span class="badge badge--active">Active</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Toggle</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Maria Constantinou</strong></td>
+                        <td>Head Chef</td>
+                        <td>Kitchen</td>
+                        <td>Full-time</td>
+                        <td class="text-right">&euro;1,500.00</td>
+                        <td><span class="badge badge--active">Active</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Toggle</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Andreas Georgiou</strong></td>
+                        <td>Waiter</td>
+                        <td>Service</td>
+                        <td>Part-time</td>
+                        <td class="text-right">&euro;600.00</td>
+                        <td><span class="badge badge--active">Active</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Toggle</button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Elena Ioannou</strong></td>
+                        <td>Manager</td>
+                        <td>Admin</td>
+                        <td>Full-time</td>
+                        <td class="text-right">&euro;2,000.00</td>
+                        <td><span class="badge badge--active">Active</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Toggle</button>
+                        </td>
+                    </tr>
+                    <tr class="row-inactive">
+                        <td><strong>Nikos Christodoulou</strong></td>
+                        <td>Dishwasher</td>
+                        <td>Kitchen</td>
+                        <td>Full-time</td>
+                        <td class="text-right">&euro;900.00</td>
+                        <td><span class="badge badge--inactive">Inactive</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Toggle</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pagination">
+                <div class="pagination__info">Showing 1–5 of 5</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== VIEW 2: Employee Form ===== -->
+    <div id="view-employee-form" class="view">
+        <div class="page-header">
+            <div class="page-header__eyebrow">Payroll</div>
+            <a class="back-link" onclick="showView('employees')">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                Back to Employees
+            </a>
+            <div class="page-header__title">Add Employee</div>
+        </div>
+
+        <section class="glass card-pad">
+            <!-- Personal Information -->
+            <h3 class="section-title">Personal Information</h3>
+            <div class="form-row">
+                <div class="field">
+                    <label>Full Name *</label>
+                    <input type="text" placeholder="e.g. Giannis Papamichael">
+                </div>
+                <div class="field">
+                    <label>Position</label>
+                    <input type="text" placeholder="e.g. Barista">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Social Insurance Number *</label>
+                    <input type="text" placeholder="e.g. 1234567">
+                </div>
+                <div class="field">
+                    <label>ID Number *</label>
+                    <input type="text" placeholder="e.g. 987654">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Phone</label>
+                    <input type="text" placeholder="+357 99 123456">
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" placeholder="giannis@example.com">
+                </div>
+            </div>
+
+            <!-- Employment Details -->
+            <h3 class="section-title" style="margin-top:32px;">Employment Details</h3>
+            <div class="form-row">
+                <div class="field">
+                    <label>Department</label>
+                    <select>
+                        <option value="">Select department...</option>
+                        <option>Kitchen</option>
+                        <option selected>Service</option>
+                        <option>Admin</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Start Date *</label>
+                    <input type="date" value="2024-03-01">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>End Date</label>
+                    <input type="date" placeholder="Optional">
+                </div>
+                <div class="field">
+                    <label>Salary Type *</label>
+                    <select>
+                        <option>Full-time</option>
+                        <option>Part-time</option>
+                        <option>Hourly</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Base Salary * (&euro;)</label>
+                    <input type="number" value="1000" step="0.01">
+                </div>
+                <div class="field">
+                    <label>Hourly Rate (&euro;)</label>
+                    <input type="number" placeholder="Shown for Part-time/Hourly" disabled>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Bank Account</label>
+                    <input type="text" placeholder="e.g. CY17 0020 0128 0000 0012 0052 7600">
+                </div>
+                <div class="field"></div>
+            </div>
+
+            <!-- Default Earnings -->
+            <h3 class="section-title" style="margin-top:32px;">Default Earnings</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Earning Type</th>
+                        <th>Description</th>
+                        <th class="text-right">Amount</th>
+                        <th class="text-right">OT Multiplier</th>
+                        <th class="text-right">OT Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Basic Salary</td>
+                        <td>&mdash;</td>
+                        <td class="text-right">&euro;1,000.00</td>
+                        <td class="text-right">&mdash;</td>
+                        <td class="text-right">&mdash;</td>
+                    </tr>
+                    <tr>
+                        <td>Paid Holidays</td>
+                        <td>Christmas bonus</td>
+                        <td class="text-right">&euro;200.00</td>
+                        <td class="text-right">&mdash;</td>
+                        <td class="text-right">&mdash;</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top:14px;">
+                <button class="btn btn-secondary btn-sm">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    Add Earning
+                </button>
+            </div>
+            <p class="info-text">These earning lines will be auto-populated when generating monthly payslips for this employee.</p>
+
+            <!-- Form Actions -->
+            <div style="margin-top:32px;display:flex;gap:12px;">
+                <button class="btn btn-primary">Save Employee</button>
+                <button class="btn btn-secondary">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== VIEW 3: Deduction Types ===== -->
+    <div id="view-deductions" class="view">
+        <div class="page-header">
+            <div class="page-header__eyebrow">Payroll</div>
+            <div class="page-header__title">Deduction Configuration</div>
+            <div class="page-header__subtitle">Manage your business deductions and contribution rates</div>
+        </div>
+
+        <div class="actions-row">
+            <button class="btn btn-primary">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                Import Country Template
+            </button>
+            <button class="btn btn-secondary">Add Custom Deduction</button>
+        </div>
+
+        <section class="glass card-pad">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Type</th>
+                        <th class="text-right">Current Rate</th>
+                        <th>Country</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Social Insurance (Employee)</strong></td>
+                        <td><code>SI_Employee</code></td>
+                        <td><span class="badge badge--employee">Employee</span></td>
+                        <td class="text-right">8.80%</td>
+                        <td>CY</td>
+                        <td><button class="btn btn-sm btn-secondary">View History</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>GESY (Employee)</strong></td>
+                        <td><code>GESY_Employee</code></td>
+                        <td><span class="badge badge--employee">Employee</span></td>
+                        <td class="text-right">2.65%</td>
+                        <td>CY</td>
+                        <td><button class="btn btn-sm btn-secondary">View History</button></td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Social Insurance (Employer)</strong></td>
+                        <td><code>SI_Employer</code></td>
+                        <td><span class="badge badge--employer">Employer</span></td>
+                        <td class="text-right">8.80%</td>
+                        <td>CY</td>
+                        <td><button class="btn btn-sm btn-secondary">View History</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Redundancy Fund</strong></td>
+                        <td><code>Redundancy</code></td>
+                        <td><span class="badge badge--employer">Employer</span></td>
+                        <td class="text-right">1.20%</td>
+                        <td>CY</td>
+                        <td><button class="btn btn-sm btn-secondary">View History</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Industrial Training Fund</strong></td>
+                        <td><code>IndustrialTraining</code></td>
+                        <td><span class="badge badge--employer">Employer</span></td>
+                        <td class="text-right">0.50%</td>
+                        <td>CY</td>
+                        <td><button class="btn btn-sm btn-secondary">View History</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Social Cohesion Fund</strong></td>
+                        <td><code>SocialCohesion</code></td>
+                        <td><span class="badge badge--employer">Employer</span></td>
+                        <td class="text-right">2.00%</td>
+                        <td>CY</td>
+                        <td><button class="btn btn-sm btn-secondary">View History</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>GESY (Employer)</strong></td>
+                        <td><code>GESY_Employer</code></td>
+                        <td><span class="badge badge--employer">Employer</span></td>
+                        <td class="text-right">2.90%</td>
+                        <td>CY</td>
+                        <td><button class="btn btn-sm btn-secondary">View History</button></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Rate History Panel -->
+            <div class="rate-history-panel">
+                <h4 class="section-title">Rate History — Social Insurance (Employee)</h4>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Rate</th>
+                            <th>Effective From</th>
+                            <th>Effective To</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>8.80%</strong></td>
+                            <td>1 Jan 2024</td>
+                            <td>&mdash;</td>
+                            <td><span class="badge badge--current">Current</span></td>
+                        </tr>
+                        <tr>
+                            <td>8.30%</td>
+                            <td>1 Jan 2019</td>
+                            <td>31 Dec 2023</td>
+                            <td><span class="badge badge--historical">Historical</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:18px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+                    <div class="field" style="margin-bottom:0;min-width:120px;">
+                        <label>New Rate (%)</label>
+                        <input type="number" placeholder="e.g. 9.00" step="0.01">
+                    </div>
+                    <div class="field" style="margin-bottom:0;min-width:160px;">
+                        <label>Effective From</label>
+                        <input type="date">
+                    </div>
+                    <button class="btn btn-primary btn-sm">Save Rate</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== VIEW 4: Payslip Periods ===== -->
+    <div id="view-periods" class="view">
+        <div class="page-header">
+            <div class="page-header__eyebrow">Payroll</div>
+            <div class="page-header__title">Payslip Periods</div>
+            <div class="page-header__subtitle">Manage monthly payroll cycles</div>
+        </div>
+
+        <div class="actions-row">
+            <button class="btn btn-primary" onclick="document.getElementById('create-period-form').style.display = document.getElementById('create-period-form').style.display === 'none' ? 'flex' : 'none'">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                Create Period
+            </button>
+        </div>
+
+        <!-- Create Period Form (toggle) -->
+        <section class="glass card-pad" style="margin-bottom:22px;">
+            <div id="create-period-form" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+                <div class="field" style="margin-bottom:0;min-width:120px;">
+                    <label>Year</label>
+                    <select>
+                        <option>2027</option>
+                        <option>2026</option>
+                    </select>
+                </div>
+                <div class="field" style="margin-bottom:0;min-width:140px;">
+                    <label>Month</label>
+                    <select>
+                        <option>July</option>
+                        <option>August</option>
+                        <option>September</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-sm">Create</button>
+            </div>
+        </section>
+
+        <section class="glass card-pad">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Status</th>
+                        <th>Employees</th>
+                        <th class="text-right">Total Net</th>
+                        <th class="text-right">Total Employer Cost</th>
+                        <th>Processed</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>July 2027</strong></td>
+                        <td><span class="badge badge--draft">Draft</span></td>
+                        <td>&mdash;</td>
+                        <td class="text-right">&mdash;</td>
+                        <td class="text-right">&mdash;</td>
+                        <td>&mdash;</td>
+                        <td><button class="btn btn-sm btn-primary">Generate Payslips</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>June 2027</strong></td>
+                        <td><span class="badge badge--finalised">Finalised</span></td>
+                        <td>4</td>
+                        <td class="text-right">&euro;4,485.50</td>
+                        <td class="text-right">&euro;4,016.00</td>
+                        <td>30 Jun 2027</td>
+                        <td><button class="btn btn-sm btn-secondary">View</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>May 2027</strong></td>
+                        <td><span class="badge badge--finalised">Finalised</span></td>
+                        <td>4</td>
+                        <td class="text-right">&euro;4,485.50</td>
+                        <td class="text-right">&euro;4,016.00</td>
+                        <td>31 May 2027</td>
+                        <td><button class="btn btn-sm btn-secondary">View</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <!-- ===== VIEW 5: Batch Generation Preview ===== -->
+    <div id="view-batch" class="view">
+        <div class="page-header">
+            <div class="page-header__eyebrow">Payroll</div>
+            <div class="page-header__title">Generate Payslips &mdash; July 2027</div>
+            <div class="page-header__subtitle">Review and confirm payslip generation for all active employees</div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card summary-card--blue">
+                <div class="summary-card__label">Total Employees</div>
+                <div class="summary-card__value">4</div>
+            </div>
+            <div class="summary-card summary-card--cyan">
+                <div class="summary-card__label">Total Payroll Cost</div>
+                <div class="summary-card__value">&euro;5,100.00</div>
+            </div>
+            <div class="summary-card summary-card--amber">
+                <div class="summary-card__label">Total Employer Contributions</div>
+                <div class="summary-card__value">&euro;785.40</div>
+            </div>
+            <div class="summary-card summary-card--green">
+                <div class="summary-card__label">Employees Excluded</div>
+                <div class="summary-card__value">0</div>
+            </div>
+        </div>
+
+        <section class="glass card-pad">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th class="text-right">Total Earnings</th>
+                        <th class="text-right">Deductions</th>
+                        <th class="text-right">Net Salary</th>
+                        <th class="text-right">Employer Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Giannis Papamichael</strong></td>
+                        <td>Service</td>
+                        <td class="text-right">&euro;1,000.00</td>
+                        <td class="text-right">&euro;114.50</td>
+                        <td class="text-right">&euro;885.50</td>
+                        <td class="text-right">&euro;154.00</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Maria Constantinou</strong></td>
+                        <td>Kitchen</td>
+                        <td class="text-right">&euro;1,500.00</td>
+                        <td class="text-right">&euro;171.75</td>
+                        <td class="text-right">&euro;1,328.25</td>
+                        <td class="text-right">&euro;231.00</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Andreas Georgiou</strong></td>
+                        <td>Service</td>
+                        <td class="text-right">&euro;600.00</td>
+                        <td class="text-right">&euro;68.70</td>
+                        <td class="text-right">&euro;531.30</td>
+                        <td class="text-right">&euro;92.40</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Elena Ioannou</strong></td>
+                        <td>Admin</td>
+                        <td class="text-right">&euro;2,000.00</td>
+                        <td class="text-right">&euro;229.00</td>
+                        <td class="text-right">&euro;1,771.00</td>
+                        <td class="text-right">&euro;308.00</td>
+                    </tr>
+                    <tr class="totals-row">
+                        <td><strong>Totals</strong></td>
+                        <td>&mdash;</td>
+                        <td class="text-right">&euro;5,100.00</td>
+                        <td class="text-right">&euro;583.95</td>
+                        <td class="text-right">&euro;4,516.05</td>
+                        <td class="text-right">&euro;785.40</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Validation Warning -->
+            <div class="warning-box">
+                &#9888;&#65039; <strong>Nikos Christodoulou</strong> &mdash; Employee is inactive (excluded from batch)
+            </div>
+
+            <!-- Actions -->
+            <div style="margin-top:24px;display:flex;gap:12px;">
+                <button class="btn btn-success">Confirm &amp; Generate</button>
+                <button class="btn btn-secondary">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== VIEW 6: Individual Payslip Detail ===== -->
+    <div id="view-payslip" class="view">
+        <div class="page-header">
+            <div class="page-header__eyebrow">Payroll</div>
+            <a class="back-link" onclick="showView('periods')">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                Back to Period
+            </a>
+            <div class="page-header__title">Payslip &mdash; Giannis Papamichael</div>
+            <div class="page-header__subtitle">July 2027 &bull; Service Department &nbsp; <span class="badge badge--preview">Preview</span></div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards" style="grid-template-columns:repeat(3,1fr);">
+            <div class="summary-card summary-card--blue">
+                <div class="summary-card__label">Total Earnings</div>
+                <div class="summary-card__value">&euro;1,150.00</div>
+            </div>
+            <div class="summary-card summary-card--green">
+                <div class="summary-card__label">Net Salary</div>
+                <div class="summary-card__value">&euro;1,018.32</div>
+            </div>
+            <div class="summary-card summary-card--amber">
+                <div class="summary-card__label">Employer Cost</div>
+                <div class="summary-card__value">&euro;1,327.10</div>
+            </div>
+        </div>
+
+        <!-- EARNINGS -->
+        <section class="glass card-pad" style="margin-bottom:22px;">
+            <h3 class="section-title">Earnings</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th class="text-right">Hours</th>
+                        <th class="text-right">Multiplier</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Basic Salary</td>
+                        <td>&mdash;</td>
+                        <td class="text-right">&mdash;</td>
+                        <td class="text-right">&mdash;</td>
+                        <td class="text-right">&euro;1,000.00</td>
+                    </tr>
+                    <tr>
+                        <td>Overtime</td>
+                        <td>Evening shift</td>
+                        <td class="text-right">10</td>
+                        <td class="text-right">&times;1.5</td>
+                        <td class="text-right">&euro;150.00</td>
+                    </tr>
+                    <tr class="totals-row">
+                        <td colspan="4"><strong>Total Earnings</strong></td>
+                        <td class="text-right"><strong>&euro;1,150.00</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- EMPLOYEE DEDUCTIONS -->
+        <section class="glass card-pad" style="margin-bottom:22px;">
+            <h3 class="section-title">Employee Deductions</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Deduction</th>
+                        <th class="text-right">Base</th>
+                        <th class="text-right">Rate</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Social Insurance</td>
+                        <td class="text-right">&euro;1,150.00</td>
+                        <td class="text-right">8.80%</td>
+                        <td class="text-right">&euro;101.20</td>
+                    </tr>
+                    <tr>
+                        <td>GESY</td>
+                        <td class="text-right">&euro;1,150.00</td>
+                        <td class="text-right">2.65%</td>
+                        <td class="text-right">&euro;30.48</td>
+                    </tr>
+                    <tr class="totals-row">
+                        <td colspan="3"><strong>Total Deductions</strong></td>
+                        <td class="text-right"><strong>&euro;131.68</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="net-highlight">Net Salary: &euro;1,018.32</div>
+        </section>
+
+        <!-- EMPLOYER CONTRIBUTIONS -->
+        <section class="glass card-pad" style="margin-bottom:22px;">
+            <h3 class="section-title">Employer Contributions</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Contribution</th>
+                        <th class="text-right">Base</th>
+                        <th class="text-right">Rate</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Social Insurance</td>
+                        <td class="text-right">&euro;1,150.00</td>
+                        <td class="text-right">8.80%</td>
+                        <td class="text-right">&euro;101.20</td>
+                    </tr>
+                    <tr>
+                        <td>Redundancy Fund</td>
+                        <td class="text-right">&euro;1,150.00</td>
+                        <td class="text-right">1.20%</td>
+                        <td class="text-right">&euro;13.80</td>
+                    </tr>
+                    <tr>
+                        <td>Industrial Training</td>
+                        <td class="text-right">&euro;1,150.00</td>
+                        <td class="text-right">0.50%</td>
+                        <td class="text-right">&euro;5.75</td>
+                    </tr>
+                    <tr>
+                        <td>Social Cohesion</td>
+                        <td class="text-right">&euro;1,150.00</td>
+                        <td class="text-right">2.00%</td>
+                        <td class="text-right">&euro;23.00</td>
+                    </tr>
+                    <tr>
+                        <td>GESY</td>
+                        <td class="text-right">&euro;1,150.00</td>
+                        <td class="text-right">2.90%</td>
+                        <td class="text-right">&euro;33.35</td>
+                    </tr>
+                    <tr class="totals-row">
+                        <td colspan="3"><strong>Total Employer Contributions</strong></td>
+                        <td class="text-right"><strong>&euro;177.10</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="cost-highlight">Total Cost to Business: &euro;1,327.10</div>
+        </section>
+
+        <!-- MANAGER NOTES -->
+        <section class="glass card-pad">
+            <h3 class="section-title">Manager Notes</h3>
+            <div class="field">
+                <textarea placeholder="Add notes for this payslip (not included in salary calculations)...">&euro;40 taxi reimbursement for late evening shift (not included in salary calculations)</textarea>
+            </div>
+            <button class="btn btn-primary btn-sm">Save Notes</button>
+        </section>
+    </div>
+
+    <!-- ===== VIEW 7: Department Management ===== -->
+    <div id="view-departments" class="view">
+        <div class="page-header">
+            <div class="page-header__eyebrow">Payroll</div>
+            <a class="back-link" onclick="showView('employees')">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                Back to Employees
+            </a>
+            <div class="page-header__title">Departments</div>
+        </div>
+
+        <section class="glass card-pad">
+            <!-- Create Form -->
+            <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+                <div class="field" style="margin-bottom:0;min-width:240px;flex:1;">
+                    <label>Department Name</label>
+                    <input type="text" placeholder="e.g. Bar">
+                </div>
+                <button class="btn btn-primary btn-sm">Create</button>
+            </div>
+
+            <!-- Departments Table -->
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Employees</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Kitchen</strong></td>
+                        <td>2</td>
+                        <td><span class="badge badge--active">Active</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Service</strong></td>
+                        <td>2</td>
+                        <td><span class="badge badge--active">Active</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Admin</strong></td>
+                        <td>1</td>
+                        <td><span class="badge badge--active">Active</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary">Edit</button>
+                            <button class="btn btn-sm btn-secondary">Deactivate</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+</div><!-- /max-width container -->
+
+<script>
+function showView(id) {
+    document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+    document.querySelectorAll('.view-toggle button').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('view-' + id).classList.add('active');
+    // Highlight the correct toggle button
+    var buttons = document.querySelectorAll('.view-toggle button');
+    var map = { 'employees': 0, 'employee-form': 1, 'deductions': 2, 'periods': 3, 'batch': 4, 'payslip': 5, 'departments': 6 };
+    if (map[id] !== undefined) buttons[map[id]].classList.add('active');
+    window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>

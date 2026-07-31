@@ -253,29 +253,53 @@
 
     window.copyComposeBody = function () {
         var bodyEl = document.getElementById('composeBodyPreview');
+        var html = bodyEl.innerHTML;
         var text = bodyEl.innerText || bodyEl.textContent;
         if (!text || text.trim() === '' || text.trim() === 'Select a template to see the rendered preview.') {
             Swal.fire({ icon: 'info', title: 'Nothing to copy', text: 'Body is empty.', confirmButtonColor: '#0D5EA6' });
             return;
         }
-        navigator.clipboard.writeText(text).then(function () {
-            Swal.fire({ icon: 'success', title: 'Copied', text: 'Body copied to clipboard.', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+        // Copy as formatted HTML so it pastes correctly into email clients
+        var blob = new Blob([html], { type: 'text/html' });
+        var textBlob = new Blob([text], { type: 'text/plain' });
+        var item = new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob });
+        navigator.clipboard.write([item]).then(function () {
+            Swal.fire({ icon: 'success', title: 'Copied', text: 'Email body copied with formatting.', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+        }).catch(function() {
+            // Fallback to plain text if HTML clipboard not supported
+            navigator.clipboard.writeText(text).then(function () {
+                Swal.fire({ icon: 'success', title: 'Copied', text: 'Body copied as plain text.', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+            });
         });
     };
 
     window.copyComposeAll = function () {
         var subject = document.getElementById('composeSubject').value || '';
         var bodyEl = document.getElementById('composeBodyPreview');
-        var body = bodyEl.innerText || bodyEl.textContent;
-        if (!subject && (!body || body.trim() === '' || body.trim() === 'Select a template to see the rendered preview.')) {
+        var html = bodyEl.innerHTML;
+        var text = bodyEl.innerText || bodyEl.textContent;
+        if (!subject && (!text || text.trim() === '' || text.trim() === 'Select a template to see the rendered preview.')) {
             Swal.fire({ icon: 'info', title: 'Nothing to copy', text: 'No content to copy.', confirmButtonColor: '#0D5EA6' });
             return;
         }
-        var combined = '';
-        if (subject) combined += 'Subject: ' + subject + '\n\n';
-        combined += body;
-        navigator.clipboard.writeText(combined).then(function () {
-            Swal.fire({ icon: 'success', title: 'Copied', text: 'Subject and body copied to clipboard.', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+        // Build full HTML with subject as a heading
+        var fullHtml = '';
+        if (subject) fullHtml += '<p><strong>Subject:</strong> ' + subject + '</p><br>';
+        fullHtml += html;
+
+        var fullText = '';
+        if (subject) fullText += 'Subject: ' + subject + '\n\n';
+        fullText += text;
+
+        var blob = new Blob([fullHtml], { type: 'text/html' });
+        var textBlob = new Blob([fullText], { type: 'text/plain' });
+        var item = new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob });
+        navigator.clipboard.write([item]).then(function () {
+            Swal.fire({ icon: 'success', title: 'Copied', text: 'Subject and body copied with formatting.', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+        }).catch(function() {
+            navigator.clipboard.writeText(fullText).then(function () {
+                Swal.fire({ icon: 'success', title: 'Copied', text: 'Content copied as plain text.', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+            });
         });
     };
 

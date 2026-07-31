@@ -1964,7 +1964,7 @@ public class PortalDbContext : DbContext
     {
         modelBuilder.Entity<SupplierRecurringRule>(entity =>
         {
-            entity.ToTable("SupplierRecurringRule", "billing");
+            entity.ToTable("SupplierRecurringRule", "purchase");
 
             entity.HasKey(e => e.Id);
 

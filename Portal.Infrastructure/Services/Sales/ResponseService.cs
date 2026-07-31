@@ -87,7 +87,7 @@ public class ResponseService : IResponseService
                 TemplateName = template.Name,
                 LeadResponseTypeId = template.LeadResponseTypeId,
                 ResponseTypeName = responseType?.Name ?? "Unknown",
-                Subject = template.Subject,
+                Subject = template.Subject != null ? RenderTemplate(template.Subject, placeholders) : null,
                 RenderedBody = renderedBody,
                 ResponseTimeInHours = template.ResponseTimeInHours
             };
@@ -364,7 +364,7 @@ public class ResponseService : IResponseService
                 TemplateName = template.Name,
                 LeadResponseTypeId = template.LeadResponseTypeId,
                 ResponseTypeName = responseType?.Name ?? "Unknown",
-                Subject = template.Subject,
+                Subject = template.Subject != null ? RenderTemplate(template.Subject, placeholders) : null,
                 RenderedBody = renderedBody,
                 ResponseTimeInHours = template.ResponseTimeInHours
             };

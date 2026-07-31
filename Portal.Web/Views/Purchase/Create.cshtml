@@ -215,30 +215,25 @@
 <!-- Sticky Action Bar -->
 <div class="sticky-action-bar">
     <div class="sticky-action-bar__inner">
-        <a href="/Purchase" class="btn btn-secondary">Cancel</a>
+        <a href="/Purchase" class="btn btn-secondary purchase-back-link">Cancel</a>
         <button type="submit" form="purchaseForm" class="btn btn-primary">Create Purchase</button>
     </div>
 </div>
 
+<script>
+    // Restore filter params on cancel link
+    (function() {
+        var saved = sessionStorage.getItem('purchase_filter_state');
+        if (saved) {
+            document.querySelectorAll('.purchase-back-link').forEach(function(link) {
+                link.href = '/Purchase' + saved;
+            });
+        }
+    })();
+</script>
+
 @section Scripts {
     <style>
-        .sticky-action-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: #d6e6f0;
-            border-top: 1.5px solid rgba(13,94,166,.15);
-            box-shadow: 0 -4px 20px rgba(0,0,0,.08);
-            padding: 14px 32px;
-        }
-        .sticky-action-bar__inner {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 12px;
-        }
         .limit-warning-banner {
             background: #FEF6E8;
             border: 1px solid #C8912E;

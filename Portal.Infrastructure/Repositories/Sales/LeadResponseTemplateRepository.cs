@@ -28,27 +28,36 @@ public class LeadResponseTemplateRepository : GenericStoredProcedureRepository<L
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var command = connection.CreateCommand();
-            command.CommandText = query;
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-            var transaction = _context.Database.CurrentTransaction;
-            if (transaction != null)
-                command.Transaction = transaction.GetDbTransaction();
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
 
-            command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
-            command.Parameters.Add(new SqlParameter("@ProductId", entity.ProductId ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@LeadResponseTypeId", entity.LeadResponseTypeId));
-            command.Parameters.Add(new SqlParameter("@Name", entity.Name));
-            command.Parameters.Add(new SqlParameter("@Subject", entity.Subject ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@BodyTemplate", entity.BodyTemplate));
-            command.Parameters.Add(new SqlParameter("@ResponseTimeInHours", entity.ResponseTimeInHours));
-            command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
 
-            var result = await command.ExecuteScalarAsync();
-            return (int)result!;
+                command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
+                command.Parameters.Add(new SqlParameter("@ProductId", entity.ProductId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@LeadResponseTypeId", entity.LeadResponseTypeId));
+                command.Parameters.Add(new SqlParameter("@Name", entity.Name));
+                command.Parameters.Add(new SqlParameter("@Subject", entity.Subject ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@BodyTemplate", entity.BodyTemplate));
+                command.Parameters.Add(new SqlParameter("@ResponseTimeInHours", entity.ResponseTimeInHours));
+                command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
+
+                var result = await command.ExecuteScalarAsync();
+                return (int)result!;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -207,51 +216,60 @@ public class LeadResponseTemplateRepository : GenericStoredProcedureRepository<L
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
 
-            int totalCount;
-            using (var countCommand = connection.CreateCommand())
+            try
             {
-                countCommand.CommandText = countQuery;
-                var transaction = _context.Database.CurrentTransaction;
-                if (transaction != null)
-                    countCommand.Transaction = transaction.GetDbTransaction();
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-                countCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                int totalCount;
+                using (var countCommand = connection.CreateCommand())
+                {
+                    countCommand.CommandText = countQuery;
+                    var transaction = _context.Database.CurrentTransaction;
+                    if (transaction != null)
+                        countCommand.Transaction = transaction.GetDbTransaction();
 
-                var countResult = await countCommand.ExecuteScalarAsync();
-                totalCount = countResult != null && countResult != DBNull.Value ? (int)countResult : 0;
-            }
+                    countCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
 
-            if (totalCount == 0)
-            {
+                    var countResult = await countCommand.ExecuteScalarAsync();
+                    totalCount = countResult != null && countResult != DBNull.Value ? (int)countResult : 0;
+                }
+
+                if (totalCount == 0)
+                {
+                    return new PagedResult<LeadResponseTemplate>
+                    {
+                        Items = new List<LeadResponseTemplate>(),
+                        CurrentPage = 1,
+                        PageSize = pageSize,
+                        TotalCount = 0
+                    };
+                }
+
+                int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                if (page > totalPages) page = totalPages;
+                if (page < 1) page = 1;
+                int offset = (page - 1) * pageSize;
+
+                var results = await ExecuteStoredProcedure(dataQuery,
+                    new SqlParameter("@BusinessId", businessId),
+                    new SqlParameter("@Offset", offset),
+                    new SqlParameter("@PageSize", pageSize));
+
                 return new PagedResult<LeadResponseTemplate>
                 {
-                    Items = new List<LeadResponseTemplate>(),
-                    CurrentPage = 1,
+                    Items = results,
+                    CurrentPage = page,
                     PageSize = pageSize,
-                    TotalCount = 0
+                    TotalCount = totalCount
                 };
             }
-
-            int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-            if (page > totalPages) page = totalPages;
-            if (page < 1) page = 1;
-            int offset = (page - 1) * pageSize;
-
-            var results = await ExecuteStoredProcedure(dataQuery,
-                new SqlParameter("@BusinessId", businessId),
-                new SqlParameter("@Offset", offset),
-                new SqlParameter("@PageSize", pageSize));
-
-            return new PagedResult<LeadResponseTemplate>
+            finally
             {
-                Items = results,
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalCount = totalCount
-            };
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {

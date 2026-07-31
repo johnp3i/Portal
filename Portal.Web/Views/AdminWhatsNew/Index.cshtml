@@ -69,7 +69,6 @@
 
 @Html.AntiForgeryToken()
 
-@section Scripts {
 <script>
     function toggleActive(id, isActive) {
         BlockUI.show(isActive ? 'Activating...' : 'Deactivating...');
@@ -89,4 +88,3 @@
         });
     }
 </script>
-}

@@ -161,8 +161,7 @@
     }
 </section>
 
-@section Scripts {
-    <script>
+<script>
         function getAntiForgeryToken() {
             return document.querySelector('input[name="__RequestVerificationToken"]').value;
         }
@@ -335,5 +334,4 @@
                 Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
             }
         }
-    </script>
-}
+</script>
