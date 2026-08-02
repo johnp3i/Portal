@@ -1,0 +1,217 @@
+@model Portal.Infrastructure.Models.Payroll.PayslipPeriodDetailDto
+@{
+    ViewData["Title"] = $"{Model.Month}/{Model.Year} Payslips";
+
+    var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var periodLabel = $"{monthNames[Model.Month]} {Model.Year}";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" asp-action="Periods" asp-controller="Payroll">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Periods
+        </a>
+        <h1 class="topbar-heading">@periodLabel</h1>
+        <p class="topbar-subtitle">
+            @if (Model.Status == "Draft")
+            {
+                <span class="pill pill-grey">Draft</span>
+            }
+            else if (Model.Status == "Preview")
+            {
+                <span class="pill pill-blue">Preview</span>
+            }
+            else if (Model.Status == "Finalised")
+            {
+                <span class="pill pill-green">Finalised</span>
+            }
+        </p>
+    </div>
+    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+        @if (Model.Status == "Draft" && Model.Payslips.Count == 0)
+        {
+            <a class="btn btn-primary" asp-action="BatchGenerate" asp-controller="Payroll" asp-route-periodId="@Model.Id">Generate Payslips</a>
+        }
+        @if (Model.Status == "Draft" && Model.Payslips.Count > 0)
+        {
+            <button class="btn btn-success" onclick="confirmBatch()">Confirm Batch</button>
+        }
+        @if (Model.Status == "Preview")
+        {
+            <button class="btn btn-success" onclick="finalisePeriod()">Finalise Period</button>
+        }
+        @if (Model.Status == "Finalised")
+        {
+            <button class="btn btn-primary" onclick="sendAllEmails()">Send All Emails</button>
+        }
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Payslips Table -->
+<section class="glass card-pad">
+    @if (Model.Payslips != null && Model.Payslips.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th data-mobile="hide">Department</th>
+                    <th class="text-right">Total Earnings</th>
+                    <th class="text-right" data-mobile="hide">Deductions</th>
+                    <th class="text-right">Net Salary</th>
+                    <th class="text-right" data-mobile="hide">Employer Cost</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payslip in Model.Payslips)
+                {
+                    <tr>
+                        <td><strong>@payslip.EmployeeName</strong></td>
+                        <td data-mobile="hide">@(payslip.DepartmentName ?? "—")</td>
+                        <td class="text-right">&euro;@payslip.TotalEarnings.ToString("N2")</td>
+                        <td class="text-right" data-mobile="hide">&euro;@payslip.TotalEmployeeDeductions.ToString("N2")</td>
+                        <td class="text-right">&euro;@payslip.NetSalary.ToString("N2")</td>
+                        <td class="text-right" data-mobile="hide">&euro;@payslip.TotalEmployerContributions.ToString("N2")</td>
+                        <td>
+                            <a class="btn btn-sm btn-secondary" asp-action="PayslipDetail" asp-controller="Payroll" asp-route-id="@payslip.Id">View</a>
+                        </td>
+                    </tr>
+                }
+                <tr class="totals-row">
+                    <td><strong>Totals</strong></td>
+                    <td data-mobile="hide">—</td>
+                    <td class="text-right"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEarnings).ToString("N2")</strong></td>
+                    <td class="text-right" data-mobile="hide"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEmployeeDeductions).ToString("N2")</strong></td>
+                    <td class="text-right"><strong>&euro;@Model.Payslips.Sum(p => p.NetSalary).ToString("N2")</strong></td>
+                    <td class="text-right" data-mobile="hide"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEmployerContributions).ToString("N2")</strong></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No payslips generated for this period yet.</p>
+            @if (Model.Status == "Draft")
+            {
+                <a class="btn btn-primary" asp-action="BatchGenerate" asp-controller="Payroll" asp-route-periodId="@Model.Id" style="margin-top:16px;">Generate Payslips</a>
+            }
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function confirmBatch() {
+        Swal.fire({
+            title: 'Confirm Batch?',
+            text: 'This will move the period to Preview status. You can still edit individual payslips afterward.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, confirm',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        }).then(async function (result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Confirming batch...');
+                try {
+                    var response = await fetch('/Payroll/AxPostConfirmBatch?periodId=@Model.Id', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    }
+
+    async function finalisePeriod() {
+        Swal.fire({
+            title: 'Finalise Period?',
+            text: 'Once finalised, payslips cannot be modified. This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, finalise',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#C24A4A'
+        }).then(async function (result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Finalising period...');
+                try {
+                    var response = await fetch('/Payroll/AxPostFinalisePeriod?periodId=@Model.Id', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    }
+
+    async function sendAllEmails() {
+        Swal.fire({
+            title: 'Send All Payslip Emails?',
+            text: 'This will send a PDF payslip to each employee with a valid email address.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, send all',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        }).then(async function (result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Sending emails...');
+                try {
+                    var response = await fetch('/Payroll/AxPostSendAllPayslipEmails?periodId=@Model.Id&includeSignature=true', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    }
+</script>

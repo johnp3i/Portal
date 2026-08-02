@@ -19,67 +19,68 @@
 
 <!-- Action Bar -->
 <section class="glass card-pad" style="margin-bottom:22px;padding:14px 20px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <!-- Status Actions -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            @if (Model.Quotation.QuotationStatusTypeId == 1 || Model.Quotation.QuotationStatusTypeId == 2)
-            {
-                <a class="btn btn-secondary" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id">Edit</a>
-            }
-            @if (Model.AvailableTransitions.Contains(2))
-            {
-                <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;" id="sendQuotationForm">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="newStatusId" value="2" />
-                    <button type="button" class="btn btn-primary" onclick="confirmSendQuotation()">Send Quotation</button>
-                </form>
-            }
-            @if (Model.AvailableTransitions.Contains(3))
-            {
-                <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="newStatusId" value="3" />
-                    <button type="submit" class="btn btn-green">Mark Accepted</button>
-                </form>
-            }
-            @if (Model.AvailableTransitions.Contains(5))
-            {
-                <form id="archiveForm" method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="newStatusId" value="5" />
-                    <button type="button" class="btn btn-secondary" onclick="confirmArchive()">Archive</button>
-                </form>
-            }
-            @if (Model.AvailableTransitions.Contains(1))
-            {
-                <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="newStatusId" value="1" />
-                    <button type="submit" class="btn btn-primary">Unarchive</button>
-                </form>
-            }
-            @if (Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
-            {
-                <form method="post" asp-action="ConvertToInvoice" asp-controller="Quotation" style="display:inline;" id="convertToInvoiceForm">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="quotationId" value="@Model.Quotation.Id" />
-                    <button type="button" class="btn btn-green" onclick="confirmConvertToInvoice()">Convert to Invoice</button>
-                </form>
-            }
-        </div>
-        <!-- Divider -->
-        <div style="width:1px;height:28px;background:rgba(13,94,166,.1);flex-shrink:0;"></div>
-        <!-- Document Actions -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview Proposal</a>
-            <button type="button" class="btn btn-secondary" onclick="downloadQuotationPdf(@Model.Quotation.Id)">Download PDF</button>
-            <button type="button" class="btn btn-secondary" onclick="duplicateQuotation(@Model.Quotation.Id)">Duplicate</button>
-            @if (Model.Quotation.QuotationStatusTypeId == 1)
-            {
-                <button type="button" class="btn btn-danger" onclick="deleteQuotation(@Model.Quotation.Id, '@Html.Raw(Model.Quotation.Reference)')">Delete</button>
-            }
-        </div>
+    <!-- Primary actions (always visible) -->
+    <div class="quotation-actions-primary" style="display:flex;justify-content:flex-start;align-items:center;flex-wrap:wrap;gap:10px;">
+        @if (Model.Quotation.QuotationStatusTypeId == 1 || Model.Quotation.QuotationStatusTypeId == 2)
+        {
+            <a class="btn btn-secondary" asp-action="Edit" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id">Edit</a>
+        }
+        @if (Model.AvailableTransitions.Contains(2))
+        {
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;" id="sendQuotationForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="2" />
+                <button type="button" class="btn btn-primary" onclick="confirmSendQuotation()">Send Quotation</button>
+            </form>
+        }
+        @if (Model.AvailableTransitions.Contains(3))
+        {
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="3" />
+                <button type="submit" class="btn btn-green">Mark Accepted</button>
+            </form>
+        }
+        @if (Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
+        {
+            <form method="post" asp-action="ConvertToInvoice" asp-controller="Quotation" style="display:inline;" id="convertToInvoiceForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="quotationId" value="@Model.Quotation.Id" />
+                <button type="button" class="btn btn-green" onclick="confirmConvertToInvoice()">Convert to Invoice</button>
+            </form>
+        }
+        @if (Model.AvailableTransitions.Contains(1))
+        {
+            <form method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="1" />
+                <button type="submit" class="btn btn-primary">Unarchive</button>
+            </form>
+        }
     </div>
+    <!-- Secondary actions (collapsed on mobile) -->
+    <div class="quotation-actions-secondary" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid rgba(13,94,166,.08);">
+        @if (Model.AvailableTransitions.Contains(5))
+        {
+            <form id="archiveForm" method="post" asp-action="TransitionStatus" asp-controller="Quotation" asp-route-id="@Model.Quotation.Id" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newStatusId" value="5" />
+                <button type="button" class="btn btn-secondary" onclick="confirmArchive()">Archive</button>
+            </form>
+        }
+        <a href="@Url.Action("Preview", "Quotation", new { id = Model.Quotation.Id })" target="_blank" class="btn btn-secondary">Preview Proposal</a>
+        <button type="button" class="btn btn-secondary" onclick="downloadQuotationPdf(@Model.Quotation.Id)">Download PDF</button>
+        <button type="button" class="btn btn-secondary" onclick="duplicateQuotation(@Model.Quotation.Id)">Duplicate</button>
+        @if (Model.Quotation.QuotationStatusTypeId == 1)
+        {
+            <button type="button" class="btn btn-danger" onclick="deleteQuotation(@Model.Quotation.Id, '@Html.Raw(Model.Quotation.Reference)')">Delete</button>
+        }
+    </div>
+    <!-- Mobile toggle (hidden on desktop) -->
+    <button type="button" class="quotation-more-toggle" onclick="toggleMoreActions(this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        More actions
+    </button>
 </section>
 
 <!-- Status Help Banner -->
@@ -422,6 +423,17 @@
             });
             if (result.isConfirmed) {
                 document.getElementById('archiveForm').submit();
+            }
+        }
+
+        function toggleMoreActions(btn) {
+            var secondary = document.querySelector('.quotation-actions-secondary');
+            if (secondary.classList.contains('expanded')) {
+                secondary.classList.remove('expanded');
+                btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg> More actions';
+            } else {
+                secondary.classList.add('expanded');
+                btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg> Less actions';
             }
         }
 

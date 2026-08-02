@@ -125,7 +125,7 @@
             @if (User.Identity?.IsAuthenticated == true)
             {
                 <!-- Global Search Bar -->
-                <div style="position:absolute;top:25px;right:200px;z-index:100;display:flex;align-items:center;gap:12px;">
+                <div class="topbar-search-area" style="position:absolute;top:25px;right:200px;z-index:100;display:flex;align-items:center;gap:12px;">
                     @await Component.InvokeAsync("WhatsNew")
                     <div id="globalSearchContainer" style="width:350px;">
                     <div style="display:flex;align-items:center;gap:8px;">
@@ -188,6 +188,69 @@
                 </div>
             }
             @RenderBody()
+
+        <!-- Mobile floating search + What's New buttons (visible only on phone via CSS) -->
+        <div class="mobile-topbar-actions" style="display:none;">
+            <button type="button" class="mobile-whats-new-btn" onclick="toggleWhatsNewPanel()" aria-label="What's New">
+                <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2.09 6.26L20.5 9l-5 4.74L17 20l-5-3.5L7 20l1.5-6.26L3.5 9l6.41-.74L12 2z"/></svg>
+                <span class="mobile-wn-badge" id="mobileWnBadge" style="display:none;"></span>
+            </button>
+            <button type="button" class="mobile-search-btn" onclick="openMobileSearch()" aria-label="Search">
+                <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
+        </div>
+        <div id="mobileSearchOverlay" class="mobile-search-overlay" style="display:none;" onclick="closeMobileSearch()"></div>
+        <div id="mobileSearchExpanded" class="mobile-search-expanded" style="display:none !important;">
+            <svg width="16" height="16" fill="none" stroke="#8899A6" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" id="mobileSearchInput" placeholder="Search..." autocomplete="off" />
+            <button type="button" class="mobile-search-close" onclick="closeMobileSearch()">&times;</button>
+        </div>
+        <script>
+            // Sync What's New badge count to mobile button
+            (function() {
+                var desktopBadge = document.getElementById('whats-new-badge');
+                var mobileBadge = document.getElementById('mobileWnBadge');
+                if (desktopBadge && mobileBadge && desktopBadge.textContent.trim()) {
+                    mobileBadge.textContent = desktopBadge.textContent.trim();
+                    mobileBadge.style.display = 'flex';
+                }
+            })();
+
+            function openMobileSearch() {
+                document.getElementById('mobileSearchOverlay').style.display = 'block';
+                var expanded = document.getElementById('mobileSearchExpanded');
+                expanded.style.display = 'flex !important';
+                expanded.style.cssText = expanded.style.cssText.replace('display:none !important', 'display:flex !important');
+                expanded.style.setProperty('display', 'flex', 'important');
+                setTimeout(function() { document.getElementById('mobileSearchInput').focus(); }, 100);
+            }
+
+            function closeMobileSearch() {
+                document.getElementById('mobileSearchOverlay').style.display = 'none';
+                var expanded = document.getElementById('mobileSearchExpanded');
+                expanded.style.setProperty('display', 'none', 'important');
+                document.getElementById('mobileSearchInput').value = '';
+            }
+
+            // Mirror mobile search input to global search
+            document.getElementById('mobileSearchInput')?.addEventListener('input', function() {
+                var globalInput = document.getElementById('globalSearchInput');
+                if (globalInput) {
+                    globalInput.value = this.value;
+                    globalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+            document.getElementById('mobileSearchInput')?.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeMobileSearch();
+                if (e.key === 'Enter') {
+                    var globalInput = document.getElementById('globalSearchInput');
+                    if (globalInput) {
+                        globalInput.value = this.value;
+                        globalInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+                    }
+                }
+            });
+        </script>
         </main>
         <nav class="bottom-tab-bar" aria-label="Quick navigation">
             <a href="/" class="bottom-tab-bar__item @(currentController == "Home" ? "active" : "")">

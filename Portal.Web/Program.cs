@@ -450,6 +450,15 @@ builder.Services.AddScoped<IStripeKeyResolutionService, StripeKeyResolutionServi
 // --- Global Search ---
 builder.Services.AddScoped<IGlobalSearchService, GlobalSearchService>();
 
+// --- Payroll ---
+builder.Services.AddScoped<PayrollRepository>(sp =>
+    new PayrollRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IPayrollService, PayrollService>();
+builder.Services.AddSingleton<IPayslipCalculationEngine, PayslipCalculationEngine>();
+builder.Services.AddScoped<IPayslipRenderer, PayslipRenderer>();
+builder.Services.AddScoped<IPayslipPdfService, PayslipPdfService>();
+builder.Services.AddScoped<IPayslipEmailService, PayslipEmailService>();
+
 // --- Compliance Filings ---
 builder.Services.AddScoped<ComplianceRepository>(sp =>
     new ComplianceRepository(sp.GetRequiredService<PortalDbContext>()));

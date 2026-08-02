@@ -1,0 +1,309 @@
+@model Portal.Infrastructure.Models.Payroll.EmployeeDetailDto?
+@using Portal.Infrastructure.Models.Payroll
+@{
+    ViewData["Title"] = Model != null ? "Edit Employee" : "Add Employee";
+
+    var departments = (List<DepartmentDto>)ViewBag.Departments;
+    var earningTypes = (List<EarningTypeDto>)ViewBag.EarningTypes;
+    var defaultEarnings = ViewBag.DefaultEarnings as List<EmployeeDefaultEarningsDto>;
+    var isEdit = Model != null;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" asp-action="Employees" asp-controller="Payroll">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Employees
+        </a>
+        <h1 class="topbar-heading">@ViewData["Title"]</h1>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<section class="glass card-pad">
+    <!-- Personal Information -->
+    <h3 class="section-title">Personal Information</h3>
+    <div class="form-row">
+        <div class="field">
+            <label>Full Name *</label>
+            <input type="text" id="empName" value="@(Model?.Name)" placeholder="e.g. Giannis Papamichael">
+        </div>
+        <div class="field">
+            <label>Position</label>
+            <input type="text" id="empPosition" value="@(Model?.Position)" placeholder="e.g. Barista">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="field">
+            <label>Social Insurance Number *</label>
+            <input type="text" id="empSIN" value="@(Model?.SocialInsuranceNumber)" placeholder="e.g. 1234567">
+        </div>
+        <div class="field">
+            <label>ID Number *</label>
+            <input type="text" id="empIdNumber" value="@(Model?.IdNumber)" placeholder="e.g. 987654">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="field">
+            <label>Phone</label>
+            <input type="text" id="empPhone" value="@(Model?.Phone)" placeholder="+357 99 123456">
+        </div>
+        <div class="field">
+            <label>Email</label>
+            <input type="email" id="empEmail" value="@(Model?.Email)" placeholder="employee@example.com">
+        </div>
+    </div>
+
+    <!-- Employment Details -->
+    <h3 class="section-title" style="margin-top:32px;">Employment Details</h3>
+    <div class="form-row">
+        <div class="field">
+            <label>Department</label>
+            <select id="empDepartmentId">
+                <option value="">Select department...</option>
+                @if (departments != null)
+                {
+                    @foreach (var dept in departments.Where(d => d.IsActive))
+                    {
+                        if (Model?.DepartmentId == dept.Id)
+                        {
+                            <option value="@dept.Id" selected>@dept.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@dept.Id">@dept.Name</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label>Start Date *</label>
+            <input type="date" id="empStartDate" value="@(Model?.StartDate.ToString("yyyy-MM-dd"))">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="field">
+            <label>End Date</label>
+            <input type="date" id="empEndDate" value="@(Model?.EndDate?.ToString("yyyy-MM-dd"))">
+        </div>
+        <div class="field">
+            <label>Salary Type *</label>
+            <select id="empSalaryTypeId" onchange="onSalaryTypeChange()">
+                @if (Model?.SalaryTypeId == 1 || Model == null)
+                {
+                    <option value="1" selected>Full-time</option>
+                    <option value="2">Part-time</option>
+                    <option value="3">Hourly</option>
+                }
+                else if (Model?.SalaryTypeId == 2)
+                {
+                    <option value="1">Full-time</option>
+                    <option value="2" selected>Part-time</option>
+                    <option value="3">Hourly</option>
+                }
+                else
+                {
+                    <option value="1">Full-time</option>
+                    <option value="2">Part-time</option>
+                    <option value="3" selected>Hourly</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="field">
+            <label>Base Salary * (&euro;)</label>
+            <input type="number" id="empBaseSalary" value="@(Model?.BaseSalary.ToString("0.00"))" step="0.01" min="0">
+        </div>
+        <div class="field">
+            <label>Hourly Rate (&euro;)</label>
+            <input type="number" id="empHourlyRate" value="@(Model?.HourlyRate?.ToString("0.00"))" step="0.01" min="0" placeholder="Required for overtime">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="field">
+            <label>Bank Account</label>
+            <input type="text" id="empBankAccount" value="@(Model?.BankAccount)" placeholder="e.g. CY17 0020 0128 0000 0012 0052 7600">
+        </div>
+        <div class="field"></div>
+    </div>
+
+    <!-- Default Earnings Section -->
+    <h3 class="section-title" style="margin-top:32px;">Default Earnings</h3>
+    <table class="data-table" id="defaultEarningsTable">
+        <thead>
+            <tr>
+                <th>Earning Type</th>
+                <th>Description</th>
+                <th class="text-right">Amount (&euro;)</th>
+                <th class="text-right">OT Multiplier</th>
+                <th class="text-right">OT Hours</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="defaultEarningsBody">
+            @if (defaultEarnings != null && defaultEarnings.Count > 0)
+            {
+                @foreach (var earning in defaultEarnings)
+                {
+                    <tr>
+                        <td>
+                            <select class="de-earningType" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;">
+                                @foreach (var et in earningTypes.Where(e => e.IsActive))
+                                {
+                                    if (et.Id == earning.EarningTypeId)
+                                    {
+                                        <option value="@et.Id" selected>@et.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@et.Id">@et.Name</option>
+                                    }
+                                }
+                            </select>
+                        </td>
+                        <td><input type="text" class="de-description" value="@earning.Description" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;"></td>
+                        <td><input type="number" class="de-amount" value="@(earning.Amount?.ToString("0.00"))" step="0.01" min="0" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>
+                        <td><input type="number" class="de-multiplier" value="@(earning.OvertimeMultiplier?.ToString("0.00"))" step="0.01" min="1" max="4" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;" placeholder="1.5"></td>
+                        <td><input type="number" class="de-hours" value="@(earning.OvertimeHours?.ToString("0.00"))" step="0.01" min="0" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>
+                        <td><button class="btn btn-sm btn-secondary" onclick="this.closest('tr').remove()">Remove</button></td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    <div style="margin-top:14px;">
+        <button class="btn btn-secondary btn-sm" onclick="addDefaultEarningRow()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Add Earning
+        </button>
+    </div>
+    <p style="font-size:12px;color:var(--text-secondary);font-style:italic;margin-top:10px;">These earning lines will be auto-populated when generating monthly payslips for this employee.</p>
+
+    <!-- Form Actions -->
+    <div style="margin-top:32px;display:flex;gap:12px;">
+        <button class="btn btn-primary" onclick="saveEmployee()">Save Employee</button>
+        <a class="btn btn-secondary" asp-action="Employees" asp-controller="Payroll">Cancel</a>
+    </div>
+</section>
+
+<script>
+    var earningTypesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(earningTypes?.Where(e => e.IsActive).Select(e => new { e.Id, e.Name })));
+    var isEditMode = @(isEdit ? "true" : "false");
+    var employeeId = @(Model?.Id ?? 0);
+
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    function onSalaryTypeChange() {
+        // Hourly rate field is always accessible - needed for overtime regardless of salary type
+    }
+
+    function addDefaultEarningRow() {
+        var tbody = document.getElementById('defaultEarningsBody');
+        var row = document.createElement('tr');
+        var options = earningTypesData.map(function(et) {
+            return '<option value="' + et.id + '">' + et.name + '</option>';
+        }).join('');
+
+        row.innerHTML = '<td><select class="de-earningType" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;">' + options + '</select></td>' +
+            '<td><input type="text" class="de-description" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;"></td>' +
+            '<td><input type="number" class="de-amount" step="0.01" min="0" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>' +
+            '<td><input type="number" class="de-multiplier" step="0.01" min="1" max="4" placeholder="1.5" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>' +
+            '<td><input type="number" class="de-hours" step="0.01" min="0" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>' +
+            '<td><button class="btn btn-sm btn-secondary" onclick="this.closest(\'tr\').remove()">Remove</button></td>';
+        tbody.appendChild(row);
+    }
+
+    function collectDefaultEarnings() {
+        var rows = document.querySelectorAll('#defaultEarningsBody tr');
+        var lines = [];
+        rows.forEach(function(row) {
+            var earningTypeId = parseInt(row.querySelector('.de-earningType').value);
+            var description = row.querySelector('.de-description').value || null;
+            var amount = row.querySelector('.de-amount').value ? parseFloat(row.querySelector('.de-amount').value) : null;
+            var multiplier = row.querySelector('.de-multiplier').value ? parseFloat(row.querySelector('.de-multiplier').value) : null;
+            var hours = row.querySelector('.de-hours').value ? parseFloat(row.querySelector('.de-hours').value) : null;
+            lines.push({ earningTypeId: earningTypeId, description: description, amount: amount, overtimeMultiplier: multiplier, overtimeHours: hours });
+        });
+        return lines;
+    }
+
+    async function saveEmployee() {
+        var name = document.getElementById('empName').value.trim();
+        var position = document.getElementById('empPosition').value.trim() || null;
+        var sin = document.getElementById('empSIN').value.trim();
+        var idNumber = document.getElementById('empIdNumber').value.trim();
+        var phone = document.getElementById('empPhone').value.trim() || null;
+        var email = document.getElementById('empEmail').value.trim() || null;
+        var startDate = document.getElementById('empStartDate').value;
+        var endDate = document.getElementById('empEndDate').value || null;
+        var salaryTypeId = parseInt(document.getElementById('empSalaryTypeId').value);
+        var baseSalary = parseFloat(document.getElementById('empBaseSalary').value) || 0;
+        var hourlyRate = document.getElementById('empHourlyRate').value ? parseFloat(document.getElementById('empHourlyRate').value) : null;
+        var bankAccount = document.getElementById('empBankAccount').value.trim() || null;
+        var departmentId = document.getElementById('empDepartmentId').value ? parseInt(document.getElementById('empDepartmentId').value) : null;
+
+        if (!name || !sin || !idNumber || !startDate || !baseSalary) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please fill in all required fields.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var payload = {
+            name: name, position: position, socialInsuranceNumber: sin, idNumber: idNumber,
+            phone: phone, email: email, startDate: startDate, endDate: endDate,
+            salaryTypeId: salaryTypeId, baseSalary: baseSalary, hourlyRate: hourlyRate,
+            bankAccount: bankAccount, departmentId: departmentId
+        };
+
+        if (isEditMode) {
+            payload.id = employeeId;
+        }
+
+        var url = isEditMode ? '/Payroll/AxPostUpdateEmployee' : '/Payroll/AxPostCreateEmployee';
+
+        BlockUI.show('Saving employee...');
+        try {
+            var response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify(payload)
+            });
+            var data = await response.json();
+
+            if (data.success) {
+                // Save default earnings if in edit mode
+                if (isEditMode) {
+                    var earnings = collectDefaultEarnings();
+                    await fetch('/Payroll/AxPostSaveDefaultEarnings?employeeId=' + employeeId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        },
+                        body: JSON.stringify(earnings)
+                    });
+                }
+
+                BlockUI.hide();
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                    window.location.href = '/Payroll/Employees';
+                });
+            } else {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>

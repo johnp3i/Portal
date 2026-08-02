@@ -47,6 +47,7 @@
 
     var hasSalesPipelineAccess = Model.TryGetValue("sales", out var salesAccess) && salesAccess != "none";
     var hasComplianceAccess = Model.TryGetValue("compliance", out var compAccess) && compAccess != "none";
+    var hasPayrollAccess = Model.TryGetValue("payroll", out var payrollAccess) && payrollAccess != "none";
 }
 
 @* ═══ PIPELINE ═══ *@
@@ -413,6 +414,34 @@
     </div>
 }
 
+@* ═══ PAYROLL ═══ *@
+@if (hasPayrollAccess)
+{
+    var payrollIcon = "<svg width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"7\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M16 7V5a4 4 0 00-8 0v2\"/><circle cx=\"12\" cy=\"14\" r=\"2\"/></svg>";
+    <div class="nav-section">
+        <div class="nav-title">Payroll</div>
+        @{
+            var isPayrollActive = currentController.Equals("Payroll", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-item @(isPayrollActive && (currentAction == "Employees" || currentAction == "EmployeeForm") ? "active" : "")" asp-controller="Payroll" asp-action="Employees">
+            <span class="nav-icon">@Html.Raw(payrollIcon)</span>
+            <span class="nav-text">Employees</span>
+        </a>
+        <a class="nav-sub-item @(isPayrollActive && currentAction == "Departments" ? "active" : "")" asp-controller="Payroll" asp-action="Departments">
+            <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+            <span class="nav-text">Departments</span>
+        </a>
+        <a class="nav-sub-item @(isPayrollActive && currentAction == "DeductionConfig" ? "active" : "")" asp-controller="Payroll" asp-action="DeductionConfig">
+            <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+            <span class="nav-text">Deductions</span>
+        </a>
+        <a class="nav-item @(isPayrollActive && (currentAction == "Periods" || currentAction == "PeriodDetail" || currentAction == "PayslipDetail" || currentAction == "BatchGenerate") ? "active" : "")" asp-controller="Payroll" asp-action="Periods">
+            <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+            <span class="nav-text">Payslip Periods</span>
+        </a>
+    </div>
+}
+
 @* ═══ ADMINISTRATION ═══ *@
 @{
     var isDemoSession = ViewContext.HttpContext.User.HasClaim("IsDemoSession", "true");
@@ -463,6 +492,10 @@
             <a class="nav-item @(currentController.Equals("AdminCompliance", StringComparison.OrdinalIgnoreCase) ? "active" : "")" asp-controller="AdminCompliance" asp-action="Index">
                 <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></span>
                 <span class="nav-text">Compliance Templates</span>
+            </a>
+            <a class="nav-item @(currentController.Equals("AdminPayroll", StringComparison.OrdinalIgnoreCase) ? "active" : "")" asp-controller="AdminPayroll" asp-action="EarningTypes">
+                <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg></span>
+                <span class="nav-text">Payroll Config</span>
             </a>
         }
     </div>

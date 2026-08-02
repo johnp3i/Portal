@@ -1,0 +1,127 @@
+@model List<Portal.Infrastructure.Models.Payroll.DeductionRateHistoryDto>
+@{
+    ViewData["Title"] = "Deduction Rate History";
+    var deductionTypeId = (int)ViewBag.DeductionTypeId;
+    var deductionTypeName = (string?)ViewBag.DeductionTypeName ?? "Deduction Type";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Admin</div>
+        <h1 class="topbar-heading">Rate History — @deductionTypeName</h1>
+        <p class="topbar-subtitle">View and manage historical rates for this deduction type template.</p>
+    </div>
+    <div>
+        <a asp-action="DeductionTypes" asp-controller="AdminPayroll" class="btn btn-secondary">Back to Templates</a>
+    </div>
+</div>
+
+<!-- Add Rate Form -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 style="margin:0 0 16px 0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#1a2a3a;">Add New Rate</h3>
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:120px;">
+            <label for="rhRate">Rate (%)</label>
+            <input type="number" id="rhRate" step="0.01" min="0" placeholder="8.80" />
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label for="rhEffectiveFrom">Effective From</label>
+            <input type="date" id="rhEffectiveFrom" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="addRate()">Save</button>
+        </div>
+    </div>
+</section>
+
+<!-- Rate History Table -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rate (%)</th>
+                        <th>Effective From</th>
+                        <th>Effective To</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderByDescending(r => r.EffectiveFromUtc))
+                    {
+                        <tr>
+                            <td><strong>@item.Rate.ToString("N2")%</strong></td>
+                            <td>@item.EffectiveFromUtc.ToString("dd MMM yyyy")</td>
+                            <td>@(item.EffectiveToUtc.HasValue ? item.EffectiveToUtc.Value.ToString("dd MMM yyyy") : "—")</td>
+                            <td>
+                                @if (item.IsCurrent)
+                                {
+                                    <span class="pill pill-green">Current</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-grey">Historical</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No rate history records found for this deduction type.</p>
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    async function addRate() {
+        var rate = parseFloat(document.getElementById('rhRate').value) || 0;
+        var effectiveFrom = document.getElementById('rhEffectiveFrom').value;
+
+        if (rate <= 0 || !effectiveFrom) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please enter a rate and effective from date.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving rate...');
+        try {
+            var response = await fetch('/AdminPayroll/AxPostAddRateHistory', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    deductionTypeId: @deductionTypeId,
+                    rate: rate,
+                    effectiveFromUtc: effectiveFrom
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>

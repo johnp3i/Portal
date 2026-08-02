@@ -1,0 +1,185 @@
+@model List<Portal.Infrastructure.Models.Payroll.DepartmentDto>
+@{
+    ViewData["Title"] = "Departments";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" asp-action="Employees" asp-controller="Payroll">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Employees
+        </a>
+        <h1 class="topbar-heading">Departments</h1>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<section class="glass card-pad">
+    <!-- Create Form -->
+    <div id="createForm" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+        <div class="field" style="margin-bottom:0;min-width:240px;flex:1;">
+            <label>Department Name</label>
+            <input type="text" id="txtDepartmentName" placeholder="e.g. Bar">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="createDepartment()">Create</button>
+    </div>
+
+    <!-- Edit Form (hidden by default) -->
+    <div id="editForm" style="display:none;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+        <input type="hidden" id="editDepartmentId">
+        <div class="field" style="margin-bottom:0;min-width:240px;flex:1;">
+            <label>Edit Department Name</label>
+            <input type="text" id="txtEditDepartmentName" placeholder="Department name">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="updateDepartment()">Update</button>
+        <button class="btn btn-secondary btn-sm" onclick="cancelEdit()">Cancel</button>
+    </div>
+
+    <!-- Departments Table -->
+    @if (Model != null && Model.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Employees</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var dept in Model)
+                {
+                    <tr class="@(!dept.IsActive ? "row-inactive" : "")">
+                        <td><strong>@dept.Name</strong></td>
+                        <td>@dept.EmployeeCount</td>
+                        <td>
+                            @if (dept.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-grey">Inactive</span>
+                            }
+                        </td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="startEdit(@dept.Id, '@dept.Name.Replace("'", "\\'")' )">Edit</button>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleDepartment(@dept.Id)">@(dept.IsActive ? "Deactivate" : "Activate")</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No departments found. Create your first department above.</p>
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function createDepartment() {
+        var name = document.getElementById('txtDepartmentName').value.trim();
+        if (!name) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please enter a department name.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Creating department...');
+        try {
+            var response = await fetch('/Payroll/AxPostCreateDepartment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ name: name })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function startEdit(id, name) {
+        document.getElementById('editDepartmentId').value = id;
+        document.getElementById('txtEditDepartmentName').value = name;
+        document.getElementById('editForm').style.display = 'flex';
+        document.getElementById('createForm').style.display = 'none';
+    }
+
+    function cancelEdit() {
+        document.getElementById('editForm').style.display = 'none';
+        document.getElementById('createForm').style.display = 'flex';
+    }
+
+    async function updateDepartment() {
+        var id = parseInt(document.getElementById('editDepartmentId').value);
+        var name = document.getElementById('txtEditDepartmentName').value.trim();
+        if (!name) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please enter a department name.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Updating department...');
+        try {
+            var response = await fetch('/Payroll/AxPostUpdateDepartment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ id: id, name: name })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function toggleDepartment(id) {
+        BlockUI.show('Updating status...');
+        try {
+            var response = await fetch('/Payroll/AxPostToggleDepartment?id=' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            window.location.reload();
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>

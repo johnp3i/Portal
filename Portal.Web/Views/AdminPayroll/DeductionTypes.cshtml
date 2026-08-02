@@ -1,0 +1,213 @@
+@model List<Portal.Infrastructure.Models.Payroll.DeductionTypeDto>
+@{
+    ViewData["Title"] = "Deduction Type Templates";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Admin</div>
+        <h1 class="topbar-heading">Deduction Type Templates</h1>
+        <p class="topbar-subtitle">Manage system-wide deduction and contribution templates that businesses can import.</p>
+    </div>
+</div>
+
+<!-- Create Form -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 style="margin:0 0 16px 0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#1a2a3a;">Create Template</h3>
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:200px;">
+            <label for="dtName">Name</label>
+            <input type="text" id="dtName" placeholder="e.g. Social Insurance" />
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="dtCode">Code</label>
+            <input type="text" id="dtCode" placeholder="e.g. SI_DEDUCTION" />
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label for="dtCategory">Category</label>
+            <select id="dtCategory">
+                <option value="">Select</option>
+                <option value="1">Deduction (from employee)</option>
+                <option value="2">Contribution (by employer)</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:100px;">
+            <label for="dtCountry">Country</label>
+            <input type="text" id="dtCountry" value="CY" placeholder="e.g. CY" />
+        </div>
+        <div class="field" style="min-width:120px;">
+            <label for="dtRate">Initial Rate (%)</label>
+            <input type="number" id="dtRate" step="0.01" min="0" placeholder="8.80" />
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="dtEffectiveFrom">Effective From</label>
+            <input type="date" id="dtEffectiveFrom" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="createDeductionType()">Create</button>
+        </div>
+    </div>
+</section>
+
+<!-- Deduction Types Table -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Category</th>
+                        <th>Country</th>
+                        <th>Current Rate</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr class="@(!item.IsActive ? "row-inactive" : "")">
+                            <td><strong>@item.Name</strong></td>
+                            <td>@item.Code</td>
+                            <td>
+                                @if (item.DeductionCategoryTypeId == 1)
+                                {
+                                    <span class="pill pill-blue">Deduction</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-purple">Contribution</span>
+                                }
+                            </td>
+                            <td>@item.Country</td>
+                            <td>@(item.CurrentRate.HasValue ? $"{item.CurrentRate.Value:N2}%" : "—")</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="pill pill-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-grey">Inactive</span>
+                                }
+                            </td>
+                            <td style="display:flex;gap:8px;">
+                                <a class="btn btn-secondary" style="font-size:12px;padding:6px 14px;" asp-action="DeductionRateHistory" asp-route-deductionTypeId="@item.Id">Rates</a>
+                                @if (item.IsActive)
+                                {
+                                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;color:#C24A4A;" onclick="toggleDeductionType(@item.Id)">Deactivate</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;color:#129867;" onclick="toggleDeductionType(@item.Id)">Activate</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No deduction type templates found. Create a template to get started.</p>
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    async function createDeductionType() {
+        var name = document.getElementById('dtName').value.trim();
+        var code = document.getElementById('dtCode').value.trim();
+        var category = parseInt(document.getElementById('dtCategory').value) || 0;
+        var country = document.getElementById('dtCountry').value.trim();
+        var rate = parseFloat(document.getElementById('dtRate').value) || 0;
+        var effectiveFrom = document.getElementById('dtEffectiveFrom').value;
+
+        if (!name || !code || !category || !country || rate <= 0 || !effectiveFrom) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please fill in all fields.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Creating template...');
+        try {
+            var response = await fetch('/AdminPayroll/AxPostCreateDeductionType', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    name: name,
+                    code: code,
+                    deductionCategoryTypeId: category,
+                    country: country,
+                    initialRate: rate,
+                    effectiveFromUtc: effectiveFrom
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function toggleDeductionType(id) {
+        BlockUI.show('Updating...');
+        fetch('/AdminPayroll/AxPostToggleDeductionType', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(r => r.json())
+        .then(data => {
+            BlockUI.hide();
+            window.location.reload();
+        })
+        .catch(() => {
+            BlockUI.hide();
+            window.location.reload();
+        });
+    }
+</script>
+
+<style>
+    .row-inactive {
+        opacity: 0.5;
+    }
+    .row-inactive td strong {
+        text-decoration: line-through;
+        color: #7a8a9a;
+    }
+    .pill-blue {
+        background: #E3F0FF;
+        color: #0D5EA6;
+    }
+    .pill-purple {
+        background: #F3E8FF;
+        color: #7C3AED;
+    }
+</style>

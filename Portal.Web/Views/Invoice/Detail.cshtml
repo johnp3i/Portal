@@ -22,29 +22,30 @@
 
 <!-- Action Bar -->
 <section class="glass card-pad" style="margin-bottom:22px;padding:14px 20px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <!-- Status Actions -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            @if (invoice.InvoiceStatusTypeId == 1)
-            {
-                <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
-            }
-            <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
-            <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
-        </div>
-        <!-- Divider -->
-        <div style="width:1px;height:28px;background:rgba(13,94,166,.1);flex-shrink:0;"></div>
-        <!-- Document Actions -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
-            <button type="button" class="btn btn-secondary" onclick="downloadInvoicePdf(@invoice.Id)">Download PDF</button>
-            <button type="button" class="btn btn-secondary" onclick="printInvoice(@invoice.Id)">Print</button>
-            @if (invoice.InvoiceStatusTypeId == 1)
-            {
-                <button type="button" class="btn btn-danger" onclick="deleteInvoice(@invoice.Id)">Delete</button>
-            }
-        </div>
+    <!-- Primary actions (always visible) -->
+    <div class="detail-actions-primary" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        @if (invoice.InvoiceStatusTypeId == 1)
+        {
+            <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
+        }
+        <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
+        <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
     </div>
+    <!-- Secondary actions (collapsed on mobile) -->
+    <div class="detail-actions-secondary" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid rgba(13,94,166,.08);">
+        <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
+        <button type="button" class="btn btn-secondary" onclick="downloadInvoicePdf(@invoice.Id)">Download PDF</button>
+        <button type="button" class="btn btn-secondary" onclick="printInvoice(@invoice.Id)">Print</button>
+        @if (invoice.InvoiceStatusTypeId == 1)
+        {
+            <button type="button" class="btn btn-danger" onclick="deleteInvoice(@invoice.Id)">Delete</button>
+        }
+    </div>
+    <!-- Mobile toggle (hidden on desktop) -->
+    <button type="button" class="detail-more-toggle" onclick="toggleDetailActions(this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        More actions
+    </button>
 </section>
 
 <!-- Invoice Overview -->
@@ -741,6 +742,17 @@
                     icon: 'error',
                     confirmButtonColor: '#0D5EA6'
                 });
+            }
+        }
+
+        function toggleDetailActions(btn) {
+            var secondary = document.querySelector('.detail-actions-secondary');
+            if (secondary.classList.contains('expanded')) {
+                secondary.classList.remove('expanded');
+                btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg> More actions';
+            } else {
+                secondary.classList.add('expanded');
+                btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg> Less actions';
             }
         }
 

@@ -1,0 +1,152 @@
+@model Portal.Infrastructure.Models.Payroll.BatchGenerationPreview
+@{
+    ViewData["Title"] = $"Generate Payslips — {Model.Month}/{Model.Year}";
+
+    var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var periodLabel = $"{monthNames[Model.Month]} {Model.Year}";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" asp-action="Periods" asp-controller="Payroll">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Periods
+        </a>
+        <h1 class="topbar-heading">Generate Payslips &mdash; @periodLabel</h1>
+        <p class="topbar-subtitle">Review and confirm payslip generation for all active employees</p>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:24px;">
+    <div class="glass card-pad" style="border-left:4px solid #0D5EA6;">
+        <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:6px;">Total Employees</p>
+        <p style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:var(--text);">@Model.TotalEmployeesProcessed</p>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #57B8E8;">
+        <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:6px;">Total Payroll Cost</p>
+        <p style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:var(--text);">&euro;@Model.TotalPayrollCost.ToString("N2")</p>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #C8912E;">
+        <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:6px;">Total Employer Contributions</p>
+        <p style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:var(--text);">&euro;@Model.TotalEmployerContributions.ToString("N2")</p>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #129867;">
+        <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:6px;">Employees Excluded</p>
+        <p style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:var(--text);">@Model.TotalEmployeesExcluded</p>
+    </div>
+</div>
+
+<!-- Payslip Previews Table -->
+<section class="glass card-pad">
+    @if (Model.Payslips != null && Model.Payslips.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th data-mobile="hide">Department</th>
+                    <th class="text-right">Total Earnings</th>
+                    <th class="text-right" data-mobile="hide">Deductions</th>
+                    <th class="text-right">Net Salary</th>
+                    <th class="text-right" data-mobile="hide">Employer Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payslip in Model.Payslips)
+                {
+                    <tr>
+                        <td><strong>@payslip.EmployeeName</strong></td>
+                        <td data-mobile="hide">@(payslip.DepartmentName ?? "—")</td>
+                        <td class="text-right">&euro;@payslip.TotalEarnings.ToString("N2")</td>
+                        <td class="text-right" data-mobile="hide">&euro;@payslip.TotalEmployeeDeductions.ToString("N2")</td>
+                        <td class="text-right">&euro;@payslip.NetSalary.ToString("N2")</td>
+                        <td class="text-right" data-mobile="hide">&euro;@payslip.TotalEmployerContributions.ToString("N2")</td>
+                    </tr>
+                }
+                <tr class="totals-row">
+                    <td><strong>Totals</strong></td>
+                    <td data-mobile="hide">—</td>
+                    <td class="text-right"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEarnings).ToString("N2")</strong></td>
+                    <td class="text-right" data-mobile="hide"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEmployeeDeductions).ToString("N2")</strong></td>
+                    <td class="text-right"><strong>&euro;@Model.Payslips.Sum(p => p.NetSalary).ToString("N2")</strong></td>
+                    <td class="text-right" data-mobile="hide"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEmployerContributions).ToString("N2")</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No valid payslips could be generated.</p>
+        </div>
+    }
+
+    <!-- Validation Errors -->
+    @if (Model.Errors != null && Model.Errors.Count > 0)
+    {
+        <div style="background:rgba(194,74,74,0.06);border:1.5px solid #C24A4A;border-radius:12px;padding:14px 18px;margin-top:18px;font-size:13px;color:#C24A4A;">
+            <strong>Excluded Employees:</strong>
+            <ul style="margin:8px 0 0 16px;padding:0;">
+                @foreach (var error in Model.Errors)
+                {
+                    <li>&#9888;&#65039; <strong>@error.EmployeeName</strong> &mdash; @error.Error</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <!-- Actions -->
+    @if (Model.Payslips != null && Model.Payslips.Count > 0)
+    {
+        <div style="margin-top:24px;display:flex;gap:12px;">
+            <button class="btn btn-success" onclick="confirmGenerate()">Confirm &amp; Generate</button>
+            <a class="btn btn-secondary" asp-action="Periods" asp-controller="Payroll">Cancel</a>
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function confirmGenerate() {
+        Swal.fire({
+            title: 'Confirm Generation?',
+            text: 'This will generate payslips for @Model.TotalEmployeesProcessed employees and move the period to Preview status.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, generate',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        }).then(async function (result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Generating payslips...');
+                try {
+                    var response = await fetch('/Payroll/AxPostConfirmBatch?periodId=@Model.PeriodId', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                            window.location.href = '/Payroll/PeriodDetail?id=@Model.PeriodId';
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    }
+</script>

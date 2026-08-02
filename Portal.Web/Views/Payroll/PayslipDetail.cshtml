@@ -1,0 +1,253 @@
+@model Portal.Infrastructure.Models.Payroll.PayslipDetailDto
+@{
+    ViewData["Title"] = $"Payslip — {Model.EmployeeName}";
+
+    var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var periodLabel = $"{monthNames[Model.Month]} {Model.Year}";
+    var isFinalised = Model.PeriodStatus == "Finalised";
+    var isEditable = Model.PeriodStatus != "Finalised";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" href="javascript:history.back()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Period
+        </a>
+        <h1 class="topbar-heading">Payslip &mdash; @Model.EmployeeName</h1>
+        <p class="topbar-subtitle">
+            @periodLabel &bull; @(Model.DepartmentName ?? "No Department")
+            &nbsp;
+            @if (Model.PeriodStatus == "Draft")
+            {
+                <span class="pill pill-grey">Draft</span>
+            }
+            else if (Model.PeriodStatus == "Preview")
+            {
+                <span class="pill pill-blue">Preview</span>
+            }
+            else if (Model.PeriodStatus == "Finalised")
+            {
+                <span class="pill pill-green">Finalised</span>
+            }
+        </p>
+    </div>
+    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+        @if (isEditable)
+        {
+            <button class="btn btn-secondary" onclick="toggleEarningLinesEdit()">Edit Earning Lines</button>
+        }
+        @if (isFinalised)
+        {
+            <a class="btn btn-secondary" href="/Payroll/AxGetDownloadPayslipPdf?payslipId=@Model.Id" target="_blank">Download PDF</a>
+            <button class="btn btn-primary" onclick="sendEmail()">Send Email</button>
+        }
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+    <div class="glass card-pad" style="border-left:4px solid #0D5EA6;">
+        <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:6px;">Total Earnings</p>
+        <p style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:var(--text);">&euro;@Model.TotalEarnings.ToString("N2")</p>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #129867;">
+        <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:6px;">Net Salary</p>
+        <p style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:var(--text);">&euro;@Model.NetSalary.ToString("N2")</p>
+    </div>
+    <div class="glass card-pad" style="border-left:4px solid #C8912E;">
+        <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:6px;">Employer Cost</p>
+        <p style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:var(--text);">&euro;@Model.TotalCostToBusiness.ToString("N2")</p>
+    </div>
+</div>
+
+<!-- EARNINGS -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 class="section-title">Earnings</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th class="text-right">Hours</th>
+                <th class="text-right">Multiplier</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Model.EarningLines)
+            {
+                <tr>
+                    <td>@line.EarningTypeName</td>
+                    <td>@(line.Description ?? "—")</td>
+                    <td class="text-right">@(line.OvertimeHours.HasValue ? line.OvertimeHours.Value.ToString("0.##") : "—")</td>
+                    <td class="text-right">@(line.OvertimeMultiplier.HasValue ? $"×{line.OvertimeMultiplier.Value:0.##}" : "—")</td>
+                    <td class="text-right">&euro;@line.Amount.ToString("N2")</td>
+                </tr>
+            }
+            <tr class="totals-row">
+                <td colspan="4"><strong>Total Earnings</strong></td>
+                <td class="text-right"><strong>&euro;@Model.TotalEarnings.ToString("N2")</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- EMPLOYEE DEDUCTIONS -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 class="section-title">Employee Deductions</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Deduction</th>
+                <th class="text-right">Base</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Model.EmployeeDeductions)
+            {
+                <tr>
+                    <td>@line.DeductionTypeName</td>
+                    <td class="text-right">&euro;@line.BaseAmount.ToString("N2")</td>
+                    <td class="text-right">@line.Rate.ToString("0.00")%</td>
+                    <td class="text-right">&euro;@line.CalculatedAmount.ToString("N2")</td>
+                </tr>
+            }
+            <tr class="totals-row">
+                <td colspan="3"><strong>Total Deductions</strong></td>
+                <td class="text-right"><strong>&euro;@Model.TotalEmployeeDeductions.ToString("N2")</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#129867;margin-top:8px;">Net Salary: &euro;@Model.NetSalary.ToString("N2")</p>
+</section>
+
+<!-- EMPLOYER CONTRIBUTIONS -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 class="section-title">Employer Contributions</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Contribution</th>
+                <th class="text-right">Base</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Model.EmployerContributions)
+            {
+                <tr>
+                    <td>@line.DeductionTypeName</td>
+                    <td class="text-right">&euro;@line.BaseAmount.ToString("N2")</td>
+                    <td class="text-right">@line.Rate.ToString("0.00")%</td>
+                    <td class="text-right">&euro;@line.CalculatedAmount.ToString("N2")</td>
+                </tr>
+            }
+            <tr class="totals-row">
+                <td colspan="3"><strong>Total Employer Contributions</strong></td>
+                <td class="text-right"><strong>&euro;@Model.TotalEmployerContributions.ToString("N2")</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#C8912E;margin-top:8px;">Total Cost to Business: &euro;@Model.TotalCostToBusiness.ToString("N2")</p>
+</section>
+
+<!-- MANAGER NOTES -->
+<section class="glass card-pad">
+    <h3 class="section-title">Manager Notes</h3>
+    <div class="field">
+        <textarea id="managerNotes" maxlength="2000" placeholder="Add notes for this payslip (not included in salary calculations)..." @(isFinalised ? "disabled" : "")>@Model.ManagerNotes</textarea>
+    </div>
+    @if (isEditable)
+    {
+        <button class="btn btn-primary btn-sm" onclick="saveNotes()">Save Notes</button>
+    }
+</section>
+
+<!-- Earning Lines Edit Section (hidden by default) -->
+<div id="earningLinesEditSection" style="display:none;margin-top:22px;">
+    @await Html.PartialAsync("_EarningLinesEdit")
+</div>
+
+<script>
+    var payslipId = @Model.Id;
+
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function saveNotes() {
+        var notes = document.getElementById('managerNotes').value;
+
+        BlockUI.show('Saving notes...');
+        try {
+            var response = await fetch('/Payroll/AxPostSaveManagerNotes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ payslipId: payslipId, notes: notes })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function sendEmail() {
+        Swal.fire({
+            title: 'Send Payslip Email?',
+            text: 'This will email the PDF payslip to @(Model.EmployeeEmail ?? "the employee").',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, send',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        }).then(async function (result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Sending email...');
+                try {
+                    var response = await fetch('/Payroll/AxPostSendPayslipEmail?payslipId=' + payslipId + '&includeSignature=true', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
+    }
+
+    function toggleEarningLinesEdit() {
+        var section = document.getElementById('earningLinesEditSection');
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        if (section.style.display === 'block') {
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+</script>

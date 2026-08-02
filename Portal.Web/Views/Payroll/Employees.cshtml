@@ -1,0 +1,176 @@
+@model Portal.Infrastructure.Models.PagedResult<Portal.Infrastructure.Models.Payroll.EmployeeDto>
+@using Portal.Infrastructure.Models.Payroll
+@{
+    ViewData["Title"] = "Employees";
+
+    var departments = (List<DepartmentDto>)ViewBag.Departments;
+    var currentSearch = (string?)ViewBag.CurrentSearch;
+    var currentDepartmentId = (int?)ViewBag.CurrentDepartmentId;
+    var currentIsActive = (bool?)ViewBag.CurrentIsActive;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <h1 class="topbar-heading">Employees</h1>
+        <p class="topbar-subtitle">Manage your team and salary configurations</p>
+    </div>
+    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="btn btn-primary" asp-action="EmployeeForm" asp-controller="Payroll">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Add Employee
+        </a>
+        <a class="btn-link" asp-action="Departments" asp-controller="Payroll" style="padding:10px 0;">Manage Departments</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" asp-action="Employees" asp-controller="Payroll">
+        <div class="filter-row" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="margin-bottom:0;min-width:180px;">
+                <label>Department</label>
+                <select name="departmentId">
+                    <option value="">All Departments</option>
+                    @if (departments != null)
+                    {
+                        @foreach (var dept in departments.Where(d => d.IsActive))
+                        {
+                            if (currentDepartmentId == dept.Id)
+                            {
+                                <option value="@dept.Id" selected>@dept.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@dept.Id">@dept.Name</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="field" style="margin-bottom:0;min-width:140px;">
+                <label>Status</label>
+                <select name="isActive">
+                    @if (currentIsActive == true || currentIsActive == null)
+                    {
+                        <option value="true" selected>Active</option>
+                        <option value="">All</option>
+                    }
+                    else
+                    {
+                        <option value="true">Active</option>
+                        <option value="" selected>All</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="margin-bottom:0;min-width:220px;">
+                <label>Search</label>
+                <input type="text" name="search" value="@currentSearch" placeholder="Search by name or position...">
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary" style="padding:10px 20px;">Filter</button>
+                <a class="btn btn-secondary" asp-action="Employees" asp-controller="Payroll" style="padding:10px 20px;">Clear</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Employee Table -->
+<section class="glass card-pad">
+    @if (Model.Items != null && Model.Items.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th data-mobile="hide">Position</th>
+                    <th data-mobile="hide">Department</th>
+                    <th data-mobile="hide">Salary Type</th>
+                    <th class="text-right">Base Salary</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in Model.Items)
+                {
+                    <tr class="@(!emp.IsActive ? "row-inactive" : "")">
+                        <td><strong>@emp.Name</strong></td>
+                        <td data-mobile="hide">@(emp.Position ?? "—")</td>
+                        <td data-mobile="hide">@(emp.DepartmentName ?? "—")</td>
+                        <td data-mobile="hide">@emp.SalaryTypeName</td>
+                        <td class="text-right">&euro;@emp.BaseSalary.ToString("N2")</td>
+                        <td>
+                            @if (emp.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-grey">Inactive</span>
+                            }
+                        </td>
+                        <td class="table-actions">
+                            <a class="btn btn-sm btn-secondary" asp-action="EmployeeForm" asp-controller="Payroll" asp-route-id="@emp.Id">Edit</a>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleEmployee(@emp.Id)">@(emp.IsActive ? "Deactivate" : "Activate")</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+                <div style="font-size:14px;color:#5a6a7a;">
+                    Showing @(((Model.CurrentPage - 1) * Model.PageSize) + 1)–@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount
+                </div>
+                <div style="display:flex;gap:4px;align-items:center;">
+                    @for (int p = 1; p <= Model.TotalPages; p++)
+                    {
+                        var isCurrentPage = p == Model.CurrentPage;
+                        <a asp-action="Employees" asp-controller="Payroll"
+                           asp-route-page="@p"
+                           asp-route-search="@currentSearch"
+                           asp-route-departmentId="@currentDepartmentId"
+                           asp-route-isActive="@currentIsActive"
+                           class="page-btn @(isCurrentPage ? "active" : "")"
+                           style="padding:6px 12px;border:1px solid rgba(13,94,166,0.15);border-radius:8px;background:@(isCurrentPage ? "#0D5EA6" : "white");color:@(isCurrentPage ? "white" : "#0D5EA6");font-weight:700;font-size:13px;text-decoration:none;">@p</a>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No employees found.</p>
+        </div>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function toggleEmployee(id) {
+        BlockUI.show('Updating status...');
+        try {
+            var response = await fetch('/Payroll/AxPostToggleEmployee?id=' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            window.location.reload();
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>

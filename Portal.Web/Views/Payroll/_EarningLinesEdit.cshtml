@@ -1,0 +1,166 @@
+@using Portal.Infrastructure.Models.Payroll
+@{
+    var earningTypes = ViewBag.EarningTypes as List<EarningTypeDto> ?? new List<EarningTypeDto>();
+}
+
+<section class="glass card-pad">
+    <h3 class="section-title">Edit Earning Lines</h3>
+    <table class="data-table" id="earningLinesTable">
+        <thead>
+            <tr>
+                <th>Earning Type</th>
+                <th>Description</th>
+                <th class="text-right">Amount (&euro;)</th>
+                <th class="text-right">OT Multiplier</th>
+                <th class="text-right">OT Hours</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="earningLinesBody">
+            <!-- Rows populated via JavaScript from parent page data -->
+        </tbody>
+    </table>
+    <div style="margin-top:14px;display:flex;gap:12px;">
+        <button class="btn btn-secondary btn-sm" onclick="addEarningLineRow()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Add Line
+        </button>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:12px;">
+        <button class="btn btn-primary" onclick="saveEarningLines()">Save Earning Lines</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('earningLinesEditSection').style.display='none'">Cancel</button>
+    </div>
+</section>
+
+<script>
+    var earningTypesForLines = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(earningTypes.Where(e => e.IsActive).Select(e => new { e.Id, e.Name, e.Code })));
+
+    // Populate from existing earning lines on the page
+    (function populateEarningLines() {
+        var existingLines = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            (ViewData.Model as PayslipDetailDto)?.EarningLines?.Select(l => new {
+                earningTypeName = l.EarningTypeName,
+                earningTypeCode = l.EarningTypeCode,
+                description = l.Description,
+                amount = l.Amount,
+                overtimeMultiplier = l.OvertimeMultiplier,
+                overtimeHours = l.OvertimeHours
+            }) ?? Enumerable.Empty<object>()));
+
+        var tbody = document.getElementById('earningLinesBody');
+        if (!tbody) return;
+
+        existingLines.forEach(function (line) {
+            var matchingType = earningTypesForLines.find(function (et) { return et.code === line.earningTypeCode; });
+            var earningTypeId = matchingType ? matchingType.id : (earningTypesForLines.length > 0 ? earningTypesForLines[0].id : 0);
+            addEarningLineRowWithData(earningTypeId, line.description, line.amount, line.overtimeMultiplier, line.overtimeHours);
+        });
+    })();
+
+    function buildEarningTypeOptions(selectedId) {
+        return earningTypesForLines.map(function (et) {
+            return '<option value="' + et.id + '"' + (et.id === selectedId ? ' selected' : '') + '>' + et.name + '</option>';
+        }).join('');
+    }
+
+    function addEarningLineRow() {
+        addEarningLineRowWithData(earningTypesForLines.length > 0 ? earningTypesForLines[0].id : 0, '', null, null, null);
+    }
+
+    function addEarningLineRowWithData(earningTypeId, description, amount, multiplier, hours) {
+        var tbody = document.getElementById('earningLinesBody');
+        var row = document.createElement('tr');
+
+        row.innerHTML =
+            '<td><select class="el-type" onchange="onEarningTypeChanged(this)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;">' + buildEarningTypeOptions(earningTypeId) + '</select></td>' +
+            '<td><input type="text" class="el-desc" value="' + (description || '') + '" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;"></td>' +
+            '<td><input type="number" class="el-amount" value="' + (amount != null ? amount.toFixed(2) : '') + '" step="0.01" min="0" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>' +
+            '<td><input type="number" class="el-multiplier" value="' + (multiplier != null ? multiplier.toFixed(2) : '') + '" step="0.01" min="1" max="4" placeholder="1.5" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>' +
+            '<td><input type="number" class="el-hours" value="' + (hours != null ? hours.toFixed(2) : '') + '" step="0.01" min="0" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;"></td>' +
+            '<td><button class="btn btn-sm btn-secondary" onclick="this.closest(\'tr\').remove()">Remove</button></td>';
+
+        tbody.appendChild(row);
+        onEarningTypeChanged(row.querySelector('.el-type'));
+    }
+
+    function onEarningTypeChanged(select) {
+        var row = select.closest('tr');
+        var selectedType = earningTypesForLines.find(function (et) { return et.id === parseInt(select.value); });
+        var isOvertime = selectedType && selectedType.code === 'Overtime';
+
+        row.querySelector('.el-multiplier').disabled = !isOvertime;
+        row.querySelector('.el-hours').disabled = !isOvertime;
+
+        if (!isOvertime) {
+            row.querySelector('.el-multiplier').value = '';
+            row.querySelector('.el-hours').value = '';
+        }
+    }
+
+    async function saveEarningLines() {
+        var rows = document.querySelectorAll('#earningLinesBody tr');
+        if (rows.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'At least one earning line is required.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var lines = [];
+        var valid = true;
+
+        rows.forEach(function (row) {
+            var earningTypeId = parseInt(row.querySelector('.el-type').value);
+            var description = row.querySelector('.el-desc').value || null;
+            var amount = row.querySelector('.el-amount').value ? parseFloat(row.querySelector('.el-amount').value) : null;
+            var multiplier = row.querySelector('.el-multiplier').value ? parseFloat(row.querySelector('.el-multiplier').value) : null;
+            var hours = row.querySelector('.el-hours').value ? parseFloat(row.querySelector('.el-hours').value) : null;
+
+            // Validate multiplier range
+            if (multiplier !== null && (multiplier < 1.0 || multiplier > 4.0)) {
+                valid = false;
+            }
+
+            // Validate non-negative amounts
+            if (amount !== null && amount < 0) {
+                valid = false;
+            }
+
+            lines.push({
+                earningTypeId: earningTypeId,
+                description: description,
+                amount: amount,
+                overtimeMultiplier: multiplier,
+                overtimeHours: hours
+            });
+        });
+
+        if (!valid) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please check values. Amounts must be non-negative and overtime multiplier must be between 1.0 and 4.0.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving earning lines...');
+        try {
+            var response = await fetch('/Payroll/AxPostSaveEarningLines', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ payslipId: payslipId, lines: lines })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>

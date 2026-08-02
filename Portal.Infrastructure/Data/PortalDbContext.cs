@@ -171,6 +171,22 @@ public class PortalDbContext : DbContext
     public DbSet<FeatureAnnouncement> FeatureAnnouncements { get; set; } = null!;
     public DbSet<UserAnnouncementDismissal> UserAnnouncementDismissals { get; set; } = null!;
 
+    // Payroll
+    public DbSet<PayslipStatusType> PayslipStatusTypes { get; set; } = null!;
+    public DbSet<DeductionCategoryType> DeductionCategoryTypes { get; set; } = null!;
+    public DbSet<SalaryType> SalaryTypes { get; set; } = null!;
+    public DbSet<Department> Departments { get; set; } = null!;
+    public DbSet<Employee> Employees { get; set; } = null!;
+    public DbSet<EarningType> EarningTypes { get; set; } = null!;
+    public DbSet<DeductionType> DeductionTypes { get; set; } = null!;
+    public DbSet<DeductionRateHistory> DeductionRateHistories { get; set; } = null!;
+    public DbSet<EmployeeDefaultEarnings> EmployeeDefaultEarnings { get; set; } = null!;
+    public DbSet<PayslipPeriod> PayslipPeriods { get; set; } = null!;
+    public DbSet<Payslip> Payslips { get; set; } = null!;
+    public DbSet<PayslipEarningLine> PayslipEarningLines { get; set; } = null!;
+    public DbSet<PayslipDeductionLine> PayslipDeductionLines { get; set; } = null!;
+    public DbSet<PayslipEmailLog> PayslipEmailLogs { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -280,6 +296,22 @@ public class PortalDbContext : DbContext
         // What's New Announcements
         ConfigureFeatureAnnouncement(modelBuilder);
         ConfigureUserAnnouncementDismissal(modelBuilder);
+
+        // Payroll entities
+        ConfigurePayslipStatusType(modelBuilder);
+        ConfigureDeductionCategoryType(modelBuilder);
+        ConfigureSalaryType(modelBuilder);
+        ConfigureDepartment(modelBuilder);
+        ConfigureEmployee(modelBuilder);
+        ConfigureEarningType(modelBuilder);
+        ConfigureDeductionType(modelBuilder);
+        ConfigureDeductionRateHistory(modelBuilder);
+        ConfigureEmployeeDefaultEarnings(modelBuilder);
+        ConfigurePayslipPeriod(modelBuilder);
+        ConfigurePayslip(modelBuilder);
+        ConfigurePayslipEarningLine(modelBuilder);
+        ConfigurePayslipDeductionLine(modelBuilder);
+        ConfigurePayslipEmailLog(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -3845,6 +3877,231 @@ public class PortalDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.FeatureAnnouncementId })
                 .IsUnique()
                 .HasDatabaseName("UQ_UserAnnouncementDismissals_UserAnnouncement");
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PAYROLL SCHEMA
+    // ═══════════════════════════════════════════════════════════
+
+    private static void ConfigurePayslipStatusType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipStatusType>(entity =>
+        {
+            entity.ToTable("PayslipStatusType", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(20);
+        });
+    }
+
+    private static void ConfigureDeductionCategoryType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DeductionCategoryType>(entity =>
+        {
+            entity.ToTable("DeductionCategoryType", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(20);
+        });
+    }
+
+    private static void ConfigureSalaryType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SalaryType>(entity =>
+        {
+            entity.ToTable("SalaryType", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+        });
+    }
+
+    private static void ConfigureDepartment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Department>(entity =>
+        {
+            entity.ToTable("Department", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BusinessId).IsRequired();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(e => new { e.BusinessId, e.Name }).IsUnique();
+        });
+    }
+
+    private static void ConfigureEmployee(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Employee>(entity =>
+        {
+            entity.ToTable("Employee", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BusinessId).IsRequired();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Position).HasMaxLength(200);
+            entity.Property(e => e.SocialInsuranceNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.IdNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Phone).HasMaxLength(50);
+            entity.Property(e => e.Email).HasMaxLength(200);
+            entity.Property(e => e.StartDate).IsRequired();
+            entity.Property(e => e.SalaryTypeId).IsRequired();
+            entity.Property(e => e.BaseSalary).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.HourlyRate).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.BankAccount).HasMaxLength(100);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<Department>().WithMany().HasForeignKey(e => e.DepartmentId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<SalaryType>().WithMany().HasForeignKey(e => e.SalaryTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasIndex(e => new { e.BusinessId, e.SocialInsuranceNumber }).IsUnique();
+            entity.HasIndex(e => new { e.BusinessId, e.IdNumber }).IsUnique();
+        });
+    }
+
+    private static void ConfigureEarningType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EarningType>(entity =>
+        {
+            entity.ToTable("EarningType", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+    }
+
+    private static void ConfigureDeductionType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DeductionType>(entity =>
+        {
+            entity.ToTable("DeductionType", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DeductionCategoryTypeId).IsRequired();
+            entity.Property(e => e.Country).IsRequired().HasMaxLength(50).HasDefaultValue("CY");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<DeductionCategoryType>().WithMany().HasForeignKey(e => e.DeductionCategoryTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasIndex(e => new { e.BusinessId, e.Code }).IsUnique();
+        });
+    }
+
+    private static void ConfigureDeductionRateHistory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DeductionRateHistory>(entity =>
+        {
+            entity.ToTable("DeductionRateHistory", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DeductionTypeId).IsRequired();
+            entity.Property(e => e.Rate).IsRequired().HasColumnType("decimal(6,2)");
+            entity.Property(e => e.EffectiveFromUtc).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<DeductionType>().WithMany().HasForeignKey(e => e.DeductionTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureEmployeeDefaultEarnings(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EmployeeDefaultEarnings>(entity =>
+        {
+            entity.ToTable("EmployeeDefaultEarnings", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EmployeeId).IsRequired();
+            entity.Property(e => e.EarningTypeId).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(300);
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.OvertimeMultiplier).HasColumnType("decimal(4,2)");
+            entity.Property(e => e.OvertimeHours).HasColumnType("decimal(6,2)");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<Employee>().WithMany().HasForeignKey(e => e.EmployeeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<EarningType>().WithMany().HasForeignKey(e => e.EarningTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePayslipPeriod(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipPeriod>(entity =>
+        {
+            entity.ToTable("PayslipPeriod", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BusinessId).IsRequired();
+            entity.Property(e => e.Year).IsRequired();
+            entity.Property(e => e.Month).IsRequired();
+            entity.Property(e => e.PayslipStatusTypeId).IsRequired().HasDefaultValue((byte)1);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<PayslipStatusType>().WithMany().HasForeignKey(e => e.PayslipStatusTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasIndex(e => new { e.BusinessId, e.Year, e.Month }).IsUnique();
+        });
+    }
+
+    private static void ConfigurePayslip(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Payslip>(entity =>
+        {
+            entity.ToTable("Payslip", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EmployeeId).IsRequired();
+            entity.Property(e => e.PayslipPeriodId).IsRequired();
+            entity.Property(e => e.TotalEarnings).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.TotalEmployeeDeductions).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.NetSalary).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.TotalEmployerContributions).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.ManagerNotes).HasMaxLength(2000);
+            entity.Property(e => e.PayslipStatusTypeId).IsRequired().HasDefaultValue((byte)1);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<Employee>().WithMany().HasForeignKey(e => e.EmployeeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<PayslipPeriod>().WithMany().HasForeignKey(e => e.PayslipPeriodId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<PayslipStatusType>().WithMany().HasForeignKey(e => e.PayslipStatusTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePayslipEarningLine(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipEarningLine>(entity =>
+        {
+            entity.ToTable("PayslipEarningLine", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PayslipId).IsRequired();
+            entity.Property(e => e.EarningTypeId).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(300);
+            entity.Property(e => e.Amount).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.OvertimeMultiplier).HasColumnType("decimal(4,2)");
+            entity.Property(e => e.OvertimeHours).HasColumnType("decimal(6,2)");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<Payslip>().WithMany().HasForeignKey(e => e.PayslipId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<EarningType>().WithMany().HasForeignKey(e => e.EarningTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePayslipDeductionLine(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipDeductionLine>(entity =>
+        {
+            entity.ToTable("PayslipDeductionLine", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PayslipId).IsRequired();
+            entity.Property(e => e.DeductionTypeId).IsRequired();
+            entity.Property(e => e.BaseAmount).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Rate).IsRequired().HasColumnType("decimal(6,2)");
+            entity.Property(e => e.CalculatedAmount).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.DeductionCategoryTypeId).IsRequired();
+            entity.Property(e => e.DeductionRateHistoryId).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<Payslip>().WithMany().HasForeignKey(e => e.PayslipId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<DeductionType>().WithMany().HasForeignKey(e => e.DeductionTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<DeductionRateHistory>().WithMany().HasForeignKey(e => e.DeductionRateHistoryId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<DeductionCategoryType>().WithMany().HasForeignKey(e => e.DeductionCategoryTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePayslipEmailLog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipEmailLog>(entity =>
+        {
+            entity.ToTable("PayslipEmailLog", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PayslipId).IsRequired();
+            entity.Property(e => e.SentByUserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.SentToEmail).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.SentAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<Payslip>().WithMany().HasForeignKey(e => e.PayslipId).OnDelete(DeleteBehavior.ClientSetNull);
         });
     }
 

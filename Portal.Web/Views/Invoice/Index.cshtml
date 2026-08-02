@@ -100,6 +100,16 @@
             <button type="button" class="period-shortcut" onclick="setInvoicePeriod('this_year')">This Year</button>
             <button type="button" class="period-shortcut" onclick="setInvoicePeriod('last_year')">Last Year</button>
             <button type="button" class="period-shortcut" onclick="setInvoicePeriod('all')">All Time</button>
+            <select class="mobile-period-select" onchange="if(this.value) setInvoicePeriod(this.value)">
+                <option value="">Quick date range...</option>
+                <option value="this_month">This Month</option>
+                <option value="last_month">Last Month</option>
+                <option value="last_3">Last 3 Months</option>
+                <option value="last_6">Last 6 Months</option>
+                <option value="this_year">This Year</option>
+                <option value="last_year">Last Year</option>
+                <option value="all">All Time</option>
+            </select>
         </div>
     </form>
 

@@ -38,9 +38,9 @@
    -------------------------------------------------------------------------- */
 @media (max-width: 1100px) {
 
-    /* Prevent horizontal overflow on mobile */
+    /* Prevent horizontal overflow on mobile — use hidden not clip to allow nested scroll */
     html, body {
-        overflow-x: clip;
+        overflow-x: hidden;
         width: 100%;
     }
 
@@ -153,15 +153,41 @@
     }
 
     /* Horizontally scrollable tables */
-    .table-responsive {
-        overflow-x: auto;
+    .table-responsive,
+    .index-table {
+        overflow-x: auto !important;
         -webkit-overflow-scrolling: touch;
         margin: 0 -14px;
         padding: 0 14px;
     }
 
-    .table-responsive table {
+    .table-responsive table,
+    .index-table table {
         min-width: 600px;
+        white-space: nowrap;
+    }
+
+    /* Any table inside a glass card — make scrollable (including nested divs) */
+    .glass table,
+    .card-pad table,
+    section table {
+        display: block !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        min-width: 100%;
+        white-space: nowrap;
+    }
+
+    /* Compact table rows on mobile */
+    table td,
+    table th {
+        padding: 6px 8px !important;
+        font-size: 12px !important;
+    }
+
+    table th {
+        font-size: 10px !important;
+        letter-spacing: 0.03em;
     }
 
     .scroll-hint {
@@ -221,10 +247,15 @@
         border-radius: 14px;
     }
 
-    /* Tighter card spacing between sections */
+    /* Tighter card spacing between sections (exclude cards inside grids) */
     .glass + .glass,
     section + section {
         margin-top: 14px !important;
+    }
+
+    [style*="display:grid"] > .glass + .glass,
+    [style*="display:grid"] > .glass {
+        margin-top: 0 !important;
     }
 
     [style*="margin-top:24px"] {
@@ -245,6 +276,120 @@
     /* Compact gauge/KPI cards */
     .gauge-row {
         gap: 10px;
+    }
+
+    /* KPI cards with inline styles — compact on mobile */
+    section[style*="display:flex"][style*="gap"] > .glass,
+    section[style*="display:grid"] > .glass,
+    section[style*="display:flex"][style*="gap"] > div[class*="card-pad"],
+    .glass[style*="border-left:4px"],
+    .glass[style*="border-left: 4px"],
+    .card-pad[style*="border-left:4px"],
+    .card-pad[style*="border-left: 4px"] {
+        padding: 8px 10px !important;
+        border-radius: 10px !important;
+    }
+
+    /* KPI values inside inline-styled cards — smaller */
+    section[style*="display:flex"] .glass h2,
+    section[style*="display:grid"] .glass h2,
+    .card-pad[style*="border-left"] h2 {
+        font-size: 16px !important;
+        margin: 2px 0 0 !important;
+    }
+
+    /* KPI labels inside inline-styled cards */
+    section[style*="display:flex"] .glass p[style*="text-transform:uppercase"],
+    section[style*="display:flex"] .glass p[style*="font-size:11px"],
+    .card-pad[style*="border-left"] p[style*="text-transform:uppercase"],
+    .card-pad[style*="border-left"] p[style*="font-size:11px"] {
+        font-size: 8px !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* KPI subtitle text */
+    section[style*="display:flex"] .glass p[style*="font-size:12px"],
+    .card-pad[style*="border-left"] p[style*="font-size:12px"] {
+        font-size: 9px !important;
+        margin: 0 !important;
+    }
+
+    /* KPI flex sections — 2-column grid on mobile */
+    section[style*="display:flex"][style*="gap:22px"],
+    section[style*="display:flex"][style*="gap: 22px"] {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+
+    section[style*="display:flex"][style*="gap:22px"] > .glass,
+    section[style*="display:flex"][style*="gap: 22px"] > .glass {
+        min-width: 0 !important;
+        flex: none !important;
+    }
+
+    /* KPI strip/grid — force 2 columns and compact sizing */
+    .kpi-strip {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+
+    .kpi-card {
+        padding: 10px 12px !important;
+        border-radius: 12px !important;
+    }
+
+    .kpi-label {
+        font-size: 9px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .kpi-value {
+        font-size: 18px !important;
+    }
+
+    /* Generic KPI cards using inline styles (Product, Dashboard, etc.) */
+    [style*="display:grid"][style*="minmax"] {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        align-items: stretch !important;
+    }
+
+    [style*="display:grid"][style*="minmax"] > .glass,
+    [style*="display:grid"][style*="minmax"] > .card-pad,
+    [style*="display:grid"][style*="minmax"] > div {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+    }
+
+    [style*="padding:18px"][style*="border-radius:14px"],
+    [style*="padding: 18px"][style*="border-radius: 14px"],
+    [style*="padding:16px"][style*="border-radius:14px"],
+    [style*="padding:16px"][style*="border-radius:12px"] {
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+    }
+
+    /* KPI values with large inline font-size */
+    [style*="font-size:28px"],
+    [style*="font-size: 28px"],
+    [style*="font-size:26px"],
+    [style*="font-size: 26px"],
+    [style*="font-size:24px"],
+    [style*="font-size: 24px"],
+    [style*="font-size:22px"],
+    [style*="font-size: 22px"] {
+        font-size: 18px !important;
+        margin-top: 2px !important;
+    }
+
+    /* KPI labels with 13px inline font-size */
+    [style*="font-size:13px"][style*="text-transform:uppercase"],
+    [style*="font-size: 13px"][style*="text-transform: uppercase"],
+    [style*="font-size:12px"][style*="text-transform:uppercase"] {
+        font-size: 9px !important;
+        margin-bottom: 2px !important;
     }
 
     .gauge-item {
@@ -437,6 +582,34 @@
         color: var(--blue);
     }
 
+    /* Topbar heading + action button — keep inline on mobile, button on right */
+    .topbar {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+
+    .topbar > div:first-child {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+
+    .topbar > div:last-child:not(:first-child) {
+        margin-top: 0 !important;
+        width: auto !important;
+        align-self: center !important;
+    }
+
+    .topbar > div:last-child:not(:first-child) .btn {
+        width: auto !important;
+        display: inline-flex !important;
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+    }
+
     /* Responsive grid collapse — single column */
     .grid-4, .grid-3, .grid-2, .form-grid {
         grid-template-columns: 1fr;
@@ -453,9 +626,9 @@
         grid-template-columns: 1fr 1fr;
     }
 
-    /* Stacked filters */
+    /* Stacked filters (exclude topbar which should stay as row) */
     .filter-panel,
-    [style*="display:flex"][style*="flex-wrap"] {
+    [style*="display:flex"][style*="flex-wrap"]:not(.topbar) {
         flex-direction: column !important;
         gap: 12px !important;
     }
@@ -466,9 +639,49 @@
         min-width: unset !important;
     }
 
+    /* Hide field labels inside filter cards on mobile — inputs use placeholders */
+    section[style*="margin-bottom:22px"] [style*="flex-wrap"] .field label,
+    .filter-panel .field label {
+        display: none !important;
+    }
+
+    /* Compact fields inside filter cards */
+    section[style*="margin-bottom:22px"] [style*="flex-wrap"] .field,
+    .filter-panel .field {
+        width: 100% !important;
+        min-width: unset !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Filter/search button containers — keep side-by-side, compact */
+    div[style*="padding-bottom:2px"],
+    div[style*="padding-bottom: 2px"] {
+        flex-direction: row !important;
+        display: flex !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    div[style*="padding-bottom:2px"] .btn,
+    div[style*="padding-bottom: 2px"] .btn {
+        flex: 1 !important;
+        width: auto !important;
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+    }
+
     .filter-panel .btn,
     .filter-panel button {
-        width: 100%;
+        width: auto;
+        flex: 1;
+    }
+
+    /* Filter action button container — side by side */
+    .filter-panel > div[style*="padding-bottom"],
+    .filter-panel > div:last-child:not(.field) {
+        display: flex !important;
+        gap: 8px !important;
+        width: 100% !important;
     }
 
     /* Full-width action buttons */
@@ -493,6 +706,229 @@
         flex-direction: column !important;
         align-items: flex-start !important;
         gap: 10px !important;
+    }
+    /* Search bar + What's New — hide the full container on phone */
+    .topbar-search-area {
+        display: none !important;
+    }
+
+    /* Mobile floating search + What's New icons */
+    .mobile-topbar-actions {
+        display: flex !important;
+        position: fixed;
+        top: 12px;
+        right: 60px;
+        z-index: 120;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mobile-search-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid rgba(13,94,166,.12);
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+        transition: all .2s;
+    }
+
+    .mobile-search-expanded {
+        position: fixed;
+        top: 10px;
+        left: 60px;
+        right: 60px;
+        z-index: 130;
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 6px 12px;
+        border: 1.5px solid rgba(13,94,166,.20);
+        box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+
+    .mobile-search-expanded input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+        padding: 8px 4px;
+        background: transparent;
+    }
+
+    .mobile-search-expanded .mobile-search-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(13,94,166,.06);
+        color: #5a6a7a;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .mobile-search-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.3);
+        z-index: 125;
+    }
+
+    .mobile-whats-new-btn {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid rgba(13,94,166,.12);
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+
+    .mobile-whats-new-btn .mobile-wn-badge {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        background: #C24A4A;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 800;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 3px;
+    }
+
+    /* What's New banner — stack on mobile */
+    #whats-new-banner {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    /* Quotation + Invoice Detail — collapsible secondary actions on mobile */
+    .quotation-actions-primary,
+    .detail-actions-primary {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .quotation-actions-primary .btn,
+    .quotation-actions-primary button,
+    .quotation-actions-primary a,
+    .detail-actions-primary .btn,
+    .detail-actions-primary button,
+    .detail-actions-primary a {
+        width: 100% !important;
+        display: block !important;
+        text-align: center !important;
+    }
+
+    .quotation-actions-primary form,
+    .detail-actions-primary form {
+        width: 100% !important;
+        display: block !important;
+    }
+
+    .quotation-actions-secondary,
+    .detail-actions-secondary {
+        display: none !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .quotation-actions-secondary.expanded,
+    .detail-actions-secondary.expanded {
+        display: flex !important;
+    }
+
+    .quotation-actions-secondary .btn,
+    .quotation-actions-secondary button,
+    .quotation-actions-secondary a,
+    .detail-actions-secondary .btn,
+    .detail-actions-secondary button,
+    .detail-actions-secondary a {
+        width: 100% !important;
+        display: block !important;
+        text-align: center !important;
+    }
+
+    .quotation-actions-secondary form,
+    .detail-actions-secondary form {
+        width: 100% !important;
+        display: block !important;
+    }
+
+    .quotation-more-toggle,
+    .detail-more-toggle {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        margin-top: 10px;
+        padding: 8px;
+        border: 1.5px solid rgba(13,94,166,.12);
+        border-radius: 8px;
+        background: #fff;
+        color: #5E7385;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+    }
+
+    /* Quick date shortcuts — convert to dropdown on mobile */
+    .period-shortcut-row,
+    [style*="margin-top:14px"][style*="flex-wrap:wrap"] {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 0 !important;
+        margin-top: 10px !important;
+    }
+
+    /* Hide the individual shortcut buttons on mobile */
+    .period-shortcut {
+        display: none !important;
+    }
+
+    /* Hide the "QUICK:" label on mobile */
+    [style*="margin-top:14px"][style*="flex-wrap:wrap"] > span[style*="text-transform:uppercase"] {
+        display: none !important;
+    }
+
+    /* Show the mobile quick-period dropdown instead */
+    .mobile-period-select {
+        display: block !important;
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        color: #5E7385;
+        border: 1.5px solid rgba(13,94,166,.12);
+        border-radius: 10px;
+        background: #fff;
+        appearance: auto;
+        cursor: pointer;
+        margin-top: 10px;
     }
 }
 

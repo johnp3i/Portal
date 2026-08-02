@@ -255,3 +255,14 @@ tbody tr:last-child td{border-bottom:0}
 /* ===== STICKY ACTION BAR ===== */
 .sticky-action-bar{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#d6e6f0;border-top:1.5px solid rgba(13,94,166,.15);box-shadow:0 -4px 20px rgba(0,0,0,.08);padding:14px 32px}
 .sticky-action-bar__inner{display:flex;justify-content:flex-end;align-items:center;gap:12px}
+
+/* Mobile quick-period dropdown — hidden on desktop */
+.mobile-period-select {
+    display: none;
+}
+
+/* Quotation/Invoice more-actions toggle — hidden on desktop */
+.quotation-more-toggle,
+.detail-more-toggle {
+    display: none;
+}

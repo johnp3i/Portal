@@ -1,0 +1,743 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create payroll schema and lookup tables": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552611570
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552627684
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552795066
+      }
+    ],
+    "1.2 Create Department and Employee tables": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552612364
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552628313
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552795701
+      }
+    ],
+    "1.3 Create EarningType and DeductionType tables": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552612517
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552628928
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552796424
+      }
+    ],
+    "1.4 Create EmployeeDefaultEarnings table": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552612625
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552629647
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552797136
+      }
+    ],
+    "1.5 Create PayslipPeriod, Payslip, and line tables": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552612697
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552630430
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552797973
+      }
+    ],
+    "1.6 Create PayslipEmailLog table and performance indexes": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552612760
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552631225
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552798752
+      }
+    ],
+    "1.7 Seed EarningTypes and Cyprus DeductionType templates with rate history": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613048
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552632006
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552799890
+      }
+    ],
+    "2.1 Create entity classes for all payroll tables": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613115
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552807302
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553053258
+      }
+    ],
+    "2.2 Add DbContext configuration for payroll entities": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613201
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552808201
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553053955
+      }
+    ],
+    "3.1 Create all DTO and request model classes": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613269
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553061006
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553234497
+      }
+    ],
+    "4.1 Add PortalModules.Payroll constant and PlanFeature seed": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613335
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553061860
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553235245
+      }
+    ],
+    "5. Build checkpoint": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613401
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553236082
+      }
+    ],
+    "6.1 Create PayrollRepository — Department and Employee methods": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613462
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553244410
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553775867
+      }
+    ],
+    "6.2 Add EarningType, DeductionType, and Rate History methods to PayrollRepository": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613519
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553245190
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553776452
+      }
+    ],
+    "6.3 Add PayslipPeriod, Payslip, and line methods to PayrollRepository": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613628
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553246183
+      },
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553777268
+      }
+    ],
+    "7.1 Create IPayslipCalculationEngine interface and PayslipCalculationEngine implementation": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613722
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555162945
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555415224
+      }
+    ],
+    "7.2 Write unit tests for PayslipCalculationEngine": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613795
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555163758
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555415915
+      }
+    ],
+    "8.1 Create IPayrollService interface": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613868
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555423872
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555533447
+      }
+    ],
+    "8.2 Implement PayrollService — Department and Employee management": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613929
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555540865
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556336103
+      }
+    ],
+    "8.3 Implement PayrollService — EarningTypes, DeductionTypes, Rate History, and Templates": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552613995
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555541642
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556336822
+      }
+    ],
+    "8.4 Implement PayrollService — Period Management and Batch Generation": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614096
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555542380
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556337505
+      }
+    ],
+    "8.5 Implement PayrollService — Payslip Detail, Earning Lines Save, and Manager Notes": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614186
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555543130
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556338289
+      }
+    ],
+    "8.6 Implement PayrollService — PDF Generation and Email": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614232
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555543956
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556339047
+      }
+    ],
+    "9. Build checkpoint": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614285
+      },
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556339900
+      }
+    ],
+    "10.1 Create PayrollController (business-facing)": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614346
+      },
+      {
+        "executionId": "84f7fa15-f3c0-45d9-ada3-cb049ee1aaa9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556511914
+      },
+      {
+        "executionId": "84f7fa15-f3c0-45d9-ada3-cb049ee1aaa9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556842427
+      }
+    ],
+    "10.2 Create AdminPayrollController (SuperAdmin)": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614398
+      },
+      {
+        "executionId": "84f7fa15-f3c0-45d9-ada3-cb049ee1aaa9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556512826
+      },
+      {
+        "executionId": "84f7fa15-f3c0-45d9-ada3-cb049ee1aaa9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556843127
+      }
+    ],
+    "11.1 Create Departments view and DepartmentForm partial": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614450
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785690805575
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691508777
+      }
+    ],
+    "11.2 Create Employees view and EmployeeForm view": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614511
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785690806489
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691509592
+      }
+    ],
+    "11.3 Create Periods view and PeriodDetail view": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614569
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785690807167
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691510246
+      }
+    ],
+    "11.4 Create BatchGenerate preview view": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614634
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785690807821
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691511064
+      }
+    ],
+    "11.5 Create PayslipDetail view": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614751
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785690808424
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691511787
+      }
+    ],
+    "11.6 Create DeductionConfig view for business owners": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614817
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785690809177
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691512585
+      }
+    ],
+    "11.7 Create PayslipEarningLinesEdit partial/modal": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614882
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785690810008
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691513629
+      }
+    ],
+    "12.1 Create AdminPayroll EarningTypes view": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552614947
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692106214
+      }
+    ],
+    "12.2 Create AdminPayroll DeductionTypes and RateHistory views": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552615013
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692107024
+      }
+    ],
+    "13.1 Create IPayslipRenderer and PayslipRenderer": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552615077
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692107798
+      }
+    ],
+    "13.2 Create IPayslipPdfService and PayslipPdfService": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552615141
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692108546
+      }
+    ],
+    "13.3 Create IPayslipEmailService and PayslipEmailService": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552615198
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692109312
+      }
+    ],
+    "14.1 Add payroll sidebar links and module access wiring": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552615265
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692116066
+      }
+    ],
+    "15.1 Register all payroll services in DI container": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552615334
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692116830
+      }
+    ],
+    "16. Final build checkpoint": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552615399
+      },
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692117716
+      }
+    ],
+    "1. SQL migrations — schema, tables, indexes, and seed data": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785552800038
+      }
+    ],
+    "2. EF Core entities and DbContext configuration": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553054055
+      }
+    ],
+    "3. DTOs and request models": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553234627
+      }
+    ],
+    "4. Constants and PlanFeature seed": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553235347
+      }
+    ],
+    "6. Repository layer": [
+      {
+        "executionId": "d8d39e26-1ee7-44d2-8c9e-7bff2a184fab",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785553777353
+      }
+    ],
+    "7. Calculation Engine": [
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785555416020
+      }
+    ],
+    "8. Service layer": [
+      {
+        "executionId": "6c0bfc1f-4510-411c-8737-3344b0b483e9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556339183
+      }
+    ],
+    "10. Controllers": [
+      {
+        "executionId": "84f7fa15-f3c0-45d9-ada3-cb049ee1aaa9",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785556843212
+      }
+    ],
+    "11. Views — Business-facing": [
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785691513701
+      }
+    ],
+    "12. Views — Admin (SuperAdmin)": [
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692107106
+      }
+    ],
+    "13. PDF and Email services": [
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692109385
+      }
+    ],
+    "14. Navigation integration": [
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692116177
+      }
+    ],
+    "15. DI registration": [
+      {
+        "executionId": "2cfce7b3-1be4-4297-bb4a-5be9aac30bda",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785692116897
+      }
+    ]
+  }
+}

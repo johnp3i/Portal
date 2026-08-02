@@ -43,7 +43,11 @@
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
     <form id="filterForm" method="get" asp-action="Index" asp-controller="Attachment" style="margin:0;">
-        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="attachmentFilterPanel">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            Filters
+        </button>
+        <div class="filter-panel" id="attachmentFilterPanel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
             <div class="field" style="min-width:180px;">
                 <label for="entityType">Entity Type</label>
                 <select id="entityType" name="entityType">

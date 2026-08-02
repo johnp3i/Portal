@@ -1,0 +1,412 @@
+@model List<Portal.Infrastructure.Models.Payroll.DeductionTypeDto>
+@{
+    ViewData["Title"] = "Deduction Configuration";
+
+    var employeeDeductions = Model?.Where(d => d.DeductionCategoryTypeId == 1).ToList() ?? new List<Portal.Infrastructure.Models.Payroll.DeductionTypeDto>();
+    var employerContributions = Model?.Where(d => d.DeductionCategoryTypeId == 2).ToList() ?? new List<Portal.Infrastructure.Models.Payroll.DeductionTypeDto>();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <h1 class="topbar-heading">Deduction Configuration</h1>
+        <p class="topbar-subtitle">Manage your business deductions and contribution rates</p>
+    </div>
+    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="showImportModal()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Import Country Template
+        </button>
+        <button class="btn btn-secondary" onclick="showAddCustomForm()">Add Custom Deduction</button>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Employee Deductions Section -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 class="section-title">Employee Deductions</h3>
+    @if (employeeDeductions.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th class="text-right">Current Rate</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var deduction in employeeDeductions)
+                {
+                    <tr class="@(!deduction.IsActive ? "row-inactive" : "")">
+                        <td><strong>@deduction.Name</strong></td>
+                        <td><code>@deduction.Code</code></td>
+                        <td class="text-right">@(deduction.CurrentRate.HasValue ? $"{deduction.CurrentRate.Value:0.00}%" : "—")</td>
+                        <td>
+                            @if (deduction.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-grey">Inactive</span>
+                            }
+                        </td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="viewRateHistory(@deduction.Id, '@deduction.Name.Replace("'", "\\'")' )">View History</button>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleDeduction(@deduction.Id)">@(deduction.IsActive ? "Deactivate" : "Activate")</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No employee deductions configured. Import a country template or add a custom deduction.</p>
+        </div>
+    }
+</section>
+
+<!-- Employer Contributions Section -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 class="section-title">Employer Contributions</h3>
+    @if (employerContributions.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th class="text-right">Current Rate</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var contribution in employerContributions)
+                {
+                    <tr class="@(!contribution.IsActive ? "row-inactive" : "")">
+                        <td><strong>@contribution.Name</strong></td>
+                        <td><code>@contribution.Code</code></td>
+                        <td class="text-right">@(contribution.CurrentRate.HasValue ? $"{contribution.CurrentRate.Value:0.00}%" : "—")</td>
+                        <td>
+                            @if (contribution.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-grey">Inactive</span>
+                            }
+                        </td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="viewRateHistory(@contribution.Id, '@contribution.Name.Replace("'", "\\'")' )">View History</button>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleDeduction(@contribution.Id)">@(contribution.IsActive ? "Deactivate" : "Activate")</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No employer contributions configured. Import a country template or add a custom contribution.</p>
+        </div>
+    }
+</section>
+
+<!-- Rate History Panel (hidden, shown dynamically) -->
+<section class="glass card-pad" id="rateHistoryPanel" style="display:none;">
+    <h3 class="section-title" id="rateHistoryTitle">Rate History</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Rate</th>
+                <th>Effective From</th>
+                <th>Effective To</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="rateHistoryBody">
+        </tbody>
+    </table>
+    <div style="margin-top:18px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <input type="hidden" id="rateHistoryDeductionId">
+        <div class="field" style="margin-bottom:0;min-width:120px;">
+            <label>New Rate (%)</label>
+            <input type="number" id="newRateValue" placeholder="e.g. 9.00" step="0.01" min="0">
+        </div>
+        <div class="field" style="margin-bottom:0;min-width:160px;">
+            <label>Effective From</label>
+            <input type="date" id="newRateEffectiveFrom">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addRateHistory()">Save Rate</button>
+    </div>
+</section>
+
+<!-- Add Custom Deduction Form (hidden) -->
+<section class="glass card-pad" id="addCustomForm" style="display:none;margin-top:22px;">
+    <h3 class="section-title">Add Custom Deduction/Contribution</h3>
+    <div class="form-row">
+        <div class="field">
+            <label>Name *</label>
+            <input type="text" id="customName" placeholder="e.g. Pension Fund">
+        </div>
+        <div class="field">
+            <label>Code *</label>
+            <input type="text" id="customCode" placeholder="e.g. PENSION">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="field">
+            <label>Category *</label>
+            <select id="customCategoryId">
+                <option value="1">Employee Deduction</option>
+                <option value="2">Employer Contribution</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Initial Rate (%) *</label>
+            <input type="number" id="customRate" step="0.01" min="0" placeholder="e.g. 5.00">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="field">
+            <label>Effective From *</label>
+            <input type="date" id="customEffectiveFrom">
+        </div>
+        <div class="field"></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:12px;">
+        <button class="btn btn-primary" onclick="saveCustomDeduction()">Create</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('addCustomForm').style.display='none'">Cancel</button>
+    </div>
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    function showAddCustomForm() {
+        document.getElementById('addCustomForm').style.display = 'block';
+        document.getElementById('addCustomForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function toggleDeduction(id) {
+        BlockUI.show('Updating status...');
+        try {
+            var response = await fetch('/Payroll/AxPostToggleDeductionType?id=' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            window.location.reload();
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function viewRateHistory(deductionTypeId, name) {
+        document.getElementById('rateHistoryDeductionId').value = deductionTypeId;
+        document.getElementById('rateHistoryTitle').textContent = 'Rate History — ' + name;
+
+        BlockUI.show('Loading rate history...');
+        try {
+            var response = await fetch('/Payroll/AxGetRateHistory?deductionTypeId=' + deductionTypeId);
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                var tbody = document.getElementById('rateHistoryBody');
+                tbody.innerHTML = '';
+
+                data.data.forEach(function (entry) {
+                    var isCurrent = !entry.effectiveToUtc;
+                    var effectiveFrom = new Date(entry.effectiveFromUtc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                    var effectiveTo = entry.effectiveToUtc ? new Date(entry.effectiveToUtc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+
+                    var row = '<tr>' +
+                        '<td>' + (isCurrent ? '<strong>' : '') + entry.rate.toFixed(2) + '%' + (isCurrent ? '</strong>' : '') + '</td>' +
+                        '<td>' + effectiveFrom + '</td>' +
+                        '<td>' + effectiveTo + '</td>' +
+                        '<td><span class="pill ' + (isCurrent ? 'pill-green' : 'pill-grey') + '">' + (isCurrent ? 'Current' : 'Historical') + '</span></td>' +
+                        '</tr>';
+                    tbody.innerHTML += row;
+                });
+
+                document.getElementById('rateHistoryPanel').style.display = 'block';
+                document.getElementById('rateHistoryPanel').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function addRateHistory() {
+        var deductionTypeId = parseInt(document.getElementById('rateHistoryDeductionId').value);
+        var rate = parseFloat(document.getElementById('newRateValue').value);
+        var effectiveFrom = document.getElementById('newRateEffectiveFrom').value;
+
+        if (!rate || !effectiveFrom) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please enter both rate and effective date.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving rate...');
+        try {
+            var response = await fetch('/Payroll/AxPostAddRateHistory', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ deductionTypeId: deductionTypeId, rate: rate, effectiveFromUtc: effectiveFrom })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function saveCustomDeduction() {
+        var name = document.getElementById('customName').value.trim();
+        var code = document.getElementById('customCode').value.trim();
+        var categoryId = parseInt(document.getElementById('customCategoryId').value);
+        var rate = parseFloat(document.getElementById('customRate').value);
+        var effectiveFrom = document.getElementById('customEffectiveFrom').value;
+
+        if (!name || !code || !rate || !effectiveFrom) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please fill in all required fields.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Creating deduction type...');
+        try {
+            var response = await fetch('/Payroll/AxPostCreateDeductionType', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    name: name,
+                    code: code,
+                    isPercentage: true,
+                    deductionCategoryTypeId: categoryId,
+                    country: 'CY',
+                    initialRate: rate,
+                    effectiveFromUtc: effectiveFrom
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function showImportModal() {
+        BlockUI.show('Loading templates...');
+        try {
+            var response = await fetch('/Payroll/AxGetDeductionTemplates?country=CY');
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success && data.data && data.data.length > 0) {
+                var html = '<div style="text-align:left;max-height:300px;overflow-y:auto;">';
+                data.data.forEach(function (t) {
+                    var category = t.deductionCategoryTypeId === 1 ? 'Employee' : 'Employer';
+                    var rateText = t.currentRate ? t.currentRate.toFixed(2) + '%' : 'N/A';
+                    html += '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;cursor:pointer;">' +
+                        '<input type="checkbox" value="' + t.id + '" checked style="width:18px;height:18px;">' +
+                        '<span><strong>' + t.name + '</strong> (' + category + ') — ' + rateText + '</span></label>';
+                });
+                html += '</div>';
+
+                Swal.fire({
+                    title: 'Import Cyprus Templates',
+                    html: html,
+                    showCancelButton: true,
+                    confirmButtonText: 'Import Selected',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#0D5EA6',
+                    preConfirm: function () {
+                        var checked = [];
+                        document.querySelectorAll('.swal2-html-container input[type="checkbox"]:checked').forEach(function (cb) {
+                            checked.push(parseInt(cb.value));
+                        });
+                        if (checked.length === 0) {
+                            Swal.showValidationMessage('Please select at least one template.');
+                            return false;
+                        }
+                        return checked;
+                    }
+                }).then(async function (result) {
+                    if (result.isConfirmed) {
+                        BlockUI.show('Importing templates...');
+                        try {
+                            var importResponse = await fetch('/Payroll/AxPostImportDeductionTemplates', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'RequestVerificationToken': getAntiForgeryToken()
+                                },
+                                body: JSON.stringify(result.value)
+                            });
+                            var importData = await importResponse.json();
+                            BlockUI.hide();
+
+                            if (importData.success) {
+                                Swal.fire({ icon: 'success', title: 'Done', text: importData.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'Error', text: importData.message, confirmButtonColor: '#0D5EA6' });
+                            }
+                        } catch (e) {
+                            BlockUI.hide();
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                        }
+                    }
+                });
+            } else {
+                Swal.fire({ icon: 'info', title: 'No Templates', text: 'No templates available for import.', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>

@@ -20,7 +20,11 @@
 
 <section class="glass card-pad" style="margin-bottom:22px;">
     <form id="filterForm" method="get" action="/SalesImport/Records">
-        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="salesFilterPanel">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            Filters
+        </button>
+        <div class="filter-panel" id="salesFilterPanel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
             <div class="field" style="min-width:180px;">
                 <label for="sourceId">Revenue Source</label>
                 <select id="sourceId" name="sourceId">
@@ -55,6 +59,16 @@
             <button type="button" class="period-shortcut" onclick="setQuickPeriod('this_year')">This Year</button>
             <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_year')">Last Year</button>
             <button type="button" class="period-shortcut" onclick="setQuickPeriod('all')">All Time</button>
+            <select class="mobile-period-select" onchange="if(this.value) setQuickPeriod(this.value)">
+                <option value="">Quick date range...</option>
+                <option value="this_month">This Month</option>
+                <option value="last_month">Last Month</option>
+                <option value="last_3">Last 3 Months</option>
+                <option value="last_6">Last 6 Months</option>
+                <option value="this_year">This Year</option>
+                <option value="last_year">Last Year</option>
+                <option value="all">All Time</option>
+            </select>
         </div>
     </form>
 </section>

@@ -1,0 +1,165 @@
+@model List<Portal.Infrastructure.Models.Payroll.EarningTypeDto>
+@{
+    ViewData["Title"] = "Earning Types";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Admin</div>
+        <h1 class="topbar-heading">Earning Types</h1>
+        <p class="topbar-subtitle">Manage system-wide earning type classifications used across all business payslips.</p>
+    </div>
+</div>
+
+<!-- Create Form -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 style="margin:0 0 16px 0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#1a2a3a;">Create Earning Type</h3>
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:200px;">
+            <label for="etName">Name</label>
+            <input type="text" id="etName" placeholder="e.g. Commission" />
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="etCode">Code</label>
+            <input type="text" id="etCode" placeholder="e.g. COMMISSION" />
+        </div>
+        <div class="field" style="min-width:100px;">
+            <label for="etSortOrder">Sort Order</label>
+            <input type="number" id="etSortOrder" min="1" max="99" placeholder="6" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="createEarningType()">Create</button>
+        </div>
+    </div>
+</section>
+
+<!-- Earning Types Table -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Sort Order</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderBy(e => e.SortOrder))
+                    {
+                        <tr class="@(!item.IsActive ? "row-inactive" : "")">
+                            <td><strong>@item.Name</strong></td>
+                            <td>@item.Code</td>
+                            <td>@item.SortOrder</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="pill pill-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-grey">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;color:#C24A4A;" onclick="toggleEarningType(@item.Id)">Deactivate</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;color:#129867;" onclick="toggleEarningType(@item.Id)">Activate</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No earning types found.</p>
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    async function createEarningType() {
+        var name = document.getElementById('etName').value.trim();
+        var code = document.getElementById('etCode').value.trim();
+        var sortOrder = parseInt(document.getElementById('etSortOrder').value) || 0;
+
+        if (!name || !code || sortOrder < 1) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please fill in Name, Code, and Sort Order.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Creating earning type...');
+        try {
+            var response = await fetch('/AdminPayroll/AxPostCreateEarningType', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ name: name, code: code, sortOrder: sortOrder })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function toggleEarningType(id) {
+        BlockUI.show('Updating...');
+        fetch('/AdminPayroll/AxPostToggleEarningType', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(r => r.json())
+        .then(data => {
+            BlockUI.hide();
+            window.location.reload();
+        })
+        .catch(() => {
+            BlockUI.hide();
+            window.location.reload();
+        });
+    }
+</script>
+
+<style>
+    .row-inactive {
+        opacity: 0.5;
+    }
+    .row-inactive td strong {
+        text-decoration: line-through;
+        color: #7a8a9a;
+    }
+</style>

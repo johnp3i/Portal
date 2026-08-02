@@ -32,6 +32,7 @@ public static class PortalModules
     public const string Sales = "sales";
     public const string StripeConnect = "stripe_connect";
     public const string Compliance = "compliance";
+    public const string Payroll = "payroll";
 
     public static readonly string[] All =
     {
@@ -40,7 +41,7 @@ public static class PortalModules
         Cashflow, Pnl, ExpenseInsights, Attachments, ClientPortal,
         ActivityTimeline, AuditLog, Api, Webhooks, MultiCurrency, SchedulePayments,
         RecurringExpenseValidation, PurchaseImport, ZReportImport, Sales, StripeConnect,
-        Compliance
+        Compliance, Payroll
     };
 
     public static bool IsValid(string module) => module is not null && All.Contains(module);

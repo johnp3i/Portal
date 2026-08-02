@@ -1,0 +1,163 @@
+@model List<Portal.Infrastructure.Models.Payroll.PayslipPeriodDto>
+@{
+    ViewData["Title"] = "Payslip Periods";
+
+    var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <h1 class="topbar-heading">Payslip Periods</h1>
+        <p class="topbar-subtitle">Manage monthly payroll cycles</p>
+    </div>
+    <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="toggleCreateForm()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Create Period
+        </button>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Create Period Form (toggle) -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div id="createPeriodForm" style="display:none;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="margin-bottom:0;min-width:120px;">
+            <label>Year</label>
+            <select id="periodYear">
+                @for (int y = DateTime.Now.Year + 1; y >= DateTime.Now.Year - 2; y--)
+                {
+                    if (y == DateTime.Now.Year)
+                    {
+                        <option value="@y" selected>@y</option>
+                    }
+                    else
+                    {
+                        <option value="@y">@y</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="field" style="margin-bottom:0;min-width:140px;">
+            <label>Month</label>
+            <select id="periodMonth">
+                @for (int m = 1; m <= 12; m++)
+                {
+                    if (m == DateTime.Now.Month)
+                    {
+                        <option value="@m" selected>@monthNames[m]</option>
+                    }
+                    else
+                    {
+                        <option value="@m">@monthNames[m]</option>
+                    }
+                }
+            </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="createPeriod()">Create</button>
+    </div>
+</section>
+
+<!-- Periods Table -->
+<section class="glass card-pad">
+    @if (Model != null && Model.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Status</th>
+                    <th data-mobile="hide">Employees</th>
+                    <th class="text-right" data-mobile="hide">Total Net</th>
+                    <th data-mobile="hide">Processed</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var period in Model)
+                {
+                    <tr>
+                        <td><strong>@monthNames[period.Month] @period.Year</strong></td>
+                        <td>
+                            @if (period.Status == "Draft")
+                            {
+                                <span class="pill pill-grey">Draft</span>
+                            }
+                            else if (period.Status == "Preview")
+                            {
+                                <span class="pill pill-blue">Preview</span>
+                            }
+                            else if (period.Status == "Finalised")
+                            {
+                                <span class="pill pill-green">Finalised</span>
+                            }
+                        </td>
+                        <td data-mobile="hide">@(period.PayslipCount > 0 ? period.PayslipCount.ToString() : "—")</td>
+                        <td class="text-right" data-mobile="hide">@(period.PayslipCount > 0 ? $"€{period.TotalNetSalary:N2}" : "—")</td>
+                        <td data-mobile="hide">@(period.ProcessedAtUtc.HasValue ? period.ProcessedAtUtc.Value.ToString("dd MMM yyyy") : "—")</td>
+                        <td class="table-actions">
+                            @if (period.Status == "Draft" && period.PayslipCount == 0)
+                            {
+                                <a class="btn btn-sm btn-primary" asp-action="BatchGenerate" asp-controller="Payroll" asp-route-periodId="@period.Id">Generate Payslips</a>
+                            }
+                            else
+                            {
+                                <a class="btn btn-sm btn-secondary" asp-action="PeriodDetail" asp-controller="Payroll" asp-route-id="@period.Id">View</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No payslip periods found. Create your first period to get started.</p>
+        </div>
+    }
+</section>
+
+<script>
+    function getAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    function toggleCreateForm() {
+        var form = document.getElementById('createPeriodForm');
+        form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    async function createPeriod() {
+        var year = parseInt(document.getElementById('periodYear').value);
+        var month = parseInt(document.getElementById('periodMonth').value);
+
+        BlockUI.show('Creating period...');
+        try {
+            var response = await fetch('/Payroll/AxPostCreatePeriod', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({ year: year, month: month })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+</script>
