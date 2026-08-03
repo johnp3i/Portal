@@ -56,6 +56,7 @@ public class PortalDbContext : DbContext
     // Purchase schema
     public DbSet<Supplier> Suppliers { get; set; } = null!;
     public DbSet<ExpenseCategory> ExpenseCategories { get; set; } = null!;
+    public DbSet<ExpenseCategoryTemplate> ExpenseCategoryTemplates { get; set; } = null!;
     public DbSet<Purchase> Purchases { get; set; } = null!;
     public DbSet<PurchaseOriginType> PurchaseOriginTypes { get; set; } = null!;
     public DbSet<ExpenseType> ExpenseTypes { get; set; } = null!;
@@ -160,6 +161,7 @@ public class PortalDbContext : DbContext
     public DbSet<Entities.Sales.LeadStatusType> LeadStatusTypes { get; set; } = null!;
     public DbSet<Entities.Sales.LeadResponseType> LeadResponseTypes { get; set; } = null!;
     public DbSet<Entities.Sales.MeetingType> MeetingTypes { get; set; } = null!;
+    public DbSet<FollowUpTask> FollowUpTasks { get; set; } = null!;
 
     // Compliance schema
     public DbSet<ApplicationCategory> ApplicationCategories { get; set; } = null!;
@@ -259,6 +261,7 @@ public class PortalDbContext : DbContext
         ConfigureScheduleOverviewRawRow(modelBuilder);
         ConfigureDocumentAttachment(modelBuilder);
         ConfigureSignature(modelBuilder);
+        ConfigureExpenseCategoryTemplate(modelBuilder);
         ConfigurePaymentReceipt(modelBuilder);
         ConfigurePaymentReceiptLine(modelBuilder);
         ConfigurePaymentReceiptShare(modelBuilder);
@@ -285,6 +288,7 @@ public class PortalDbContext : DbContext
         ConfigureMeetingProductRequest(modelBuilder);
         ConfigureMeetingOpportunity(modelBuilder);
         ConfigureTeamMember(modelBuilder);
+        ConfigureFollowUpTask(modelBuilder);
         ConfigureActivityFeed(modelBuilder);
 
         // Compliance
@@ -3037,6 +3041,19 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureExpenseCategoryTemplate(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ExpenseCategoryTemplate>(entity =>
+        {
+            entity.ToTable("ExpenseCategoryTemplate", "purchase");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
     private static void ConfigureSignature(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Signature>(entity =>
@@ -3630,6 +3647,47 @@ public class PortalDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
             entity.HasIndex(e => e.BusinessId).HasDatabaseName("IX_TeamMember_BusinessId");
+        });
+    }
+
+    private static void ConfigureFollowUpTask(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FollowUpTask>(entity =>
+        {
+            entity.ToTable("FollowUpTask", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.TaskType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DueAtUtc).IsRequired();
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.IsCompleted).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.SnoozedCount).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.CreatedByUserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadRequest)
+                .WithMany()
+                .HasForeignKey(e => e.LeadRequestId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.Contact)
+                .WithMany()
+                .HasForeignKey(e => e.ContactId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.TeamMember)
+                .WithMany()
+                .HasForeignKey(e => e.TeamMemberId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 
@@ -4227,6 +4285,9 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<Meeting>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<FollowUpTask>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         // Compliance entities

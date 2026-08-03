@@ -300,10 +300,13 @@ builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<ITeamMemberService, TeamMemberService>();
 builder.Services.AddScoped<IActivityFeedService, ActivityFeedService>();
+builder.Services.AddScoped<IFollowUpTaskService, FollowUpTaskService>();
 builder.Services.AddScoped<TeamMemberRepository>(sp =>
     new TeamMemberRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ActivityFeedRepository>(sp =>
     new ActivityFeedRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<FollowUpTaskRepository>(sp =>
+    new FollowUpTaskRepository(sp.GetRequiredService<PortalDbContext>()));
 
 // --- What's New Announcements ---
 builder.Services.AddScoped<AnnouncementRepository>(sp =>
@@ -387,6 +390,10 @@ builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IStatementRenderer, StatementRenderer>();
 
 // --- Payment Receipts & Signatures ---
+builder.Services.AddScoped<IProductInsightsService, ProductInsightsService>();
+builder.Services.AddScoped<ExpenseCategoryTemplateRepository>(sp =>
+    new ExpenseCategoryTemplateRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IExpenseCategoryTemplateService, ExpenseCategoryTemplateService>();
 builder.Services.AddScoped<SignatureRepository>(sp =>
     new SignatureRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<PaymentReceiptRepository>(sp =>

@@ -637,7 +637,7 @@ else if (Model.ShowRevenue)
                             "cheque" => "pill-gold",
                             _ => "pill-grey"
                         };
-                        <tr>
+                        <tr style="vertical-align:middle;@(payment.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
                             <td>
                                 @payment.PaymentDateUtc.ToString("dd MMM yyyy")
                                 @if (payment.IsUpcoming)
@@ -766,7 +766,7 @@ else if (Model.ShowRevenue)
                             "cheque" => "pill-gold",
                             _ => "pill-grey"
                         };
-                        <tr>
+                        <tr style="vertical-align:middle;@(payment.IsVoided ? "opacity:0.5;text-decoration:line-through;" : "")">
                             <td>
                                 @payment.PaymentDateUtc.ToString("dd MMM yyyy")
                                 @if (payment.IsUpcoming)

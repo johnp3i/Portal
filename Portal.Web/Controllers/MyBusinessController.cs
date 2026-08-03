@@ -115,15 +115,17 @@ public class MyBusinessController : Controller
             }
         }
 
-        // Validate required fields
+        // Validate required fields (VAT fields skipped if "PENDING" — not yet registered)
+        var isVatPending = profile.VatRegistrationNumber == "PENDING";
+
         if (string.IsNullOrWhiteSpace(profile.CompanyRegistrationNumber) ||
-            string.IsNullOrWhiteSpace(profile.VatRegistrationNumber) ||
+            (!isVatPending && string.IsNullOrWhiteSpace(profile.VatRegistrationNumber)) ||
             string.IsNullOrWhiteSpace(profile.AddressLine1) ||
             string.IsNullOrWhiteSpace(profile.City) ||
             string.IsNullOrWhiteSpace(profile.PostalCode) ||
             string.IsNullOrWhiteSpace(profile.Country) ||
             string.IsNullOrWhiteSpace(profile.Email) ||
-            profile.VatRegistrationDate == default)
+            (!isVatPending && profile.VatRegistrationDate == default))
         {
             TempData["Error"] = "Please fill in all required fields (marked with *).";
 

@@ -1,0 +1,157 @@
+@model List<Portal.Infrastructure.Entities.ExpenseCategoryTemplate>
+@{
+    ViewData["Title"] = "Category Templates";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Expense Category Templates</h1>
+        <p class="topbar-subtitle">Manage the platform-wide expense category templates available for businesses to import.</p>
+    </div>
+    <div>
+        <button class="btn btn-primary" onclick="openCreateTemplateModal()">Add Template</button>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (Model.Any())
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr style="vertical-align:middle;@(!t.IsActive ? "opacity:0.5;" : "")">
+                        <td style="font-weight:600;">@t.Name</td>
+                        <td style="font-size:13px;color:#5a6a7a;">@(t.Description ?? "—")</td>
+                        <td>
+                            @if (t.IsActive)
+                            {
+                                <span class="pill pill-green">Active</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill-red">Inactive</span>
+                            }
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <button class="tbl-action tbl-action--primary" onclick="editTemplate(@t.Id, '@t.Name.Replace("'", "\\'")','@(t.Description?.Replace("'", "\\'") ?? "")')">Edit</button>
+                            @if (t.IsActive)
+                            {
+                                <button class="tbl-action tbl-action--danger" onclick="deactivateTemplate(@t.Id)">Deactivate</button>
+                            }
+                            else
+                            {
+                                <button class="tbl-action tbl-action--secondary" onclick="reactivateTemplate(@t.Id)">Reactivate</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state"><p>No templates created yet.</p></div>
+    }
+</section>
+
+<!-- Create/Edit Modal -->
+<div id="templateModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.4);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,.15);">
+        <h3 id="templateModalTitle" style="margin-bottom:16px;">Add Template</h3>
+        <input type="hidden" id="templateId" />
+        <div class="field"><label>Name *</label><input type="text" id="templateName" /></div>
+        <div class="field" style="margin-top:12px;"><label>Description</label><textarea id="templateDesc" rows="3"></textarea></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+            <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveTemplate()">Save</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openCreateTemplateModal() {
+        document.getElementById('templateModalTitle').textContent = 'Add Template';
+        document.getElementById('templateId').value = '';
+        document.getElementById('templateName').value = '';
+        document.getElementById('templateDesc').value = '';
+        document.getElementById('templateModal').style.display = 'flex';
+    }
+
+    function editTemplate(id, name, desc) {
+        document.getElementById('templateModalTitle').textContent = 'Edit Template';
+        document.getElementById('templateId').value = id;
+        document.getElementById('templateName').value = name;
+        document.getElementById('templateDesc').value = desc;
+        document.getElementById('templateModal').style.display = 'flex';
+    }
+
+    function closeTemplateModal() {
+        document.getElementById('templateModal').style.display = 'none';
+    }
+
+    async function saveTemplate() {
+        var id = document.getElementById('templateId').value;
+        var name = document.getElementById('templateName').value.trim();
+        var desc = document.getElementById('templateDesc').value.trim();
+
+        if (!name) { Swal.fire({ icon: 'warning', title: 'Name required', confirmButtonColor: '#0D5EA6' }); return; }
+
+        BlockUI.show('Saving...');
+        try {
+            var url = id ? '/Admin/AxPostUpdateCategoryTemplate' : '/Admin/AxPostCreateCategoryTemplate';
+            var body = 'name=' + encodeURIComponent(name) + '&description=' + encodeURIComponent(desc);
+            if (id) body += '&id=' + id;
+
+            var response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: body
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) {
+                closeTemplateModal();
+                Swal.fire({ icon: 'success', title: 'Saved', confirmButtonColor: '#0D5EA6' }).then(function() { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function deactivateTemplate(id) {
+        BlockUI.show('Deactivating...');
+        var response = await fetch('/Admin/AxPostDeactivateCategoryTemplate?id=' + id, { method: 'POST', headers: { 'RequestVerificationToken': getAntiForgeryToken() } });
+        var data = await response.json();
+        BlockUI.hide();
+        if (data.success) location.reload();
+        else Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+    }
+
+    async function reactivateTemplate(id) {
+        BlockUI.show('Reactivating...');
+        var response = await fetch('/Admin/AxPostReactivateCategoryTemplate?id=' + id, { method: 'POST', headers: { 'RequestVerificationToken': getAntiForgeryToken() } });
+        var data = await response.json();
+        BlockUI.hide();
+        if (data.success) location.reload();
+        else Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+    }
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    }
+</script>
+}

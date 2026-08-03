@@ -464,5 +464,8 @@
     @RenderSection("Scripts", required: false)
     @await Html.PartialAsync("_GraceAccessModal")
     <script src="/js/mobile-nav.js?v=2"></script>
+    <script>
+    (function(){var b=document.getElementById('navTaskOverdueBadge');if(!b)return;fetch('/Sales/AxGetOverdueTaskCount').then(function(r){return r.json()}).then(function(d){if(d.success&&d.count>0){b.textContent=d.count;b.style.display='inline-block'}}).catch(function(){})})();
+    </script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -51,6 +52,73 @@ public class ProductController : Controller
         ViewBag.ProductTypes = productTypes;
 
         return View(pagedResult.Items);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Detail(int id)
+    {
+        var product = await _productService.GetProductByIdAsync(id);
+        if (product == null) return NotFound();
+
+        var insightsService = HttpContext.RequestServices.GetRequiredService<IProductInsightsService>();
+        var planCheckService = HttpContext.RequestServices.GetRequiredService<IPlanCheckService>();
+        var tenantService = HttpContext.RequestServices.GetRequiredService<ICurrentTenantService>();
+        var dbContext = HttpContext.RequestServices.GetRequiredService<Portal.Infrastructure.Data.PortalDbContext>();
+
+        var businessId = tenantService.CurrentBusinessId;
+        if (product.BusinessId != businessId) return NotFound();
+
+        var profile = await dbContext.BusinessProfiles.IgnoreQueryFilters()
+            .Where(bp => bp.BusinessId == businessId)
+            .Select(bp => new { bp.CurrencySymbol })
+            .FirstOrDefaultAsync();
+
+        var kpis = await insightsService.GetSalesKpisAsync(product.ProductCode, businessId, product.DefaultCostPrice);
+        var topCustomers = await insightsService.GetTopCustomersAsync(product.ProductCode, businessId);
+        var customerSummary = await insightsService.GetCustomerSummaryAsync(product.ProductCode, businessId);
+        var trend = await insightsService.GetMonthlyTrendAsync(product.ProductCode, businessId);
+        var priceHistory = await dbContext.ProductPriceHistories
+            .Where(h => h.ProductId == id)
+            .OrderByDescending(h => h.EffectiveFromUtc)
+            .ToListAsync();
+
+        var isProfessional = await planCheckService.IsModuleInPlanAsync(PortalModules.Cashflow);
+
+        Portal.Infrastructure.Models.ProductInsights.ProductForecastDto? forecast = null;
+        if (isProfessional)
+            forecast = await insightsService.GetForecastAsync(product.ProductCode, businessId, product.DefaultSellingPrice);
+
+        var pipeline = await insightsService.GetPipelineActivityAsync(id, businessId);
+
+        var supplierName = product.SupplierId.HasValue
+            ? (await dbContext.Suppliers.IgnoreQueryFilters().Where(s => s.Id == product.SupplierId.Value).Select(s => s.Name).FirstOrDefaultAsync())
+            : null;
+
+        string? productTypeName = null;
+        if (product.ProductTypeId.HasValue)
+        {
+            var productTypeRepo = HttpContext.RequestServices.GetRequiredService<Portal.Infrastructure.Repositories.ProductTypeRepository>();
+            var types = await productTypeRepo.GetAllAsync();
+            productTypeName = types.FirstOrDefault(t => t.Id == product.ProductTypeId.Value)?.Name;
+        }
+
+        var model = new Portal.Infrastructure.Models.ProductInsights.ProductDetailViewModel
+        {
+            Product = product,
+            SupplierName = supplierName,
+            ProductTypeName = productTypeName,
+            CurrencySymbol = profile?.CurrencySymbol ?? "€",
+            Kpis = kpis,
+            TopCustomers = topCustomers,
+            CustomerSummary = customerSummary,
+            MonthlyTrend = trend,
+            PriceHistory = priceHistory,
+            Forecast = forecast,
+            Pipeline = pipeline,
+            IsProfessional = isProfessional
+        };
+
+        return View(model);
     }
 
     [HttpGet]

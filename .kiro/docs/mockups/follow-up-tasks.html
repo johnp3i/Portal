@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Follow-Up Tasks — Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #0B1B28;
+            --text-secondary: #5E7385;
+            --text-muted: #8a9bab;
+            --border: rgba(13, 94, 166, 0.08);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            padding: 32px;
+            line-height: 1.5;
+        }
+        h1, h2, h3, h4 { font-family: 'Manrope', sans-serif; }
+        .glass {
+            background: #fff;
+            border-radius: var(--radius);
+            border: 1.5px solid var(--border);
+            box-shadow: 0 2px 12px rgba(13, 94, 166, 0.04);
+        }
+        .card-pad { padding: 24px; }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            border: 1.5px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: #fff; color: var(--text-primary); border-color: var(--border); }
+        .btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+        .btn-success { background: rgba(18,152,103,0.08); color: var(--success); border-color: rgba(18,152,103,0.2); }
+        .btn-snooze { background: rgba(87,184,232,0.08); color: #1a8fc7; border-color: rgba(87,184,232,0.2); }
+        .mockup-label {
+            display: inline-block;
+            background: var(--blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            letter-spacing: 0.04em;
+        }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
+        .dot-red { background: var(--danger); }
+        .dot-amber { background: var(--warning); }
+        .dot-grey { background: #b8c4d0; }
+        .dot-green { background: var(--success); }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-red { background: rgba(194,74,74,0.08); color: var(--danger); }
+        .badge-amber { background: rgba(200,145,46,0.08); color: var(--warning); }
+        .badge-grey { background: rgba(138,155,171,0.08); color: var(--text-muted); }
+        .badge-blue { background: rgba(13,94,166,0.08); color: var(--blue); }
+        /* Task card */
+        .task-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            background: var(--bg-base);
+            border-radius: 12px;
+            border: 1.5px solid var(--border);
+            margin-bottom: 10px;
+            transition: border-color 0.15s;
+        }
+        .task-card:hover { border-color: rgba(13,94,166,0.18); }
+        .task-card.overdue { border-left: 3px solid var(--danger); }
+        .task-card.today { border-left: 3px solid var(--warning); }
+        .task-card.tomorrow { border-left: 3px solid #b8c4d0; }
+        .task-card.snoozed-warning { border: 1.5px dashed var(--warning); }
+        .task-card.completed {
+            opacity: 0.55;
+            border-left: 3px solid var(--success);
+        }
+        .task-card .task-info { flex: 1; min-width: 0; }
+        .task-card .task-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .task-card .task-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+        .task-card .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        /* Type icons */
+        .type-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+        .type-call { background: rgba(13,94,166,0.08); color: var(--blue); }
+        .type-email { background: rgba(18,152,103,0.08); color: var(--success); }
+        .type-followup { background: rgba(200,145,46,0.08); color: var(--warning); }
+        .type-other { background: rgba(138,155,171,0.08); color: var(--text-muted); }
+
+        /* Panel header */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .panel-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Quick presets */
+        .preset-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .preset-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .preset-btn:hover, .preset-btn.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(11,27,40,0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 32px;
+            width: 440px;
+            max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .modal-box h3 { margin-bottom: 20px; font-size: 18px; }
+        .field { margin-bottom: 14px; }
+        .field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .field input, .field select, .field textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background: #fff;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus {
+            border-color: var(--blue);
+        }
+        .field textarea { resize: vertical; min-height: 60px; }
+
+        .separator { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+        /* Snooze dropdown */
+        .snooze-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .snooze-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            padding: 6px;
+            min-width: 140px;
+            z-index: 10;
+            margin-top: 4px;
+        }
+        .snooze-menu a {
+            display: block;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .snooze-menu a:hover { background: var(--bg-base); }
+    </style>
+</head>
+<body>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 1: Today's Actions Panel (Pipeline page)              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="mockup-label">1. TODAY'S ACTIONS PANEL (Pipeline page — above the Kanban board)</div>
+
+<section class="glass card-pad" style="margin-bottom:32px;">
+    <div class="panel-header">
+        <h3>
+            <svg width="20" height="20" fill="none" stroke="var(--warning)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Today's Actions
+        </h3>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span class="badge badge-red">1 overdue</span>
+            <span class="badge badge-amber">2 due today</span>
+            <span class="badge badge-grey">1 tomorrow</span>
+            <button class="btn btn-secondary btn-sm" title="Collapse panel">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+            </button>
+        </div>
+    </div>
+    <!-- Overdue task -->
+    <div class="task-card overdue snoozed-warning">
+        <span class="dot dot-red"></span>
+        <div class="type-icon type-call">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        </div>
+        <div class="task-info">
+            <div class="task-title">Call Maria Petrou (Acme Corp) — Proposal follow-up</div>
+            <div class="task-meta">
+                <span class="badge badge-red" style="margin-right:6px;">Overdue 2 days</span>
+                Assigned to: <strong>Me</strong> &middot; Snoozed 3 times
+            </div>
+        </div>
+        <div class="task-actions">
+            <button class="btn btn-success btn-sm">&#10003; Complete</button>
+            <div class="snooze-dropdown">
+                <button class="btn btn-snooze btn-sm">&#9193; Snooze &#9662;</button>
+            </div>
+        </div>
+    </div>
+    <!-- Today task 1 -->
+    <div class="task-card today">
+        <span class="dot dot-amber"></span>
+        <div class="type-icon type-email">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+        </div>
+        <div class="task-info">
+            <div class="task-title">Email follow-up to Nexus Digital — Pricing query</div>
+            <div class="task-meta">
+                <span class="badge badge-amber" style="margin-right:6px;">Due today</span>
+                Assigned to: <strong>Me</strong>
+            </div>
+        </div>
+        <div class="task-actions">
+            <button class="btn btn-success btn-sm">&#10003; Complete</button>
+            <div class="snooze-dropdown">
+                <button class="btn btn-snooze btn-sm">&#9193; Snooze &#9662;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today task 2 -->
+    <div class="task-card today">
+        <span class="dot dot-amber"></span>
+        <div class="type-icon type-followup">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        </div>
+        <div class="task-info">
+            <div class="task-title">Send revised quotation to Costa Enterprises</div>
+            <div class="task-meta">
+                <span class="badge badge-amber" style="margin-right:6px;">Due today</span>
+                Assigned to: <strong>Constantinos</strong>
+            </div>
+        </div>
+        <div class="task-actions">
+            <button class="btn btn-success btn-sm">&#10003; Complete</button>
+            <div class="snooze-dropdown">
+                <button class="btn btn-snooze btn-sm">&#9193; Snooze &#9662;</button>
+            </div>
+        </div>
+    </div>
+    <!-- Tomorrow task -->
+    <div class="task-card tomorrow">
+        <span class="dot dot-grey"></span>
+        <div class="type-icon type-call">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        </div>
+        <div class="task-info">
+            <div class="task-title">Call John (Marina Bay) re: onboarding pack</div>
+            <div class="task-meta">
+                <span class="badge badge-grey" style="margin-right:6px;">Tomorrow</span>
+                Assigned to: <strong>Me</strong>
+            </div>
+        </div>
+        <div class="task-actions">
+            <button class="btn btn-success btn-sm">&#10003; Complete</button>
+            <div class="snooze-dropdown">
+                <button class="btn btn-snooze btn-sm">&#9193; Snooze &#9662;</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<hr class="separator">
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 2: Quick Creation Modal                                -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="mockup-label">2. QUICK CREATION MODAL (from Lead Detail page)</div>
+
+<div style="position:relative;margin-bottom:32px;">
+    <div class="modal-overlay" style="position:relative;min-height:480px;border-radius:var(--radius);">
+        <div class="modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 style="margin:0;">Schedule Follow-up</h3>
+                <button style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:20px;">&times;</button>
+            </div>
+
+            <div class="field">
+                <label>Title</label>
+                <input type="text" value="Follow up &mdash; Maria Petrou" />
+            </div>
+
+            <div class="field">
+                <label>Type</label>
+                <select>
+                    <option>Call</option>
+                    <option selected>Email</option>
+                    <option>Follow-up</option>
+                    <option>Meeting Prep</option>
+                    <option>Other</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Due Date</label>
+                <div class="preset-group" style="margin-bottom:10px;">
+                    <button class="preset-btn">Tomorrow</button>
+                    <button class="preset-btn active">In 3 days</button>
+                    <button class="preset-btn">Next week</button>
+                    <button class="preset-btn">Next Monday</button>
+                </div>
+                <input type="date" value="2026-07-15" />
+            </div>
+
+            <div class="field">
+                <label>Assign to</label>
+                <select>
+                    <option selected>Me (Constantinos Andreou)</option>
+                    <option>Anna Georgiou</option>
+                    <option>Michael Stavrou</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Notes (optional)</label>
+                <textarea placeholder="Add context for the follow-up...">Send updated pricing after the meeting discussion</textarea>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                <button class="btn btn-secondary">Cancel</button>
+                <button class="btn btn-primary">Create Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="separator">
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 3: Lead Detail — Tasks Section                         -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="mockup-label">3. LEAD DETAIL — FOLLOW-UP TASKS SECTION (between Meetings and Linked Documents)</div>
+
+<section class="glass card-pad" style="margin-bottom:32px;">
+    <div class="panel-header">
+        <h3 style="font-size:16px;">
+            Follow-Up Tasks
+            <span class="badge badge-blue">3</span>
+        </h3>
+        <button class="btn btn-primary btn-sm">+ Schedule Follow-up</button>
+    </div>
+
+    <!-- Pending tasks -->
+    <div class="task-card overdue">
+        <span class="dot dot-red"></span>
+        <div class="type-icon type-call">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        </div>
+        <div class="task-info">
+            <div class="task-title">Call back — contract questions</div>
+            <div class="task-meta">
+                <span class="badge badge-red" style="margin-right:6px;">Overdue 2 days</span>
+                Assigned to: <strong>Me</strong>
+            </div>
+        </div>
+        <div class="task-actions">
+            <button class="btn btn-success btn-sm">&#10003; Complete</button>
+            <button class="btn btn-snooze btn-sm">&#9193; Snooze &#9662;</button>
+        </div>
+    </div>
+    <div class="task-card today">
+        <span class="dot dot-amber"></span>
+        <div class="type-icon type-email">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+        </div>
+        <div class="task-info">
+            <div class="task-title">Email follow-up — pricing query</div>
+            <div class="task-meta">
+                <span class="badge badge-amber" style="margin-right:6px;">Due today</span>
+                Assigned to: <strong>Constantinos</strong>
+            </div>
+        </div>
+        <div class="task-actions">
+            <button class="btn btn-success btn-sm">&#10003; Complete</button>
+            <button class="btn btn-snooze btn-sm">&#9193; Snooze &#9662;</button>
+        </div>
+    </div>
+
+    <!-- Completed tasks (muted) -->
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;">COMPLETED</div>
+
+        <div class="task-card completed">
+            <span class="dot dot-green"></span>
+            <div class="type-icon type-email" style="opacity:0.6;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+            </div>
+            <div class="task-info">
+                <div class="task-title" style="text-decoration:line-through;">Send introductory email</div>
+                <div class="task-meta">Completed: 08 Jul 2026</div>
+            </div>
+        </div>
+
+        <div class="task-card completed">
+            <span class="dot dot-green"></span>
+            <div class="type-icon type-call" style="opacity:0.6;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            </div>
+            <div class="task-info">
+                <div class="task-title" style="text-decoration:line-through;">Call to confirm receipt</div>
+                <div class="task-meta">Completed: 06 Jul 2026</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<hr class="separator">
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 4: Snooze Dropdown (expanded)                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="mockup-label">4. SNOOZE DROPDOWN (shown when clicking Snooze button)</div>
+
+<section class="glass card-pad" style="margin-bottom:32px;">
+    <div class="task-card today" style="position:relative;">
+        <span class="dot dot-amber"></span>
+        <div class="type-icon type-email">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+        </div>
+        <div class="task-info">
+            <div class="task-title">Email follow-up to Nexus Digital</div>
+            <div class="task-meta">
+                <span class="badge badge-amber">Due today</span>
+            </div>
+        </div>
+        <div class="task-actions" style="position:relative;">
+            <button class="btn btn-success btn-sm">&#10003; Complete</button>
+            <div class="snooze-dropdown">
+                <button class="btn btn-snooze btn-sm">&#9193; Snooze &#9662;</button>
+                <div class="snooze-menu">
+                    <a href="#">+1 day (Tomorrow)</a>
+                    <a href="#">+3 days</a>
+                    <a href="#">Next Monday</a>
+                    <a href="#" style="border-top:1px solid var(--border);margin-top:4px;padding-top:10px;">Custom date...</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<hr class="separator">
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 5: Tasks List View (standalone page)                   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="mockup-label">5. TASKS LIST VIEW (Sales/Tasks — full list page with filters)</div>
+
+<!-- Topbar -->
+<div style="margin-bottom:22px;">
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--blue);display:inline-block;"></span>
+        Opportunities / Tasks
+    </div>
+    <h1 style="font-family:'Manrope',sans-serif;font-size:36px;font-weight:800;">Follow-Up Tasks</h1>
+    <p style="color:var(--text-muted);font-size:14px;">Manage all your follow-up reminders in one place.</p>
+</div>
+
+<!-- Filter -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:150px;margin-bottom:0;">
+            <label>Status</label>
+            <select>
+                <option value="">All</option>
+                <option>Overdue</option>
+                <option selected>Pending</option>
+                <option>Completed</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;margin-bottom:0;">
+            <label>Type</label>
+            <select>
+                <option value="">All Types</option>
+                <option>Call</option>
+                <option>Email</option>
+                <option>Follow-up</option>
+                <option>Meeting Prep</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;margin-bottom:0;">
+            <label>Assigned To</label>
+            <select>
+                <option value="">All Team</option>
+                <option selected>Me</option>
+                <option>Anna Georgiou</option>
+                <option>Michael Stavrou</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;margin-bottom:0;">
+            <label>From</label>
+            <input type="date" value="2026-07-01" />
+        </div>
+        <div class="field" style="min-width:140px;margin-bottom:0;">
+            <label>To</label>
+            <input type="date" value="2026-07-31" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary">Filter</button>
+            <button class="btn btn-secondary">Clear</button>
+        </div>
+    </div>
+</section>
+<!-- Table -->
+<section class="glass card-pad" style="margin-bottom:32px;">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead>
+            <tr style="border-bottom:2px solid var(--border);">
+                <th style="text-align:left;padding:12px 14px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Title</th>
+                <th style="text-align:left;padding:12px 14px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Contact</th>
+                <th style="text-align:left;padding:12px 14px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Type</th>
+                <th style="text-align:left;padding:12px 14px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Due Date</th>
+                <th style="text-align:left;padding:12px 14px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Status</th>
+                <th style="text-align:left;padding:12px 14px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Assigned</th>
+                <th style="text-align:center;padding:12px 14px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:14px;font-weight:600;">Call Maria Petrou — Proposal follow-up</td>
+                <td style="padding:14px;color:var(--blue);">Maria Petrou</td>
+                <td style="padding:14px;"><span class="badge badge-blue">Call</span></td>
+                <td style="padding:14px;color:var(--danger);font-weight:600;">10 Jul 2026</td>
+                <td style="padding:14px;"><span class="badge badge-red">Overdue</span></td>
+                <td style="padding:14px;">Me</td>
+                <td style="padding:14px;text-align:center;">
+                    <button class="btn btn-success btn-sm">&#10003;</button>
+                    <button class="btn btn-snooze btn-sm">&#9193;</button>
+                </td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:14px;font-weight:600;">Email follow-up to Nexus Digital</td>
+                <td style="padding:14px;color:var(--blue);">Nexus Digital</td>
+                <td style="padding:14px;"><span class="badge" style="background:rgba(18,152,103,.08);color:var(--success);">Email</span></td>
+                <td style="padding:14px;color:var(--warning);font-weight:600;">12 Jul 2026</td>
+                <td style="padding:14px;"><span class="badge badge-amber">Today</span></td>
+                <td style="padding:14px;">Me</td>
+                <td style="padding:14px;text-align:center;">
+                    <button class="btn btn-success btn-sm">&#10003;</button>
+                    <button class="btn btn-snooze btn-sm">&#9193;</button>
+                </td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:14px;font-weight:600;">Send revised quotation to Costa</td>
+                <td style="padding:14px;color:var(--blue);">Costa Enterprises</td>
+                <td style="padding:14px;"><span class="badge" style="background:rgba(200,145,46,.08);color:var(--warning);">Follow-up</span></td>
+                <td style="padding:14px;color:var(--warning);font-weight:600;">12 Jul 2026</td>
+                <td style="padding:14px;"><span class="badge badge-amber">Today</span></td>
+                <td style="padding:14px;">Constantinos</td>
+                <td style="padding:14px;text-align:center;">
+                    <button class="btn btn-success btn-sm">&#10003;</button>
+                    <button class="btn btn-snooze btn-sm">&#9193;</button>
+                </td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:14px;font-weight:600;">Call John re: onboarding pack</td>
+                <td style="padding:14px;color:var(--blue);">John Marina</td>
+                <td style="padding:14px;"><span class="badge badge-blue">Call</span></td>
+                <td style="padding:14px;">13 Jul 2026</td>
+                <td style="padding:14px;"><span class="badge badge-grey">Tomorrow</span></td>
+                <td style="padding:14px;">Me</td>
+                <td style="padding:14px;text-align:center;">
+                    <button class="btn btn-success btn-sm">&#10003;</button>
+                    <button class="btn btn-snooze btn-sm">&#9193;</button>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:14px;font-weight:600;">Prepare demo materials</td>
+                <td style="padding:14px;color:var(--blue);">Alpha Solutions</td>
+                <td style="padding:14px;"><span class="badge" style="background:rgba(138,155,171,.08);color:var(--text-muted);">Meeting Prep</span></td>
+                <td style="padding:14px;">18 Jul 2026</td>
+                <td style="padding:14px;"><span class="badge badge-grey">Upcoming</span></td>
+                <td style="padding:14px;">Anna</td>
+                <td style="padding:14px;text-align:center;">
+                    <button class="btn btn-success btn-sm">&#10003;</button>
+                    <button class="btn btn-snooze btn-sm">&#9193;</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div style="font-size:14px;color:var(--text-muted);">Showing 1–5 of 12 tasks</div>
+        <div style="display:flex;gap:4px;">
+            <button class="btn btn-secondary btn-sm" style="font-weight:800;background:var(--blue);color:#fff;border-color:var(--blue);">1</button>
+            <button class="btn btn-secondary btn-sm">2</button>
+            <button class="btn btn-secondary btn-sm">3</button>
+        </div>
+    </div>
+</section>
+<hr class="separator">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 6: Navigation Item with Badge                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="mockup-label">6. NAVIGATION — "Tasks" item with overdue badge (under Opportunities)</div>
+
+<section class="glass card-pad" style="margin-bottom:32px;max-width:240px;">
+    <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Opportunities</div>
+
+    <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;text-decoration:none;color:var(--text-primary);font-size:14px;font-weight:500;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Lead Board
+    </a>
+    <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 12px 9px 24px;border-radius:8px;text-decoration:none;color:var(--text-secondary);font-size:13px;font-weight:500;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Contacts
+    </a>
+    <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 12px 9px 24px;border-radius:8px;text-decoration:none;color:var(--text-secondary);font-size:13px;font-weight:500;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        Products &amp; Services
+    </a>
+    <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 12px 9px 24px;border-radius:8px;text-decoration:none;color:var(--text-secondary);font-size:13px;font-weight:500;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Meetings
+    </a>
+    <!-- NEW: Tasks nav item with overdue badge -->
+    <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 12px 9px 24px;border-radius:8px;text-decoration:none;color:var(--blue);font-size:13px;font-weight:600;background:rgba(13,94,166,.04);">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Tasks
+        <span style="margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;min-width:18px;text-align:center;">1</span>
+    </a>
+    <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 12px 9px 24px;border-radius:8px;text-decoration:none;color:var(--text-secondary);font-size:13px;font-weight:500;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg>
+        Templates
+    </a>
+    <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 12px 9px 24px;border-radius:8px;text-decoration:none;color:var(--text-secondary);font-size:13px;font-weight:500;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Team
+    </a>
+</section>
+
+</body>
+</html>

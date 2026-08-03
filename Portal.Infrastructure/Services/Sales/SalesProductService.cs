@@ -28,6 +28,7 @@ public class SalesProductService : ISalesProductService
                 BusinessId = _tenantService.CurrentBusinessId,
                 Name = request.Name,
                 Description = request.Description,
+                ProductId = request.ProductId,
                 IsActive = true
             };
 
@@ -51,6 +52,7 @@ public class SalesProductService : ISalesProductService
 
             existing.Name = request.Name;
             existing.Description = request.Description;
+            existing.ProductId = request.ProductId;
 
             await _productRepository.UpdateAsync(existing);
             return ServiceResult.Ok();

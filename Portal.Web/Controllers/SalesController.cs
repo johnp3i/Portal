@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Models.Sales;
 using Portal.Infrastructure.Repositories.Sales;
@@ -28,6 +29,7 @@ public class SalesController : Controller
     private readonly IBusinessService _businessService;
     private readonly ITeamMemberService _teamMemberService;
     private readonly IActivityFeedService _activityFeedService;
+    private readonly IFollowUpTaskService _followUpTaskService;
     private readonly ILogger<SalesController> _logger;
 
     public SalesController(
@@ -45,6 +47,7 @@ public class SalesController : Controller
         IBusinessService businessService,
         ITeamMemberService teamMemberService,
         IActivityFeedService activityFeedService,
+        IFollowUpTaskService followUpTaskService,
         ILogger<SalesController> logger)
     {
         _leadRequestService = leadRequestService;
@@ -61,6 +64,7 @@ public class SalesController : Controller
         _businessService = businessService;
         _teamMemberService = teamMemberService;
         _activityFeedService = activityFeedService;
+        _followUpTaskService = followUpTaskService;
         _logger = logger;
     }
 
@@ -99,6 +103,23 @@ public class SalesController : Controller
     {
         var paged = await _productService.GetProductsPagedAsync(search, page, 15);
         ViewBag.SearchTerm = search;
+
+        // Build lookup for linked catalogue product names
+        var linkedIds = paged.Items.Where(p => p.ProductId.HasValue).Select(p => p.ProductId!.Value).Distinct().ToList();
+        if (linkedIds.Any())
+        {
+            var dbContext = HttpContext.RequestServices.GetRequiredService<Portal.Infrastructure.Data.PortalDbContext>();
+            var catalogLookup = await dbContext.Products
+                .IgnoreQueryFilters()
+                .Where(p => linkedIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.ProductCode + " — " + p.Description);
+            ViewBag.CatalogLookup = catalogLookup;
+        }
+        else
+        {
+            ViewBag.CatalogLookup = new Dictionary<int, string>();
+        }
+
         return View(paged);
     }
 
@@ -138,6 +159,12 @@ public class SalesController : Controller
         ViewBag.UnassignedLeads = unassignedLeads;
 
         return View(members);
+    }
+
+    [HttpGet]
+    public IActionResult Tasks()
+    {
+        return View();
     }
 
     [HttpGet]
@@ -326,6 +353,26 @@ public class SalesController : Controller
         {
             _logger.LogError(ex, "Error activating product");
             return Json(new { success = false, message = "An error occurred while activating the product." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetCatalogProducts()
+    {
+        try
+        {
+            var dbContext = HttpContext.RequestServices.GetRequiredService<Portal.Infrastructure.Data.PortalDbContext>();
+            var products = await dbContext.Products
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.Description)
+                .Select(p => new { p.Id, Name = p.Description, p.ProductCode, SellingPrice = p.DefaultSellingPrice })
+                .ToListAsync();
+
+            return Json(new { success = true, data = products });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load catalog products." });
         }
     }
 
@@ -1036,6 +1083,138 @@ public class SalesController : Controller
         {
             _logger.LogError(ex, "Error loading lookups");
             return Json(new { success = false, message = "Failed to load lookup data." });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // AJAX — FOLLOW-UP TASKS
+    // ═══════════════════════════════════════════════════════════
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostCreateTask([FromBody] CreateFollowUpTaskRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var result = await _followUpTaskService.CreateTaskAsync(request, userId);
+
+            if (result.Success && request.LeadRequestId.HasValue)
+                await RecordActivityAsync(request.LeadRequestId.Value, "task_created", $"Follow-up task created: {request.Title}");
+
+            return Json(new { success = result.Success, message = result.Message, id = result.Id });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating follow-up task");
+            return Json(new { success = false, message = "An error occurred while creating the task." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostCompleteTask(int id)
+    {
+        try
+        {
+            var result = await _followUpTaskService.CompleteTaskAsync(id);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error completing follow-up task");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSnoozeTask(int id, DateTime newDueDate)
+    {
+        try
+        {
+            var result = await _followUpTaskService.SnoozeTaskAsync(id, newDueDate);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error snoozing follow-up task");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetTodaysActions(int? teamMemberId)
+    {
+        try
+        {
+            var tasks = await _followUpTaskService.GetTodaysActionsAsync(teamMemberId);
+            return Json(new { success = true, data = tasks });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading today's actions");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetTasksByLead(int leadRequestId)
+    {
+        try
+        {
+            var tasks = await _followUpTaskService.GetByLeadIdAsync(leadRequestId);
+            return Json(new { success = true, data = tasks });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading tasks for lead");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetTasksPaged(string? status, string? taskType, int? teamMemberId, DateTime? dateFrom, DateTime? dateTo, int page = 1)
+    {
+        try
+        {
+            var filter = new FollowUpTaskFilter
+            {
+                Status = status,
+                TaskType = taskType,
+                TeamMemberId = teamMemberId,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            var result = await _followUpTaskService.GetTasksPagedAsync(filter, page, 15);
+            return Json(new
+            {
+                success = true,
+                data = result.Items,
+                totalCount = result.TotalCount,
+                currentPage = result.CurrentPage,
+                totalPages = result.TotalPages
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading paged tasks");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetOverdueTaskCount(int? teamMemberId)
+    {
+        try
+        {
+            var count = await _followUpTaskService.GetOverdueCountAsync(teamMemberId);
+            return Json(new { success = true, count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading overdue task count");
+            return Json(new { success = false, message = "An error occurred." });
         }
     }
 

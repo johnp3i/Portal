@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Detail — Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        :root {
+            --bg: #F7FAFC;
+            --bg2: #EEF4F8;
+            --text: #0B1B28;
+            --muted: #5E7385;
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --green: #129867;
+            --red: #C24A4A;
+            --gold: #C8912E;
+            --line: rgba(13,94,166,.10);
+            --shadow: 0 20px 50px rgba(13,94,166,.10);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Inter, -apple-system, sans-serif; color: var(--text); background: var(--bg); padding: 32px; }
+        h1, h2, h3 { font-family: Manrope, Inter, sans-serif; letter-spacing: -.03em; }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* Topbar */
+        .topbar { margin-bottom: 24px; }
+        .eyebrow { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.88); color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+        .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--cyan); }
+        .topbar h1 { font-size: 32px; font-weight: 800; margin-top: 12px; }
+        .topbar .subtitle { font-size: 15px; color: var(--muted); margin-top: 4px; }
+        .breadcrumb { font-size: 13px; color: var(--muted); margin-top: 8px; }
+        .breadcrumb a { color: var(--blue); text-decoration: none; font-weight: 600; }
+
+        /* Cards */
+        .glass { background: linear-gradient(180deg, rgba(255,255,255,.995) 0%, rgba(244,249,253,.97) 100%); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 24px; margin-bottom: 22px; }
+
+        /* KPI Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 22px; }
+        .kpi-card { padding: 20px; border-radius: 16px; background: rgba(255,255,255,.9); border: 1px solid var(--line); }
+        .kpi-card .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+        .kpi-card .value { font-size: 26px; font-weight: 800; font-family: Manrope, sans-serif; color: var(--text); }
+        .kpi-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+        .kpi-card.highlight { border-left: 4px solid var(--green); }
+
+        /* Product Header */
+        .product-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+        .product-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 18px; }
+        .product-meta .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+        .product-meta .field-value { font-size: 15px; font-weight: 600; margin-top: 4px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; font-family: inherit; }
+        .btn-primary { background: linear-gradient(180deg,#1A6BB8,#0D5EA6); color: #fff; box-shadow: 0 8px 20px rgba(13,94,166,.2); }
+        .btn-secondary { background: rgba(255,255,255,.8); color: var(--text); border: 1px solid var(--line); }
+        .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .pill-green { background: rgba(18,152,103,.1); color: var(--green); }
+        .pill-blue { background: rgba(13,94,166,.08); color: var(--blue); }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; }
+        th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid rgba(13,94,166,.05); font-size: 14px; }
+        td.right, th.right { text-align: right; }
+
+        /* Chart */
+        .chart-container { position: relative; height: 240px; margin-top: 16px; }
+
+        /* Forecast */
+        .forecast-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+        .forecast-card { padding: 18px; border-radius: 14px; background: rgba(13,94,166,.04); border: 1px solid rgba(13,94,166,.08); text-align: center; }
+        .forecast-card .period { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+        .forecast-card .amount { font-size: 22px; font-weight: 800; margin-top: 6px; color: var(--text); }
+        .forecast-card .units { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+        /* Pipeline */
+        .pipeline-kpi { display: flex; gap: 24px; margin-bottom: 16px; }
+        .pipeline-kpi .stat { text-align: center; }
+        .pipeline-kpi .stat-value { font-size: 24px; font-weight: 800; color: var(--blue); }
+        .pipeline-kpi .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; font-weight: 700; }
+
+        /* Two columns */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .product-meta { grid-template-columns: 1fr 1fr; }
+            .two-col { grid-template-columns: 1fr; }
+            .forecast-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="eyebrow"><span class="dot"></span> Product Catalogue</div>
+        <h1>WorkforcePi</h1>
+        <p class="subtitle">PROD-001 · Services · Active</p>
+        <p class="breadcrumb"><a href="#">Catalogue</a> › <a href="#">Products</a> › PROD-001</p>
+    </div>
+
+    <!-- Product Header Card -->
+    <div class="glass">
+        <div class="product-header">
+            <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pill pill-green">Active</span>
+                    <span class="pill pill-blue">Services</span>
+                </div>
+                <div class="product-meta">
+                    <div>
+                        <div class="field-label">Product Code</div>
+                        <div class="field-value">PROD-001</div>
+                    </div>
+                    <div>
+                        <div class="field-label">Selling Price</div>
+                        <div class="field-value">€89.00</div>
+                    </div>
+                    <div>
+                        <div class="field-label">Cost Price</div>
+                        <div class="field-value">€35.00</div>
+                    </div>
+                    <div>
+                        <div class="field-label">VAT Rate</div>
+                        <div class="field-value">19%</div>
+                    </div>
+                    <div>
+                        <div class="field-label">Supplier</div>
+                        <div class="field-value">— None —</div>
+                    </div>
+                    <div>
+                        <div class="field-label">Last Used</div>
+                        <div class="field-value">28 Jul 2026</div>
+                    </div>
+                    <div>
+                        <div class="field-label">Created</div>
+                        <div class="field-value">15 Mar 2026</div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-primary">Edit Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card highlight">
+            <div class="label">Total Revenue</div>
+            <div class="value">€12,460</div>
+            <div class="sub">From 140 invoices</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Units Sold</div>
+            <div class="value">140</div>
+            <div class="sub">Since Mar 2026</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Avg. Selling Price</div>
+            <div class="value">€89.00</div>
+            <div class="sub">vs default €89.00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Gross Margin</div>
+            <div class="value">€7,560</div>
+            <div class="sub">60.6% margin</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Last Sold</div>
+            <div class="value" style="font-size:18px;">28 Jul 2026</div>
+            <div class="sub">3 days ago</div>
+        </div>
+    </div>
+
+    <!-- Two Column: Customers + Trend -->
+    <div class="two-col">
+        <!-- Top Customers -->
+        <div class="glass">
+            <h3 style="font-size:16px;margin-bottom:4px;">Top Customers</h3>
+            <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">12 unique customers · 38% repeat rate</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th class="right">Units</th>
+                        <th class="right">Revenue</th>
+                        <th>Last Purchase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight:600;">A Supplies LTD</td>
+                        <td class="right">42</td>
+                        <td class="right" style="font-weight:700;color:var(--green);">€3,738</td>
+                        <td>28 Jul 2026</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Hatlo Trading Ltd</td>
+                        <td class="right">28</td>
+                        <td class="right" style="font-weight:700;color:var(--green);">€2,492</td>
+                        <td>22 Jul 2026</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Nexus Digital</td>
+                        <td class="right">19</td>
+                        <td class="right" style="font-weight:700;color:var(--green);">€1,691</td>
+                        <td>18 Jul 2026</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Le Paris Roasting</td>
+                        <td class="right">15</td>
+                        <td class="right" style="font-weight:700;color:var(--green);">€1,335</td>
+                        <td>10 Jul 2026</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;">Marina Bay Hotels</td>
+                        <td class="right">12</td>
+                        <td class="right" style="font-weight:700;color:var(--green);">€1,068</td>
+                        <td>05 Jul 2026</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Monthly Trend -->
+        <div class="glass">
+            <h3 style="font-size:16px;margin-bottom:4px;">Monthly Revenue Trend</h3>
+            <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Last 12 months</p>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price History -->
+    <div class="glass">
+        <h3 style="font-size:16px;margin-bottom:16px;">Price History</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Effective From</th>
+                    <th class="right">Selling Price</th>
+                    <th class="right">Cost Price</th>
+                    <th>Changed By</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>15 Mar 2026, 09:00</td>
+                    <td class="right" style="font-weight:600;">€89.00</td>
+                    <td class="right">€35.00</td>
+                    <td>John Papamichael</td>
+                </tr>
+                <tr>
+                    <td>01 Jan 2026, 14:30</td>
+                    <td class="right" style="font-weight:600;">€79.00</td>
+                    <td class="right">€32.00</td>
+                    <td>John Papamichael</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Demand Forecasting (Professional) -->
+    <div class="glass">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3 style="font-size:16px;">Demand Forecast</h3>
+            <span class="pill pill-blue">Professional</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Based on 6-month average monthly sales of 23 units.</p>
+        <div class="forecast-grid">
+            <div class="forecast-card">
+                <div class="period">Next 30 days</div>
+                <div class="amount">€2,047</div>
+                <div class="units">~23 units</div>
+            </div>
+            <div class="forecast-card">
+                <div class="period">Next 60 days</div>
+                <div class="amount">€4,094</div>
+                <div class="units">~46 units</div>
+            </div>
+            <div class="forecast-card">
+                <div class="period">Next 90 days</div>
+                <div class="amount">€6,141</div>
+                <div class="units">~69 units</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipeline Activity -->
+    <div class="glass">
+        <h3 style="font-size:16px;margin-bottom:16px;">Pipeline Activity</h3>
+        <div class="pipeline-kpi">
+            <div class="stat">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Active Leads</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">€8,900</div>
+                <div class="stat-label">Estimated Value</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">42%</div>
+                <div class="stat-label">Conversion Rate</div>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Lead</th>
+                    <th>Stage</th>
+                    <th class="right">Est. Value</th>
+                    <th>Assigned To</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight:600;">Nexus Digital — Annual Renewal</td>
+                    <td><span class="pill pill-green">Proposal Sent</span></td>
+                    <td class="right" style="font-weight:700;">€2,136</td>
+                    <td>John P.</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;">Marina Bay — Q4 Package</td>
+                    <td><span class="pill pill-blue">Meeting Scheduled</span></td>
+                    <td class="right" style="font-weight:700;">€1,780</td>
+                    <td>John P.</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;">Acme Ltd — New Setup</td>
+                    <td><span class="pill" style="background:rgba(200,145,46,.1);color:var(--gold);">Follow-Up</span></td>
+                    <td class="right" style="font-weight:700;">€890</td>
+                    <td>Maria C.</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;">TechNova — Expansion</td>
+                    <td><span class="pill pill-blue">Contacted</span></td>
+                    <td class="right" style="font-weight:700;">€2,670</td>
+                    <td>John P.</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;">Costa Enterprises — Trial</td>
+                    <td><span class="pill" style="background:rgba(87,184,232,.1);color:#2A8FC0;">New</span></td>
+                    <td class="right" style="font-weight:700;">€1,424</td>
+                    <td>Unassigned</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // Monthly Trend Chart
+    var ctx = document.getElementById('trendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+            datasets: [{
+                label: 'Revenue',
+                data: [0, 0, 0, 0, 0, 890, 1420, 1780, 2050, 2136, 1980, 2204],
+                borderColor: '#0D5EA6',
+                backgroundColor: 'rgba(13,94,166,.08)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#0D5EA6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) { return '€' + ctx.parsed.y.toLocaleString(); }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: function(v) { return '€' + v; } },
+                    grid: { color: 'rgba(13,94,166,.06)' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+</body>
+</html>

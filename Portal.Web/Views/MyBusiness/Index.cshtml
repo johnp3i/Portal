@@ -69,15 +69,22 @@
                     <label asp-for="CompanyRegistrationNumber">Company Registration *</label>
                     <input asp-for="CompanyRegistrationNumber" placeholder="e.g. HE123456" disabled="@isReadOnly" />
                 </div>
-                <div class="field">
+                <div class="field" style="grid-column:1/-1;margin-top:8px;">
+                    <label style="display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:#5E7385;">
+                        <input type="checkbox" id="notVatRegistered" onchange="toggleVatFields(this.checked)" style="width:18px;height:18px;accent-color:#0D5EA6;cursor:pointer;" @(Model.VatRegistrationNumber == "PENDING" ? "checked" : "") />
+                        Not yet VAT-registered
+                    </label>
+                    <p style="font-size:12px;color:#5E7385;margin-top:4px;margin-left:28px;">Check this if your company is not yet registered for VAT. You can update this later.</p>
+                </div>
+                <div class="field" id="vatRegNumField">
                     <label asp-for="VatRegistrationNumber">VAT Registration *</label>
                     <input asp-for="VatRegistrationNumber" placeholder="e.g. CY12345678X" disabled="@isReadOnly" />
                 </div>
-                <div class="field">
+                <div class="field" id="vatRegDateField">
                     <label asp-for="VatRegistrationDate">VAT Registration Date *</label>
                     <input asp-for="VatRegistrationDate" type="date" disabled="@isReadOnly" />
                 </div>
-                <div class="field">
+                <div class="field" id="vatPeriodField">
                     <label asp-for="VatPeriodLengthInMonths">VAT Period (months) *</label>
                     <select asp-for="VatPeriodLengthInMonths" disabled="@isReadOnly">
                         <option value="1">1 month</option>
@@ -522,6 +529,55 @@ else if (activeTab == "payment")
 
 @section Scripts {
     <script>
+        function toggleVatFields(notRegistered) {
+            var vatFields = ['VatRegistrationNumber', 'VatRegistrationDate', 'VatPeriodLengthInMonths'];
+            var containers = ['vatRegNumField', 'vatRegDateField', 'vatPeriodField'];
+
+            if (notRegistered) {
+                // Disable fields and set placeholder values
+                document.getElementById('VatRegistrationNumber').value = 'PENDING';
+                document.getElementById('VatRegistrationNumber').disabled = true;
+                document.getElementById('VatRegistrationDate').value = '2000-01-01';
+                document.getElementById('VatRegistrationDate').disabled = true;
+                document.getElementById('VatPeriodLengthInMonths').value = '3';
+                document.getElementById('VatPeriodLengthInMonths').disabled = true;
+                containers.forEach(function(id) {
+                    document.getElementById(id).style.opacity = '0.4';
+                });
+            } else {
+                // Re-enable fields and clear placeholders
+                document.getElementById('VatRegistrationNumber').disabled = false;
+                document.getElementById('VatRegistrationDate').disabled = false;
+                document.getElementById('VatPeriodLengthInMonths').disabled = false;
+                if (document.getElementById('VatRegistrationNumber').value === 'PENDING') {
+                    document.getElementById('VatRegistrationNumber').value = '';
+                }
+                if (document.getElementById('VatRegistrationDate').value === '2000-01-01') {
+                    document.getElementById('VatRegistrationDate').value = '';
+                }
+                containers.forEach(function(id) {
+                    document.getElementById(id).style.opacity = '1';
+                });
+            }
+        }
+
+        // Apply initial state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            var checkbox = document.getElementById('notVatRegistered');
+            if (checkbox && checkbox.checked) {
+                toggleVatFields(true);
+            }
+
+            // Re-enable disabled VAT fields before form submission so values are sent
+            var profileForm = document.querySelector('form[action*="SaveProfile"]');
+            if (profileForm) {
+                profileForm.addEventListener('submit', function() {
+                    var vatFields = document.querySelectorAll('#vatRegNumField input, #vatRegNumField select, #vatRegDateField input, #vatPeriodField select');
+                    vatFields.forEach(function(field) { field.disabled = false; });
+                });
+            }
+        });
+
         async function togglePaymentInstructions(enabled) {
             BlockUI.show('Updating...');
             try {

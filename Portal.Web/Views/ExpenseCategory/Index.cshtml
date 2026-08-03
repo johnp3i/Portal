@@ -10,6 +10,7 @@
         <p class="topbar-subtitle">Manage your expense classification categories.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary" onclick="openImportTemplatesModal()">Import from Templates</button>
         <button type="button" class="btn btn-primary" onclick="openCreateModal()">Create Category</button>
     </div>
 </div>
@@ -283,5 +284,77 @@
                 filterCategories();
             }
         });
+
+        // === Import from Templates ===
+        async function openImportTemplatesModal() {
+            BlockUI.show('Loading templates...');
+            try {
+                var response = await fetch('/ExpenseCategory/AxGetTemplates');
+                var result = await response.json();
+                BlockUI.hide();
+
+                if (!result.success) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                var templates = result.data;
+                if (!templates || templates.length === 0) {
+                    Swal.fire({ icon: 'info', title: 'No Templates', text: 'No category templates are available yet.', confirmButtonColor: '#0D5EA6' });
+                    return;
+                }
+
+                var html = '<div style="text-align:left;max-height:400px;overflow-y:auto;">';
+                templates.forEach(function(t) {
+                    var disabled = t.alreadyImported ? 'disabled' : '';
+                    var badge = t.alreadyImported ? ' <span style="font-size:11px;color:#129867;font-weight:600;">(already added)</span>' : '';
+                    html += '<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.06);cursor:' + (t.alreadyImported ? 'default' : 'pointer') + ';opacity:' + (t.alreadyImported ? '0.5' : '1') + ';">';
+                    html += '<input type="checkbox" class="template-cb" value="' + t.id + '" ' + disabled + ' style="margin-top:3px;width:16px;height:16px;accent-color:#0D5EA6;" />';
+                    html += '<div><strong>' + t.name + '</strong>' + badge;
+                    if (t.description) html += '<div style="font-size:12px;color:#5a6a7a;margin-top:2px;">' + t.description + '</div>';
+                    html += '</div></label>';
+                });
+                html += '</div>';
+
+                var swalResult = await Swal.fire({
+                    title: 'Import Categories',
+                    html: html,
+                    showCancelButton: true,
+                    confirmButtonText: 'Import Selected',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#0D5EA6',
+                    width: '520px',
+                    preConfirm: function() {
+                        var checked = Swal.getPopup().querySelectorAll('.template-cb:checked:not(:disabled)');
+                        if (checked.length === 0) {
+                            Swal.showValidationMessage('Select at least one template.');
+                            return false;
+                        }
+                        return Array.from(checked).map(function(cb) { return parseInt(cb.value); });
+                    }
+                });
+
+                if (!swalResult.isConfirmed || !swalResult.value) return;
+
+                BlockUI.show('Importing...');
+                var importResponse = await fetch('/ExpenseCategory/AxPostImportTemplates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
+                    body: JSON.stringify(swalResult.value)
+                });
+                var importData = await importResponse.json();
+                BlockUI.hide();
+
+                if (importData.success) {
+                    Swal.fire({ icon: 'success', title: 'Imported', text: importData.message, confirmButtonColor: '#0D5EA6' })
+                        .then(function() { window.location.reload(); });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: importData.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load templates.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
     </script>
 }

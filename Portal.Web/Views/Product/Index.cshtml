@@ -126,6 +126,7 @@
                         </td>
                         <td>@(product.LastUsedDate?.ToString("dd MMM yyyy") ?? "—")</td>
                         <td style="white-space:nowrap;">
+                            <a href="/Product/Detail/@product.Id" class="tbl-action tbl-action--primary">Detail</a>
                             <a href="javascript:void(0)" onclick="openEditModal(@product.Id)" class="tbl-action tbl-action--primary">Edit</a>
                             @if (product.IsActive)
                             {

@@ -20,6 +20,25 @@
     </div>
 </div>
 
+<!-- Today's Actions Panel -->
+<section id="todaysActionsPanel" class="glass card-pad" style="margin-bottom:22px;display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;margin:0;">
+            <svg width="20" height="20" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Today's Actions
+        </h3>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span id="todaysBadges" style="display:flex;gap:6px;"></span>
+            <button class="btn btn-secondary" style="padding:5px 8px;" onclick="toggleTodaysActions()" title="Collapse">
+                <svg id="todaysCollapseIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+            </button>
+        </div>
+    </div>
+    <div id="todaysActionsList">
+        <!-- Rendered by JS -->
+    </div>
+</section>
+
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
@@ -168,4 +187,5 @@
 
 @section Scripts {
     <script src="~/js/sales/pipeline.js?v=7"></script>
+    <script src="~/js/sales/follow-up-tasks.js?v=1"></script>
 }

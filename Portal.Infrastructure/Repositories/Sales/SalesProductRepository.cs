@@ -20,9 +20,9 @@ public class SalesProductRepository : GenericStoredProcedureRepository<SalesProd
         {
             const string query = @"
                 INSERT INTO [sales].[Product]
-                    ([BusinessId], [Name], [Description], [IsActive], [CreatedAtUtc])
+                    ([BusinessId], [Name], [Description], [ProductId], [IsActive], [CreatedAtUtc])
                 VALUES
-                    (@BusinessId, @Name, @Description, @IsActive, @CreatedAtUtc);
+                    (@BusinessId, @Name, @Description, @ProductId, @IsActive, @CreatedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
@@ -42,6 +42,7 @@ public class SalesProductRepository : GenericStoredProcedureRepository<SalesProd
                 command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
                 command.Parameters.Add(new SqlParameter("@Name", entity.Name));
                 command.Parameters.Add(new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ProductId", entity.ProductId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@IsActive", true));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
 
@@ -67,14 +68,16 @@ public class SalesProductRepository : GenericStoredProcedureRepository<SalesProd
             const string query = @"
                 UPDATE [sales].[Product]
                 SET [Name] = @Name,
-                    [Description] = @Description
+                    [Description] = @Description,
+                    [ProductId] = @ProductId
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", entity.Id),
                 new SqlParameter("@BusinessId", entity.BusinessId),
                 new SqlParameter("@Name", entity.Name),
-                new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value)
+                new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value),
+                new SqlParameter("@ProductId", entity.ProductId ?? (object)DBNull.Value)
             );
         }
         catch (Exception ex)
@@ -128,7 +131,7 @@ public class SalesProductRepository : GenericStoredProcedureRepository<SalesProd
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [Name], [Description], [IsActive], [CreatedAtUtc]
+                SELECT [Id], [BusinessId], [Name], [Description], [ProductId], [IsActive], [CreatedAtUtc]
                 FROM [sales].[Product]
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
@@ -147,7 +150,7 @@ public class SalesProductRepository : GenericStoredProcedureRepository<SalesProd
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [Name], [Description], [IsActive], [CreatedAtUtc]
+                SELECT [Id], [BusinessId], [Name], [Description], [ProductId], [IsActive], [CreatedAtUtc]
                 FROM [sales].[Product]
                 WHERE [BusinessId] = @BusinessId AND [IsActive] = 1";
 
@@ -171,7 +174,7 @@ public class SalesProductRepository : GenericStoredProcedureRepository<SalesProd
                   AND (@SearchTerm IS NULL OR [sales].[Product].[Name] LIKE @SearchPattern)";
 
             const string dataQuery = @"
-                SELECT [Id], [BusinessId], [Name], [Description], [IsActive], [CreatedAtUtc]
+                SELECT [Id], [BusinessId], [Name], [Description], [ProductId], [IsActive], [CreatedAtUtc]
                 FROM [sales].[Product]
                 WHERE [sales].[Product].[BusinessId] = @BusinessId
                   AND (@SearchTerm IS NULL OR [sales].[Product].[Name] LIKE @SearchPattern)

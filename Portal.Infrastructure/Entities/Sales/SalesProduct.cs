@@ -16,6 +16,11 @@ public class SalesProduct
 
     public bool IsActive { get; set; }
 
+    /// <summary>
+    /// Optional link to the Product Catalog for reference pricing. NULL if no catalog link.
+    /// </summary>
+    public int? ProductId { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties

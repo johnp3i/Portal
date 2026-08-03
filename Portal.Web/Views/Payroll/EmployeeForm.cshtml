@@ -132,15 +132,22 @@
     </div>
 
     <!-- Default Earnings Section -->
-    <h3 class="section-title" style="margin-top:32px;">Default Earnings</h3>
+    <div style="background:rgba(13,94,166,0.04);border-left:4px solid #0D5EA6;border-radius:14px;padding:22px 24px;margin-top:32px;">
+        <h3 class="section-title" style="margin-top:0;">Default Earnings</h3>
+        <p style="font-size:13px;color:#3a5a7a;margin:0 0 6px 0;line-height:1.5;">
+            Define the recurring earning lines for this employee. These will be <strong>automatically populated</strong> each time you generate a monthly payslip, saving you from re-entering the same data every pay cycle.
+        </p>
+        <p style="font-size:12px;color:#5a7a9a;margin:0 0 16px 0;line-height:1.5;">
+            <strong>Example:</strong> Basic Salary &euro;1,500 &middot; Overtime at x1.5 multiplier for 10 hours = &euro;225 extra. The <em>OT Multiplier</em> is the overtime pay rate (e.g. 1.5x, 2x, 4x) and <em>OT Hours</em> is the default monthly overtime hours.
+        </p>
     <table class="data-table" id="defaultEarningsTable">
         <thead>
             <tr>
                 <th>Earning Type</th>
                 <th>Description</th>
                 <th class="text-right">Amount (&euro;)</th>
-                <th class="text-right">OT Multiplier</th>
-                <th class="text-right">OT Hours</th>
+                <th class="text-right">Overtime Multiplier</th>
+                <th class="text-right">Overtime Hours</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -181,7 +188,7 @@
             Add Earning
         </button>
     </div>
-    <p style="font-size:12px;color:var(--text-secondary);font-style:italic;margin-top:10px;">These earning lines will be auto-populated when generating monthly payslips for this employee.</p>
+    </div>
 
     <!-- Form Actions -->
     <div style="margin-top:32px;display:flex;gap:12px;">
@@ -190,8 +197,31 @@
     </div>
 </section>
 
+<style>
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    .form-row .field {
+        margin-bottom: 0;
+    }
+    .form-row .field label {
+        margin-bottom: 8px;
+    }
+    .section-title {
+        margin-bottom: 18px;
+    }
+    @@media (max-width: 576px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
 <script>
-    var earningTypesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(earningTypes?.Where(e => e.IsActive).Select(e => new { e.Id, e.Name })));
+    var earningTypesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(earningTypes?.Where(e => e.IsActive).Select(e => new { e.Id, e.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
     var isEditMode = @(isEdit ? "true" : "false");
     var employeeId = @(Model?.Id ?? 0);
 

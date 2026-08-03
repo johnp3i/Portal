@@ -10,19 +10,23 @@
     }
 
     window.openCreateProductModal = function () {
-        document.getElementById('productModalTitle').textContent = 'New Product';
+        document.getElementById('productModalTitle').textContent = 'New Product / Service';
         document.getElementById('productId').value = '';
         document.getElementById('productName').value = '';
         document.getElementById('productDescription').value = '';
+        document.getElementById('productCatalogLink').value = '';
         document.getElementById('productModal').style.display = 'flex';
+        loadCatalogProducts(null);
     };
 
-    window.editProduct = function (id, name, description) {
-        document.getElementById('productModalTitle').textContent = 'Edit Product';
+    window.editProduct = function (id, name, description, catalogProductId) {
+        document.getElementById('productModalTitle').textContent = 'Edit Product / Service';
         document.getElementById('productId').value = id;
         document.getElementById('productName').value = name;
         document.getElementById('productDescription').value = description || '';
+        document.getElementById('productCatalogLink').value = catalogProductId || '';
         document.getElementById('productModal').style.display = 'flex';
+        loadCatalogProducts(catalogProductId);
     };
 
     window.closeProductModal = function () {
@@ -31,13 +35,15 @@
 
     window.submitProduct = async function () {
         var id = document.getElementById('productId').value;
+        var catalogLinkValue = document.getElementById('productCatalogLink').value;
         var payload = {
             name: document.getElementById('productName').value,
-            description: document.getElementById('productDescription').value || null
+            description: document.getElementById('productDescription').value || null,
+            productId: catalogLinkValue ? parseInt(catalogLinkValue) : null
         };
 
         if (!payload.name) {
-            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Product name is required.', confirmButtonColor: '#0D5EA6' });
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Name is required.', confirmButtonColor: '#0D5EA6' });
             return;
         }
 
@@ -56,7 +62,7 @@
 
             if (result.success) {
                 closeProductModal();
-                Swal.fire({ icon: 'success', title: 'Saved', text: 'Product saved successfully.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
+                Swal.fire({ icon: 'success', title: 'Saved', text: 'Saved successfully.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
             }
@@ -68,7 +74,7 @@
 
     window.deactivateProduct = function (id, name) {
         Swal.fire({
-            title: 'Deactivate Product?',
+            title: 'Deactivate?',
             text: 'Are you sure you want to deactivate "' + name + '"?',
             icon: 'warning',
             showCancelButton: true,
@@ -87,7 +93,7 @@
                     BlockUI.hide();
 
                     if (data.success) {
-                        Swal.fire({ icon: 'success', title: 'Done', text: 'Product deactivated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
+                        Swal.fire({ icon: 'success', title: 'Done', text: 'Deactivated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
                     }
@@ -101,7 +107,7 @@
 
     window.activateProduct = function (id, name) {
         Swal.fire({
-            title: 'Activate Product?',
+            title: 'Activate?',
             text: 'Reactivate "' + name + '"?',
             icon: 'question',
             showCancelButton: true,
@@ -120,7 +126,7 @@
                     BlockUI.hide();
 
                     if (data.success) {
-                        Swal.fire({ icon: 'success', title: 'Done', text: 'Product activated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
+                        Swal.fire({ icon: 'success', title: 'Done', text: 'Activated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
                     }
@@ -131,4 +137,26 @@
             }
         });
     };
+
+    async function loadCatalogProducts(preselectedId) {
+        var select = document.getElementById('productCatalogLink');
+        if (select.options.length > 1) {
+            // Already loaded — just set selection
+            if (preselectedId) select.value = preselectedId;
+            return;
+        }
+        try {
+            var response = await fetch('/Sales/AxGetCatalogProducts');
+            var result = await response.json();
+            if (result.success && result.data) {
+                result.data.forEach(function(p) {
+                    var opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name + (p.productCode ? ' (' + p.productCode + ')' : '') + (p.sellingPrice ? ' — €' + p.sellingPrice.toFixed(2) : '');
+                    select.appendChild(opt);
+                });
+                if (preselectedId) select.value = preselectedId;
+            }
+        } catch (e) { /* silent fail */ }
+    }
 })();

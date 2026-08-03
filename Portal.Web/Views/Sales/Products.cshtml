@@ -2,18 +2,18 @@
 @using Portal.Infrastructure.Models
 @model PagedResult<SalesProduct>
 @{
-    ViewData["Title"] = "Sales Products";
+    ViewData["Title"] = "Products & Services";
     var searchTerm = ViewBag.SearchTerm as string;
 }
 
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
-        <h1 class="topbar-heading">Products</h1>
-        <p class="topbar-subtitle">Manage your product catalogue for the sales pipeline.</p>
+        <h1 class="topbar-heading">Products & Services</h1>
+        <p class="topbar-subtitle">Manage your product and service offerings for the sales pipeline.</p>
     </div>
     <div>
-        <button class="btn btn-primary" onclick="openCreateProductModal()">New Product</button>
+        <button class="btn btn-primary" onclick="openCreateProductModal()">New Product / Service</button>
     </div>
 </div>
 
@@ -46,6 +46,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Description</th>
+                    <th>Linked Catalogue</th>
                     <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -58,6 +59,18 @@
                         <td style="font-weight:600;">@product.Name</td>
                         <td>@(product.Description?.Length > 80 ? product.Description.Substring(0, 80) + "…" : product.Description ?? "—")</td>
                         <td>
+                            @if (product.ProductId.HasValue)
+                            {
+                                var catalogLookup = ViewBag.CatalogLookup as Dictionary<int, string> ?? new Dictionary<int, string>();
+                                var catalogName = catalogLookup.GetValueOrDefault(product.ProductId.Value, "Linked");
+                                <a href="/Product/Detail/@product.ProductId.Value" style="font-size:12px;color:#0D5EA6;font-weight:600;text-decoration:none;" title="View in Product Catalogue">@catalogName</a>
+                            }
+                            else
+                            {
+                                <span style="color:var(--muted);font-size:12px;">—</span>
+                            }
+                        </td>
+                        <td>
                             @if (product.IsActive)
                             {
                                 <span class="pill pill-green">Active</span>
@@ -69,7 +82,7 @@
                         </td>
                         <td>@product.CreatedAtUtc.ToString("dd MMM yyyy")</td>
                         <td style="white-space:nowrap;">
-                            <button class="tbl-action tbl-action--primary" onclick="editProduct(@product.Id, '@product.Name.Replace("'", "\\'")' , '@(product.Description?.Replace("'", "\\'") ?? "")')">Edit</button>
+                            <button class="tbl-action tbl-action--primary" onclick="editProduct(@product.Id, '@product.Name.Replace("'", "\\'")' , '@(product.Description?.Replace("'", "\\'") ?? "")', '@(product.ProductId?.ToString() ?? "")')">Edit</button>
                             @if (product.IsActive)
                             {
                                 <button class="tbl-action tbl-action--danger" onclick="deactivateProduct(@product.Id, '@(product.Name.Replace("'", "\\'"))')">Deactivate</button>
@@ -102,10 +115,19 @@
 <!-- Create/Edit Product Modal -->
 <div id="productModal" class="modal-overlay" style="display:none;">
     <div class="modal-content" style="max-width:460px;">
-        <h3 id="productModalTitle" style="margin-bottom:16px;">New Product</h3>
+        <h3 id="productModalTitle" style="margin-bottom:16px;">New Product / Service</h3>
         <input type="hidden" id="productId" />
         <div class="field"><label>Name *</label><input type="text" id="productName" required /></div>
         <div class="field"><label>Description</label><textarea id="productDescription" rows="3"></textarea></div>
+        <div class="field">
+            <label>Link to Catalogue (optional)</label>
+            <select id="productCatalogLink">
+                <option value="">— No link —</option>
+            </select>
+            <p style="font-size:11px;color:#5a6a7a;margin-top:4px;line-height:1.5;">
+                Optionally link this item to your Product Catalogue. This shows reference pricing from the catalogue on this sales entry. The link is for reference only — no live sync.
+            </p>
+        </div>
         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
             <button class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
             <button class="btn btn-primary" onclick="submitProduct()">Save</button>

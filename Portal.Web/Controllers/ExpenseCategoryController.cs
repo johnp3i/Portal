@@ -12,10 +12,17 @@ namespace Portal.Web.Controllers;
 public class ExpenseCategoryController : Controller
 {
     private readonly IExpenseCategoryService _expenseCategoryService;
+    private readonly IExpenseCategoryTemplateService _templateService;
+    private readonly ICurrentTenantService _tenantService;
 
-    public ExpenseCategoryController(IExpenseCategoryService expenseCategoryService)
+    public ExpenseCategoryController(
+        IExpenseCategoryService expenseCategoryService,
+        IExpenseCategoryTemplateService templateService,
+        ICurrentTenantService tenantService)
     {
         _expenseCategoryService = expenseCategoryService;
+        _templateService = templateService;
+        _tenantService = tenantService;
     }
 
     [HttpGet]
@@ -49,5 +56,51 @@ public class ExpenseCategoryController : Controller
     {
         var result = await _expenseCategoryService.DeactivateExpenseCategoryAsync(id);
         return Json(new { success = result.Success, message = result.Message });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetTemplates()
+    {
+        try
+        {
+            var templates = await _templateService.GetActiveTemplatesAsync();
+            var businessId = _tenantService.CurrentBusinessId;
+            var existingNames = (await _expenseCategoryService.GetExpenseCategoriesAsync())
+                .Select(c => c.Name.ToLower()).ToHashSet();
+
+            var data = templates.Select(t => new
+            {
+                t.Id,
+                t.Name,
+                t.Description,
+                alreadyImported = existingNames.Contains(t.Name.ToLower())
+            });
+
+            return Json(new { success = true, data });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load templates." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostImportTemplates([FromBody] int[] templateIds)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _templateService.ImportTemplatesAsync(businessId, templateIds);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            return Json(new { success = true, message = $"{result.Data} categories imported.", importedCount = result.Data });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to import categories." });
+        }
     }
 }

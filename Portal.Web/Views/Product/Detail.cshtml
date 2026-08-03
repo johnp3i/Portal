@@ -1,0 +1,252 @@
+@model Portal.Infrastructure.Models.ProductInsights.ProductDetailViewModel
+@{
+    ViewData["Title"] = Model.Product.Description;
+    var cs = Model.CurrencySymbol;
+    var p = Model.Product;
+    var kpi = Model.Kpis;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Product Catalogue</div>
+        <h1 class="topbar-heading">@p.Description</h1>
+        <p class="topbar-subtitle">@p.ProductCode · @(Model.ProductTypeName ?? "General") · @(p.IsActive ? "Active" : "Inactive")</p>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;"><a href="/Product" style="color:var(--blue);text-decoration:none;font-weight:600;">Catalogue</a> › <a href="/Product" style="color:var(--blue);text-decoration:none;font-weight:600;">Products</a> › @p.ProductCode</p>
+    </div>
+    <div>
+        <a href="/Product" class="btn btn-secondary" style="margin-right:8px;">← Back</a>
+    </div>
+</div>
+
+<!-- Product Header -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        @if (p.IsActive) { <span class="pill pill-green">Active</span> } else { <span class="pill" style="background:#fdeaea;color:#C24A4A;">Inactive</span> }
+        @if (Model.ProductTypeName != null) { <span class="pill" style="background:rgba(13,94,166,.08);color:var(--blue);">@Model.ProductTypeName</span> }
+    </div>
+    <div class="product-meta-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:18px;">
+        <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Product Code</div><div style="font-size:15px;font-weight:600;margin-top:4px;">@p.ProductCode</div></div>
+        <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Selling Price</div><div style="font-size:15px;font-weight:600;margin-top:4px;">@cs@p.DefaultSellingPrice.ToString("N2")</div></div>
+        <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Cost Price</div><div style="font-size:15px;font-weight:600;margin-top:4px;">@cs@p.DefaultCostPrice.ToString("N2")</div></div>
+        <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">VAT Rate</div><div style="font-size:15px;font-weight:600;margin-top:4px;">@p.DefaultVatRate.ToString("N2")%</div></div>
+        <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Supplier</div><div style="font-size:15px;font-weight:600;margin-top:4px;">@(Model.SupplierName ?? "—")</div></div>
+        <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Last Used</div><div style="font-size:15px;font-weight:600;margin-top:4px;">@(p.LastUsedDate?.ToString("dd MMM yyyy") ?? "Never")</div></div>
+    </div>
+</section>
+
+<!-- KPI Cards -->
+<div class="product-kpi-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:22px;">
+    <div class="glass card-pad" style="border-left:4px solid var(--green);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Total Revenue</div>
+        <div style="font-size:24px;font-weight:800;font-family:'Manrope',sans-serif;margin-top:6px;">@cs@kpi.TotalRevenue.ToString("N2")</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">From @kpi.InvoiceCount invoices</div>
+    </div>
+    <div class="glass card-pad">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Units Sold</div>
+        <div style="font-size:24px;font-weight:800;font-family:'Manrope',sans-serif;margin-top:6px;">@kpi.TotalUnits.ToString("N0")</div>
+    </div>
+    <div class="glass card-pad">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Avg. Selling Price</div>
+        <div style="font-size:24px;font-weight:800;font-family:'Manrope',sans-serif;margin-top:6px;">@cs@kpi.AvgSellingPrice.ToString("N2")</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">vs default @cs@p.DefaultSellingPrice.ToString("N2")</div>
+    </div>
+    <div class="glass card-pad">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Gross Margin</div>
+        <div style="font-size:24px;font-weight:800;font-family:'Manrope',sans-serif;margin-top:6px;">@cs@kpi.GrossMargin.ToString("N2")</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">@kpi.MarginPercentage.ToString("N1")% margin</div>
+    </div>
+    <div class="glass card-pad">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Last Sold</div>
+        <div style="font-size:18px;font-weight:800;font-family:'Manrope',sans-serif;margin-top:6px;">@(kpi.LastSoldDate?.ToString("dd MMM yyyy") ?? "Never")</div>
+    </div>
+</div>
+
+<!-- Two Column: Customers + Trend -->
+<div class="product-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px;">
+    <!-- Top Customers -->
+    <section class="glass card-pad">
+        <h3 style="font-size:16px;margin-bottom:4px;">Top Customers</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">@Model.CustomerSummary.UniqueCustomerCount unique customers · @Model.CustomerSummary.RepeatPurchaseRate% repeat rate</p>
+        @if (Model.TopCustomers.Any())
+        {
+            <table>
+                <thead><tr><th>Customer</th><th style="text-align:right;">Units</th><th style="text-align:right;">Revenue</th><th>Last Purchase</th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model.TopCustomers)
+                    {
+                        <tr>
+                            <td style="font-weight:600;">@c.CustomerName</td>
+                            <td style="text-align:right;">@c.Units.ToString("N0")</td>
+                            <td style="text-align:right;font-weight:700;color:var(--green);">@cs@c.Revenue.ToString("N2")</td>
+                            <td>@c.LastPurchase.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="color:var(--muted);font-size:14px;">No customers yet.</p>
+        }
+    </section>
+
+    <!-- Monthly Trend -->
+    <section class="glass card-pad">
+        <h3 style="font-size:16px;margin-bottom:4px;">Monthly Revenue Trend</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Last 12 months</p>
+        <div style="position:relative;height:220px;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </section>
+</div>
+
+<!-- Price History -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h3 style="font-size:16px;margin-bottom:16px;">Price History</h3>
+    @if (Model.PriceHistory.Any())
+    {
+        <table>
+            <thead><tr><th>Effective From</th><th style="text-align:right;">Selling Price</th><th style="text-align:right;">Cost Price</th><th>Changed By</th></tr></thead>
+            <tbody>
+                @foreach (var h in Model.PriceHistory)
+                {
+                    <tr>
+                        <td>@h.EffectiveFromUtc.ToString("dd MMM yyyy, HH:mm")</td>
+                        <td style="text-align:right;font-weight:600;">@cs@h.SellingPrice.ToString("N2")</td>
+                        <td style="text-align:right;">@cs@h.CostPrice.ToString("N2")</td>
+                        <td style="font-size:12px;color:var(--muted);">@h.ChangedByUserId</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p style="color:var(--muted);font-size:14px;">No price changes recorded.</p>
+    }
+</section>
+
+<!-- Demand Forecast -->
+@if (Model.IsProfessional && Model.Forecast != null)
+{
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3 style="font-size:16px;">Demand Forecast</h3>
+            <span class="pill" style="background:rgba(13,94,166,.08);color:var(--blue);">Professional</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Based on 6-month average of @Model.Forecast.AvgMonthlyUnits.ToString("N0") units/month.</p>
+        <div class="product-forecast-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+            <div style="padding:18px;border-radius:14px;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);text-align:center;">
+                <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Next 30 days</div>
+                <div style="font-size:22px;font-weight:800;margin-top:6px;">@cs@Model.Forecast.Forecast30Revenue.ToString("N2")</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px;">~@Model.Forecast.Forecast30Units.ToString("N0") units</div>
+            </div>
+            <div style="padding:18px;border-radius:14px;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);text-align:center;">
+                <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Next 60 days</div>
+                <div style="font-size:22px;font-weight:800;margin-top:6px;">@cs@Model.Forecast.Forecast60Revenue.ToString("N2")</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px;">~@Model.Forecast.Forecast60Units.ToString("N0") units</div>
+            </div>
+            <div style="padding:18px;border-radius:14px;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);text-align:center;">
+                <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Next 90 days</div>
+                <div style="font-size:22px;font-weight:800;margin-top:6px;">@cs@Model.Forecast.Forecast90Revenue.ToString("N2")</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px;">~@Model.Forecast.Forecast90Units.ToString("N0") units</div>
+            </div>
+        </div>
+    </section>
+}
+else if (!Model.IsProfessional)
+{
+    <section class="glass card-pad" style="margin-bottom:22px;opacity:0.7;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h3 style="font-size:16px;">Demand Forecast</h3>
+                <p style="font-size:13px;color:var(--muted);margin-top:4px;">Project future demand based on sales history. Available on Professional plan.</p>
+            </div>
+            <span class="pill" style="background:rgba(13,94,166,.08);color:var(--blue);">Upgrade</span>
+        </div>
+    </section>
+}
+
+<!-- Pipeline Activity -->
+@if (Model.Pipeline != null)
+{
+    <section class="glass card-pad">
+        <h3 style="font-size:16px;margin-bottom:16px;">Pipeline Activity</h3>
+        <div class="product-pipeline-kpi" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+            <div style="padding:18px;border-radius:14px;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-left:4px solid var(--blue);text-align:center;">
+                <div style="font-size:28px;font-weight:800;color:var(--blue);font-family:'Manrope',sans-serif;">@Model.Pipeline.ActiveLeadCount</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-top:6px;letter-spacing:.04em;">Active Leads</div>
+            </div>
+            <div style="padding:18px;border-radius:14px;background:rgba(18,152,103,.04);border:1px solid rgba(18,152,103,.08);border-left:4px solid var(--green);text-align:center;">
+                <div style="font-size:28px;font-weight:800;color:var(--green);font-family:'Manrope',sans-serif;">@cs@Model.Pipeline.EstimatedValue.ToString("N2")</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-top:6px;letter-spacing:.04em;">Estimated Value</div>
+            </div>
+            <div style="padding:18px;border-radius:14px;background:rgba(200,145,46,.04);border:1px solid rgba(200,145,46,.08);border-left:4px solid var(--gold);text-align:center;">
+                <div style="font-size:28px;font-weight:800;color:var(--gold);font-family:'Manrope',sans-serif;">@Model.Pipeline.ConversionRate%</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-top:6px;letter-spacing:.04em;">Conversion Rate</div>
+            </div>
+        </div>
+        @if (Model.Pipeline.Leads.Any())
+        {
+            <table>
+                <thead><tr><th>Lead</th><th>Stage</th><th style="text-align:right;">Est. Value</th><th>Assigned To</th></tr></thead>
+                <tbody>
+                    @foreach (var lead in Model.Pipeline.Leads)
+                    {
+                        <tr>
+                            <td style="font-weight:600;">@lead.Title</td>
+                            <td><span class="pill pill-green">@lead.Stage</span></td>
+                            <td style="text-align:right;font-weight:700;">@cs@lead.EstimatedValue.ToString("N2")</td>
+                            <td>@(lead.AssignedTo ?? "Unassigned")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@section Scripts {
+<style>
+    @@media (max-width: 768px) {
+        .product-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        .product-two-col { grid-template-columns: 1fr !important; }
+        .product-meta-grid { grid-template-columns: 1fr 1fr !important; }
+        .product-forecast-grid { grid-template-columns: 1fr !important; }
+        .product-pipeline-kpi { grid-template-columns: 1fr !important; }
+    }
+    @@media (max-width: 480px) {
+        .product-kpi-grid { grid-template-columns: 1fr !important; }
+        .product-meta-grid { grid-template-columns: 1fr !important; }
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+    var ctx = document.getElementById('trendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [@Html.Raw(string.Join(",", Model.MonthlyTrend.Select(m => $"'{m.Label}'")))],
+            datasets: [{
+                label: 'Revenue',
+                data: [@Html.Raw(string.Join(",", Model.MonthlyTrend.Select(m => m.Revenue.ToString("F2"))))],
+                borderColor: '#0D5EA6',
+                backgroundColor: 'rgba(13,94,166,.08)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#0D5EA6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: function(v) { return '\u20ac' + v; } }, grid: { color: 'rgba(13,94,166,.06)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+}

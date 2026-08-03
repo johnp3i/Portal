@@ -266,3 +266,14 @@ tbody tr:last-child td{border-bottom:0}
 .detail-more-toggle {
     display: none;
 }
+
+/* ===== ALERTS ===== */
+.alert-success{padding:14px 20px;border-radius:12px;margin-bottom:18px;font-size:14px;font-weight:600;background:rgba(18,152,103,.08);border:1px solid rgba(18,152,103,.2);color:#129867}
+.alert-error{padding:14px 20px;border-radius:12px;margin-bottom:18px;font-size:14px;font-weight:600;background:#fdeaea;border:1px solid rgba(194,74,74,.2);color:#C24A4A}
+
+/* ===== FOLLOW-UP TASK CARDS ===== */
+.task-card-action{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg);border-radius:12px;border:1.5px solid var(--line);margin-bottom:10px;transition:border-color .15s}
+.task-card-action:hover{border-color:rgba(13,94,166,.18)}
+.task-card-action.completed{opacity:.55;border-left:3px solid var(--green)}
+.preset-btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid var(--line);background:#fff;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;color:var(--text)}
+.preset-btn:hover,.preset-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}

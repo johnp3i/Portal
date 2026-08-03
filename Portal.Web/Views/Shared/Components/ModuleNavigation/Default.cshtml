@@ -81,7 +81,7 @@
         }
         <a class="nav-sub-item @(isSalesProductsActive ? "active" : "")" asp-controller="Sales" asp-action="Products">
             <span class="nav-icon">@Html.Raw(salesProductIcon)</span>
-            <span class="nav-text">Products</span>
+            <span class="nav-text">Products & Services</span>
         </a>
         @{
             var isMeetingsActive = currentController.Equals("Sales", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Meetings", StringComparison.OrdinalIgnoreCase);
@@ -89,6 +89,14 @@
         <a class="nav-sub-item @(isMeetingsActive ? "active" : "")" asp-controller="Sales" asp-action="Meetings">
             <span class="nav-icon">@Html.Raw(meetingsIcon)</span>
             <span class="nav-text">Meetings</span>
+        </a>
+        @{
+            var isTasksActive = currentController.Equals("Sales", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Tasks", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-sub-item @(isTasksActive ? "active" : "")" asp-controller="Sales" asp-action="Tasks">
+            <span class="nav-icon"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+            <span class="nav-text">Tasks</span>
+            <span id="navTaskOverdueBadge" style="margin-left:auto;display:none;background:#C24A4A;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;min-width:18px;text-align:center;"></span>
         </a>
         @{
             var isTemplatesActive = currentController.Equals("Sales", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Templates", StringComparison.OrdinalIgnoreCase);
@@ -500,3 +508,104 @@
         }
     </div>
 }
+
+<!-- Collapsible Navigation Sections -->
+<style>
+    .nav-title {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+    }
+    .nav-title .nav-chevron {
+        width: 10px;
+        height: 10px;
+        transition: transform .15s ease;
+        opacity: 0.5;
+    }
+    .nav-section.collapsed .nav-chevron {
+        transform: rotate(-90deg);
+    }
+    .nav-section .nav-section-items {
+        max-height: 1000px;
+        overflow: hidden;
+        transition: max-height .2s ease;
+    }
+    .nav-section.collapsed .nav-section-items {
+        max-height: 0;
+    }
+    .app.sidebar-collapsed .nav-chevron {
+        display: none;
+    }
+</style>
+<script>
+    (function() {
+        var STORAGE_KEY = 'portalNavState';
+
+        function getNavState() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            } catch (e) { return {}; }
+        }
+
+        function saveNavState(state) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+        }
+
+        // Wrap each section's items in a container and add chevron
+        var sections = document.querySelectorAll('.nav-section');
+        var state = getNavState();
+
+        sections.forEach(function(section, index) {
+            var title = section.querySelector('.nav-title');
+            if (!title) return;
+
+            var sectionKey = title.textContent.trim().toLowerCase().replace(/\s+/g, '-');
+            section.setAttribute('data-nav-section', sectionKey);
+
+            // Add chevron to title
+            var chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            chevron.setAttribute('class', 'nav-chevron');
+            chevron.setAttribute('viewBox', '0 0 10 10');
+            chevron.setAttribute('fill', 'none');
+            chevron.setAttribute('stroke', 'currentColor');
+            chevron.setAttribute('stroke-width', '2');
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M2 3 L5 6 L8 3');
+            chevron.appendChild(path);
+            title.appendChild(chevron);
+
+            // Wrap items in container
+            var items = [];
+            var sibling = title.nextElementSibling;
+            while (sibling) {
+                items.push(sibling);
+                sibling = sibling.nextElementSibling;
+            }
+            var container = document.createElement('div');
+            container.className = 'nav-section-items';
+            items.forEach(function(item) { container.appendChild(item); });
+            section.appendChild(container);
+
+            // Apply saved state
+            if (state[sectionKey] === false) {
+                section.classList.add('collapsed');
+            }
+
+            // Auto-expand if active item is inside AND user has no explicit preference
+            var activeItem = container.querySelector('.nav-item.active, .nav-sub-item.active');
+            if (activeItem && !(sectionKey in state)) {
+                section.classList.remove('collapsed');
+            }
+
+            // Toggle on click
+            title.addEventListener('click', function() {
+                var isCollapsed = section.classList.toggle('collapsed');
+                var currentState = getNavState();
+                currentState[sectionKey] = !isCollapsed;
+                saveNavState(currentState);
+            });
+        });
+    })();
+</script>
