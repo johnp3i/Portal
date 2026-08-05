@@ -61,4 +61,12 @@ public interface IPayrollService
     Task<byte[]> GeneratePayslipPdfAsync(int payslipId, int businessId, bool includeSignature);
     Task<ServiceResult> SendPayslipEmailAsync(int payslipId, int businessId, string userId, bool includeSignature);
     Task<ServiceResult> SendAllPayslipEmailsAsync(int periodId, int businessId, string userId, bool includeSignature);
+
+    // Phase B: Unlock & Re-finalise
+    Task<ServiceResult> UnlockPeriodAsync(int periodId, int businessId, string userId, string userRole);
+    Task<ServiceResult> RefinalisePeriodAsync(int periodId, int businessId, string userId, string userRole);
+
+    // Phase B: Audit History
+    Task<List<PayslipAuditLogDto>> GetPayslipAuditHistoryAsync(int payslipId, int businessId);
+    Task<List<PeriodAuditGroupDto>> GetPeriodAuditSummaryAsync(int periodId, int businessId);
 }

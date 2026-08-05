@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Period Summary — July 2027 | Payroll Reports</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg: #F7FAFC;
+            --card-bg: #ffffff;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6a7a;
+            --text-muted: #8a9aaa;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            padding: 32px 40px;
+            min-height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            margin-bottom: 28px;
+        }
+
+        .topbar .eyebrow {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+        }
+
+        .topbar h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 42px;
+            color: var(--text-primary);
+            line-height: 1.1;
+            margin-bottom: 6px;
+        }
+
+        .topbar .subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e6f7f0;
+            color: var(--success);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 5px 14px;
+            border-radius: 20px;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* Cards */
+        .glass.card-pad {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 24px 28px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Filter Card */
+        .filter-card {
+            margin-bottom: 22px;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .field {
+            min-width: 180px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .field select {
+            width: 100%;
+            padding: 9px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background: white;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235a6a7a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            cursor: pointer;
+        }
+
+        .field select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(13, 94, 166, 0.1);
+        }
+
+        .btn {
+            padding: 9px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0a4d8a;
+        }
+
+        .btn-secondary {
+            background: #eef4f8;
+            color: var(--primary-blue);
+            border: 1.5px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #dfeaf2;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            padding-bottom: 2px;
+        }
+
+        /* Summary Cards */
+        .summary-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+        }
+
+        .summary-card {
+            flex: 1;
+            min-width: 160px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px 22px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .summary-card .label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        .summary-card.highlight-blue .value {
+            color: var(--primary-blue);
+        }
+
+        .summary-card.highlight-success .value {
+            color: var(--success);
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 12px 14px;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: 13px 14px;
+            border-bottom: 1px solid #f0f4f8;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background: #f8fbfd;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .totals-row td {
+            font-weight: 700;
+            background: #f0f6fb;
+            border-top: 2px solid var(--border);
+            border-bottom: none;
+            color: var(--primary-blue);
+        }
+
+        .dept-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .dept-bar {
+            background: #e8f4fd;
+            color: #0D5EA6;
+        }
+
+        .dept-kitchen {
+            background: #fef3e6;
+            color: #C8912E;
+        }
+
+        .dept-service {
+            background: #e6f7f0;
+            color: #129867;
+        }
+
+        /* Department Breakdown */
+        .section-heading {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .department-card {
+            margin-top: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 16px;
+            }
+
+            .topbar h1 {
+                font-size: 28px;
+            }
+
+            .summary-row {
+                flex-direction: column;
+            }
+
+            .summary-card {
+                min-width: 100%;
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .field {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="eyebrow">Payroll Reports</div>
+        <h1>Period Summary — July 2027</h1>
+        <p class="subtitle">Consolidated payroll cost for all employees</p>
+        <span class="status-badge">Finalised</span>
+    </div>
+
+    <!-- Filter Card -->
+    <section class="glass card-pad filter-card">
+        <div class="filter-row">
+            <div class="field">
+                <label>Period</label>
+                <select>
+                    <option selected>July 2027</option>
+                    <option>June 2027</option>
+                    <option>May 2027</option>
+                    <option>April 2027</option>
+                    <option>March 2027</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Department</label>
+                <select>
+                    <option selected>All Departments</option>
+                    <option>Kitchen</option>
+                    <option>Bar</option>
+                    <option>Service</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary">Filter</button>
+                <button class="btn btn-secondary">Download PDF</button>
+                <button class="btn btn-secondary">Export Excel</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Summary Cards -->
+    <div class="summary-row">
+        <div class="summary-card highlight-blue">
+            <div class="label">Employees</div>
+            <div class="value">8</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Gross</div>
+            <div class="value">&euro;12,420.00</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Deductions</div>
+            <div class="value">&euro;1,422.09</div>
+        </div>
+        <div class="summary-card highlight-success">
+            <div class="label">Total Net</div>
+            <div class="value">&euro;10,997.91</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Cost</div>
+            <div class="value">&euro;14,332.68</div>
+        </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <section class="glass card-pad">
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Total Earnings</th>
+                        <th>Deductions</th>
+                        <th>Net Salary</th>
+                        <th>Employer Cost</th>
+                        <th>Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Giannis Papamichael</td>
+                        <td><span class="dept-badge dept-bar">Bar</span></td>
+                        <td>&euro;1,920.00</td>
+                        <td>&euro;219.84</td>
+                        <td>&euro;1,700.16</td>
+                        <td>&euro;295.68</td>
+                        <td><strong>&euro;2,215.68</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Maria Christodoulou</td>
+                        <td><span class="dept-badge dept-kitchen">Kitchen</span></td>
+                        <td>&euro;1,800.00</td>
+                        <td>&euro;206.10</td>
+                        <td>&euro;1,593.90</td>
+                        <td>&euro;277.20</td>
+                        <td><strong>&euro;2,077.20</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Andreas Georgiou</td>
+                        <td><span class="dept-badge dept-bar">Bar</span></td>
+                        <td>&euro;1,500.00</td>
+                        <td>&euro;171.75</td>
+                        <td>&euro;1,328.25</td>
+                        <td>&euro;231.00</td>
+                        <td><strong>&euro;1,731.00</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Elena Konstantinou</td>
+                        <td><span class="dept-badge dept-service">Service</span></td>
+                        <td>&euro;1,200.00</td>
+                        <td>&euro;137.40</td>
+                        <td>&euro;1,062.60</td>
+                        <td>&euro;184.80</td>
+                        <td><strong>&euro;1,384.80</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Nikos Demetriou</td>
+                        <td><span class="dept-badge dept-kitchen">Kitchen</span></td>
+                        <td>&euro;1,650.00</td>
+                        <td>&euro;188.93</td>
+                        <td>&euro;1,461.08</td>
+                        <td>&euro;254.10</td>
+                        <td><strong>&euro;1,904.10</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Sophia Ioannou</td>
+                        <td><span class="dept-badge dept-service">Service</span></td>
+                        <td>&euro;1,100.00</td>
+                        <td>&euro;125.95</td>
+                        <td>&euro;974.05</td>
+                        <td>&euro;169.40</td>
+                        <td><strong>&euro;1,269.40</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Christos Pavlou</td>
+                        <td><span class="dept-badge dept-bar">Bar</span></td>
+                        <td>&euro;1,500.00</td>
+                        <td>&euro;171.75</td>
+                        <td>&euro;1,328.25</td>
+                        <td>&euro;231.00</td>
+                        <td><strong>&euro;1,731.00</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Katerina Michaelides</td>
+                        <td><span class="dept-badge dept-kitchen">Kitchen</span></td>
+                        <td>&euro;1,750.00</td>
+                        <td>&euro;200.38</td>
+                        <td>&euro;1,549.63</td>
+                        <td>&euro;269.50</td>
+                        <td><strong>&euro;2,019.50</strong></td>
+                    </tr>
+                    <tr class="totals-row">
+                        <td><strong>TOTALS</strong></td>
+                        <td>&mdash;</td>
+                        <td><strong>&euro;12,420.00</strong></td>
+                        <td><strong>&euro;1,422.09</strong></td>
+                        <td><strong>&euro;10,997.91</strong></td>
+                        <td><strong>&euro;1,912.68</strong></td>
+                        <td><strong>&euro;14,332.68</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Department Breakdown Card -->
+    <section class="glass card-pad department-card">
+        <h2 class="section-heading">Cost by Department</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Department</th>
+                        <th>Employees</th>
+                        <th>Gross</th>
+                        <th>Employer Cost</th>
+                        <th>Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="dept-badge dept-bar">Bar</span></td>
+                        <td>3</td>
+                        <td>&euro;4,920.00</td>
+                        <td>&euro;757.68</td>
+                        <td><strong>&euro;5,677.68</strong></td>
+                    </tr>
+                    <tr>
+                        <td><span class="dept-badge dept-kitchen">Kitchen</span></td>
+                        <td>3</td>
+                        <td>&euro;5,200.00</td>
+                        <td>&euro;800.80</td>
+                        <td><strong>&euro;6,000.80</strong></td>
+                    </tr>
+                    <tr>
+                        <td><span class="dept-badge dept-service">Service</span></td>
+                        <td>2</td>
+                        <td>&euro;2,300.00</td>
+                        <td>&euro;354.20</td>
+                        <td><strong>&euro;2,654.20</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</body>
+</html>

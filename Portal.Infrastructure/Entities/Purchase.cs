@@ -44,6 +44,10 @@ public class Purchase
 
     public DateTime UpdatedAtUtc { get; set; }
 
+    public int? PayslipPeriodId { get; set; }
+
+    public string? CancelledByUserId { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 

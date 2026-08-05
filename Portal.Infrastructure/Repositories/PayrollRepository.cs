@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Models.Payroll;
 
 namespace Portal.Infrastructure.Repositories;
 
@@ -71,7 +72,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets a single department by Id scoped to a business.
     /// </summary>
-    public async Task<Department?> GetDepartmentByIdAsync(int id, int businessId)
+    public virtual async Task<Department?> GetDepartmentByIdAsync(int id, int businessId)
     {
         try
         {
@@ -333,7 +334,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets a single employee by Id scoped to a business.
     /// </summary>
-    public async Task<Employee?> GetEmployeeByIdAsync(int id, int businessId)
+    public virtual async Task<Employee?> GetEmployeeByIdAsync(int id, int businessId)
     {
         try
         {
@@ -604,7 +605,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets all earning types ordered by SortOrder.
     /// </summary>
-    public async Task<List<EarningType>> GetAllEarningTypesAsync()
+    public virtual async Task<List<EarningType>> GetAllEarningTypesAsync()
     {
         try
         {
@@ -748,7 +749,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets deduction types for a specific business.
     /// </summary>
-    public async Task<List<DeductionType>> GetDeductionTypesByBusinessAsync(int businessId)
+    public virtual async Task<List<DeductionType>> GetDeductionTypesByBusinessAsync(int businessId)
     {
         try
         {
@@ -1108,7 +1109,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets all payslip periods for a business, ordered by Year DESC then Month DESC.
     /// </summary>
-    public async Task<List<PayslipPeriod>> GetPeriodsByBusinessAsync(int businessId)
+    public virtual async Task<List<PayslipPeriod>> GetPeriodsByBusinessAsync(int businessId)
     {
         try
         {
@@ -1130,7 +1131,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets a single payslip period by Id scoped to a business.
     /// </summary>
-    public async Task<PayslipPeriod?> GetPeriodByIdAsync(int id, int businessId)
+    public virtual async Task<PayslipPeriod?> GetPeriodByIdAsync(int id, int businessId)
     {
         try
         {
@@ -1181,21 +1182,72 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
 
     /// <summary>
     /// Updates the status and optional processed timestamp of a payslip period.
+    /// Uses optimistic concurrency: only succeeds if the current status matches expectedCurrentStatus.
+    /// Returns true if 1 row was affected (success), false if 0 rows (concurrency conflict).
     /// </summary>
-    public async Task UpdatePeriodStatusAsync(int id, byte statusTypeId, DateTime? processedAtUtc)
+    public async Task<bool> UpdatePeriodStatusAsync(int id, byte newStatusId, byte expectedCurrentStatus, DateTime? processedAtUtc)
     {
         try
         {
             const string query = @"
                 UPDATE [payroll].[PayslipPeriod]
-                SET [PayslipStatusTypeId] = @PayslipStatusTypeId,
+                SET [PayslipStatusTypeId] = @NewStatusId,
                     [ProcessedAtUtc] = @ProcessedAtUtc
-                WHERE [payroll].[PayslipPeriod].[Id] = @Id";
+                WHERE [payroll].[PayslipPeriod].[Id] = @Id
+                  AND [payroll].[PayslipPeriod].[PayslipStatusTypeId] = @ExpectedCurrentStatus";
+
+            var rowsAffected = await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@NewStatusId", newStatusId),
+                new SqlParameter("@ProcessedAtUtc", processedAtUtc ?? (object)DBNull.Value),
+                new SqlParameter("@Id", id),
+                new SqlParameter("@ExpectedCurrentStatus", expectedCurrentStatus));
+
+            return rowsAffected == 1;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates all payslips in a given period to the specified status.
+    /// </summary>
+    public async Task UpdateAllPayslipStatusesInPeriodAsync(int periodId, byte statusId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [payroll].[Payslip]
+                SET [PayslipStatusTypeId] = @StatusId
+                WHERE [PayslipPeriodId] = @PeriodId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
-                new SqlParameter("@Id", id),
-                new SqlParameter("@PayslipStatusTypeId", statusTypeId),
-                new SqlParameter("@ProcessedAtUtc", processedAtUtc ?? (object)DBNull.Value));
+                new SqlParameter("@StatusId", statusId),
+                new SqlParameter("@PeriodId", periodId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all payslip status type names from the lookup table.
+    /// </summary>
+    public virtual async Task<Dictionary<byte, string>> GetStatusNamesAsync()
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [Name]
+                FROM [payroll].[PayslipStatusType]";
+
+            var results = await _context.Set<PayslipStatusType>()
+                .FromSqlRaw(query)
+                .ToListAsync();
+
+            return results.ToDictionary(x => x.Id, x => x.Name);
         }
         catch (Exception ex)
         {
@@ -1224,6 +1276,196 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             ).ToListAsync();
 
             return result.FirstOrDefault() > 0;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Audit Log (Phase B)
+
+    /// <summary>
+    /// Inserts a single audit log entry.
+    /// </summary>
+    public async Task InsertAuditLogAsync(PayslipAuditLog entry)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [payroll].[PayslipAuditLog]
+                    ([PayslipId], [UserId], [PayslipAuditActionTypeId], [FieldName], [OldValue], [NewValue])
+                VALUES
+                    (@PayslipId, @UserId, @PayslipAuditActionTypeId, @FieldName, @OldValue, @NewValue)";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@PayslipId", entry.PayslipId),
+                new SqlParameter("@UserId", entry.UserId),
+                new SqlParameter("@PayslipAuditActionTypeId", entry.PayslipAuditActionTypeId),
+                new SqlParameter("@FieldName", entry.FieldName ?? (object)DBNull.Value),
+                new SqlParameter("@OldValue", entry.OldValue ?? (object)DBNull.Value),
+                new SqlParameter("@NewValue", entry.NewValue ?? (object)DBNull.Value));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserts multiple audit log entries efficiently.
+    /// </summary>
+    public async Task InsertAuditLogBatchAsync(List<PayslipAuditLog> entries)
+    {
+        try
+        {
+            foreach (var entry in entries)
+            {
+                await InsertAuditLogAsync(entry);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all audit entries for a payslip in reverse chronological order.
+    /// Joins to AspNetUsers for UserFullName and PayslipAuditActionType for ActionName.
+    /// </summary>
+    public async Task<List<PayslipAuditLogDto>> GetAuditLogsByPayslipAsync(int payslipId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [payroll].[PayslipAuditLog].[Id],
+                       ISNULL([dbo].[AspNetUsers].[FullName], [payroll].[PayslipAuditLog].[UserId]) AS [UserFullName],
+                       [payroll].[PayslipAuditActionType].[Name] AS [ActionName],
+                       [payroll].[PayslipAuditLog].[PayslipAuditActionTypeId] AS [ActionTypeId],
+                       [payroll].[PayslipAuditLog].[FieldName],
+                       [payroll].[PayslipAuditLog].[OldValue],
+                       [payroll].[PayslipAuditLog].[NewValue],
+                       [payroll].[PayslipAuditLog].[CreatedAtUtc]
+                FROM [payroll].[PayslipAuditLog]
+                INNER JOIN [payroll].[PayslipAuditActionType]
+                    ON [payroll].[PayslipAuditLog].[PayslipAuditActionTypeId] = [payroll].[PayslipAuditActionType].[Id]
+                LEFT JOIN [dbo].[AspNetUsers]
+                    ON [payroll].[PayslipAuditLog].[UserId] = [dbo].[AspNetUsers].[Id]
+                WHERE [payroll].[PayslipAuditLog].[PayslipId] = @PayslipId
+                ORDER BY [payroll].[PayslipAuditLog].[CreatedAtUtc] DESC";
+
+            var connection = _context.Database.GetDbConnection();
+            var results = new List<PayslipAuditLogDto>();
+
+            try
+            {
+                if (connection.State != System.Data.ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@PayslipId", payslipId));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new PayslipAuditLogDto
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        UserFullName = reader.GetString(reader.GetOrdinal("UserFullName")),
+                        ActionName = reader.GetString(reader.GetOrdinal("ActionName")),
+                        ActionTypeId = reader.GetByte(reader.GetOrdinal("ActionTypeId")),
+                        FieldName = reader.IsDBNull(reader.GetOrdinal("FieldName")) ? null : reader.GetString(reader.GetOrdinal("FieldName")),
+                        OldValue = reader.IsDBNull(reader.GetOrdinal("OldValue")) ? null : reader.GetString(reader.GetOrdinal("OldValue")),
+                        NewValue = reader.IsDBNull(reader.GetOrdinal("NewValue")) ? null : reader.GetString(reader.GetOrdinal("NewValue")),
+                        CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == System.Data.ConnectionState.Open)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all audit entries for all payslips in a period, grouped by employee.
+    /// </summary>
+    public async Task<List<PayslipAuditLogDto>> GetAuditLogsByPeriodAsync(int periodId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [payroll].[PayslipAuditLog].[Id],
+                       [payroll].[PayslipAuditLog].[PayslipId],
+                       ISNULL([dbo].[AspNetUsers].[FullName], [payroll].[PayslipAuditLog].[UserId]) AS [UserFullName],
+                       [payroll].[PayslipAuditActionType].[Name] AS [ActionName],
+                       [payroll].[PayslipAuditLog].[PayslipAuditActionTypeId] AS [ActionTypeId],
+                       [payroll].[PayslipAuditLog].[FieldName],
+                       [payroll].[PayslipAuditLog].[OldValue],
+                       [payroll].[PayslipAuditLog].[NewValue],
+                       [payroll].[PayslipAuditLog].[CreatedAtUtc],
+                       [payroll].[Employee].[Name] AS [EmployeeName]
+                FROM [payroll].[PayslipAuditLog]
+                INNER JOIN [payroll].[Payslip]
+                    ON [payroll].[PayslipAuditLog].[PayslipId] = [payroll].[Payslip].[Id]
+                INNER JOIN [payroll].[Employee]
+                    ON [payroll].[Payslip].[EmployeeId] = [payroll].[Employee].[Id]
+                INNER JOIN [payroll].[PayslipAuditActionType]
+                    ON [payroll].[PayslipAuditLog].[PayslipAuditActionTypeId] = [payroll].[PayslipAuditActionType].[Id]
+                LEFT JOIN [dbo].[AspNetUsers]
+                    ON [payroll].[PayslipAuditLog].[UserId] = [dbo].[AspNetUsers].[Id]
+                WHERE [payroll].[Payslip].[PayslipPeriodId] = @PeriodId
+                ORDER BY [payroll].[Employee].[Name], [payroll].[PayslipAuditLog].[CreatedAtUtc] DESC";
+
+            var connection = _context.Database.GetDbConnection();
+            var results = new List<PayslipAuditLogDto>();
+
+            try
+            {
+                if (connection.State != System.Data.ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@PeriodId", periodId));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new PayslipAuditLogDto
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        PayslipId = reader.GetInt32(reader.GetOrdinal("PayslipId")),
+                        UserFullName = reader.GetString(reader.GetOrdinal("UserFullName")),
+                        ActionName = reader.GetString(reader.GetOrdinal("ActionName")),
+                        ActionTypeId = reader.GetByte(reader.GetOrdinal("ActionTypeId")),
+                        FieldName = reader.IsDBNull(reader.GetOrdinal("FieldName")) ? null : reader.GetString(reader.GetOrdinal("FieldName")),
+                        OldValue = reader.IsDBNull(reader.GetOrdinal("OldValue")) ? null : reader.GetString(reader.GetOrdinal("OldValue")),
+                        NewValue = reader.IsDBNull(reader.GetOrdinal("NewValue")) ? null : reader.GetString(reader.GetOrdinal("NewValue")),
+                        CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc")),
+                        EmployeeName = reader.GetString(reader.GetOrdinal("EmployeeName"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == System.Data.ConnectionState.Open)
+                    await connection.CloseAsync();
+            }
+
+            return results;
         }
         catch (Exception ex)
         {
@@ -1324,7 +1566,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets a single payslip by Id with business ownership validation via PayslipPeriod join.
     /// </summary>
-    public async Task<Payslip?> GetPayslipDetailAsync(int id, int businessId)
+    public virtual async Task<Payslip?> GetPayslipDetailAsync(int id, int businessId)
     {
         try
         {
@@ -1486,7 +1728,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets all earning lines for a payslip.
     /// </summary>
-    public async Task<List<PayslipEarningLine>> GetEarningLinesByPayslipAsync(int payslipId)
+    public virtual async Task<List<PayslipEarningLine>> GetEarningLinesByPayslipAsync(int payslipId)
     {
         try
         {
@@ -1588,7 +1830,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets all deduction lines for a payslip.
     /// </summary>
-    public async Task<List<PayslipDeductionLine>> GetDeductionLinesByPayslipAsync(int payslipId)
+    public virtual async Task<List<PayslipDeductionLine>> GetDeductionLinesByPayslipAsync(int payslipId)
     {
         try
         {
@@ -1781,15 +2023,16 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
         {
             const string query = @"
                 INSERT INTO [payroll].[PayslipEmailLog]
-                    ([PayslipId], [SentByUserId], [SentToEmail], [IsSignatureIncluded], [SentAtUtc])
+                    ([PayslipId], [SentByUserId], [SentToEmail], [IsSuccess], [FailureReason], [SentAtUtc])
                 VALUES
-                    (@PayslipId, @SentByUserId, @SentToEmail, @IsSignatureIncluded, @SentAtUtc)";
+                    (@PayslipId, @SentByUserId, @SentToEmail, @IsSuccess, @FailureReason, @SentAtUtc)";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@PayslipId", entity.PayslipId),
                 new SqlParameter("@SentByUserId", entity.SentByUserId),
                 new SqlParameter("@SentToEmail", entity.SentToEmail),
-                new SqlParameter("@IsSignatureIncluded", entity.IsSignatureIncluded),
+                new SqlParameter("@IsSuccess", entity.IsSuccess),
+                new SqlParameter("@FailureReason", entity.FailureReason ?? (object)DBNull.Value),
                 new SqlParameter("@SentAtUtc", entity.SentAtUtc));
         }
         catch (Exception ex)
@@ -1816,7 +2059,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT [Id], [PayslipId], [SentByUserId], [SentToEmail],
-                           [IsSignatureIncluded], [SentAtUtc], [CreatedAtUtc]
+                           [IsSuccess], [FailureReason], [SentAtUtc], [CreatedAtUtc]
                     FROM [payroll].[PayslipEmailLog]
                     WHERE [payroll].[PayslipEmailLog].[PayslipId] = @PayslipId";
 
@@ -1839,6 +2082,581 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             }
 
             return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region P&L Integration (Phase B)
+
+    /// <summary>
+    /// Gets active (non-cancelled) payroll-generated Purchase records for a period.
+    /// </summary>
+    public async Task<List<Purchase>> GetPayrollPurchasesByPeriodAsync(int businessId, int periodId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
+                       [InvoiceNumber], [InvoiceDate], [Description],
+                       [AmountExcludingVat], [VatAmount], [TotalAmount],
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[PayslipPeriodId] = @PeriodId
+                  AND [purchase].[Purchase].[IsCancelled] = 0";
+
+            return await _context.Set<Purchase>()
+                .FromSqlRaw(query,
+                    new SqlParameter("@BusinessId", businessId),
+                    new SqlParameter("@PeriodId", periodId))
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all payslips in a period with their earning lines loaded (for re-finalisation recalculation).
+    /// </summary>
+    public async Task<List<Payslip>> GetPayslipsByPeriodWithLinesAsync(int periodId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [EmployeeId], [PayslipPeriodId], [TotalEarnings], [TotalEmployeeDeductions],
+                       [NetSalary], [TotalEmployerContributions], [ManagerNotes], [PayslipStatusTypeId], [CreatedAtUtc]
+                FROM [payroll].[Payslip]
+                WHERE [payroll].[Payslip].[PayslipPeriodId] = @PeriodId";
+
+            return await _context.Set<Payslip>()
+                .FromSqlRaw(query, new SqlParameter("@PeriodId", periodId))
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the payroll internal supplier for a business (IsSystemGenerated = 1).
+    /// Returns null if not yet created.
+    /// </summary>
+    public async Task<Supplier?> GetPayrollSupplierAsync(int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [Name], [IsActive], [IsSystemGenerated], [CreatedAtUtc]
+                FROM [purchase].[Supplier]
+                WHERE [purchase].[Supplier].[BusinessId] = @BusinessId
+                  AND [purchase].[Supplier].[IsSystemGenerated] = 1
+                  AND [purchase].[Supplier].[Name] = 'Payroll (Internal)'";
+
+            var results = await _context.Set<Supplier>()
+                .FromSqlRaw(query, new SqlParameter("@BusinessId", businessId))
+                .ToListAsync();
+
+            return results.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Creates the payroll internal supplier for a business.
+    /// </summary>
+    public async Task<int> InsertPayrollSupplierAsync(int businessId)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [purchase].[Supplier]
+                    ([BusinessId], [Name], [IsActive], [IsSystemGenerated], [CreatedAtUtc])
+                VALUES
+                    (@BusinessId, 'Payroll (Internal)', 1, 1, GETUTCDATE());
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != System.Data.ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+
+                var result = await command.ExecuteScalarAsync();
+                return result != null ? Convert.ToInt32(result) : 0;
+            }
+            finally
+            {
+                if (connection.State == System.Data.ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets an expense category by business and name, or creates it if it doesn't exist.
+    /// Returns the category Id.
+    /// </summary>
+    public async Task<int> GetOrCreateExpenseCategoryAsync(int businessId, string name)
+    {
+        try
+        {
+            const string selectQuery = @"
+                SELECT [Id]
+                FROM [purchase].[ExpenseCategory]
+                WHERE [purchase].[ExpenseCategory].[BusinessId] = @BusinessId
+                  AND [purchase].[ExpenseCategory].[Name] = @Name";
+
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != System.Data.ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var selectCommand = connection.CreateCommand();
+                selectCommand.CommandText = selectQuery;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    selectCommand.Transaction = transaction.GetDbTransaction();
+
+                selectCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                selectCommand.Parameters.Add(new SqlParameter("@Name", name));
+
+                var existingId = await selectCommand.ExecuteScalarAsync();
+                if (existingId != null && existingId != DBNull.Value)
+                    return Convert.ToInt32(existingId);
+
+                // Create
+                const string insertQuery = @"
+                    INSERT INTO [purchase].[ExpenseCategory]
+                        ([BusinessId], [Name], [IsActive], [CreatedAtUtc])
+                    VALUES
+                        (@BusinessId, @Name, 1, GETUTCDATE());
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                using var insertCommand = connection.CreateCommand();
+                insertCommand.CommandText = insertQuery;
+
+                if (transaction != null)
+                    insertCommand.Transaction = transaction.GetDbTransaction();
+
+                insertCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                insertCommand.Parameters.Add(new SqlParameter("@Name", name));
+
+                var newId = await insertCommand.ExecuteScalarAsync();
+                return newId != null ? Convert.ToInt32(newId) : 0;
+            }
+            finally
+            {
+                if (connection.State == System.Data.ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Phase C: Report Queries
+
+    /// <summary>
+    /// Gets all payslips for an employee, optionally filtered by year.
+    /// </summary>
+    public virtual async Task<List<Payslip>> GetPayslipsByEmployeeAsync(int employeeId, int businessId, int? year)
+    {
+        try
+        {
+            var results = new List<Payslip>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+
+                var sql = @"
+                    SELECT [payroll].[Payslip].[Id], [payroll].[Payslip].[EmployeeId], [payroll].[Payslip].[PayslipPeriodId],
+                           [payroll].[Payslip].[TotalEarnings], [payroll].[Payslip].[TotalEmployeeDeductions],
+                           [payroll].[Payslip].[NetSalary], [payroll].[Payslip].[TotalEmployerContributions],
+                           [payroll].[Payslip].[ManagerNotes], [payroll].[Payslip].[PayslipStatusTypeId], [payroll].[Payslip].[CreatedAtUtc]
+                    FROM [payroll].[Payslip]
+                    INNER JOIN [payroll].[PayslipPeriod] ON [payroll].[Payslip].[PayslipPeriodId] = [payroll].[PayslipPeriod].[Id]
+                    INNER JOIN [payroll].[Employee] ON [payroll].[Payslip].[EmployeeId] = [payroll].[Employee].[Id]
+                    WHERE [payroll].[Payslip].[EmployeeId] = @EmployeeId
+                      AND [payroll].[Employee].[BusinessId] = @BusinessId";
+
+                command.Parameters.Add(new SqlParameter("@EmployeeId", employeeId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+
+                if (year.HasValue)
+                {
+                    sql += " AND [payroll].[PayslipPeriod].[Year] = @Year";
+                    command.Parameters.Add(new SqlParameter("@Year", year.Value));
+                }
+
+                sql += " ORDER BY [payroll].[PayslipPeriod].[Year] DESC, [payroll].[PayslipPeriod].[Month] DESC";
+
+                command.CommandText = sql;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapPayslip(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets finalised payslips for an employee in a specific year (StatusTypeId IN (3, 5)).
+    /// </summary>
+    public virtual async Task<List<Payslip>> GetFinalisedPayslipsForEmployeeYearAsync(int employeeId, int businessId, int year)
+    {
+        try
+        {
+            var results = new List<Payslip>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [payroll].[Payslip].[Id], [payroll].[Payslip].[EmployeeId], [payroll].[Payslip].[PayslipPeriodId],
+                           [payroll].[Payslip].[TotalEarnings], [payroll].[Payslip].[TotalEmployeeDeductions],
+                           [payroll].[Payslip].[NetSalary], [payroll].[Payslip].[TotalEmployerContributions],
+                           [payroll].[Payslip].[ManagerNotes], [payroll].[Payslip].[PayslipStatusTypeId], [payroll].[Payslip].[CreatedAtUtc]
+                    FROM [payroll].[Payslip]
+                    INNER JOIN [payroll].[PayslipPeriod] ON [payroll].[Payslip].[PayslipPeriodId] = [payroll].[PayslipPeriod].[Id]
+                    INNER JOIN [payroll].[Employee] ON [payroll].[Payslip].[EmployeeId] = [payroll].[Employee].[Id]
+                    WHERE [payroll].[Payslip].[EmployeeId] = @EmployeeId
+                      AND [payroll].[Employee].[BusinessId] = @BusinessId
+                      AND [payroll].[PayslipPeriod].[Year] = @Year
+                      AND [payroll].[Payslip].[PayslipStatusTypeId] IN (3, 5)
+                    ORDER BY [payroll].[PayslipPeriod].[Month] ASC";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@EmployeeId", employeeId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@Year", year));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapPayslip(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets earning lines for multiple payslips (for annual breakdown).
+    /// </summary>
+    public virtual async Task<List<PayslipEarningLine>> GetEarningLinesForPayslipsAsync(int[] payslipIds)
+    {
+        try
+        {
+            if (payslipIds == null || payslipIds.Length == 0)
+                return new List<PayslipEarningLine>();
+
+            var results = new List<PayslipEarningLine>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+
+                var idPlaceholders = new List<string>();
+                for (int i = 0; i < payslipIds.Length; i++)
+                {
+                    var paramName = $"@Id{i}";
+                    idPlaceholders.Add(paramName);
+                    command.Parameters.Add(new SqlParameter(paramName, payslipIds[i]));
+                }
+
+                command.CommandText = $@"
+                    SELECT [Id], [PayslipId], [EarningTypeId], [Description], [Amount], [OvertimeMultiplier], [OvertimeHours], [CreatedAtUtc]
+                    FROM [payroll].[PayslipEarningLine]
+                    WHERE [payroll].[PayslipEarningLine].[PayslipId] IN ({string.Join(", ", idPlaceholders)})";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapPayslipEarningLine(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets deduction lines for multiple payslips (for annual breakdown).
+    /// </summary>
+    public virtual async Task<List<PayslipDeductionLine>> GetDeductionLinesForPayslipsAsync(int[] payslipIds)
+    {
+        try
+        {
+            if (payslipIds == null || payslipIds.Length == 0)
+                return new List<PayslipDeductionLine>();
+
+            var results = new List<PayslipDeductionLine>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+
+                var idPlaceholders = new List<string>();
+                for (int i = 0; i < payslipIds.Length; i++)
+                {
+                    var paramName = $"@Id{i}";
+                    idPlaceholders.Add(paramName);
+                    command.Parameters.Add(new SqlParameter(paramName, payslipIds[i]));
+                }
+
+                command.CommandText = $@"
+                    SELECT [Id], [PayslipId], [DeductionTypeId], [BaseAmount], [Rate], [CalculatedAmount], [DeductionCategoryTypeId], [DeductionRateHistoryId], [CreatedAtUtc]
+                    FROM [payroll].[PayslipDeductionLine]
+                    WHERE [payroll].[PayslipDeductionLine].[PayslipId] IN ({string.Join(", ", idPlaceholders)})";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapPayslipDeductionLine(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets available years for an employee (for year picker dropdowns).
+    /// </summary>
+    public virtual async Task<List<int>> GetAvailableYearsForEmployeeAsync(int employeeId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT DISTINCT [payroll].[PayslipPeriod].[Year]
+                FROM [payroll].[Payslip]
+                INNER JOIN [payroll].[PayslipPeriod] ON [payroll].[Payslip].[PayslipPeriodId] = [payroll].[PayslipPeriod].[Id]
+                INNER JOIN [payroll].[Employee] ON [payroll].[Payslip].[EmployeeId] = [payroll].[Employee].[Id]
+                WHERE [payroll].[Payslip].[EmployeeId] = @EmployeeId
+                  AND [payroll].[Employee].[BusinessId] = @BusinessId
+                ORDER BY [payroll].[PayslipPeriod].[Year] DESC";
+
+            return await _context.Database
+                .SqlQueryRaw<int>(query,
+                    new SqlParameter("@EmployeeId", employeeId),
+                    new SqlParameter("@BusinessId", businessId))
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all finalised payslips for a period (StatusTypeId IN (3, 5)) for batch PDF/email operations.
+    /// Returns raw Payslip entities — the service layer builds full detail objects.
+    /// </summary>
+    public virtual async Task<List<Payslip>> GetFinalisedPayslipsForPeriodAsync(int periodId, int businessId)
+    {
+        try
+        {
+            var results = new List<Payslip>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [payroll].[Payslip].[Id], [payroll].[Payslip].[EmployeeId], [payroll].[Payslip].[PayslipPeriodId],
+                           [payroll].[Payslip].[TotalEarnings], [payroll].[Payslip].[TotalEmployeeDeductions],
+                           [payroll].[Payslip].[NetSalary], [payroll].[Payslip].[TotalEmployerContributions],
+                           [payroll].[Payslip].[ManagerNotes], [payroll].[Payslip].[PayslipStatusTypeId], [payroll].[Payslip].[CreatedAtUtc]
+                    FROM [payroll].[Payslip]
+                    INNER JOIN [payroll].[PayslipPeriod] ON [payroll].[Payslip].[PayslipPeriodId] = [payroll].[PayslipPeriod].[Id]
+                    WHERE [payroll].[Payslip].[PayslipPeriodId] = @PeriodId
+                      AND [payroll].[PayslipPeriod].[BusinessId] = @BusinessId
+                      AND [payroll].[Payslip].[PayslipStatusTypeId] IN (3, 5)";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@PeriodId", periodId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapPayslip(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets email summary counts for all payslips in a period.
+    /// </summary>
+    public virtual async Task<PayslipEmailSummaryDto> GetEmailSummaryForPeriodAsync(int periodId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT 
+                    COUNT(*) AS TotalSent,
+                    SUM(CASE WHEN [payroll].[PayslipEmailLog].[IsSuccess] = 1 THEN 1 ELSE 0 END) AS TotalSuccessful,
+                    SUM(CASE WHEN [payroll].[PayslipEmailLog].[IsSuccess] = 0 THEN 1 ELSE 0 END) AS TotalFailed
+                FROM [payroll].[PayslipEmailLog]
+                INNER JOIN [payroll].[Payslip] ON [payroll].[PayslipEmailLog].[PayslipId] = [payroll].[Payslip].[Id]
+                INNER JOIN [payroll].[PayslipPeriod] ON [payroll].[Payslip].[PayslipPeriodId] = [payroll].[PayslipPeriod].[Id]
+                WHERE [payroll].[Payslip].[PayslipPeriodId] = @PeriodId
+                  AND [payroll].[PayslipPeriod].[BusinessId] = @BusinessId";
+
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@PeriodId", periodId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                using var reader = await command.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return new PayslipEmailSummaryDto
+                    {
+                        TotalSent = reader.IsDBNull(0) ? 0 : reader.GetInt32(0),
+                        TotalSuccessful = reader.IsDBNull(1) ? 0 : reader.GetInt32(1),
+                        TotalFailed = reader.IsDBNull(2) ? 0 : reader.GetInt32(2)
+                    };
+                }
+
+                return new PayslipEmailSummaryDto();
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -2000,7 +2818,8 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             PayslipId = reader.GetInt32(reader.GetOrdinal("PayslipId")),
             SentByUserId = reader.GetString(reader.GetOrdinal("SentByUserId")),
             SentToEmail = reader.GetString(reader.GetOrdinal("SentToEmail")),
-            IsSignatureIncluded = reader.GetBoolean(reader.GetOrdinal("IsSignatureIncluded")),
+            IsSuccess = reader.GetBoolean(reader.GetOrdinal("IsSuccess")),
+            FailureReason = reader.IsDBNull(reader.GetOrdinal("FailureReason")) ? null : reader.GetString(reader.GetOrdinal("FailureReason")),
             SentAtUtc = reader.GetDateTime(reader.GetOrdinal("SentAtUtc")),
             CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
         };

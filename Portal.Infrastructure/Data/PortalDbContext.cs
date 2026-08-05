@@ -188,6 +188,8 @@ public class PortalDbContext : DbContext
     public DbSet<PayslipEarningLine> PayslipEarningLines { get; set; } = null!;
     public DbSet<PayslipDeductionLine> PayslipDeductionLines { get; set; } = null!;
     public DbSet<PayslipEmailLog> PayslipEmailLogs { get; set; } = null!;
+    public DbSet<PayslipAuditLog> PayslipAuditLogs { get; set; } = null!;
+    public DbSet<PayslipAuditActionType> PayslipAuditActionTypes { get; set; } = null!;
 
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
@@ -316,6 +318,8 @@ public class PortalDbContext : DbContext
         ConfigurePayslipEarningLine(modelBuilder);
         ConfigurePayslipDeductionLine(modelBuilder);
         ConfigurePayslipEmailLog(modelBuilder);
+        ConfigurePayslipAuditLog(modelBuilder);
+        ConfigurePayslipAuditActionType(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -1052,6 +1056,8 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.IsSystemGenerated).IsRequired().HasDefaultValue(false);
         });
     }
 
@@ -1227,6 +1233,9 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.PayslipPeriodId).IsRequired(false);
+            entity.Property(e => e.CancelledByUserId).HasMaxLength(450).IsRequired(false);
         });
     }
 
@@ -4156,10 +4165,38 @@ public class PortalDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.PayslipId).IsRequired();
             entity.Property(e => e.SentByUserId).IsRequired().HasMaxLength(450);
-            entity.Property(e => e.SentToEmail).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.SentToEmail).IsRequired().HasMaxLength(256);
             entity.Property(e => e.SentAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.IsSuccess).IsRequired();
+            entity.Property(e => e.FailureReason).HasMaxLength(500);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne<Payslip>().WithMany().HasForeignKey(e => e.PayslipId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigurePayslipAuditLog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipAuditLog>(entity =>
+        {
+            entity.ToTable("PayslipAuditLog", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PayslipId).IsRequired();
+            entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(e => e.PayslipAuditActionTypeId).IsRequired();
+            entity.Property(e => e.FieldName).HasMaxLength(100);
+            entity.Property(e => e.OldValue).HasMaxLength(500);
+            entity.Property(e => e.NewValue).HasMaxLength(500);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigurePayslipAuditActionType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipAuditActionType>(entity =>
+        {
+            entity.ToTable("PayslipAuditActionType", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(20).IsRequired();
         });
     }
 

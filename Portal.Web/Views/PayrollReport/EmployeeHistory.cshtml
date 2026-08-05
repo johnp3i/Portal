@@ -1,0 +1,121 @@
+@model Portal.Infrastructure.Models.Payroll.EmployeePayslipHistoryDto
+@using System.Globalization
+@{
+    ViewData["Title"] = Model.EmployeeName + " — Payslip History";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" asp-action="EmployeeForm" asp-controller="Payroll" asp-route-id="@Model.EmployeeId">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Employee
+        </a>
+        <h1 class="topbar-heading">@Model.EmployeeName &mdash; Payslip History</h1>
+        <p class="topbar-subtitle">All payslips for this employee</p>
+    </div>
+</div>
+
+<!-- Filter Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="filter-row" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="margin-bottom:0;min-width:180px;">
+            <label>Year</label>
+            <select id="yearFilter">
+                <option value="">All Years</option>
+                @foreach (var year in Model.AvailableYears)
+                {
+                    if (Model.FilteredYear == year)
+                    {
+                        <option value="@year" selected>@year</option>
+                    }
+                    else
+                    {
+                        <option value="@year">@year</option>
+                    }
+                }
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="applyYearFilter()">Filter</button>
+            <button class="btn btn-secondary" style="margin-left:8px;" onclick="clearFilter()">Clear</button>
+        </div>
+    </div>
+</section>
+
+<!-- Data Table Card -->
+<section class="glass card-pad">
+    @if (Model.Payslips != null && Model.Payslips.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Status</th>
+                    <th class="text-right">Total Earnings</th>
+                    <th class="text-right">Net Salary</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payslip in Model.Payslips)
+                {
+                    var monthName = CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(payslip.Month);
+                    var badgeClass = payslip.Status switch
+                    {
+                        "Finalised" => "badge--finalised",
+                        "Re-finalised" => "badge--re-finalised",
+                        "Draft" => "badge--draft",
+                        "Preview" => "badge--preview",
+                        "Unlocked" => "badge--unlocked",
+                        _ => "badge--draft"
+                    };
+                    <tr>
+                        <td><strong>@monthName @payslip.Year</strong></td>
+                        <td><span class="badge @badgeClass">@payslip.Status</span></td>
+                        <td class="text-right">&euro;@payslip.TotalEarnings.ToString("N2")</td>
+                        <td class="text-right">&euro;@payslip.NetSalary.ToString("N2")</td>
+                        <td>
+                            <a class="action-link" asp-action="PayslipDetail" asp-controller="Payroll" asp-route-id="@payslip.PayslipId">View</a>
+                            <span class="action-separator">&middot;</span>
+                            <a class="action-link" href="javascript:void(0)" onclick="downloadPdf(@payslip.PayslipId)">PDF</a>
+                        </td>
+                    </tr>
+                }
+                <!-- Summary Row -->
+                <tr class="summary-row">
+                    <td><strong>Year Total</strong></td>
+                    <td>@Model.SummaryCount payslips</td>
+                    <td class="text-right"><strong>&euro;@Model.SummaryTotalGross.ToString("N2")</strong></td>
+                    <td class="text-right"><strong>&euro;@Model.SummaryTotalNet.ToString("N2")</strong></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No payslips found for @(Model.FilteredYear.HasValue ? Model.FilteredYear.Value.ToString() : "this employee")</p>
+        </div>
+    }
+</section>
+
+<script>
+    function applyYearFilter() {
+        var year = document.getElementById('yearFilter').value;
+        var url = '/PayrollReport/EmployeeHistory?employeeId=@Model.EmployeeId';
+        if (year) {
+            url += '&year=' + year;
+        }
+        window.location.href = url;
+    }
+
+    function clearFilter() {
+        window.location.href = '/PayrollReport/EmployeeHistory?employeeId=@Model.EmployeeId';
+    }
+
+    function downloadPdf(payslipId) {
+        window.location.href = '/PayrollReport/AxGetDownloadPayslipPdf?payslipId=' + payslipId;
+    }
+</script>

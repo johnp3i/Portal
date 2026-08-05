@@ -115,6 +115,16 @@ public class PayrollController : Controller
             if (detail == null)
                 return NotFound();
 
+            var isOwner = User.HasClaim("IsOwner", "true");
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+            ViewBag.CanUnlock = isOwner || isSuperAdmin;
+            ViewBag.CanSendEmail = isOwner || isSuperAdmin;
+            ViewBag.PeriodStatus = detail.Status;
+            ViewBag.PeriodId = detail.Id;
+            ViewBag.MonthName = System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(detail.Month);
+            ViewBag.Year = detail.Year;
+
             return View(detail);
         }
         catch (Exception ex)
@@ -133,6 +143,10 @@ public class PayrollController : Controller
 
             if (detail == null)
                 return NotFound();
+
+            var isOwner = User.HasClaim("IsOwner", "true");
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            ViewBag.CanSendEmail = isOwner || isSuperAdmin;
 
             return View(detail);
         }
@@ -601,4 +615,128 @@ public class PayrollController : Controller
             return Json(new { success = false, message = "An unexpected error occurred." });
         }
     }
+
+    #region Phase B: Unlock & Re-finalise
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUnlockPeriod(int periodId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+            // Role detection: Owner is a claim, SuperAdmin is a role
+            var isOwner = User.HasClaim("IsOwner", "true");
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+            if (!isOwner && !isSuperAdmin)
+                return Json(new { success = false, message = "Only the business owner or a SuperAdmin can perform this action." });
+
+            var userRole = isSuperAdmin ? "SuperAdmin" : isOwner ? "Owner" : "User";
+
+            var result = await _payrollService.UnlockPeriodAsync(periodId, businessId, userId, userRole);
+            return Json(new { success = result.Success, message = result.Message ?? "Period unlocked successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRefinalisePeriod(int periodId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+            // Role detection: Owner is a claim, SuperAdmin is a role
+            var isOwner = User.HasClaim("IsOwner", "true");
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+            if (!isOwner && !isSuperAdmin)
+                return Json(new { success = false, message = "Only the business owner or a SuperAdmin can perform this action." });
+
+            var userRole = isSuperAdmin ? "SuperAdmin" : isOwner ? "Owner" : "User";
+
+            var result = await _payrollService.RefinalisePeriodAsync(periodId, businessId, userId, userRole);
+            return Json(new { success = result.Success, message = result.Message ?? "Period re-finalised successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
+    }
+
+    #endregion
+
+    #region Phase B: Audit History
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetAuditHistory(int payslipId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var entries = await _payrollService.GetPayslipAuditHistoryAsync(payslipId, businessId);
+            return Json(new { success = true, data = entries });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load audit history." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetPeriodAuditSummary(int periodId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var groups = await _payrollService.GetPeriodAuditSummaryAsync(periodId, businessId);
+            return Json(new { success = true, data = groups });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load period audit summary." });
+        }
+    }
+
+    public async Task<IActionResult> PayslipAuditHistory(int payslipId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var entries = await _payrollService.GetPayslipAuditHistoryAsync(payslipId, businessId);
+            ViewBag.PayslipId = payslipId;
+            ViewBag.AuditEntries = entries;
+            return View();
+        }
+        catch (Exception ex)
+        {
+            return RedirectToAction("Periods");
+        }
+    }
+
+    public async Task<IActionResult> PeriodAuditSummary(int periodId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var groups = await _payrollService.GetPeriodAuditSummaryAsync(periodId, businessId);
+            ViewBag.PeriodId = periodId;
+            ViewBag.AuditGroups = groups;
+            return View();
+        }
+        catch (Exception ex)
+        {
+            return RedirectToAction("Periods");
+        }
+    }
+
+    #endregion
 }

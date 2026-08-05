@@ -1,0 +1,200 @@
+@model Portal.Infrastructure.Models.Payroll.PeriodSummaryDto
+@{
+    ViewData["Title"] = "Period Summary";
+
+    var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var periodLabel = Model.Month >= 1 && Model.Month <= 12 ? $"{monthNames[Model.Month]} {Model.Year}" : $"{Model.Year}";
+
+    // Department badge colour cycling based on name hash
+    string GetDeptBadgeStyle(string? deptName)
+    {
+        if (string.IsNullOrWhiteSpace(deptName)) return "background:#f0f4f8;color:#5a6a7a;";
+
+        var colours = new[] {
+            ("background:#e8f4fd;color:#0D5EA6;"),   // blue
+            ("background:#fef3e6;color:#C8912E;"),   // orange
+            ("background:#e6f7f0;color:#129867;"),   // green
+            ("background:#f3e8fd;color:#7B2D8B;"),   // purple
+            ("background:#fde8e8;color:#C24A4A;"),   // red
+            ("background:#e8fdf4;color:#0D7A5F;"),   // teal
+        };
+
+        var hash = Math.Abs(deptName.GetHashCode());
+        return colours[hash % colours.Length];
+    }
+}
+
+<div class="topbar">
+    <div class="eyebrow"><span class="dot"></span> Payroll Reports</div>
+    <h1 class="topbar-heading">Period Summary — @periodLabel</h1>
+    <p class="topbar-subtitle">Consolidated payroll cost for all employees</p>
+</div>
+
+<!-- Filter Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" asp-action="PeriodSummary" asp-controller="PayrollReport" id="filterForm">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:120px;">
+                <label>Year</label>
+                <select name="__year" id="filterYear" style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:#1a2b3c;background:white;">
+                    @for (int y = DateTime.UtcNow.Year; y >= DateTime.UtcNow.Year - 5; y--)
+                    {
+                        <option value="@y" selected="@(y == Model.Year)">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="min-width:160px;">
+                <label>Month</label>
+                <select name="__month" id="filterMonth" style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:#1a2b3c;background:white;">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" selected="@(m == Model.Month)">@monthNames[m]</option>
+                    }
+                </select>
+            </div>
+            <div class="field" style="min-width:180px;">
+                <label>Department</label>
+                <select name="departmentId" id="filterDepartment" style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:#1a2b3c;background:white;">
+                    <option value="">All Departments</option>
+                    @if (ViewBag.Departments != null)
+                    {
+                        foreach (var dept in (IEnumerable<dynamic>)ViewBag.Departments)
+                        {
+                            <option value="@dept.Id" selected="@(Model.DepartmentFilter != null && Model.DepartmentFilter == (int)dept.Id)">@dept.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <input type="hidden" name="periodId" id="hiddenPeriodId" value="@Model.PeriodId" />
+            <div style="padding-bottom:2px;display:flex;gap:10px;">
+                <button type="button" class="btn btn-primary" onclick="applyFilter()">Filter</button>
+                <button type="button" class="btn btn-secondary" onclick="downloadPdf()">Download PDF</button>
+                <button type="button" class="btn btn-secondary" onclick="exportExcel()">Export Excel</button>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Summary Cards -->
+@if (Model.Rows != null && Model.Rows.Count > 0)
+{
+    <div style="display:flex;gap:16px;margin-bottom:22px;flex-wrap:wrap;">
+        <div class="glass card-pad" style="flex:1;min-width:160px;padding:20px 22px;">
+            <div style="font-size:12px;font-weight:600;color:#8a9aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Employees</div>
+            <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;color:#0D5EA6;">@Model.Rows.Count</div>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:160px;padding:20px 22px;">
+            <div style="font-size:12px;font-weight:600;color:#8a9aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Total Gross</div>
+            <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;color:#1a2b3c;">&euro;@Model.TotalGross.ToString("N2")</div>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:160px;padding:20px 22px;">
+            <div style="font-size:12px;font-weight:600;color:#8a9aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Total Deductions</div>
+            <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;color:#1a2b3c;">&euro;@Model.TotalDeductions.ToString("N2")</div>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:160px;padding:20px 22px;">
+            <div style="font-size:12px;font-weight:600;color:#8a9aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Total Net</div>
+            <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;color:#129867;">&euro;@Model.TotalNet.ToString("N2")</div>
+        </div>
+        <div class="glass card-pad" style="flex:1;min-width:160px;padding:20px 22px;">
+            <div style="font-size:12px;font-weight:600;color:#8a9aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Total Cost</div>
+            <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;color:#1a2b3c;">&euro;@Model.TotalCost.ToString("N2")</div>
+        </div>
+    </div>
+}
+
+<!-- Main Table -->
+<section class="glass card-pad">
+    @if (Model.Rows != null && Model.Rows.Count > 0)
+    {
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th class="text-right">Total Earnings</th>
+                        <th class="text-right">Deductions</th>
+                        <th class="text-right">Net Salary</th>
+                        <th class="text-right">Employer Contributions</th>
+                        <th class="text-right">Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td><strong>@row.EmployeeName</strong></td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(row.DepartmentName))
+                                {
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:600;@GetDeptBadgeStyle(row.DepartmentName)">@row.DepartmentName</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#8a9aaa;">&mdash;</span>
+                                }
+                            </td>
+                            <td class="text-right">&euro;@row.TotalEarnings.ToString("N2")</td>
+                            <td class="text-right">&euro;@row.TotalDeductions.ToString("N2")</td>
+                            <td class="text-right">&euro;@row.NetSalary.ToString("N2")</td>
+                            <td class="text-right">&euro;@row.EmployerContributions.ToString("N2")</td>
+                            <td class="text-right"><strong>&euro;@row.TotalCost.ToString("N2")</strong></td>
+                        </tr>
+                    }
+                    <tr class="totals-row">
+                        <td><strong>TOTALS</strong></td>
+                        <td>&mdash;</td>
+                        <td class="text-right"><strong>&euro;@Model.TotalGross.ToString("N2")</strong></td>
+                        <td class="text-right"><strong>&euro;@Model.TotalDeductions.ToString("N2")</strong></td>
+                        <td class="text-right"><strong>&euro;@Model.TotalNet.ToString("N2")</strong></td>
+                        <td class="text-right"><strong>&euro;@Model.TotalContributions.ToString("N2")</strong></td>
+                        <td class="text-right"><strong>&euro;@Model.TotalCost.ToString("N2")</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No finalised payslips for @periodLabel</p>
+        </div>
+    }
+</section>
+
+<script>
+    function getSelectedPeriodParams() {
+        var year = document.getElementById('filterYear').value;
+        var month = document.getElementById('filterMonth').value;
+        var departmentId = document.getElementById('filterDepartment').value;
+        var periodId = document.getElementById('hiddenPeriodId').value;
+        return { year: year, month: month, departmentId: departmentId, periodId: periodId };
+    }
+
+    function applyFilter() {
+        var params = getSelectedPeriodParams();
+        var url = '/PayrollReport/PeriodSummary?periodId=' + encodeURIComponent(params.periodId);
+        if (params.departmentId) {
+            url += '&departmentId=' + encodeURIComponent(params.departmentId);
+        }
+        window.location.href = url;
+    }
+
+    function downloadPdf() {
+        var params = getSelectedPeriodParams();
+        var url = '/PayrollReport/AxGetDownloadPeriodSummaryPdf?periodId=' + encodeURIComponent(params.periodId);
+        if (params.departmentId) {
+            url += '&departmentId=' + encodeURIComponent(params.departmentId);
+        }
+        window.location.href = url;
+    }
+
+    function exportExcel() {
+        var params = getSelectedPeriodParams();
+        var url = '/PayrollReport/AxGetExportPeriodSummary?periodId=' + encodeURIComponent(params.periodId);
+        if (params.departmentId) {
+            url += '&departmentId=' + encodeURIComponent(params.departmentId);
+        }
+        window.location.href = url;
+    }
+</script>

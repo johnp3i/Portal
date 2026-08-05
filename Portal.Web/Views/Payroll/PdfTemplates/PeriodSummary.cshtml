@@ -1,0 +1,226 @@
+@model Portal.Infrastructure.Models.Payroll.PeriodSummaryDto
+@{
+    Layout = null;
+    var monthNames = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var monthName = (Model.Month >= 1 && Model.Month <= 12) ? monthNames[Model.Month - 1] : "Unknown";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Period Summary — @monthName @Model.Year</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #1a2332;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .page {
+            width: 297mm;
+            min-height: 210mm;
+            background: #ffffff;
+            padding: 40px 48px;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #0D5EA6;
+        }
+
+        .header-left h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: #0D5EA6;
+            margin-bottom: 4px;
+        }
+
+        .header-left p {
+            font-size: 13px;
+            color: #5a6a7a;
+            line-height: 1.4;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .header-right .report-title {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 22px;
+            color: #0D5EA6;
+            letter-spacing: 0.5px;
+        }
+
+        .header-right .report-period {
+            font-size: 13px;
+            color: #5a6a7a;
+            margin-top: 4px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            font-size: 12px;
+        }
+
+        thead th {
+            background: #0D5EA6;
+            color: #ffffff;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 9px 12px;
+            text-align: left;
+            border: none;
+        }
+
+        thead th.text-right {
+            text-align: right;
+        }
+
+        tbody td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eef2f6;
+            color: #2d3a4a;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f9fbfd;
+        }
+
+        tbody td.text-right {
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .total-row td {
+            background: #0D5EA6 !important;
+            font-weight: 700;
+            color: #ffffff;
+            border-top: 2px solid #0D5EA6;
+            border-bottom: none;
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+
+        .total-row td.text-right {
+            text-align: right;
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 28px;
+            left: 48px;
+            right: 48px;
+            text-align: center;
+            font-size: 11px;
+            color: #8a96a4;
+            padding-top: 14px;
+            border-top: 1px solid #e8eef4;
+        }
+
+        @@media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+
+            .page {
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                padding: 28px 36px;
+                min-height: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>@(ViewBag.BusinessName ?? "Period Summary")</h1>
+                @if (Model.DepartmentFilter.HasValue)
+                {
+                    <p>Department: @(ViewBag.DepartmentName ?? "Filtered")</p>
+                }
+            </div>
+            <div class="header-right">
+                <div class="report-title">PERIOD SUMMARY</div>
+                <div class="report-period">@monthName @Model.Year</div>
+            </div>
+        </div>
+
+        <!-- Employee Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Department</th>
+                    <th class="text-right">Gross</th>
+                    <th class="text-right">Deductions</th>
+                    <th class="text-right">Net</th>
+                    <th class="text-right">Employer Contributions</th>
+                    <th class="text-right">Total Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td>@row.EmployeeName</td>
+                        <td>@(row.DepartmentName ?? "—")</td>
+                        <td class="text-right">&euro;@row.TotalEarnings.ToString("N2")</td>
+                        <td class="text-right">&euro;@row.TotalDeductions.ToString("N2")</td>
+                        <td class="text-right">&euro;@row.NetSalary.ToString("N2")</td>
+                        <td class="text-right">&euro;@row.EmployerContributions.ToString("N2")</td>
+                        <td class="text-right">&euro;@row.TotalCost.ToString("N2")</td>
+                    </tr>
+                }
+                <tr class="total-row">
+                    <td><strong>TOTALS</strong></td>
+                    <td></td>
+                    <td class="text-right">&euro;@Model.TotalGross.ToString("N2")</td>
+                    <td class="text-right">&euro;@Model.TotalDeductions.ToString("N2")</td>
+                    <td class="text-right">&euro;@Model.TotalNet.ToString("N2")</td>
+                    <td class="text-right">&euro;@Model.TotalContributions.ToString("N2")</td>
+                    <td class="text-right">&euro;@Model.TotalCost.ToString("N2")</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="footer">
+            Generated by 3 Inventors Portal &bull; Confidential
+        </div>
+    </div>
+</body>
+</html>

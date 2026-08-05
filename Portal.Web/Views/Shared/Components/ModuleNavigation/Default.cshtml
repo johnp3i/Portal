@@ -430,6 +430,7 @@
         <div class="nav-title">Payroll</div>
         @{
             var isPayrollActive = currentController.Equals("Payroll", StringComparison.OrdinalIgnoreCase);
+            var isPayrollReportActive = currentController.Equals("PayrollReport", StringComparison.OrdinalIgnoreCase);
         }
         <a class="nav-item @(isPayrollActive && (currentAction == "Employees" || currentAction == "EmployeeForm") ? "active" : "")" asp-controller="Payroll" asp-action="Employees">
             <span class="nav-icon">@Html.Raw(payrollIcon)</span>
@@ -446,6 +447,14 @@
         <a class="nav-item @(isPayrollActive && (currentAction == "Periods" || currentAction == "PeriodDetail" || currentAction == "PayslipDetail" || currentAction == "BatchGenerate") ? "active" : "")" asp-controller="Payroll" asp-action="Periods">
             <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
             <span class="nav-text">Payslip Periods</span>
+        </a>
+        <a class="nav-item @(isPayrollReportActive && currentAction == "EarningsBreakdown" ? "active" : "")" href="/PayrollReport/EarningsBreakdown">
+            <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></span>
+            <span class="nav-text">Earnings Breakdown</span>
+        </a>
+        <a class="nav-item @(isPayrollReportActive && currentAction == "PeriodSummary" ? "active" : "")" href="/PayrollReport/PeriodSummary">
+            <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg></span>
+            <span class="nav-text">Period Summary</span>
         </a>
     </div>
 }

@@ -1,0 +1,102 @@
+@using Portal.Infrastructure.Models.Payroll
+@{
+    ViewData["Title"] = "Period Audit Summary";
+
+    var periodId = (int)ViewBag.PeriodId;
+    var auditGroups = (List<PeriodAuditGroupDto>)ViewBag.AuditGroups;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" href="/Payroll/PeriodDetail?id=@periodId">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Period
+        </a>
+        <h1 class="topbar-heading">Period Audit Summary</h1>
+        <p class="topbar-subtitle">All audit events across payslips in this period</p>
+    </div>
+</div>
+
+@if (auditGroups == null || auditGroups.Count == 0)
+{
+    <section class="glass card-pad">
+        <div class="empty-state">
+            <p>No audit entries recorded for this period.</p>
+        </div>
+    </section>
+}
+else
+{
+    foreach (var group in auditGroups)
+    {
+        <section class="glass card-pad" style="margin-top:24px;">
+            <details open>
+                <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;">
+                    <svg class="chevron-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="transition:transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>
+                    <h3 style="margin:0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#1a2b3c;">@group.EmployeeName</h3>
+                    <span style="font-size:12px;color:#5a6a7a;font-weight:500;">(@group.Entries.Count @(group.Entries.Count == 1 ? "entry" : "entries"))</span>
+                </summary>
+
+                <div class="audit-timeline" style="margin-top:16px;padding-left:20px;border-left:2px solid #e2e8f0;">
+                    @foreach (var entry in group.Entries)
+                    {
+                        var badgeColor = entry.ActionTypeId switch
+                        {
+                            1 => "#C8912E", // Unlocked — amber
+                            2 => "#0D5EA6", // Edited — blue
+                            3 => "#129867", // Re-finalised — green
+                            _ => "#6b7280"
+                        };
+
+                        <div class="audit-entry" style="position:relative;padding:12px 0 12px 20px;">
+                            <div style="position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:@badgeColor;border:2px solid #fff;box-shadow:0 0 0 2px @badgeColor;"></div>
+
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;color:#fff;background:@badgeColor;">@entry.ActionName</span>
+                                <span style="font-size:13px;font-weight:600;color:#1a2b3c;">@entry.UserFullName</span>
+                                <span style="font-size:12px;color:#5a6a7a;">@entry.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</span>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(entry.FieldName))
+                            {
+                                <div style="margin-top:6px;font-size:13px;color:#374151;">
+                                    <span style="font-weight:600;color:#4b5563;">@entry.FieldName</span>
+
+                                    @if (entry.OldValue != null && entry.NewValue != null)
+                                    {
+                                        <span style="margin-left:8px;">
+                                            <span style="color:#C24A4A;text-decoration:line-through;">@entry.OldValue</span>
+                                            <svg width="12" height="12" fill="none" stroke="#5a6a7a" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin:0 4px;"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                                            <span style="color:#129867;font-weight:600;">@entry.NewValue</span>
+                                        </span>
+                                    }
+                                    else if (entry.OldValue == null && entry.NewValue != null)
+                                    {
+                                        <span style="margin-left:8px;color:#129867;font-weight:600;">+ @entry.NewValue</span>
+                                    }
+                                    else if (entry.OldValue != null && entry.NewValue == null)
+                                    {
+                                        <span style="margin-left:8px;color:#C24A4A;font-weight:600;">- @entry.OldValue</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </details>
+        </section>
+    }
+}
+
+<style>
+    details summary::-webkit-details-marker {
+        display: none;
+    }
+    details[open] .chevron-icon {
+        transform: rotate(0deg);
+    }
+    details:not([open]) .chevron-icon {
+        transform: rotate(-90deg);
+    }
+</style>

@@ -4,8 +4,8 @@
 
     var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
     var periodLabel = $"{monthNames[Model.Month]} {Model.Year}";
-    var isFinalised = Model.PeriodStatus == "Finalised";
-    var isEditable = Model.PeriodStatus != "Finalised";
+    var isFinalised = Model.PeriodStatus == "Finalised" || Model.PeriodStatus == "Re-finalised";
+    var isEditable = Model.PeriodStatus == "Draft" || Model.PeriodStatus == "Preview" || Model.PeriodStatus == "Unlocked";
 }
 
 <div class="topbar">
@@ -31,6 +31,14 @@
             {
                 <span class="pill pill-green">Finalised</span>
             }
+            else if (Model.PeriodStatus == "Unlocked")
+            {
+                <span class="pill pill-amber">Unlocked</span>
+            }
+            else if (Model.PeriodStatus == "Re-finalised")
+            {
+                <span class="pill pill-green">Re-finalised</span>
+            }
         </p>
     </div>
     <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -40,13 +48,31 @@
         }
         @if (isFinalised)
         {
-            <a class="btn btn-secondary" href="/Payroll/AxGetDownloadPayslipPdf?payslipId=@Model.Id" target="_blank">Download PDF</a>
-            <button class="btn btn-primary" onclick="sendEmail()">Send Email</button>
+            <a class="btn btn-secondary" href="/PayrollReport/AxGetDownloadPayslipPdf?payslipId=@Model.Id" target="_blank">Download PDF</a>
         }
+        @if (isFinalised && ViewBag.CanSendEmail == true)
+        {
+            @if (string.IsNullOrEmpty(Model.EmployeeEmail))
+            {
+                <button class="btn btn-primary" disabled title="Employee email address not configured">Send by Email</button>
+            }
+            else
+            {
+                <button class="btn btn-primary" onclick="sendEmail()">Send by Email</button>
+            }
+        }
+        <a class="btn btn-secondary" href="/Payroll/PayslipAuditHistory?payslipId=@Model.Id">Audit History</a>
     </div>
 </div>
 
 @Html.AntiForgeryToken()
+
+@if (!isEditable)
+{
+    <div style="background:#f0f4f8;border:1px solid #d0dbe5;border-radius:10px;padding:14px 18px;margin-bottom:20px;">
+        <p style="font-size:13px;color:#5a6a7a;font-style:italic;margin:0;">This payslip is in a finalised period and cannot be edited. To make changes, unlock the period first.</p>
+    </div>
+}
 
 <!-- Summary Cards -->
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
@@ -223,14 +249,44 @@
             if (result.isConfirmed) {
                 BlockUI.show('Sending email...');
                 try {
-                    var response = await fetch('/Payroll/AxPostSendPayslipEmail?payslipId=' + payslipId + '&includeSignature=true', {
+                    var response = await fetch('/PayrollReport/AxPostSendPayslipEmail?payslipId=' + payslipId, {
                         method: 'POST',
                         headers: { 'RequestVerificationToken': getAntiForgeryToken() }
                     });
                     var data = await response.json();
                     BlockUI.hide();
 
-                    if (data.success) {
+                    if (data.alreadySent) {
+                        Swal.fire({
+                            title: 'Already Sent',
+                            text: 'This payslip was already emailed on ' + data.sentDate + '. Send again?',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, resend',
+                            cancelButtonText: 'Cancel',
+                            confirmButtonColor: '#0D5EA6'
+                        }).then(async function (resendResult) {
+                            if (resendResult.isConfirmed) {
+                                BlockUI.show('Resending email...');
+                                try {
+                                    var resendResponse = await fetch('/PayrollReport/AxPostSendPayslipEmail?payslipId=' + payslipId + '&confirmResend=true', {
+                                        method: 'POST',
+                                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                                    });
+                                    var resendData = await resendResponse.json();
+                                    BlockUI.hide();
+                                    if (resendData.success) {
+                                        Swal.fire({ icon: 'success', title: 'Done', text: resendData.message, confirmButtonColor: '#0D5EA6' });
+                                    } else {
+                                        Swal.fire({ icon: 'error', title: 'Error', text: resendData.message, confirmButtonColor: '#0D5EA6' });
+                                    }
+                                } catch (e) {
+                                    BlockUI.hide();
+                                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                                }
+                            }
+                        });
+                    } else if (data.success) {
                         Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });

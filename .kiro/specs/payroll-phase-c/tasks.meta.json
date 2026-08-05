@@ -1,0 +1,370 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create PayslipEmailLog table SQL migration": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041448
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856054051
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856149273
+      }
+    ],
+    "1.2 Add Payroll value to EmailDepartmentEnum": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041547
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856054911
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856150149
+      }
+    ],
+    "1.3 Create PayslipEmailLog EF Core entity and DbContext configuration": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041596
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856155970
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856313719
+      }
+    ],
+    "2.1 Create PDF View Models": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041638
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856156820
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856314645
+      }
+    ],
+    "2.2 Create Report DTOs": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041689
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856157488
+      },
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856315265
+      }
+    ],
+    "3.1 Create PayslipEmailLogRepository": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041752
+      }
+    ],
+    "3.2 Add report query methods to PayrollRepository": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041811
+      }
+    ],
+    "4. Build checkpoint": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041862
+      }
+    ],
+    "5.1 Replace PayslipRenderer stub with Razor-based implementation": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041910
+      }
+    ],
+    "5.2 Create Payslip PDF Razor template": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856041997
+      }
+    ],
+    "6.1 Replace PayslipPdfService stub with PuppeteerSharp implementation": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042081
+      }
+    ],
+    "7.1 Add SendPayslipEmailAsync method to IEmailService": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042138
+      }
+    ],
+    "7.2 Replace PayslipEmailService stub with full implementation": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042201
+      }
+    ],
+    "7.3 Implement SendAllPayslipsAsync for batch email sending": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042261
+      }
+    ],
+    "8.1 Create IPayrollReportService interface and basic class structure": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042323
+      }
+    ],
+    "8.2 Implement GetEmployeeHistoryAsync": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042401
+      }
+    ],
+    "8.3 Implement GetAnnualSummaryAsync and GenerateAnnualSummaryPdfAsync": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042460
+      }
+    ],
+    "8.4 Implement GetEarningsBreakdownAsync and ExportEarningsBreakdownToExcelAsync": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042521
+      }
+    ],
+    "8.5 Implement GetPeriodSummaryAsync with PDF and Excel export": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042641
+      }
+    ],
+    "8.6 Implement GenerateEmployeeStatementPdfAsync": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042702
+      }
+    ],
+    "8.7 Implement GenerateAllPayslipsPdfZipAsync": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042752
+      }
+    ],
+    "8.8 Implement email log query methods": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042804
+      }
+    ],
+    "9. Build checkpoint": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042861
+      }
+    ],
+    "10.1 Create Annual Summary PDF Razor template": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042912
+      }
+    ],
+    "10.2 Create Period Summary PDF Razor template": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856042959
+      }
+    ],
+    "10.3 Create Employee Statement PDF Razor template": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043008
+      }
+    ],
+    "11.1 Create PayrollReportController with page actions": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043050
+      }
+    ],
+    "11.2 Add download and export AJAX endpoints": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043100
+      }
+    ],
+    "11.3 Add email send and log AJAX endpoints": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043153
+      }
+    ],
+    "12.1 Register Phase C services in DI container": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043205
+      }
+    ],
+    "13. Build checkpoint": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043260
+      }
+    ],
+    "14.1 Create Employee History view": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043318
+      }
+    ],
+    "14.2 Create Annual Summary view": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043368
+      }
+    ],
+    "15.1 Create Earnings Breakdown view": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043418
+      }
+    ],
+    "15.2 Create Period Summary view": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043472
+      }
+    ],
+    "16.1 Add email send buttons and duplicate detection to existing views": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043521
+      }
+    ],
+    "16.2 Implement email send JavaScript with SweetAlert2 flows": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043577
+      }
+    ],
+    "16.3 Add Download PDF and Download All buttons to existing payslip views": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043634
+      }
+    ],
+    "16.4 Add Export Statement action to employee views": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043731
+      }
+    ],
+    "17.1 Add responsive CSS for Phase C report views": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043906
+      }
+    ],
+    "18. Build and integration checkpoint": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856043971
+      }
+    ],
+    "20.1 Create What's New announcement seed SQL for Phase C": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856044032
+      }
+    ],
+    "21. Final checkpoint": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856044089
+      }
+    ],
+    "1. Database schema and EF Core setup": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856313811
+      }
+    ],
+    "2. DTOs and View Models": [
+      {
+        "executionId": "ed2412ee-2490-4fbf-9677-98426045da75",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785856315340
+      }
+    ]
+  }
+}

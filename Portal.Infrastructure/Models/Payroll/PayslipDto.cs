@@ -16,6 +16,8 @@ public class PayslipDetailDto
     public int Id { get; set; }
     public string EmployeeName { get; set; } = string.Empty;
     public string? EmployeePosition { get; set; }
+    public string? SocialInsuranceNumber { get; set; }
+    public string? IdNumber { get; set; }
     public string? DepartmentName { get; set; }
     public string? EmployeeEmail { get; set; }
     public int Year { get; set; }

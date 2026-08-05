@@ -18,6 +18,13 @@
         </a>
         <h1 class="topbar-heading">@ViewData["Title"]</h1>
     </div>
+    @if (isEdit)
+    {
+        <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+            <a class="btn btn-secondary" href="/PayrollReport/EmployeeHistory?employeeId=@Model!.Id">View History</a>
+            <a class="btn btn-secondary" href="/PayrollReport/AnnualSummary?employeeId=@Model!.Id">Annual Summary</a>
+        </div>
+    }
 </div>
 
 @Html.AntiForgeryToken()

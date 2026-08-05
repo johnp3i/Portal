@@ -17,7 +17,7 @@ public class SupplierRepository : GenericStoredProcedureRepository<Supplier>
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [Name], [IsActive], [CreatedAtUtc]
+                SELECT [Id], [BusinessId], [Name], [IsActive], [IsSystemGenerated], [CreatedAtUtc]
                 FROM [purchase].[Supplier]
                 WHERE Supplier.BusinessId = @BusinessId";
 
@@ -34,7 +34,7 @@ public class SupplierRepository : GenericStoredProcedureRepository<Supplier>
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [Name], [IsActive], [CreatedAtUtc]
+                SELECT [Id], [BusinessId], [Name], [IsActive], [IsSystemGenerated], [CreatedAtUtc]
                 FROM [purchase].[Supplier]
                 WHERE Supplier.Id = @Id AND Supplier.BusinessId = @BusinessId";
 
@@ -128,6 +128,34 @@ public class SupplierRepository : GenericStoredProcedureRepository<Supplier>
         }
     }
 
+    /// <summary>
+    /// Checks if a supplier is system-generated (protected from deletion/deactivation).
+    /// </summary>
+    public async Task<bool> IsSystemGeneratedAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT COUNT(*)
+                FROM [purchase].[Supplier]
+                WHERE [purchase].[Supplier].[Id] = @Id
+                  AND [purchase].[Supplier].[BusinessId] = @BusinessId
+                  AND [purchase].[Supplier].[IsSystemGenerated] = 1";
+
+            var result = await _context.Database
+                .SqlQueryRaw<int>(query,
+                    new SqlParameter("@Id", id),
+                    new SqlParameter("@BusinessId", businessId))
+                .ToListAsync();
+
+            return result.FirstOrDefault() > 0;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<(List<Supplier> Items, int TotalCount)> GetPagedByBusinessIdAsync(
         int businessId,
         string? searchTerm,
@@ -141,10 +169,12 @@ public class SupplierRepository : GenericStoredProcedureRepository<Supplier>
                        [purchase].[Supplier].[BusinessId],
                        [purchase].[Supplier].[Name],
                        [purchase].[Supplier].[IsActive],
+                       [purchase].[Supplier].[IsSystemGenerated],
                        [purchase].[Supplier].[CreatedAtUtc],
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [purchase].[Supplier]
                 WHERE [purchase].[Supplier].[BusinessId] = @BusinessId
+                  AND [purchase].[Supplier].[IsSystemGenerated] = 0
                   AND (@SearchTerm IS NULL OR [purchase].[Supplier].[Name] LIKE '%' + @SearchTerm + '%')
                 ORDER BY [purchase].[Supplier].[Name] ASC
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
@@ -180,6 +210,7 @@ public class SupplierRepository : GenericStoredProcedureRepository<Supplier>
                         BusinessId = reader.GetInt32(reader.GetOrdinal("BusinessId")),
                         Name = reader.GetString(reader.GetOrdinal("Name")),
                         IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
+                        IsSystemGenerated = reader.GetBoolean(reader.GetOrdinal("IsSystemGenerated")),
                         CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
                     });
                 }

@@ -16,6 +16,8 @@ public class Supplier
 
     public DateTime CreatedAtUtc { get; set; }
 
+    public bool IsSystemGenerated { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 

@@ -458,13 +458,21 @@ builder.Services.AddScoped<IStripeKeyResolutionService, StripeKeyResolutionServi
 builder.Services.AddScoped<IGlobalSearchService, GlobalSearchService>();
 
 // --- Payroll ---
+builder.Services.Configure<Portal.Infrastructure.Models.PayrollSettings>(builder.Configuration.GetSection("Payroll"));
 builder.Services.AddScoped<PayrollRepository>(sp =>
     new PayrollRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<PayslipEmailLogRepository>(sp =>
+    new PayslipEmailLogRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddSingleton<IPayslipCalculationEngine, PayslipCalculationEngine>();
 builder.Services.AddScoped<IPayslipRenderer, PayslipRenderer>();
 builder.Services.AddScoped<IPayslipPdfService, PayslipPdfService>();
 builder.Services.AddScoped<IPayslipEmailService, PayslipEmailService>();
+builder.Services.AddScoped<IPayrollReportService, PayrollReportService>();
+builder.Services.AddScoped<IPayslipPeriodStatusService, PayslipPeriodStatusService>();
+builder.Services.AddScoped<IPayslipAuditService, PayslipAuditService>();
+builder.Services.AddScoped<IPayrollPnlService, PayrollPnlService>();
+builder.Services.AddScoped<IPayrollProgressNotifier, Portal.Web.Services.PayrollProgressNotifier>();
 
 // --- Compliance Filings ---
 builder.Services.AddScoped<ComplianceRepository>(sp =>
@@ -472,6 +480,7 @@ builder.Services.AddScoped<ComplianceRepository>(sp =>
 builder.Services.AddScoped<IComplianceService, ComplianceService>();
 
 // --- MVC ---
+builder.Services.AddSignalR();
 var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<Portal.Web.Filters.SetupWizardRedirectFilter>();
@@ -542,6 +551,8 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<LoggingEnrichmentMiddleware>();
+
+app.MapHub<Portal.Web.Hubs.PayrollHub>("/hubs/payroll");
 
 app.MapControllerRoute(
     name: "default",

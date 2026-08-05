@@ -15,18 +15,20 @@
         </a>
         <h1 class="topbar-heading">@periodLabel</h1>
         <p class="topbar-subtitle">
-            @if (Model.Status == "Draft")
-            {
-                <span class="pill pill-grey">Draft</span>
+            @{
+                var statusColor = ViewBag.PeriodStatus switch
+                {
+                    "Draft" => "#6b7280",
+                    "Preview" => "#0D5EA6",
+                    "Finalised" => "#129867",
+                    "Unlocked" => "#C8912E",
+                    "Re-finalised" => "#129867",
+                    _ => "#6b7280"
+                };
             }
-            else if (Model.Status == "Preview")
-            {
-                <span class="pill pill-blue">Preview</span>
-            }
-            else if (Model.Status == "Finalised")
-            {
-                <span class="pill pill-green">Finalised</span>
-            }
+            <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;background:@statusColor;">
+                @ViewBag.PeriodStatus
+            </span>
         </p>
     </div>
     <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -42,9 +44,26 @@
         {
             <button class="btn btn-success" onclick="finalisePeriod()">Finalise Period</button>
         }
-        @if (Model.Status == "Finalised")
+        @if ((ViewBag.PeriodStatus == "Finalised" || ViewBag.PeriodStatus == "Re-finalised") && ViewBag.CanSendEmail == true)
         {
-            <button class="btn btn-primary" onclick="sendAllEmails()">Send All Emails</button>
+            <button class="btn btn-primary" onclick="sendAllEmails()">Send All by Email</button>
+        }
+        @if ((ViewBag.PeriodStatus == "Finalised" || ViewBag.PeriodStatus == "Re-finalised"))
+        {
+            <a class="btn btn-secondary" href="/PayrollReport/AxGetDownloadAllPayslipsPdf?periodId=@Model.Id">Download All (ZIP)</a>
+        }
+        @if (ViewBag.CanUnlock == true && (ViewBag.PeriodStatus == "Finalised" || ViewBag.PeriodStatus == "Re-finalised"))
+        {
+            <button class="btn btn-secondary" onclick="unlockPeriod(@ViewBag.PeriodId, '@ViewBag.MonthName', @ViewBag.Year)">Unlock Period</button>
+        }
+        @if (ViewBag.CanUnlock == true && ViewBag.PeriodStatus == "Unlocked")
+        {
+            <button class="btn btn-primary" onclick="refinalisePeriod(@ViewBag.PeriodId, '@ViewBag.MonthName', @ViewBag.Year)">Re-finalise</button>
+        }
+        <a class="btn btn-secondary" href="/Payroll/PeriodAuditSummary?periodId=@ViewBag.PeriodId">View Audit Summary</a>
+        @if (ViewBag.PeriodStatus == "Finalised" || ViewBag.PeriodStatus == "Re-finalised")
+        {
+            <a class="btn btn-secondary" href="/PayrollReport/PeriodSummary?periodId=@Model.Id">View Period Report</a>
         }
     </div>
 </div>
@@ -195,7 +214,7 @@
             if (result.isConfirmed) {
                 BlockUI.show('Sending emails...');
                 try {
-                    var response = await fetch('/Payroll/AxPostSendAllPayslipEmails?periodId=@Model.Id&includeSignature=true', {
+                    var response = await fetch('/PayrollReport/AxPostSendAllPayslipEmails?periodId=@Model.Id', {
                         method: 'POST',
                         headers: { 'RequestVerificationToken': getAntiForgeryToken() }
                     });
@@ -213,5 +232,73 @@
                 }
             }
         });
+    }
+
+    async function unlockPeriod(periodId, monthName, year) {
+        const result = await Swal.fire({
+            title: 'Unlock Period?',
+            text: `Editing will affect P&L for ${monthName} ${year}`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Proceed',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#C24A4A'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Unlocking period...');
+        try {
+            const response = await fetch(`/Payroll/AxPostUnlockPeriod?periodId=${periodId}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            const data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({ icon: 'success', title: 'Unlocked', text: data.message, confirmButtonColor: '#0D5EA6' });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    async function refinalisePeriod(periodId, monthName, year) {
+        const result = await Swal.fire({
+            title: 'Re-finalise this period?',
+            text: 'P&L entries will be updated to reflect your changes.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Re-finalise',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Re-finalising period...');
+        try {
+            const response = await fetch(`/Payroll/AxPostRefinalisePeriod?periodId=${periodId}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            const data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                await Swal.fire({ icon: 'success', title: 'Re-finalised', text: data.message, confirmButtonColor: '#0D5EA6' });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong.', confirmButtonColor: '#0D5EA6' });
+        }
     }
 </script>

@@ -1,0 +1,227 @@
+@{
+    ViewData["Title"] = "Audit History";
+
+    var payslipId = (int)ViewBag.PayslipId;
+    var entries = (List<Portal.Infrastructure.Models.Payroll.PayslipAuditLogDto>)ViewBag.AuditEntries;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" href="/Payroll/PayslipDetail?payslipId=@payslipId">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Payslip
+        </a>
+        <h1 class="topbar-heading">Audit History</h1>
+        <p class="topbar-subtitle">All changes recorded for this payslip in reverse chronological order.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (entries == null || entries.Count == 0)
+    {
+        <div class="empty-state">
+            <p>No audit entries found for this payslip.</p>
+        </div>
+    }
+    else
+    {
+        <div class="audit-timeline">
+            @foreach (var entry in entries)
+            {
+                var isStatusChange = entry.ActionTypeId == 1 || entry.ActionTypeId == 3;
+                var badgeColor = entry.ActionTypeId switch
+                {
+                    1 => "#C8912E",  // Unlocked = amber
+                    2 => "#0D5EA6",  // Edited = blue
+                    3 => "#129867",  // Re-finalised = green
+                    _ => "#6b7280"
+                };
+
+                <div class="audit-entry">
+                    <div class="audit-entry-dot" style="background:@badgeColor;"></div>
+                    <div class="audit-entry-content">
+                        <div class="audit-entry-header">
+                            <span class="audit-badge" style="background:@(badgeColor)1A;color:@badgeColor;">@entry.ActionName</span>
+                            <span class="audit-user">@entry.UserFullName</span>
+                            <span class="audit-timestamp">@entry.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm")</span>
+                        </div>
+                        @if (!isStatusChange && !string.IsNullOrEmpty(entry.FieldName))
+                        {
+                            <div class="audit-entry-detail">
+                                <span class="audit-field">@entry.FieldName</span>
+                                <div class="audit-values">
+                                    @if (!string.IsNullOrEmpty(entry.OldValue))
+                                    {
+                                        <span class="audit-old-value">@entry.OldValue</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(entry.OldValue) && !string.IsNullOrEmpty(entry.NewValue))
+                                    {
+                                        <svg class="audit-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                                    }
+                                    @if (!string.IsNullOrEmpty(entry.NewValue))
+                                    {
+                                        <span class="audit-new-value">@entry.NewValue</span>
+                                    }
+                                    @if (string.IsNullOrEmpty(entry.OldValue) && !string.IsNullOrEmpty(entry.NewValue))
+                                    {
+                                        <span class="audit-added-label">added</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(entry.OldValue) && string.IsNullOrEmpty(entry.NewValue))
+                                    {
+                                        <span class="audit-removed-label">removed</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<style>
+    .audit-timeline {
+        position: relative;
+        padding-left: 28px;
+    }
+
+    .audit-timeline::before {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        background: #d0dbe5;
+        border-radius: 2px;
+    }
+
+    .audit-entry {
+        position: relative;
+        padding-bottom: 24px;
+    }
+
+    .audit-entry:last-child {
+        padding-bottom: 0;
+    }
+
+    .audit-entry-dot {
+        position: absolute;
+        left: -28px;
+        top: 6px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .audit-entry-content {
+        background: #f7fafc;
+        border: 1px solid #e8eff5;
+        border-radius: 14px;
+        padding: 14px 18px;
+    }
+
+    .audit-entry-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .audit-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .audit-user {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        font-family: 'Manrope', sans-serif;
+    }
+
+    .audit-timestamp {
+        font-size: 12px;
+        color: #5a6a7a;
+        margin-left: auto;
+    }
+
+    .audit-entry-detail {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #e8eff5;
+    }
+
+    .audit-field {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #5a6a7a;
+        background: #eef4f8;
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        font-family: 'Inter', monospace;
+    }
+
+    .audit-values {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+    }
+
+    .audit-old-value {
+        font-size: 13px;
+        color: #C24A4A;
+        background: #fdf2f2;
+        padding: 3px 10px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: line-through;
+    }
+
+    .audit-new-value {
+        font-size: 13px;
+        color: #129867;
+        background: #f0fdf8;
+        padding: 3px 10px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .audit-arrow {
+        color: #5a6a7a;
+        flex-shrink: 0;
+    }
+
+    .audit-added-label,
+    .audit-removed-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .audit-added-label {
+        color: #129867;
+        background: #f0fdf8;
+    }
+
+    .audit-removed-label {
+        color: #C24A4A;
+        background: #fdf2f2;
+    }
+</style>

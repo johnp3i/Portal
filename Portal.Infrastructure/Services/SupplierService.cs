@@ -71,7 +71,7 @@ public class SupplierService : ISupplierService
     public async Task<List<Supplier>> GetActiveSuppliersAsync()
     {
         var suppliers = await _supplierRepository.GetAllByBusinessIdAsync(_currentTenantService.CurrentBusinessId);
-        return suppliers.Where(s => s.IsActive).ToList();
+        return suppliers.Where(s => s.IsActive && !s.IsSystemGenerated).ToList();
     }
 
     public async Task<Supplier?> GetSupplierByIdAsync(int id)
@@ -129,6 +129,11 @@ public class SupplierService : ISupplierService
         if (existing == null)
         {
             return ServiceResult.Fail("Supplier not found.");
+        }
+
+        if (existing.IsSystemGenerated)
+        {
+            return ServiceResult.Fail("This supplier is system-generated and cannot be deleted.");
         }
 
         await _supplierRepository.DeactivateAsync(id, _currentTenantService.CurrentBusinessId);

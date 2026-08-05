@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annual Summary — Portal Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11,27,40,0.06);
+            --card-radius: 22px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 36px 32px 80px;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4 { font-family: 'Manrope', sans-serif; }
+
+        /* Page Header */
+        .page-header { margin-bottom: 28px; }
+        .page-header__eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px; font-weight: 700;
+            letter-spacing: 1.2px; text-transform: uppercase;
+            color: var(--primary-blue); margin-bottom: 4px;
+        }
+        .page-header__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px; font-weight: 800;
+            letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px;
+        }
+        .page-header__subtitle { font-size: 14px; color: var(--text-secondary); }
+
+        /* Header Actions Row */
+        .header-actions {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            flex-wrap: wrap; gap: 16px;
+        }
+        .header-left { flex: 1; }
+        .header-right {
+            display: flex; align-items: center; gap: 12px;
+            padding-top: 18px;
+        }
+
+        /* Glass Card */
+        .glass {
+            background: #fff; border-radius: var(--card-radius);
+            border: 1px solid rgba(13,94,166,0.06);
+            box-shadow: var(--card-shadow);
+        }
+        .card-pad { padding: 28px 32px; }
+
+        /* Section Title inside cards */
+        .section-title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 17px; font-weight: 700;
+            color: var(--text); margin-bottom: 18px;
+        }
+
+        /* Metric Cards Grid */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+        .metric-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 22px 24px;
+            border: 1px solid rgba(13,94,166,0.06);
+            box-shadow: 0 4px 16px rgba(11,27,40,0.04);
+            position: relative;
+            overflow: hidden;
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; border-radius: 4px 0 0 4px;
+        }
+        .metric-card--blue::before { background: var(--primary-blue); }
+        .metric-card--amber::before { background: var(--warning); }
+        .metric-card--green::before { background: var(--success); }
+        .metric-card--cyan::before { background: var(--cyan); }
+        .metric-card__value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 26px; font-weight: 800;
+            letter-spacing: -0.5px; margin-bottom: 4px;
+        }
+        .metric-card--blue .metric-card__value { color: var(--primary-blue); }
+        .metric-card--amber .metric-card__value { color: var(--warning); }
+        .metric-card--green .metric-card__value { color: var(--success); }
+        .metric-card--cyan .metric-card__value { color: var(--cyan); }
+        .metric-card__label {
+            font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.4px;
+            color: var(--muted);
+        }
+
+        /* Data Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table thead th {
+            font-family: 'Manrope', sans-serif;
+            font-size: 11px; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase;
+            color: var(--muted); padding: 12px 14px;
+            text-align: left; border-bottom: 2px solid var(--border);
+        }
+        .data-table tbody tr { transition: background .15s; }
+        .data-table tbody tr:hover { background: var(--bg); }
+        .data-table tbody td {
+            padding: 14px; border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table .text-right { text-align: right; }
+        .data-table thead th.text-right { text-align: right; }
+
+        /* Summary/Total row */
+        .data-table .summary-row td {
+            font-weight: 700;
+            border-top: 2px solid var(--border);
+            border-bottom: none;
+            background: var(--bg-secondary);
+            font-size: 13px;
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            padding: 10px 20px; border-radius: 10px; border: none;
+            cursor: pointer; transition: all .2s; display: inline-flex;
+            align-items: center; gap: 6px; text-decoration: none;
+        }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--primary-blue); }
+        .btn-secondary:hover { background: #dce8f0; }
+
+        /* Forms */
+        .field label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 5px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .field select {
+            width: 100%; padding: 10px 14px; font-size: 14px;
+            border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'Inter', sans-serif; color: var(--text);
+            background: #fff; transition: border-color .2s;
+        }
+        .field select:focus {
+            outline: none; border-color: var(--primary-blue);
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 600; color: var(--primary-blue);
+            text-decoration: none; margin-bottom: 16px; cursor: pointer;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div style="max-width:1200px;margin:0 auto;">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-actions">
+            <div class="header-left">
+                <div class="page-header__eyebrow">Payroll</div>
+                <a class="back-link" href="#">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                    Back to Employee
+                </a>
+                <div class="page-header__title">Annual Summary &mdash; 2027</div>
+                <div class="page-header__subtitle">Giannis Papamichael &bull; Head Barista &bull; SIN: 1234567</div>
+            </div>
+            <div class="header-right">
+                <div class="field" style="min-width:120px;margin-bottom:0;">
+                    <select>
+                        <option selected>2027</option>
+                        <option>2026</option>
+                    </select>
+                </div>
+                <a class="btn btn-primary" href="#">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    Download PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 1: Summary Metrics -->
+    <div class="metric-grid" style="margin-bottom:24px;">
+        <div class="metric-card metric-card--blue">
+            <div class="metric-card__value">&euro;19,440.00</div>
+            <div class="metric-card__label">Total Gross</div>
+        </div>
+        <div class="metric-card metric-card--amber">
+            <div class="metric-card__value">&euro;2,224.92</div>
+            <div class="metric-card__label">Total Deductions</div>
+        </div>
+        <div class="metric-card metric-card--green">
+            <div class="metric-card__value">&euro;17,215.08</div>
+            <div class="metric-card__label">Total Net</div>
+        </div>
+        <div class="metric-card metric-card--cyan">
+            <div class="metric-card__value">&euro;3,793.68</div>
+            <div class="metric-card__label">Employer Cost</div>
+        </div>
+    </div>
+
+    <!-- Card 2: Monthly Breakdown Table -->
+    <section class="glass card-pad">
+        <div class="section-title">Monthly Breakdown</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th class="text-right">Gross Earnings</th>
+                    <th class="text-right">Employee Deductions</th>
+                    <th class="text-right">Net Salary</th>
+                    <th class="text-right">Employer Contributions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>January</td>
+                    <td class="text-right">&euro;1,500.00</td>
+                    <td class="text-right">&euro;171.75</td>
+                    <td class="text-right">&euro;1,328.25</td>
+                    <td class="text-right">&euro;231.00</td>
+                </tr>
+                <tr>
+                    <td>February</td>
+                    <td class="text-right">&euro;1,500.00</td>
+                    <td class="text-right">&euro;171.75</td>
+                    <td class="text-right">&euro;1,328.25</td>
+                    <td class="text-right">&euro;231.00</td>
+                </tr>
+                <tr>
+                    <td>March</td>
+                    <td class="text-right">&euro;1,500.00</td>
+                    <td class="text-right">&euro;171.75</td>
+                    <td class="text-right">&euro;1,328.25</td>
+                    <td class="text-right">&euro;231.00</td>
+                </tr>
+                <tr>
+                    <td>April</td>
+                    <td class="text-right">&euro;1,500.00</td>
+                    <td class="text-right">&euro;171.75</td>
+                    <td class="text-right">&euro;1,328.25</td>
+                    <td class="text-right">&euro;231.00</td>
+                </tr>
+                <tr>
+                    <td>May</td>
+                    <td class="text-right">&euro;1,650.00</td>
+                    <td class="text-right">&euro;188.93</td>
+                    <td class="text-right">&euro;1,461.08</td>
+                    <td class="text-right">&euro;254.10</td>
+                </tr>
+                <tr>
+                    <td>June</td>
+                    <td class="text-right">&euro;1,500.00</td>
+                    <td class="text-right">&euro;171.75</td>
+                    <td class="text-right">&euro;1,328.25</td>
+                    <td class="text-right">&euro;231.00</td>
+                </tr>
+                <tr>
+                    <td>July</td>
+                    <td class="text-right">&euro;1,920.00</td>
+                    <td class="text-right">&euro;219.84</td>
+                    <td class="text-right">&euro;1,700.16</td>
+                    <td class="text-right">&euro;295.68</td>
+                </tr>
+                <tr class="summary-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"><strong>&euro;19,440.00</strong></td>
+                    <td class="text-right"><strong>&euro;2,224.92</strong></td>
+                    <td class="text-right"><strong>&euro;17,215.08</strong></td>
+                    <td class="text-right"><strong>&euro;3,793.68</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Card 3: Employee Deductions Breakdown -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="section-title">Employee Deductions Summary</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Deduction Type</th>
+                    <th class="text-right">Rate</th>
+                    <th class="text-right">Months Applied</th>
+                    <th class="text-right">Annual Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Social Insurance</td>
+                    <td class="text-right">8.80%</td>
+                    <td class="text-right">7</td>
+                    <td class="text-right">&euro;1,710.72</td>
+                </tr>
+                <tr>
+                    <td>GESY (Healthcare)</td>
+                    <td class="text-right">2.65%</td>
+                    <td class="text-right">7</td>
+                    <td class="text-right">&euro;515.16</td>
+                </tr>
+                <tr class="summary-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"><strong>&euro;2,225.88</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Card 4: Employer Contributions Breakdown -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="section-title">Employer Contributions Summary</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Contribution Type</th>
+                    <th class="text-right">Rate</th>
+                    <th class="text-right">Months Applied</th>
+                    <th class="text-right">Annual Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Social Insurance</td>
+                    <td class="text-right">8.80%</td>
+                    <td class="text-right">7</td>
+                    <td class="text-right">&euro;1,710.72</td>
+                </tr>
+                <tr>
+                    <td>Redundancy Fund</td>
+                    <td class="text-right">1.20%</td>
+                    <td class="text-right">7</td>
+                    <td class="text-right">&euro;233.28</td>
+                </tr>
+                <tr>
+                    <td>Industrial Training</td>
+                    <td class="text-right">0.50%</td>
+                    <td class="text-right">7</td>
+                    <td class="text-right">&euro;97.20</td>
+                </tr>
+                <tr>
+                    <td>Social Cohesion</td>
+                    <td class="text-right">2.00%</td>
+                    <td class="text-right">7</td>
+                    <td class="text-right">&euro;388.80</td>
+                </tr>
+                <tr>
+                    <td>GESY (Healthcare)</td>
+                    <td class="text-right">2.90%</td>
+                    <td class="text-right">7</td>
+                    <td class="text-right">&euro;563.76</td>
+                </tr>
+                <tr class="summary-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"><strong>&euro;2,993.76</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Card 5: Earnings by Type -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div class="section-title">Earnings by Type</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Earning Type</th>
+                    <th class="text-right">Annual Total</th>
+                    <th class="text-right">% of Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Basic Salary</td>
+                    <td class="text-right">&euro;18,000.00</td>
+                    <td class="text-right">92.6%</td>
+                </tr>
+                <tr>
+                    <td>Overtime</td>
+                    <td class="text-right">&euro;1,020.00</td>
+                    <td class="text-right">5.2%</td>
+                </tr>
+                <tr>
+                    <td>Bonus</td>
+                    <td class="text-right">&euro;420.00</td>
+                    <td class="text-right">2.2%</td>
+                </tr>
+                <tr class="summary-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"><strong>&euro;19,440.00</strong></td>
+                    <td class="text-right"><strong>100%</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+</div>
+
+</body>
+</html>

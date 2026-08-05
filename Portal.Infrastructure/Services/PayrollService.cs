@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Models.Payroll;
@@ -14,13 +16,25 @@ public class PayrollService : IPayrollService
 {
     private readonly PayrollRepository _repository;
     private readonly IPayslipCalculationEngine _calculationEngine;
+    private readonly IPayslipPeriodStatusService _periodStatusService;
+    private readonly IPayslipAuditService _auditService;
+    private readonly IPayrollPnlService _pnlService;
+    private readonly PortalDbContext _portalDbContext;
 
     public PayrollService(
         PayrollRepository repository,
-        IPayslipCalculationEngine calculationEngine)
+        IPayslipCalculationEngine calculationEngine,
+        IPayslipPeriodStatusService periodStatusService,
+        IPayslipAuditService auditService,
+        IPayrollPnlService pnlService,
+        PortalDbContext portalDbContext)
     {
         _repository = repository;
         _calculationEngine = calculationEngine;
+        _periodStatusService = periodStatusService;
+        _auditService = auditService;
+        _pnlService = pnlService;
+        _portalDbContext = portalDbContext;
     }
 
     #region Department Management
@@ -744,18 +758,20 @@ public class PayrollService : IPayrollService
 
     #region Period Management
 
-    private static readonly Dictionary<byte, string> PeriodStatusNames = new()
+    private Dictionary<byte, string>? _statusNames;
+
+    private async Task<Dictionary<byte, string>> GetStatusNamesAsync()
     {
-        { 1, "Draft" },
-        { 2, "Preview" },
-        { 3, "Finalised" }
-    };
+        _statusNames ??= await _repository.GetStatusNamesAsync();
+        return _statusNames;
+    }
 
     public async Task<List<PayslipPeriodDto>> GetPeriodsAsync(int businessId)
     {
         try
         {
             var periods = await _repository.GetPeriodsByBusinessAsync(businessId);
+            var statusNames = await GetStatusNamesAsync();
             var dtos = new List<PayslipPeriodDto>();
 
             foreach (var p in periods)
@@ -767,7 +783,7 @@ public class PayrollService : IPayrollService
                     Id = p.Id,
                     Year = p.Year,
                     Month = p.Month,
-                    Status = PeriodStatusNames.GetValueOrDefault(p.PayslipStatusTypeId, "Unknown"),
+                    Status = statusNames.GetValueOrDefault(p.PayslipStatusTypeId, "Unknown"),
                     ProcessedAtUtc = p.ProcessedAtUtc,
                     PayslipCount = payslips.Count,
                     TotalNetSalary = payslips.Sum(s => s.NetSalary)
@@ -791,6 +807,7 @@ public class PayrollService : IPayrollService
 
             var payslips = await _repository.GetPayslipsByPeriodAsync(id);
             var departments = await _repository.GetDepartmentsByBusinessAsync(businessId);
+            var statusNames = await GetStatusNamesAsync();
             var deptLookup = departments.ToDictionary(d => d.Id, d => d.Name);
 
             var summaries = new List<PayslipSummaryDto>();
@@ -815,7 +832,7 @@ public class PayrollService : IPayrollService
                 Id = period.Id,
                 Year = period.Year,
                 Month = period.Month,
-                Status = PeriodStatusNames.GetValueOrDefault(period.PayslipStatusTypeId, "Unknown"),
+                Status = statusNames.GetValueOrDefault(period.PayslipStatusTypeId, "Unknown"),
                 ProcessedAtUtc = period.ProcessedAtUtc,
                 Payslips = summaries
             };
@@ -865,11 +882,37 @@ public class PayrollService : IPayrollService
             if (period == null)
                 return ServiceResult.Fail("Period not found.");
 
-            if (period.PayslipStatusTypeId != 2) // Must be Preview
+            if (!_periodStatusService.IsTransitionAllowed(period.PayslipStatusTypeId, 3))
                 return ServiceResult.Fail("Only periods in Preview status can be finalised.");
 
-            await _repository.UpdatePeriodStatusAsync(id, 3, DateTime.UtcNow); // 3 = Finalised
-            return ServiceResult.Ok();
+            using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var updated = await _repository.UpdatePeriodStatusAsync(id, 3, period.PayslipStatusTypeId, DateTime.UtcNow);
+                if (!updated)
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResult.Fail("Period status has been changed by another user. Please refresh and try again.");
+                }
+
+                await _repository.UpdateAllPayslipStatusesInPeriodAsync(id, 3);
+
+                // Phase B: Create P&L entries
+                var pnlResult = await _pnlService.CreatePnlEntriesAsync(id, businessId);
+                if (!pnlResult.Success)
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResult.Fail(pnlResult.Message ?? "Failed to create P&L entries. Finalisation rolled back.");
+                }
+
+                await transaction.CommitAsync();
+                return ServiceResult.Ok();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
         catch (Exception ex)
         {
@@ -1146,7 +1189,8 @@ public class PayrollService : IPayrollService
             }
 
             // Update period status to Preview
-            await _repository.UpdatePeriodStatusAsync(periodId, 2, null); // 2 = Preview
+            await _repository.UpdatePeriodStatusAsync(periodId, 2, period.PayslipStatusTypeId, null); // 2 = Preview
+            await _repository.UpdateAllPayslipStatusesInPeriodAsync(periodId, 2);
 
             return ServiceResult.Ok();
         }
@@ -1236,11 +1280,13 @@ public class PayrollService : IPayrollService
                 Id = payslip.Id,
                 EmployeeName = employee?.Name ?? "Unknown",
                 EmployeePosition = employee?.Position,
+                SocialInsuranceNumber = employee?.SocialInsuranceNumber,
+                IdNumber = employee?.IdNumber,
                 DepartmentName = deptName,
                 EmployeeEmail = employee?.Email,
                 Year = period?.Year ?? 0,
                 Month = period?.Month ?? 0,
-                PeriodStatus = PeriodStatusNames.GetValueOrDefault(period?.PayslipStatusTypeId ?? 0, "Unknown"),
+                PeriodStatus = (await GetStatusNamesAsync()).GetValueOrDefault(period?.PayslipStatusTypeId ?? 0, "Unknown"),
                 TotalEarnings = payslip.TotalEarnings,
                 TotalEmployeeDeductions = payslip.TotalEmployeeDeductions,
                 NetSalary = payslip.NetSalary,
@@ -1274,8 +1320,8 @@ public class PayrollService : IPayrollService
             if (period == null)
                 return ServiceResult.Fail("Period not found.");
 
-            if (period.PayslipStatusTypeId == 3) // Finalised
-                return ServiceResult.Fail("Cannot modify earning lines on a finalised payslip.");
+            if (!_periodStatusService.IsEditableStatus(period.PayslipStatusTypeId))
+                return ServiceResult.Fail("Payslips in a finalised period cannot be modified. Unlock the period first.");
 
             // Get employee for calculation
             var employee = await _repository.GetEmployeeByIdAsync(payslip.EmployeeId, businessId);
@@ -1324,6 +1370,9 @@ public class PayrollService : IPayrollService
             if (!calcResult.IsValid)
                 return ServiceResult.Fail(calcResult.ValidationError ?? "Calculation failed.");
 
+            // Capture old earning lines before modification (for audit tracking)
+            var oldEarningLines = await _repository.GetEarningLinesByPayslipAsync(request.PayslipId);
+
             // Delete existing earning lines
             await _repository.DeleteEarningLinesByPayslipAsync(request.PayslipId);
 
@@ -1366,6 +1415,18 @@ public class PayrollService : IPayrollService
             payslip.TotalEmployerContributions = calcResult.TotalEmployerContributions;
             await _repository.UpdatePayslipTotalsAsync(payslip);
 
+            // Audit tracking: only when period is Unlocked
+            if (period.PayslipStatusTypeId == 4) // Unlocked
+            {
+                var newEarningLines = await _repository.GetEarningLinesByPayslipAsync(request.PayslipId);
+                await _auditService.RecordEarningLineChangesAsync(
+                    request.PayslipId,
+                    "system", // userId will be passed from controller in a future refactor
+                    oldEarningLines,
+                    newEarningLines,
+                    earningTypes);
+            }
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -1392,10 +1453,24 @@ public class PayrollService : IPayrollService
             if (period == null)
                 return ServiceResult.Fail("Period not found.");
 
-            if (period.PayslipStatusTypeId == 3) // Finalised
-                return ServiceResult.Fail("Cannot modify notes on a finalised payslip.");
+            if (!_periodStatusService.IsEditableStatus(period.PayslipStatusTypeId))
+                return ServiceResult.Fail("Payslips in a finalised period cannot be modified. Unlock the period first.");
+
+            // Capture old notes for audit tracking
+            var oldNotes = payslip.ManagerNotes;
 
             await _repository.UpdateManagerNotesAsync(request.PayslipId, request.Notes);
+
+            // Audit tracking: only when period is Unlocked
+            if (period.PayslipStatusTypeId == 4) // Unlocked
+            {
+                await _auditService.RecordManagerNotesChangeAsync(
+                    request.PayslipId,
+                    "system", // userId will be passed from controller in a future refactor
+                    oldNotes,
+                    request.Notes);
+            }
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -1449,6 +1524,34 @@ public class PayrollService : IPayrollService
         {
             throw;
         }
+    }
+
+    #endregion
+
+    #region Phase B: Unlock & Re-finalise
+
+    public async Task<ServiceResult> UnlockPeriodAsync(int periodId, int businessId, string userId, string userRole)
+    {
+        return await _periodStatusService.UnlockPeriodAsync(periodId, businessId, userId, userRole);
+    }
+
+    public async Task<ServiceResult> RefinalisePeriodAsync(int periodId, int businessId, string userId, string userRole)
+    {
+        return await _periodStatusService.RefinalisePeriodAsync(periodId, businessId, userId, userRole);
+    }
+
+    #endregion
+
+    #region Phase B: Audit History
+
+    public async Task<List<PayslipAuditLogDto>> GetPayslipAuditHistoryAsync(int payslipId, int businessId)
+    {
+        return await _auditService.GetAuditHistoryAsync(payslipId, businessId);
+    }
+
+    public async Task<List<PeriodAuditGroupDto>> GetPeriodAuditSummaryAsync(int periodId, int businessId)
+    {
+        return await _auditService.GetPeriodAuditSummaryAsync(periodId, businessId);
     }
 
     #endregion

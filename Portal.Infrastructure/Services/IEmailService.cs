@@ -29,4 +29,9 @@ public interface IEmailService
         decimal outstandingAmount, DateOnly dueDate, string businessName,
         string escalationTier, string? invoiceShareToken, string baseUrl,
         string? trackingToken = null, bool isTestSend = false);
+
+    /// <summary>
+    /// Sends a payslip email with the PDF attached.
+    /// </summary>
+    Task SendPayslipEmailAsync(string toEmail, string employeeName, string businessName, string monthName, int year, byte[] pdfBytes, string filename);
 }

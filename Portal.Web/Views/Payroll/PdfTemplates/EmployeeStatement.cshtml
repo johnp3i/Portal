@@ -1,0 +1,463 @@
+@model Portal.Infrastructure.Models.Payroll.EmployeeStatementPdfViewModel
+@{
+    Layout = null;
+    var monthNames = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Statement — @Model.BusinessName — @Model.EmployeeName</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #1a2332;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #ffffff;
+            padding: 48px 52px;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 36px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #0D5EA6;
+        }
+
+        .company-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: #0D5EA6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .company-details h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            color: #0D5EA6;
+            margin-bottom: 4px;
+        }
+
+        .company-details p {
+            font-size: 12px;
+            color: #5a6a7a;
+            line-height: 1.4;
+        }
+
+        .statement-title {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 22px;
+            color: #0D5EA6;
+            letter-spacing: 1px;
+            text-align: right;
+        }
+
+        /* Employee Details */
+        .employee-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 40px;
+            margin-bottom: 32px;
+            padding: 18px 22px;
+            background: #F7FAFC;
+            border-radius: 6px;
+            border: 1px solid #e8eef4;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #5a6a7a;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a2332;
+        }
+
+        /* Summary Section */
+        .summary-section {
+            margin-bottom: 36px;
+        }
+
+        .summary-section-title {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            color: #0D5EA6;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .summary-card {
+            background: #F7FAFC;
+            border: 1px solid #e8eef4;
+            border-radius: 6px;
+            padding: 14px 18px;
+        }
+
+        .summary-card .label {
+            font-size: 11px;
+            color: #5a6a7a;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+        }
+
+        .summary-card .amount {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 16px;
+            color: #1a2332;
+        }
+
+        .summary-card.highlight {
+            background: #0D5EA6;
+            border-color: #0D5EA6;
+        }
+
+        .summary-card.highlight .label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .summary-card.highlight .amount {
+            color: #ffffff;
+        }
+
+        /* Payslip Sections */
+        .payslip-section {
+            margin-bottom: 0;
+        }
+
+        .payslip-section:not(:first-of-type) {
+            page-break-before: always;
+            padding-top: 48px;
+        }
+
+        .payslip-section:first-of-type {
+            margin-top: 12px;
+        }
+
+        .payslip-header {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            color: #0D5EA6;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e8eef4;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 12px;
+            color: #0D5EA6;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+            font-size: 12px;
+        }
+
+        thead th {
+            background: #0D5EA6;
+            color: #ffffff;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 8px 10px;
+            text-align: left;
+            border: none;
+        }
+
+        thead th:last-child {
+            text-align: right;
+        }
+
+        tbody td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #eef2f6;
+            color: #2d3a4a;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f9fbfd;
+        }
+
+        tbody td:last-child {
+            text-align: right;
+            font-weight: 500;
+        }
+
+        tbody td.center {
+            text-align: center;
+        }
+
+        .total-row td {
+            background: #eef5fc !important;
+            font-weight: 700;
+            color: #0D5EA6;
+            border-top: 2px solid #0D5EA6;
+            border-bottom: none;
+            padding: 9px 10px;
+        }
+
+        /* Net Salary Line */
+        .net-salary-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0D5EA6;
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+        }
+
+        .net-salary-line .label {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .net-salary-line .amount {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #8a96a4;
+            padding-top: 16px;
+            border-top: 1px solid #e8eef4;
+            margin-top: 40px;
+        }
+
+        @@media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+
+            .page {
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                padding: 30px 40px;
+                min-height: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <div class="header">
+            <div class="company-info">
+                <div class="logo-circle">@(Model.BusinessName.Length >= 2 ? Model.BusinessName.Substring(0, 2).ToUpper() : Model.BusinessName.ToUpper())</div>
+                <div class="company-details">
+                    <h1>@Model.BusinessName</h1>
+                    @if (!string.IsNullOrEmpty(Model.BusinessAddress))
+                    {
+                        <p>@Model.BusinessAddress</p>
+                    }
+                </div>
+            </div>
+            <div class="statement-title">EMPLOYEE STATEMENT</div>
+        </div>
+
+        <!-- Employee Details -->
+        <div class="employee-details">
+            <div class="detail-row">
+                <span class="detail-label">Employee Name</span>
+                <span class="detail-value">@Model.EmployeeName</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Position</span>
+                <span class="detail-value">@(Model.Position ?? "—")</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Social Insurance No</span>
+                <span class="detail-value">@(Model.SocialInsuranceNumber ?? "—")</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">ID Number</span>
+                <span class="detail-value">@(Model.IdNumber ?? "—")</span>
+            </div>
+            <div class="detail-row" style="grid-column: span 2;">
+                <span class="detail-label">Period</span>
+                <span class="detail-value">@Model.PeriodFrom to @Model.PeriodTo</span>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="summary-section">
+            <div class="summary-section-title">Statement Summary</div>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="label">Total Gross Earnings</div>
+                    <div class="amount">&euro;@Model.TotalGross.ToString("N2")</div>
+                </div>
+                <div class="summary-card">
+                    <div class="label">Total Employee Deductions</div>
+                    <div class="amount">&euro;@Model.TotalDeductions.ToString("N2")</div>
+                </div>
+                <div class="summary-card highlight">
+                    <div class="label">Total Net Salary</div>
+                    <div class="amount">&euro;@Model.TotalNet.ToString("N2")</div>
+                </div>
+                <div class="summary-card">
+                    <div class="label">Total Employer Contributions</div>
+                    <div class="amount">&euro;@Model.TotalContributions.ToString("N2")</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer for cover page -->
+        <div class="footer">
+            Generated by 3 Inventors Portal &bull; Confidential
+        </div>
+    </div>
+
+    <!-- Individual Payslip Sections -->
+    @for (var i = 0; i < Model.Payslips.Count; i++)
+    {
+        var payslip = Model.Payslips[i];
+        var payslipMonthName = (payslip.Month >= 1 && payslip.Month <= 12) ? monthNames[payslip.Month - 1] : "Unknown";
+
+        <div class="page" style="page-break-before: always;">
+            <!-- Payslip Month Header -->
+            <div class="payslip-header">@payslipMonthName @payslip.Year</div>
+
+            <!-- Earnings Table -->
+            <div class="section-title">Earnings</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th style="text-align:right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in payslip.EarningLines)
+                    {
+                        <tr>
+                            <td>@(!string.IsNullOrEmpty(line.Description) ? line.Description : line.EarningTypeName)</td>
+                            <td>&euro;@line.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="total-row">
+                        <td>Total Earnings</td>
+                        <td>&euro;@payslip.TotalEarnings.ToString("N2")</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Deductions Table -->
+            <div class="section-title">Employee Deductions</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th style="text-align:center;">Rate</th>
+                        <th style="text-align:right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in payslip.EmployeeDeductions)
+                    {
+                        <tr>
+                            <td>@line.DeductionTypeName</td>
+                            <td class="center">@line.Rate.ToString("0.00")%</td>
+                            <td>&euro;@line.CalculatedAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="total-row">
+                        <td>Total Deductions</td>
+                        <td></td>
+                        <td>&euro;@payslip.TotalEmployeeDeductions.ToString("N2")</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Net Salary -->
+            <div class="net-salary-line">
+                <span class="label">Net Salary</span>
+                <span class="amount">&euro;@payslip.NetSalary.ToString("N2")</span>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                Generated by 3 Inventors Portal &bull; Confidential
+            </div>
+        </div>
+    }
+</body>
+</html>

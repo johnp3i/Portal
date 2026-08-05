@@ -68,4 +68,13 @@ public class StubEmailService : IEmailService
 
         return Task.CompletedTask;
     }
+
+    public Task SendPayslipEmailAsync(string toEmail, string employeeName, string businessName, string monthName, int year, byte[] pdfBytes, string filename)
+    {
+        _logger.LogInformation(
+            "Payslip email stub: To={ToEmail}, Employee={EmployeeName}, Business={BusinessName}, Period={MonthName} {Year}, Filename={Filename}, PdfSize={PdfSize} bytes",
+            toEmail, employeeName, businessName, monthName, year, filename, pdfBytes.Length);
+
+        return Task.CompletedTask;
+    }
 }

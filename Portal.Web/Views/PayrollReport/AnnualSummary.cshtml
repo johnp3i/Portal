@@ -1,0 +1,229 @@
+@model Portal.Infrastructure.Models.Payroll.AnnualSummaryDto
+@{
+    ViewData["Title"] = $"Annual Summary — {Model.Year}";
+
+    var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var hasData = Model.MonthlyBreakdown != null && Model.MonthlyBreakdown.Any();
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <a class="back-link" href="/Payroll/Employees">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Employee
+        </a>
+        <h1 class="topbar-heading">Annual Summary &mdash; @Model.Year</h1>
+        <p class="topbar-subtitle">@Model.EmployeeName</p>
+    </div>
+    <div class="topbar-actions" style="display:flex;gap:12px;align-items:center;padding-top:18px;">
+        <div class="field" style="min-width:120px;margin-bottom:0;">
+            <select id="yearSelector" onchange="filterByYear()">
+                @foreach (var yr in Model.AvailableYears)
+                {
+                    if (yr == Model.Year)
+                    {
+                        <option value="@yr" selected>@yr</option>
+                    }
+                    else
+                    {
+                        <option value="@yr">@yr</option>
+                    }
+                }
+            </select>
+        </div>
+        @if (hasData)
+        {
+            <button class="btn btn-primary" onclick="downloadPdf()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                Download PDF
+            </button>
+        }
+    </div>
+</div>
+
+@if (!hasData)
+{
+    <section class="glass card-pad">
+        <div class="empty-state">
+            <p>No finalised payslips for @Model.Year</p>
+        </div>
+    </section>
+}
+else
+{
+    <!-- Summary Metric Cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:24px;">
+        <div class="glass card-pad" style="position:relative;overflow:hidden;border-radius:16px;padding:22px 24px;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#0D5EA6;border-radius:4px 0 0 4px;"></div>
+            <p style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#0D5EA6;margin-bottom:4px;">&euro;@Model.TotalGross.ToString("N2")</p>
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:#8a9bac;">Total Gross</p>
+        </div>
+        <div class="glass card-pad" style="position:relative;overflow:hidden;border-radius:16px;padding:22px 24px;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#C8912E;border-radius:4px 0 0 4px;"></div>
+            <p style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#C8912E;margin-bottom:4px;">&euro;@Model.TotalDeductions.ToString("N2")</p>
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:#8a9bac;">Total Deductions</p>
+        </div>
+        <div class="glass card-pad" style="position:relative;overflow:hidden;border-radius:16px;padding:22px 24px;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#129867;border-radius:4px 0 0 4px;"></div>
+            <p style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#129867;margin-bottom:4px;">&euro;@Model.TotalNet.ToString("N2")</p>
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:#8a9bac;">Total Net</p>
+        </div>
+        <div class="glass card-pad" style="position:relative;overflow:hidden;border-radius:16px;padding:22px 24px;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#57B8E8;border-radius:4px 0 0 4px;"></div>
+            <p style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#57B8E8;margin-bottom:4px;">&euro;@Model.TotalContributions.ToString("N2")</p>
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:#8a9bac;">Employer Cost</p>
+        </div>
+    </div>
+
+    <!-- Monthly Breakdown Table -->
+    <section class="glass card-pad">
+        <div class="section-title">Monthly Breakdown</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th class="text-right">Gross Earnings</th>
+                    <th class="text-right">Employee Deductions</th>
+                    <th class="text-right">Net Salary</th>
+                    <th class="text-right">Employer Contributions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.MonthlyBreakdown)
+                {
+                    <tr>
+                        <td>@monthNames[row.Month]</td>
+                        <td class="text-right">&euro;@row.Gross.ToString("N2")</td>
+                        <td class="text-right">&euro;@row.Deductions.ToString("N2")</td>
+                        <td class="text-right">&euro;@row.Net.ToString("N2")</td>
+                        <td class="text-right">&euro;@row.Contributions.ToString("N2")</td>
+                    </tr>
+                }
+                <tr class="summary-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"><strong>&euro;@Model.TotalGross.ToString("N2")</strong></td>
+                    <td class="text-right"><strong>&euro;@Model.TotalDeductions.ToString("N2")</strong></td>
+                    <td class="text-right"><strong>&euro;@Model.TotalNet.ToString("N2")</strong></td>
+                    <td class="text-right"><strong>&euro;@Model.TotalContributions.ToString("N2")</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Employee Deductions Breakdown -->
+    @if (Model.DeductionBreakdown != null && Model.DeductionBreakdown.Any())
+    {
+        <section class="glass card-pad" style="margin-top:24px;">
+            <div class="section-title">Employee Deductions Summary</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Deduction Type</th>
+                        <th class="text-right">Rate</th>
+                        <th class="text-right">Months Applied</th>
+                        <th class="text-right">Annual Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.DeductionBreakdown)
+                    {
+                        <tr>
+                            <td>@row.DeductionName</td>
+                            <td class="text-right">@row.Rate.ToString("0.00")%</td>
+                            <td class="text-right">@row.MonthsApplied</td>
+                            <td class="text-right">&euro;@row.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="summary-row">
+                        <td><strong>Total</strong></td>
+                        <td class="text-right"></td>
+                        <td class="text-right"></td>
+                        <td class="text-right"><strong>&euro;@Model.DeductionBreakdown.Sum(d => d.TotalAmount).ToString("N2")</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    }
+
+    <!-- Employer Contributions Breakdown -->
+    @if (Model.ContributionBreakdown != null && Model.ContributionBreakdown.Any())
+    {
+        <section class="glass card-pad" style="margin-top:24px;">
+            <div class="section-title">Employer Contributions Summary</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Contribution Type</th>
+                        <th class="text-right">Rate</th>
+                        <th class="text-right">Months Applied</th>
+                        <th class="text-right">Annual Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.ContributionBreakdown)
+                    {
+                        <tr>
+                            <td>@row.DeductionName</td>
+                            <td class="text-right">@row.Rate.ToString("0.00")%</td>
+                            <td class="text-right">@row.MonthsApplied</td>
+                            <td class="text-right">&euro;@row.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="summary-row">
+                        <td><strong>Total</strong></td>
+                        <td class="text-right"></td>
+                        <td class="text-right"></td>
+                        <td class="text-right"><strong>&euro;@Model.ContributionBreakdown.Sum(c => c.TotalAmount).ToString("N2")</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    }
+
+    <!-- Earnings by Type -->
+    @if (Model.EarningsBreakdown != null && Model.EarningsBreakdown.Any())
+    {
+        <section class="glass card-pad" style="margin-top:24px;">
+            <div class="section-title">Earnings by Type</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Earning Type</th>
+                        <th class="text-right">Annual Total</th>
+                        <th class="text-right">% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.EarningsBreakdown)
+                    {
+                        <tr>
+                            <td>@row.EarningTypeName</td>
+                            <td class="text-right">&euro;@row.TotalAmount.ToString("N2")</td>
+                            <td class="text-right">@row.Percentage.ToString("0.0")%</td>
+                        </tr>
+                    }
+                    <tr class="summary-row">
+                        <td><strong>Total</strong></td>
+                        <td class="text-right"><strong>&euro;@Model.TotalGross.ToString("N2")</strong></td>
+                        <td class="text-right"><strong>100%</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    }
+}
+
+<script>
+    var employeeId = @Model.EmployeeId;
+    var currentYear = @Model.Year;
+
+    function filterByYear() {
+        var year = document.getElementById('yearSelector').value;
+        window.location.href = '/PayrollReport/AnnualSummary?employeeId=' + employeeId + '&year=' + year;
+    }
+
+    function downloadPdf() {
+        window.location.href = '/PayrollReport/AxGetDownloadAnnualSummaryPdf?employeeId=' + employeeId + '&year=' + currentYear;
+    }
+</script>

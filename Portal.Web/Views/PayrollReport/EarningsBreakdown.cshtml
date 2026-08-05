@@ -1,0 +1,318 @@
+@model Portal.Infrastructure.Models.Payroll.EarningsBreakdownDto
+@using System.Globalization
+@{
+    ViewData["Title"] = "Earnings Breakdown";
+
+    var monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var currentYear = DateTime.Now.Year;
+    var filter = Model.AppliedFilter;
+
+    // Derive distinct employees from detail rows for the dropdown
+    var distinctEmployees = Model.Details
+        .Select(d => d.EmployeeName)
+        .Distinct()
+        .OrderBy(n => n)
+        .ToList();
+
+    // Earning type colour mapping
+    var typeColourMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "Overtime", "blue" },
+        { "Bonus", "green" },
+        { "Paid Holidays", "amber" },
+        { "Part-time", "blue" },
+        { "Basic", "blue" }
+    };
+
+    // Page size for client-side pagination
+    var pageSize = 15;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll Reports</div>
+        <h1 class="topbar-heading">Earnings Breakdown</h1>
+        <p class="topbar-subtitle">Analyse compensation by earning type across employees and periods</p>
+    </div>
+</div>
+
+<!-- Filter Card -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div class="filter-row" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="margin-bottom:0;min-width:180px;">
+            <label>Period From</label>
+            <div style="display:flex;gap:6px;">
+                <select id="filterFromMonth" style="flex:1;">
+                    <option value="">Month</option>
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        if (filter.FromMonth == m)
+                        {
+                            <option value="@m" selected>@monthNames[m]</option>
+                        }
+                        else
+                        {
+                            <option value="@m">@monthNames[m]</option>
+                        }
+                    }
+                </select>
+                <select id="filterFromYear" style="width:90px;">
+                    <option value="">Year</option>
+                    @for (int y = currentYear + 1; y >= currentYear - 5; y--)
+                    {
+                        if (filter.FromYear == y)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="field" style="margin-bottom:0;min-width:180px;">
+            <label>Period To</label>
+            <div style="display:flex;gap:6px;">
+                <select id="filterToMonth" style="flex:1;">
+                    <option value="">Month</option>
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        if (filter.ToMonth == m)
+                        {
+                            <option value="@m" selected>@monthNames[m]</option>
+                        }
+                        else
+                        {
+                            <option value="@m">@monthNames[m]</option>
+                        }
+                    }
+                </select>
+                <select id="filterToYear" style="width:90px;">
+                    <option value="">Year</option>
+                    @for (int y = currentYear + 1; y >= currentYear - 5; y--)
+                    {
+                        if (filter.ToYear == y)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="field" style="margin-bottom:0;min-width:180px;">
+            <label>Employee</label>
+            <select id="filterEmployee">
+                <option value="">All Employees</option>
+                @foreach (var emp in distinctEmployees)
+                {
+                    <option value="@(emp)">@emp</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="margin-bottom:0;min-width:180px;">
+            <label>Earning Type</label>
+            <select id="filterEarningType">
+                <option value="">All Types</option>
+                @foreach (var ts in Model.TypeSummaries)
+                {
+                    <option value="@ts.EarningTypeId">@ts.EarningTypeName</option>
+                }
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="applyFilter()">Filter</button>
+            <button class="btn btn-secondary" style="margin-left:8px;" onclick="clearFilter()">Clear</button>
+            <button class="btn btn-secondary" style="margin-left:8px;" onclick="exportExcel()">Export Excel</button>
+        </div>
+    </div>
+</section>
+
+<!-- Summary Cards -->
+@if (Model.TypeSummaries.Any())
+{
+    <div style="display:flex;gap:18px;margin-bottom:22px;flex-wrap:wrap;">
+        @foreach (var summary in Model.TypeSummaries)
+        {
+            var colourClass = typeColourMap.ContainsKey(summary.EarningTypeName)
+                ? typeColourMap[summary.EarningTypeName]
+                : "blue";
+            var borderColour = colourClass switch
+            {
+                "green" => "#129867",
+                "amber" => "#C8912E",
+                _ => "#0D5EA6"
+            };
+            <div class="glass card-pad" style="flex:1;min-width:220px;border-left:4px solid @borderColour;">
+                <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:#5a6b7c;margin-bottom:6px;">@summary.EarningTypeName</div>
+                <div style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;color:#1a2b3c;margin-bottom:2px;">&euro;@summary.TotalAmount.ToString("N2")</div>
+                <div style="font-size:12px;color:#8a9bac;">@summary.LineCount entries</div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Detail Table Card -->
+<section class="glass card-pad">
+    @if (Model.Details.Any())
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Period</th>
+                    <th>Earning Type</th>
+                    <th>Description</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                @foreach (var row in Model.Details)
+                {
+                    var pillClass = row.EarningTypeName.ToLowerInvariant() switch
+                    {
+                        "overtime" => "pill--overtime",
+                        "bonus" => "pill--bonus",
+                        "paid holidays" => "pill--holidays",
+                        _ => "pill--overtime"
+                    };
+                    var periodStr = CultureInfo.InvariantCulture.DateTimeFormat.GetAbbreviatedMonthName(row.Month) + " " + row.Year;
+                    <tr>
+                        <td><strong>@row.EmployeeName</strong></td>
+                        <td>@periodStr</td>
+                        <td><span class="pill @pillClass">@row.EarningTypeName</span></td>
+                        <td>@(row.Description ?? "&mdash;")</td>
+                        <td class="text-right"><strong>&euro;@row.Amount.ToString("N2")</strong></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+            <div id="paginationInfo" style="font-size:13px;color:#5a6b7c;"></div>
+            <div id="paginationControls" style="display:flex;gap:6px;"></div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No earnings found matching the selected filters.</p>
+        </div>
+    }
+</section>
+
+<style>
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+    }
+    .pill--overtime { background: rgba(13,94,166,0.1); color: #0D5EA6; }
+    .pill--bonus { background: rgba(18,152,103,0.1); color: #129867; }
+    .pill--holidays { background: rgba(200,145,46,0.12); color: #C8912E; }
+</style>
+
+<script>
+    // Client-side pagination
+    (function () {
+        var pageSize = @pageSize;
+        var rows = document.querySelectorAll('#tableBody tr');
+        var totalRows = rows.length;
+        var totalPages = Math.ceil(totalRows / pageSize);
+        var currentPage = 1;
+
+        function renderPage(page) {
+            currentPage = page;
+            var start = (page - 1) * pageSize;
+            var end = start + pageSize;
+
+            rows.forEach(function (row, i) {
+                row.style.display = (i >= start && i < end) ? '' : 'none';
+            });
+
+            var showing = totalRows === 0 ? 'No results' : 'Showing ' + (start + 1) + '\u2013' + Math.min(end, totalRows) + ' of ' + totalRows;
+            document.getElementById('paginationInfo').textContent = showing;
+
+            renderPaginationControls();
+        }
+
+        function renderPaginationControls() {
+            var container = document.getElementById('paginationControls');
+            container.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            var prevBtn = document.createElement('button');
+            prevBtn.innerHTML = '&laquo;';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = function () { renderPage(currentPage - 1); };
+            container.appendChild(prevBtn);
+
+            for (var p = 1; p <= totalPages; p++) {
+                var btn = document.createElement('button');
+                btn.textContent = p;
+                btn.className = p === currentPage ? 'active' : '';
+                btn.onclick = (function (page) {
+                    return function () { renderPage(page); };
+                })(p);
+                container.appendChild(btn);
+            }
+
+            var nextBtn = document.createElement('button');
+            nextBtn.innerHTML = '&raquo;';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = function () { renderPage(currentPage + 1); };
+            container.appendChild(nextBtn);
+        }
+
+        if (totalRows > 0) {
+            renderPage(1);
+        }
+    })();
+
+    // Filter functions
+    function getFilterParams() {
+        var params = [];
+        var fromYear = document.getElementById('filterFromYear').value;
+        var fromMonth = document.getElementById('filterFromMonth').value;
+        var toYear = document.getElementById('filterToYear').value;
+        var toMonth = document.getElementById('filterToMonth').value;
+        var earningType = document.getElementById('filterEarningType').value;
+
+        if (fromYear) params.push('fromYear=' + fromYear);
+        if (fromMonth) params.push('fromMonth=' + fromMonth);
+        if (toYear) params.push('toYear=' + toYear);
+        if (toMonth) params.push('toMonth=' + toMonth);
+        if (earningType) params.push('earningTypeIds=' + earningType);
+
+        return params.join('&');
+    }
+
+    function applyFilter() {
+        var params = getFilterParams();
+        var url = '/PayrollReport/EarningsBreakdown';
+        if (params) url += '?' + params;
+        window.location.href = url;
+    }
+
+    function clearFilter() {
+        window.location.href = '/PayrollReport/EarningsBreakdown';
+    }
+
+    function exportExcel() {
+        var params = getFilterParams();
+        var url = '/PayrollReport/AxGetExportEarningsBreakdown';
+        if (params) url += '?' + params;
+        window.location.href = url;
+    }
+</script>

@@ -1,0 +1,741 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add UpdateAllPayslipStatusesInPeriodAsync to PayrollRepository": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834036142
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834052023
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834151633
+      }
+    ],
+    "1.2 Add status cascade to FinalisePeriodAsync and batch generation": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834036878
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834156265
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834402034
+      }
+    ],
+    "1.3 Replace PeriodStatusNames dictionary with DB lookup": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834037028
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834157149
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834402683
+      }
+    ],
+    "1.4 Add optimistic concurrency to UpdatePeriodStatusAsync": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834037618
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834157912
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834403518
+      }
+    ],
+    "2.1 Seed new PayslipStatusType values and create audit lookup table": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834037687
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834409901
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834503305
+      }
+    ],
+    "2.2 Create PayslipAuditLog table with indexes": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834037746
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834410654
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834504204
+      }
+    ],
+    "2.3 ALTER Purchase and Supplier tables for P&L integration": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834037810
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834411681
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834505040
+      }
+    ],
+    "2.4 Update raw SQL SELECT queries in PurchaseRepository and SupplierRepository": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834037924
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834511570
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834702409
+      }
+    ],
+    "3.1 Create new entity classes for Phase B": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834037980
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834512256
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834703298
+      }
+    ],
+    "3.2 Add DbContext configuration for Phase B entities": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038042
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834513088
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834704170
+      }
+    ],
+    "4.1 Create Phase B DTOs and request models": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038106
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834716171
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834796704
+      }
+    ],
+    "5. Build checkpoint": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038178
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834802702
+      }
+    ],
+    "6.1 Add audit log methods to PayrollRepository": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038254
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834808164
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785835367084
+      }
+    ],
+    "6.2 Add P&L integration methods to PayrollRepository and PurchaseRepository": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038339
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834808932
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785835367972
+      }
+    ],
+    "6.3 Add supplier and expense category helper methods": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038423
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834809730
+      },
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785835368984
+      }
+    ],
+    "7.1 Create IPayslipPeriodStatusService and implementation": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038496
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785835681275
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837212436
+      }
+    ],
+    "7.2 Implement UnlockPeriodAsync in PayslipPeriodStatusService": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038640
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837219466
+      }
+    ],
+    "7.3 Implement RefinalisePeriodAsync in PayslipPeriodStatusService": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038708
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837221285
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837228261
+      }
+    ],
+    "8.1 Create IPayslipAuditService and implementation": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038777
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837233813
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837455302
+      }
+    ],
+    "8.2 Implement RecordEarningLineChangesAsync with disambiguation logic": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038856
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837234663
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837456174
+      }
+    ],
+    "8.3 Integrate audit tracking into existing PayrollService edit flow": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834038928
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837462389
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837690695
+      }
+    ],
+    "8.4 Implement GetAuditHistoryAsync and GetPeriodAuditSummaryAsync": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039019
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837463306
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837691448
+      }
+    ],
+    "9.1 Create IPayrollPnlService and implementation": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039095
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837706287
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838089261
+      }
+    ],
+    "9.2 Implement CreatePnlEntriesAsync": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039173
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838095298
+      }
+    ],
+    "9.3 Implement AdjustPnlEntriesAsync": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039247
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838096126
+      }
+    ],
+    "9.4 Integrate P&L into existing FinalisePeriodAsync": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039352
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838096937
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838312706
+      }
+    ],
+    "10. Build checkpoint": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039444
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838325618
+      }
+    ],
+    "11.1 Register Phase B services in DI container": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039510
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838326382
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838425125
+      }
+    ],
+    "12.1 Add unlock and re-finalise AJAX endpoints to PayrollController": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039564
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838431090
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838621405
+      }
+    ],
+    "12.2 Add audit history endpoints to PayrollController": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039618
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838431924
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838622156
+      }
+    ],
+    "13.1 Add unlock/re-finalise buttons and status badges to PeriodDetail view": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039675
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838633504
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838808863
+      }
+    ],
+    "13.2 Implement unlock confirmation dialog (SweetAlert2)": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039741
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838634299
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838809779
+      }
+    ],
+    "13.3 Implement re-finalise confirmation dialog (SweetAlert2)": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039805
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838635220
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838810589
+      }
+    ],
+    "13.4 Update PayslipDetail view for edit gating": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039862
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838636020
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838811606
+      }
+    ],
+    "14.1 Create PayslipAuditHistory view (timeline)": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834039918
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838826738
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838973542
+      }
+    ],
+    "14.2 Create PeriodAuditSummary view": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834040035
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838827535
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838972606
+      }
+    ],
+    "15.1 Add IsSystemGenerated protection to supplier management": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834040093
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838828436
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838974228
+      }
+    ],
+    "15.2 Create What's New announcement seed SQL for Phase B": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834040157
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838829300
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838971797
+      }
+    ],
+    "16. Build and integration checkpoint": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834040225
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838975249
+      }
+    ],
+    "20. Final checkpoint": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834040294
+      },
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838976128
+      }
+    ],
+    "1. Phase A retroactive fixes (prerequisite for all Phase B work)": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834403649
+      }
+    ],
+    "2. SQL migrations — Phase B schema additions": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834702531
+      }
+    ],
+    "3. EF Core entities and DbContext configuration (Phase B additions)": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834704284
+      }
+    ],
+    "4. DTO and request models (Phase B additions)": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785834796812
+      }
+    ],
+    "6. Repository layer (Phase B extensions)": [
+      {
+        "executionId": "0ffb1ffa-7c61-428f-8584-4ea056035fcc",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785835369054
+      }
+    ],
+    "7. Service layer — PayslipPeriodStatusService (state machine)": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837228375
+      }
+    ],
+    "8. Service layer — PayslipAuditService (change tracking)": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785837691630
+      }
+    ],
+    "9. Service layer — PayrollPnlService (expense sync)": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838312787
+      }
+    ],
+    "11. DI registration (Phase B services)": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838425247
+      }
+    ],
+    "12. Controller layer (Phase B endpoints)": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838622295
+      }
+    ],
+    "13. View layer — Unlock and Re-finalise UI": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838811689
+      }
+    ],
+    "14. View layer — Audit History views": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838973683
+      }
+    ],
+    "15. Supplier protection (IsSystemGenerated)": [
+      {
+        "executionId": "1e94ab70-d55d-45cf-aa5c-cf2aaf3b5d68",
+        "chatSessionId": "sess_9e1e88dc-3721-4b4d-8905-3d2f92221a25",
+        "timestamp": 1785838974313
+      }
+    ]
+  }
+}

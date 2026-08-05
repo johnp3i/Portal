@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earnings Breakdown Report — Portal Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --muted: #8a9bac;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11,27,40,0.06);
+            --card-radius: 22px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 36px 32px 80px;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4 { font-family: 'Manrope', sans-serif; }
+
+        /* Page Header */
+        .page-header { margin-bottom: 28px; }
+        .page-header__eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px; font-weight: 700;
+            letter-spacing: 1.2px; text-transform: uppercase;
+            color: var(--primary-blue); margin-bottom: 4px;
+        }
+        .page-header__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 32px; font-weight: 800;
+            letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px;
+        }
+        .page-header__subtitle { font-size: 14px; color: var(--text-secondary); }
+
+        /* Glass Card */
+        .glass {
+            background: #fff; border-radius: var(--card-radius);
+            border: 1px solid rgba(13,94,166,0.06);
+            box-shadow: var(--card-shadow);
+        }
+        .card-pad { padding: 28px 32px; }
+
+        /* Summary Cards */
+        .summary-cards {
+            display: flex; gap: 18px; margin-bottom: 22px; flex-wrap: wrap;
+        }
+        .summary-card {
+            flex: 1; min-width: 220px;
+            padding: 22px 26px;
+            border-left: 4px solid transparent;
+        }
+        .summary-card--blue { border-left-color: var(--primary-blue); }
+        .summary-card--green { border-left-color: var(--success); }
+        .summary-card--amber { border-left-color: var(--warning); }
+        .summary-card__label {
+            font-size: 12px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.4px; color: var(--text-secondary); margin-bottom: 6px;
+        }
+        .summary-card__value {
+            font-family: 'Manrope', sans-serif;
+            font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 2px;
+        }
+        .summary-card__meta {
+            font-size: 12px; color: var(--muted);
+        }
+
+        /* Data Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table thead th {
+            font-family: 'Manrope', sans-serif;
+            font-size: 11px; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase;
+            color: var(--muted); padding: 12px 14px;
+            text-align: left; border-bottom: 2px solid var(--border);
+        }
+        .data-table tbody tr { transition: background .15s; }
+        .data-table tbody tr:hover { background: var(--bg); }
+        .data-table tbody td {
+            padding: 14px; border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table .text-right { text-align: right; }
+
+        /* Earning Type Pills */
+        .pill {
+            display: inline-flex; align-items: center;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+        }
+        .pill--overtime { background: rgba(13,94,166,0.1); color: var(--primary-blue); }
+        .pill--bonus { background: rgba(18,152,103,0.1); color: var(--success); }
+        .pill--holidays { background: rgba(200,145,46,0.12); color: var(--warning); }
+
+        /* Buttons */
+        .btn {
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            padding: 10px 20px; border-radius: 10px; border: none;
+            cursor: pointer; transition: all .2s; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--primary-blue); }
+        .btn-secondary:hover { background: #dce8f0; }
+
+        /* Forms */
+        .field label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 5px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .field select {
+            width: 100%; padding: 10px 14px; font-size: 14px;
+            border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'Inter', sans-serif; color: var(--text);
+            background: #fff; transition: border-color .2s;
+            appearance: auto;
+        }
+        .field select:focus {
+            outline: none; border-color: var(--primary-blue);
+        }
+
+        /* Filter Row */
+        .filter-row {
+            display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;
+        }
+        .filter-row .field { margin-bottom: 0; min-width: 180px; }
+
+        /* Pagination */
+        .pagination {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 18px; flex-wrap: wrap; gap: 12px;
+        }
+        .pagination__info { font-size: 13px; color: var(--text-secondary); }
+        .pagination__controls { display: flex; gap: 6px; }
+        .pagination__controls button {
+            padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+            border: 1.5px solid var(--border); background: #fff; color: var(--text);
+            cursor: pointer; transition: all .2s;
+        }
+        .pagination__controls button:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+        .pagination__controls button.active {
+            background: var(--primary-blue); color: #fff; border-color: var(--primary-blue);
+        }
+        .pagination__controls button:disabled {
+            opacity: 0.4; cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div style="max-width:1200px;margin:0 auto;">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header__eyebrow">Payroll Reports</div>
+        <div class="page-header__title">Earnings Breakdown</div>
+        <div class="page-header__subtitle">Analyse compensation by earning type across employees and periods</div>
+    </div>
+
+    <!-- Filter Card -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div class="filter-row">
+            <div class="field">
+                <label>Period From</label>
+                <select>
+                    <option selected>Jan 2027</option>
+                    <option>Feb 2027</option>
+                    <option>Mar 2027</option>
+                    <option>Apr 2027</option>
+                    <option>May 2027</option>
+                    <option>Jun 2027</option>
+                    <option>Jul 2027</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Period To</label>
+                <select>
+                    <option>Jan 2027</option>
+                    <option>Feb 2027</option>
+                    <option>Mar 2027</option>
+                    <option>Apr 2027</option>
+                    <option>May 2027</option>
+                    <option>Jun 2027</option>
+                    <option selected>Jul 2027</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Employee</label>
+                <select>
+                    <option selected>All Employees</option>
+                    <option>Giannis Papamichael</option>
+                    <option>Maria Christodoulou</option>
+                    <option>Andreas Georgiou</option>
+                    <option>Elena Konstantinou</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Earning Type</label>
+                <select>
+                    <option selected>All Types</option>
+                    <option>Overtime</option>
+                    <option>Bonus</option>
+                    <option>Paid Holidays</option>
+                </select>
+            </div>
+            <div style="padding-bottom:2px;">
+                <button class="btn btn-primary">Filter</button>
+                <button class="btn btn-secondary" style="margin-left:8px;">Clear</button>
+                <button class="btn btn-secondary" style="margin-left:8px;">Export Excel</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="glass card-pad summary-card summary-card--blue">
+            <div class="summary-card__label">Overtime</div>
+            <div class="summary-card__value">&euro;3,420.00</div>
+            <div class="summary-card__meta">28 entries</div>
+        </div>
+        <div class="glass card-pad summary-card summary-card--green">
+            <div class="summary-card__label">Bonus</div>
+            <div class="summary-card__value">&euro;1,250.00</div>
+            <div class="summary-card__meta">8 entries</div>
+        </div>
+        <div class="glass card-pad summary-card summary-card--amber">
+            <div class="summary-card__label">Paid Holidays</div>
+            <div class="summary-card__value">&euro;890.00</div>
+            <div class="summary-card__meta">5 entries</div>
+        </div>
+    </div>
+
+    <!-- Detail Table Card -->
+    <section class="glass card-pad">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Period</th>
+                    <th>Earning Type</th>
+                    <th>Description</th>
+                    <th class="text-right">Hours</th>
+                    <th class="text-right">Multiplier</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Giannis Papamichael</strong></td>
+                    <td>Jul 2027</td>
+                    <td><span class="pill pill--overtime">Overtime</span></td>
+                    <td>Evening Shift</td>
+                    <td class="text-right">12</td>
+                    <td class="text-right">x1.5</td>
+                    <td class="text-right"><strong>&euro;270.00</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Giannis Papamichael</strong></td>
+                    <td>Jun 2027</td>
+                    <td><span class="pill pill--bonus">Bonus</span></td>
+                    <td>Performance Q2</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right"><strong>&euro;150.00</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Maria Christodoulou</strong></td>
+                    <td>Jul 2027</td>
+                    <td><span class="pill pill--overtime">Overtime</span></td>
+                    <td>Weekend Shift</td>
+                    <td class="text-right">8</td>
+                    <td class="text-right">x2.0</td>
+                    <td class="text-right"><strong>&euro;240.00</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Maria Christodoulou</strong></td>
+                    <td>Jul 2027</td>
+                    <td><span class="pill pill--holidays">Paid Holidays</span></td>
+                    <td>Annual Leave</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right"><strong>&euro;200.00</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Andreas Georgiou</strong></td>
+                    <td>Jun 2027</td>
+                    <td><span class="pill pill--overtime">Overtime</span></td>
+                    <td>Night Shift</td>
+                    <td class="text-right">16</td>
+                    <td class="text-right">x1.5</td>
+                    <td class="text-right"><strong>&euro;360.00</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Andreas Georgiou</strong></td>
+                    <td>May 2027</td>
+                    <td><span class="pill pill--bonus">Bonus</span></td>
+                    <td>Annual Bonus</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right"><strong>&euro;500.00</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Giannis Papamichael</strong></td>
+                    <td>May 2027</td>
+                    <td><span class="pill pill--overtime">Overtime</span></td>
+                    <td>Evening Shift</td>
+                    <td class="text-right">10</td>
+                    <td class="text-right">x1.5</td>
+                    <td class="text-right"><strong>&euro;225.00</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Elena Konstantinou</strong></td>
+                    <td>Apr 2027</td>
+                    <td><span class="pill pill--holidays">Paid Holidays</span></td>
+                    <td>Public Holiday</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right">&mdash;</td>
+                    <td class="text-right"><strong>&euro;150.00</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <div class="pagination__info">Showing 1&ndash;8 of 41</div>
+            <div class="pagination__controls">
+                <button disabled>&laquo;</button>
+                <button class="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>4</button>
+                <button>5</button>
+                <button>&raquo;</button>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+</body>
+</html>
