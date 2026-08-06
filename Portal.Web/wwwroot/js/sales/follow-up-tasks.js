@@ -78,6 +78,7 @@ function toggleTodaysActions() {
 // ─── Task Card Rendering ────────────────────────────────────
 
 function renderTaskCard(t) {
+    cacheTaskData(t);
     var urgencyClass = t.urgency === 'overdue' ? 'overdue' : t.urgency === 'today' ? 'today' : 'tomorrow';
     var dotColor = t.urgency === 'overdue' ? '#C24A4A' : t.urgency === 'today' ? '#C8912E' : '#b8c4d0';
     var snoozedWarning = t.snoozedCount >= 3 ? ' style="border:1.5px dashed #C8912E;"' : '';
@@ -91,10 +92,12 @@ function renderTaskCard(t) {
         '<span style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;"></span>' +
         '<div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;' + getTypeIconBg(t.taskType) + '">' + typeIcon + '</div>' +
         '<div style="flex:1;min-width:0;">' +
-            '<div style="font-size:14px;font-weight:600;color:#0B1B28;">' + escapeHtml(t.title) + '</div>' +
+            '<div style="font-size:14px;font-weight:600;color:#0B1B28;">' + (t.leadRequestId ? '<a href="/Sales/LeadDetail/' + t.leadRequestId + '" style="color:#0B1B28;text-decoration:none;border-bottom:1px dashed rgba(13,94,166,.3);">' + escapeHtml(t.title) + '</a>' : escapeHtml(t.title)) + '</div>' +
             '<div style="font-size:12px;color:#8a9bab;margin-top:3px;">' + urgencyBadge + assignedTo + snoozedNote + '</div>' +
         '</div>' +
-        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">' +
+            (t.notes ? '<button class="btn btn-sm" style="background:rgba(13,94,166,.06);color:#0D5EA6;border:1.5px solid rgba(13,94,166,.12);padding:5px 8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="openViewNotesModal(' + t.id + ')" title="View notes">&#128221;</button>' : '') +
+            '<button class="btn btn-sm" style="background:rgba(138,155,171,.06);color:#5E7385;border:1.5px solid rgba(138,155,171,.15);padding:5px 8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="openEditTaskModal(' + t.id + ')" title="Edit task">&#9998;</button>' +
             '<button class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="completeTask(' + t.id + ')">&#10003; Complete</button>' +
             '<div style="position:relative;display:inline-block;">' +
                 '<button class="btn btn-sm" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="toggleSnoozeMenu(event, ' + t.id + ')">&#9193; Snooze &#9662;</button>' +
@@ -320,6 +323,137 @@ async function submitCreateTask() {
                 if (typeof loadTasksPage === 'function') loadTasksPage(1);
             }, 300);
             Swal.fire({ icon: 'success', title: 'Task Created', text: 'Follow-up task has been scheduled.', confirmButtonColor: '#0D5EA6' });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+        }
+    } catch (e) {
+        BlockUI.hide();
+        Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+    }
+}
+
+// ─── View Notes Modal ────────────────────────────────────────
+
+function openViewNotesModal(taskId) {
+    var t = _taskDataCache[taskId];
+    if (!t || !t.notes) return;
+
+    var modalHtml = '<div id="viewNotesModal" style="position:fixed;inset:0;background:rgba(11,27,40,.4);display:flex;align-items:center;justify-content:center;z-index:1000;" onclick="if(event.target===this)closeViewNotesModal()">' +
+        '<div style="background:#fff;border-radius:20px;padding:32px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.15);">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+                '<h3 style="font-family:Manrope,sans-serif;font-size:16px;font-weight:700;margin:0;">Task Notes</h3>' +
+                '<button onclick="closeViewNotesModal()" style="background:none;border:none;cursor:pointer;color:#8a9bab;font-size:22px;">&times;</button>' +
+            '</div>' +
+            '<div style="font-size:13px;font-weight:600;color:#5E7385;margin-bottom:12px;">' + escapeHtml(t.title) + '</div>' +
+            '<div style="padding:16px;background:#f7fafc;border-radius:12px;border:1px solid rgba(13,94,166,.08);font-size:14px;color:#0B1B28;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(t.notes) + '</div>' +
+            '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">' +
+                '<button class="btn btn-secondary" onclick="closeViewNotesModal()">Close</button>' +
+                '<button class="btn btn-primary" onclick="closeViewNotesModal();openEditTaskModal(' + t.id + ')">Edit Task</button>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeViewNotesModal() {
+    var modal = document.getElementById('viewNotesModal');
+    if (modal) modal.remove();
+}
+
+// ─── Edit Task Modal ────────────────────────────────────────
+
+// Store task data for editing (populated by renderTaskCard or fetched)
+var _taskDataCache = {};
+
+function cacheTaskData(t) {
+    _taskDataCache[t.id] = t;
+}
+
+function openEditTaskModal(taskId) {
+    var t = _taskDataCache[taskId];
+    if (!t) {
+        // If not cached, we can't open - shouldn't happen
+        Swal.fire({ icon: 'warning', title: 'Cannot edit', text: 'Task data not available. Please refresh the page.', confirmButtonColor: '#0D5EA6' });
+        return;
+    }
+
+    var dueDate = t.dueAtUtc ? t.dueAtUtc.split('T')[0] : '';
+
+    var modalHtml = '<div id="editTaskModal" style="position:fixed;inset:0;background:rgba(11,27,40,.4);display:flex;align-items:center;justify-content:center;z-index:1000;">' +
+        '<div style="background:#fff;border-radius:20px;padding:32px;width:480px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.15);">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+                '<h3 style="font-family:Manrope,sans-serif;font-size:18px;font-weight:700;margin:0;">Edit Task</h3>' +
+                '<button onclick="closeEditTaskModal()" style="background:none;border:none;cursor:pointer;color:#8a9bab;font-size:22px;">&times;</button>' +
+            '</div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Title</label><input type="text" id="editTaskTitle" value="' + escapeAttr(t.title) + '" maxlength="200" /></div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Type</label><select id="editTaskType">' +
+                '<option value="Call"' + (t.taskType === 'Call' ? ' selected' : '') + '>Call</option>' +
+                '<option value="Email"' + (t.taskType === 'Email' ? ' selected' : '') + '>Email</option>' +
+                '<option value="Follow-up"' + (t.taskType === 'Follow-up' ? ' selected' : '') + '>Follow-up</option>' +
+                '<option value="Meeting Prep"' + (t.taskType === 'Meeting Prep' ? ' selected' : '') + '>Meeting Prep</option>' +
+                '<option value="Other"' + (t.taskType === 'Other' ? ' selected' : '') + '>Other</option>' +
+            '</select></div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Due Date</label><input type="date" id="editTaskDueDate" value="' + dueDate + '" /></div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Notes</label><textarea id="editTaskNotes" rows="4" placeholder="Add notes, comments, or context...">' + escapeHtml(t.notes || '') + '</textarea></div>' +
+            '<input type="hidden" id="editTaskId" value="' + t.id + '" />' +
+            '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">' +
+                '<button class="btn btn-secondary" onclick="closeEditTaskModal()">Cancel</button>' +
+                '<button class="btn btn-primary" onclick="submitEditTask()">Save Changes</button>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeEditTaskModal() {
+    var modal = document.getElementById('editTaskModal');
+    if (modal) modal.remove();
+}
+
+async function submitEditTask() {
+    var title = document.getElementById('editTaskTitle').value.trim();
+    if (!title) {
+        Swal.fire({ icon: 'warning', title: 'Required', text: 'Please enter a title.', confirmButtonColor: '#0D5EA6' });
+        return;
+    }
+
+    var dueValue = document.getElementById('editTaskDueDate').value;
+    if (!dueValue) {
+        Swal.fire({ icon: 'warning', title: 'Required', text: 'Please select a due date.', confirmButtonColor: '#0D5EA6' });
+        return;
+    }
+
+    var payload = {
+        id: parseInt(document.getElementById('editTaskId').value),
+        title: title,
+        taskType: document.getElementById('editTaskType').value,
+        dueAtUtc: dueValue + 'T09:00:00Z',
+        notes: document.getElementById('editTaskNotes').value.trim() || null
+    };
+
+    BlockUI.show('Saving...');
+    try {
+        var response = await fetch('/Sales/AxPostUpdateTask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            },
+            body: JSON.stringify(payload)
+        });
+        var data = await response.json();
+        BlockUI.hide();
+
+        if (data.success) {
+            closeEditTaskModal();
+            Swal.fire({ icon: 'success', title: 'Saved', text: 'Task updated.', timer: 1500, showConfirmButton: false });
+            setTimeout(function() {
+                if (typeof loadTodaysActions === 'function') loadTodaysActions();
+                if (typeof loadLeadTasks === 'function') loadLeadTasks();
+                if (typeof loadTasksPage === 'function') loadTasksPage(1);
+            }, 200);
         } else {
             Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
         }

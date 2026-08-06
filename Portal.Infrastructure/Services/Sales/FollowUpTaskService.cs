@@ -104,6 +104,56 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
+    public async Task<ServiceResult> ReopenTaskAsync(int taskId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var task = await _taskRepository.GetByIdAsync(taskId, businessId);
+
+            if (task == null)
+                return ServiceResult.Fail("Task not found.");
+
+            if (!task.IsCompleted)
+                return ServiceResult.Fail("Task is not completed.");
+
+            await _taskRepository.ReopenAsync(taskId, businessId);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> UpdateTaskAsync(int taskId, string title, string taskType, DateTime dueAtUtc, string? notes)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return ServiceResult.Fail("Title is required.");
+
+            if (title.Length > 200)
+                return ServiceResult.Fail("Title must be 200 characters or fewer.");
+
+            if (!ValidTaskTypes.Contains(taskType))
+                return ServiceResult.Fail("Invalid task type.");
+
+            var businessId = _tenantService.CurrentBusinessId;
+            var task = await _taskRepository.GetByIdAsync(taskId, businessId);
+
+            if (task == null)
+                return ServiceResult.Fail("Task not found.");
+
+            await _taskRepository.UpdateAsync(taskId, businessId, title.Trim(), taskType, dueAtUtc, notes?.Trim());
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<List<FollowUpTaskDto>> GetTodaysActionsAsync(int? teamMemberId = null)
     {
         try

@@ -381,17 +381,17 @@
         }
 
         function getActionColor(action) {
-            var map = { lead_created:'#8a9bab', stage_changed:'#0D5EA6', lead_cancelled:'#C24A4A', lead_reactivated:'#129867', response_logged:'#129867', meeting_scheduled:'#C8912E', meeting_cancelled:'#C24A4A', proposal_linked:'#57B8E8', invoice_linked:'#57B8E8', marked_as_won:'#129867', assigned:'#0D5EA6', unassigned:'#8a9bab', request_details_updated:'#8a9bab' };
+            var map = { lead_created:'#8a9bab', stage_changed:'#0D5EA6', lead_cancelled:'#C24A4A', lead_reactivated:'#129867', response_logged:'#129867', meeting_scheduled:'#C8912E', meeting_cancelled:'#C24A4A', proposal_linked:'#57B8E8', invoice_linked:'#57B8E8', marked_as_won:'#129867', assigned:'#0D5EA6', unassigned:'#8a9bab', request_details_updated:'#8a9bab', task_created:'#C8912E' };
             return map[action] || '#8a9bab';
         }
 
         function getActionIcon(action) {
-            var map = { lead_created:'+', stage_changed:'→', lead_cancelled:'✕', lead_reactivated:'↺', response_logged:'💬', meeting_scheduled:'📅', meeting_cancelled:'📅', proposal_linked:'📄', invoice_linked:'📄', marked_as_won:'✓', assigned:'👤', unassigned:'👤', request_details_updated:'✏' };
+            var map = { lead_created:'+', stage_changed:'→', lead_cancelled:'✕', lead_reactivated:'↺', response_logged:'💬', meeting_scheduled:'📅', meeting_cancelled:'📅', proposal_linked:'📄', invoice_linked:'📄', marked_as_won:'✓', assigned:'👤', unassigned:'👤', request_details_updated:'✏', task_created:'☑' };
             return map[action] || '•';
         }
 
         function formatActionLabel(action) {
-            var map = { lead_created:'Lead Created', stage_changed:'Stage Changed', lead_cancelled:'Lead Cancelled', lead_reactivated:'Lead Reactivated', response_logged:'Response Logged', meeting_scheduled:'Meeting Scheduled', meeting_cancelled:'Meeting Cancelled', proposal_linked:'Proposal Linked', invoice_linked:'Invoice Linked', marked_as_won:'Marked as Won', assigned:'Assigned', unassigned:'Unassigned', request_details_updated:'Details Updated' };
+            var map = { lead_created:'Lead Created', stage_changed:'Stage Changed', lead_cancelled:'Lead Cancelled', lead_reactivated:'Lead Reactivated', response_logged:'Response Logged', meeting_scheduled:'Meeting Scheduled', meeting_cancelled:'Meeting Cancelled', proposal_linked:'Proposal Linked', invoice_linked:'Invoice Linked', marked_as_won:'Marked as Won', assigned:'Assigned', unassigned:'Unassigned', request_details_updated:'Details Updated', task_created:'Task Scheduled' };
             return map[action] || action;
         }
 

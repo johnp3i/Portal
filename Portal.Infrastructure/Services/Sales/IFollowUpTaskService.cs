@@ -10,6 +10,8 @@ public interface IFollowUpTaskService
 {
     Task<ServiceResult> CreateTaskAsync(CreateFollowUpTaskRequest request, string userId);
     Task<ServiceResult> CompleteTaskAsync(int taskId);
+    Task<ServiceResult> ReopenTaskAsync(int taskId);
+    Task<ServiceResult> UpdateTaskAsync(int taskId, string title, string taskType, DateTime dueAtUtc, string? notes);
     Task<ServiceResult> SnoozeTaskAsync(int taskId, DateTime newDueDate);
     Task<List<FollowUpTaskDto>> GetTodaysActionsAsync(int? teamMemberId = null);
     Task<List<FollowUpTaskDto>> GetByLeadIdAsync(int leadRequestId);

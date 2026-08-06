@@ -112,6 +112,54 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         }
     }
 
+    public async Task ReopenAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [sales].[FollowUpTask]
+                SET [IsCompleted] = 0,
+                    [CompletedAtUtc] = NULL
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId AND [IsCompleted] = 1";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId)
+            );
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task UpdateAsync(int id, int businessId, string title, string taskType, DateTime dueAtUtc, string? notes)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [sales].[FollowUpTask]
+                SET [Title] = @Title,
+                    [TaskType] = @TaskType,
+                    [DueAtUtc] = @DueAtUtc,
+                    [Notes] = @Notes
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@Title", title),
+                new SqlParameter("@TaskType", taskType),
+                new SqlParameter("@DueAtUtc", dueAtUtc),
+                new SqlParameter("@Notes", notes ?? (object)DBNull.Value)
+            );
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<FollowUpTask?> GetByIdAsync(int id, int businessId)
     {
         try

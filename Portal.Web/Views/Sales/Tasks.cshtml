@@ -82,7 +82,7 @@
                 <th>Due Date</th>
                 <th>Status</th>
                 <th>Assigned</th>
-                <th style="text-align:center;">Actions</th>
+                <th style="text-align:right;">Actions</th>
             </tr>
         </thead>
         <tbody id="tasksTableBody">
@@ -139,6 +139,7 @@
 
             var html = '';
             tasks.forEach(function (t) {
+                if (typeof cacheTaskData === 'function') cacheTaskData(t);
                 var dueColor = t.urgency === 'overdue' ? 'color:#C24A4A;font-weight:600;' : t.urgency === 'today' ? 'color:#C8912E;font-weight:600;' : '';
                 var statusBadge = getStatusBadgeHtml(t);
                 var dueStr = new Date(t.dueAtUtc).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -150,10 +151,16 @@
                 html += '<td style="' + dueColor + '">' + dueStr + '</td>';
                 html += '<td>' + statusBadge + '</td>';
                 html += '<td>' + (t.assignedToName ? escapeHtml(t.assignedToName) : '<span style="color:#8a9bab;">Me</span>') + '</td>';
-                html += '<td style="text-align:center;">';
+                html += '<td style="text-align:right;white-space:nowrap;">';
+                if (t.notes) {
+                    html += '<button class="btn btn-sm" style="background:rgba(13,94,166,.06);color:#0D5EA6;border:1.5px solid rgba(13,94,166,.12);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openViewNotesModal(' + t.id + ')" title="View notes">&#128221;</button> ';
+                }
+                html += '<button class="btn btn-sm" style="background:rgba(138,155,171,.06);color:#5E7385;border:1.5px solid rgba(138,155,171,.15);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openEditTaskModalFromTable(' + t.id + ')" title="Edit task">&#9998;</button> ';
                 if (!t.isCompleted) {
-                    html += '<button class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="completeTaskFromList(' + t.id + ')">&#10003;</button> ';
-                    html += '<button class="btn btn-sm" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="snoozeTaskFromList(' + t.id + ')">&#9193;</button>';
+                    html += '<button class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="completeTaskFromList(' + t.id + ')" title="Mark as completed">&#10003;</button> ';
+                    html += '<button class="btn btn-sm" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="snoozeTaskFromList(' + t.id + ')" title="Snooze +1 day">+1d</button>';
+                } else {
+                    html += '<button class="btn btn-sm" style="background:rgba(200,145,46,.08);color:#C8912E;border:1.5px solid rgba(200,145,46,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="reopenTaskFromList(' + t.id + ')" title="Reopen task">Reopen</button>';
                 }
                 if (t.leadRequestId) {
                     html += ' <a href="/Sales/LeadDetail/' + t.leadRequestId + '" class="btn btn-sm" style="padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid rgba(13,94,166,.15);color:#0D5EA6;text-decoration:none;">View Lead</a>';
@@ -227,6 +234,28 @@
                 var data = await response.json();
                 BlockUI.hide();
                 if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Snoozed', text: 'Task moved to tomorrow.', timer: 1500, showConfirmButton: false });
+                    loadTasksPage(_tasksCurrentPage);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function reopenTaskFromList(taskId) {
+            BlockUI.show('Reopening...');
+            try {
+                var response = await fetch('/Sales/AxPostReopenTask?id=' + taskId, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                });
+                var data = await response.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Reopened', text: 'Task has been moved back to pending.', timer: 1500, showConfirmButton: false });
                     loadTasksPage(_tasksCurrentPage);
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
@@ -247,6 +276,10 @@
 
         // Load on page ready
         loadTasksPage(1);
+
+        function openEditTaskModalFromTable(taskId) {
+            if (typeof openEditTaskModal === 'function') openEditTaskModal(taskId);
+        }
 
         function setQuickPeriod(preset) {
             var now = new Date();

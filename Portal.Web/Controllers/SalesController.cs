@@ -1129,6 +1129,38 @@ public class SalesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostReopenTask(int id)
+    {
+        try
+        {
+            var result = await _followUpTaskService.ReopenTaskAsync(id);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reopening follow-up task");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUpdateTask([FromBody] UpdateFollowUpTaskRequest request)
+    {
+        try
+        {
+            var result = await _followUpTaskService.UpdateTaskAsync(request.Id, request.Title, request.TaskType, request.DueAtUtc, request.Notes);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating follow-up task");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostSnoozeTask(int id, DateTime newDueDate)
     {
         try

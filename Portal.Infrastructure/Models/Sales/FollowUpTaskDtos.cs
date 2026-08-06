@@ -58,3 +58,15 @@ public class FollowUpTaskFilter
     public DateTime? DateFrom { get; set; }
     public DateTime? DateTo { get; set; }
 }
+
+/// <summary>
+/// Request model for updating a follow-up task.
+/// </summary>
+public class UpdateFollowUpTaskRequest
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = null!;
+    public string TaskType { get; set; } = null!;
+    public DateTime DueAtUtc { get; set; }
+    public string? Notes { get; set; }
+}
