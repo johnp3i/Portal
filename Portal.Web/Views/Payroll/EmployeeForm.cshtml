@@ -197,6 +197,24 @@
     </div>
     </div>
 
+    @if (isEdit)
+    {
+    <!-- PAYE Income Tax (Phase D) -->
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #e2e8f0;">
+        <h3 class="section-title">PAYE Income Tax</h3>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+            <label class="toggle-switch" style="margin:0;">
+                <input type="checkbox" id="isPayeApplicable" @(Model!.IsPayeApplicable ? "checked" : "")>
+                <span class="toggle-slider"></span>
+            </label>
+            <span style="font-weight:600;font-size:14px;">Subject to PAYE Income Tax</span>
+        </div>
+        <p style="font-size:13px;color:#5a6a7a;margin:0;">
+            PAYE applies when projected annual income exceeds €19,500. When enabled, PAYE income tax will be calculated using progressive tax bands during payslip generation.
+        </p>
+    </div>
+    }
+
     <!-- Form Actions -->
     <div style="margin-top:32px;display:flex;gap:12px;">
         <button class="btn btn-primary" onclick="saveEmployee()">Save Employee</button>
@@ -342,5 +360,56 @@
             BlockUI.hide();
             Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
         }
+    }
+
+    // Phase D: PAYE Toggle
+    @if (isEdit)
+    {
+    <text>
+    document.getElementById('isPayeApplicable')?.addEventListener('change', async function() {
+        var checkbox = this;
+        var isPayeApplicable = checkbox.checked;
+        var employeeId = @(Model!.Id);
+
+        BlockUI.show('Updating PAYE status...');
+        try {
+            var response = await fetch('/Payroll/AxPostToggleEmployeePaye', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ employeeId: employeeId, isPayeApplicable: isPayeApplicable })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success && data.warning) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Below Threshold',
+                    text: data.message,
+                    showCancelButton: true,
+                    confirmButtonText: 'Keep Enabled',
+                    cancelButtonText: 'Revert',
+                    confirmButtonColor: '#0D5EA6'
+                }).then((result) => {
+                    if (!result.isConfirmed) {
+                        checkbox.checked = !isPayeApplicable;
+                    }
+                });
+            } else if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Updated', text: 'PAYE status updated.', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false });
+            } else {
+                checkbox.checked = !isPayeApplicable;
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            checkbox.checked = !isPayeApplicable;
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    });
+    </text>
     }
 </script>

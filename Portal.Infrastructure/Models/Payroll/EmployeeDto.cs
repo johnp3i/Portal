@@ -29,6 +29,7 @@ public class EmployeeDetailDto
     public decimal? HourlyRate { get; set; }
     public string? BankAccount { get; set; }
     public bool IsActive { get; set; }
+    public bool IsPayeApplicable { get; set; }
 }
 
 public class CreateEmployeeRequest

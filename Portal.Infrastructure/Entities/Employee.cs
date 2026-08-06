@@ -18,5 +18,6 @@ public class Employee
     public decimal? HourlyRate { get; set; }
     public string? BankAccount { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsPayeApplicable { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

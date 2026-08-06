@@ -1,0 +1,147 @@
+@{
+    var countryCode = (string?)ViewBag.CountryCode ?? "CY";
+    ViewData["Title"] = "PAYE Tax Bands — " + countryCode;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Platform Admin</div>
+        <a class="back-link" href="/PayrollTemplate">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to Templates
+        </a>
+        <h1 class="topbar-heading">PAYE Tax Bands — @countryCode</h1>
+        <p class="topbar-description">Progressive income tax bands used for PAYE calculation.</p>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<section class="glass card-pad">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;">Tax Bands (Current Year)</h3>
+        <button class="btn btn-primary btn-sm" onclick="showAddBandModal()">Add Tax Band</button>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="bandsTable">
+            <thead>
+                <tr>
+                    <th style="text-align:right;">Lower Bound (€)</th>
+                    <th style="text-align:right;">Upper Bound (€)</th>
+                    <th style="text-align:right;">Rate %</th>
+                    <th style="text-align:center;">From Year</th>
+                    <th style="text-align:center;">To Year</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="bandsBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+    var currentCountryCode = '@countryCode';
+    document.addEventListener('DOMContentLoaded', loadBands);
+
+    async function loadBands() {
+        try {
+            var response = await fetch('/PayrollTemplate/AxGetTaxBands?countryCode=' + currentCountryCode);
+            var data = await response.json();
+            if (data.success) { renderBands(data.data); }
+        } catch (e) { }
+    }
+
+    function renderBands(bands) {
+        var html = '';
+        bands.forEach(function(b) {
+            var upper = b.upperBound != null ? '€' + b.upperBound.toLocaleString('en', {minimumFractionDigits:2}) : 'No limit';
+            html += '<tr>' +
+                '<td style="text-align:right;">€' + b.lowerBound.toLocaleString('en', {minimumFractionDigits:2}) + '</td>' +
+                '<td style="text-align:right;">' + upper + '</td>' +
+                '<td style="text-align:right;">' + (b.rate * 100).toFixed(2) + '%</td>' +
+                '<td style="text-align:center;">' + b.effectiveFromYear + '</td>' +
+                '<td style="text-align:center;">' + (b.effectiveToYear || 'Current') + '</td>' +
+                '<td style="text-align:center;"><button class="btn btn-secondary btn-sm" onclick=\'editBand(' + JSON.stringify(b) + ')\'>Edit</button></td>' +
+                '</tr>';
+        });
+        document.getElementById('bandsBody').innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#5a6a7a;">No tax bands configured.</td></tr>';
+    }
+
+    function showAddBandModal() {
+        Swal.fire({
+            title: 'Add Tax Band',
+            html: '<div style="text-align:left;">' +
+                '<label style="font-size:13px;font-weight:600;">Lower Bound (€)</label><input id="swalLower" class="swal2-input" type="number" step="0.01" placeholder="0.00">' +
+                '<label style="font-size:13px;font-weight:600;">Upper Bound (€, leave empty for top band)</label><input id="swalUpper" class="swal2-input" type="number" step="0.01" placeholder="">' +
+                '<label style="font-size:13px;font-weight:600;">Rate (decimal, e.g. 0.20 for 20%)</label><input id="swalRate" class="swal2-input" type="number" step="0.0001" placeholder="0.2000">' +
+                '<label style="font-size:13px;font-weight:600;">Effective From Year</label><input id="swalFromYear" class="swal2-input" type="number" value="' + new Date().getFullYear() + '">' +
+                '<label style="font-size:13px;font-weight:600;">Effective To Year (leave empty for current)</label><input id="swalToYear" class="swal2-input" type="number" placeholder="">' +
+                '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Create',
+            confirmButtonColor: '#0D5EA6',
+            preConfirm: () => ({
+                countryCode: currentCountryCode,
+                lowerBound: parseFloat(document.getElementById('swalLower').value),
+                upperBound: document.getElementById('swalUpper').value ? parseFloat(document.getElementById('swalUpper').value) : null,
+                rate: parseFloat(document.getElementById('swalRate').value),
+                effectiveFromYear: parseInt(document.getElementById('swalFromYear').value),
+                effectiveToYear: document.getElementById('swalToYear').value ? parseInt(document.getElementById('swalToYear').value) : null
+            })
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                BlockUI.show('Creating...');
+                try {
+                    var response = await fetch('/PayrollTemplate/AxPostCreateTaxBand', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                        body: JSON.stringify(result.value)
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+                    if (data.success) { Swal.fire({ icon: 'success', title: 'Created', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false }); loadBands(); }
+                    else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+                } catch (e) { BlockUI.hide(); Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' }); }
+            }
+        });
+    }
+
+    function editBand(band) {
+        Swal.fire({
+            title: 'Edit Tax Band',
+            html: '<div style="text-align:left;">' +
+                '<label style="font-size:13px;font-weight:600;">Lower Bound (€)</label><input id="swalLower" class="swal2-input" type="number" step="0.01" value="' + band.lowerBound + '">' +
+                '<label style="font-size:13px;font-weight:600;">Upper Bound (€)</label><input id="swalUpper" class="swal2-input" type="number" step="0.01" value="' + (band.upperBound || '') + '">' +
+                '<label style="font-size:13px;font-weight:600;">Rate (decimal)</label><input id="swalRate" class="swal2-input" type="number" step="0.0001" value="' + band.rate + '">' +
+                '<label style="font-size:13px;font-weight:600;">From Year</label><input id="swalFromYear" class="swal2-input" type="number" value="' + band.effectiveFromYear + '">' +
+                '<label style="font-size:13px;font-weight:600;">To Year</label><input id="swalToYear" class="swal2-input" type="number" value="' + (band.effectiveToYear || '') + '">' +
+                '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            confirmButtonColor: '#0D5EA6',
+            preConfirm: () => ({
+                id: band.id,
+                lowerBound: parseFloat(document.getElementById('swalLower').value),
+                upperBound: document.getElementById('swalUpper').value ? parseFloat(document.getElementById('swalUpper').value) : null,
+                rate: parseFloat(document.getElementById('swalRate').value),
+                effectiveFromYear: parseInt(document.getElementById('swalFromYear').value),
+                effectiveToYear: document.getElementById('swalToYear').value ? parseInt(document.getElementById('swalToYear').value) : null
+            })
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                BlockUI.show('Updating...');
+                try {
+                    var response = await fetch('/PayrollTemplate/AxPostUpdateTaxBand', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                        body: JSON.stringify(result.value)
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+                    if (data.success) { Swal.fire({ icon: 'success', title: 'Updated', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false }); loadBands(); }
+                    else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+                } catch (e) { BlockUI.hide(); Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' }); }
+            }
+        });
+    }
+</script>

@@ -69,4 +69,11 @@ public interface IPayrollService
     // Phase B: Audit History
     Task<List<PayslipAuditLogDto>> GetPayslipAuditHistoryAsync(int payslipId, int businessId);
     Task<List<PeriodAuditGroupDto>> GetPeriodAuditSummaryAsync(int periodId, int businessId);
+
+    // Phase D: PAYE Toggle
+    Task<ServiceResult> UpdateEmployeePayeStatusAsync(int businessId, int employeeId, bool isPayeApplicable);
+
+    // Phase D: Contribution Report
+    Task<ContributionReportDto?> GetContributionReportAsync(int periodId, int businessId);
+    Task<List<PayslipPeriodComplianceFilingDto>> GetComplianceFilingHistoryAsync(int periodId, int businessId);
 }

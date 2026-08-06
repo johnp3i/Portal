@@ -11,5 +11,6 @@ public class DeductionType
     public bool IsActive { get; set; } = true;
     public string Country { get; set; } = "CY";
     public bool IsTemplate { get; set; }
+    public bool IsPayeDeductible { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

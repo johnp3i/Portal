@@ -24,10 +24,14 @@ public class PayslipPeriodStatusService : IPayslipPeriodStatusService
     private static readonly HashSet<byte> EditableStatuses = new() { Draft, Preview, Unlocked };
 
     private readonly PayrollRepository _payrollRepository;
+    private readonly IComplianceIntegrationService _complianceIntegrationService;
 
-    public PayslipPeriodStatusService(PayrollRepository payrollRepository)
+    public PayslipPeriodStatusService(
+        PayrollRepository payrollRepository,
+        IComplianceIntegrationService complianceIntegrationService)
     {
         _payrollRepository = payrollRepository;
+        _complianceIntegrationService = complianceIntegrationService;
     }
 
     public bool IsTransitionAllowed(byte currentStatusId, byte targetStatusId)
@@ -134,6 +138,16 @@ public class PayslipPeriodStatusService : IPayslipPeriodStatusService
                     OldValue = null,
                     NewValue = null
                 });
+            }
+
+            // Phase D: Non-blocking compliance integration on re-finalisation
+            try
+            {
+                await _complianceIntegrationService.UpdateComplianceFilingFromPayrollAsync(periodId, businessId, userId);
+            }
+            catch
+            {
+                // Non-blocking: compliance failure must not affect re-finalisation result
             }
 
             return ServiceResult.Ok();

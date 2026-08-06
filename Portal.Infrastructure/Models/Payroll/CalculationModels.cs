@@ -27,6 +27,7 @@ public class DeductionTypeWithHistory
     public string Code { get; set; } = string.Empty;
     public bool IsPercentage { get; set; }
     public byte DeductionCategoryTypeId { get; set; }
+    public bool IsPayeDeductible { get; set; }
     public List<DeductionRateHistory> RateHistories { get; set; } = new();
 }
 
@@ -58,5 +59,5 @@ public class ComputedDeductionLine
     public decimal Rate { get; set; }
     public decimal CalculatedAmount { get; set; }
     public byte DeductionCategoryTypeId { get; set; }
-    public int DeductionRateHistoryId { get; set; }
+    public int? DeductionRateHistoryId { get; set; }
 }

@@ -739,4 +739,40 @@ public class PayrollController : Controller
     }
 
     #endregion
+
+    #region Phase D: PAYE Toggle
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostToggleEmployeePaye([FromBody] TogglePayeRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            // Check Owner or SuperAdmin role
+            var isOwner = User.HasClaim("IsOwner", "true");
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+            if (!isOwner && !isSuperAdmin)
+                return Json(new { success = false, message = "Only business owners or SuperAdmins can toggle PAYE status." });
+
+            var result = await _payrollService.UpdateEmployeePayeStatusAsync(businessId, request.EmployeeId, request.IsPayeApplicable);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            // If there's a warning message (income below threshold), pass it as a warning flag
+            if (!string.IsNullOrEmpty(result.Message))
+                return Json(new { success = true, warning = true, message = result.Message });
+
+            return Json(new { success = true, message = "PAYE status updated successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to update PAYE status." });
+        }
+    }
+
+    #endregion
 }

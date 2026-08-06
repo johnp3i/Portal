@@ -1,0 +1,177 @@
+@{
+    ViewData["Title"] = "Employer Contribution Report";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <h1 class="topbar-heading">Employer Contribution Report</h1>
+        <p class="topbar-description">Breakdown of employer contributions per employee for a payslip period.</p>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label>Period</label>
+            <select id="filterPeriod">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="loadReport()">View Report</button>
+        </div>
+    </div>
+</section>
+
+<!-- Summary Card -->
+<section class="glass card-pad" id="summarySection" style="display:none;margin-bottom:22px;">
+    <h3 style="margin:0 0 16px;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;">Contribution Summary</h3>
+    <div id="summaryBoxes" style="display:flex;gap:16px;flex-wrap:wrap;"></div>
+</section>
+
+<!-- Detail Table Card -->
+<section class="glass card-pad" id="detailSection" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 style="margin:0;font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;">Per-Employee Breakdown</h3>
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary btn-sm" onclick="exportExcel()">Export to Excel</button>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="contributionTable">
+            <thead>
+                <tr id="tableHeader"></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot>
+                <tr id="tableFooter" style="font-weight:700;"></tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Compliance Filing Link -->
+    <div id="complianceLink" style="display:none;margin-top:18px;padding:14px;background:#EEF4F8;border-radius:12px;">
+        <span style="font-size:13px;color:#5a6a7a;" id="complianceLinkText"></span>
+    </div>
+</section>
+
+<!-- Empty State -->
+<section class="glass card-pad" id="emptyState" style="display:none;">
+    <div class="empty-state">
+        <p id="emptyMessage">Select a period and click "View Report" to see employer contributions.</p>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadPeriods);
+
+    async function loadPeriods() {
+        try {
+            var response = await fetch('/PayrollCompliance/AxGetAvailablePeriods');
+            var data = await response.json();
+            if (data.success) {
+                var select = document.getElementById('filterPeriod');
+                select.innerHTML = '<option value="">-- Select Period --</option>';
+                data.data.forEach(function(p) {
+                    var monthName = new Date(p.year, p.month - 1).toLocaleString('en', { month: 'long' });
+                    select.innerHTML += '<option value="' + p.id + '">' + monthName + ' ' + p.year + ' (' + p.status + ')</option>';
+                });
+            }
+        } catch (e) { }
+    }
+
+    async function loadReport() {
+        var periodId = document.getElementById('filterPeriod').value;
+        if (!periodId) {
+            Swal.fire({ icon: 'warning', title: 'Select Period', text: 'Please select a payslip period.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Loading report...');
+        try {
+            var response = await fetch('/PayrollCompliance/AxGetContributionReportData?periodId=' + periodId);
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success && data.data) {
+                renderReport(data.data);
+            } else {
+                showEmpty(data.message || 'No data found.');
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load report.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    function renderReport(report) {
+        // Summary boxes
+        var summaryHtml = '';
+        report.typeSummaries.forEach(function(ts) {
+            summaryHtml += '<div style="background:#F7FAFC;border:1px solid #e2e8f0;border-radius:12px;padding:14px 20px;min-width:140px;">' +
+                '<div style="font-size:12px;color:#5a6a7a;margin-bottom:4px;">' + ts.deductionTypeName + '</div>' +
+                '<div style="font-size:18px;font-weight:700;color:#0D5EA6;">€' + ts.total.toFixed(2) + '</div></div>';
+        });
+        summaryHtml += '<div style="background:#0D5EA6;border-radius:12px;padding:14px 20px;min-width:140px;">' +
+            '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px;">Grand Total</div>' +
+            '<div style="font-size:18px;font-weight:700;color:#fff;">€' + report.grandTotal.toFixed(2) + '</div></div>';
+        document.getElementById('summaryBoxes').innerHTML = summaryHtml;
+
+        // Build table header dynamically based on contribution types
+        var codes = report.typeSummaries.map(function(ts) { return ts.code; });
+        var names = report.typeSummaries.map(function(ts) { return ts.deductionTypeName; });
+        var headerHtml = '<th>Employee</th>';
+        names.forEach(function(n) { headerHtml += '<th style="text-align:right;">' + n + '</th>'; });
+        headerHtml += '<th style="text-align:right;">Total</th>';
+        document.getElementById('tableHeader').innerHTML = headerHtml;
+
+        // Build table body
+        var bodyHtml = '';
+        report.employeeDetails.forEach(function(emp) {
+            bodyHtml += '<tr><td>' + emp.employeeName + '</td>';
+            codes.forEach(function(code) {
+                var line = emp.contributions.find(function(c) { return c.code === code; });
+                var amt = line ? line.amount.toFixed(2) : '0.00';
+                bodyHtml += '<td style="text-align:right;">€' + amt + '</td>';
+            });
+            bodyHtml += '<td style="text-align:right;font-weight:600;">€' + emp.employeeTotal.toFixed(2) + '</td></tr>';
+        });
+        document.getElementById('tableBody').innerHTML = bodyHtml;
+
+        // Footer totals
+        var footerHtml = '<td style="font-weight:700;">Total</td>';
+        report.typeSummaries.forEach(function(ts) { footerHtml += '<td style="text-align:right;">€' + ts.total.toFixed(2) + '</td>'; });
+        footerHtml += '<td style="text-align:right;">€' + report.grandTotal.toFixed(2) + '</td>';
+        document.getElementById('tableFooter').innerHTML = footerHtml;
+
+        // Compliance link
+        if (report.complianceFiling) {
+            document.getElementById('complianceLinkText').textContent =
+                'Linked to Social Insurance filing (€' + report.complianceFiling.estimatedAmount.toFixed(2) + ') — Status: ' + report.complianceFiling.status;
+            document.getElementById('complianceLink').style.display = 'block';
+        } else {
+            document.getElementById('complianceLink').style.display = 'none';
+        }
+
+        document.getElementById('summarySection').style.display = 'block';
+        document.getElementById('detailSection').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+    }
+
+    function showEmpty(message) {
+        document.getElementById('summarySection').style.display = 'none';
+        document.getElementById('detailSection').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('emptyMessage').textContent = message;
+    }
+
+    function exportExcel() {
+        var periodId = document.getElementById('filterPeriod').value;
+        if (!periodId) return;
+        window.location.href = '/PayrollCompliance/AxGetDownloadContributionReportExcel?periodId=' + periodId;
+    }
+</script>

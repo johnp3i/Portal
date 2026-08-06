@@ -9,6 +9,6 @@ public class PayslipDeductionLine
     public decimal Rate { get; set; }
     public decimal CalculatedAmount { get; set; }
     public byte DeductionCategoryTypeId { get; set; }
-    public int DeductionRateHistoryId { get; set; }
+    public int? DeductionRateHistoryId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

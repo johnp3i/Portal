@@ -16,24 +16,30 @@ public class PayrollService : IPayrollService
 {
     private readonly PayrollRepository _repository;
     private readonly IPayslipCalculationEngine _calculationEngine;
+    private readonly IPayslipCalculationOrchestrator _orchestrator;
     private readonly IPayslipPeriodStatusService _periodStatusService;
     private readonly IPayslipAuditService _auditService;
     private readonly IPayrollPnlService _pnlService;
+    private readonly IComplianceIntegrationService _complianceIntegrationService;
     private readonly PortalDbContext _portalDbContext;
 
     public PayrollService(
         PayrollRepository repository,
         IPayslipCalculationEngine calculationEngine,
+        IPayslipCalculationOrchestrator orchestrator,
         IPayslipPeriodStatusService periodStatusService,
         IPayslipAuditService auditService,
         IPayrollPnlService pnlService,
+        IComplianceIntegrationService complianceIntegrationService,
         PortalDbContext portalDbContext)
     {
         _repository = repository;
         _calculationEngine = calculationEngine;
+        _orchestrator = orchestrator;
         _periodStatusService = periodStatusService;
         _auditService = auditService;
         _pnlService = pnlService;
+        _complianceIntegrationService = complianceIntegrationService;
         _portalDbContext = portalDbContext;
     }
 
@@ -234,7 +240,8 @@ public class PayrollService : IPayrollService
                 BaseSalary = employee.BaseSalary,
                 HourlyRate = employee.HourlyRate,
                 BankAccount = employee.BankAccount,
-                IsActive = employee.IsActive
+                IsActive = employee.IsActive,
+                IsPayeApplicable = employee.IsPayeApplicable
             };
         }
         catch (Exception ex)
@@ -906,6 +913,17 @@ public class PayrollService : IPayrollService
                 }
 
                 await transaction.CommitAsync();
+
+                // Phase D: Non-blocking compliance integration (after commit)
+                try
+                {
+                    await _complianceIntegrationService.UpdateComplianceFilingFromPayrollAsync(id, businessId, "system");
+                }
+                catch
+                {
+                    // Non-blocking: compliance failure must not affect finalisation result
+                }
+
                 return ServiceResult.Ok();
             }
             catch (Exception ex)
@@ -977,6 +995,7 @@ public class PayrollService : IPayrollService
                     Code = dt.Code,
                     IsPercentage = dt.IsPercentage,
                     DeductionCategoryTypeId = dt.DeductionCategoryTypeId,
+                    IsPayeDeductible = dt.IsPayeDeductible,
                     RateHistories = rates
                 });
             }
@@ -1034,7 +1053,7 @@ public class PayrollService : IPayrollService
                     PeriodDate = periodDate
                 };
 
-                var calcResult = _calculationEngine.Calculate(calcInput);
+                var calcResult = await _orchestrator.CalculateWithPayeAsync(calcInput, employee.IsPayeApplicable);
 
                 if (!calcResult.IsValid)
                 {
@@ -1167,13 +1186,20 @@ public class PayrollService : IPayrollService
                     var dedType = deductionTypes.FirstOrDefault(d => d.Name == dl.DeductionTypeName);
                     if (dedType == null) continue;
 
-                    // Find effective rate to get DeductionRateHistoryId
-                    var rates = await _repository.GetRateHistoryAsync(dedType.Id);
-                    var effectiveRate = rates.FirstOrDefault(r =>
-                        r.EffectiveFromUtc <= periodDate &&
-                        (r.EffectiveToUtc == null || r.EffectiveToUtc > periodDate));
+                    // For PAYE lines (IsPercentage = false, Code = "PAYE"), DeductionRateHistoryId is null
+                    int? deductionRateHistoryId = null;
 
-                    if (effectiveRate == null) continue;
+                    if (dedType.Code != "PAYE")
+                    {
+                        // Find effective rate to get DeductionRateHistoryId
+                        var rates = await _repository.GetRateHistoryAsync(dedType.Id);
+                        var effectiveRate = rates.FirstOrDefault(r =>
+                            r.EffectiveFromUtc <= periodDate &&
+                            (r.EffectiveToUtc == null || r.EffectiveToUtc > periodDate));
+
+                        if (effectiveRate == null) continue;
+                        deductionRateHistoryId = effectiveRate.Id;
+                    }
 
                     await _repository.InsertDeductionLineAsync(new PayslipDeductionLine
                     {
@@ -1183,7 +1209,7 @@ public class PayrollService : IPayrollService
                         Rate = dl.Rate,
                         CalculatedAmount = dl.CalculatedAmount,
                         DeductionCategoryTypeId = dedType.DeductionCategoryTypeId,
-                        DeductionRateHistoryId = effectiveRate.Id
+                        DeductionRateHistoryId = deductionRateHistoryId
                     });
                 }
             }
@@ -1353,11 +1379,12 @@ public class PayrollService : IPayrollService
                     Code = dt.Code,
                     IsPercentage = dt.IsPercentage,
                     DeductionCategoryTypeId = dt.DeductionCategoryTypeId,
+                    IsPayeDeductible = dt.IsPayeDeductible,
                     RateHistories = rates
                 });
             }
 
-            // Run calculation engine with new earning lines
+            // Run calculation engine with new earning lines (orchestrator adds PAYE if applicable)
             var calcInput = new PayslipCalculationInput
             {
                 Employee = employee,
@@ -1366,7 +1393,7 @@ public class PayrollService : IPayrollService
                 PeriodDate = periodDate
             };
 
-            var calcResult = _calculationEngine.Calculate(calcInput);
+            var calcResult = await _orchestrator.CalculateWithPayeAsync(calcInput, employee.IsPayeApplicable);
             if (!calcResult.IsValid)
                 return ServiceResult.Fail(calcResult.ValidationError ?? "Calculation failed.");
 
@@ -1552,6 +1579,141 @@ public class PayrollService : IPayrollService
     public async Task<List<PeriodAuditGroupDto>> GetPeriodAuditSummaryAsync(int periodId, int businessId)
     {
         return await _auditService.GetPeriodAuditSummaryAsync(periodId, businessId);
+    }
+
+    #endregion
+
+    #region Phase D: PAYE Toggle & Contribution Report
+
+    public async Task<ServiceResult> UpdateEmployeePayeStatusAsync(int businessId, int employeeId, bool isPayeApplicable)
+    {
+        try
+        {
+            // Validate employee belongs to business
+            var employee = await _repository.GetEmployeeByIdAsync(employeeId, businessId);
+            if (employee == null)
+                return ServiceResult.Fail("Employee not found.");
+
+            await _repository.UpdateEmployeePayeStatusAsync(employeeId, businessId, isPayeApplicable);
+
+            // Check if projected income is below threshold and return warning flag
+            if (isPayeApplicable && employee.BaseSalary * 12 <= 19500)
+            {
+                return new ServiceResult
+                {
+                    Success = true,
+                    Message = $"Warning: This employee's projected annual income (€{employee.BaseSalary * 12:N2}) does not exceed the PAYE threshold (€19,500). PAYE calculation will result in €0."
+                };
+            }
+
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ContributionReportDto?> GetContributionReportAsync(int periodId, int businessId)
+    {
+        try
+        {
+            var period = await _repository.GetPeriodByIdAsync(periodId, businessId);
+            if (period == null) return null;
+
+            var contributions = await _repository.GetEmployerContributionsForPeriodAsync(periodId, businessId);
+
+            // Build type summaries
+            var typeSummaries = contributions
+                .GroupBy(c => new { c.DeductionTypeName, c.DeductionTypeCode })
+                .Select(g => new ContributionTypeSummary
+                {
+                    DeductionTypeName = g.Key.DeductionTypeName,
+                    Code = g.Key.DeductionTypeCode,
+                    Total = g.Sum(c => c.CalculatedAmount)
+                })
+                .ToList();
+
+            // Build per-employee details
+            var employeeDetails = contributions
+                .GroupBy(c => new { c.EmployeeId, c.EmployeeName })
+                .Select(g => new EmployeeContributionDetail
+                {
+                    EmployeeId = g.Key.EmployeeId,
+                    EmployeeName = g.Key.EmployeeName,
+                    Contributions = g.Select(c => new ContributionLineItem
+                    {
+                        DeductionTypeName = c.DeductionTypeName,
+                        Code = c.DeductionTypeCode,
+                        Amount = c.CalculatedAmount
+                    }).ToList(),
+                    EmployeeTotal = g.Sum(c => c.CalculatedAmount)
+                })
+                .ToList();
+
+            // Check for compliance filing link
+            var filings = await _repository.GetComplianceFilingsByPeriodAsync(periodId);
+            ComplianceFilingLinkDto? complianceFiling = null;
+
+            if (filings.Any())
+            {
+                var latestFiling = filings.First(); // Already ordered DESC
+                // Load the actual BusinessApplication for status
+                complianceFiling = new ComplianceFilingLinkDto
+                {
+                    FilingId = latestFiling.ComplianceFilingId,
+                    Status = "Linked",
+                    DueDate = latestFiling.UpdatedAtUtc,
+                    EstimatedAmount = latestFiling.ContributionTotal
+                };
+            }
+
+            var monthName = System.Globalization.CultureInfo.InvariantCulture
+                .DateTimeFormat.GetMonthName(period.Month);
+
+            return new ContributionReportDto
+            {
+                PeriodId = periodId,
+                Year = period.Year,
+                Month = period.Month,
+                MonthName = monthName,
+                TypeSummaries = typeSummaries,
+                EmployeeDetails = employeeDetails,
+                GrandTotal = contributions.Sum(c => c.CalculatedAmount),
+                ComplianceFiling = complianceFiling
+            };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<PayslipPeriodComplianceFilingDto>> GetComplianceFilingHistoryAsync(int periodId, int businessId)
+    {
+        try
+        {
+            // Validate period belongs to business
+            var period = await _repository.GetPeriodByIdAsync(periodId, businessId);
+            if (period == null) return new List<PayslipPeriodComplianceFilingDto>();
+
+            var filings = await _repository.GetComplianceFilingsByPeriodAsync(periodId);
+
+            return filings.Select(f => new PayslipPeriodComplianceFilingDto
+            {
+                Id = f.Id,
+                PayslipPeriodId = f.PayslipPeriodId,
+                ComplianceFilingId = f.ComplianceFilingId,
+                ContributionTotal = f.ContributionTotal,
+                UpdatedAtUtc = f.UpdatedAtUtc,
+                UpdatedByUserName = f.UpdatedByUserId, // TODO: Join to AspNetUsers for display name
+                CreatedAtUtc = f.CreatedAtUtc
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 
     #endregion

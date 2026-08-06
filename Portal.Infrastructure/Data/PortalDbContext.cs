@@ -191,6 +191,11 @@ public class PortalDbContext : DbContext
     public DbSet<PayslipAuditLog> PayslipAuditLogs { get; set; } = null!;
     public DbSet<PayslipAuditActionType> PayslipAuditActionTypes { get; set; } = null!;
 
+    // Payroll Phase D
+    public DbSet<PayeTaxBand> PayeTaxBands { get; set; } = null!;
+    public DbSet<CountryDeductionTemplate> CountryDeductionTemplates { get; set; } = null!;
+    public DbSet<PayslipPeriodComplianceFiling> PayslipPeriodComplianceFilings { get; set; } = null!;
+
     // Payment Schedule Overview (keyless — for read-only query results)
     public DbSet<ScheduleOverviewRawRow> ScheduleOverviewRawRows { get; set; } = null!;
 
@@ -320,6 +325,11 @@ public class PortalDbContext : DbContext
         ConfigurePayslipEmailLog(modelBuilder);
         ConfigurePayslipAuditLog(modelBuilder);
         ConfigurePayslipAuditActionType(modelBuilder);
+
+        // Payroll Phase D entities
+        ConfigurePayeTaxBand(modelBuilder);
+        ConfigureCountryDeductionTemplate(modelBuilder);
+        ConfigurePayslipPeriodComplianceFiling(modelBuilder);
 
         ApplyGlobalQueryFilters(modelBuilder);
     }
@@ -4012,6 +4022,7 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.BaseSalary).IsRequired().HasColumnType("decimal(18,2)");
             entity.Property(e => e.HourlyRate).HasColumnType("decimal(18,2)");
             entity.Property(e => e.BankAccount).HasMaxLength(100);
+            entity.Property(e => e.IsPayeApplicable).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne<Department>().WithMany().HasForeignKey(e => e.DepartmentId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne<SalaryType>().WithMany().HasForeignKey(e => e.SalaryTypeId).OnDelete(DeleteBehavior.ClientSetNull);
@@ -4043,6 +4054,7 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
             entity.Property(e => e.DeductionCategoryTypeId).IsRequired();
             entity.Property(e => e.Country).IsRequired().HasMaxLength(50).HasDefaultValue("CY");
+            entity.Property(e => e.IsPayeDeductible).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne<DeductionCategoryType>().WithMany().HasForeignKey(e => e.DeductionCategoryTypeId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasIndex(e => new { e.BusinessId, e.Code }).IsUnique();
@@ -4148,11 +4160,11 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.Rate).IsRequired().HasColumnType("decimal(6,2)");
             entity.Property(e => e.CalculatedAmount).IsRequired().HasColumnType("decimal(18,2)");
             entity.Property(e => e.DeductionCategoryTypeId).IsRequired();
-            entity.Property(e => e.DeductionRateHistoryId).IsRequired();
+            entity.Property(e => e.DeductionRateHistoryId).IsRequired(false);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne<Payslip>().WithMany().HasForeignKey(e => e.PayslipId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne<DeductionType>().WithMany().HasForeignKey(e => e.DeductionTypeId).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne<DeductionRateHistory>().WithMany().HasForeignKey(e => e.DeductionRateHistoryId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<DeductionRateHistory>().WithMany().HasForeignKey(e => e.DeductionRateHistoryId).IsRequired(false).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne<DeductionCategoryType>().WithMany().HasForeignKey(e => e.DeductionCategoryTypeId).OnDelete(DeleteBehavior.ClientSetNull);
         });
     }
@@ -4197,6 +4209,61 @@ public class PortalDbContext : DbContext
             entity.ToTable("PayslipAuditActionType", "payroll");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(20).IsRequired();
+        });
+    }
+
+    private static void ConfigurePayeTaxBand(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayeTaxBand>(entity =>
+        {
+            entity.ToTable("PayeTaxBand", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CountryCode).IsRequired().HasMaxLength(3);
+            entity.Property(e => e.LowerBound).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.UpperBound).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Rate).IsRequired().HasColumnType("decimal(5,4)");
+            entity.Property(e => e.EffectiveFromYear).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(e => new { e.CountryCode, e.EffectiveFromYear });
+        });
+    }
+
+    private static void ConfigureCountryDeductionTemplate(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CountryDeductionTemplate>(entity =>
+        {
+            entity.ToTable("CountryDeductionTemplate", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CountryCode).IsRequired().HasMaxLength(3);
+            entity.Property(e => e.DeductionName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.IsPercentage).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.DeductionCategoryTypeId).IsRequired();
+            entity.Property(e => e.DefaultRate).IsRequired().HasColumnType("decimal(5,4)");
+            entity.Property(e => e.IsPayeDeductible).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.SortOrder).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<DeductionCategoryType>().WithMany().HasForeignKey(e => e.DeductionCategoryTypeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasIndex(e => new { e.CountryCode, e.IsActive });
+        });
+    }
+
+    private static void ConfigurePayslipPeriodComplianceFiling(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PayslipPeriodComplianceFiling>(entity =>
+        {
+            entity.ToTable("PayslipPeriodComplianceFiling", "payroll");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PayslipPeriodId).IsRequired();
+            entity.Property(e => e.ComplianceFilingId).IsRequired();
+            entity.Property(e => e.ContributionTotal).IsRequired().HasColumnType("decimal(18,2)");
+            entity.Property(e => e.UpdatedAtUtc).IsRequired();
+            entity.Property(e => e.UpdatedByUserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne<PayslipPeriod>().WithMany().HasForeignKey(e => e.PayslipPeriodId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<BusinessApplication>().WithMany().HasForeignKey(e => e.ComplianceFilingId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasIndex(e => e.PayslipPeriodId);
         });
     }
 

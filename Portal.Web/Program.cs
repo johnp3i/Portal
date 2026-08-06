@@ -474,6 +474,12 @@ builder.Services.AddScoped<IPayslipAuditService, PayslipAuditService>();
 builder.Services.AddScoped<IPayrollPnlService, PayrollPnlService>();
 builder.Services.AddScoped<IPayrollProgressNotifier, Portal.Web.Services.PayrollProgressNotifier>();
 
+// --- Payroll Phase D ---
+builder.Services.AddSingleton<IPayeCalculationService, PayeCalculationService>();
+builder.Services.AddScoped<IPayslipCalculationOrchestrator, PayslipCalculationOrchestrator>();
+builder.Services.AddScoped<IComplianceIntegrationService, ComplianceIntegrationService>();
+builder.Services.AddScoped<ICountryTemplateService, CountryTemplateService>();
+
 // --- Compliance Filings ---
 builder.Services.AddScoped<ComplianceRepository>(sp =>
     new ComplianceRepository(sp.GetRequiredService<PortalDbContext>()));

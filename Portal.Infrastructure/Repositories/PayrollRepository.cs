@@ -284,6 +284,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                        [payroll].[Employee].[HourlyRate],
                        [payroll].[Employee].[BankAccount],
                        [payroll].[Employee].[IsActive],
+                       [payroll].[Employee].[IsPayeApplicable],
                        [payroll].[Employee].[CreatedAtUtc],
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [payroll].[Employee]
@@ -350,7 +351,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                     SELECT [Id], [BusinessId], [DepartmentId], [Name], [Position],
                            [SocialInsuranceNumber], [IdNumber], [Phone], [Email],
                            [StartDate], [EndDate], [SalaryTypeId], [BaseSalary],
-                           [HourlyRate], [BankAccount], [IsActive], [CreatedAtUtc]
+                           [HourlyRate], [BankAccount], [IsActive], [IsPayeApplicable], [CreatedAtUtc]
                     FROM [payroll].[Employee]
                     WHERE [payroll].[Employee].[Id] = @Id
                       AND [payroll].[Employee].[BusinessId] = @BusinessId";
@@ -564,7 +565,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                     SELECT [Id], [BusinessId], [DepartmentId], [Name], [Position],
                            [SocialInsuranceNumber], [IdNumber], [Phone], [Email],
                            [StartDate], [EndDate], [SalaryTypeId], [BaseSalary],
-                           [HourlyRate], [BankAccount], [IsActive], [CreatedAtUtc]
+                           [HourlyRate], [BankAccount], [IsActive], [IsPayeApplicable], [CreatedAtUtc]
                     FROM [payroll].[Employee]
                     WHERE [payroll].[Employee].[BusinessId] = @BusinessId
                       AND [payroll].[Employee].[IsActive] = 1
@@ -719,7 +720,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT [Id], [Name], [Code], [IsPercentage], [DeductionCategoryTypeId],
-                           [BusinessId], [IsActive], [Country], [IsTemplate], [CreatedAtUtc]
+                           [BusinessId], [IsActive], [Country], [IsTemplate], [IsPayeDeductible], [CreatedAtUtc]
                     FROM [payroll].[DeductionType]";
 
                 var transaction = _context.Database.CurrentTransaction;
@@ -764,7 +765,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT [Id], [Name], [Code], [IsPercentage], [DeductionCategoryTypeId],
-                           [BusinessId], [IsActive], [Country], [IsTemplate], [CreatedAtUtc]
+                           [BusinessId], [IsActive], [Country], [IsTemplate], [IsPayeDeductible], [CreatedAtUtc]
                     FROM [payroll].[DeductionType]
                     WHERE [payroll].[DeductionType].[BusinessId] = @BusinessId";
 
@@ -804,10 +805,10 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             const string query = @"
                 INSERT INTO [payroll].[DeductionType]
                     ([Name], [Code], [IsPercentage], [DeductionCategoryTypeId],
-                     [BusinessId], [IsActive], [Country], [IsTemplate])
+                     [BusinessId], [IsActive], [Country], [IsTemplate], [IsPayeDeductible])
                 VALUES
                     (@Name, @Code, @IsPercentage, @DeductionCategoryTypeId,
-                     @BusinessId, @IsActive, @Country, @IsTemplate);
+                     @BusinessId, @IsActive, @Country, @IsTemplate, @IsPayeDeductible);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var result = await _context.Database.SqlQueryRaw<int>(query,
@@ -818,7 +819,8 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 new SqlParameter("@BusinessId", entity.BusinessId ?? (object)DBNull.Value),
                 new SqlParameter("@IsActive", entity.IsActive),
                 new SqlParameter("@Country", entity.Country),
-                new SqlParameter("@IsTemplate", entity.IsTemplate)
+                new SqlParameter("@IsTemplate", entity.IsTemplate),
+                new SqlParameter("@IsPayeDeductible", entity.IsPayeDeductible)
             ).ToListAsync();
 
             return result.FirstOrDefault();
@@ -868,7 +870,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT [Id], [Name], [Code], [IsPercentage], [DeductionCategoryTypeId],
-                           [BusinessId], [IsActive], [Country], [IsTemplate], [CreatedAtUtc]
+                           [BusinessId], [IsActive], [Country], [IsTemplate], [IsPayeDeductible], [CreatedAtUtc]
                     FROM [payroll].[DeductionType]
                     WHERE [payroll].[DeductionType].[BusinessId] = @BusinessId
                       AND [payroll].[DeductionType].[IsActive] = 1";
@@ -917,7 +919,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
                     SELECT [Id], [Name], [Code], [IsPercentage], [DeductionCategoryTypeId],
-                           [BusinessId], [IsActive], [Country], [IsTemplate], [CreatedAtUtc]
+                           [BusinessId], [IsActive], [Country], [IsTemplate], [IsPayeDeductible], [CreatedAtUtc]
                     FROM [payroll].[DeductionType]
                     WHERE [payroll].[DeductionType].[IsTemplate] = 1
                       AND [payroll].[DeductionType].[Country] = @Country";
@@ -958,10 +960,10 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             const string insertTypeQuery = @"
                 INSERT INTO [payroll].[DeductionType]
                     ([Name], [Code], [IsPercentage], [DeductionCategoryTypeId],
-                     [BusinessId], [IsActive], [Country], [IsTemplate])
+                     [BusinessId], [IsActive], [Country], [IsTemplate], [IsPayeDeductible])
                 VALUES
                     (@Name, @Code, @IsPercentage, @DeductionCategoryTypeId,
-                     @BusinessId, @IsActive, @Country, @IsTemplate);
+                     @BusinessId, @IsActive, @Country, @IsTemplate, @IsPayeDeductible);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var typeIdResult = await _context.Database.SqlQueryRaw<int>(insertTypeQuery,
@@ -972,7 +974,8 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 new SqlParameter("@BusinessId", type.BusinessId ?? (object)DBNull.Value),
                 new SqlParameter("@IsActive", type.IsActive),
                 new SqlParameter("@Country", type.Country),
-                new SqlParameter("@IsTemplate", type.IsTemplate)
+                new SqlParameter("@IsTemplate", type.IsTemplate),
+                new SqlParameter("@IsPayeDeductible", type.IsPayeDeductible)
             ).ToListAsync();
 
             var newTypeId = typeIdResult.FirstOrDefault();
@@ -1799,7 +1802,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
                 new SqlParameter("@Rate", entity.Rate),
                 new SqlParameter("@CalculatedAmount", entity.CalculatedAmount),
                 new SqlParameter("@DeductionCategoryTypeId", entity.DeductionCategoryTypeId),
-                new SqlParameter("@DeductionRateHistoryId", entity.DeductionRateHistoryId));
+                new SqlParameter("@DeductionRateHistoryId", entity.DeductionRateHistoryId ?? (object)DBNull.Value));
         }
         catch (Exception ex)
         {
@@ -2700,6 +2703,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             HourlyRate = reader.IsDBNull(reader.GetOrdinal("HourlyRate")) ? null : reader.GetDecimal(reader.GetOrdinal("HourlyRate")),
             BankAccount = reader.IsDBNull(reader.GetOrdinal("BankAccount")) ? null : reader.GetString(reader.GetOrdinal("BankAccount")),
             IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
+            IsPayeApplicable = reader.GetBoolean(reader.GetOrdinal("IsPayeApplicable")),
             CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
         };
     }
@@ -2730,6 +2734,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
             Country = reader.GetString(reader.GetOrdinal("Country")),
             IsTemplate = reader.GetBoolean(reader.GetOrdinal("IsTemplate")),
+            IsPayeDeductible = reader.GetBoolean(reader.GetOrdinal("IsPayeDeductible")),
             CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
         };
     }
@@ -2805,7 +2810,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
             Rate = reader.GetDecimal(reader.GetOrdinal("Rate")),
             CalculatedAmount = reader.GetDecimal(reader.GetOrdinal("CalculatedAmount")),
             DeductionCategoryTypeId = reader.GetByte(reader.GetOrdinal("DeductionCategoryTypeId")),
-            DeductionRateHistoryId = reader.GetInt32(reader.GetOrdinal("DeductionRateHistoryId")),
+            DeductionRateHistoryId = reader.IsDBNull(reader.GetOrdinal("DeductionRateHistoryId")) ? null : reader.GetInt32(reader.GetOrdinal("DeductionRateHistoryId")),
             CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
         };
     }
@@ -2826,4 +2831,735 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     }
 
     #endregion
+
+    #region Phase D: PAYE Tax Band Methods
+
+    /// <summary>
+    /// Gets PAYE tax bands for a country and year, ordered by LowerBound ascending.
+    /// </summary>
+    public async Task<List<PayeTaxBand>> GetTaxBandsAsync(string countryCode, int year)
+    {
+        try
+        {
+            var results = new List<PayeTaxBand>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [Id], [CountryCode], [LowerBound], [UpperBound], [Rate],
+                           [EffectiveFromYear], [EffectiveToYear], [CreatedAtUtc]
+                    FROM [payroll].[PayeTaxBand]
+                    WHERE [payroll].[PayeTaxBand].[CountryCode] = @CountryCode
+                      AND [payroll].[PayeTaxBand].[EffectiveFromYear] <= @Year
+                      AND ([payroll].[PayeTaxBand].[EffectiveToYear] IS NULL OR [payroll].[PayeTaxBand].[EffectiveToYear] >= @Year)
+                    ORDER BY [payroll].[PayeTaxBand].[LowerBound] ASC";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CountryCode", countryCode));
+                command.Parameters.Add(new SqlParameter("@Year", year));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapPayeTaxBand(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets a single PAYE tax band by Id.
+    /// </summary>
+    public async Task<PayeTaxBand?> GetTaxBandByIdAsync(int id)
+    {
+        try
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [Id], [CountryCode], [LowerBound], [UpperBound], [Rate],
+                           [EffectiveFromYear], [EffectiveToYear], [CreatedAtUtc]
+                    FROM [payroll].[PayeTaxBand]
+                    WHERE [payroll].[PayeTaxBand].[Id] = @Id";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@Id", id));
+
+                using var reader = await command.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return MapPayeTaxBand(reader);
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserts a new PAYE tax band and returns the generated Id.
+    /// </summary>
+    public async Task<int> InsertTaxBandAsync(PayeTaxBand band)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [payroll].[PayeTaxBand]
+                    ([CountryCode], [LowerBound], [UpperBound], [Rate], [EffectiveFromYear], [EffectiveToYear])
+                VALUES
+                    (@CountryCode, @LowerBound, @UpperBound, @Rate, @EffectiveFromYear, @EffectiveToYear);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+            var result = await _context.Database.SqlQueryRaw<int>(query,
+                new SqlParameter("@CountryCode", band.CountryCode),
+                new SqlParameter("@LowerBound", band.LowerBound),
+                new SqlParameter("@UpperBound", band.UpperBound ?? (object)DBNull.Value),
+                new SqlParameter("@Rate", band.Rate),
+                new SqlParameter("@EffectiveFromYear", band.EffectiveFromYear),
+                new SqlParameter("@EffectiveToYear", band.EffectiveToYear ?? (object)DBNull.Value)
+            ).ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing PAYE tax band.
+    /// </summary>
+    public async Task UpdateTaxBandAsync(PayeTaxBand band)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [payroll].[PayeTaxBand]
+                SET [LowerBound] = @LowerBound,
+                    [UpperBound] = @UpperBound,
+                    [Rate] = @Rate,
+                    [EffectiveFromYear] = @EffectiveFromYear,
+                    [EffectiveToYear] = @EffectiveToYear
+                WHERE [payroll].[PayeTaxBand].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", band.Id),
+                new SqlParameter("@LowerBound", band.LowerBound),
+                new SqlParameter("@UpperBound", band.UpperBound ?? (object)DBNull.Value),
+                new SqlParameter("@Rate", band.Rate),
+                new SqlParameter("@EffectiveFromYear", band.EffectiveFromYear),
+                new SqlParameter("@EffectiveToYear", band.EffectiveToYear ?? (object)DBNull.Value));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Phase D: Country Deduction Template Methods
+
+    /// <summary>
+    /// Gets active country deduction templates for a given country, ordered by SortOrder.
+    /// </summary>
+    public async Task<List<CountryDeductionTemplate>> GetCountryTemplatesByCountryAsync(string countryCode)
+    {
+        try
+        {
+            var results = new List<CountryDeductionTemplate>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [Id], [CountryCode], [DeductionName], [Code], [IsPercentage],
+                           [DeductionCategoryTypeId], [DefaultRate], [IsPayeDeductible],
+                           [SortOrder], [IsActive], [CreatedAtUtc]
+                    FROM [payroll].[CountryDeductionTemplate]
+                    WHERE [payroll].[CountryDeductionTemplate].[CountryCode] = @CountryCode
+                      AND [payroll].[CountryDeductionTemplate].[IsActive] = 1
+                    ORDER BY [payroll].[CountryDeductionTemplate].[SortOrder]";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CountryCode", countryCode));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapCountryDeductionTemplate(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all country deduction templates (including inactive) for a given country.
+    /// Used by SuperAdmin management views.
+    /// </summary>
+    public async Task<List<CountryDeductionTemplate>> GetAllCountryTemplatesByCountryAsync(string countryCode)
+    {
+        try
+        {
+            var results = new List<CountryDeductionTemplate>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [Id], [CountryCode], [DeductionName], [Code], [IsPercentage],
+                           [DeductionCategoryTypeId], [DefaultRate], [IsPayeDeductible],
+                           [SortOrder], [IsActive], [CreatedAtUtc]
+                    FROM [payroll].[CountryDeductionTemplate]
+                    WHERE [payroll].[CountryDeductionTemplate].[CountryCode] = @CountryCode
+                    ORDER BY [payroll].[CountryDeductionTemplate].[SortOrder]";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CountryCode", countryCode));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapCountryDeductionTemplate(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets a single country deduction template by Id.
+    /// </summary>
+    public async Task<CountryDeductionTemplate?> GetCountryTemplateByIdAsync(int id)
+    {
+        try
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [Id], [CountryCode], [DeductionName], [Code], [IsPercentage],
+                           [DeductionCategoryTypeId], [DefaultRate], [IsPayeDeductible],
+                           [SortOrder], [IsActive], [CreatedAtUtc]
+                    FROM [payroll].[CountryDeductionTemplate]
+                    WHERE [payroll].[CountryDeductionTemplate].[Id] = @Id";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@Id", id));
+
+                using var reader = await command.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return MapCountryDeductionTemplate(reader);
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserts a new country deduction template and returns the generated Id.
+    /// </summary>
+    public async Task<int> InsertCountryTemplateAsync(CountryDeductionTemplate template)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [payroll].[CountryDeductionTemplate]
+                    ([CountryCode], [DeductionName], [Code], [IsPercentage],
+                     [DeductionCategoryTypeId], [DefaultRate], [IsPayeDeductible], [SortOrder], [IsActive])
+                VALUES
+                    (@CountryCode, @DeductionName, @Code, @IsPercentage,
+                     @DeductionCategoryTypeId, @DefaultRate, @IsPayeDeductible, @SortOrder, @IsActive);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+            var result = await _context.Database.SqlQueryRaw<int>(query,
+                new SqlParameter("@CountryCode", template.CountryCode),
+                new SqlParameter("@DeductionName", template.DeductionName),
+                new SqlParameter("@Code", template.Code),
+                new SqlParameter("@IsPercentage", template.IsPercentage),
+                new SqlParameter("@DeductionCategoryTypeId", template.DeductionCategoryTypeId),
+                new SqlParameter("@DefaultRate", template.DefaultRate),
+                new SqlParameter("@IsPayeDeductible", template.IsPayeDeductible),
+                new SqlParameter("@SortOrder", template.SortOrder),
+                new SqlParameter("@IsActive", template.IsActive)
+            ).ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing country deduction template (Name, DefaultRate, SortOrder).
+    /// </summary>
+    public async Task UpdateCountryTemplateAsync(CountryDeductionTemplate template)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [payroll].[CountryDeductionTemplate]
+                SET [DeductionName] = @DeductionName,
+                    [DefaultRate] = @DefaultRate,
+                    [SortOrder] = @SortOrder
+                WHERE [payroll].[CountryDeductionTemplate].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", template.Id),
+                new SqlParameter("@DeductionName", template.DeductionName),
+                new SqlParameter("@DefaultRate", template.DefaultRate),
+                new SqlParameter("@SortOrder", template.SortOrder));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Soft-deactivates a country deduction template.
+    /// </summary>
+    public async Task DeactivateCountryTemplateAsync(int id)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [payroll].[CountryDeductionTemplate]
+                SET [IsActive] = 0
+                WHERE [payroll].[CountryDeductionTemplate].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Phase D: Compliance Cross-Reference Methods
+
+    /// <summary>
+    /// Gets all compliance filing cross-references for a payslip period, ordered by CreatedAtUtc descending.
+    /// Joins to AspNetUsers for UpdatedByUserName.
+    /// </summary>
+    public async Task<List<PayslipPeriodComplianceFiling>> GetComplianceFilingsByPeriodAsync(int periodId)
+    {
+        try
+        {
+            var results = new List<PayslipPeriodComplianceFiling>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [Id], [PayslipPeriodId], [ComplianceFilingId], [ContributionTotal],
+                           [UpdatedAtUtc], [UpdatedByUserId], [CreatedAtUtc]
+                    FROM [payroll].[PayslipPeriodComplianceFiling]
+                    WHERE [payroll].[PayslipPeriodComplianceFiling].[PayslipPeriodId] = @PeriodId
+                    ORDER BY [payroll].[PayslipPeriodComplianceFiling].[CreatedAtUtc] DESC";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@PeriodId", periodId));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapPayslipPeriodComplianceFiling(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserts a new compliance filing cross-reference record (always insert, never update — preserves history).
+    /// </summary>
+    public async Task<int> InsertComplianceFilingLinkAsync(PayslipPeriodComplianceFiling link)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [payroll].[PayslipPeriodComplianceFiling]
+                    ([PayslipPeriodId], [ComplianceFilingId], [ContributionTotal], [UpdatedAtUtc], [UpdatedByUserId])
+                VALUES
+                    (@PayslipPeriodId, @ComplianceFilingId, @ContributionTotal, @UpdatedAtUtc, @UpdatedByUserId);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+            var result = await _context.Database.SqlQueryRaw<int>(query,
+                new SqlParameter("@PayslipPeriodId", link.PayslipPeriodId),
+                new SqlParameter("@ComplianceFilingId", link.ComplianceFilingId),
+                new SqlParameter("@ContributionTotal", link.ContributionTotal),
+                new SqlParameter("@UpdatedAtUtc", link.UpdatedAtUtc),
+                new SqlParameter("@UpdatedByUserId", link.UpdatedByUserId)
+            ).ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Phase D: Contribution Report & PAYE Support Methods
+
+    /// <summary>
+    /// Gets employer contribution deduction lines for all finalised payslips in a period.
+    /// DeductionCategoryTypeId = 2 indicates employer contributions.
+    /// Returns lines joined with Employee name and DeductionType details.
+    /// </summary>
+    public async Task<List<EmployerContributionRow>> GetEmployerContributionsForPeriodAsync(int periodId, int businessId)
+    {
+        try
+        {
+            var results = new List<EmployerContributionRow>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT [payroll].[Employee].[Id] AS [EmployeeId],
+                           [payroll].[Employee].[Name] AS [EmployeeName],
+                           [payroll].[DeductionType].[Name] AS [DeductionTypeName],
+                           [payroll].[DeductionType].[Code] AS [DeductionTypeCode],
+                           [payroll].[PayslipDeductionLine].[CalculatedAmount]
+                    FROM [payroll].[PayslipDeductionLine]
+                    INNER JOIN [payroll].[Payslip]
+                        ON [payroll].[PayslipDeductionLine].[PayslipId] = [payroll].[Payslip].[Id]
+                    INNER JOIN [payroll].[PayslipPeriod]
+                        ON [payroll].[Payslip].[PayslipPeriodId] = [payroll].[PayslipPeriod].[Id]
+                    INNER JOIN [payroll].[Employee]
+                        ON [payroll].[Payslip].[EmployeeId] = [payroll].[Employee].[Id]
+                    INNER JOIN [payroll].[DeductionType]
+                        ON [payroll].[PayslipDeductionLine].[DeductionTypeId] = [payroll].[DeductionType].[Id]
+                    WHERE [payroll].[Payslip].[PayslipPeriodId] = @PeriodId
+                      AND [payroll].[PayslipPeriod].[BusinessId] = @BusinessId
+                      AND [payroll].[PayslipDeductionLine].[DeductionCategoryTypeId] = 2
+                      AND [payroll].[Payslip].[PayslipStatusTypeId] IN (3, 5)
+                    ORDER BY [payroll].[Employee].[Name], [payroll].[DeductionType].[Code]";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@PeriodId", periodId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new EmployerContributionRow
+                    {
+                        EmployeeId = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                        EmployeeName = reader.GetString(reader.GetOrdinal("EmployeeName")),
+                        DeductionTypeName = reader.GetString(reader.GetOrdinal("DeductionTypeName")),
+                        DeductionTypeCode = reader.GetString(reader.GetOrdinal("DeductionTypeCode")),
+                        CalculatedAmount = reader.GetDecimal(reader.GetOrdinal("CalculatedAmount"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the PAYE DeductionType Id for a business. Returns null if not found.
+    /// </summary>
+    public async Task<int?> GetPayeDeductionTypeIdForBusinessAsync(int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [payroll].[DeductionType].[Id]
+                FROM [payroll].[DeductionType]
+                WHERE [payroll].[DeductionType].[BusinessId] = @BusinessId
+                  AND [payroll].[DeductionType].[Code] = 'PAYE'";
+
+            var result = await _context.Database.SqlQueryRaw<int>(query,
+                new SqlParameter("@BusinessId", businessId)
+            ).ToListAsync();
+
+            return result.FirstOrDefault() > 0 ? result.First() : null;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates the IsPayeApplicable flag for an employee.
+    /// </summary>
+    public async Task UpdateEmployeePayeStatusAsync(int employeeId, int businessId, bool isPayeApplicable)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [payroll].[Employee]
+                SET [IsPayeApplicable] = @IsPayeApplicable
+                WHERE [payroll].[Employee].[Id] = @EmployeeId
+                  AND [payroll].[Employee].[BusinessId] = @BusinessId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@IsPayeApplicable", isPayeApplicable),
+                new SqlParameter("@EmployeeId", employeeId),
+                new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Finds a Social Insurance compliance filing for a business with 1-month offset.
+    /// Filing for July's payroll has DueDate in August.
+    /// </summary>
+    public async Task<int?> FindSocialInsuranceFilingAsync(int businessId, int year, int month)
+    {
+        try
+        {
+            // Apply 1-month offset: filing for payroll month is due next month
+            int dueMonth;
+            int dueYear;
+            if (month < 12)
+            {
+                dueMonth = month + 1;
+                dueYear = year;
+            }
+            else
+            {
+                dueMonth = 1;
+                dueYear = year + 1;
+            }
+
+            const string query = @"
+                SELECT [compliance].[BusinessApplication].[Id]
+                FROM [compliance].[BusinessApplication]
+                INNER JOIN [compliance].[ApplicationType]
+                    ON [compliance].[BusinessApplication].[ApplicationTypeId] = [compliance].[ApplicationType].[Id]
+                WHERE [compliance].[BusinessApplication].[BusinessId] = @BusinessId
+                  AND [compliance].[ApplicationType].[Name] = 'Social Insurance'
+                  AND YEAR([compliance].[BusinessApplication].[DueDate]) = @DueYear
+                  AND MONTH([compliance].[BusinessApplication].[DueDate]) = @DueMonth";
+
+            var result = await _context.Database.SqlQueryRaw<int>(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@DueYear", dueYear),
+                new SqlParameter("@DueMonth", dueMonth)
+            ).ToListAsync();
+
+            return result.FirstOrDefault() > 0 ? result.First() : null;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates the EstimatedAmount on a compliance filing (BusinessApplication).
+    /// </summary>
+    public async Task UpdateComplianceFilingEstimatedAmountAsync(int filingId, decimal amount)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [compliance].[BusinessApplication]
+                SET [EstimatedAmount] = @Amount
+                WHERE [compliance].[BusinessApplication].[Id] = @FilingId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Amount", amount),
+                new SqlParameter("@FilingId", filingId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Phase D: Private Mappers
+
+    private static PayeTaxBand MapPayeTaxBand(DbDataReader reader)
+    {
+        return new PayeTaxBand
+        {
+            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+            CountryCode = reader.GetString(reader.GetOrdinal("CountryCode")),
+            LowerBound = reader.GetDecimal(reader.GetOrdinal("LowerBound")),
+            UpperBound = reader.IsDBNull(reader.GetOrdinal("UpperBound")) ? null : reader.GetDecimal(reader.GetOrdinal("UpperBound")),
+            Rate = reader.GetDecimal(reader.GetOrdinal("Rate")),
+            EffectiveFromYear = reader.GetInt32(reader.GetOrdinal("EffectiveFromYear")),
+            EffectiveToYear = reader.IsDBNull(reader.GetOrdinal("EffectiveToYear")) ? null : reader.GetInt32(reader.GetOrdinal("EffectiveToYear")),
+            CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+        };
+    }
+
+    private static CountryDeductionTemplate MapCountryDeductionTemplate(DbDataReader reader)
+    {
+        return new CountryDeductionTemplate
+        {
+            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+            CountryCode = reader.GetString(reader.GetOrdinal("CountryCode")),
+            DeductionName = reader.GetString(reader.GetOrdinal("DeductionName")),
+            Code = reader.GetString(reader.GetOrdinal("Code")),
+            IsPercentage = reader.GetBoolean(reader.GetOrdinal("IsPercentage")),
+            DeductionCategoryTypeId = reader.GetByte(reader.GetOrdinal("DeductionCategoryTypeId")),
+            DefaultRate = reader.GetDecimal(reader.GetOrdinal("DefaultRate")),
+            IsPayeDeductible = reader.GetBoolean(reader.GetOrdinal("IsPayeDeductible")),
+            SortOrder = reader.GetInt32(reader.GetOrdinal("SortOrder")),
+            IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
+            CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+        };
+    }
+
+    private static PayslipPeriodComplianceFiling MapPayslipPeriodComplianceFiling(DbDataReader reader)
+    {
+        return new PayslipPeriodComplianceFiling
+        {
+            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+            PayslipPeriodId = reader.GetInt32(reader.GetOrdinal("PayslipPeriodId")),
+            ComplianceFilingId = reader.GetInt32(reader.GetOrdinal("ComplianceFilingId")),
+            ContributionTotal = reader.GetDecimal(reader.GetOrdinal("ContributionTotal")),
+            UpdatedAtUtc = reader.GetDateTime(reader.GetOrdinal("UpdatedAtUtc")),
+            UpdatedByUserId = reader.GetString(reader.GetOrdinal("UpdatedByUserId")),
+            CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+        };
+    }
+
+    #endregion
 }
+

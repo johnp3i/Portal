@@ -1,0 +1,190 @@
+@{
+    ViewData["Title"] = "Country Deduction Templates";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Platform Admin</div>
+        <h1 class="topbar-heading">Country Deduction Templates</h1>
+        <p class="topbar-description">Manage deduction templates per country. Businesses import these as their local deduction types.</p>
+    </div>
+    <div class="topbar-actions">
+        <a class="btn btn-secondary" href="/PayrollTemplate/TaxBands?countryCode=CY">PAYE Tax Bands</a>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Filter -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label>Country</label>
+            <select id="filterCountry" onchange="loadTemplates()">
+                <option value="CY">Cyprus</option>
+                <option value="MT">Malta</option>
+                <option value="GB">United Kingdom</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="showAddModal()">Add Template</button>
+        </div>
+    </div>
+</section>
+
+<!-- Templates Table -->
+<section class="glass card-pad">
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="templatesTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Category</th>
+                    <th style="text-align:right;">Rate</th>
+                    <th style="text-align:center;">PAYE Deductible</th>
+                    <th style="text-align:center;">Order</th>
+                    <th style="text-align:center;">Active</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="templatesBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadTemplates);
+
+    async function loadTemplates() {
+        var countryCode = document.getElementById('filterCountry').value;
+        try {
+            var response = await fetch('/PayrollTemplate/AxGetTemplates?countryCode=' + countryCode);
+            var data = await response.json();
+            if (data.success) {
+                renderTemplates(data.data);
+            }
+        } catch (e) { }
+    }
+
+    function renderTemplates(templates) {
+        var html = '';
+        templates.forEach(function(t) {
+            var rateDisplay = (t.defaultRate * 100).toFixed(2) + '%';
+            var activeClass = t.isActive ? 'badge-success' : 'badge-muted';
+            var activeBadge = t.isActive ? 'Active' : 'Inactive';
+            html += '<tr>' +
+                '<td>' + t.deductionName + '</td>' +
+                '<td><code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">' + t.code + '</code></td>' +
+                '<td>' + t.categoryName + '</td>' +
+                '<td style="text-align:right;">' + rateDisplay + '</td>' +
+                '<td style="text-align:center;">' + (t.isPayeDeductible ? '✓' : '—') + '</td>' +
+                '<td style="text-align:center;">' + t.sortOrder + '</td>' +
+                '<td style="text-align:center;"><span class="badge ' + activeClass + '">' + activeBadge + '</span></td>' +
+                '<td style="text-align:center;">' +
+                    '<button class="btn btn-secondary btn-sm" onclick="editTemplate(' + t.id + ', \'' + t.deductionName.replace(/'/g, "\\'") + '\', ' + t.defaultRate + ', ' + t.sortOrder + ')">Edit</button> ' +
+                    (t.isActive ? '<button class="btn btn-danger btn-sm" onclick="deactivateTemplate(' + t.id + ')">Deactivate</button>' : '') +
+                '</td></tr>';
+        });
+        document.getElementById('templatesBody').innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:#5a6a7a;">No templates found.</td></tr>';
+    }
+
+    function showAddModal() {
+        Swal.fire({
+            title: 'Add Deduction Template',
+            html: '<div style="text-align:left;">' +
+                '<label style="font-size:13px;font-weight:600;">Name</label><input id="swalName" class="swal2-input" placeholder="e.g. Social Insurance (Employee)">' +
+                '<label style="font-size:13px;font-weight:600;">Code</label><input id="swalCode" class="swal2-input" placeholder="e.g. SI_Deduction">' +
+                '<label style="font-size:13px;font-weight:600;">Category</label><select id="swalCategory" class="swal2-select"><option value="1">Employee Deduction</option><option value="2">Employer Contribution</option></select>' +
+                '<label style="font-size:13px;font-weight:600;">Rate (decimal, e.g. 0.0880)</label><input id="swalRate" class="swal2-input" type="number" step="0.0001" placeholder="0.0880">' +
+                '<label style="font-size:13px;font-weight:600;">Sort Order</label><input id="swalSort" class="swal2-input" type="number" value="0">' +
+                '<label style="font-size:13px;font-weight:600;"><input type="checkbox" id="swalPayeDeductible"> Reduces PAYE taxable base</label>' +
+                '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Create',
+            confirmButtonColor: '#0D5EA6',
+            preConfirm: () => ({
+                countryCode: document.getElementById('filterCountry').value,
+                deductionName: document.getElementById('swalName').value,
+                code: document.getElementById('swalCode').value,
+                deductionCategoryTypeId: parseInt(document.getElementById('swalCategory').value),
+                defaultRate: parseFloat(document.getElementById('swalRate').value),
+                sortOrder: parseInt(document.getElementById('swalSort').value) || 0,
+                isPayeDeductible: document.getElementById('swalPayeDeductible').checked,
+                isPercentage: true
+            })
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                BlockUI.show('Creating...');
+                try {
+                    var response = await fetch('/PayrollTemplate/AxPostCreateTemplate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                        body: JSON.stringify(result.value)
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+                    if (data.success) { Swal.fire({ icon: 'success', title: 'Created', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false }); loadTemplates(); }
+                    else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+                } catch (e) { BlockUI.hide(); Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' }); }
+            }
+        });
+    }
+
+    function editTemplate(id, name, rate, sortOrder) {
+        Swal.fire({
+            title: 'Edit Template',
+            html: '<div style="text-align:left;">' +
+                '<label style="font-size:13px;font-weight:600;">Name</label><input id="swalName" class="swal2-input" value="' + name + '">' +
+                '<label style="font-size:13px;font-weight:600;">Rate (decimal)</label><input id="swalRate" class="swal2-input" type="number" step="0.0001" value="' + rate + '">' +
+                '<label style="font-size:13px;font-weight:600;">Sort Order</label><input id="swalSort" class="swal2-input" type="number" value="' + sortOrder + '">' +
+                '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            confirmButtonColor: '#0D5EA6',
+            preConfirm: () => ({ id: id, deductionName: document.getElementById('swalName').value, defaultRate: parseFloat(document.getElementById('swalRate').value), sortOrder: parseInt(document.getElementById('swalSort').value) })
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                BlockUI.show('Updating...');
+                try {
+                    var response = await fetch('/PayrollTemplate/AxPostUpdateTemplate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                        body: JSON.stringify(result.value)
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+                    if (data.success) { Swal.fire({ icon: 'success', title: 'Updated', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false }); loadTemplates(); }
+                    else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+                } catch (e) { BlockUI.hide(); Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' }); }
+            }
+        });
+    }
+
+    function deactivateTemplate(id) {
+        Swal.fire({
+            title: 'Deactivate Template?',
+            text: 'This will hide the template from import. Existing business deductions are not affected.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, deactivate',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#C24A4A'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                BlockUI.show('Deactivating...');
+                try {
+                    var response = await fetch('/PayrollTemplate/AxPostDeactivateTemplate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                        body: JSON.stringify(id)
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+                    if (data.success) { Swal.fire({ icon: 'success', title: 'Deactivated', confirmButtonColor: '#0D5EA6', timer: 1500, showConfirmButton: false }); loadTemplates(); }
+                    else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+                } catch (e) { BlockUI.hide(); Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' }); }
+            }
+        });
+    }
+</script>
