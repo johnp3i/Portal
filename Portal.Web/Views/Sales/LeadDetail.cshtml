@@ -8,6 +8,8 @@
     var meetingTypes = (List<MeetingType>)ViewBag.MeetingTypes;
     var products = (List<SalesProduct>)ViewBag.Products;
     var teamMembers = (List<TeamMemberDto>)ViewBag.TeamMembers;
+    var sourceTypes = (List<LeadSourceType>)ViewBag.SourceTypes;
+    var sourceRefTypes = (List<LeadSourceReferenceType>)ViewBag.SourceRefTypes;
 }
 
 <div class="topbar">
@@ -83,14 +85,27 @@
 
 <!-- Lead Info -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <h4 style="margin-bottom:12px;">Lead Information</h4>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h4 style="margin:0;">Lead Information</h4>
+        @if (!Model.IsTerminal && !Model.IsCancelled)
+        {
+            <button class="tbl-action tbl-action--primary" onclick="editLeadInfo()">Edit</button>
+        }
+    </div>
+    <div id="leadInfoGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;"
+         data-lead-id="@Model.Id"
+         data-product-id="@(Model.ProductId?.ToString() ?? "")"
+         data-source-type-id="@Model.LeadSourceTypeId"
+         data-source-ref-type-id="@(Model.LeadSourceReferenceTypeId?.ToString() ?? "")"
+         data-source-url="@(Model.SourceUrl ?? "")"
+         data-request-text="@(Model.RequestText ?? "")">
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Contact</span><a href="/Sales/ContactDetail/@Model.ContactId" style="color:var(--blue);">@Model.ContactName</a></div>
-        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Email</span>@(Model.ContactEmail ?? "—")</div>
+        <div style="min-width:0;"><span style="font-size:12px;color:#5a6a7a;display:block;">Email</span><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@(Model.ContactEmail ?? "")">@(Model.ContactEmail ?? "—")</span></div>
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Phone</span>@(Model.ContactPhone ?? "—")</div>
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Company</span>@(Model.CompanyName ?? "—")</div>
-        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Product</span>@(Model.ProductName ?? "—")</div>
-        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Source</span>@Model.SourceName @(Model.SourceReferenceName != null ? $"({Model.SourceReferenceName})" : "")</div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Product</span><span id="leadInfoProduct">@(Model.ProductName ?? "—")</span></div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Source</span><span id="leadInfoSource">@Model.SourceName</span></div>
+        <div><span style="font-size:12px;color:#5a6a7a;display:block;">Source Reference</span><span id="leadInfoSourceRef">@(Model.SourceReferenceName ?? "—")</span></div>
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Created</span>@Model.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</div>
         <div><span style="font-size:12px;color:#5a6a7a;display:block;">Assigned To</span>
             @if (!Model.IsTerminal && !Model.IsCancelled)
@@ -108,15 +123,41 @@
                 <span style="font-size:14px;color:#0B1B28;">@(Model.AssignedToUserName ?? "Unassigned")</span>
             }
         </div>
+        <div id="priorityDropdownContainer"
+             data-priority-id="@(Model.LeadPriorityTypeId?.ToString() ?? "")"
+             data-priority-name="@(Model.PriorityName ?? "")"
+             data-priority-colour="@(Model.PriorityColour ?? "")">
+            <span style="font-size:12px;color:#5a6a7a;display:block;">Priority</span>
+            @if (!Model.IsTerminal && !Model.IsCancelled)
+            {
+                <select id="prioritySelect" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(13,94,166,.1);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;color:#0B1B28;background:transparent;appearance:auto;cursor:pointer;margin-top:2px;" onchange="changeLeadPriority(@Model.Id, this.value)">
+                    <option value="">— None —</option>
+                    <option value="1" selected="@(Model.LeadPriorityTypeId == 1)">🔴 Hot</option>
+                    <option value="2" selected="@(Model.LeadPriorityTypeId == 2)">🟠 Warm</option>
+                    <option value="3" selected="@(Model.LeadPriorityTypeId == 3)">🔵 Cold</option>
+                </select>
+            }
+            else
+            {
+                @if (Model.LeadPriorityTypeId.HasValue)
+                {
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:700;background:@(Model.PriorityColour)18;color:@(Model.PriorityColour);border:1px solid @(Model.PriorityColour)30;margin-top:2px;">
+                        <span style="width:6px;height:6px;border-radius:50%;background:@(Model.PriorityColour);display:inline-block;"></span>
+                        @Model.PriorityName
+                    </span>
+                }
+                else
+                {
+                    <span style="font-size:14px;color:#8a9bab;margin-top:2px;">None</span>
+                }
+            }
+        </div>
     </div>
     @if (!string.IsNullOrWhiteSpace(Model.RequestText))
     {
         <div style="margin-top:16px;padding:16px 18px;background:rgba(13,94,166,.03);border:1.5px solid rgba(13,94,166,.08);border-radius:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Request Details</span>
-                <button class="tbl-action tbl-action--primary" onclick="editRequestDetails(@Model.Id, this)">Edit</button>
-            </div>
-            <p id="requestDetailsText" style="margin:0;font-size:14px;line-height:1.7;color:#0B1B28;">@Model.RequestText</p>
+            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Request Details</span>
+            <p id="requestDetailsText" style="margin:6px 0 0;font-size:14px;line-height:1.7;color:#0B1B28;">@Model.RequestText</p>
             @if (!string.IsNullOrWhiteSpace(Model.SourceUrl))
             {
                 <div style="margin-top:8px;">
@@ -128,13 +169,21 @@
     else
     {
         <div style="margin-top:16px;padding:16px 18px;background:rgba(13,94,166,.03);border:1.5px solid rgba(13,94,166,.08);border-radius:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Request Details</span>
-                <button class="tbl-action tbl-action--primary" onclick="editRequestDetails(@Model.Id, this)">Edit</button>
-            </div>
+            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;">Request Details</span>
             <p id="requestDetailsText" style="margin:6px 0 0;font-size:13px;color:#8a9bab;font-style:italic;">No request details provided.</p>
         </div>
     }
+</section>
+
+<!-- Timeline -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <h4 style="margin-bottom:14px;font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;">Timeline</h4>
+    <div id="leadTimeline" data-lead-id="@Model.Id">
+        <p class="muted" style="font-size:14px;">Loading timeline...</p>
+    </div>
+    <div id="timelineLoadMore" style="display:none;margin-top:16px;text-align:center;">
+        <button class="btn btn-secondary" onclick="loadMoreTimeline()">Load More</button>
+    </div>
 </section>
 
 <!-- Response History -->
@@ -328,8 +377,15 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/lead-detail.js?v=7"></script>
-    <script src="~/js/sales/follow-up-tasks.js?v=1"></script>
+    <script>
+        var _leadLookups = {
+            products: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(products.Select(p => new { id = p.Id, name = p.Name }))),
+            sourceTypes: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(sourceTypes.Select(s => new { id = s.Id, name = s.Name }))),
+            sourceRefTypes: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(sourceRefTypes.Select(s => new { id = s.Id, name = s.Name }))),
+        };
+    </script>
+    <script src="~/js/sales/lead-detail.js?v=8"></script>
+    <script src="~/js/sales/follow-up-tasks.js?v=2"></script>
     <script>
         var activityPage = 1;
 
@@ -397,6 +453,163 @@
 
         // Load on page ready
         loadActivityFeed(1);
+
+        // ═══════════════════════════════════════════════════════════
+        // TIMELINE
+        // ═══════════════════════════════════════════════════════════
+
+        var _timelinePage = 1;
+        var _timelineColours = {
+            creation: '#8a9bab',
+            response: '#129867',
+            meeting: '#C8912E',
+            stage_change: '#0D5EA6',
+            assignment: '#0D5EA6',
+            proposal_linked: '#57B8E8',
+            invoice_linked: '#57B8E8',
+            conversion: '#129867',
+            task: '#8a9bab'
+        };
+
+        function getTimelineIcon(eventType) {
+            var map = { creation: '+', response: '💬', meeting: '📅', stage_change: '→', assignment: '👤', proposal_linked: '📄', invoice_linked: '📄', conversion: '✓', task: '☑' };
+            return map[eventType] || '•';
+        }
+
+        function formatRelativeTime(timestamp) {
+            var now = new Date();
+            var then = new Date(timestamp);
+            var diffMs = now - then;
+            var diffMins = Math.floor(diffMs / 60000);
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return diffMins + 'm ago';
+            var diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return diffHours + 'h ago';
+            var diffDays = Math.floor(diffHours / 24);
+            if (diffDays === 1) return '1 day ago';
+            if (diffDays < 30) return diffDays + ' days ago';
+            var diffMonths = Math.floor(diffDays / 30);
+            if (diffMonths === 1) return '1 month ago';
+            return diffMonths + ' months ago';
+        }
+
+        function renderTimelineEvent(ev) {
+            var colour = ev.colour || _timelineColours[ev.eventType] || '#8a9bab';
+            var icon = getTimelineIcon(ev.eventType);
+            var relTime = formatRelativeTime(ev.timestamp);
+            var descHtml = '';
+            if (ev.description) {
+                var truncated = ev.description.length > 150 ? ev.description.substring(0, 150) + '…' : ev.description;
+                descHtml = '<div class="timeline-desc" style="font-size:12px;color:#5E7385;margin-top:4px;line-height:1.5;">' + escapeHtml(truncated) + '</div>';
+            }
+
+            return '<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid rgba(13,94,166,.05);" class="timeline-event">'
+                + '<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;">'
+                + '<div style="width:28px;height:28px;border-radius:50%;background:' + colour + '18;color:' + colour + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid ' + colour + '40;">' + icon + '</div>'
+                + '<div style="flex:1;width:2px;background:rgba(13,94,166,.08);margin-top:6px;min-height:12px;"></div>'
+                + '</div>'
+                + '<div style="flex:1;min-width:0;padding-top:3px;">'
+                + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+                + '<div>'
+                + '<span style="font-size:13px;font-weight:700;color:#0B1B28;">' + escapeHtml(ev.title) + '</span>'
+                + '<span style="font-size:11px;color:#8a9bab;margin-left:8px;">by ' + escapeHtml(ev.actorName) + '</span>'
+                + '</div>'
+                + '<span style="font-size:11px;color:#8a9bab;white-space:nowrap;">' + relTime + '</span>'
+                + '</div>'
+                + descHtml
+                + '</div></div>';
+        }
+
+        async function loadTimeline(page, append) {
+            var container = document.getElementById('leadTimeline');
+            var leadId = container.getAttribute('data-lead-id');
+            try {
+                var response = await fetch('/Sales/AxGetLeadTimeline?leadRequestId=' + leadId + '&page=' + page);
+                var result = await response.json();
+
+                if (!result.success) {
+                    if (!append) container.innerHTML = '<p style="font-size:13px;color:#8a9bab;text-align:center;padding:16px 0;">Unable to load timeline.</p>';
+                    document.getElementById('timelineLoadMore').style.display = 'none';
+                    return;
+                }
+
+                var events = result.data || [];
+                if (events.length === 0 && !append) {
+                    container.innerHTML = '<p style="font-size:13px;color:#8a9bab;text-align:center;padding:16px 0;">No timeline events yet.</p>';
+                    document.getElementById('timelineLoadMore').style.display = 'none';
+                    return;
+                }
+
+                var html = '';
+                events.forEach(function(ev) {
+                    html += renderTimelineEvent(ev);
+                });
+
+                if (append) {
+                    container.innerHTML += html;
+                } else {
+                    container.innerHTML = html;
+                }
+
+                document.getElementById('timelineLoadMore').style.display = result.hasMore ? 'block' : 'none';
+            } catch (e) {
+                if (!append) container.innerHTML = '<p style="font-size:13px;color:#8a9bab;">Failed to load timeline.</p>';
+                document.getElementById('timelineLoadMore').style.display = 'none';
+            }
+        }
+
+        function loadMoreTimeline() {
+            _timelinePage++;
+            loadTimeline(_timelinePage, true);
+        }
+
+        // Initial timeline load
+        loadTimeline(1, false);
+
+        // ═══════════════════════════════════════════════════════════
+        // PRIORITY CHANGE
+        // ═══════════════════════════════════════════════════════════
+
+        async function changeLeadPriority(leadId, value) {
+            BlockUI.show('Updating priority...');
+            try {
+                var url;
+                if (value === '' || value === null) {
+                    url = '/Sales/AxPostClearLeadPriority?leadRequestId=' + leadId;
+                } else {
+                    url = '/Sales/AxPostSetLeadPriority?leadRequestId=' + leadId + '&leadPriorityTypeId=' + parseInt(value);
+                }
+
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    }
+                });
+                var result = await response.json();
+                BlockUI.hide();
+
+                if (result.success) {
+                    // Priority updated — no need to reload, dropdown already reflects the new value
+                    var container = document.getElementById('priorityDropdownContainer');
+                    var priorityMap = { '1': { name: 'Hot', colour: '#E53E3E' }, '2': { name: 'Warm', colour: '#DD6B20' }, '3': { name: 'Cold', colour: '#3182CE' } };
+                    if (value && priorityMap[value]) {
+                        container.setAttribute('data-priority-id', value);
+                        container.setAttribute('data-priority-name', priorityMap[value].name);
+                        container.setAttribute('data-priority-colour', priorityMap[value].colour);
+                    } else {
+                        container.setAttribute('data-priority-id', '');
+                        container.setAttribute('data-priority-name', '');
+                        container.setAttribute('data-priority-colour', '');
+                    }
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Failed to update priority.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
 
         window.loadLeadTasks = async function() {
             try {

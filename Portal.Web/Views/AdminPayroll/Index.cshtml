@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Payroll Configuration";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Platform Admin</div>
+        <h1 class="topbar-heading">Payroll Configuration</h1>
+        <p class="topbar-subtitle">Manage earning types, country deduction templates, and tax bands.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;">
+
+        <!-- Earning Types -->
+        <a href="/AdminPayroll/EarningTypes" style="text-decoration:none;">
+            <div style="padding:24px;border-radius:16px;border:1.5px solid rgba(13,94,166,.1);background:rgba(13,94,166,.02);transition:border-color .15s,box-shadow .15s;" onmouseover="this.style.borderColor='rgba(13,94,166,.25)';this.style.boxShadow='0 4px 16px rgba(13,94,166,.08)'" onmouseout="this.style.borderColor='rgba(13,94,166,.1)';this.style.boxShadow='none'">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <div style="width:40px;height:40px;border-radius:12px;background:rgba(13,94,166,.08);display:flex;align-items:center;justify-content:center;">
+                        <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin:0;">Earning Types</h3>
+                </div>
+                <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Manage overtime, bonus, allowance, and commission types available for payslip line items.</p>
+            </div>
+        </a>
+
+        <!-- Country Deduction Templates -->
+        <a href="/PayrollTemplate" style="text-decoration:none;">
+            <div style="padding:24px;border-radius:16px;border:1.5px solid rgba(18,152,103,.1);background:rgba(18,152,103,.02);transition:border-color .15s,box-shadow .15s;" onmouseover="this.style.borderColor='rgba(18,152,103,.25)';this.style.boxShadow='0 4px 16px rgba(18,152,103,.08)'" onmouseout="this.style.borderColor='rgba(18,152,103,.1)';this.style.boxShadow='none'">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <div style="width:40px;height:40px;border-radius:12px;background:rgba(18,152,103,.08);display:flex;align-items:center;justify-content:center;">
+                        <svg width="20" height="20" fill="none" stroke="#129867" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
+                    </div>
+                    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin:0;">Deduction Templates</h3>
+                </div>
+                <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Create and edit country-specific deduction templates (Social Insurance, NHS, etc.) that businesses can import.</p>
+            </div>
+        </a>
+
+        <!-- PAYE Tax Bands -->
+        <a href="/PayrollTemplate/TaxBands" style="text-decoration:none;">
+            <div style="padding:24px;border-radius:16px;border:1.5px solid rgba(200,145,46,.1);background:rgba(200,145,46,.02);transition:border-color .15s,box-shadow .15s;" onmouseover="this.style.borderColor='rgba(200,145,46,.25)';this.style.boxShadow='0 4px 16px rgba(200,145,46,.08)'" onmouseout="this.style.borderColor='rgba(200,145,46,.1)';this.style.boxShadow='none'">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <div style="width:40px;height:40px;border-radius:12px;background:rgba(200,145,46,.08);display:flex;align-items:center;justify-content:center;">
+                        <svg width="20" height="20" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    </div>
+                    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin:0;">PAYE Tax Bands</h3>
+                </div>
+                <p style="font-size:13px;color:#5E7385;line-height:1.6;margin:0;">Configure income tax bands and rates per country for PAYE deduction calculations.</p>
+            </div>
+        </a>
+
+    </div>
+</section>

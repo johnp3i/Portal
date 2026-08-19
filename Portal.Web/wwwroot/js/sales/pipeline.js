@@ -105,6 +105,9 @@
 
     function renderKanban(stages) {
         var board = document.getElementById('pipelineBoard');
+        // Remove skeleton if present
+        var skeleton = document.getElementById('pipelineSkeleton');
+        if (skeleton) skeleton.remove();
         board.innerHTML = '';
 
         stages.forEach(function (stage) {
@@ -123,13 +126,31 @@
             var cards = '';
             stage.leads.forEach(function (lead) {
                 var initials = lead.contactName ? lead.contactName.charAt(0).toUpperCase() : '?';
+
+                // Priority badge (shown above contact name when assigned)
+                var priorityBadge = '';
+                if (lead.priorityName && lead.priorityColour) {
+                    priorityBadge = '<div style="margin-bottom:6px;"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;color:' + lead.priorityColour + ';background:' + lead.priorityColour + '14;border:1px solid ' + lead.priorityColour + '30;">' + lead.priorityName + '</span></div>';
+                }
+
+                // Days since last activity indicator
+                var daysVal = Math.max(0, lead.daysSinceLastActivity || 0);
+                var daysText = daysVal === 0 ? 'Today' : daysVal + 'd ago';
+                var daysColour = '#8a9bab';
+                if (daysVal > 14) {
+                    daysColour = '#C24A4A';
+                } else if (daysVal > 7) {
+                    daysColour = '#C8912E';
+                }
+
                 cards += '<div class="pipeline-card" style="background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(13,94,166,.06);border:1px solid rgba(13,94,166,.06);cursor:pointer;transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow=\'0 6px 16px rgba(13,94,166,.12)\';this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.boxShadow=\'0 2px 8px rgba(13,94,166,.06)\';this.style.transform=\'none\'" onclick="window.open(\'/Sales/LeadDetail/' + lead.id + '\', \'_blank\')">'
+                    + priorityBadge
                     + '<div style="font-weight:700;font-size:14px;color:#0B1B28;">' + lead.contactName + '</div>'
                     + (lead.companyName ? '<div style="font-size:12px;color:#5E7385;margin-top:2px;">' + lead.companyName + '</div>' : '')
                     + (lead.productName ? '<div style="margin-top:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(13,94,166,.08);color:#0D5EA6;">' + lead.productName + '</span></div>' : '')
                     + '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;">'
                     + '<div style="width:22px;height:22px;border-radius:50%;background:' + (stage.colour || '#0D5EA6') + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">' + initials + '</div>'
-                    + '<span style="font-size:11px;color:#8a9bab;">' + timeAgo(lead.createdAtUtc) + '</span>'
+                    + '<span style="font-size:11px;color:' + daysColour + ';font-weight:' + (daysVal > 7 ? '700' : '400') + ';">' + daysText + '</span>'
                     + '</div>'
                     + '</div>';
             });
@@ -328,6 +349,10 @@
             var response = await fetch('/Sales/AxGetGlobalActivityFeed?page=' + page);
             var result = await response.json();
 
+            // Remove skeleton if present
+            var skeleton = document.getElementById('activityFeedSkeleton');
+            if (skeleton) skeleton.remove();
+
             if (!result.success || !result.data || result.data.length === 0) {
                 if (page === 1) container.innerHTML = '<p style="font-size:13px;color:#8a9bab;text-align:center;padding:16px 0;">No activity recorded yet.</p>';
                 document.getElementById('globalFeedPaging').style.display = 'none';
@@ -380,9 +405,9 @@
         }
     }
 
-    function getGlobalFeedColor(a) { return { lead_created:'#8a9bab', stage_changed:'#0D5EA6', lead_cancelled:'#C24A4A', lead_reactivated:'#129867', response_logged:'#129867', meeting_scheduled:'#C8912E', meeting_cancelled:'#C24A4A', proposal_linked:'#57B8E8', invoice_linked:'#57B8E8', marked_as_won:'#129867', assigned:'#0D5EA6', unassigned:'#8a9bab', request_details_updated:'#8a9bab' }[a] || '#8a9bab'; }
-    function getGlobalFeedIcon(a) { return { lead_created:'+', stage_changed:'→', lead_cancelled:'✕', lead_reactivated:'↺', response_logged:'💬', meeting_scheduled:'📅', meeting_cancelled:'📅', proposal_linked:'📄', invoice_linked:'📄', marked_as_won:'✓', assigned:'👤', unassigned:'👤', request_details_updated:'✏' }[a] || '•'; }
-    function getGlobalFeedLabel(a) { return { lead_created:'Lead Created', stage_changed:'Stage Changed', lead_cancelled:'Lead Cancelled', lead_reactivated:'Lead Reactivated', response_logged:'Response Logged', meeting_scheduled:'Meeting Scheduled', meeting_cancelled:'Meeting Cancelled', proposal_linked:'Proposal Linked', invoice_linked:'Invoice Linked', marked_as_won:'Marked as Won', assigned:'Assigned', unassigned:'Unassigned', request_details_updated:'Details Updated' }[a] || a; }
+    function getGlobalFeedColor(a) { return { lead_created:'#8a9bab', stage_changed:'#0D5EA6', lead_cancelled:'#C24A4A', lead_reactivated:'#129867', response_logged:'#129867', meeting_scheduled:'#C8912E', meeting_cancelled:'#C24A4A', proposal_linked:'#57B8E8', invoice_linked:'#57B8E8', marked_as_won:'#129867', assigned:'#0D5EA6', unassigned:'#8a9bab', request_details_updated:'#8a9bab', task_created:'#C8912E', task_completed:'#129867', task_snoozed:'#57B8E8' }[a] || '#8a9bab'; }
+    function getGlobalFeedIcon(a) { return { lead_created:'+', stage_changed:'→', lead_cancelled:'✕', lead_reactivated:'↺', response_logged:'💬', meeting_scheduled:'📅', meeting_cancelled:'📅', proposal_linked:'📄', invoice_linked:'📄', marked_as_won:'✓', assigned:'👤', unassigned:'👤', request_details_updated:'✏', task_created:'📋', task_completed:'✓', task_snoozed:'⏩' }[a] || '•'; }
+    function getGlobalFeedLabel(a) { return { lead_created:'Lead Created', stage_changed:'Stage Changed', lead_cancelled:'Lead Cancelled', lead_reactivated:'Lead Reactivated', response_logged:'Response Logged', meeting_scheduled:'Meeting Scheduled', meeting_cancelled:'Meeting Cancelled', proposal_linked:'Proposal Linked', invoice_linked:'Invoice Linked', marked_as_won:'Marked as Won', assigned:'Assigned', unassigned:'Unassigned', request_details_updated:'Details Updated', task_created:'Task Created', task_completed:'Task Completed', task_snoozed:'Task Snoozed' }[a] || a; }
 
     // Load global feed on page init
     loadGlobalFeed(1);

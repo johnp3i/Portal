@@ -23,6 +23,27 @@
 
 @Html.AntiForgeryToken()
 
+<!-- About Deductions -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <button type="button" onclick="var el=this.nextElementSibling;el.style.display=el.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=el.style.display==='none'?'':'rotate(180deg)';" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#0D5EA6;padding:0;font-family:inherit;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        About Deductions &amp; Contributions
+    </button>
+    <div style="display:none;margin-top:14px;">
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;margin-bottom:10px;">
+            Deductions are split into two categories:
+        </p>
+        <ul style="font-size:13px;color:#5a6a7a;line-height:1.8;margin:0 0 0 18px;padding:0;">
+            <li><strong>Employee Deductions</strong> — Taken from the employee's gross salary (e.g., Social Insurance 8.8%, GESY 2.65%)</li>
+            <li><strong>Employer Contributions</strong> — Paid by the business on top of the salary (e.g., Social Insurance 8.8%, Redundancy Fund)</li>
+        </ul>
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;margin-top:10px;">
+            Each deduction has a <strong>rate history</strong> — when rates change (e.g., new year), add a new rate with an effective date. The system automatically uses the correct rate for each payslip period.
+            Use <strong>Import Country Template</strong> to quickly set up standard deductions for your country.
+        </p>
+    </div>
+</section>
+
 <!-- Employee Deductions Section -->
 <section class="glass card-pad" style="margin-bottom:22px;">
     <h3 class="section-title">Employee Deductions</h3>
@@ -123,7 +144,7 @@
 
 <!-- Rate History Panel (hidden, shown dynamically) -->
 <section class="glass card-pad" id="rateHistoryPanel" style="display:none;">
-    <h3 class="section-title" id="rateHistoryTitle">Rate History</h3>
+    <h3 class="section-title" id="rateHistoryTitle" style="margin-bottom:18px;">Rate History</h3>
     <table class="data-table">
         <thead>
             <tr>
@@ -152,8 +173,8 @@
 
 <!-- Add Custom Deduction Form (hidden) -->
 <section class="glass card-pad" id="addCustomForm" style="display:none;margin-top:22px;">
-    <h3 class="section-title">Add Custom Deduction/Contribution</h3>
-    <div class="form-row">
+    <h3 class="section-title" style="margin-bottom:18px;">Add Custom Deduction/Contribution</h3>
+    <div class="form-row" style="margin-top:14px;">
         <div class="field">
             <label>Name *</label>
             <input type="text" id="customName" placeholder="e.g. Pension Fund">

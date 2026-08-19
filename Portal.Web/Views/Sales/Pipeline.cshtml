@@ -21,7 +21,7 @@
 </div>
 
 <!-- Today's Actions Panel -->
-<section id="todaysActionsPanel" class="glass card-pad" style="margin-bottom:22px;display:none;">
+<section id="todaysActionsPanel" class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
         <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;margin:0;">
             <svg width="20" height="20" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
@@ -35,7 +35,19 @@
         </div>
     </div>
     <div id="todaysActionsList">
-        <!-- Rendered by JS -->
+        <!-- Skeleton placeholder while loading -->
+        <div id="todaysActionsSkeleton" style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-radius:14px;border:1px solid rgba(13,94,166,.06);">
+                <span style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></span>
+                <div style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;flex-shrink:0;"></div>
+                <div style="flex:1;"><div style="height:14px;width:60%;background:#f1f5f9;border-radius:6px;margin-bottom:6px;"></div><div style="height:10px;width:40%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-radius:14px;border:1px solid rgba(13,94,166,.06);">
+                <span style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></span>
+                <div style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;flex-shrink:0;"></div>
+                <div style="flex:1;"><div style="height:14px;width:50%;background:#f1f5f9;border-radius:6px;margin-bottom:6px;"></div><div style="height:10px;width:35%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -69,7 +81,31 @@
 <div id="kanbanView">
     <section class="glass card-pad" style="padding:16px;">
         <div class="pipeline-board" id="pipelineBoard" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;">
-            <!-- Columns rendered by JS -->
+            <!-- Skeleton columns while loading -->
+            <div id="pipelineSkeleton" style="display:flex;gap:14px;width:100%;">
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div style="min-width:220px;flex:1;max-width:280px;background:rgba(138,155,171,.04);border-radius:16px;padding:16px;border:1px solid rgba(138,155,171,.08);min-height:200px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;"></span>
+                                <div style="height:14px;width:80px;background:#f1f5f9;border-radius:6px;"></div>
+                            </div>
+                            <div style="height:20px;width:28px;background:#f7fafc;border-radius:10px;"></div>
+                        </div>
+                        <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;border:1px solid rgba(13,94,166,.04);">
+                            <div style="height:14px;width:70%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div>
+                            <div style="height:10px;width:50%;background:#f7fafc;border-radius:6px;margin-bottom:10px;"></div>
+                            <div style="display:flex;align-items:center;gap:8px;"><div style="width:22px;height:22px;border-radius:50%;background:#f1f5f9;"></div><div style="height:10px;width:40px;background:#f7fafc;border-radius:6px;"></div></div>
+                        </div>
+                        <div style="background:#fff;border-radius:14px;padding:16px;border:1px solid rgba(13,94,166,.04);">
+                            <div style="height:14px;width:60%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div>
+                            <div style="height:10px;width:40%;background:#f7fafc;border-radius:6px;margin-bottom:10px;"></div>
+                            <div style="display:flex;align-items:center;gap:8px;"><div style="width:22px;height:22px;border-radius:50%;background:#f1f5f9;"></div><div style="height:10px;width:40px;background:#f7fafc;border-radius:6px;"></div></div>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     </section>
 
@@ -144,7 +180,25 @@
         <button class="tbl-action tbl-action--secondary" onclick="showActivityInfo()">What's logged?</button>
     </div>
     <div id="globalActivityFeed">
-        <p class="muted" style="font-size:14px;">Loading...</p>
+        <!-- Skeleton placeholder while loading -->
+        <div id="activityFeedSkeleton">
+            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.05);">
+                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
+                <div style="flex:1;"><div style="height:12px;width:45%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:70%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.05);">
+                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
+                <div style="flex:1;"><div style="height:12px;width:35%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:60%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.05);">
+                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
+                <div style="flex:1;"><div style="height:12px;width:55%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:50%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+            <div style="display:flex;gap:12px;padding:10px 0;">
+                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
+                <div style="flex:1;"><div style="height:12px;width:40%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:65%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+        </div>
     </div>
     <div id="globalFeedPaging" style="display:none;margin-top:14px;display:flex;justify-content:center;gap:8px;">
     </div>
@@ -186,6 +240,6 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/pipeline.js?v=7"></script>
-    <script src="~/js/sales/follow-up-tasks.js?v=1"></script>
+    <script src="~/js/sales/pipeline.js?v=8"></script>
+    <script src="~/js/sales/follow-up-tasks.js?v=2"></script>
 }

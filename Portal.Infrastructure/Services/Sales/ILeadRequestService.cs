@@ -18,6 +18,7 @@ public interface ILeadRequestService
     Task<ServiceResult> ReactivateLeadAsync(int id);
     Task<List<LeadCardDto>> GetCancelledLeadsAsync();
     Task<ServiceResult> UpdateRequestDetailsAsync(int id, string? requestText);
+    Task<ServiceResult> UpdateLeadDetailsAsync(int id, int? productId, int leadSourceTypeId, int? leadSourceReferenceTypeId, string? sourceUrl, string? requestText);
     Task<ServiceResult> DeactivateLeadAsync(int id);
     Task<ServiceResult> MarkAsWonAsync(int id);
     Task<ServiceResult> LinkProposalAsync(int leadRequestId, int quotationId);
@@ -26,4 +27,7 @@ public interface ILeadRequestService
     Task<List<PipelineStageGroupDto>> GetPipelineDataAsync(string? assignedToUserId, int? productId, int? teamMemberId = null);
     Task<PagedResult<LeadTableRowDto>> GetLeadsPagedAsync(LeadFilterDto filter);
     Task SuggestStageTransitionAsync(int leadRequestId, string eventType);
+    Task<ServiceResult> SetPriorityAsync(int leadRequestId, int leadPriorityTypeId);
+    Task<ServiceResult> ClearPriorityAsync(int leadRequestId);
+    Task<List<LeadPriorityTypeDto>> GetPriorityTypesAsync();
 }

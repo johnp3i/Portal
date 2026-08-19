@@ -83,4 +83,72 @@ public class LeadResponseRepository : GenericStoredProcedureRepository<LeadRespo
             throw;
         }
     }
+
+    public async Task<Dictionary<int, DateTime>> GetEarliestResponseDatesAsync(List<int> leadRequestIds, int businessId)
+    {
+        try
+        {
+            if (leadRequestIds == null || leadRequestIds.Count == 0)
+                return new Dictionary<int, DateTime>();
+
+            var parameters = new List<SqlParameter>();
+            var placeholders = new List<string>();
+            for (int i = 0; i < leadRequestIds.Count; i++)
+            {
+                var paramName = $"@LeadRequestId{i}";
+                placeholders.Add(paramName);
+                parameters.Add(new SqlParameter(paramName, leadRequestIds[i]));
+            }
+
+            parameters.Add(new SqlParameter("@BusinessId", businessId));
+
+            var query = $@"
+                SELECT [sales].[LeadResponse].[LeadRequestId],
+                       MIN([sales].[LeadResponse].[SentAtUtc]) AS [EarliestSentAtUtc]
+                FROM [sales].[LeadResponse]
+                INNER JOIN [sales].[LeadRequest]
+                    ON [sales].[LeadResponse].[LeadRequestId] = [sales].[LeadRequest].[Id]
+                WHERE [sales].[LeadResponse].[LeadRequestId] IN ({string.Join(", ", placeholders)})
+                  AND [sales].[LeadRequest].[BusinessId] = @BusinessId
+                GROUP BY [sales].[LeadResponse].[LeadRequestId]";
+
+            var result = new Dictionary<int, DateTime>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                foreach (var param in parameters)
+                    command.Parameters.Add(param);
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    var leadRequestId = reader.GetInt32(0);
+                    var earliestSentAtUtc = reader.GetDateTime(1);
+                    result[leadRequestId] = earliestSentAtUtc;
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 }

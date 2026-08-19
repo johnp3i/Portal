@@ -85,4 +85,65 @@ public class ActivityFeedRepository : GenericStoredProcedureRepository<ActivityF
             throw;
         }
     }
+
+    /// <summary>
+    /// Returns all activity feed entries for a lead, ordered by CreatedAtUtc descending.
+    /// Used by the timeline service to display all events chronologically.
+    /// </summary>
+    public async Task<List<ActivityFeedEntry>> GetByLeadRequestIdAsync(int leadRequestId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [LeadRequestId], [Action], [Description],
+                       [PerformedByUserId], [PerformedByTeamMemberId], [Metadata], [CreatedAtUtc]
+                FROM [sales].[ActivityFeed]
+                WHERE [LeadRequestId] = @LeadRequestId
+                ORDER BY [CreatedAtUtc] DESC";
+
+            return await ExecuteStoredProcedure(query,
+                new SqlParameter("@LeadRequestId", leadRequestId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Returns all activity feed entries where Action = 'stage_changed' and CreatedAtUtc
+    /// is within [startDate, endDate) for leads belonging to the given businessId.
+    /// Used by InsightsService for conversion rate computation.
+    /// </summary>
+    public async Task<List<ActivityFeedEntry>> GetStageChangesInRangeAsync(DateTime startDate, DateTime endDate, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [sales].[ActivityFeed].[Id],
+                       [sales].[ActivityFeed].[BusinessId],
+                       [sales].[ActivityFeed].[LeadRequestId],
+                       [sales].[ActivityFeed].[Action],
+                       [sales].[ActivityFeed].[Description],
+                       [sales].[ActivityFeed].[PerformedByUserId],
+                       [sales].[ActivityFeed].[PerformedByTeamMemberId],
+                       [sales].[ActivityFeed].[Metadata],
+                       [sales].[ActivityFeed].[CreatedAtUtc]
+                FROM [sales].[ActivityFeed]
+                WHERE [sales].[ActivityFeed].[Action] = @Action
+                  AND [sales].[ActivityFeed].[CreatedAtUtc] >= @StartDate
+                  AND [sales].[ActivityFeed].[CreatedAtUtc] < @EndDate
+                  AND [sales].[ActivityFeed].[BusinessId] = @BusinessId";
+
+            return await ExecuteStoredProcedure(query,
+                new SqlParameter("@Action", "stage_changed"),
+                new SqlParameter("@StartDate", startDate),
+                new SqlParameter("@EndDate", endDate),
+                new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 }

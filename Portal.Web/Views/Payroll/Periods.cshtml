@@ -21,9 +21,32 @@
 
 @Html.AntiForgeryToken()
 
-<!-- Create Period Form (toggle) -->
+<!-- About Payslip Periods -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div id="createPeriodForm" style="display:none;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+    <button type="button" onclick="var el=this.nextElementSibling;el.style.display=el.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=el.style.display==='none'?'':'rotate(180deg)';" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#0D5EA6;padding:0;font-family:inherit;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        About Payslip Periods
+    </button>
+    <div style="display:none;margin-top:14px;">
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;margin-bottom:10px;">
+            Each month follows this cycle:
+        </p>
+        <ol style="font-size:13px;color:#5a6a7a;line-height:2;margin:0 0 0 18px;padding:0;">
+            <li><strong>Create Period</strong> — Click "+ Create Period" and select the month/year</li>
+            <li><strong>Generate Payslips</strong> — The system calculates earnings, deductions, and net salary for each employee</li>
+            <li><strong>Review</strong> — Check individual payslips, edit earning lines if needed</li>
+            <li><strong>Finalise</strong> — Lock the period (payslips become read-only)</li>
+            <li><strong>Email</strong> — Send payslips to employees as PDF attachments</li>
+        </ol>
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;margin-top:10px;">
+            Statuses: <span style="color:#6b7280;font-weight:600;">Draft</span> → <span style="color:#0D5EA6;font-weight:600;">Preview</span> → <span style="color:#129867;font-weight:600;">Finalised</span>. Once finalised, a period can be unlocked by the business owner if corrections are needed.
+        </p>
+    </div>
+</section>
+
+<!-- Create Period Form (toggle) -->
+<section id="createPeriodSection" class="glass card-pad" style="margin-bottom:22px;display:none;">
+    <div id="createPeriodForm" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="margin-bottom:0;min-width:120px;">
             <label>Year</label>
             <select id="periodYear">
@@ -127,8 +150,8 @@
     }
 
     function toggleCreateForm() {
-        var form = document.getElementById('createPeriodForm');
-        form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+        var section = document.getElementById('createPeriodSection');
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
 
     async function createPeriod() {

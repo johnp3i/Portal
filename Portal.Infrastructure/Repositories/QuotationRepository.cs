@@ -240,6 +240,34 @@ public class QuotationRepository : GenericStoredProcedureRepository<Quotation>
         }
     }
 
+    public async Task<Quotation?> GetLatestByLeadRequestIdAsync(int leadRequestId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 1
+                       [quotation].[Quotation].[Id], [quotation].[Quotation].[BusinessId], [quotation].[Quotation].[CustomerId],
+                       [quotation].[Quotation].[QuotationStatusTypeId], [quotation].[Quotation].[Reference],
+                       [quotation].[Quotation].[ValidUntil], [quotation].[Quotation].[Subtotal],
+                       [quotation].[Quotation].[TaxAmount], [quotation].[Quotation].[TotalAmount],
+                       [quotation].[Quotation].[Notes], [quotation].[Quotation].[CreatedAtUtc],
+                       [quotation].[Quotation].[UpdatedAtUtc], [quotation].[Quotation].[QuotationContactId],
+                       [quotation].[Quotation].[IsGrandTotalShown], [quotation].[Quotation].[IsDeleted],
+                       [quotation].[Quotation].[DeletedAtUtc], [quotation].[Quotation].[LeadRequestId]
+                FROM [quotation].[Quotation]
+                WHERE [quotation].[Quotation].[LeadRequestId] = @LeadRequestId
+                  AND [quotation].[Quotation].[IsDeleted] = 0
+                ORDER BY [quotation].[Quotation].[CreatedAtUtc] DESC";
+
+            return await ExecuteSingleRecordStoredProcedure(query,
+                new SqlParameter("@LeadRequestId", leadRequestId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<(List<QuotationListDto> Items, int TotalCount)> GetPagedByBusinessIdAsync(
         int businessId,
         int? statusFilter,

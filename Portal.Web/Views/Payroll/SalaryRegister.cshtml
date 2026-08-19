@@ -1,0 +1,152 @@
+@model Portal.Infrastructure.Models.Payroll.SalaryRegisterViewModel
+@using Portal.Infrastructure.Models.Payroll
+@{
+    ViewData["Title"] = "Salary Register";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <h1 class="topbar-heading">Salary Register</h1>
+        <p class="topbar-subtitle">View and manage employee salary information.</p>
+    </div>
+</div>
+
+<!-- About Salary Register -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <button type="button" onclick="var el=this.nextElementSibling;el.style.display=el.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=el.style.display==='none'?'':'rotate(180deg)';" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#0D5EA6;padding:0;font-family:inherit;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        About the Salary Register
+    </button>
+    <div style="display:none;margin-top:14px;">
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;">
+            The Salary Register gives you a quick overview of every employee's pay. Click any <span style="color:#0D5EA6;font-weight:600;">blue salary value</span> to update it directly without opening the full employee form.
+            Use the filters to focus on a specific department or show inactive employees. The footer total shows your monthly payroll cost for active monthly employees only.
+        </p>
+    </div>
+</section>
+
+<!-- Filters -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="margin-bottom:0;min-width:180px;">
+            <label>Department</label>
+            <select id="filterDepartment" onchange="refreshSalaryRegister()">
+                <option value="">All Departments</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    if (Model.SelectedDepartmentId == dept.Id)
+                    {
+                        <option value="@dept.Id" selected>@dept.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@dept.Id">@dept.Name</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="field" style="margin-bottom:0;min-width:140px;">
+            <label>Status</label>
+            <select id="filterStatus" onchange="refreshSalaryRegister()">
+                @if (Model.SelectedIsActive == true || Model.SelectedIsActive == null)
+                {
+                    <option value="true" selected>Active</option>
+                    <option value="false">Inactive</option>
+                    <option value="">All</option>
+                }
+                else if (Model.SelectedIsActive == false)
+                {
+                    <option value="true">Active</option>
+                    <option value="false" selected>Inactive</option>
+                    <option value="">All</option>
+                }
+                else
+                {
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                    <option value="" selected>All</option>
+                }
+            </select>
+        </div>
+    </div>
+</section>
+
+<!-- Salary Register Table -->
+<section class="glass card-pad">
+    <div id="salaryRegisterTableContainer">
+        @if (Model.Employees != null && Model.Employees.Count > 0)
+        {
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th data-mobile="hide">Department</th>
+                        <th data-mobile="hide">Salary Type</th>
+                        <th class="text-right">Base Salary (&euro;)</th>
+                        <th class="text-right" data-mobile="hide">Hourly Rate (&euro;)</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="salaryRegisterBody">
+                    @foreach (var emp in Model.Employees)
+                    {
+                        <tr>
+                            <td><strong>@emp.EmployeeName</strong></td>
+                            <td data-mobile="hide">@(emp.DepartmentName ?? "—")</td>
+                            <td data-mobile="hide">@emp.SalaryType</td>
+                            <td class="text-right">
+                                <span class="salary-cell"
+                                      style="cursor:pointer;color:#0D5EA6;font-weight:700;"
+                                      data-employee-id="@emp.EmployeeId"
+                                      data-current-salary="@emp.BaseSalary"
+                                      onclick="quickEditSalary(this)">
+                                    &euro;@emp.BaseSalary.ToString("N2")
+                                </span>
+                            </td>
+                            <td class="text-right" data-mobile="hide">
+                                @if (emp.HourlyRate.HasValue)
+                                {
+                                    <span>&euro;@emp.HourlyRate.Value.ToString("N2")</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (emp.IsActive)
+                                {
+                                    <span class="pill pill-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-grey">Inactive</span>
+                                }
+                            </td>
+                            <td class="table-actions">
+                                <a class="btn btn-sm btn-secondary" href="/Payroll/EmployeeForm/@emp.EmployeeId">Edit</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Summary Footer -->
+            <div id="salaryRegisterSummary" style="margin-top:18px;padding:12px 16px;background:rgba(13,94,166,0.04);border-radius:10px;font-size:14px;color:#364152;font-weight:600;">
+                Total: @Model.TotalEmployees employees &middot; Monthly payroll: &euro;@Model.TotalMonthlyPayroll.ToString("N2") <span style="font-weight:400;color:#5a6a7a;">(active monthly employees only)</span>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>No employees match the selected filters.</p>
+            </div>
+        }
+    </div>
+</section>
+
+@Html.AntiForgeryToken()
+
+<script src="~/js/payroll/salary-register.js?v=1"></script>

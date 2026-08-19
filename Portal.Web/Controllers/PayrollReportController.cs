@@ -84,6 +84,15 @@ public class PayrollReportController : Controller
         try
         {
             var businessId = _tenantService.CurrentBusinessId;
+
+            // Default to most recent finalised period when no periodId is provided
+            if (periodId == 0)
+            {
+                var latestPeriod = await _reportService.GetLatestFinalisedPeriodIdAsync(businessId);
+                if (latestPeriod.HasValue)
+                    periodId = latestPeriod.Value;
+            }
+
             var dto = await _reportService.GetPeriodSummaryAsync(periodId, businessId, departmentId);
             ViewBag.CanSendEmail = User.HasClaim("IsOwner", "true") || User.IsInRole("SuperAdmin");
             return View(dto);

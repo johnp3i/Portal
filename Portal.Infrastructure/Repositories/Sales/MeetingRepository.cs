@@ -180,12 +180,43 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
                        [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[Meeting]
-                WHERE [LeadRequestId] = @LeadRequestId AND [BusinessId] = @BusinessId AND [IsActive] = 1";
+                WHERE [LeadRequestId] = @LeadRequestId
+                  AND [BusinessId] = @BusinessId
+                  AND [IsCancelled] = 0
+                  AND [IsActive] = 1";
 
             var results = await ExecuteStoredProcedure(query,
                 new SqlParameter("@LeadRequestId", leadRequestId),
                 new SqlParameter("@BusinessId", businessId));
             return results.OrderByDescending(x => x.ScheduledAtUtc).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<Meeting?> GetUpcomingByLeadRequestIdAsync(int leadRequestId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 1
+                       [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
+                       [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
+                       [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                FROM [sales].[Meeting]
+                WHERE [LeadRequestId] = @LeadRequestId
+                  AND [BusinessId] = @BusinessId
+                  AND [IsCancelled] = 0
+                  AND [IsActive] = 1
+                  AND [ScheduledAtUtc] > GETUTCDATE()
+                ORDER BY [ScheduledAtUtc] ASC";
+
+            return await ExecuteSingleRecordStoredProcedure(query,
+                new SqlParameter("@LeadRequestId", leadRequestId),
+                new SqlParameter("@BusinessId", businessId));
         }
         catch (Exception ex)
         {

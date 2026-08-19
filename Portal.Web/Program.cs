@@ -289,6 +289,8 @@ builder.Services.AddScoped<LeadSourceReferenceTypeRepository>(sp =>
     new LeadSourceReferenceTypeRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<LeadStatusTypeRepository>(sp =>
     new LeadStatusTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadPriorityTypeRepository>(sp =>
+    new LeadPriorityTypeRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<LeadResponseTypeRepository>(sp =>
     new LeadResponseTypeRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<MeetingTypeRepository>(sp =>
@@ -301,6 +303,8 @@ builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<ITeamMemberService, TeamMemberService>();
 builder.Services.AddScoped<IActivityFeedService, ActivityFeedService>();
 builder.Services.AddScoped<IFollowUpTaskService, FollowUpTaskService>();
+builder.Services.AddScoped<IInsightsService, InsightsService>();
+builder.Services.AddScoped<ITimelineService, TimelineService>();
 builder.Services.AddScoped<TeamMemberRepository>(sp =>
     new TeamMemberRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ActivityFeedRepository>(sp =>

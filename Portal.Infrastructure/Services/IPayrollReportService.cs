@@ -16,6 +16,7 @@ public interface IPayrollReportService
     Task<byte[]> ExportEarningsBreakdownToExcelAsync(int businessId, EarningsBreakdownFilter filter);
 
     // Period Summary
+    Task<int?> GetLatestFinalisedPeriodIdAsync(int businessId);
     Task<PeriodSummaryDto> GetPeriodSummaryAsync(int periodId, int businessId, int? departmentId);
     Task<byte[]> GeneratePeriodSummaryPdfAsync(int periodId, int businessId, int? departmentId);
     Task<byte[]> ExportPeriodSummaryToExcelAsync(int periodId, int businessId, int? departmentId);

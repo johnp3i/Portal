@@ -48,7 +48,7 @@
         }
         @if (isFinalised)
         {
-            <a class="btn btn-secondary" href="/PayrollReport/AxGetDownloadPayslipPdf?payslipId=@Model.Id" target="_blank">Download PDF</a>
+            <a class="btn btn-secondary" href="/Payroll/AxGetDownloadPayslipPdf?payslipId=@Model.Id" target="_blank">Download PDF</a>
         }
         @if (isFinalised && ViewBag.CanSendEmail == true)
         {
@@ -92,7 +92,7 @@
 
 <!-- EARNINGS -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <h3 class="section-title">Earnings</h3>
+    <h3 class="section-title" style="margin-bottom:14px;">Earnings</h3>
     <table class="data-table">
         <thead>
             <tr>
@@ -124,7 +124,7 @@
 
 <!-- EMPLOYEE DEDUCTIONS -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <h3 class="section-title">Employee Deductions</h3>
+    <h3 class="section-title" style="margin-bottom:14px;">Employee Deductions</h3>
     <table class="data-table">
         <thead>
             <tr>
@@ -155,7 +155,7 @@
 
 <!-- EMPLOYER CONTRIBUTIONS -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <h3 class="section-title">Employer Contributions</h3>
+    <h3 class="section-title" style="margin-bottom:14px;">Employer Contributions</h3>
     <table class="data-table">
         <thead>
             <tr>
@@ -186,7 +186,7 @@
 
 <!-- MANAGER NOTES -->
 <section class="glass card-pad">
-    <h3 class="section-title">Manager Notes</h3>
+    <h3 class="section-title" style="margin-bottom:14px;">Manager Notes</h3>
     <div class="field">
         <textarea id="managerNotes" maxlength="2000" placeholder="Add notes for this payslip (not included in salary calculations)..." @(isFinalised ? "disabled" : "")>@Model.ManagerNotes</textarea>
     </div>

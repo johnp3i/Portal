@@ -1,3 +1,4 @@
+@using System.Linq
 @model Portal.Infrastructure.Models.Payroll.BatchGenerationPreview
 @{
     ViewData["Title"] = $"Generate Payslips — {Model.Month}/{Model.Year}";
@@ -53,18 +54,20 @@
                     <th class="text-right" data-mobile="hide">Deductions</th>
                     <th class="text-right">Net Salary</th>
                     <th class="text-right" data-mobile="hide">Employer Cost</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var payslip in Model.Payslips)
                 {
-                    <tr>
+                    <tr data-employee-id="@payslip.EmployeeId">
                         <td><strong>@payslip.EmployeeName</strong></td>
                         <td data-mobile="hide">@(payslip.DepartmentName ?? "—")</td>
                         <td class="text-right">&euro;@payslip.TotalEarnings.ToString("N2")</td>
                         <td class="text-right" data-mobile="hide">&euro;@payslip.TotalEmployeeDeductions.ToString("N2")</td>
                         <td class="text-right">&euro;@payslip.NetSalary.ToString("N2")</td>
                         <td class="text-right" data-mobile="hide">&euro;@payslip.TotalEmployerContributions.ToString("N2")</td>
+                        <td><button class="btn btn-sm btn-secondary" data-employee-id="@payslip.EmployeeId" onclick="openEarningsEditModal(@payslip.EmployeeId)">Edit</button></td>
                     </tr>
                 }
                 <tr class="totals-row">
@@ -74,6 +77,7 @@
                     <td class="text-right" data-mobile="hide"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEmployeeDeductions).ToString("N2")</strong></td>
                     <td class="text-right"><strong>&euro;@Model.Payslips.Sum(p => p.NetSalary).ToString("N2")</strong></td>
                     <td class="text-right" data-mobile="hide"><strong>&euro;@Model.Payslips.Sum(p => p.TotalEmployerContributions).ToString("N2")</strong></td>
+                    <td></td>
                 </tr>
             </tbody>
         </table>
@@ -109,44 +113,41 @@
     }
 </section>
 
+<!-- Edit Earnings Modal -->
+<div id="editEarningsModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:560px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+            <h3 id="editEarningsTitle" style="margin:0;">Edit Earnings</h3>
+            <button onclick="closeEarningsModal()" style="background:none;border:none;font-size:20px;color:#8a9bab;cursor:pointer;">&times;</button>
+        </div>
+        <div id="earningsLinesContainer">
+            <!-- Dynamically populated earning lines -->
+        </div>
+        <div style="display:flex;gap:12px;justify-content:space-between;margin-top:20px;">
+            <button id="btnResetToDefault" class="btn btn-secondary" style="display:none;" onclick="resetToDefault()">Reset to Default</button>
+            <div style="display:flex;gap:12px;margin-left:auto;">
+                <button class="btn btn-secondary" onclick="closeEarningsModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEarningsOverride()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    function getAntiForgeryToken() {
-        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-        return tokenInput ? tokenInput.value : '';
-    }
-
-    async function confirmGenerate() {
-        Swal.fire({
-            title: 'Confirm Generation?',
-            text: 'This will generate payslips for @Model.TotalEmployeesProcessed employees and move the period to Preview status.',
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, generate',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#0D5EA6'
-        }).then(async function (result) {
-            if (result.isConfirmed) {
-                BlockUI.show('Generating payslips...');
-                try {
-                    var response = await fetch('/Payroll/AxPostConfirmBatch?periodId=@Model.PeriodId', {
-                        method: 'POST',
-                        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
-                    });
-                    var data = await response.json();
-                    BlockUI.hide();
-
-                    if (data.success) {
-                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
-                            window.location.href = '/Payroll/PeriodDetail?id=@Model.PeriodId';
-                        });
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
-                    }
-                } catch (e) {
-                    BlockUI.hide();
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
-                }
-            }
-        });
-    }
+    // Server-rendered earning line data for each employee (used by batch-generate-overrides.js)
+    var batchPeriodId = @Model.PeriodId;
+    var employeeEarningsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Payslips.ToDictionary(
+            p => p.EmployeeId,
+            p => p.EarningLines.Select(e => new {
+                earningTypeId = e.EarningTypeId,
+                earningTypeName = e.EarningTypeName,
+                description = e.Description,
+                amount = e.Amount,
+                overtimeMultiplier = e.OvertimeMultiplier,
+                overtimeHours = e.OvertimeHours
+            })
+        )
+    ));
 </script>
+<script src="~/js/payroll/batch-generate-overrides.js?v=1"></script>

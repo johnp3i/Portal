@@ -7,6 +7,7 @@ using Portal.Infrastructure.Models.Sales;
 using Portal.Infrastructure.Repositories.Sales;
 using Portal.Infrastructure.Services;
 using Portal.Infrastructure.Services.Sales;
+using Portal.Web.Models;
 using Portal.Web.Security;
 
 namespace Portal.Web.Controllers;
@@ -30,6 +31,9 @@ public class SalesController : Controller
     private readonly ITeamMemberService _teamMemberService;
     private readonly IActivityFeedService _activityFeedService;
     private readonly IFollowUpTaskService _followUpTaskService;
+    private readonly IInsightsService _insightsService;
+    private readonly ITimelineService _timelineService;
+    private readonly IPlanCheckService _planCheckService;
     private readonly ILogger<SalesController> _logger;
 
     public SalesController(
@@ -48,6 +52,9 @@ public class SalesController : Controller
         ITeamMemberService teamMemberService,
         IActivityFeedService activityFeedService,
         IFollowUpTaskService followUpTaskService,
+        IInsightsService insightsService,
+        ITimelineService timelineService,
+        IPlanCheckService planCheckService,
         ILogger<SalesController> logger)
     {
         _leadRequestService = leadRequestService;
@@ -65,6 +72,9 @@ public class SalesController : Controller
         _teamMemberService = teamMemberService;
         _activityFeedService = activityFeedService;
         _followUpTaskService = followUpTaskService;
+        _insightsService = insightsService;
+        _timelineService = timelineService;
+        _planCheckService = planCheckService;
         _logger = logger;
     }
 
@@ -168,6 +178,26 @@ public class SalesController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> Insights()
+    {
+        var isInPlan = await _planCheckService.IsModuleInPlanAsync(PortalModules.Sales);
+        if (!isInPlan)
+        {
+            var requiredPlan = await _planCheckService.GetRequiredPlanForModuleAsync(PortalModules.Sales) ?? "Professional";
+            return View("PlanSoftGate", new SoftGateViewModel
+            {
+                ModuleName = PortalModules.Sales,
+                ModuleDisplayName = "Sales Insights",
+                ModuleDescription = "View operational metrics, conversion rates, revenue breakdowns, and pipeline performance analytics.",
+                RequiredPlanName = requiredPlan,
+                CurrentPlanName = "your current plan"
+            });
+        }
+
+        return View();
+    }
+
+    [HttpGet]
     public async Task<IActionResult> LeadDetail(int id)
     {
         var detail = await _leadRequestService.GetLeadDetailAsync(id);
@@ -177,11 +207,15 @@ public class SalesController : Controller
         var responseTypes = await _responseTypeRepository.GetAllAsync();
         var meetingTypes = await _meetingTypeRepository.GetAllAsync();
         var products = await _productService.GetActiveProductsAsync();
+        var sourceTypes = await _sourceTypeRepository.GetAllAsync();
+        var sourceRefTypes = await _sourceRefTypeRepository.GetAllAsync();
 
         ViewBag.Statuses = statuses;
         ViewBag.ResponseTypes = responseTypes;
         ViewBag.MeetingTypes = meetingTypes;
         ViewBag.Products = products;
+        ViewBag.SourceTypes = sourceTypes;
+        ViewBag.SourceRefTypes = sourceRefTypes;
 
         var teamMembers = await _teamMemberService.GetActiveAsync();
         ViewBag.TeamMembers = teamMembers;
@@ -510,14 +544,16 @@ public class SalesController : Controller
     {
         try
         {
-            var result = await _leadRequestService.UpdateRequestDetailsAsync(request.Id, request.RequestText);
+            var result = await _leadRequestService.UpdateLeadDetailsAsync(
+                request.Id, request.ProductId, request.LeadSourceTypeId,
+                request.LeadSourceReferenceTypeId, request.SourceUrl, request.RequestText);
             if (result.Success)
-                await RecordActivityAsync(request.Id, "request_details_updated", "Request details updated.");
+                await RecordActivityAsync(request.Id, "request_details_updated", "Lead information updated.");
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating request details");
+            _logger.LogError(ex, "Error updating lead details");
             return Json(new { success = false, message = "An error occurred." });
         }
     }
@@ -1247,6 +1283,99 @@ public class SalesController : Controller
         {
             _logger.LogError(ex, "Error loading overdue task count");
             return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // AJAX — LEAD PRIORITY
+    // ═══════════════════════════════════════════════════════════
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSetLeadPriority(int leadRequestId, int leadPriorityTypeId)
+    {
+        try
+        {
+            var result = await _leadRequestService.SetPriorityAsync(leadRequestId, leadPriorityTypeId);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting lead priority");
+            return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostClearLeadPriority(int leadRequestId)
+    {
+        try
+        {
+            var result = await _leadRequestService.ClearPriorityAsync(leadRequestId);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error clearing lead priority");
+            return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetLeadPriorityTypes()
+    {
+        try
+        {
+            var types = await _leadRequestService.GetPriorityTypesAsync();
+            return Json(new { success = true, data = types });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading lead priority types");
+            return Json(new { success = false, message = "Failed to load priority types." });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // AJAX — INSIGHTS
+    // ═══════════════════════════════════════════════════════════
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetInsightsMetrics(DateTime startDate, DateTime endDate)
+    {
+        try
+        {
+            if (startDate >= endDate)
+                return Json(new { success = false, message = "Start date must be before end date." });
+
+            var metrics = await _insightsService.GetMetricsAsync(startDate, endDate);
+            return Json(new { success = true, data = metrics });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading insights metrics");
+            return Json(new { success = false, message = "Failed to load insights metrics." });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // AJAX — TIMELINE
+    // ═══════════════════════════════════════════════════════════
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetLeadTimeline(int leadRequestId, int page = 1)
+    {
+        try
+        {
+            var pageSize = 20;
+            var result = await _timelineService.GetTimelineAsync(leadRequestId, page, pageSize);
+            return Json(new { success = true, data = result.Items, hasMore = result.TotalCount > page * pageSize });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading lead timeline");
+            return Json(new { success = false, message = "Failed to load timeline." });
         }
     }
 

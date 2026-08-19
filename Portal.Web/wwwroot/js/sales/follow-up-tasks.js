@@ -21,6 +21,10 @@ async function loadTodaysActions() {
         var panel = document.getElementById('todaysActionsPanel');
         var list = document.getElementById('todaysActionsList');
         var badges = document.getElementById('todaysBadges');
+        var skeleton = document.getElementById('todaysActionsSkeleton');
+
+        // Remove skeleton if present
+        if (skeleton) skeleton.remove();
 
         if (!tasks || tasks.length === 0) {
             panel.style.display = 'none';

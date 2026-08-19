@@ -76,4 +76,10 @@ public interface IPayrollService
     // Phase D: Contribution Report
     Task<ContributionReportDto?> GetContributionReportAsync(int periodId, int businessId);
     Task<List<PayslipPeriodComplianceFilingDto>> GetComplianceFilingHistoryAsync(int periodId, int businessId);
+
+    // Earnings Override & Salary Register
+    Task<RecalculationResult> RecalculateEmployeeAsync(int employeeId, int periodId, int businessId, List<EarningLineOverride> overriddenLines);
+    Task<ServiceResult> ConfirmBatchGenerationWithOverridesAsync(int periodId, int businessId, List<EmployeeEarningsOverride> overrides);
+    Task<SalaryRegisterViewModel> GetSalaryRegisterAsync(int businessId, int? departmentId, bool? isActive);
+    Task<ServiceResult> UpdateBaseSalaryAsync(int employeeId, int businessId, decimal newSalary);
 }

@@ -1,6 +1,15 @@
 namespace Portal.Infrastructure.Models.Sales;
 
 /// <summary>
+/// Represents the last activity date for a lead, used for Days Since Last Activity computation.
+/// </summary>
+public class LeadActivityDateDto
+{
+    public int LeadRequestId { get; set; }
+    public DateTime LastActivityDateUtc { get; set; }
+}
+
+/// <summary>
 /// DTO for a lead card shown on the Kanban board.
 /// </summary>
 public class LeadCardDto
@@ -14,6 +23,10 @@ public class LeadCardDto
     public string? AssignedToUserId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public int LeadStatusTypeId { get; set; }
+    public int? LeadPriorityTypeId { get; set; }
+    public string? PriorityName { get; set; }
+    public string? PriorityColour { get; set; }
+    public int DaysSinceLastActivity { get; set; }
 }
 
 /// <summary>
@@ -72,6 +85,8 @@ public class LeadRequestDetailDto
     public string? CompanyName { get; set; }
     public int? ProductId { get; set; }
     public string? ProductName { get; set; }
+    public int LeadSourceTypeId { get; set; }
+    public int? LeadSourceReferenceTypeId { get; set; }
     public string SourceName { get; set; } = null!;
     public string? SourceReferenceName { get; set; }
     public string? SourceUrl { get; set; }
@@ -83,6 +98,9 @@ public class LeadRequestDetailDto
     public string? AssignedToUserId { get; set; }
     public string? AssignedToUserName { get; set; }
     public int? TeamMemberId { get; set; }
+    public int? LeadPriorityTypeId { get; set; }
+    public string? PriorityName { get; set; }
+    public string? PriorityColour { get; set; }
     public bool IsCancelled { get; set; }
     public string? CancellationDescription { get; set; }
     public DateTime CreatedAtUtc { get; set; }

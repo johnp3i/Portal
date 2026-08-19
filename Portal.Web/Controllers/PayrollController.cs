@@ -740,6 +740,88 @@ public class PayrollController : Controller
 
     #endregion
 
+    #region Earnings Override & Salary Register
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRecalculateEmployee([FromBody] RecalculateEmployeeRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _payrollService.RecalculateEmployeeAsync(request.EmployeeId, request.PeriodId, businessId, request.EarningLines);
+            return Json(new { success = result.Success, totalEarnings = result.TotalEarnings, totalEmployeeDeductions = result.TotalEmployeeDeductions, netSalary = result.NetSalary, totalEmployerContributions = result.TotalEmployerContributions, error = result.Error });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostConfirmBatchWithOverrides([FromBody] ConfirmBatchWithOverridesRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _payrollService.ConfirmBatchGenerationWithOverridesAsync(request.PeriodId, businessId, request.Overrides);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SalaryRegister(int? departmentId, bool? isActive)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _payrollService.GetSalaryRegisterAsync(businessId, departmentId, isActive);
+            return View(result);
+        }
+        catch (Exception ex)
+        {
+            return View("Error");
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUpdateBaseSalary([FromBody] UpdateBaseSalaryRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _payrollService.UpdateBaseSalaryAsync(request.EmployeeId, businessId, request.NewSalary);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetSalaryRegisterData(int? departmentId, bool? isActive)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var result = await _payrollService.GetSalaryRegisterAsync(businessId, departmentId, isActive);
+            return Json(new { success = true, data = result.Employees, totalEmployees = result.TotalEmployees, totalMonthlyPayroll = result.TotalMonthlyPayroll });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    #endregion
+
     #region Phase D: PAYE Toggle
 
     [HttpPost]

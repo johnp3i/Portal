@@ -159,6 +159,7 @@ public class PortalDbContext : DbContext
     public DbSet<Entities.Sales.LeadSourceType> LeadSourceTypes { get; set; } = null!;
     public DbSet<LeadSourceReferenceType> LeadSourceReferenceTypes { get; set; } = null!;
     public DbSet<Entities.Sales.LeadStatusType> LeadStatusTypes { get; set; } = null!;
+    public DbSet<LeadPriorityType> LeadPriorityTypes { get; set; } = null!;
     public DbSet<Entities.Sales.LeadResponseType> LeadResponseTypes { get; set; } = null!;
     public DbSet<Entities.Sales.MeetingType> MeetingTypes { get; set; } = null!;
     public DbSet<FollowUpTask> FollowUpTasks { get; set; } = null!;
@@ -286,6 +287,7 @@ public class PortalDbContext : DbContext
         ConfigureLeadSourceType(modelBuilder);
         ConfigureLeadSourceReferenceType(modelBuilder);
         ConfigureLeadStatusType(modelBuilder);
+        ConfigureLeadPriorityType(modelBuilder);
         ConfigureLeadResponseType(modelBuilder);
         ConfigureMeetingType(modelBuilder);
         ConfigureLeadRequest(modelBuilder);
@@ -3439,6 +3441,19 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureLeadPriorityType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<LeadPriorityType>(entity =>
+        {
+            entity.ToTable("LeadPriorityType", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.Property(e => e.Colour).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
     private static void ConfigureMeetingType(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Entities.Sales.MeetingType>(entity =>
@@ -3495,6 +3510,12 @@ public class PortalDbContext : DbContext
             entity.HasOne(e => e.LeadStatusType)
                 .WithMany()
                 .HasForeignKey(e => e.LeadStatusTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.LeadPriorityType)
+                .WithMany()
+                .HasForeignKey(e => e.LeadPriorityTypeId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.ClientSetNull);
         });
     }

@@ -34,4 +34,13 @@ public class TemplatePlaceholderValues
     public string ProductName { get; set; } = string.Empty;
     public string BusinessName { get; set; } = string.Empty;
     public string ResponseTime { get; set; } = string.Empty;
+    public string AssignedSalesperson { get; set; } = string.Empty;
+    public string MeetingDate { get; set; } = string.Empty;
+    public string MeetingLink { get; set; } = string.Empty;
+    public string ProposalLink { get; set; } = string.Empty;
+    public string Company { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string BusinessWebsite { get; set; } = string.Empty;
+    public string NextStage { get; set; } = string.Empty;
+    public string SupportEmail { get; set; } = string.Empty;
 }

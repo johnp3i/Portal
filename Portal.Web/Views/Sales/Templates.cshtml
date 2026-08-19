@@ -53,10 +53,56 @@
                     <td style="padding:8px 12px;color:#5a6a7a;">Your business name</td>
                     <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">The team at @("{{BusinessName}}") will be in touch shortly.</td>
                 </tr>
-                <tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
                     <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{ResponseTime}}")</code></td>
                     <td style="padding:8px 12px;color:#5a6a7a;">The template's response time (e.g. "4 hours")</td>
                     <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">We aim to respond within @("{{ResponseTime}}").</td>
+                </tr>
+                <tr><td colspan="3" style="padding:14px 12px 6px;font-weight:700;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">Extended Placeholders</td></tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{AssignedSalesperson}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The assigned salesperson's full name</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">Your point of contact is @("{{AssignedSalesperson}}").</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{MeetingDate}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The next upcoming meeting date/time</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">Your meeting is scheduled for @("{{MeetingDate}}").</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{MeetingLink}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The meeting URL (if available)</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">Join the meeting here: @("{{MeetingLink}}")</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{ProposalLink}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">Link to the latest proposal/quotation</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">View your proposal: @("{{ProposalLink}}")</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{Company}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The contact's company name</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">We look forward to working with @("{{Company}}").</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{Phone}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The contact's phone number</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">You can reach us or call back at @("{{Phone}}").</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{BusinessWebsite}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">Your business website URL</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">Visit us at @("{{BusinessWebsite}}").</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(13,94,166,.06);">
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{NextStage}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">The next pipeline stage name</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">Next step: @("{{NextStage}}").</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 12px;"><code style="background:#EEF4F8;padding:2px 6px;border-radius:4px;font-size:12px;">@("{{SupportEmail}}")</code></td>
+                    <td style="padding:8px 12px;color:#5a6a7a;">Your business support email (if configured)</td>
+                    <td style="padding:8px 12px;color:#5a6a7a;font-style:italic;">For any questions, email @("{{SupportEmail}}"). <span style="font-size:11px;color:#8a9bab;font-style:normal;">(Requires configuration in Business settings)</span></td>
                 </tr>
             </tbody>
         </table>
@@ -187,6 +233,12 @@ The @("{{BusinessName}}") Team</p>
                     <button type="button" onclick="insertPlaceholder('ProductName')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert product name">Product</button>
                     <button type="button" onclick="insertPlaceholder('BusinessName')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert business name">Business</button>
                     <button type="button" onclick="insertPlaceholder('ResponseTime')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert response time">Time</button>
+                    <button type="button" onclick="insertPlaceholder('AssignedSalesperson')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert assigned salesperson">Salesperson</button>
+                    <button type="button" onclick="insertPlaceholder('MeetingDate')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert meeting date">Meeting</button>
+                    <button type="button" onclick="insertPlaceholder('ProposalLink')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert proposal link">Proposal</button>
+                    <button type="button" onclick="insertPlaceholder('Company')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert company name">Company</button>
+                    <button type="button" onclick="insertPlaceholder('NextStage')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert next stage">Next Stage</button>
+                    <button type="button" onclick="insertPlaceholder('SupportEmail')" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:#0D5EA6;" title="Insert support email">Support</button>
                 </span>
             </div>
             <div id="templateBodyEditor" style="height:200px;border:1px solid rgba(13,94,166,.15);border-top:none;border-radius:0 0 12px 12px;"></div>
@@ -234,7 +286,16 @@ The @("{{BusinessName}}") Team</p>
                 .replace(/\{\{ContactName\}\}/g, '<strong>Maria Costa</strong>')
                 .replace(/\{\{ProductName\}\}/g, '<strong>Website Redesign</strong>')
                 .replace(/\{\{BusinessName\}\}/g, '<strong>Your Company</strong>')
-                .replace(/\{\{ResponseTime\}\}/g, '<strong>4 hours</strong>');
+                .replace(/\{\{ResponseTime\}\}/g, '<strong>4 hours</strong>')
+                .replace(/\{\{AssignedSalesperson\}\}/g, '<strong>John Smith</strong>')
+                .replace(/\{\{MeetingDate\}\}/g, '<strong>15 Jan 2025 10:00</strong>')
+                .replace(/\{\{MeetingLink\}\}/g, '<strong>https://meet.example.com/abc</strong>')
+                .replace(/\{\{ProposalLink\}\}/g, '<strong>https://proposals.example.com/q123</strong>')
+                .replace(/\{\{Company\}\}/g, '<strong>Acme Corp</strong>')
+                .replace(/\{\{Phone\}\}/g, '<strong>+44 7700 900000</strong>')
+                .replace(/\{\{BusinessWebsite\}\}/g, '<strong>https://yourcompany.com</strong>')
+                .replace(/\{\{NextStage\}\}/g, '<strong>Meeting Scheduled</strong>')
+                .replace(/\{\{SupportEmail\}\}/g, '<strong>support@yourcompany.com</strong>');
 
             Swal.fire({
                 title: 'Template Preview',

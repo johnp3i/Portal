@@ -391,6 +391,25 @@ public class PayrollReportService : IPayrollReportService
         }
     }
 
+    public async Task<int?> GetLatestFinalisedPeriodIdAsync(int businessId)
+    {
+        try
+        {
+            var periods = await _payrollRepository.GetPeriodsByBusinessAsync(businessId);
+            var finalised = periods
+                .Where(p => p.PayslipStatusTypeId >= 3) // Finalised or later
+                .OrderByDescending(p => p.Year)
+                .ThenByDescending(p => p.Month)
+                .FirstOrDefault();
+
+            return finalised?.Id;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<PeriodSummaryDto> GetPeriodSummaryAsync(int periodId, int businessId, int? departmentId)
     {
         try

@@ -64,42 +64,103 @@
     };
 
     window.editRequestDetails = function (id) {
-        var currentText = document.getElementById('requestDetailsText')?.textContent || '';
-        if (currentText === 'No request details provided.') currentText = '';
+        // Redirect to the full edit function
+        editLeadInfo();
+    };
 
-        Swal.fire({
-            title: 'Edit Request Details',
-            html: '<textarea id="swalRequestDetails" rows="5" style="width:100%;padding:12px 16px;border:1.5px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;">' + currentText.trim() + '</textarea>',
-            showCancelButton: true,
-            confirmButtonText: 'Save',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#0D5EA6',
-            preConfirm: function () {
-                return document.getElementById('swalRequestDetails').value;
-            }
-        }).then(async function (result) {
-            if (result.isConfirmed) {
-                BlockUI.show('Saving...');
-                try {
-                    var response = await fetch('/Sales/AxPostUpdateRequestDetails', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
-                        body: JSON.stringify({ id: id, requestText: result.value })
-                    });
-                    var data = await response.json();
-                    BlockUI.hide();
+    window.editLeadInfo = function () {
+        var grid = document.getElementById('leadInfoGrid');
+        var leadId = parseInt(grid.dataset.leadId);
+        var currentProductId = grid.dataset.productId || '';
+        var currentSourceTypeId = grid.dataset.sourceTypeId || '';
+        var currentSourceRefTypeId = grid.dataset.sourceRefTypeId || '';
+        var currentSourceUrl = grid.dataset.sourceUrl || '';
+        var currentRequestText = grid.dataset.requestText || '';
 
-                    if (data.success) {
-                        Swal.fire({ icon: 'success', title: 'Saved', text: 'Request details updated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
-                    }
-                } catch (e) {
-                    BlockUI.hide();
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
-                }
+        // Build product options
+        var productOptions = '<option value="">None</option>';
+        if (window._leadLookups && _leadLookups.products) {
+            _leadLookups.products.forEach(function (p) {
+                productOptions += '<option value="' + p.id + '"' + (p.id == currentProductId ? ' selected' : '') + '>' + p.name + '</option>';
+            });
+        }
+
+        // Build source type options
+        var sourceOptions = '';
+        if (window._leadLookups && _leadLookups.sourceTypes) {
+            _leadLookups.sourceTypes.forEach(function (s) {
+                sourceOptions += '<option value="' + s.id + '"' + (s.id == currentSourceTypeId ? ' selected' : '') + '>' + s.name + '</option>';
+            });
+        }
+
+        // Build source reference options
+        var sourceRefOptions = '<option value="">None</option>';
+        if (window._leadLookups && _leadLookups.sourceRefTypes) {
+            _leadLookups.sourceRefTypes.forEach(function (s) {
+                sourceRefOptions += '<option value="' + s.id + '"' + (s.id == currentSourceRefTypeId ? ' selected' : '') + '>' + s.name + '</option>';
+            });
+        }
+
+        var modalHtml = '<div id="editLeadInfoModal" style="position:fixed;inset:0;background:rgba(11,27,40,.4);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(2px);" onclick="if(event.target===this)closeEditLeadInfoModal()">'
+            + '<div style="background:#fff;border-radius:24px;padding:32px;width:520px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.15);max-height:90vh;overflow-y:auto;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">'
+            + '<h3 style="font-family:Manrope,sans-serif;font-size:18px;font-weight:700;margin:0;">Edit Lead Information</h3>'
+            + '<button onclick="closeEditLeadInfoModal()" style="background:none;border:none;cursor:pointer;color:#8a9bab;font-size:22px;">&times;</button>'
+            + '</div>'
+            + '<div class="field" style="margin-bottom:18px;"><label>Product</label><select id="editLeadProduct">' + productOptions + '</select></div>'
+            + '<div class="field" style="margin-bottom:18px;"><label>Source</label><select id="editLeadSourceType">' + sourceOptions + '</select></div>'
+            + '<div class="field" style="margin-bottom:18px;"><label>Source Reference</label><select id="editLeadSourceRef">' + sourceRefOptions + '</select></div>'
+            + '<div class="field" style="margin-bottom:18px;"><label>Source URL</label><input type="text" id="editLeadSourceUrl" value="' + currentSourceUrl.replace(/"/g, '&quot;') + '" placeholder="https://..." /></div>'
+            + '<div class="field" style="margin-bottom:18px;"><label>Request Details</label><textarea id="editLeadRequestText" rows="4" style="resize:vertical;">' + currentRequestText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</textarea></div>'
+            + '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">'
+            + '<button class="btn btn-secondary" onclick="closeEditLeadInfoModal()">Cancel</button>'
+            + '<button class="btn btn-primary" onclick="submitEditLeadInfo(' + leadId + ')">Save Changes</button>'
+            + '</div>'
+            + '</div></div>';
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    };
+
+    window.closeEditLeadInfoModal = function () {
+        var modal = document.getElementById('editLeadInfoModal');
+        if (modal) modal.remove();
+    };
+
+    window.submitEditLeadInfo = async function (leadId) {
+        var payload = {
+            id: leadId,
+            productId: document.getElementById('editLeadProduct').value ? parseInt(document.getElementById('editLeadProduct').value) : null,
+            leadSourceTypeId: parseInt(document.getElementById('editLeadSourceType').value),
+            leadSourceReferenceTypeId: document.getElementById('editLeadSourceRef').value ? parseInt(document.getElementById('editLeadSourceRef').value) : null,
+            sourceUrl: document.getElementById('editLeadSourceUrl').value.trim() || null,
+            requestText: document.getElementById('editLeadRequestText').value.trim() || null
+        };
+
+        if (!payload.leadSourceTypeId) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Source is required.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving...');
+        try {
+            var response = await fetch('/Sales/AxPostUpdateRequestDetails', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: JSON.stringify(payload)
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                closeEditLeadInfoModal();
+                Swal.fire({ icon: 'success', title: 'Saved', text: 'Lead information updated.', confirmButtonColor: '#0D5EA6' }).then(function () { window.location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
             }
-        });
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
     };
 
     window.reactivateLead = function (id) {
@@ -419,3 +480,6 @@
         }
     };
 })();
+
+
+

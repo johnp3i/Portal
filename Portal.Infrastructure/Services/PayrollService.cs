@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -21,6 +22,9 @@ public class PayrollService : IPayrollService
     private readonly IPayslipAuditService _auditService;
     private readonly IPayrollPnlService _pnlService;
     private readonly IComplianceIntegrationService _complianceIntegrationService;
+    private readonly IPayslipPdfService _pdfService;
+    private readonly IPayslipRenderer _renderer;
+    private readonly IBusinessService _businessService;
     private readonly PortalDbContext _portalDbContext;
 
     public PayrollService(
@@ -31,6 +35,9 @@ public class PayrollService : IPayrollService
         IPayslipAuditService auditService,
         IPayrollPnlService pnlService,
         IComplianceIntegrationService complianceIntegrationService,
+        IPayslipPdfService pdfService,
+        IPayslipRenderer renderer,
+        IBusinessService businessService,
         PortalDbContext portalDbContext)
     {
         _repository = repository;
@@ -40,6 +47,9 @@ public class PayrollService : IPayrollService
         _auditService = auditService;
         _pnlService = pnlService;
         _complianceIntegrationService = complianceIntegrationService;
+        _pdfService = pdfService;
+        _renderer = renderer;
+        _businessService = businessService;
         _portalDbContext = portalDbContext;
     }
 
@@ -1074,6 +1084,7 @@ public class PayrollService : IPayrollService
                     var et = earningTypeLookup.GetValueOrDefault(el.EarningTypeId);
                     return new EarningLineDto
                     {
+                        EarningTypeId = el.EarningTypeId,
                         EarningTypeName = et?.Name ?? "Unknown",
                         EarningTypeCode = et?.Code ?? "Unknown",
                         Description = el.Description,
@@ -1262,6 +1273,7 @@ public class PayrollService : IPayrollService
                 return new EarningLineDto
                 {
                     Id = el.Id,
+                    EarningTypeId = el.EarningTypeId,
                     EarningTypeName = et?.Name ?? "Unknown",
                     EarningTypeCode = et?.Code ?? "Unknown",
                     Description = el.Description,
@@ -1514,10 +1526,24 @@ public class PayrollService : IPayrollService
     {
         try
         {
-            // STUB: PDF generation deferred to PDF service task (Task 13)
-            // Returns empty byte array until IPayslipPdfService is implemented
-            await Task.CompletedTask;
-            return Array.Empty<byte>();
+            // Load payslip detail
+            var payslip = await GetPayslipDetailAsync(payslipId, businessId);
+            if (payslip == null)
+                return Array.Empty<byte>();
+
+            // Load business info
+            var business = await _businessService.GetBusinessByIdAsync(businessId);
+            var profile = await _businessService.GetBusinessProfileAsync(businessId);
+            var businessAddress = profile != null
+                ? $"{profile.AddressLine1 ?? ""}, {profile.City ?? ""}, {profile.PostalCode ?? ""}, {profile.Country ?? ""}".Trim(',', ' ')
+                : "";
+
+            // Render HTML → PDF
+            var html = await _renderer.RenderPayslipHtmlAsync(
+                payslip, business?.Name ?? "Business", businessAddress, includeSignature);
+            var pdfBytes = await _pdfService.GeneratePdfAsync(html);
+
+            return pdfBytes;
         }
         catch (Exception ex)
         {
@@ -1709,6 +1735,455 @@ public class PayrollService : IPayrollService
                 UpdatedByUserName = f.UpdatedByUserId, // TODO: Join to AspNetUsers for display name
                 CreatedAtUtc = f.CreatedAtUtc
             }).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Earnings Override & Salary Register
+
+    public async Task<RecalculationResult> RecalculateEmployeeAsync(int employeeId, int periodId, int businessId, List<EarningLineOverride> overriddenLines)
+    {
+        try
+        {
+            // 1. Fetch the employee record
+            var employee = await _repository.GetEmployeeByIdAsync(employeeId, businessId);
+            if (employee == null)
+            {
+                return new RecalculationResult
+                {
+                    Success = false,
+                    Error = "Employee not found."
+                };
+            }
+
+            // 2. Fetch the period record to get the period date
+            var period = await _repository.GetPeriodByIdAsync(periodId, businessId);
+            if (period == null)
+            {
+                return new RecalculationResult
+                {
+                    Success = false,
+                    Error = "Period not found."
+                };
+            }
+
+            var periodDate = new DateTime(period.Year, period.Month, 1);
+
+            // 3. Load applicable deductions with rates (same logic as GeneratePayslipsPreviewAsync)
+            var deductionTypes = await _repository.GetActiveDeductionsWithRatesAsync(businessId);
+            var deductionsWithRates = new List<DeductionTypeWithHistory>();
+            foreach (var dt in deductionTypes)
+            {
+                var rates = await _repository.GetRateHistoryAsync(dt.Id);
+                deductionsWithRates.Add(new DeductionTypeWithHistory
+                {
+                    Id = dt.Id,
+                    Name = dt.Name,
+                    Code = dt.Code,
+                    IsPercentage = dt.IsPercentage,
+                    DeductionCategoryTypeId = dt.DeductionCategoryTypeId,
+                    IsPayeDeductible = dt.IsPayeDeductible,
+                    RateHistories = rates
+                });
+            }
+
+            // 4. Load earning types for code lookup
+            var earningTypes = await _repository.GetAllEarningTypesAsync();
+            var earningTypeLookup = earningTypes.ToDictionary(e => e.Id, e => e);
+
+            // 5. Map EarningLineOverride list to List<EarningLineInput>
+            var earningLineInputs = overriddenLines.Select(ol =>
+            {
+                var et = earningTypeLookup.GetValueOrDefault(ol.EarningTypeId);
+                return new EarningLineInput
+                {
+                    EarningTypeId = ol.EarningTypeId,
+                    EarningTypeCode = et?.Code ?? "Basic",
+                    Description = ol.Description,
+                    Amount = ol.Amount,
+                    OvertimeMultiplier = ol.OvertimeMultiplier,
+                    OvertimeHours = ol.OvertimeHours
+                };
+            }).ToList();
+
+            // 6. Build PayslipCalculationInput
+            var calcInput = new PayslipCalculationInput
+            {
+                Employee = employee,
+                EarningLines = earningLineInputs,
+                ApplicableDeductions = deductionsWithRates,
+                PeriodDate = periodDate
+            };
+
+            // 7. Call orchestrator
+            var calcResult = await _orchestrator.CalculateWithPayeAsync(calcInput, employee.IsPayeApplicable);
+
+            if (!calcResult.IsValid)
+            {
+                return new RecalculationResult
+                {
+                    Success = false,
+                    Error = calcResult.ValidationError ?? "Calculation failed."
+                };
+            }
+
+            // 8. Return RecalculationResult
+            return new RecalculationResult
+            {
+                Success = true,
+                TotalEarnings = calcResult.TotalEarnings,
+                TotalEmployeeDeductions = calcResult.TotalEmployeeDeductions,
+                NetSalary = calcResult.NetSalary,
+                TotalEmployerContributions = calcResult.TotalEmployerContributions
+            };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> ConfirmBatchGenerationWithOverridesAsync(int periodId, int businessId, List<EmployeeEarningsOverride> overrides)
+    {
+        try
+        {
+            var period = await _repository.GetPeriodByIdAsync(periodId, businessId);
+            if (period == null)
+                return ServiceResult.Fail("Period not found.");
+
+            if (period.PayslipStatusTypeId != 1) // Must be Draft
+                return ServiceResult.Fail("Batch can only be confirmed for Draft periods.");
+
+            var periodDate = new DateTime(period.Year, period.Month, 1);
+            var employees = await _repository.GetActiveEmployeesForPeriodAsync(businessId, periodDate);
+
+            if (!employees.Any())
+                return ServiceResult.Fail("No active employees found for this period.");
+
+            // Load earning types for code lookup
+            var earningTypes = await _repository.GetAllEarningTypesAsync();
+            var earningTypeLookup = earningTypes.ToDictionary(e => e.Id, e => e);
+
+            // Load business deductions with rates
+            var deductionTypes = await _repository.GetActiveDeductionsWithRatesAsync(businessId);
+            var deductionsWithRates = new List<DeductionTypeWithHistory>();
+            foreach (var dt in deductionTypes)
+            {
+                var rates = await _repository.GetRateHistoryAsync(dt.Id);
+                deductionsWithRates.Add(new DeductionTypeWithHistory
+                {
+                    Id = dt.Id,
+                    Name = dt.Name,
+                    Code = dt.Code,
+                    IsPercentage = dt.IsPercentage,
+                    DeductionCategoryTypeId = dt.DeductionCategoryTypeId,
+                    IsPayeDeductible = dt.IsPayeDeductible,
+                    RateHistories = rates
+                });
+            }
+
+            // Build override lookup by EmployeeId
+            var overrideLookup = overrides.ToDictionary(o => o.EmployeeId, o => o.EarningLines);
+
+            foreach (var employee in employees)
+            {
+                var earningLineInputs = new List<EarningLineInput>();
+
+                if (overrideLookup.TryGetValue(employee.Id, out var overriddenLines))
+                {
+                    // Use overridden earning lines
+                    earningLineInputs = overriddenLines.Select(ol =>
+                    {
+                        var et = earningTypeLookup.GetValueOrDefault(ol.EarningTypeId);
+                        return new EarningLineInput
+                        {
+                            EarningTypeId = ol.EarningTypeId,
+                            EarningTypeCode = et?.Code ?? "Basic",
+                            Description = ol.Description,
+                            Amount = ol.Amount,
+                            OvertimeMultiplier = ol.OvertimeMultiplier,
+                            OvertimeHours = ol.OvertimeHours
+                        };
+                    }).ToList();
+                }
+                else
+                {
+                    // Use default earnings or BaseSalary fallback (same as GeneratePayslipsPreviewAsync)
+                    var defaultEarnings = await _repository.GetDefaultEarningsByEmployeeAsync(employee.Id);
+
+                    if (defaultEarnings.Any())
+                    {
+                        foreach (var de in defaultEarnings)
+                        {
+                            var et = earningTypeLookup.GetValueOrDefault(de.EarningTypeId);
+                            earningLineInputs.Add(new EarningLineInput
+                            {
+                                EarningTypeId = de.EarningTypeId,
+                                EarningTypeCode = et?.Code ?? "Basic",
+                                Description = de.Description,
+                                Amount = de.Amount,
+                                OvertimeMultiplier = de.OvertimeMultiplier,
+                                OvertimeHours = de.OvertimeHours
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // Fallback: BaseSalary as Basic earning
+                        var basicType = earningTypes.FirstOrDefault(e => e.Code == "Basic");
+                        earningLineInputs.Add(new EarningLineInput
+                        {
+                            EarningTypeId = basicType?.Id ?? 1,
+                            EarningTypeCode = "Basic",
+                            Description = "Basic Salary",
+                            Amount = employee.BaseSalary,
+                            OvertimeMultiplier = null,
+                            OvertimeHours = null
+                        });
+                    }
+                }
+
+                // Run calculation engine
+                var calcInput = new PayslipCalculationInput
+                {
+                    Employee = employee,
+                    EarningLines = earningLineInputs,
+                    ApplicableDeductions = deductionsWithRates,
+                    PeriodDate = periodDate
+                };
+
+                var calcResult = await _orchestrator.CalculateWithPayeAsync(calcInput, employee.IsPayeApplicable);
+
+                if (!calcResult.IsValid)
+                    continue; // Skip employees with calculation errors
+
+                // Create payslip record
+                var payslip = new Payslip
+                {
+                    EmployeeId = employee.Id,
+                    PayslipPeriodId = periodId,
+                    TotalEarnings = calcResult.TotalEarnings,
+                    TotalEmployeeDeductions = calcResult.TotalEmployeeDeductions,
+                    NetSalary = calcResult.NetSalary,
+                    TotalEmployerContributions = calcResult.TotalEmployerContributions,
+                    ManagerNotes = null,
+                    PayslipStatusTypeId = 2 // Preview
+                };
+
+                var payslipId = await _repository.InsertPayslipAsync(payslip);
+
+                // Insert earning lines
+                foreach (var el in calcResult.EarningLines)
+                {
+                    await _repository.InsertEarningLineAsync(new PayslipEarningLine
+                    {
+                        PayslipId = payslipId,
+                        EarningTypeId = el.EarningTypeId,
+                        Description = el.Description,
+                        Amount = el.Amount,
+                        OvertimeMultiplier = el.OvertimeMultiplier,
+                        OvertimeHours = el.OvertimeHours
+                    });
+                }
+
+                // Insert deduction lines
+                foreach (var dl in calcResult.DeductionLines)
+                {
+                    var dedType = deductionsWithRates.FirstOrDefault(d => d.Id == dl.DeductionTypeId);
+                    if (dedType == null) continue;
+
+                    int? deductionRateHistoryId = null;
+
+                    if (dedType.Code != "PAYE")
+                    {
+                        var rates = await _repository.GetRateHistoryAsync(dedType.Id);
+                        var effectiveRate = rates.FirstOrDefault(r =>
+                            r.EffectiveFromUtc <= periodDate &&
+                            (r.EffectiveToUtc == null || r.EffectiveToUtc > periodDate));
+
+                        if (effectiveRate == null) continue;
+                        deductionRateHistoryId = effectiveRate.Id;
+                    }
+
+                    await _repository.InsertDeductionLineAsync(new PayslipDeductionLine
+                    {
+                        PayslipId = payslipId,
+                        DeductionTypeId = dedType.Id,
+                        BaseAmount = dl.BaseAmount,
+                        Rate = dl.Rate,
+                        CalculatedAmount = dl.CalculatedAmount,
+                        DeductionCategoryTypeId = dedType.DeductionCategoryTypeId,
+                        DeductionRateHistoryId = deductionRateHistoryId
+                    });
+                }
+            }
+
+            // Update period status to Preview
+            await _repository.UpdatePeriodStatusAsync(periodId, 2, period.PayslipStatusTypeId, null);
+            await _repository.UpdateAllPayslipStatusesInPeriodAsync(periodId, 2);
+
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<SalaryRegisterViewModel> GetSalaryRegisterAsync(int businessId, int? departmentId, bool? isActive)
+    {
+        try
+        {
+            // Default isActive to true when null (initial page load shows active employees)
+            var effectiveIsActive = isActive ?? true;
+
+            // Get all employees for the business
+            var connection = _portalDbContext.Database.GetDbConnection();
+
+            var allEmployees = new List<SalaryRegisterRow>();
+            var departments = new List<DepartmentDto>();
+
+            try
+            {
+                if (connection.State != System.Data.ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                // Get departments for filter dropdown
+                using (var deptCommand = connection.CreateCommand())
+                {
+                    deptCommand.CommandText = @"
+                        SELECT [payroll].[Department].[Id],
+                               [payroll].[Department].[Name],
+                               [payroll].[Department].[IsActive]
+                        FROM [payroll].[Department]
+                        WHERE [payroll].[Department].[BusinessId] = @BusinessId
+                          AND [payroll].[Department].[IsActive] = 1
+                        ORDER BY [payroll].[Department].[Name]";
+
+                    var transaction = _portalDbContext.Database.CurrentTransaction;
+                    if (transaction != null)
+                        deptCommand.Transaction = transaction.GetDbTransaction();
+
+                    deptCommand.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@BusinessId", businessId));
+
+                    using var deptReader = await deptCommand.ExecuteReaderAsync();
+                    while (await deptReader.ReadAsync())
+                    {
+                        departments.Add(new DepartmentDto
+                        {
+                            Id = deptReader.GetInt32(0),
+                            Name = deptReader.GetString(1),
+                            IsActive = deptReader.GetBoolean(2)
+                        });
+                    }
+                }
+
+                // Get employees with optional filters
+                using (var empCommand = connection.CreateCommand())
+                {
+                    var sql = @"
+                        SELECT [payroll].[Employee].[Id],
+                               [payroll].[Employee].[Name],
+                               [payroll].[Department].[Name],
+                               [payroll].[Employee].[SalaryTypeId],
+                               [payroll].[Employee].[BaseSalary],
+                               [payroll].[Employee].[HourlyRate],
+                               [payroll].[Employee].[IsActive]
+                        FROM [payroll].[Employee]
+                        LEFT JOIN [payroll].[Department]
+                            ON [payroll].[Employee].[DepartmentId] = [payroll].[Department].[Id]
+                        WHERE [payroll].[Employee].[BusinessId] = @BusinessId
+                          AND [payroll].[Employee].[IsActive] = @IsActive";
+
+                    if (departmentId.HasValue)
+                    {
+                        sql += " AND [payroll].[Employee].[DepartmentId] = @DepartmentId";
+                    }
+
+                    sql += " ORDER BY [payroll].[Employee].[Name] ASC";
+
+                    empCommand.CommandText = sql;
+
+                    var transaction = _portalDbContext.Database.CurrentTransaction;
+                    if (transaction != null)
+                        empCommand.Transaction = transaction.GetDbTransaction();
+
+                    empCommand.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@BusinessId", businessId));
+                    empCommand.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@IsActive", effectiveIsActive));
+
+                    if (departmentId.HasValue)
+                    {
+                        empCommand.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@DepartmentId", departmentId.Value));
+                    }
+
+                    using var empReader = await empCommand.ExecuteReaderAsync();
+                    while (await empReader.ReadAsync())
+                    {
+                        allEmployees.Add(new SalaryRegisterRow
+                        {
+                            EmployeeId = empReader.GetInt32(0),
+                            EmployeeName = empReader.GetString(1),
+                            DepartmentName = empReader.IsDBNull(2) ? null : empReader.GetString(2),
+                            SalaryType = empReader.GetByte(3) == 1 ? "Monthly" : "Hourly",
+                            BaseSalary = empReader.GetDecimal(4),
+                            HourlyRate = empReader.IsDBNull(5) ? null : empReader.GetDecimal(5),
+                            IsActive = empReader.GetBoolean(6)
+                        });
+                    }
+                }
+            }
+            finally
+            {
+                if (connection.State == System.Data.ConnectionState.Open && _portalDbContext.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            // Compute totals
+            var totalEmployees = allEmployees.Count;
+            var totalMonthlyPayroll = allEmployees
+                .Where(e => e.SalaryType == "Monthly" && e.IsActive)
+                .Sum(e => e.BaseSalary);
+
+            return new SalaryRegisterViewModel
+            {
+                Employees = allEmployees,
+                Departments = departments,
+                SelectedDepartmentId = departmentId,
+                SelectedIsActive = isActive,
+                TotalEmployees = totalEmployees,
+                TotalMonthlyPayroll = totalMonthlyPayroll
+            };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> UpdateBaseSalaryAsync(int employeeId, int businessId, decimal newSalary)
+    {
+        try
+        {
+            // 1. Validate newSalary > 0
+            if (newSalary <= 0)
+                return ServiceResult.Fail("Salary must be greater than zero.");
+
+            // 2. Fetch employee to verify it exists and belongs to the business
+            var employee = await _repository.GetEmployeeByIdAsync(employeeId, businessId);
+            if (employee == null)
+                return ServiceResult.Fail("Employee not found.");
+
+            // 3. Update BaseSalary
+            employee.BaseSalary = newSalary;
+            await _repository.UpdateEmployeeAsync(employee);
+
+            // 4. Return success
+            return ServiceResult.Ok();
         }
         catch (Exception ex)
         {

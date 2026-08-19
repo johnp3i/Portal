@@ -1,0 +1,174 @@
+@{
+    ViewData["Title"] = "Sales Insights";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Pipeline / Insights</div>
+        <h1 class="topbar-heading">Insights</h1>
+        <p class="topbar-subtitle">Operational metrics and performance analytics.</p>
+    </div>
+</div>
+
+<!-- Date Range Filter -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-secondary date-preset" data-period="ThisWeek">This Week</button>
+        <button class="btn btn-secondary date-preset active" data-period="ThisMonth">This Month</button>
+        <button class="btn btn-secondary date-preset" data-period="LastMonth">Last Month</button>
+        <button class="btn btn-secondary date-preset" data-period="ThisQuarter">This Quarter</button>
+        <button class="btn btn-secondary date-preset" data-period="Last6Months">Last 6 Months</button>
+        <button class="btn btn-secondary date-preset" data-period="ThisYear">This Year</button>
+        <button class="btn btn-secondary date-preset" data-period="Custom">Custom</button>
+        <div id="customRange" style="display:none;margin-left:8px;align-items:center;gap:8px;">
+            <input type="date" id="insightsStartDate" style="padding:8px 12px;border:1px solid rgba(13,94,166,.15);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;" />
+            <span style="font-size:13px;color:#5E7385;">to</span>
+            <input type="date" id="insightsEndDate" style="padding:8px 12px;border:1px solid rgba(13,94,166,.15);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;" />
+            <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;" id="btnApplyCustomRange">Apply</button>
+        </div>
+    </div>
+</section>
+
+<!-- Metric Cards Grid -->
+<section class="glass card-pad">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:18px;">
+        <!-- New Leads -->
+        <div id="newLeadsCount" class="metric-card">
+            <div class="metric-label">New Leads</div>
+            <div class="metric-value" data-value>No data</div>
+        </div>
+
+        <!-- Response SLA -->
+        <div id="responseSla" class="metric-card">
+            <div class="metric-label">Response SLA</div>
+            <div class="metric-value" data-value>No data</div>
+        </div>
+
+        <!-- Demo Conversion -->
+        <div id="demoConversion" class="metric-card">
+            <div class="metric-label">Demo Conversion</div>
+            <div class="metric-value" data-value>No data</div>
+        </div>
+
+        <!-- Proposal Conversion -->
+        <div id="proposalConversion" class="metric-card">
+            <div class="metric-label">Proposal Conversion</div>
+            <div class="metric-value" data-value>No data</div>
+        </div>
+
+        <!-- Win Rate -->
+        <div id="winRate" class="metric-card">
+            <div class="metric-label">Win Rate</div>
+            <div class="metric-value" data-value>No data</div>
+        </div>
+
+        <!-- Avg. Sales Cycle -->
+        <div id="avgSalesCycle" class="metric-card">
+            <div class="metric-label">Avg. Sales Cycle</div>
+            <div class="metric-value" data-value>No data</div>
+        </div>
+    </div>
+</section>
+
+<!-- Revenue by Product -->
+<section class="glass card-pad" style="margin-top:22px;">
+    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin:0 0 16px 0;">Revenue by Product</h3>
+    <div id="revenueByProduct">
+        <p style="font-size:14px;color:#5E7385;">No data</p>
+    </div>
+</section>
+
+<!-- Revenue by Source -->
+<section class="glass card-pad" style="margin-top:22px;">
+    <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#0B1B28;margin:0 0 16px 0;">Revenue by Source</h3>
+    <div id="revenueBySource">
+        <p style="font-size:14px;color:#5E7385;">No data</p>
+    </div>
+</section>
+
+<style>
+    .metric-card {
+        background: rgba(13, 94, 166, .03);
+        border: 1px solid rgba(13, 94, 166, .08);
+        border-radius: 16px;
+        padding: 20px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .metric-card .metric-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: #5E7385;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .metric-card .metric-value {
+        font-family: 'Manrope', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        color: #0B1B28;
+    }
+
+    .metric-card .metric-value.colour-green {
+        color: #129867;
+    }
+
+    .metric-card .metric-value.colour-amber {
+        color: #C8912E;
+    }
+
+    .metric-card .metric-value.colour-red {
+        color: #C24A4A;
+    }
+
+    .date-preset.active {
+        background: #0D5EA6;
+        color: #fff;
+        border-color: #0D5EA6;
+    }
+
+    .revenue-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(13, 94, 166, .06);
+    }
+
+    .revenue-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .revenue-list-item .revenue-name {
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: #0B1B28;
+    }
+
+    .revenue-list-item .revenue-details {
+        text-align: right;
+    }
+
+    .revenue-list-item .revenue-amount {
+        font-family: 'Manrope', sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: #0B1B28;
+    }
+
+    .revenue-list-item .revenue-percentage {
+        font-size: 12px;
+        font-weight: 600;
+        color: #5E7385;
+        margin-top: 2px;
+    }
+</style>
+
+@section Scripts {
+    <script src="~/js/sales/insights.js?v=1"></script>
+}

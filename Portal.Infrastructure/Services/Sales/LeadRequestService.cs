@@ -23,6 +23,7 @@ public class LeadRequestService : ILeadRequestService
     private readonly LeadResponseTypeRepository _responseTypeRepository;
     private readonly MeetingRepository _meetingRepository;
     private readonly MeetingTypeRepository _meetingTypeRepository;
+    private readonly LeadPriorityTypeRepository _priorityTypeRepository;
     private readonly IContactService _contactService;
     private readonly ICurrentTenantService _tenantService;
     private readonly PortalDbContext _context;
@@ -38,6 +39,7 @@ public class LeadRequestService : ILeadRequestService
         LeadResponseTypeRepository responseTypeRepository,
         MeetingRepository meetingRepository,
         MeetingTypeRepository meetingTypeRepository,
+        LeadPriorityTypeRepository priorityTypeRepository,
         IContactService contactService,
         ICurrentTenantService tenantService,
         PortalDbContext context)
@@ -52,6 +54,7 @@ public class LeadRequestService : ILeadRequestService
         _responseTypeRepository = responseTypeRepository;
         _meetingRepository = meetingRepository;
         _meetingTypeRepository = meetingTypeRepository;
+        _priorityTypeRepository = priorityTypeRepository;
         _contactService = contactService;
         _tenantService = tenantService;
         _context = context;
@@ -89,7 +92,30 @@ public class LeadRequestService : ILeadRequestService
         try
         {
             var businessId = _tenantService.CurrentBusinessId;
+
+            // Terminal stages: Won (6), Lost (7). Inactive (8) is excluded from ClosedAtUtc logic.
+            const int WonStageId = 6;
+            const int LostStageId = 7;
+
+            var lead = await _leadRequestRepository.GetByIdAsync(id, businessId);
+            if (lead == null)
+                return ServiceResult.Fail("Lead not found.");
+
+            var currentStageIsTerminal = lead.LeadStatusTypeId == WonStageId || lead.LeadStatusTypeId == LostStageId;
+            var newStageIsTerminal = leadStatusTypeId == WonStageId || leadStatusTypeId == LostStageId;
+
             await _leadRequestRepository.UpdateStageAsync(id, businessId, leadStatusTypeId);
+
+            // ClosedAtUtc lifecycle: set when transitioning TO terminal, clear when reopening FROM terminal
+            if (newStageIsTerminal && !currentStageIsTerminal && lead.ClosedAtUtc == null)
+            {
+                await _leadRequestRepository.SetClosedAtUtcAsync(id, DateTime.UtcNow, businessId);
+            }
+            else if (currentStageIsTerminal && !newStageIsTerminal)
+            {
+                await _leadRequestRepository.SetClosedAtUtcAsync(id, null, businessId);
+            }
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -247,6 +273,24 @@ public class LeadRequestService : ILeadRequestService
                 return ServiceResult.Fail("Lead not found.");
 
             await _leadRequestRepository.UpdateRequestTextAsync(id, businessId, requestText);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> UpdateLeadDetailsAsync(int id, int? productId, int leadSourceTypeId, int? leadSourceReferenceTypeId, string? sourceUrl, string? requestText)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var lead = await _leadRequestRepository.GetByIdAsync(id, businessId);
+            if (lead == null)
+                return ServiceResult.Fail("Lead not found.");
+
+            await _leadRequestRepository.UpdateLeadDetailsAsync(id, businessId, productId, leadSourceTypeId, leadSourceReferenceTypeId, sourceUrl, requestText);
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -442,12 +486,15 @@ public class LeadRequestService : ILeadRequestService
                 SourceReferenceName = sourceRef?.Name,
                 SourceUrl = lead.SourceUrl,
                 RequestText = lead.RequestText,
+                LeadSourceTypeId = lead.LeadSourceTypeId,
+                LeadSourceReferenceTypeId = lead.LeadSourceReferenceTypeId,
                 LeadStatusTypeId = lead.LeadStatusTypeId,
                 StageName = status?.Name ?? "Unknown",
                 StageColour = status?.Colour,
                 IsTerminal = status?.IsTerminal ?? false,
                 AssignedToUserId = lead.AssignedToUserId,
                 TeamMemberId = lead.TeamMemberId,
+                LeadPriorityTypeId = lead.LeadPriorityTypeId,
                 IsCancelled = lead.IsCancelled,
                 CancellationDescription = lead.CancellationDescription,
                 CreatedAtUtc = lead.CreatedAtUtc,
@@ -484,6 +531,18 @@ public class LeadRequestService : ILeadRequestService
                 }
             }
 
+            // Resolve priority name and colour
+            if (lead.LeadPriorityTypeId.HasValue)
+            {
+                var priorityTypes = await _priorityTypeRepository.GetAllAsync();
+                var priority = priorityTypes.FirstOrDefault(p => p.Id == lead.LeadPriorityTypeId.Value);
+                if (priority != null)
+                {
+                    dto.PriorityName = priority.Name;
+                    dto.PriorityColour = priority.Colour;
+                }
+            }
+
             return dto;
         }
         catch (Exception ex)
@@ -515,6 +574,23 @@ public class LeadRequestService : ILeadRequestService
             if (productId.HasValue)
                 leads = leads.Where(l => l.ProductId == productId.Value).ToList();
 
+            // Batch-load priority types for enrichment
+            var priorityTypes = await _priorityTypeRepository.GetAllAsync();
+
+            // Batch-load products for all leads that have a ProductId
+            var productIds = leads.Where(l => l.ProductId.HasValue).Select(l => l.ProductId!.Value).Distinct().ToList();
+            var productLookup = new Dictionary<int, string>();
+            foreach (var pid in productIds)
+            {
+                var product = await _productRepository.GetByIdAsync(pid, businessId);
+                if (product != null) productLookup[pid] = product.Name;
+            }
+
+            // Batch-load last activity dates for DaysSinceLastActivity computation
+            var leadIds = leads.Select(l => l.Id).ToList();
+            var activityDates = await _leadRequestRepository.GetLastActivityDatesAsync(leadIds, businessId);
+            var activityDateLookup = activityDates.ToDictionary(a => a.LeadRequestId, a => a.LastActivityDateUtc);
+
             // Build pipeline groups
             var groups = statuses.Select(s => new PipelineStageGroupDto
             {
@@ -532,11 +608,12 @@ public class LeadRequestService : ILeadRequestService
                         ContactName = string.Empty, // Will be filled below
                         AssignedToUserId = l.AssignedToUserId,
                         CreatedAtUtc = l.CreatedAtUtc,
-                        LeadStatusTypeId = l.LeadStatusTypeId
+                        LeadStatusTypeId = l.LeadStatusTypeId,
+                        LeadPriorityTypeId = l.LeadPriorityTypeId
                     }).ToList()
             }).OrderBy(g => g.DisplayOrder).ToList();
 
-            // Enrich contact names
+            // Enrich contact names, priority, and days-since-last-activity
             foreach (var group in groups)
             {
                 foreach (var card in group.Leads)
@@ -552,13 +629,32 @@ public class LeadRequestService : ILeadRequestService
                     if (contacts.TryGetValue(lead.ContactId, out var c))
                         card.ContactName = string.IsNullOrWhiteSpace(c.LastName) ? c.FirstName : $"{c.FirstName} {c.LastName}";
 
-                    if (lead.ProductId.HasValue)
-                    {
-                        var product = await _productRepository.GetByIdAsync(lead.ProductId.Value, businessId);
-                        card.ProductName = product?.Name;
-                    }
+                    if (lead.ProductId.HasValue && productLookup.TryGetValue(lead.ProductId.Value, out var productName))
+                        card.ProductName = productName;
 
                     card.SourceName = sourceTypes.FirstOrDefault(s => s.Id == lead.LeadSourceTypeId)?.Name;
+
+                    // Enrich priority name and colour
+                    if (lead.LeadPriorityTypeId.HasValue)
+                    {
+                        var priority = priorityTypes.FirstOrDefault(p => p.Id == lead.LeadPriorityTypeId.Value);
+                        if (priority != null)
+                        {
+                            card.PriorityName = priority.Name;
+                            card.PriorityColour = priority.Colour;
+                        }
+                    }
+
+                    // Compute DaysSinceLastActivity from batch-loaded activity dates
+                    if (activityDateLookup.TryGetValue(card.Id, out var lastActivityDate))
+                    {
+                        card.DaysSinceLastActivity = Math.Max(0, (int)(DateTime.UtcNow.Date - lastActivityDate.Date).TotalDays);
+                    }
+                    else
+                    {
+                        // Fallback to CreatedAtUtc if no activity date returned
+                        card.DaysSinceLastActivity = Math.Max(0, (int)(DateTime.UtcNow.Date - lead.CreatedAtUtc.Date).TotalDays);
+                    }
                 }
             }
 
@@ -655,6 +751,55 @@ public class LeadRequestService : ILeadRequestService
             {
                 await _leadRequestRepository.UpdateStageAsync(leadRequestId, businessId, suggestedStatusId.Value);
             }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> SetPriorityAsync(int leadRequestId, int leadPriorityTypeId)
+    {
+        try
+        {
+            if (leadPriorityTypeId < 1 || leadPriorityTypeId > 3)
+                return ServiceResult.Fail("Invalid priority type.");
+
+            var businessId = _tenantService.CurrentBusinessId;
+            await _leadRequestRepository.UpdatePriorityAsync(leadRequestId, leadPriorityTypeId, businessId);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> ClearPriorityAsync(int leadRequestId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            await _leadRequestRepository.UpdatePriorityAsync(leadRequestId, null, businessId);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<LeadPriorityTypeDto>> GetPriorityTypesAsync()
+    {
+        try
+        {
+            var priorityTypes = await _priorityTypeRepository.GetAllAsync();
+            return priorityTypes.Select(p => new LeadPriorityTypeDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Colour = p.Colour
+            }).ToList();
         }
         catch (Exception ex)
         {

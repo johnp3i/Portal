@@ -36,6 +36,10 @@ public class LeadRequest
 
     public bool IsActive { get; set; }
 
+    public int? LeadPriorityTypeId { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties
@@ -52,6 +56,8 @@ public class LeadRequest
     public LeadSourceReferenceType? LeadSourceReferenceType { get; set; }
 
     public LeadStatusType LeadStatusType { get; set; } = null!;
+
+    public LeadPriorityType? LeadPriorityType { get; set; }
 
     public ICollection<LeadResponse> Responses { get; set; } = new List<LeadResponse>();
 

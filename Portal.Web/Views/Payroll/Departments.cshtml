@@ -16,6 +16,24 @@
 
 @Html.AntiForgeryToken()
 
+<!-- About Departments -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <button type="button" onclick="var el=this.nextElementSibling;el.style.display=el.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=el.style.display==='none'?'':'rotate(180deg)';" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#0D5EA6;padding:0;font-family:inherit;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        About Departments
+    </button>
+    <div style="display:none;margin-top:14px;">
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;">
+            Departments group your employees by team or function (e.g., Kitchen, Bar, Management). They are used for:
+        </p>
+        <ul style="font-size:13px;color:#5a6a7a;line-height:1.8;margin:8px 0 0 18px;padding:0;">
+            <li>Filtering employees in lists and reports</li>
+            <li>Grouping payslips in the Period Summary report</li>
+            <li>Department-level cost breakdowns</li>
+        </ul>
+    </div>
+</section>
+
 <section class="glass card-pad">
     <!-- Create Form -->
     <div id="createForm" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
@@ -24,17 +42,6 @@
             <input type="text" id="txtDepartmentName" placeholder="e.g. Bar">
         </div>
         <button class="btn btn-primary btn-sm" onclick="createDepartment()">Create</button>
-    </div>
-
-    <!-- Edit Form (hidden by default) -->
-    <div id="editForm" style="display:none;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
-        <input type="hidden" id="editDepartmentId">
-        <div class="field" style="margin-bottom:0;min-width:240px;flex:1;">
-            <label>Edit Department Name</label>
-            <input type="text" id="txtEditDepartmentName" placeholder="Department name">
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="updateDepartment()">Update</button>
-        <button class="btn btn-secondary btn-sm" onclick="cancelEdit()">Cancel</button>
     </div>
 
     <!-- Departments Table -->
@@ -122,49 +129,49 @@
     }
 
     function startEdit(id, name) {
-        document.getElementById('editDepartmentId').value = id;
-        document.getElementById('txtEditDepartmentName').value = name;
-        document.getElementById('editForm').style.display = 'flex';
-        document.getElementById('createForm').style.display = 'none';
-    }
-
-    function cancelEdit() {
-        document.getElementById('editForm').style.display = 'none';
-        document.getElementById('createForm').style.display = 'flex';
-    }
-
-    async function updateDepartment() {
-        var id = parseInt(document.getElementById('editDepartmentId').value);
-        var name = document.getElementById('txtEditDepartmentName').value.trim();
-        if (!name) {
-            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Please enter a department name.', confirmButtonColor: '#0D5EA6' });
-            return;
-        }
-
-        BlockUI.show('Updating department...');
-        try {
-            var response = await fetch('/Payroll/AxPostUpdateDepartment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': getAntiForgeryToken()
-                },
-                body: JSON.stringify({ id: id, name: name })
-            });
-            var data = await response.json();
-            BlockUI.hide();
-
-            if (data.success) {
-                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
-                    window.location.reload();
-                });
-            } else {
-                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+        Swal.fire({
+            title: 'Edit Department',
+            html: '<div style="text-align:left;"><label style="font-size:13px;font-weight:600;color:#5E7385;display:block;margin-bottom:6px;">Department Name</label><input type="text" id="swalEditName" value="' + name + '" style="width:100%;padding:12px 16px;border:1.5px solid rgba(13,94,166,.15);border-radius:12px;font-size:14px;font-family:Inter,sans-serif;outline:none;"></div>',
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6',
+            preConfirm: function () {
+                var newName = document.getElementById('swalEditName').value.trim();
+                if (!newName) {
+                    Swal.showValidationMessage('Please enter a department name.');
+                    return false;
+                }
+                return newName;
             }
-        } catch (e) {
-            BlockUI.hide();
-            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
-        }
+        }).then(async function (result) {
+            if (result.isConfirmed) {
+                BlockUI.show('Updating department...');
+                try {
+                    var response = await fetch('/Payroll/AxPostUpdateDepartment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        },
+                        body: JSON.stringify({ id: id, name: result.value })
+                    });
+                    var data = await response.json();
+                    BlockUI.hide();
+
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    }
+                } catch (e) {
+                    BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+                }
+            }
+        });
     }
 
     async function toggleDepartment(id) {

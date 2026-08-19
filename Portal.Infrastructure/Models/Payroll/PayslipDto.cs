@@ -37,6 +37,7 @@ public class PayslipDetailDto
 public class EarningLineDto
 {
     public int Id { get; set; }
+    public int EarningTypeId { get; set; }
     public string EarningTypeName { get; set; } = string.Empty;
     public string EarningTypeCode { get; set; } = string.Empty;
     public string? Description { get; set; }

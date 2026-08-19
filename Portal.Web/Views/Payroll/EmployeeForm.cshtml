@@ -29,13 +29,34 @@
 
 @Html.AntiForgeryToken()
 
+<!-- Employee Setup Guide -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <button type="button" onclick="var el=this.nextElementSibling;el.style.display=el.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=el.style.display==='none'?'':'rotate(180deg)';" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#0D5EA6;padding:0;font-family:inherit;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        Employee Setup Guide
+    </button>
+    <div style="display:none;margin-top:14px;">
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.7;margin-bottom:10px;">
+            Key fields to fill in:
+        </p>
+        <ul style="font-size:13px;color:#5a6a7a;line-height:1.8;margin:0 0 0 18px;padding:0;">
+            <li><strong>Full Name, SIN, ID Number</strong> — Required for payslip generation and compliance</li>
+            <li><strong>Salary Type</strong> — Full-time (monthly salary), Part-time (monthly), or Hourly</li>
+            <li><strong>Base Salary</strong> — The monthly gross salary before deductions</li>
+            <li><strong>Hourly Rate</strong> — Required for overtime calculations</li>
+            <li><strong>Earning Lines</strong> — Break down the salary into components (Basic, Overtime, Allowances). If none are set, the full Base Salary is used as a single "Basic" line.</li>
+            <li><strong>PAYE</strong> — Toggle if the employee is subject to income tax deductions</li>
+        </ul>
+    </div>
+</section>
+
 <section class="glass card-pad">
     <!-- Personal Information -->
     <h3 class="section-title">Personal Information</h3>
     <div class="form-row">
         <div class="field">
             <label>Full Name *</label>
-            <input type="text" id="empName" value="@(Model?.Name)" placeholder="e.g. Giannis Papamichael">
+            <input type="text" id="empName" value="@(Model?.Name)" placeholder="e.g. Maria Georgiou">
         </div>
         <div class="field">
             <label>Position</label>

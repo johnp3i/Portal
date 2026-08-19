@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
+using Portal.Infrastructure.Models.Sales;
 
 namespace Portal.Infrastructure.Repositories;
 
@@ -571,7 +572,144 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 new SqlParameter("@FinancialStatusTypeId", financialStatusTypeId),
                 new SqlParameter("@UpdatedAtUtc", DateTime.UtcNow));
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Returns revenue grouped by product name for won leads with ClosedAtUtc in [startDate, endDate).
+    /// Leads with no ProductId are grouped under "General Enquiry".
+    /// </summary>
+    public async Task<List<RevenueBreakdownDto>> GetRevenueByProductAsync(DateTime startDate, DateTime endDate, int wonStatusTypeId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT ISNULL([sales].[Product].[Name], 'General Enquiry') AS [Name],
+                       SUM([invoice].[Invoice].[TotalAmount]) AS [TotalRevenue]
+                FROM [invoice].[Invoice]
+                INNER JOIN [sales].[LeadRequest] ON [invoice].[Invoice].[LeadRequestId] = [sales].[LeadRequest].[Id]
+                LEFT JOIN [sales].[Product] ON [sales].[LeadRequest].[ProductId] = [sales].[Product].[Id]
+                WHERE [sales].[LeadRequest].[BusinessId] = @BusinessId
+                  AND [sales].[LeadRequest].[ClosedAtUtc] >= @StartDate
+                  AND [sales].[LeadRequest].[ClosedAtUtc] < @EndDate
+                  AND [sales].[LeadRequest].[LeadStatusTypeId] = @WonStatusTypeId
+                GROUP BY ISNULL([sales].[Product].[Name], 'General Enquiry')
+                ORDER BY SUM([invoice].[Invoice].[TotalAmount]) DESC";
+
+            var results = new List<RevenueBreakdownDto>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@StartDate", startDate));
+                command.Parameters.Add(new SqlParameter("@EndDate", endDate));
+                command.Parameters.Add(new SqlParameter("@WonStatusTypeId", wonStatusTypeId));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new RevenueBreakdownDto
+                    {
+                        Name = reader.GetString(reader.GetOrdinal("Name")),
+                        TotalRevenue = reader.GetDecimal(reader.GetOrdinal("TotalRevenue"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    await connection.CloseAsync();
+            }
+
+            // Compute percentage of total for each row
+            var grandTotal = results.Sum(r => r.TotalRevenue);
+            foreach (var row in results)
+            {
+                row.Percentage = grandTotal > 0
+                    ? Math.Round((row.TotalRevenue / grandTotal) * 100, 2)
+                    : 0;
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Returns revenue grouped by lead source name for won leads with ClosedAtUtc in [startDate, endDate).
+    /// </summary>
+    public async Task<List<RevenueBreakdownDto>> GetRevenueBySourceAsync(DateTime startDate, DateTime endDate, int wonStatusTypeId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [sales].[LeadSourceType].[Name] AS [Name],
+                       SUM([invoice].[Invoice].[TotalAmount]) AS [TotalRevenue]
+                FROM [invoice].[Invoice]
+                INNER JOIN [sales].[LeadRequest] ON [invoice].[Invoice].[LeadRequestId] = [sales].[LeadRequest].[Id]
+                INNER JOIN [sales].[LeadSourceType] ON [sales].[LeadRequest].[LeadSourceTypeId] = [sales].[LeadSourceType].[Id]
+                WHERE [sales].[LeadRequest].[BusinessId] = @BusinessId
+                  AND [sales].[LeadRequest].[ClosedAtUtc] >= @StartDate
+                  AND [sales].[LeadRequest].[ClosedAtUtc] < @EndDate
+                  AND [sales].[LeadRequest].[LeadStatusTypeId] = @WonStatusTypeId
+                GROUP BY [sales].[LeadSourceType].[Name]
+                ORDER BY SUM([invoice].[Invoice].[TotalAmount]) DESC";
+
+            var results = new List<RevenueBreakdownDto>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@StartDate", startDate));
+                command.Parameters.Add(new SqlParameter("@EndDate", endDate));
+                command.Parameters.Add(new SqlParameter("@WonStatusTypeId", wonStatusTypeId));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new RevenueBreakdownDto
+                    {
+                        Name = reader.GetString(reader.GetOrdinal("Name")),
+                        TotalRevenue = reader.GetDecimal(reader.GetOrdinal("TotalRevenue"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    await connection.CloseAsync();
+            }
+
+            // Compute percentage of total for each row
+            var grandTotal = results.Sum(r => r.TotalRevenue);
+            foreach (var row in results)
+            {
+                row.Percentage = grandTotal > 0
+                    ? Math.Round((row.TotalRevenue / grandTotal) * 100, 2)
+                    : 0;
+            }
+
+            return results;
+        }
+        catch (Exception ex)
         {
             throw;
         }

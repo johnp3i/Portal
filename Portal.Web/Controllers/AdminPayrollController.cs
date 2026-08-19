@@ -21,6 +21,12 @@ public class AdminPayrollController : Controller
     // === Page Actions ===
 
     [HttpGet]
+    public IActionResult Index()
+    {
+        return View();
+    }
+
+    [HttpGet]
     public async Task<IActionResult> EarningTypes()
     {
         try
