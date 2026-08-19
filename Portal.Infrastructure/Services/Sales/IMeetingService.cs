@@ -18,4 +18,6 @@ public interface IMeetingService
     Task<byte[]> GenerateIcsFileAsync(int id);
     Task<ServiceResult> CreateProductRequestAsync(CreateMeetingProductRequestDto request);
     Task<ServiceResult> CreateOpportunityAsync(CreateMeetingOpportunityDto request);
+    Task<List<MeetingBriefDto>> GetUpcomingMeetingsBriefAsync(int businessId);
+    Task<List<DashboardMeetingBriefDto>> GetDashboardMeetingsBriefAsync(int businessId);
 }

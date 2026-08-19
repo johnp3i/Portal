@@ -21,11 +21,13 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 INSERT INTO [sales].[FollowUpTask]
                     ([BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                      [Title], [TaskType], [DueAtUtc], [Notes],
-                     [IsCompleted], [SnoozedCount], [CreatedByUserId], [CreatedAtUtc])
+                     [IsCompleted], [SnoozedCount], [ScheduledTimeUtc],
+                     [CreatedByUserId], [CreatedAtUtc])
                 VALUES
                     (@BusinessId, @LeadRequestId, @ContactId, @TeamMemberId,
                      @Title, @TaskType, @DueAtUtc, @Notes,
-                     0, 0, @CreatedByUserId, @CreatedAtUtc);
+                     0, 0, @ScheduledTimeUtc,
+                     @CreatedByUserId, @CreatedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
@@ -50,6 +52,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 command.Parameters.Add(new SqlParameter("@TaskType", entity.TaskType));
                 command.Parameters.Add(new SqlParameter("@DueAtUtc", entity.DueAtUtc));
                 command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ScheduledTimeUtc", SqlDbType.Time) { Value = entity.ScheduledTimeUtc.HasValue ? entity.ScheduledTimeUtc.Value.ToTimeSpan() : DBNull.Value });
                 command.Parameters.Add(new SqlParameter("@CreatedByUserId", entity.CreatedByUserId));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
 
@@ -75,7 +78,8 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
             const string query = @"
                 UPDATE [sales].[FollowUpTask]
                 SET [IsCompleted] = 1,
-                    [CompletedAtUtc] = @CompletedAtUtc
+                    [CompletedAtUtc] = @CompletedAtUtc,
+                    [TaskOutcome] = 'Completed'
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId AND [IsCompleted] = 0";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -119,7 +123,8 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
             const string query = @"
                 UPDATE [sales].[FollowUpTask]
                 SET [IsCompleted] = 0,
-                    [CompletedAtUtc] = NULL
+                    [CompletedAtUtc] = NULL,
+                    [TaskOutcome] = NULL
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId AND [IsCompleted] = 1";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -133,7 +138,30 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         }
     }
 
-    public async Task UpdateAsync(int id, int businessId, string title, string taskType, DateTime dueAtUtc, string? notes)
+    public async Task MarkUnprocessedAsync(int id, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [sales].[FollowUpTask]
+                SET [IsCompleted] = 1,
+                    [CompletedAtUtc] = @CompletedAtUtc,
+                    [TaskOutcome] = 'Unprocessed'
+                WHERE [Id] = @Id AND [BusinessId] = @BusinessId AND [IsCompleted] = 0";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@CompletedAtUtc", DateTime.UtcNow)
+            );
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task UpdateAsync(int id, int businessId, string title, string taskType, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
     {
         try
         {
@@ -142,7 +170,8 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SET [Title] = @Title,
                     [TaskType] = @TaskType,
                     [DueAtUtc] = @DueAtUtc,
-                    [Notes] = @Notes
+                    [Notes] = @Notes,
+                    [ScheduledTimeUtc] = @ScheduledTimeUtc
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -151,7 +180,8 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 new SqlParameter("@Title", title),
                 new SqlParameter("@TaskType", taskType),
                 new SqlParameter("@DueAtUtc", dueAtUtc),
-                new SqlParameter("@Notes", notes ?? (object)DBNull.Value)
+                new SqlParameter("@Notes", notes ?? (object)DBNull.Value),
+                new SqlParameter("@ScheduledTimeUtc", SqlDbType.Time) { Value = scheduledTimeUtc.HasValue ? scheduledTimeUtc.Value.ToTimeSpan() : DBNull.Value }
             );
         }
         catch (Exception ex)
@@ -168,6 +198,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
+                       [TaskOutcome], [ScheduledTimeUtc],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
@@ -194,6 +225,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT TOP 10 [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
+                       [TaskOutcome], [ScheduledTimeUtc],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE [BusinessId] = @BusinessId
@@ -210,7 +242,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 parameters.Add(new SqlParameter("@TeamMemberId", teamMemberId.Value));
             }
 
-            query += " ORDER BY [DueAtUtc] ASC";
+            query += " ORDER BY [DueAtUtc] ASC, CASE WHEN [ScheduledTimeUtc] IS NOT NULL THEN 0 ELSE 1 END ASC, [ScheduledTimeUtc] ASC";
 
             var results = await ExecuteStoredProcedureUnfiltered(query, parameters.ToArray());
             return results.ToList();
@@ -232,6 +264,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
+                       [TaskOutcome], [ScheduledTimeUtc],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE [LeadRequestId] = @LeadRequestId AND [BusinessId] = @BusinessId
@@ -309,6 +342,41 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
     }
 
     /// <summary>
+    /// Gets incomplete tasks due today or tomorrow for the dashboard brief.
+    /// </summary>
+    public async Task<List<FollowUpTask>> GetDashboardBriefAsync(int businessId)
+    {
+        try
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+
+            const string query = @"
+                SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
+                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [IsCompleted], [CompletedAtUtc], [SnoozedCount],
+                       [TaskOutcome], [ScheduledTimeUtc],
+                       [CreatedByUserId], [CreatedAtUtc]
+                FROM [sales].[FollowUpTask]
+                WHERE [BusinessId] = @BusinessId
+                  AND [IsCompleted] = 0
+                  AND CAST([DueAtUtc] AS DATE) >= @Today
+                  AND CAST([DueAtUtc] AS DATE) <= @Tomorrow
+                ORDER BY [DueAtUtc] ASC, CASE WHEN [ScheduledTimeUtc] IS NOT NULL THEN 0 ELSE 1 END ASC, [ScheduledTimeUtc] ASC";
+
+            var results = await ExecuteStoredProcedureUnfiltered(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@Today", today),
+                new SqlParameter("@Tomorrow", tomorrow));
+            return results.ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Gets paged tasks with optional filtering.
     /// </summary>
     public async Task<(List<FollowUpTask> Items, int TotalCount)> GetPagedAsync(
@@ -332,6 +400,12 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                         baseWhere += " AND [IsCompleted] = 0";
                         break;
                     case "completed":
+                        baseWhere += " AND [IsCompleted] = 1 AND [TaskOutcome] = 'Completed'";
+                        break;
+                    case "unprocessed":
+                        baseWhere += " AND [IsCompleted] = 1 AND [TaskOutcome] = 'Unprocessed'";
+                        break;
+                    case "all_closed":
                         baseWhere += " AND [IsCompleted] = 1";
                         break;
                 }
@@ -397,6 +471,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
+                       [TaskOutcome], [ScheduledTimeUtc],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE {baseWhere}

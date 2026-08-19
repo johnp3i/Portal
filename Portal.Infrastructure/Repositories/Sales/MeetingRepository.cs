@@ -244,4 +244,62 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
             throw;
         }
     }
+
+    public async Task<List<Meeting>> GetUpcomingBriefAsync(int businessId, DateTime todayStart, DateTime endDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 10
+                       [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
+                       [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
+                       [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                FROM [sales].[Meeting]
+                WHERE [sales].[Meeting].[BusinessId] = @BusinessId
+                  AND [sales].[Meeting].[IsActive] = 1
+                  AND [sales].[Meeting].[IsCancelled] = 0
+                  AND [sales].[Meeting].[ScheduledAtUtc] >= @TodayStart
+                  AND [sales].[Meeting].[ScheduledAtUtc] < @EndDate
+                ORDER BY [sales].[Meeting].[ScheduledAtUtc] ASC";
+
+            var results = await ExecuteStoredProcedure(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@TodayStart", todayStart),
+                new SqlParameter("@EndDate", endDate));
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<Meeting>> GetDashboardMeetingsBriefAsync(int businessId, DateTime todayStart, DateTime dayAfterTomorrow)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
+                       [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
+                       [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                FROM [sales].[Meeting]
+                WHERE [sales].[Meeting].[IsActive] = 1
+                  AND [sales].[Meeting].[IsCancelled] = 0
+                  AND [sales].[Meeting].[BusinessId] = @BusinessId
+                  AND [sales].[Meeting].[ScheduledAtUtc] >= @TodayStart
+                  AND [sales].[Meeting].[ScheduledAtUtc] < @DayAfterTomorrow
+                ORDER BY [sales].[Meeting].[ScheduledAtUtc] ASC";
+
+            return await ExecuteStoredProcedure(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@TodayStart", todayStart),
+                new SqlParameter("@DayAfterTomorrow", dayAfterTomorrow));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 }

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tier Selector — Quotation/Invoice Line Item (Mockup)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #0B1B28;
+            --text-muted: #5a6a7a;
+            --border-light: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); padding: 32px; }
+        .glass { background: #fff; border: 1px solid var(--border-light); border-radius: 20px; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
+        .card-pad { padding: 28px 32px; }
+        h3 { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; margin: 0 0 20px; }
+        .field { margin-bottom: 18px; }
+        .field label { display: block; font-size: 13px; font-weight: 600; color: #5E7385; margin-bottom: 6px; }
+        .field input, .field select { width: 100%; padding: 10px 14px; border: 1.5px solid rgba(13,94,166,.12); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border-color .15s; }
+        .field input:focus, .field select:focus { border-color: var(--blue); }
+        .field .helper { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .btn { padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; border: 1.5px solid transparent; cursor: pointer; font-family: 'Inter', sans-serif; }
+        .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+        .btn-secondary { background: rgba(13,94,166,.06); color: var(--blue); border-color: rgba(13,94,166,.15); }
+        .mockup-label { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 24px; font-style: italic; }
+        .divider { height: 1px; background: rgba(13,94,166,.06); margin: 40px 0; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .tier-selector { position: relative; }
+        .tier-selector select { background: rgba(13,94,166,.03); border-color: var(--blue); font-weight: 600; }
+        .tier-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(13,94,166,.06); color: var(--blue); margin-top: 6px; }
+        .price-highlight { background: rgba(18,152,103,.04); border: 1.5px solid rgba(18,152,103,.15); border-radius: 10px; padding: 12px 16px; margin-top: 10px; display: flex; align-items: center; gap: 12px; }
+        .price-highlight .label { font-size: 12px; color: var(--text-muted); }
+        .price-highlight .value { font-size: 18px; font-weight: 800; color: var(--success); font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body>
+
+<p class="mockup-label">MOCKUP — Tier selector in Quotation/Invoice line item form</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SCENARIO 1: Product with tiers — selector shown -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="glass card-pad" style="max-width:600px;margin:0 auto 32px;">
+    <h3>Add Line Item</h3>
+
+    <div class="field">
+        <label>Product</label>
+        <input type="text" value="Premium Widget (PWG-001)" readonly style="background:#f7fafc;font-weight:600;" />
+    </div>
+
+    <!-- Tier Selector — appears when product has tiers -->
+    <div class="field tier-selector">
+        <label>Price Tier</label>
+        <select>
+            <option selected>Retail — €150.00</option>
+            <option>Wholesale — €120.00</option>
+            <option>VIP — €100.00</option>
+        </select>
+        <div class="helper">Select the pricing level for this line item. Default tier is pre-selected.</div>
+    </div>
+
+    <div class="price-highlight">
+        <div>
+            <div class="label">Unit Price (from tier)</div>
+            <div class="value">€150.00</div>
+        </div>
+        <div style="margin-left:auto;">
+            <div class="label">Cost Price</div>
+            <div class="value" style="color:var(--text-muted);font-size:14px;">€85.00</div>
+        </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:18px;">
+        <div class="field">
+            <label>Quantity</label>
+            <input type="number" value="10" />
+        </div>
+        <div class="field">
+            <label>VAT Rate (%)</label>
+            <input type="number" value="18" />
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="field">
+            <label>Discount</label>
+            <input type="number" value="0" />
+        </div>
+        <div class="field">
+            <label>Discount Type</label>
+            <select>
+                <option>Percentage</option>
+                <option>Fixed</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="field">
+        <label>Description</label>
+        <input type="text" value="Premium Widget" />
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-primary">Add Line</button>
+    </div>
+</section>
+
+<div class="divider" style="max-width:600px;margin:40px auto;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SCENARIO 2: Product with NO tiers — no selector shown -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<p class="mockup-label">SCENARIO: Product without tiers — no selector shown (legacy behavior)</p>
+
+<section class="glass card-pad" style="max-width:600px;margin:0 auto 32px;">
+    <h3>Add Line Item</h3>
+
+    <div class="field">
+        <label>Product</label>
+        <input type="text" value="Basic Bolt (BLT-003)" readonly style="background:#f7fafc;font-weight:600;" />
+    </div>
+
+    <!-- NO tier selector — product uses DefaultSellingPrice directly -->
+
+    <div class="grid-2" style="margin-top:4px;">
+        <div class="field">
+            <label>Unit Price</label>
+            <input type="number" value="5.50" />
+        </div>
+        <div class="field">
+            <label>Quantity</label>
+            <input type="number" value="100" />
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="field">
+            <label>VAT Rate (%)</label>
+            <input type="number" value="18" />
+        </div>
+        <div class="field">
+            <label>Cost Price</label>
+            <input type="number" value="2.80" />
+        </div>
+    </div>
+
+    <div class="field">
+        <label>Description</label>
+        <input type="text" value="Basic Bolt" />
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-primary">Add Line</button>
+    </div>
+</section>
+
+<div class="divider" style="max-width:600px;margin:40px auto;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SCENARIO 3: Tier selection changed — price updates -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<p class="mockup-label">SCENARIO: User switches tier — prices update instantly</p>
+
+<section class="glass card-pad" style="max-width:600px;margin:0 auto 32px;">
+    <h3>Add Line Item</h3>
+
+    <div class="field">
+        <label>Product</label>
+        <input type="text" value="Premium Widget (PWG-001)" readonly style="background:#f7fafc;font-weight:600;" />
+    </div>
+
+    <div class="field tier-selector">
+        <label>Price Tier</label>
+        <select>
+            <option>Retail — €150.00</option>
+            <option selected>Wholesale — €120.00</option>
+            <option>VIP — €100.00</option>
+        </select>
+        <div class="tier-badge">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Price updated from Wholesale tier
+        </div>
+    </div>
+
+    <div class="price-highlight" style="background:rgba(200,145,46,.04);border-color:rgba(200,145,46,.15);">
+        <div>
+            <div class="label">Unit Price (Wholesale)</div>
+            <div class="value" style="color:var(--warning);">€120.00</div>
+        </div>
+        <div style="margin-left:auto;">
+            <div class="label">Cost Price</div>
+            <div class="value" style="color:var(--text-muted);font-size:14px;">€85.00</div>
+        </div>
+        <div style="margin-left:16px;">
+            <div class="label">Savings vs Retail</div>
+            <div class="value" style="color:var(--success);font-size:14px;">-€30.00</div>
+        </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:18px;">
+        <div class="field">
+            <label>Quantity</label>
+            <input type="number" value="50" />
+        </div>
+        <div class="field">
+            <label>VAT Rate (%)</label>
+            <input type="number" value="18" />
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-primary">Add Line</button>
+    </div>
+</section>
+
+</body>
+</html>

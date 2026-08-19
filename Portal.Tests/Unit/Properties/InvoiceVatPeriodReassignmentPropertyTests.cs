@@ -74,6 +74,7 @@ public class InvoiceVatPeriodReassignmentPropertyTests
     {
         var productServiceMock = new Mock<IProductService>();
         var productRepositoryMock = new Mock<ProductRepository>(dbContextMock.Object);
+        var productPriceTierRepoMock = new Mock<ProductPriceTierRepository>(dbContextMock.Object) { CallBase = false };
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         var loggerMock = new Mock<ILogger<InvoiceService>>();
 
@@ -92,6 +93,7 @@ public class InvoiceVatPeriodReassignmentPropertyTests
             dbContextMock.Object,
             productServiceMock.Object,
             productRepositoryMock.Object,
+            productPriceTierRepoMock.Object,
             httpContextAccessorMock.Object,
             loggerMock.Object);
     }
@@ -523,6 +525,7 @@ public class InvoiceVatPeriodReassignmentPropertyTests
                 // Build service using the real dbContext (for BusinessProfiles query)
                 var productServiceMock2 = new Mock<IProductService>();
                 var productRepositoryMock2 = new Mock<ProductRepository>(realDbContext);
+                var productPriceTierRepoMock2 = new Mock<ProductPriceTierRepository>(realDbContext) { CallBase = false };
                 var httpContextAccessorMock2 = new Mock<IHttpContextAccessor>();
                 var loggerMock2 = new Mock<ILogger<InvoiceService>>();
 
@@ -541,6 +544,7 @@ public class InvoiceVatPeriodReassignmentPropertyTests
                     realDbContext,
                     productServiceMock2.Object,
                     productRepositoryMock2.Object,
+                    productPriceTierRepoMock2.Object,
                     httpContextAccessorMock2.Object,
                     loggerMock2.Object);
 

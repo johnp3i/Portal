@@ -19,17 +19,23 @@ public class ProductController : Controller
     private readonly IProductAutocompleteService _autocompleteService;
     private readonly ISupplierService _supplierService;
     private readonly ProductTypeRepository _productTypeRepository;
+    private readonly IProductPriceTierService _priceTierService;
+    private readonly ICurrentTenantService _tenantService;
 
     public ProductController(
         IProductService productService,
         IProductAutocompleteService autocompleteService,
         ISupplierService supplierService,
-        ProductTypeRepository productTypeRepository)
+        ProductTypeRepository productTypeRepository,
+        IProductPriceTierService priceTierService,
+        ICurrentTenantService tenantService)
     {
         _productService = productService;
         _autocompleteService = autocompleteService;
         _supplierService = supplierService;
         _productTypeRepository = productTypeRepository;
+        _priceTierService = priceTierService;
+        _tenantService = tenantService;
     }
 
     [HttpGet]
@@ -44,12 +50,17 @@ public class ProductController : Controller
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var productTypes = await _productTypeRepository.GetAllAsync();
 
+        // Active tier counts for the products on this page (single batched query, no N+1)
+        var tierCounts = await _priceTierService.GetActiveTierCountsAsync(
+            pagedResult.Items.Select(p => p.Id));
+
         ViewBag.PagedResult = pagedResult;
         ViewBag.SearchTerm = search;
         ViewBag.Kpis = kpis;
         ViewBag.TopProducts = topProducts;
         ViewBag.Suppliers = suppliers;
         ViewBag.ProductTypes = productTypes;
+        ViewBag.TierCounts = tierCounts;
 
         return View(pagedResult.Items);
     }
@@ -262,5 +273,131 @@ public class ProductController : Controller
         }).ToList();
 
         return Json(new { success = true, records });
+    }
+
+    // ─── Price Tier Management Endpoints ─────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostCreateTier([FromBody] CreateTierRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var result = await _priceTierService.CreateTierAsync(request, businessId, userId);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            return Json(new { success = true, message = "Price tier created successfully.", tier = new { id = result.Id } });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUpdateTier([FromBody] UpdateTierRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var result = await _priceTierService.UpdateTierAsync(request, businessId, userId);
+
+            return Json(new { success = result.Success, message = result.Message ?? "Price tier updated successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSetDefaultTier([FromBody] SetDefaultTierRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            var result = await _priceTierService.SetDefaultTierAsync(request.TierId, request.ProductId, businessId);
+
+            return Json(new { success = result.Success, message = result.Message ?? "Default tier updated successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostDeactivateTier([FromBody] DeactivateTierRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            var result = await _priceTierService.DeactivateTierAsync(request.TierId, request.ProductId, businessId);
+
+            return Json(new { success = result.Success, message = result.Message ?? "Price tier deactivated successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostReactivateTier([FromBody] ReactivateTierRequest request)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            var result = await _priceTierService.ReactivateTierAsync(request.TierId, request.ProductId, businessId);
+
+            return Json(new { success = result.Success, message = result.Message ?? "Price tier reactivated successfully." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetProductTiers(int productId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            var tiers = await _priceTierService.GetTiersForProductAsync(productId, businessId);
+
+            var data = tiers.Select(t => new
+            {
+                t.Id,
+                t.TierName,
+                t.SellingPrice,
+                t.CostPrice,
+                t.IsDefault,
+                t.IsActive,
+                t.CreatedAtUtc,
+                t.UpdatedAtUtc
+            }).ToList();
+
+            return Json(new { success = true, data });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
     }
 }

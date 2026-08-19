@@ -11,6 +11,7 @@
             <input type="hidden" id="invoiceLineModalLineId" name="lineId" />
             <input type="hidden" id="invoiceLineModalInvoiceId" name="invoiceId" value="@Model.Id" />
             <input type="hidden" id="invoiceLineModalProductCode" name="productCode" />
+            <input type="hidden" id="invoiceLineModalProductPriceTierId" name="productPriceTierId" />
 
             <!-- Row 1: Description (full width, required) -->
             <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px;">
@@ -18,6 +19,14 @@
                     <label for="invoiceLineModalDescription">Description *</label>
                     <input type="text" id="invoiceLineModalDescription" name="description" required placeholder="Item description" />
                     <div class="catalog-autocomplete"></div>
+                </div>
+            </div>
+
+            <!-- Price Tier Selector (shown dynamically when product has tiers) -->
+            <div id="invoiceLineTierSelectorRow" style="display:none;margin-bottom:14px;">
+                <div class="field">
+                    <label for="invoiceLineModalPriceTier">Price Tier</label>
+                    <select id="invoiceLineModalPriceTier" style="width:100%;"></select>
                 </div>
             </div>
 

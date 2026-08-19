@@ -13,15 +13,8 @@
         // Get quotationId from page (set by Edit.cshtml as global `quotationId`)
         currentQuotationId = window.quotationId;
 
-        // Overlay click to close
-        var overlay = document.getElementById('lineItemModal');
-        if (overlay) {
-            overlay.addEventListener('click', function (e) {
-                if (e.target === this) {
-                    hideLineItemModal();
-                }
-            });
-        }
+        // Note: clicking the overlay does NOT close the modal — the user must use
+        // Cancel or Save to avoid accidental data loss while editing a line item.
 
         // Reverse charge toggle handler
         var reverseChargeCheckbox = document.getElementById('lineModalReverseCharge');
@@ -46,6 +39,36 @@
         if (submitBtn) {
             submitBtn.addEventListener('click', submitLineItemForm);
         }
+
+        // Description → tier lookup. Fire as the user types (debounced) and on blur, so the
+        // tier selector appears without waiting for the field to lose focus.
+        var descInput = document.getElementById('lineModalDescription');
+        if (descInput) {
+            var descTierDebounce = null;
+
+            var triggerTierLookup = function () {
+                // If a product code is already set (autocomplete was used), that flow handles tiers.
+                var productCode = document.getElementById('lineModalProductCode').value;
+                if (productCode) return;
+
+                var descVal = descInput.value.trim();
+                if (descVal && typeof window.fetchProductTiers === 'function') {
+                    window.fetchProductTiers(null, descVal);
+                } else if (typeof window.resetTierSelector === 'function') {
+                    window.resetTierSelector();
+                }
+            };
+
+            descInput.addEventListener('input', function () {
+                if (descTierDebounce) clearTimeout(descTierDebounce);
+                descTierDebounce = setTimeout(triggerTierLookup, 400);
+            });
+
+            descInput.addEventListener('blur', function () {
+                if (descTierDebounce) clearTimeout(descTierDebounce);
+                triggerTierLookup();
+            });
+        }
     });
 
     /**
@@ -56,6 +79,11 @@
     window.showEditLineModal = function (lineId, sectionId) {
         var row = document.querySelector('tr[data-line-id="' + lineId + '"]');
         if (!row) return;
+
+        // Reset tier selector before populating
+        if (typeof window.resetTierSelector === 'function') {
+            window.resetTierSelector();
+        }
 
         // Read data attributes from the table row
         var description = row.getAttribute('data-description') || '';
@@ -121,6 +149,11 @@
 
         // Show modal
         document.getElementById('lineItemModal').style.display = 'flex';
+
+        // Fetch current tiers for draft re-selection (always fetches fresh prices)
+        if (productCode && typeof window.fetchProductTiers === 'function') {
+            window.fetchProductTiers(productCode);
+        }
     };
 
     /**
@@ -132,6 +165,11 @@
         var form = document.getElementById('lineItemForm');
         if (form) {
             form.reset();
+        }
+
+        // Reset tier selector
+        if (typeof window.resetTierSelector === 'function') {
+            window.resetTierSelector();
         }
 
         // Set hidden fields
@@ -181,6 +219,12 @@
 
         // Show modal
         document.getElementById('lineItemModal').style.display = 'flex';
+
+        // If a description is already present (e.g. pre-filled), attempt a tier lookup by description
+        var descVal = document.getElementById('lineModalDescription').value.trim();
+        if (descVal && typeof window.fetchProductTiers === 'function') {
+            window.fetchProductTiers(null, descVal);
+        }
     };
 
     /**
@@ -194,6 +238,11 @@
         var form = document.getElementById('lineItemForm');
         if (form) {
             form.reset();
+        }
+
+        // Reset tier selector
+        if (typeof window.resetTierSelector === 'function') {
+            window.resetTierSelector();
         }
 
         // Reset VAT field state (in case reverse charge was active)

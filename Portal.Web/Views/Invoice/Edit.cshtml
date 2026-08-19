@@ -411,6 +411,12 @@
                 if (productCodeEl && entry.productCode) {
                     productCodeEl.value = entry.productCode;
                 }
+                // Fetch price tiers for the selected product
+                if (entry.productCode) {
+                    fetchInvoiceProductTiers(entry.productCode);
+                } else {
+                    hideInvoiceTierSelector();
+                }
             }
 
             function escapeHtml(str) {
@@ -520,5 +526,6 @@
             });
         })();
     </script>
+    <script src="~/js/invoice-tier-selector.js"></script>
     @Html.AntiForgeryToken()
 }

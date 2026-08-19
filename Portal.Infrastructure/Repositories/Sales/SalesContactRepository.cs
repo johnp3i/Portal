@@ -164,6 +164,39 @@ public class SalesContactRepository : GenericStoredProcedureRepository<SalesCont
         }
     }
 
+    /// <summary>
+    /// Batch-fetches contacts by their IDs for a given business.
+    /// </summary>
+    public async Task<Dictionary<int, SalesContact>> GetByIdsAsync(IEnumerable<int> ids, int businessId)
+    {
+        try
+        {
+            var idList = ids.Distinct().ToList();
+            if (idList.Count == 0)
+                return new Dictionary<int, SalesContact>();
+
+            var paramNames = idList.Select((_, i) => $"@Id{i}").ToList();
+            var inClause = string.Join(", ", paramNames);
+
+            var query = $@"
+                SELECT [Id], [BusinessId], [FirstName], [LastName], [Email], [PhoneNumber],
+                       [CompanyName], [JobTitle], [Country], [Notes], [IsActive], [CreatedAtUtc]
+                FROM [sales].[Contact]
+                WHERE [BusinessId] = @BusinessId AND [Id] IN ({inClause})";
+
+            var parameters = new List<SqlParameter> { new SqlParameter("@BusinessId", businessId) };
+            for (int i = 0; i < idList.Count; i++)
+                parameters.Add(new SqlParameter($"@Id{i}", idList[i]));
+
+            var results = await ExecuteStoredProcedure(query, parameters.ToArray());
+            return results.ToDictionary(c => c.Id);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<SalesContact?> CheckDuplicateEmailAsync(string email, int businessId, int? excludeId = null)
     {
         try

@@ -22,7 +22,7 @@ public interface IQuotationService
     Task<Quotation> CreateQuotationAsync(int customerId, DateOnly? validUntil, string? notes);
     Task UpdateQuotationAsync(int quotationId, int customerId, DateOnly? validUntil, string? notes, int? quotationContactId = null, bool? isGrandTotalShown = null, string? reference = null);
     Task TransitionStatusAsync(int quotationId, int newStatusId, string userId);
-    Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null, bool isReverseCharge = false, int? proposalSectionId = null);
+    Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null, bool isReverseCharge = false, int? proposalSectionId = null, int? productPriceTierId = null);
     Task UpdateLineAsync(int lineId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, bool isReverseCharge = false);
     Task RemoveLineAsync(int lineId);
     bool IsExpired(Quotation quotation);

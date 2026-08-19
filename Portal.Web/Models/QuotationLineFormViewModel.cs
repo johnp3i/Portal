@@ -41,4 +41,6 @@ public class QuotationLineFormViewModel
     public bool IsReverseCharge { get; set; }
 
     public int? ProposalSectionId { get; set; }
+
+    public int? ProductPriceTierId { get; set; }
 }

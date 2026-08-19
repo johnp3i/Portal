@@ -30,7 +30,32 @@ public class ProductPriceHistoryRepository : GenericStoredProcedureRepository<Pr
                 new SqlParameter("@ChangedByUserId", entry.ChangedByUserId)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task InsertTierPriceHistoryAsync(int productId, int productPriceTierId, decimal sellingPrice, decimal costPrice, string userId)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [product].[ProductPriceHistory]
+                    ([ProductId], [ProductPriceTierId], [SellingPrice], [CostPrice], [EffectiveFromUtc], [ChangedByUserId])
+                VALUES
+                    (@ProductId, @ProductPriceTierId, @SellingPrice, @CostPrice, @EffectiveFromUtc, @ChangedByUserId)";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@ProductId", productId),
+                new SqlParameter("@ProductPriceTierId", productPriceTierId),
+                new SqlParameter("@SellingPrice", sellingPrice),
+                new SqlParameter("@CostPrice", costPrice),
+                new SqlParameter("@EffectiveFromUtc", DateTime.UtcNow),
+                new SqlParameter("@ChangedByUserId", userId)
+            );
+        }
+        catch (Exception ex)
         {
             throw;
         }
@@ -41,14 +66,14 @@ public class ProductPriceHistoryRepository : GenericStoredProcedureRepository<Pr
         try
         {
             const string query = @"
-                SELECT [Id], [ProductId], [SellingPrice], [CostPrice], [EffectiveFromUtc], [ChangedByUserId], [CreatedAtUtc]
+                SELECT [Id], [ProductId], [ProductPriceTierId], [SellingPrice], [CostPrice], [EffectiveFromUtc], [ChangedByUserId], [CreatedAtUtc]
                 FROM [product].[ProductPriceHistory]
                 WHERE [ProductId] = @ProductId
                 ORDER BY [EffectiveFromUtc] DESC";
 
             return await ExecuteStoredProcedure(query, new SqlParameter("@ProductId", productId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }

@@ -1,3 +1,5 @@
+using Portal.Infrastructure.Models.Sales;
+
 namespace Portal.Infrastructure.Models;
 
 /// <summary>
@@ -49,6 +51,11 @@ public class DashboardViewModel
 
     // Top Customers
     public List<TopCustomerDto> TopCustomers { get; set; } = new();
+
+    // Today's Brief (Sales module)
+    public List<DashboardTaskBriefDto> BriefTasks { get; set; } = new();
+    public List<DashboardMeetingBriefDto> BriefMeetings { get; set; } = new();
+    public bool ShowSales { get; set; }
 
     // Scope visibility flags
     public bool ShowRevenue { get; set; } = true;

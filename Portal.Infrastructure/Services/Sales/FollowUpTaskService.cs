@@ -11,15 +11,18 @@ namespace Portal.Infrastructure.Services.Sales;
 public class FollowUpTaskService : IFollowUpTaskService
 {
     private readonly FollowUpTaskRepository _taskRepository;
+    private readonly SalesContactRepository _contactRepository;
     private readonly ICurrentTenantService _tenantService;
 
     private static readonly string[] ValidTaskTypes = { "Call", "Email", "Follow-up", "Meeting Prep", "Other" };
 
     public FollowUpTaskService(
         FollowUpTaskRepository taskRepository,
+        SalesContactRepository contactRepository,
         ICurrentTenantService tenantService)
     {
         _taskRepository = taskRepository;
+        _contactRepository = contactRepository;
         _tenantService = tenantService;
     }
 
@@ -46,6 +49,7 @@ public class FollowUpTaskService : IFollowUpTaskService
                 TaskType = request.TaskType,
                 DueAtUtc = request.DueAtUtc,
                 Notes = request.Notes?.Trim(),
+                ScheduledTimeUtc = request.ScheduledTimeUtc,
                 IsCompleted = false,
                 SnoozedCount = 0,
                 CreatedByUserId = userId
@@ -74,6 +78,28 @@ public class FollowUpTaskService : IFollowUpTaskService
                 return ServiceResult.Fail("Task is already completed.");
 
             await _taskRepository.CompleteAsync(taskId, businessId);
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> MarkTaskUnprocessedAsync(int taskId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var task = await _taskRepository.GetByIdAsync(taskId, businessId);
+
+            if (task == null)
+                return ServiceResult.Fail("Task not found.");
+
+            if (task.IsCompleted)
+                return ServiceResult.Fail("Task is already closed.");
+
+            await _taskRepository.MarkUnprocessedAsync(taskId, businessId);
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -126,7 +152,7 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
-    public async Task<ServiceResult> UpdateTaskAsync(int taskId, string title, string taskType, DateTime dueAtUtc, string? notes)
+    public async Task<ServiceResult> UpdateTaskAsync(int taskId, string title, string taskType, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
     {
         try
         {
@@ -145,7 +171,7 @@ public class FollowUpTaskService : IFollowUpTaskService
             if (task == null)
                 return ServiceResult.Fail("Task not found.");
 
-            await _taskRepository.UpdateAsync(taskId, businessId, title.Trim(), taskType, dueAtUtc, notes?.Trim());
+            await _taskRepository.UpdateAsync(taskId, businessId, title.Trim(), taskType, dueAtUtc, notes?.Trim(), scheduledTimeUtc);
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -160,7 +186,12 @@ public class FollowUpTaskService : IFollowUpTaskService
         {
             var businessId = _tenantService.CurrentBusinessId;
             var tasks = await _taskRepository.GetTodaysActionsAsync(businessId, teamMemberId);
-            return tasks.Select(MapToDto).ToList();
+
+            // Batch-fetch contacts for all tasks that have a ContactId
+            var contactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
+            var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
+            return tasks.Select(t => MapToDto(t, contactsLookup)).ToList();
         }
         catch (Exception ex)
         {
@@ -174,7 +205,11 @@ public class FollowUpTaskService : IFollowUpTaskService
         {
             var businessId = _tenantService.CurrentBusinessId;
             var tasks = await _taskRepository.GetByLeadRequestIdAsync(leadRequestId, businessId);
-            return tasks.Select(MapToDto).ToList();
+
+            var contactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
+            var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
+            return tasks.Select(t => MapToDto(t, contactsLookup)).ToList();
         }
         catch (Exception ex)
         {
@@ -191,9 +226,12 @@ public class FollowUpTaskService : IFollowUpTaskService
                 businessId, filter.Status, filter.TaskType, filter.TeamMemberId,
                 filter.DateFrom, filter.DateTo, page, pageSize);
 
+            var contactIds = items.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
+            var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
             return new PagedResult<FollowUpTaskDto>
             {
-                Items = items.Select(MapToDto).ToList(),
+                Items = items.Select(t => MapToDto(t, contactsLookup)).ToList(),
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalCount = totalCount
@@ -218,7 +256,45 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
-    private static FollowUpTaskDto MapToDto(FollowUpTask entity)
+    public async Task<List<DashboardTaskBriefDto>> GetDashboardBriefAsync(int businessId)
+    {
+        try
+        {
+            var tasks = await _taskRepository.GetDashboardBriefAsync(businessId);
+            var today = DateTime.UtcNow.Date;
+
+            var contactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
+            var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
+            return tasks.Select(t =>
+            {
+                string? contactName = null;
+                if (t.ContactId.HasValue && contactsLookup.TryGetValue(t.ContactId.Value, out var contact))
+                {
+                    contactName = string.IsNullOrWhiteSpace(contact.LastName)
+                        ? contact.FirstName
+                        : $"{contact.FirstName} {contact.LastName}";
+                }
+
+                return new DashboardTaskBriefDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    TaskType = t.TaskType,
+                    DueAtUtc = t.DueAtUtc,
+                    ScheduledTimeUtc = t.ScheduledTimeUtc,
+                    ContactName = contactName,
+                    Urgency = t.DueAtUtc.Date == today ? "today" : "tomorrow"
+                };
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    private static FollowUpTaskDto MapToDto(FollowUpTask entity, Dictionary<int, SalesContact> contactsLookup)
     {
         var today = DateTime.UtcNow.Date;
         var dueDate = entity.DueAtUtc.Date;
@@ -235,20 +311,20 @@ public class FollowUpTaskService : IFollowUpTaskService
         else
             urgency = "upcoming";
 
+        string? contactName = null;
+        if (entity.ContactId.HasValue && contactsLookup.TryGetValue(entity.ContactId.Value, out var contact))
+        {
+            contactName = string.IsNullOrWhiteSpace(contact.LastName)
+                ? contact.FirstName
+                : $"{contact.FirstName} {contact.LastName}";
+        }
+
         return new FollowUpTaskDto
         {
             Id = entity.Id,
             LeadRequestId = entity.LeadRequestId,
-            ContactName = entity.Contact != null
-                ? string.IsNullOrWhiteSpace(entity.Contact.LastName)
-                    ? entity.Contact.FirstName
-                    : $"{entity.Contact.FirstName} {entity.Contact.LastName}"
-                : null,
-            AssignedToName = entity.TeamMember != null
-                ? string.IsNullOrWhiteSpace(entity.TeamMember.LastName)
-                    ? entity.TeamMember.FirstName
-                    : $"{entity.TeamMember.FirstName} {entity.TeamMember.LastName}"
-                : null,
+            ContactName = contactName,
+            AssignedToName = null, // TeamMember names resolved separately if needed
             Title = entity.Title,
             TaskType = entity.TaskType,
             DueAtUtc = entity.DueAtUtc,
@@ -256,6 +332,8 @@ public class FollowUpTaskService : IFollowUpTaskService
             IsCompleted = entity.IsCompleted,
             CompletedAtUtc = entity.CompletedAtUtc,
             SnoozedCount = entity.SnoozedCount,
+            TaskOutcome = entity.TaskOutcome,
+            ScheduledTimeUtc = entity.ScheduledTimeUtc,
             Urgency = urgency
         };
     }

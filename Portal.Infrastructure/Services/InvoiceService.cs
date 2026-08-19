@@ -29,6 +29,7 @@ public class InvoiceService : IInvoiceService
     private readonly PortalDbContext _portalDbContext;
     private readonly IProductService _productService;
     private readonly ProductRepository _productRepository;
+    private readonly ProductPriceTierRepository _productPriceTierRepository;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<InvoiceService> _logger;
 
@@ -60,6 +61,7 @@ public class InvoiceService : IInvoiceService
         PortalDbContext portalDbContext,
         IProductService productService,
         ProductRepository productRepository,
+        ProductPriceTierRepository productPriceTierRepository,
         IHttpContextAccessor httpContextAccessor,
         ILogger<InvoiceService> logger)
     {
@@ -77,6 +79,7 @@ public class InvoiceService : IInvoiceService
         _portalDbContext = portalDbContext;
         _productService = productService;
         _productRepository = productRepository;
+        _productPriceTierRepository = productPriceTierRepository;
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
     }
@@ -218,7 +221,9 @@ public class InvoiceService : IInvoiceService
                     InvoiceSectionId = invoiceSectionId,
                     ProductCode = line.ProductCode,
                     IsReverseCharge = line.IsReverseCharge,
-                    ProductTypeId = productTypeId
+                    ProductTypeId = productTypeId,
+                    ProductPriceTierId = line.ProductPriceTierId,
+                    PriceTierName = line.PriceTierName
                 };
 
                 await _invoiceLineRepository.InsertAsync(invoiceLine);
@@ -401,6 +406,23 @@ public class InvoiceService : IInvoiceService
                 invoiceSectionId = sectionIndexToIdMap[lineDto.SectionIndex.Value];
             }
 
+            // Resolve PriceTierName snapshot if a valid, active tier is referenced
+            int? productPriceTierId = lineDto.ProductPriceTierId;
+            string? priceTierName = null;
+            if (productPriceTierId.HasValue)
+            {
+                var tier = await _productPriceTierRepository.GetByIdAsync(productPriceTierId.Value);
+                if (tier != null && tier.IsActive)
+                {
+                    priceTierName = tier.TierName;
+                }
+                else
+                {
+                    // Tier not found or inactive — clear the reference (don't persist stale/invalid tier ID)
+                    productPriceTierId = null;
+                }
+            }
+
             var invoiceLine = new InvoiceLine
             {
                 InvoiceId = invoiceId,
@@ -416,7 +438,9 @@ public class InvoiceService : IInvoiceService
                 ReferenceUrl = lineDto.ReferenceUrl,
                 Subtitle = lineDto.Subtitle,
                 InvoiceSectionId = invoiceSectionId,
-                ProductCode = lineDto.ProductCode
+                ProductCode = lineDto.ProductCode,
+                ProductPriceTierId = productPriceTierId,
+                PriceTierName = priceTierName
             };
 
             await _invoiceLineRepository.InsertAsync(invoiceLine);
@@ -650,7 +674,7 @@ public class InvoiceService : IInvoiceService
     public async Task<InvoiceLine> AddLineAsync(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
         decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
-        string? productCode = null, bool isReverseCharge = false)
+        string? productCode = null, bool isReverseCharge = false, int? productPriceTierId = null)
     {
         // Validation: Reverse Charge Invariant
         if (isReverseCharge && vatRate > 0)
@@ -688,6 +712,22 @@ public class InvoiceService : IInvoiceService
             ? existingLines.Max(l => l.SortOrder) + 1
             : 1;
 
+        // Resolve PriceTierName snapshot if ProductPriceTierId is provided
+        string? priceTierName = null;
+        if (productPriceTierId.HasValue)
+        {
+            var tier = await _productPriceTierRepository.GetByIdAsync(productPriceTierId.Value);
+            if (tier != null && tier.IsActive)
+            {
+                priceTierName = tier.TierName;
+            }
+            else
+            {
+                // Tier not found or inactive — clear the reference (don't persist stale/invalid tier ID)
+                productPriceTierId = null;
+            }
+        }
+
         // Insert line
         var invoiceLine = new InvoiceLine
         {
@@ -705,7 +745,9 @@ public class InvoiceService : IInvoiceService
             Subtitle = subtitle,
             InvoiceSectionId = invoiceSectionId,
             ProductCode = productCode,
-            IsReverseCharge = isReverseCharge
+            IsReverseCharge = isReverseCharge,
+            ProductPriceTierId = productPriceTierId,
+            PriceTierName = priceTierName
         };
 
         var lineId = await _invoiceLineRepository.InsertAsync(invoiceLine);

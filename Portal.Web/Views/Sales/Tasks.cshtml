@@ -23,6 +23,8 @@
                 <option value="overdue">Overdue</option>
                 <option value="pending" selected>Pending</option>
                 <option value="completed">Completed</option>
+                <option value="unprocessed">Unprocessed</option>
+                <option value="all_closed">All Closed</option>
             </select>
         </div>
         <div class="field" style="min-width:140px;">
@@ -143,12 +145,16 @@
                 var dueColor = t.urgency === 'overdue' ? 'color:#C24A4A;font-weight:600;' : t.urgency === 'today' ? 'color:#C8912E;font-weight:600;' : '';
                 var statusBadge = getStatusBadgeHtml(t);
                 var dueStr = new Date(t.dueAtUtc).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                // Append scheduled time-of-day (HH:mm) when set; otherwise show "All day".
+                var timeStr = t.scheduledTimeUtc
+                    ? '<div style="font-size:11px;color:#5a6a7a;margin-top:2px;">\u23F0 ' + t.scheduledTimeUtc.substring(0, 5) + '</div>'
+                    : '<div style="font-size:11px;color:#b8c4d0;margin-top:2px;">All day</div>';
 
                 html += '<tr>';
                 html += '<td style="font-weight:600;">' + escapeHtml(t.title) + '</td>';
                 html += '<td>' + (t.contactName ? '<span style="color:#0D5EA6;">' + escapeHtml(t.contactName) + '</span>' : '<span style="color:#8a9bab;">\u2014</span>') + '</td>';
                 html += '<td>' + getTypeBadgeHtml(t.taskType) + '</td>';
-                html += '<td style="' + dueColor + '">' + dueStr + '</td>';
+                html += '<td style="' + dueColor + '">' + dueStr + timeStr + '</td>';
                 html += '<td>' + statusBadge + '</td>';
                 html += '<td>' + (t.assignedToName ? escapeHtml(t.assignedToName) : '<span style="color:#8a9bab;">Me</span>') + '</td>';
                 html += '<td style="text-align:right;white-space:nowrap;">';
@@ -157,6 +163,7 @@
                 }
                 html += '<button class="btn btn-sm" style="background:rgba(138,155,171,.06);color:#5E7385;border:1.5px solid rgba(138,155,171,.15);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openEditTaskModalFromTable(' + t.id + ')" title="Edit task">&#9998;</button> ';
                 if (!t.isCompleted) {
+                    html += '<button class="btn btn-sm" style="background:rgba(200,145,46,.06);color:#C8912E;border:1.5px solid rgba(200,145,46,.18);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;" onclick="markTaskUnprocessedFromList(' + t.id + ')" title="Mark as unprocessed">Unprocessed</button> ';
                     html += '<button class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="completeTaskFromList(' + t.id + ')" title="Mark as completed">&#10003;</button> ';
                     html += '<button class="btn btn-sm" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="snoozeTaskFromList(' + t.id + ')" title="Snooze +1 day">+1d</button>';
                 } else {
@@ -188,6 +195,7 @@
         }
 
         function getStatusBadgeHtml(t) {
+            if (t.isCompleted && t.taskOutcome === 'Unprocessed') return '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(200,145,46,.08);color:#C8912E;">Unprocessed</span>';
             if (t.isCompleted) return '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(18,152,103,.08);color:#129867;">Completed</span>';
             if (t.urgency === 'overdue') return '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(194,74,74,.08);color:#C24A4A;">Overdue</span>';
             if (t.urgency === 'today') return '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(200,145,46,.08);color:#C8912E;">Today</span>';
@@ -199,6 +207,27 @@
             var colors = { 'Call': 'rgba(13,94,166,.08);color:#0D5EA6', 'Email': 'rgba(18,152,103,.08);color:#129867', 'Follow-up': 'rgba(200,145,46,.08);color:#C8912E', 'Meeting Prep': 'rgba(87,184,232,.08);color:#1a8fc7', 'Other': 'rgba(138,155,171,.08);color:#8a9bab' };
             var c = colors[type] || colors['Other'];
             return '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:' + c + ';">' + type + '</span>';
+        }
+
+        async function markTaskUnprocessedFromList(taskId) {
+            BlockUI.show('Processing...');
+            try {
+                var response = await fetch('/Sales/AxPostMarkTaskUnprocessed?id=' + taskId, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                });
+                var data = await response.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    loadTasksPage(_tasksCurrentPage);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.', confirmButtonColor: '#0D5EA6' });
+            }
         }
 
         async function completeTaskFromList(taskId) {

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
 using Portal.Infrastructure.Services.Sales;
@@ -31,6 +32,7 @@ public class QuotationController : Controller
     private readonly IProposalAcceptanceService _acceptanceService;
     private readonly IProposalPdfService _proposalPdfService;
     private readonly ILeadRequestService _leadRequestService;
+    private readonly IProductPriceTierService _priceTierService;
     private readonly ILogger<QuotationController> _logger;
 
     public QuotationController(
@@ -49,6 +51,7 @@ public class QuotationController : Controller
         IProposalAcceptanceService acceptanceService,
         IProposalPdfService proposalPdfService,
         ILeadRequestService leadRequestService,
+        IProductPriceTierService priceTierService,
         ILogger<QuotationController> logger)
     {
         _quotationService = quotationService;
@@ -66,6 +69,7 @@ public class QuotationController : Controller
         _acceptanceService = acceptanceService;
         _proposalPdfService = proposalPdfService;
         _leadRequestService = leadRequestService;
+        _priceTierService = priceTierService;
         _logger = logger;
     }
 
@@ -408,7 +412,7 @@ public class QuotationController : Controller
 
         try
         {
-            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, productCode: model.ProductCode, isReverseCharge: model.IsReverseCharge, proposalSectionId: model.ProposalSectionId);
+            await _quotationService.AddLineAsync(quotationId, model.Description, model.Quantity, model.UnitPrice, model.VatRate, model.ReferenceUrl, model.Discount, model.DiscountType, model.Subtitle, costPrice: model.CostPrice, productCode: model.ProductCode, isReverseCharge: model.IsReverseCharge, proposalSectionId: model.ProposalSectionId, productPriceTierId: model.ProductPriceTierId);
         }
         catch (ArgumentException ex)
         {
@@ -629,6 +633,65 @@ public class QuotationController : Controller
         catch (Exception)
         {
             return Json(new { success = false, message = "An unexpected error occurred while deleting the quotation." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetProductTiersForSelection(int? productId = null, string? productCode = null, string? description = null)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            // Resolve productId from productCode, then description if not provided directly
+            int resolvedProductId;
+            if (productId.HasValue && productId.Value > 0)
+            {
+                resolvedProductId = productId.Value;
+            }
+            else if (!string.IsNullOrWhiteSpace(productCode))
+            {
+                var product = await _productRepository.GetByProductCodeAndBusinessIdAsync(productCode.Trim(), businessId);
+                if (product == null)
+                    return Json(new { success = true, data = new ProductTierSelectionResponse { HasTiers = false } });
+                resolvedProductId = product.Id;
+            }
+            else if (!string.IsNullOrWhiteSpace(description))
+            {
+                var product = await _productRepository.GetByDescriptionAndBusinessIdAsync(description.Trim(), businessId);
+                if (product == null)
+                    return Json(new { success = true, data = new ProductTierSelectionResponse { HasTiers = false } });
+                resolvedProductId = product.Id;
+            }
+            else
+            {
+                return Json(new { success = true, data = new ProductTierSelectionResponse { HasTiers = false } });
+            }
+
+            var tiers = await _priceTierService.GetActiveTiersForProductAsync(resolvedProductId, businessId);
+            var profile = await _businessService.GetBusinessProfileAsync(businessId);
+            var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+            var response = new ProductTierSelectionResponse
+            {
+                HasTiers = tiers.Any(),
+                DefaultTierId = tiers.FirstOrDefault(t => t.IsDefault)?.Id,
+                CurrencySymbol = currencySymbol,
+                Tiers = tiers.Select(t => new TierOption
+                {
+                    Id = t.Id,
+                    TierName = t.TierName,
+                    SellingPrice = t.SellingPrice,
+                    CostPrice = t.CostPrice,
+                    IsDefault = t.IsDefault
+                }).ToList()
+            };
+
+            return Json(new { success = true, data = response });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
         }
     }
 

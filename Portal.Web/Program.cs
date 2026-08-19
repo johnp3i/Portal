@@ -414,10 +414,13 @@ builder.Services.AddScoped<ProductRepository>(sp =>
     new ProductRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ProductPriceHistoryRepository>(sp =>
     new ProductPriceHistoryRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ProductPriceTierRepository>(sp =>
+    new ProductPriceTierRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ProductTypeRepository>(sp =>
     new ProductTypeRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductAutocompleteService, ProductAutocompleteService>();
+builder.Services.AddScoped<IProductPriceTierService, ProductPriceTierService>();
 
 // --- Audit & User Admin ---
 builder.Services.AddScoped<AuditLogQueryRepository>(sp =>
@@ -498,6 +501,12 @@ var mvcBuilder = builder.Services.AddControllersWithViews(options =>
     options.Filters.Add<Portal.Web.Filters.DemoPermissionFilter>();
     options.Filters.Add<Portal.Web.Filters.PlanPermissionFilter>();
     options.Filters.Add<Portal.Web.Filters.UserPermissionFilter>();
+})
+.AddJsonOptions(options =>
+{
+    // Accept HTML time-input values ("HH:mm") as well as "HH:mm:ss" for TimeOnly binding.
+    options.JsonSerializerOptions.Converters.Add(new Portal.Web.Json.FlexibleTimeOnlyJsonConverter());
+    options.JsonSerializerOptions.Converters.Add(new Portal.Web.Json.FlexibleNullableTimeOnlyJsonConverter());
 });
 
 if (builder.Environment.IsDevelopment())

@@ -38,8 +38,14 @@ public class QuotationLine
 
     public bool IsReverseCharge { get; set; }
 
+    public int? ProductPriceTierId { get; set; }
+
+    public string? PriceTierName { get; set; }
+
     // Navigation properties
     public Quotation Quotation { get; set; } = null!;
 
     public ProposalSection? ProposalSection { get; set; }
+
+    public ProductPriceTier? ProductPriceTier { get; set; }
 }

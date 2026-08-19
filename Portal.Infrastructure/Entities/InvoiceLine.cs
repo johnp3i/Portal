@@ -40,10 +40,16 @@ public class InvoiceLine
 
     public int? ProductTypeId { get; set; }
 
+    public int? ProductPriceTierId { get; set; }
+
+    public string? PriceTierName { get; set; }
+
     // Navigation properties
     public Invoice Invoice { get; set; } = null!;
 
     public InvoiceSection? InvoiceSection { get; set; }
 
     public ProductType? ProductType { get; set; }
+
+    public ProductPriceTier? ProductPriceTier { get; set; }
 }

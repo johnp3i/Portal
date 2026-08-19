@@ -39,6 +39,8 @@ public class InvoiceController : Controller
     private readonly IPaymentInstructionsService _paymentInstructionsService;
     private readonly IPlanCheckService _planCheckService;
     private readonly IPermissionService _permissionService;
+    private readonly IProductPriceTierService _priceTierService;
+    private readonly ProductRepository _productRepository;
     private readonly PortalDbContext _dbContext;
     private readonly ILogger<InvoiceController> _logger;
 
@@ -60,6 +62,8 @@ public class InvoiceController : Controller
         IPaymentInstructionsService paymentInstructionsService,
         IPlanCheckService planCheckService,
         IPermissionService permissionService,
+        IProductPriceTierService priceTierService,
+        ProductRepository productRepository,
         PortalDbContext dbContext,
         ILogger<InvoiceController> logger)
     {
@@ -80,6 +84,8 @@ public class InvoiceController : Controller
         _paymentInstructionsService = paymentInstructionsService;
         _planCheckService = planCheckService;
         _permissionService = permissionService;
+        _priceTierService = priceTierService;
+        _productRepository = productRepository;
         _dbContext = dbContext;
         _logger = logger;
     }
@@ -486,13 +492,13 @@ public class InvoiceController : Controller
     public async Task<IActionResult> AddLine(int invoiceId, string description, decimal quantity,
         decimal unitPrice, decimal vatRate, decimal discount, string discountType,
         decimal? costPrice, string? referenceUrl, string? subtitle, int? invoiceSectionId,
-        string? productCode = null, bool isReverseCharge = false)
+        string? productCode = null, bool isReverseCharge = false, int? productPriceTierId = null)
     {
         try
         {
             var line = await _invoiceService.AddLineAsync(invoiceId, description, quantity,
                 unitPrice, vatRate, discount, discountType, costPrice, referenceUrl, subtitle, invoiceSectionId,
-                productCode, isReverseCharge: isReverseCharge);
+                productCode, isReverseCharge: isReverseCharge, productPriceTierId: productPriceTierId);
             return Json(new { success = true, lineId = line.Id });
         }
         catch (Exception ex)
@@ -750,6 +756,72 @@ public class InvoiceController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to update setting." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetProductTiersForSelection(int? productId = null, string? productCode = null, string? description = null)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var profile = await _businessService.GetBusinessProfileAsync(businessId);
+            var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+            // Resolve productId from productCode, then description if not provided directly
+            int resolvedProductId;
+            if (productId.HasValue && productId.Value > 0)
+            {
+                resolvedProductId = productId.Value;
+            }
+            else if (!string.IsNullOrWhiteSpace(productCode))
+            {
+                var product = await _productRepository.GetByProductCodeAndBusinessIdAsync(productCode.Trim(), businessId);
+                if (product == null)
+                    return Json(new { success = true, data = new { hasTiers = false, defaultTierId = (int?)null, currencySymbol, tiers = new List<object>() } });
+                resolvedProductId = product.Id;
+            }
+            else if (!string.IsNullOrWhiteSpace(description))
+            {
+                var product = await _productRepository.GetByDescriptionAndBusinessIdAsync(description.Trim(), businessId);
+                if (product == null)
+                    return Json(new { success = true, data = new { hasTiers = false, defaultTierId = (int?)null, currencySymbol, tiers = new List<object>() } });
+                resolvedProductId = product.Id;
+            }
+            else
+            {
+                return Json(new { success = true, data = new { hasTiers = false, defaultTierId = (int?)null, currencySymbol, tiers = new List<object>() } });
+            }
+
+            var tiers = await _priceTierService.GetActiveTiersForProductAsync(resolvedProductId, businessId);
+
+            var hasTiers = tiers.Count > 0;
+            int? defaultTierId = tiers.FirstOrDefault(t => t.IsDefault)?.Id;
+
+            var tierOptions = tiers.Select(t => new
+            {
+                id = t.Id,
+                tierName = t.TierName,
+                sellingPrice = t.SellingPrice,
+                costPrice = t.CostPrice,
+                isDefault = t.IsDefault
+            }).ToList();
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    hasTiers,
+                    defaultTierId,
+                    currencySymbol,
+                    tiers = tierOptions
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
         }
     }
 

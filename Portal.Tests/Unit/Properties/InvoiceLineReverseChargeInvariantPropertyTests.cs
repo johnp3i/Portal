@@ -94,6 +94,8 @@ public class InvoiceLineReverseChargeInvariantPropertyTests
         Mock<IHttpContextAccessor> httpContextAccessorMock,
         Mock<ILogger<InvoiceService>> loggerMock)
     {
+        var productPriceTierRepoMock = new Mock<ProductPriceTierRepository>(dbContextMock.Object) { CallBase = false };
+
         return new InvoiceService(
             tenantMock.Object,
             invoiceRepoMock.Object,
@@ -109,6 +111,7 @@ public class InvoiceLineReverseChargeInvariantPropertyTests
             dbContextMock.Object,
             productServiceMock.Object,
             productRepoMock.Object,
+            productPriceTierRepoMock.Object,
             httpContextAccessorMock.Object,
             loggerMock.Object);
     }

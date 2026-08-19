@@ -14,6 +14,7 @@
             <input type="hidden" id="lineModalLineId" name="lineId" />
             <input type="hidden" id="lineModalSectionId" name="ProposalSectionId" />
             <input type="hidden" id="lineModalProductCode" name="ProductCode" />
+            <input type="hidden" id="selectedPriceTierId" name="ProductPriceTierId" />
 
             <!-- Row 1: Description (full width) -->
             <div class="form-grid" style="margin-bottom:14px;">
@@ -24,7 +25,29 @@
                 </div>
             </div>
 
-            <!-- Row 2: Subtitle + Reference URL (2-column) -->
+            <!-- Row 2: Price Tier Selector (conditional, shown only when product has tiers) -->
+            <div id="priceTierRow" class="form-grid tier-selector" style="margin-bottom:14px;display:none;">
+                <div class="field" style="grid-column:1 / -1;">
+                    <label for="lineModalPriceTier">Price Tier</label>
+                    <select id="lineModalPriceTier" class="tier-select">
+                        <option value="">— Select Tier —</option>
+                    </select>
+                    <div class="helper" style="font-size:11px;color:#5a6a7a;margin-top:4px;">Select the pricing level for this line item. The default tier is pre-selected.</div>
+                    <!-- Price highlight box — updated when a tier is selected -->
+                    <div id="tierPriceHighlight" class="tier-price-highlight" style="display:none;">
+                        <div>
+                            <div class="tph-label">Unit Price (from tier)</div>
+                            <div class="tph-value" id="tierPriceHighlightUnit">—</div>
+                        </div>
+                        <div style="margin-left:auto;">
+                            <div class="tph-label">Cost Price</div>
+                            <div class="tph-value tph-value--muted" id="tierPriceHighlightCost">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Subtitle + Reference URL (2-column) -->
             <div class="form-grid" style="margin-bottom:14px;">
                 <div class="field">
                     <label for="lineModalSubtitleField">Subtitle</label>

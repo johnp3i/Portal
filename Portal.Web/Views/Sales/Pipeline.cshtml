@@ -51,6 +51,37 @@
     </div>
 </section>
 
+<!-- Upcoming Meetings Panel -->
+<section id="upcomingMeetingsPanel" class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;margin:0;">
+            <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Upcoming Meetings
+        </h3>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span id="meetingsBadge" style="display:flex;gap:6px;"></span>
+            <button class="btn btn-secondary" style="padding:5px 8px;" onclick="toggleUpcomingMeetings()" title="Collapse">
+                <svg id="meetingsCollapseIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+            </button>
+        </div>
+    </div>
+    <div id="upcomingMeetingsList">
+        <!-- Skeleton placeholder while loading -->
+        <div id="upcomingMeetingsSkeleton" style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-radius:14px;border:1px solid rgba(13,94,166,.06);">
+                <span style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></span>
+                <div style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;flex-shrink:0;"></div>
+                <div style="flex:1;"><div style="height:14px;width:60%;background:#f1f5f9;border-radius:6px;margin-bottom:6px;"></div><div style="height:10px;width:40%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-radius:14px;border:1px solid rgba(13,94,166,.06);">
+                <span style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></span>
+                <div style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;flex-shrink:0;"></div>
+                <div style="flex:1;"><div style="height:14px;width:50%;background:#f1f5f9;border-radius:6px;margin-bottom:6px;"></div><div style="height:10px;width:35%;background:#f7fafc;border-radius:6px;"></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Filter Panel -->
 <section class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
@@ -241,5 +272,5 @@
 
 @section Scripts {
     <script src="~/js/sales/pipeline.js?v=8"></script>
-    <script src="~/js/sales/follow-up-tasks.js?v=2"></script>
+    <script src="~/js/sales/follow-up-tasks.js?v=3"></script>
 }

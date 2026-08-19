@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Tiers — Product Edit Page (Mockup)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0D5EA6;
+            --cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #0B1B28;
+            --text-muted: #5a6a7a;
+            --border-light: rgba(13,94,166,.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); padding: 32px; }
+        .glass { background: #fff; border: 1px solid var(--border-light); border-radius: 20px; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
+        .card-pad { padding: 28px 32px; }
+        h3 { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; margin: 0; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; border: 1.5px solid transparent; cursor: pointer; font-family: 'Inter', sans-serif; transition: all .15s; }
+        .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: rgba(13,94,166,.06); color: var(--blue); border-color: rgba(13,94,166,.15); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+        .btn-danger-outline { background: rgba(194,74,74,.06); color: var(--danger); border-color: rgba(194,74,74,.18); }
+        .btn-warning-outline { background: rgba(200,145,46,.06); color: var(--warning); border-color: rgba(200,145,46,.18); }
+        .btn-success-outline { background: rgba(18,152,103,.06); color: var(--success); border-color: rgba(18,152,103,.18); }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; padding: 10px 14px; border-bottom: 1.5px solid rgba(13,94,166,.08); }
+        td { padding: 14px; font-size: 14px; border-bottom: 1px solid rgba(13,94,166,.04); }
+        .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+        .badge-default { background: rgba(13,94,166,.08); color: var(--blue); }
+        .badge-active { background: rgba(18,152,103,.08); color: var(--success); }
+        .badge-inactive { background: rgba(138,155,171,.08); color: #8a9bab; }
+        .price { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .mockup-label { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 24px; font-style: italic; }
+        .divider { height: 1px; background: rgba(13,94,166,.06); margin: 32px 0; }
+
+        /* Empty state */
+        .empty-cta { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 20px; text-align: center; }
+        .empty-cta p { font-size: 14px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<p class="mockup-label">MOCKUP — Price Tiers section on Product Edit page</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- STATE 1: Product with tiers (normal state) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="glass card-pad" style="max-width:900px;margin:0 auto 32px;">
+    <div class="section-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <svg width="20" height="20" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <h3>Price Tiers</h3>
+            <span class="badge badge-active">3 active</span>
+        </div>
+        <button class="btn btn-primary btn-sm">+ Add Tier</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tier Name</th>
+                <th>Selling Price</th>
+                <th>Cost Price</th>
+                <th>Default</th>
+                <th>Status</th>
+                <th style="text-align:right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="font-weight:600;">Retail</td>
+                <td class="price">€150.00</td>
+                <td class="price" style="color:var(--text-muted);">€85.00</td>
+                <td><span class="badge badge-default">Default</span></td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm">Edit</button>
+                        <button class="btn btn-danger-outline btn-sm">Deactivate</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight:600;">Wholesale</td>
+                <td class="price">€120.00</td>
+                <td class="price" style="color:var(--text-muted);">€85.00</td>
+                <td></td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm">Edit</button>
+                        <button class="btn btn-secondary btn-sm">Set Default</button>
+                        <button class="btn btn-danger-outline btn-sm">Deactivate</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight:600;">VIP</td>
+                <td class="price">€100.00</td>
+                <td class="price" style="color:var(--text-muted);">€85.00</td>
+                <td></td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm">Edit</button>
+                        <button class="btn btn-secondary btn-sm">Set Default</button>
+                        <button class="btn btn-danger-outline btn-sm">Deactivate</button>
+                    </div>
+                </td>
+            </tr>
+            <tr style="opacity:.6;">
+                <td style="font-weight:600;text-decoration:line-through;">Old Promo</td>
+                <td class="price" style="text-decoration:line-through;">€90.00</td>
+                <td class="price" style="color:var(--text-muted);text-decoration:line-through;">€85.00</td>
+                <td></td>
+                <td><span class="badge badge-inactive">Inactive</span></td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-success-outline btn-sm">Reactivate</button>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<div class="divider" style="max-width:900px;margin:32px auto;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- STATE 2: Product with NO tiers (empty state / CTA) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<p class="mockup-label">STATE: No tiers yet (first-time CTA)</p>
+
+<section class="glass card-pad" style="max-width:900px;margin:0 auto 32px;">
+    <div class="section-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <svg width="20" height="20" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <h3>Price Tiers</h3>
+        </div>
+    </div>
+    <div class="empty-cta">
+        <svg width="48" height="48" fill="none" stroke="rgba(13,94,166,.3)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <p>This product uses a single price (<strong>€150.00</strong>).<br>Add price tiers to offer different rates for Wholesale, VIP, or other customer segments.</p>
+        <button class="btn btn-primary">Add Price Tiers</button>
+    </div>
+</section>
+
+<div class="divider" style="max-width:900px;margin:32px auto;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- STATE 3: Read-only mode (deactivated product) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<p class="mockup-label">STATE: Product deactivated — tiers shown in read-only mode</p>
+
+<section class="glass card-pad" style="max-width:900px;margin:0 auto 32px;opacity:.7;">
+    <div class="section-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <svg width="20" height="20" fill="none" stroke="#8a9bab" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <h3 style="color:#8a9bab;">Price Tiers</h3>
+            <span class="badge badge-inactive">Read-only</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tier Name</th>
+                <th>Selling Price</th>
+                <th>Cost Price</th>
+                <th>Default</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="font-weight:600;">Retail</td>
+                <td class="price">€150.00</td>
+                <td class="price" style="color:var(--text-muted);">€85.00</td>
+                <td><span class="badge badge-default">Default</span></td>
+                <td><span class="badge badge-active">Active</span></td>
+            </tr>
+            <tr>
+                <td style="font-weight:600;">Wholesale</td>
+                <td class="price">€120.00</td>
+                <td class="price" style="color:var(--text-muted);">€85.00</td>
+                <td></td>
+                <td><span class="badge badge-active">Active</span></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+</body>
+</html>

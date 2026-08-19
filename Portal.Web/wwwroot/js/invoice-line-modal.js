@@ -13,17 +13,10 @@
         // Get invoiceId from page (set by Edit.cshtml as global `invoiceId`)
         currentInvoiceId = window.invoiceId;
 
-        // Overlay click to close
-        var overlay = document.getElementById('invoiceLineItemModal');
-        if (overlay) {
-            overlay.addEventListener('click', function (e) {
-                if (e.target === this) {
-                    hideInvoiceLineItemModal();
-                }
-            });
-        }
+        // Note: clicking the overlay does NOT close the modal — the user must use
+        // Cancel or Save to avoid accidental data loss while editing a line item.
 
-        // Escape key handler to close modal
+        // Escape key still closes the modal (intentional keypress, low risk of accidental loss).
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 var modal = document.getElementById('invoiceLineItemModal');
@@ -105,6 +98,7 @@
         document.getElementById('invoiceLineModalLineId').value = lineId;
         document.getElementById('invoiceLineModalInvoiceId').value = currentInvoiceId || '';
         document.getElementById('invoiceLineModalProductCode').value = productCode;
+        document.getElementById('invoiceLineModalProductPriceTierId').value = '';
         document.getElementById('invoiceLineModalDescription').value = description;
         document.getElementById('invoiceLineModalSubtitleField').value = subtitle;
         document.getElementById('invoiceLineModalReferenceUrl').value = referenceUrl;
@@ -153,8 +147,18 @@
         currentMode = 'edit';
         currentLineId = lineId;
 
+        // Reset tier selector before showing modal
+        if (typeof window.resetInvoiceTierSelector === 'function') {
+            window.resetInvoiceTierSelector();
+        }
+
         // Show modal
         document.getElementById('invoiceLineItemModal').style.display = 'flex';
+
+        // Fetch current tiers for draft re-selection (always fetches fresh prices)
+        if (productCode && typeof window.fetchInvoiceProductTiers === 'function') {
+            window.fetchInvoiceProductTiers(productCode);
+        }
     };
 
     /**
@@ -171,6 +175,12 @@
         document.getElementById('invoiceLineModalLineId').value = '';
         document.getElementById('invoiceLineModalInvoiceId').value = currentInvoiceId || '';
         document.getElementById('invoiceLineModalProductCode').value = '';
+        document.getElementById('invoiceLineModalProductPriceTierId').value = '';
+
+        // Reset tier selector
+        if (typeof window.resetInvoiceTierSelector === 'function') {
+            window.resetInvoiceTierSelector();
+        }
 
         // Clear text/number inputs explicitly (in case reset doesn't clear all)
         document.getElementById('invoiceLineModalDescription').value = '';
@@ -239,6 +249,11 @@
             vatInput.readOnly = false;
             vatInput.style.opacity = '1';
             delete vatInput.dataset.previousVatRate;
+        }
+
+        // Reset tier selector
+        if (typeof window.resetInvoiceTierSelector === 'function') {
+            window.resetInvoiceTierSelector();
         }
 
         // Clear mode state
@@ -393,6 +408,12 @@
             + '&costPrice=' + encodeURIComponent(document.getElementById('invoiceLineModalCostPrice').value || '')
             + '&productCode=' + encodeURIComponent(document.getElementById('invoiceLineModalProductCode').value || '')
             + '&isReverseCharge=' + document.getElementById('invoiceLineModalReverseCharge').checked;
+
+        // Include productPriceTierId if a tier is selected
+        var tierIdValue = document.getElementById('invoiceLineModalProductPriceTierId').value;
+        if (tierIdValue) {
+            data += '&productPriceTierId=' + encodeURIComponent(tierIdValue);
+        }
 
         // Add lineId for edit mode
         if (currentMode === 'edit') {

@@ -492,7 +492,30 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 new SqlParameter("@Query", escapedQuery),
                 new SqlParameter("@MaxResults", maxResults));
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public virtual async Task UpdateDefaultPricesAsync(int productId, decimal sellingPrice, decimal costPrice)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [product].[Product]
+                SET
+                    [DefaultSellingPrice] = @DefaultSellingPrice,
+                    [DefaultCostPrice] = @DefaultCostPrice
+                WHERE [product].[Product].[Id] = @ProductId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@ProductId", productId),
+                new SqlParameter("@DefaultSellingPrice", sellingPrice),
+                new SqlParameter("@DefaultCostPrice", costPrice)
+            );
+        }
+        catch (Exception ex)
         {
             throw;
         }

@@ -16,14 +16,14 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode], [ProductPriceTierId], [PriceTierName]
                 FROM [quotation].[QuotationLine]
                 WHERE [QuotationId] = @QuotationId
                 ORDER BY [SortOrder]";
 
             return await ExecuteStoredProcedure(query, new SqlParameter("@QuotationId", quotationId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -34,13 +34,13 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode], [ProductPriceTierId], [PriceTierName]
                 FROM [quotation].[QuotationLine]
                 WHERE [Id] = @Id";
 
             return await ExecuteSingleRecordStoredProcedure(query, new SqlParameter("@Id", id));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -52,9 +52,9 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         {
             const string query = @"
                 INSERT INTO [quotation].[QuotationLine]
-                    ([QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge])
+                    ([QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [ProductCode], [IsReverseCharge], [ProductPriceTierId], [PriceTierName])
                 VALUES
-                    (@QuotationId, @Description, @Quantity, @UnitPrice, @VatRate, @Discount, @DiscountType, @CostPrice, @LineTotal, @SortOrder, @ReferenceUrl, @ProposalSectionId, @Subtitle, @IsReverseCharge)";
+                    (@QuotationId, @Description, @Quantity, @UnitPrice, @VatRate, @Discount, @DiscountType, @CostPrice, @LineTotal, @SortOrder, @ReferenceUrl, @ProposalSectionId, @Subtitle, @ProductCode, @IsReverseCharge, @ProductPriceTierId, @PriceTierName)";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@QuotationId", entity.QuotationId),
@@ -70,10 +70,13 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
                 new SqlParameter("@ReferenceUrl", entity.ReferenceUrl ?? (object)DBNull.Value),
                 new SqlParameter("@ProposalSectionId", entity.ProposalSectionId ?? (object)DBNull.Value),
                 new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value),
-                new SqlParameter("@IsReverseCharge", entity.IsReverseCharge)
+                new SqlParameter("@ProductCode", entity.ProductCode ?? (object)DBNull.Value),
+                new SqlParameter("@IsReverseCharge", entity.IsReverseCharge),
+                new SqlParameter("@ProductPriceTierId", entity.ProductPriceTierId ?? (object)DBNull.Value),
+                new SqlParameter("@PriceTierName", entity.PriceTierName ?? (object)DBNull.Value)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }

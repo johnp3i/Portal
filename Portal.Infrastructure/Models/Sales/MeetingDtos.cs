@@ -112,3 +112,35 @@ public class CreateMeetingOpportunityDto
     public string? Description { get; set; }
     public decimal? EstimatedValue { get; set; }
 }
+
+/// <summary>
+/// Brief DTO for the Upcoming Meetings panel on the Pipeline page.
+/// </summary>
+public class MeetingBriefDto
+{
+    public int Id { get; set; }
+    public int? LeadRequestId { get; set; }
+    public int ContactId { get; set; }
+    public string Subject { get; set; } = null!;
+    public string ContactName { get; set; } = null!;
+    public string MeetingTypeName { get; set; } = null!;
+    public DateTime ScheduledAtUtc { get; set; }
+    public int DurationMinutes { get; set; }
+    public string? Location { get; set; }
+}
+
+/// <summary>
+/// Brief DTO for dashboard Today's Brief section — meetings scheduled today/tomorrow.
+/// </summary>
+public class DashboardMeetingBriefDto
+{
+    public int Id { get; set; }
+    public string Subject { get; set; } = null!;
+    public string ContactName { get; set; } = null!;
+    public string MeetingTypeName { get; set; } = null!;
+    public DateTime ScheduledAtUtc { get; set; }
+    public int DurationMinutes { get; set; }
+
+    /// <summary>"today" or "tomorrow"</summary>
+    public string Urgency { get; set; } = null!;
+}

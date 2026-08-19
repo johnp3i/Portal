@@ -306,6 +306,92 @@ public class MeetingService : IMeetingService
         }
     }
 
+    public async Task<List<MeetingBriefDto>> GetUpcomingMeetingsBriefAsync(int businessId)
+    {
+        try
+        {
+            var todayStart = DateTime.UtcNow.Date;
+            var endDate = todayStart.AddDays(4);
+
+            var meetings = await _meetingRepository.GetUpcomingBriefAsync(businessId, todayStart, endDate);
+
+            var meetingTypes = await _meetingTypeRepository.GetAllAsync();
+            var contactIds = meetings.Select(m => m.ContactId).Distinct();
+            var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
+            var briefs = new List<MeetingBriefDto>();
+
+            foreach (var m in meetings)
+            {
+                contactsLookup.TryGetValue(m.ContactId, out var contact);
+                var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId);
+
+                briefs.Add(new MeetingBriefDto
+                {
+                    Id = m.Id,
+                    LeadRequestId = m.LeadRequestId,
+                    ContactId = m.ContactId,
+                    Subject = m.Subject,
+                    ContactName = contact != null
+                        ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
+                        : "Unknown",
+                    MeetingTypeName = meetingType?.Name ?? "Unknown",
+                    ScheduledAtUtc = m.ScheduledAtUtc,
+                    DurationMinutes = m.DurationMinutes,
+                    Location = m.Location
+                });
+            }
+
+            return briefs;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<DashboardMeetingBriefDto>> GetDashboardMeetingsBriefAsync(int businessId)
+    {
+        try
+        {
+            var today = DateTime.UtcNow.Date;
+            var dayAfterTomorrow = today.AddDays(2);
+
+            var meetings = await _meetingRepository.GetDashboardMeetingsBriefAsync(businessId, today, dayAfterTomorrow);
+
+            var meetingTypes = await _meetingTypeRepository.GetAllAsync();
+            var contactIds = meetings.Select(m => m.ContactId).Distinct();
+            var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
+            var briefs = new List<DashboardMeetingBriefDto>();
+
+            foreach (var m in meetings)
+            {
+                contactsLookup.TryGetValue(m.ContactId, out var contact);
+                var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId);
+
+                briefs.Add(new DashboardMeetingBriefDto
+                {
+                    Id = m.Id,
+                    Subject = m.Subject,
+                    ContactName = contact != null
+                        ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
+                        : "Unknown",
+                    MeetingTypeName = meetingType?.Name ?? "Unknown",
+                    ScheduledAtUtc = m.ScheduledAtUtc,
+                    DurationMinutes = m.DurationMinutes,
+                    Urgency = m.ScheduledAtUtc.Date == today ? "today" : "tomorrow"
+                });
+            }
+
+            return briefs;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     private async Task<List<MeetingListDto>> MapToListDtos(List<Meeting> meetings, int businessId)
     {
         var meetingTypes = await _meetingTypeRepository.GetAllAsync();

@@ -20,6 +20,10 @@ public class ProductPriceHistory
 
     public DateTime CreatedAtUtc { get; set; }
 
+    public int? ProductPriceTierId { get; set; }
+
     // Navigation properties
     public Product Product { get; set; } = null!;
+
+    public ProductPriceTier? ProductPriceTier { get; set; }
 }

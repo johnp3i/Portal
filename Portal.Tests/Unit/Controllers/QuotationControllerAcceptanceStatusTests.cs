@@ -80,6 +80,7 @@ public class QuotationControllerAcceptanceStatusTests
             _acceptanceServiceMock.Object,
             Mock.Of<IProposalPdfService>(),
             Mock.Of<ILeadRequestService>(),
+            Mock.Of<IProductPriceTierService>(),
             Mock.Of<ILogger<QuotationController>>());
 
         // Set up TempData to avoid null reference exceptions

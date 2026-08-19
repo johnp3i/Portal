@@ -35,7 +35,7 @@ The upgrade path is natural: as a business grows, manual processes become bottle
 -   VAT Periods & Submissions
 -   Credit Notes
 -   Revenue Summary Entry (Z-Report recording for POS businesses)
--   Product/Line Item Catalog
+-   Product/Line Item Catalog (with named price tiers — e.g. Retail, Wholesale, VIP — selectable per quotation/invoice line)
 -   Payment Links (manual generation via Stripe — one at a time)
 -   Payment Reminders (manual send only — click per invoice, no automation)
 -   Dashboard (basic KPIs, recent activity)
@@ -124,6 +124,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | VAT Periods & Submissions                 | ✅                   | ✅                   | ✅                   |
 | Credit Notes                              | ✅                   | ✅                   | ✅                   |
 | Product Catalog                           | ✅                   | ✅                   | ✅                   |
+| Product Price Tiers (Retail/Wholesale/VIP)| ✅                   | ✅                   | ✅                   |
 | Dashboard (basic)                         | ✅                   | ✅                   | ✅                   |
 | Mobile Access                             | ✅                   | ✅                   | ✅                   |
 | **Payments**                              |                      |                      |                      |
@@ -244,7 +245,7 @@ Request arrives
 | `purchase`                     | Purchase Management                                         | Foundation     |
 | `vat`                          | VAT Periods                                                 | Foundation     |
 | `credit`                       | Credit Notes                                                | Foundation     |
-| `products`                     | Product Catalog                                             | Foundation     |
+| `products`                     | Product Catalog (incl. named price tiers)                   | Foundation     |
 | `payment_link_manual`          | Manual Payment Links                                        | Foundation     |
 | `payment_reminder_manual`      | Manual Reminders                                            | Foundation     |
 | `payment_link_auto`            | Auto Payment Links                                          | Professional   |
@@ -444,7 +445,7 @@ This model prioritises operational continuity over monthly billing — a busines
 
 ### Pricing Rationale
 
-**Foundation (€39/mo)** — The name is intentional. This tier provides the complete foundation for running a business — quotations, invoicing, revenue control, purchases, suppliers, VAT submissions, credit notes, product catalog, and customer statements. Unlike competitors who cripple basic tiers to force upgrades, Foundation is genuinely complete. Positioned alongside serious business platforms (Xero, QuickBooks), not budget invoicing tools.
+**Foundation (€39/mo)** — The name is intentional. This tier provides the complete foundation for running a business — quotations, invoicing, revenue control, purchases, suppliers, VAT submissions, credit notes, a product catalog with multiple named price tiers (Retail, Wholesale, VIP), and customer statements. Unlike competitors who cripple basic tiers to force upgrades, Foundation is genuinely complete. Positioned alongside serious business platforms (Xero, QuickBooks), not budget invoicing tools.
 
 **Professional (€89/mo)** — The highest-value tier. A business paying €89/mo for fully automated payment chasing, auto-generated payment links, cash flow forecasting, and P&L summaries is getting capabilities that would cost them €200+/month with a part-time bookkeeper. The automation pipeline alone (remind → pay link → auto-record) eliminates hours of manual work every week.
 

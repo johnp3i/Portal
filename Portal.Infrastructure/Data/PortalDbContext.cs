@@ -78,6 +78,7 @@ public class PortalDbContext : DbContext
     // Product schema
     public DbSet<Product> Products { get; set; } = null!;
     public DbSet<ProductPriceHistory> ProductPriceHistories { get; set; } = null!;
+    public DbSet<ProductPriceTier> ProductPriceTiers { get; set; } = null!;
 
     // Credit schema
     public DbSet<CreditNoteStatusType> CreditNoteStatusTypes { get; set; } = null!;
@@ -237,6 +238,7 @@ public class PortalDbContext : DbContext
         ConfigureLineItemCatalog(modelBuilder);
         ConfigureProduct(modelBuilder);
         ConfigureProductPriceHistory(modelBuilder);
+        ConfigureProductPriceTier(modelBuilder);
         ConfigureCreditNoteStatusType(modelBuilder);
         ConfigureCreditNote(modelBuilder);
         ConfigureCreditNoteLine(modelBuilder);
@@ -1679,6 +1681,33 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+
+    private static void ConfigureProductPriceTier(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProductPriceTier>(entity =>
+        {
+            entity.ToTable("ProductPriceTier", "product");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.TierName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.SellingPrice).HasPrecision(18, 2);
+            entity.Property(e => e.CostPrice).HasPrecision(18, 2);
+            entity.Property(e => e.IsDefault).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.ProductId, e.TierName })
+                .HasFilter("[IsActive] = 1")
+                .IsUnique()
+                .HasDatabaseName("UQ_ProductPriceTier_ActiveName");
         });
     }
 
@@ -3703,6 +3732,8 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.Notes).HasMaxLength(500);
             entity.Property(e => e.IsCompleted).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.SnoozedCount).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.TaskOutcome).HasMaxLength(20);
+            entity.Property(e => e.ScheduledTimeUtc).HasColumnType("time(0)");
             entity.Property(e => e.CreatedByUserId).IsRequired().HasMaxLength(450);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
 

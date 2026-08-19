@@ -1132,6 +1132,9 @@ public class SalesController : Controller
     {
         try
         {
+            if (request == null)
+                return Json(new { success = false, message = "Invalid request data." });
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var result = await _followUpTaskService.CreateTaskAsync(request, userId);
 
@@ -1181,11 +1184,36 @@ public class SalesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostMarkTaskUnprocessed(int id)
+    {
+        try
+        {
+            var result = await _followUpTaskService.MarkTaskUnprocessedAsync(id);
+
+            if (!result.Success)
+            {
+                return Json(new { success = false, message = result.Message });
+            }
+
+            return Json(new { success = true, message = "Task marked as unprocessed." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking follow-up task as unprocessed");
+            return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostUpdateTask([FromBody] UpdateFollowUpTaskRequest request)
     {
         try
         {
-            var result = await _followUpTaskService.UpdateTaskAsync(request.Id, request.Title, request.TaskType, request.DueAtUtc, request.Notes);
+            if (request == null)
+                return Json(new { success = false, message = "Invalid request data." });
+
+            var result = await _followUpTaskService.UpdateTaskAsync(request.Id, request.Title, request.TaskType, request.DueAtUtc, request.Notes, request.ScheduledTimeUtc);
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -1223,6 +1251,22 @@ public class SalesController : Controller
         {
             _logger.LogError(ex, "Error loading today's actions");
             return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetUpcomingMeetingsBrief()
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var meetings = await _meetingService.GetUpcomingMeetingsBriefAsync(businessId);
+            return Json(new { success = true, data = meetings });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load upcoming meetings brief");
+            return Json(new { success = true, data = new List<MeetingBriefDto>() });
         }
     }
 

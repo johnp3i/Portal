@@ -84,6 +84,8 @@ public class InvoiceControllerDownloadPdfTests
             Mock.Of<IPaymentInstructionsService>(),
             Mock.Of<IPlanCheckService>(),
             Mock.Of<IPermissionService>(),
+            Mock.Of<IProductPriceTierService>(),
+            new ProductRepository(portalDbContext),
             portalDbContext,
             _loggerMock.Object);
 

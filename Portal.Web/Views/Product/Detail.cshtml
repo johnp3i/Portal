@@ -100,6 +100,20 @@
     </section>
 </div>
 
+<!-- Price Tiers -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-size:16px;margin:0;">Price Tiers</h3>
+        @if (p.IsActive)
+        {
+            <button id="btnAddTier" class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="showAddTierModal(@p.Id)">Add Tier</button>
+        }
+    </div>
+    <div id="tierTableContainer">
+        <p class="muted" style="font-size:14px;">Loading tiers...</p>
+    </div>
+</section>
+
 <!-- Price History -->
 <section class="glass card-pad" style="margin-bottom:22px;">
     <h3 style="font-size:16px;margin-bottom:16px;">Price History</h3>
@@ -206,6 +220,8 @@ else if (!Model.IsProfessional)
     </section>
 }
 
+@Html.AntiForgeryToken()
+
 @section Scripts {
 <style>
     @@media (max-width: 768px) {
@@ -218,6 +234,36 @@ else if (!Model.IsProfessional)
     @@media (max-width: 480px) {
         .product-kpi-grid { grid-template-columns: 1fr !important; }
         .product-meta-grid { grid-template-columns: 1fr !important; }
+    }
+    .tier-badge-default {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(13,94,166,.08);
+        color: #0D5EA6;
+    }
+    .tier-badge-active {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        background: #E6F7EF;
+        color: #129867;
+    }
+    .tier-badge-inactive {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        background: #FDEAEA;
+        color: #C24A4A;
+    }
+    .tier-row-inactive td {
+        opacity: 0.6;
     }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -248,5 +294,434 @@ else if (!Model.IsProfessional)
             }
         }
     });
+</script>
+<script>
+(function () {
+    // =========================================================================
+    // Price Tier Management — Product Detail Page
+    // =========================================================================
+
+    var productId = @p.Id;
+    var productIsActive = @(p.IsActive ? "true" : "false");
+    var currencySymbol = '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(cs))';
+    var defaultSellingPrice = @p.DefaultSellingPrice.ToString("F2");
+    var defaultCostPrice = @p.DefaultCostPrice.ToString("F2");
+
+    function getAntiForgeryToken() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // =========================================================================
+    // Load Tier Table
+    // =========================================================================
+    async function loadTierTable(prodId) {
+        var container = document.getElementById('tierTableContainer');
+
+        try {
+            var response = await fetch('/Product/AxGetProductTiers?productId=' + prodId);
+            var result = await response.json();
+
+            if (!result.success) {
+                container.innerHTML = '<p class="muted" style="font-size:14px;">Failed to load tiers.</p>';
+                return;
+            }
+
+            var tiers = result.data;
+
+            if (!tiers || tiers.length === 0) {
+                if (productIsActive) {
+                    container.innerHTML = '<div style="text-align:center;padding:24px 0;">'
+                        + '<p style="color:var(--muted);font-size:14px;margin-bottom:12px;">No price tiers configured. Add tiers to offer multiple pricing profiles.</p>'
+                        + '<button class="btn btn-primary" style="font-size:13px;padding:8px 20px;" onclick="showAddTierModal(' + prodId + ', true)">Add Price Tiers</button>'
+                        + '</div>';
+                } else {
+                    container.innerHTML = '<p class="muted" style="font-size:14px;">No price tiers configured.</p>';
+                }
+                var btnAdd = document.getElementById('btnAddTier');
+                if (btnAdd) btnAdd.style.display = 'none';
+                return;
+            }
+
+            // Show the "Add Tier" button
+            var btnAdd = document.getElementById('btnAddTier');
+            if (btnAdd) btnAdd.style.display = productIsActive ? 'inline-block' : 'none';
+
+            // Check if max tiers reached
+            var activeTierCount = tiers.filter(function(t) { return t.isActive; }).length;
+            if (btnAdd && activeTierCount >= 20) {
+                btnAdd.disabled = true;
+                btnAdd.title = 'Maximum of 20 active tiers reached';
+            } else if (btnAdd) {
+                btnAdd.disabled = false;
+                btnAdd.title = '';
+            }
+
+            var html = '<table style="width:100%;"><thead><tr>'
+                + '<th>Tier Name</th>'
+                + '<th style="text-align:right;">Selling Price</th>'
+                + '<th style="text-align:right;">Cost Price</th>'
+                + '<th>Default</th>'
+                + '<th>Status</th>'
+                + (productIsActive ? '<th>Actions</th>' : '')
+                + '</tr></thead><tbody>';
+
+            for (var i = 0; i < tiers.length; i++) {
+                var t = tiers[i];
+                var rowClass = t.isActive ? '' : ' class="tier-row-inactive"';
+                html += '<tr' + rowClass + '>';
+                html += '<td style="font-weight:600;">' + escapeHtml(t.tierName) + '</td>';
+                html += '<td style="text-align:right;font-weight:600;">' + currencySymbol + parseFloat(t.sellingPrice).toFixed(2) + '</td>';
+                html += '<td style="text-align:right;">' + currencySymbol + parseFloat(t.costPrice).toFixed(2) + '</td>';
+                html += '<td>' + (t.isDefault ? '<span class="tier-badge-default">Default</span>' : '') + '</td>';
+                html += '<td>' + (t.isActive ? '<span class="tier-badge-active">Active</span>' : '<span class="tier-badge-inactive">Inactive</span>') + '</td>';
+
+                if (productIsActive) {
+                    html += '<td style="white-space:nowrap;">';
+                    if (t.isActive) {
+                        // Store tier data in a data attribute for the edit action
+                        var tierJson = JSON.stringify(t).replace(/"/g, '&quot;');
+                        html += '<a href="javascript:void(0)" onclick=\'showEditTierModal(JSON.parse(this.getAttribute("data-tier")))\' data-tier="' + tierJson + '" class="tbl-action tbl-action--primary">Edit</a> ';
+                        if (!t.isDefault) {
+                            html += '<a href="javascript:void(0)" onclick="setDefaultTier(' + t.id + ', ' + prodId + ')" class="tbl-action tbl-action--primary">Set Default</a> ';
+                            html += '<a href="javascript:void(0)" onclick="deactivateTier(' + t.id + ', ' + prodId + ')" class="tbl-action tbl-action--danger">Deactivate</a>';
+                        }
+                    } else {
+                        html += '<a href="javascript:void(0)" onclick="reactivateTier(' + t.id + ', ' + prodId + ')" class="tbl-action tbl-action--primary" style="opacity:0.7;">Reactivate</a>';
+                    }
+                    html += '</td>';
+                }
+
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+        } catch (e) {
+            container.innerHTML = '<p class="muted" style="font-size:14px;">Failed to load tiers.</p>';
+        }
+    }
+
+    // =========================================================================
+    // Add Tier Modal
+    // =========================================================================
+    window.showAddTierModal = async function (prodId, isFirstTier) {
+        var prefillSelling = isFirstTier ? defaultSellingPrice : '0.00';
+        var prefillCost = isFirstTier ? defaultCostPrice : '0.00';
+
+        var result = await Swal.fire({
+            title: 'Add Price Tier',
+            html:
+                '<div style="text-align:left;">' +
+                '<div style="margin-bottom:14px;">' +
+                    '<label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Tier Name <span style="color:#C24A4A;">*</span></label>' +
+                    '<input id="swalTierName" type="text" class="swal2-input" placeholder="e.g. Retail, Wholesale, VIP" maxlength="100" style="margin:0;width:100%;box-sizing:border-box;" />' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
+                    '<div>' +
+                        '<label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Selling Price</label>' +
+                        '<input id="swalSellingPrice" type="number" class="swal2-input" min="0" step="0.01" value="' + prefillSelling + '" style="margin:0;width:100%;box-sizing:border-box;" />' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Cost Price</label>' +
+                        '<input id="swalCostPrice" type="number" class="swal2-input" min="0" step="0.01" value="' + prefillCost + '" style="margin:0;width:100%;box-sizing:border-box;" />' +
+                    '</div>' +
+                '</div>' +
+                '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Create Tier',
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d',
+            focusConfirm: false,
+            preConfirm: function () {
+                var tierName = document.getElementById('swalTierName').value.trim();
+                var sellingPrice = parseFloat(document.getElementById('swalSellingPrice').value);
+                var costPrice = parseFloat(document.getElementById('swalCostPrice').value);
+
+                if (!tierName) {
+                    Swal.showValidationMessage('Tier name is required.');
+                    return false;
+                }
+                if (tierName.length > 100) {
+                    Swal.showValidationMessage('Tier name must be 100 characters or fewer.');
+                    return false;
+                }
+                if (isNaN(sellingPrice) || sellingPrice < 0) {
+                    Swal.showValidationMessage('Selling price must be zero or greater.');
+                    return false;
+                }
+                if (isNaN(costPrice) || costPrice < 0) {
+                    Swal.showValidationMessage('Cost price must be zero or greater.');
+                    return false;
+                }
+
+                return { tierName: tierName, sellingPrice: sellingPrice, costPrice: costPrice };
+            }
+        });
+
+        if (!result.isConfirmed || !result.value) return;
+
+        BlockUI.show('Creating tier...');
+        try {
+            var response = await fetch('/Product/AxPostCreateTier', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    productId: prodId,
+                    tierName: result.value.tierName,
+                    sellingPrice: result.value.sellingPrice,
+                    costPrice: result.value.costPrice
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ title: 'Created!', text: data.message || 'Price tier created successfully.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                loadTierTable(prodId);
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Failed to create tier.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    // =========================================================================
+    // Edit Tier Modal
+    // =========================================================================
+    window.showEditTierModal = async function (tier) {
+        var result = await Swal.fire({
+            title: 'Edit Price Tier',
+            html:
+                '<div style="text-align:left;">' +
+                '<div style="margin-bottom:14px;">' +
+                    '<label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Tier Name <span style="color:#C24A4A;">*</span></label>' +
+                    '<input id="swalTierName" type="text" class="swal2-input" value="' + escapeHtml(tier.tierName) + '" maxlength="100" style="margin:0;width:100%;box-sizing:border-box;" />' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
+                    '<div>' +
+                        '<label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Selling Price</label>' +
+                        '<input id="swalSellingPrice" type="number" class="swal2-input" min="0" step="0.01" value="' + parseFloat(tier.sellingPrice).toFixed(2) + '" style="margin:0;width:100%;box-sizing:border-box;" />' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="display:block;font-size:12px;font-weight:600;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Cost Price</label>' +
+                        '<input id="swalCostPrice" type="number" class="swal2-input" min="0" step="0.01" value="' + parseFloat(tier.costPrice).toFixed(2) + '" style="margin:0;width:100%;box-sizing:border-box;" />' +
+                    '</div>' +
+                '</div>' +
+                '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Save Changes',
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d',
+            focusConfirm: false,
+            preConfirm: function () {
+                var tierName = document.getElementById('swalTierName').value.trim();
+                var sellingPrice = parseFloat(document.getElementById('swalSellingPrice').value);
+                var costPrice = parseFloat(document.getElementById('swalCostPrice').value);
+
+                if (!tierName) {
+                    Swal.showValidationMessage('Tier name is required.');
+                    return false;
+                }
+                if (tierName.length > 100) {
+                    Swal.showValidationMessage('Tier name must be 100 characters or fewer.');
+                    return false;
+                }
+                if (isNaN(sellingPrice) || sellingPrice < 0) {
+                    Swal.showValidationMessage('Selling price must be zero or greater.');
+                    return false;
+                }
+                if (isNaN(costPrice) || costPrice < 0) {
+                    Swal.showValidationMessage('Cost price must be zero or greater.');
+                    return false;
+                }
+
+                return { tierName: tierName, sellingPrice: sellingPrice, costPrice: costPrice };
+            }
+        });
+
+        if (!result.isConfirmed || !result.value) return;
+
+        BlockUI.show('Updating tier...');
+        try {
+            var response = await fetch('/Product/AxPostUpdateTier', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    tierId: tier.id,
+                    productId: productId,
+                    tierName: result.value.tierName,
+                    sellingPrice: result.value.sellingPrice,
+                    costPrice: result.value.costPrice
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ title: 'Updated!', text: data.message || 'Price tier updated successfully.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                loadTierTable(productId);
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Failed to update tier.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    // =========================================================================
+    // Set Default Tier
+    // =========================================================================
+    window.setDefaultTier = async function (tierId, prodId) {
+        var result = await Swal.fire({
+            title: 'Set as Default',
+            text: 'This tier will become the default pricing level for this product.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, set as default',
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Updating default tier...');
+        try {
+            var response = await fetch('/Product/AxPostSetDefaultTier', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    tierId: tierId,
+                    productId: prodId
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ title: 'Updated!', text: data.message || 'Default tier updated successfully.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                loadTierTable(prodId);
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Failed to update default tier.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    // =========================================================================
+    // Deactivate Tier
+    // =========================================================================
+    window.deactivateTier = async function (tierId, prodId) {
+        var result = await Swal.fire({
+            title: 'Deactivate Tier',
+            text: 'This tier will no longer appear in the tier selection. Historical records will be preserved.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, deactivate',
+            confirmButtonColor: '#C24A4A',
+            cancelButtonColor: '#6c757d'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Deactivating tier...');
+        try {
+            var response = await fetch('/Product/AxPostDeactivateTier', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    tierId: tierId,
+                    productId: prodId
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ title: 'Deactivated!', text: data.message || 'Price tier deactivated successfully.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                loadTierTable(prodId);
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Failed to deactivate tier.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    // =========================================================================
+    // Reactivate Tier
+    // =========================================================================
+    window.reactivateTier = async function (tierId, prodId) {
+        var result = await Swal.fire({
+            title: 'Reactivate Tier',
+            text: 'This tier will become active and available for selection again.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, reactivate',
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d'
+        });
+
+        if (!result.isConfirmed) return;
+
+        BlockUI.show('Reactivating tier...');
+        try {
+            var response = await fetch('/Product/AxPostReactivateTier', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    tierId: tierId,
+                    productId: prodId
+                })
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                Swal.fire({ title: 'Reactivated!', text: data.message || 'Price tier reactivated successfully.', icon: 'success', confirmButtonColor: '#0D5EA6' });
+                loadTierTable(prodId);
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Failed to reactivate tier.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    // =========================================================================
+    // Initial Load
+    // =========================================================================
+    loadTierTable(productId);
+})();
 </script>
 }

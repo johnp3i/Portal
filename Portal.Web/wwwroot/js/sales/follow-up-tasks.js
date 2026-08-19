@@ -23,6 +23,10 @@ async function loadTodaysActions() {
         var badges = document.getElementById('todaysBadges');
         var skeleton = document.getElementById('todaysActionsSkeleton');
 
+        // The Today's Actions panel only exists on the Pipeline page.
+        // On other pages (e.g. /Sales/Tasks) there is nothing to render here.
+        if (!panel || !list) return;
+
         // Remove skeleton if present
         if (skeleton) skeleton.remove();
 
@@ -44,7 +48,7 @@ async function loadTodaysActions() {
         if (today > 0) badgeHtml += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(200,145,46,.08);color:#C8912E;">' + today + ' today</span>';
         if (tomorrow > 0) badgeHtml += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(138,155,171,.08);color:#8a9bab;">' + tomorrow + ' tomorrow</span>';
         if (upcoming > 0) badgeHtml += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(13,94,166,.06);color:#0D5EA6;">' + upcoming + ' upcoming</span>';
-        badges.innerHTML = badgeHtml;
+        if (badges) badges.innerHTML = badgeHtml;
 
         // Render tasks
         if (_todaysActionsCollapsed) {
@@ -96,12 +100,14 @@ function renderTaskCard(t) {
         '<span style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;"></span>' +
         '<div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;' + getTypeIconBg(t.taskType) + '">' + typeIcon + '</div>' +
         '<div style="flex:1;min-width:0;">' +
-            '<div style="font-size:14px;font-weight:600;color:#0B1B28;">' + (t.leadRequestId ? '<a href="/Sales/LeadDetail/' + t.leadRequestId + '" style="color:#0B1B28;text-decoration:none;border-bottom:1px dashed rgba(13,94,166,.3);">' + escapeHtml(t.title) + '</a>' : escapeHtml(t.title)) + '</div>' +
+            '<div style="font-size:14px;font-weight:600;color:#0B1B28;">' + (t.scheduledTimeUtc ? '<span style="font-size:12px;font-weight:600;color:#5a6a7a;margin-right:6px;">' + t.scheduledTimeUtc.substring(0, 5) + '</span>' : '') + (t.leadRequestId ? '<a href="/Sales/LeadDetail/' + t.leadRequestId + '" style="color:#0B1B28;text-decoration:none;border-bottom:1px dashed rgba(13,94,166,.3);">' + escapeHtml(t.title) + '</a>' : escapeHtml(t.title)) + '</div>' +
             '<div style="font-size:12px;color:#8a9bab;margin-top:3px;">' + urgencyBadge + assignedTo + snoozedNote + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">' +
+            (t.isCompleted ? getTaskOutcomeBadge(t.taskOutcome) :
             (t.notes ? '<button class="btn btn-sm" style="background:rgba(13,94,166,.06);color:#0D5EA6;border:1.5px solid rgba(13,94,166,.12);padding:5px 8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="openViewNotesModal(' + t.id + ')" title="View notes">&#128221;</button>' : '') +
             '<button class="btn btn-sm" style="background:rgba(138,155,171,.06);color:#5E7385;border:1.5px solid rgba(138,155,171,.15);padding:5px 8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="openEditTaskModal(' + t.id + ')" title="Edit task">&#9998;</button>' +
+            '<button class="btn btn-sm" style="background:rgba(200,145,46,.06);color:#C8912E;border:1.5px solid rgba(200,145,46,.18);padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;" onclick="markTaskUnprocessed(' + t.id + ')">Unprocessed</button>' +
             '<button class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="completeTask(' + t.id + ')">&#10003; Complete</button>' +
             '<div style="position:relative;display:inline-block;">' +
                 '<button class="btn btn-sm" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="toggleSnoozeMenu(event, ' + t.id + ')">&#9193; Snooze &#9662;</button>' +
@@ -110,7 +116,7 @@ function renderTaskCard(t) {
                     '<a href="#" onclick="snoozeTask(event,' + t.id + ',3)" style="display:block;padding:8px 12px;font-size:13px;color:#0B1B28;text-decoration:none;border-radius:6px;">+3 days</a>' +
                     '<a href="#" onclick="snoozeTask(event,' + t.id + ',7)" style="display:block;padding:8px 12px;font-size:13px;color:#0B1B28;text-decoration:none;border-radius:6px;">Next week</a>' +
                 '</div>' +
-            '</div>' +
+            '</div>') +
         '</div>' +
     '</div>';
 }
@@ -149,6 +155,15 @@ function getUrgencyBadge(t) {
     }
 }
 
+function getTaskOutcomeBadge(outcome) {
+    if (outcome === 'Completed') {
+        return '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(18,152,103,.1);color:#129867;">Completed</span>';
+    } else if (outcome === 'Unprocessed') {
+        return '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(200,145,46,.1);color:#C8912E;">Unprocessed</span>';
+    }
+    return '';
+}
+
 // ─── Actions ────────────────────────────────────────────────
 
 async function completeTask(taskId) {
@@ -175,6 +190,30 @@ async function completeTask(taskId) {
     } catch (e) {
         BlockUI.hide();
         Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+    }
+}
+
+async function markTaskUnprocessed(taskId) {
+    BlockUI.show('Processing...');
+    try {
+        var response = await fetch('/Sales/AxPostMarkTaskUnprocessed?id=' + taskId, {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+        });
+        var data = await response.json();
+        BlockUI.hide();
+
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' });
+            loadTodaysActions();
+            if (typeof loadLeadTasks === 'function') loadLeadTasks();
+            if (typeof loadTasksPage === 'function') loadTasksPage(1);
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+        }
+    } catch (e) {
+        BlockUI.hide();
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.', confirmButtonColor: '#0D5EA6' });
     }
 }
 
@@ -241,13 +280,14 @@ function openCreateTaskModal(leadRequestId, contactId, contactName) {
             '</select></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Due Date</label>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
-                    '<button class="preset-btn" onclick="setTaskPreset(1)">Tomorrow</button>' +
-                    '<button class="preset-btn active" onclick="setTaskPreset(3)">In 3 days</button>' +
-                    '<button class="preset-btn" onclick="setTaskPreset(7)">Next week</button>' +
-                    '<button class="preset-btn" onclick="setTaskPresetNextMonday()">Next Monday</button>' +
+                    '<button class="preset-btn" onclick="setTaskPreset(event, 1)">Tomorrow</button>' +
+                    '<button class="preset-btn active" onclick="setTaskPreset(event, 3)">In 3 days</button>' +
+                    '<button class="preset-btn" onclick="setTaskPreset(event, 7)">Next week</button>' +
+                    '<button class="preset-btn" onclick="setTaskPresetNextMonday(event)">Next Monday</button>' +
                 '</div>' +
                 '<input type="date" id="taskDueDate" value="' + getPresetDate(3) + '" />' +
             '</div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Scheduled Time</label><input type="time" id="taskScheduledTime" value="" /><div style="font-size:11px;color:#8a9bab;margin-top:4px;">Leave blank for all-day task</div></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Notes (optional)</label><textarea id="taskNotes" rows="2" placeholder="Add context for the follow-up..."></textarea></div>' +
             '<input type="hidden" id="taskLeadRequestId" value="' + (leadRequestId || '') + '" />' +
             '<input type="hidden" id="taskContactId" value="' + (contactId || '') + '" />' +
@@ -266,20 +306,20 @@ function closeCreateTaskModal() {
     if (modal) modal.remove();
 }
 
-function setTaskPreset(days) {
+function setTaskPreset(e, days) {
     document.getElementById('taskDueDate').value = getPresetDate(days);
     document.querySelectorAll('#createTaskModal .preset-btn').forEach(function (b) { b.classList.remove('active'); });
-    event.target.classList.add('active');
+    e.target.classList.add('active');
 }
 
-function setTaskPresetNextMonday() {
+function setTaskPresetNextMonday(e) {
     var d = new Date();
     var day = d.getDay();
     var diff = day === 0 ? 1 : 8 - day;
     d.setDate(d.getDate() + diff);
     document.getElementById('taskDueDate').value = d.toISOString().split('T')[0];
     document.querySelectorAll('#createTaskModal .preset-btn').forEach(function (b) { b.classList.remove('active'); });
-    event.target.classList.add('active');
+    e.target.classList.add('active');
 }
 
 function getPresetDate(days) {
@@ -295,10 +335,23 @@ async function submitCreateTask() {
         return;
     }
 
+    var dueDate = document.getElementById('taskDueDate').value;
+    if (!dueDate) {
+        Swal.fire({ icon: 'warning', title: 'Required', text: 'Please select a due date.', confirmButtonColor: '#0D5EA6' });
+        return;
+    }
+
+    var scheduledTime = document.getElementById('taskScheduledTime').value || null;
+    // Ensure time format includes seconds for TimeOnly deserialization (HH:mm:ss)
+    if (scheduledTime && scheduledTime.length === 5) {
+        scheduledTime = scheduledTime + ':00';
+    }
+
     var payload = {
         title: title,
         taskType: document.getElementById('taskType').value,
-        dueAtUtc: document.getElementById('taskDueDate').value + 'T09:00:00Z',
+        dueAtUtc: dueDate + 'T09:00:00Z',
+        scheduledTimeUtc: scheduledTime,
         notes: document.getElementById('taskNotes').value.trim() || null,
         leadRequestId: document.getElementById('taskLeadRequestId').value ? parseInt(document.getElementById('taskLeadRequestId').value) : null,
         contactId: document.getElementById('taskContactId').value ? parseInt(document.getElementById('taskContactId').value) : null,
@@ -383,6 +436,7 @@ function openEditTaskModal(taskId) {
     }
 
     var dueDate = t.dueAtUtc ? t.dueAtUtc.split('T')[0] : '';
+    var scheduledTime = t.scheduledTimeUtc ? t.scheduledTimeUtc.substring(0, 5) : '';
 
     var modalHtml = '<div id="editTaskModal" style="position:fixed;inset:0;background:rgba(11,27,40,.4);display:flex;align-items:center;justify-content:center;z-index:1000;">' +
         '<div style="background:#fff;border-radius:20px;padding:32px;width:480px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.15);">' +
@@ -399,6 +453,7 @@ function openEditTaskModal(taskId) {
                 '<option value="Other"' + (t.taskType === 'Other' ? ' selected' : '') + '>Other</option>' +
             '</select></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Due Date</label><input type="date" id="editTaskDueDate" value="' + dueDate + '" /></div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Scheduled Time</label><input type="time" id="editTaskScheduledTime" value="' + scheduledTime + '" /><div style="font-size:11px;color:#8a9bab;margin-top:4px;">Leave blank for all-day task</div></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Notes</label><textarea id="editTaskNotes" rows="4" placeholder="Add notes, comments, or context...">' + escapeHtml(t.notes || '') + '</textarea></div>' +
             '<input type="hidden" id="editTaskId" value="' + t.id + '" />' +
             '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">' +
@@ -429,11 +484,18 @@ async function submitEditTask() {
         return;
     }
 
+    var scheduledTime = document.getElementById('editTaskScheduledTime').value || null;
+    // Ensure time format includes seconds for TimeOnly deserialization (HH:mm:ss)
+    if (scheduledTime && scheduledTime.length === 5) {
+        scheduledTime = scheduledTime + ':00';
+    }
+
     var payload = {
         id: parseInt(document.getElementById('editTaskId').value),
         title: title,
         taskType: document.getElementById('editTaskType').value,
         dueAtUtc: dueValue + 'T09:00:00Z',
+        scheduledTimeUtc: scheduledTime,
         notes: document.getElementById('editTaskNotes').value.trim() || null
     };
 
@@ -484,9 +546,121 @@ document.addEventListener('click', function () {
     document.querySelectorAll('.snooze-menu-dropdown').forEach(function (m) { m.style.display = 'none'; });
 });
 
+// ─── Upcoming Meetings Panel (Pipeline page) ────────────────
+
+var _upcomingMeetingsCollapsed = localStorage.getItem('upcomingMeetingsCollapsed') === 'true';
+
+async function loadUpcomingMeetings() {
+    try {
+        var response = await fetch('/Sales/AxGetUpcomingMeetingsBrief');
+        var data = await response.json();
+        if (!data.success) return;
+
+        var meetings = data.data;
+        var panel = document.getElementById('upcomingMeetingsPanel');
+        var list = document.getElementById('upcomingMeetingsList');
+        var badge = document.getElementById('meetingsBadge');
+        var skeleton = document.getElementById('upcomingMeetingsSkeleton');
+
+        // Remove skeleton if present
+        if (skeleton) skeleton.remove();
+
+        if (!meetings || meetings.length === 0) {
+            // Show empty state
+            if (_upcomingMeetingsCollapsed) {
+                list.style.display = 'none';
+                document.getElementById('meetingsCollapseIcon').innerHTML = '<path d="M6 9l6 6 6-6"/>';
+            } else {
+                list.style.display = '';
+            }
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:#8a9bab;font-size:14px;">No upcoming meetings scheduled</div>';
+            badge.innerHTML = '';
+            return;
+        }
+
+        // Badge count
+        badge.innerHTML = '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(13,94,166,.06);color:#0D5EA6;">' + meetings.length + ' meeting' + (meetings.length > 1 ? 's' : '') + '</span>';
+
+        // Render meetings
+        if (_upcomingMeetingsCollapsed) {
+            list.style.display = 'none';
+            document.getElementById('meetingsCollapseIcon').innerHTML = '<path d="M6 9l6 6 6-6"/>';
+        } else {
+            list.style.display = '';
+        }
+
+        var html = '';
+        meetings.forEach(function (m) {
+            html += renderMeetingCard(m);
+        });
+        list.innerHTML = html;
+    } catch (e) {
+        console.error('Failed to load upcoming meetings', e);
+        var skeleton = document.getElementById('upcomingMeetingsSkeleton');
+        if (skeleton) skeleton.remove();
+        var list = document.getElementById('upcomingMeetingsList');
+        if (list) list.innerHTML = '';
+    }
+}
+
+function toggleUpcomingMeetings() {
+    var list = document.getElementById('upcomingMeetingsList');
+    var icon = document.getElementById('meetingsCollapseIcon');
+    _upcomingMeetingsCollapsed = !_upcomingMeetingsCollapsed;
+    localStorage.setItem('upcomingMeetingsCollapsed', _upcomingMeetingsCollapsed);
+
+    if (_upcomingMeetingsCollapsed) {
+        list.style.display = 'none';
+        icon.innerHTML = '<path d="M6 9l6 6 6-6"/>';
+    } else {
+        list.style.display = '';
+        icon.innerHTML = '<path d="M18 15l-6-6-6 6"/>';
+    }
+}
+
+function renderMeetingCard(m) {
+    var scheduledDate = new Date(m.scheduledAtUtc);
+    var formattedDate = formatMeetingDate(scheduledDate);
+    var duration = m.durationMinutes + ' min';
+    var linkUrl = m.leadRequestId ? '/Sales/LeadDetail/' + m.leadRequestId : '/Sales/ContactDetail/' + m.contactId;
+
+    return '<a href="' + linkUrl + '" style="text-decoration:none;color:inherit;display:block;">' +
+        '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-radius:14px;border:1px solid rgba(13,94,166,.06);transition:border-color .15s;cursor:pointer;" onmouseenter="this.style.borderColor=\'rgba(13,94,166,.2)\'" onmouseleave="this.style.borderColor=\'rgba(13,94,166,.06)\'">' +
+            '<span style="width:8px;height:8px;border-radius:50%;background:#0D5EA6;flex-shrink:0;"></span>' +
+            '<div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(13,94,166,.08);color:#0D5EA6;">' +
+                '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:14px;font-weight:600;color:#0B1B28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(m.subject) + '</div>' +
+                '<div style="font-size:12px;color:#8a9bab;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                    '<span>' + escapeHtml(m.contactName) + '</span>' +
+                    '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(87,184,232,.1);color:#1a8fc7;">' + escapeHtml(m.meetingTypeName) + '</span>' +
+                '</div>' +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">' +
+                '<span style="font-size:13px;font-weight:700;color:#0B1B28;">' + formattedDate + '</span>' +
+                '<span style="font-size:11px;color:#8a9bab;">' + duration + '</span>' +
+            '</div>' +
+        '</div>' +
+    '</a>';
+}
+
+function formatMeetingDate(date) {
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var day = date.getDate().toString().padStart(2, '0');
+    var month = months[date.getMonth()];
+    var hours = date.getHours().toString().padStart(2, '0');
+    var mins = date.getMinutes().toString().padStart(2, '0');
+    return day + ' ' + month + ' ' + hours + ':' + mins;
+}
+
 // ─── Auto-load on pipeline page ─────────────────────────────
 if (document.getElementById('todaysActionsPanel')) {
     loadTodaysActions();
+}
+
+if (document.getElementById('upcomingMeetingsPanel')) {
+    loadUpcomingMeetings();
 }
 
 // ─── Navigation badge — overdue count ───────────────────────

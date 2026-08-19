@@ -17,6 +17,7 @@ public class QuotationService : IQuotationService
     private readonly AuditLogRepository _auditLogRepository;
     private readonly CustomerRepository _customerRepository;
     private readonly ProposalSectionRepository _sectionRepository;
+    private readonly ProductPriceTierRepository _productPriceTierRepository;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly ILineItemCatalogService _lineItemCatalogService;
     private readonly IProductService _productService;
@@ -46,6 +47,7 @@ public class QuotationService : IQuotationService
         AuditLogRepository auditLogRepository,
         CustomerRepository customerRepository,
         ProposalSectionRepository sectionRepository,
+        ProductPriceTierRepository productPriceTierRepository,
         ICurrentTenantService currentTenantService,
         ILineItemCatalogService lineItemCatalogService,
         IProductService productService,
@@ -57,6 +59,7 @@ public class QuotationService : IQuotationService
         _auditLogRepository = auditLogRepository;
         _customerRepository = customerRepository;
         _sectionRepository = sectionRepository;
+        _productPriceTierRepository = productPriceTierRepository;
         _currentTenantService = currentTenantService;
         _lineItemCatalogService = lineItemCatalogService;
         _productService = productService;
@@ -287,7 +290,7 @@ public class QuotationService : IQuotationService
         }
     }
 
-    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null, bool isReverseCharge = false, int? proposalSectionId = null)
+    public async Task<QuotationLine> AddLineAsync(int quotationId, string description, decimal quantity, decimal unitPrice, decimal vatRate, string? referenceUrl = null, decimal discount = 0, string discountType = "Percentage", string? subtitle = null, decimal? costPrice = null, string? productCode = null, bool isReverseCharge = false, int? proposalSectionId = null, int? productPriceTierId = null)
     {
         if (isReverseCharge && vatRate > 0)
         {
@@ -318,6 +321,22 @@ public class QuotationService : IQuotationService
         var existingLines = await _quotationLineRepository.GetByQuotationIdAsync(quotationId);
         var nextSortOrder = existingLines.Count > 0 ? existingLines.Max(l => l.SortOrder) + 1 : 1;
 
+        // Look up tier name snapshot when ProductPriceTierId is provided
+        string? priceTierName = null;
+        if (productPriceTierId.HasValue)
+        {
+            var tier = await _productPriceTierRepository.GetByIdAsync(productPriceTierId.Value);
+            if (tier != null && tier.IsActive)
+            {
+                priceTierName = tier.TierName;
+            }
+            else
+            {
+                // Tier not found or inactive — clear the reference (don't persist stale/invalid tier ID)
+                productPriceTierId = null;
+            }
+        }
+
         var line = new QuotationLine
         {
             QuotationId = quotationId,
@@ -334,7 +353,9 @@ public class QuotationService : IQuotationService
             Subtitle = subtitle,
             ProductCode = productCode,
             IsReverseCharge = isReverseCharge,
-            ProposalSectionId = proposalSectionId
+            ProposalSectionId = proposalSectionId,
+            ProductPriceTierId = productPriceTierId,
+            PriceTierName = priceTierName
         };
 
         await _quotationLineRepository.InsertAsync(line);

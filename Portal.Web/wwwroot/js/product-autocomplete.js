@@ -184,6 +184,21 @@
 
         // Trigger change on the description input itself
         triggerChange(input);
+
+        // Per-container hook (e.g. Invoice Create inline line cards) — allows a page to
+        // drive its own per-card tier selector using the resolved container + entry.
+        if (typeof window.onProductAutocompleteSelected === 'function') {
+            try { window.onProductAutocompleteSelected(container, entry); } catch (e) { /* ignore */ }
+        }
+
+        // Fetch price tiers for the selected product (Quotation/Invoice singleton tier selector integration)
+        if (entry.productCode && typeof window.fetchProductTiers === 'function') {
+            window.fetchProductTiers(entry.productCode);
+        } else if (entry.productCode && typeof window.fetchInvoiceProductTiers === 'function') {
+            window.fetchInvoiceProductTiers(entry.productCode);
+        } else if (typeof window.resetTierSelector === 'function') {
+            window.resetTierSelector();
+        }
     }
 
     function triggerChange(el) {

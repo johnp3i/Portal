@@ -76,6 +76,7 @@ public class QuotationControllerDownloadPdfTests
             _acceptanceServiceMock.Object,
             _proposalPdfServiceMock.Object,
             Mock.Of<ILeadRequestService>(),
+            Mock.Of<IProductPriceTierService>(),
             _loggerMock.Object);
 
         _controller.TempData = new TempDataDictionary(

@@ -16,4 +16,9 @@ public class CreateInvoiceLineDto
     public string? Subtitle { get; set; }
     public int? SectionIndex { get; set; }
     public string? ProductCode { get; set; }
+
+    /// <summary>
+    /// Optional reference to the selected product price tier (if the product has tiers).
+    /// </summary>
+    public int? ProductPriceTierId { get; set; }
 }

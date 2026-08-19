@@ -1,9 +1,12 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
+using Portal.Infrastructure.Models.Sales;
 using Portal.Infrastructure.Services;
+using Portal.Infrastructure.Services.Sales;
 
 namespace Portal.Web.Controllers;
 
@@ -20,6 +23,10 @@ public class HomeController : Controller
     private readonly ISystemBriefingService _systemBriefingService;
     private readonly IOnboardingService _onboardingService;
     private readonly IAnnouncementService _announcementService;
+    private readonly IFollowUpTaskService _followUpTaskService;
+    private readonly IMeetingService _meetingService;
+    private readonly IPlanCheckService _planCheckService;
+    private readonly ILogger<HomeController> _logger;
 
     public HomeController(
         IQuotationService quotationService,
@@ -31,7 +38,11 @@ public class HomeController : Controller
         IDashboardBriefingService briefingService,
         ISystemBriefingService systemBriefingService,
         IOnboardingService onboardingService,
-        IAnnouncementService announcementService)
+        IAnnouncementService announcementService,
+        IFollowUpTaskService followUpTaskService,
+        IMeetingService meetingService,
+        IPlanCheckService planCheckService,
+        ILogger<HomeController> logger)
 
     {
         _quotationService = quotationService;
@@ -44,6 +55,10 @@ public class HomeController : Controller
         _systemBriefingService = systemBriefingService;
         _onboardingService = onboardingService;
         _announcementService = announcementService;
+        _followUpTaskService = followUpTaskService;
+        _meetingService = meetingService;
+        _planCheckService = planCheckService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -219,6 +234,33 @@ public class HomeController : Controller
         var briefing = await _briefingService.GenerateBriefingAsync(businessId, scope, profile?.CurrencySymbol ?? "€");
         ViewBag.Briefing = briefing;
 
+        // Today's Brief — only for users with Sales module access
+        var hasSalesAccess = await _planCheckService.IsModuleInPlanAsync(PortalModules.Sales);
+        model.ShowSales = hasSalesAccess;
+
+        if (hasSalesAccess)
+        {
+            try
+            {
+                model.BriefTasks = await _followUpTaskService.GetDashboardBriefAsync(businessId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load dashboard tasks brief");
+                model.BriefTasks = new List<DashboardTaskBriefDto>();
+            }
+
+            try
+            {
+                model.BriefMeetings = await _meetingService.GetDashboardMeetingsBriefAsync(businessId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load dashboard meetings brief");
+                model.BriefMeetings = new List<DashboardMeetingBriefDto>();
+            }
+        }
+
         // Generate system briefing for SuperAdmin only
         if (User.IsInRole("SuperAdmin"))
         {
@@ -238,6 +280,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostDismissOnboarding()
     {
         try
@@ -253,6 +296,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostDismissAnnouncement(int announcementId)
     {
         try
@@ -271,6 +315,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostDismissAllAnnouncements()
     {
         try

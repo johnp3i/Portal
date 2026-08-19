@@ -19,6 +19,16 @@ public class FollowUpTaskDto
     public int SnoozedCount { get; set; }
 
     /// <summary>
+    /// Closure outcome: "Completed", "Unprocessed", or null (open).
+    /// </summary>
+    public string? TaskOutcome { get; set; }
+
+    /// <summary>
+    /// Optional time-of-day for the task. NULL means all-day task.
+    /// </summary>
+    public TimeOnly? ScheduledTimeUtc { get; set; }
+
+    /// <summary>
     /// Computed urgency: "overdue", "today", "tomorrow", "upcoming"
     /// </summary>
     public string Urgency { get; set; } = null!;
@@ -36,6 +46,11 @@ public class CreateFollowUpTaskRequest
     public string TaskType { get; set; } = null!;
     public DateTime DueAtUtc { get; set; }
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// Optional time-of-day for the task. NULL means all-day task.
+    /// </summary>
+    public TimeOnly? ScheduledTimeUtc { get; set; }
 }
 
 /// <summary>
@@ -69,4 +84,30 @@ public class UpdateFollowUpTaskRequest
     public string TaskType { get; set; } = null!;
     public DateTime DueAtUtc { get; set; }
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// Optional time-of-day for the task. NULL means all-day task.
+    /// </summary>
+    public TimeOnly? ScheduledTimeUtc { get; set; }
+}
+
+/// <summary>
+/// Brief DTO for dashboard Today's Brief section — tasks due today/tomorrow.
+/// </summary>
+public class DashboardTaskBriefDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = null!;
+    public string TaskType { get; set; } = null!;
+    public DateTime DueAtUtc { get; set; }
+
+    /// <summary>
+    /// Optional time-of-day for the task. NULL means all-day task.
+    /// </summary>
+    public TimeOnly? ScheduledTimeUtc { get; set; }
+
+    public string? ContactName { get; set; }
+
+    /// <summary>"today" or "tomorrow"</summary>
+    public string Urgency { get; set; } = null!;
 }

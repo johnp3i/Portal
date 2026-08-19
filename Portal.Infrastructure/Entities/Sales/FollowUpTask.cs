@@ -33,6 +33,16 @@ public class FollowUpTask
 
     public int SnoozedCount { get; set; }
 
+    /// <summary>
+    /// Closure outcome: "Completed" or "Unprocessed". NULL for open tasks.
+    /// </summary>
+    public string? TaskOutcome { get; set; }
+
+    /// <summary>
+    /// Optional time-of-day for the task. NULL means all-day task.
+    /// </summary>
+    public TimeOnly? ScheduledTimeUtc { get; set; }
+
     public string CreatedByUserId { get; set; } = null!;
 
     public DateTime CreatedAtUtc { get; set; }
