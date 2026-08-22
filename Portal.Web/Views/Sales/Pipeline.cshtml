@@ -5,15 +5,355 @@
     var products = (List<SalesProduct>)ViewBag.Products;
 }
 
+<style>
+    /* Desktop-hide defaults */
+    .stage-pill-nav { display: none; }
+    .pipeline-fab { display: none; }
+
+    /* View toggle — desktop default */
+    #pipelineViewToggle { display: flex; gap: 8px; align-items: center; }
+    #pipelineTopbarActions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+    /* FAB base styles */
+    .pipeline-fab {
+        display: none;
+        position: fixed;
+        bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #0D5EA6;
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 16px rgba(13, 94, 166, 0.35);
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 900;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .pipeline-fab:active {
+        transform: scale(0.92);
+        box-shadow: 0 2px 8px rgba(13, 94, 166, 0.25);
+    }
+
+    /* Stage pill nav base styles */
+    .stage-pill-nav {
+        display: none;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 8px 0 12px 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    .stage-pill {
+        flex-shrink: 0;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        border: none;
+    }
+
+    /* Mobile responsive rules */
+    @@media (max-width: 768px) {
+        /* Topbar — Pipeline-specific overrides for mobile.css */
+        .topbar {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+        }
+        .topbar-heading { font-size: 22px !important; margin-top: 4px !important; }
+        .topbar-subtitle { font-size: 12px !important; margin-bottom: 4px !important; }
+        .topbar > div:first-child { width: 100% !important; }
+        #pipelineTopbarActions {
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 12px !important;
+            margin-top: 0 !important;
+        }
+        /* New Lead button — compact on mobile */
+        #pipelineTopbarActions > .btn-primary {
+            display: inline-flex !important;
+            width: auto !important;
+            padding: 8px 16px !important;
+            font-size: 13px !important;
+            min-height: 38px !important;
+            border-radius: 10px !important;
+        }
+        /* Board/Table segmented toggle */
+        #pipelineViewToggle {
+            display: flex !important;
+            flex-direction: row !important;
+            width: auto !important;
+            background: rgba(13,94,166,.06) !important;
+            border-radius: 12px !important;
+            padding: 4px !important;
+            gap: 4px !important;
+        }
+        #pipelineViewToggle .btn,
+        #pipelineViewToggle .btn.btn-secondary {
+            flex: 1 !important;
+            width: auto !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px !important;
+            border-radius: 10px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            border: none !important;
+            background: transparent !important;
+            color: #5E7385 !important;
+            padding: 8px 16px !important;
+        }
+        #pipelineViewToggle .btn.active,
+        #pipelineViewToggle .btn.btn-secondary.active {
+            background: #fff !important;
+            color: #0B1B28 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08) !important;
+        }
+
+        /* Filter Panel — scoped to #pipelineFilters to avoid affecting modals */
+        #pipelineFilters .field { min-width: 100% !important; }
+        #pipelineFilters select { min-height: 44px; width: 100%; }
+        #pipelineFilters > div {
+            flex-direction: column;
+            gap: 12px !important;
+            width: 100%;
+        }
+        #pipelineFilters > div > div:last-child {
+            display: flex;
+            gap: 10px;
+            padding-bottom: 0 !important;
+            width: 100%;
+        }
+        #pipelineFilters > div > div:last-child .btn {
+            flex: 1;
+            min-height: 44px;
+            text-align: center;
+        }
+
+        /* Task Cards */
+        .task-card-action {
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+            padding: 14px 16px !important;
+            gap: 10px;
+            border-radius: 14px;
+            border: 1px solid rgba(13,94,166,.06);
+            background: #fff;
+            margin-bottom: 10px;
+        }
+        .task-card-action > span:first-child {
+            display: none;
+        }
+        .task-card-action > div:nth-child(2) {
+            width: 28px !important;
+            height: 28px !important;
+            border-radius: 6px;
+        }
+        .task-card-action > div:nth-child(3) {
+            flex: 1;
+            min-width: 0;
+        }
+        .task-card-action > div:nth-child(3) > div:first-child {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: calc(100vw - 100px);
+            font-size: 13px !important;
+        }
+        .task-card-action > div:last-child {
+            width: 100%;
+            display: flex !important;
+            justify-content: flex-start;
+            margin-top: 4px;
+            flex-wrap: wrap;
+            gap: 8px !important;
+            padding-top: 8px;
+            border-top: 1px solid rgba(138,155,171,.08);
+        }
+        .task-card-action .btn,
+        .task-card-action .btn.btn-sm {
+            min-width: 44px;
+            min-height: 38px;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            border-radius: 10px !important;
+        }
+
+        /* Kanban Board */
+        .pipeline-board {
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            gap: 10px !important;
+        }
+        .pipeline-column {
+            scroll-snap-align: start;
+            min-width: 85vw !important;
+            min-height: 120px !important;
+            max-width: none !important;
+        }
+
+        /* Stage Pill Navigator */
+        .stage-pill-nav {
+            display: flex;
+            padding: 8px 0;
+            margin: 0;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .stage-pill-nav::-webkit-scrollbar { display: none; }
+        .stage-pill {
+            min-height: 36px;
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        /* Meeting Cards */
+        #upcomingMeetingsList > a > div { flex-direction: column; align-items: flex-start; }
+        #upcomingMeetingsList > a > div > div:last-child {
+            align-items: flex-start;
+            flex-direction: row;
+            gap: 8px;
+        }
+
+        /* KPI Footer */
+        .kpi-footer {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .kpi-footer > div {
+            padding: 10px 8px;
+            background: rgba(13,94,166,.03);
+            border-radius: 12px;
+        }
+        .kpi-footer .kpi-value { font-size: 22px; }
+        .kpi-footer .kpi-label { font-size: 10px; margin-top: 2px; }
+        .kpi-footer.kpi-expanded .kpi-value { font-size: 28px; }
+        .kpi-footer.kpi-expanded .kpi-label { font-size: 12px; }
+
+        /* FAB — hidden since New Lead stays in topbar */
+        .pipeline-fab { display: none !important; }
+
+        /* Touch targets & spacing */
+        #pipelineFilters .btn,
+        #pipelineFilters select,
+        .topbar .btn { min-height: 44px; min-width: 44px; }
+        .glass.card-pad { padding: 16px; }
+
+        /* Today's Actions panel tweaks */
+        #todaysActionsPanel h3 { font-size: 15px !important; }
+        #todaysActionsList { display: flex; flex-direction: column; gap: 0; }
+
+        /* Collapse buttons — small icon in top-right */
+        #todaysActionsPanel > div:first-child,
+        #upcomingMeetingsPanel > div:first-child {
+            position: relative;
+        }
+        #todaysActionsPanel > div:first-child > div:last-child,
+        #upcomingMeetingsPanel > div:first-child > div:last-child {
+            position: absolute !important;
+            top: 0;
+            right: 0;
+        }
+        #todaysActionsPanel > div:first-child > div:last-child .btn,
+        #upcomingMeetingsPanel > div:first-child > div:last-child .btn {
+            width: 28px !important;
+            height: 28px !important;
+            min-width: 28px !important;
+            min-height: 28px !important;
+            padding: 0 !important;
+            border-radius: 8px !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            background: rgba(138,155,171,.06) !important;
+            border: none !important;
+        }
+
+        /* Content padding */
+        body > .content-area { padding-left: 16px; padding-right: 16px; }
+
+        /* Table View — horizontal scroll on mobile */
+        #tableView .glass.card-pad { padding: 12px !important; overflow-x: auto; }
+        #leadsTable { font-size: 12px; min-width: 600px; }
+        #leadsTable th, #leadsTable td { padding: 10px 8px; white-space: nowrap; }
+
+        /* Create Lead Modal — mobile adjustments */
+        #createLeadModal > div {
+            border-radius: 18px !important;
+            padding: 20px !important;
+            margin: 12px !important;
+            max-width: calc(100vw - 24px) !important;
+        }
+        #createLeadModal h2 { font-size: 18px !important; margin-bottom: 16px !important; }
+        #createLeadModal .field { margin-bottom: 14px !important; }
+        #createLeadModal select,
+        #createLeadModal input,
+        #createLeadModal textarea {
+            padding: 10px 14px !important;
+            font-size: 14px !important;
+            border-radius: 10px !important;
+        }
+
+        /* Recent Lead Activity — compact on mobile */
+        #recentLeadActivityList > div {
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+            padding: 8px 0 !important;
+        }
+        #recentLeadActivityList > div > span:last-child {
+            margin-left: 0 !important;
+            width: 100%;
+        }
+
+        /* Cancelled Leads — full-width cards on mobile */
+        #cancelledLeadsList {
+            flex-direction: column !important;
+        }
+        #cancelledLeadsList > div {
+            min-width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Badges in section headers — allow wrapping */
+        #todaysBadges, #meetingsBadge {
+            flex-wrap: wrap;
+            max-width: 150px;
+            justify-content: flex-end;
+        }
+
+        /* Pipeline cards — disable hover transforms on touch */
+        .pipeline-card {
+            box-shadow: 0 2px 8px rgba(13,94,166,.06) !important;
+            transform: none !important;
+        }
+    }
+</style>
+
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
         <h1 class="topbar-heading">Pipeline</h1>
         <p class="topbar-subtitle">Track leads through your sales pipeline from enquiry to conversion.</p>
     </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <div id="pipelineTopbarActions">
         <button class="btn btn-primary" onclick="openCreateLeadModal()">New Lead</button>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div id="pipelineViewToggle">
             <button id="btnKanbanView" class="btn btn-secondary active" onclick="switchView('kanban')">Board</button>
             <button id="btnTableView" class="btn btn-secondary" onclick="switchView('table')">Table</button>
         </div>
@@ -83,7 +423,7 @@
 </section>
 
 <!-- Filter Panel -->
-<section class="glass card-pad" style="margin-bottom:22px;">
+<section id="pipelineFilters" class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:180px;">
             <label for="filterProduct">Product</label>
@@ -184,55 +524,30 @@
 
 <!-- Pipeline KPI Footer -->
 <section class="glass card-pad" style="margin-top:22px;">
-    <div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:16px;text-align:center;">
+    <div id="kpiFooterSection" class="kpi-footer" style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:16px;text-align:center;">
         <div>
-            <div id="kpiTotalLeads" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Total Active Leads</div>
+            <div id="kpiTotalLeads" class="kpi-value" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0</div>
+            <div class="kpi-label" style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Total Active Leads</div>
         </div>
         <div>
-            <div id="kpiThisMonth" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">This Month</div>
+            <div id="kpiThisMonth" class="kpi-value" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0</div>
+            <div class="kpi-label" style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">This Month</div>
         </div>
         <div>
-            <div id="kpiConversionRate" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0%</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Conversion Rate</div>
+            <div id="kpiConversionRate" class="kpi-value" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">0%</div>
+            <div class="kpi-label" style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Conversion Rate</div>
         </div>
         <div>
-            <div id="kpiAvgDaysToWon" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">—</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Avg. Days to Won</div>
+            <div id="kpiAvgDaysToWon" class="kpi-value" style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">—</div>
+            <div class="kpi-label" style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Avg. Days to Won</div>
         </div>
     </div>
 </section>
 
-<!-- Global Activity Feed -->
+<!-- Recent Lead Activity -->
 <section class="glass card-pad" style="margin-top:22px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h4 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;">Recent Activity</h4>
-        <button class="tbl-action tbl-action--secondary" onclick="showActivityInfo()">What's logged?</button>
-    </div>
-    <div id="globalActivityFeed">
-        <!-- Skeleton placeholder while loading -->
-        <div id="activityFeedSkeleton">
-            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.05);">
-                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
-                <div style="flex:1;"><div style="height:12px;width:45%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:70%;background:#f7fafc;border-radius:6px;"></div></div>
-            </div>
-            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.05);">
-                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
-                <div style="flex:1;"><div style="height:12px;width:35%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:60%;background:#f7fafc;border-radius:6px;"></div></div>
-            </div>
-            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.05);">
-                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
-                <div style="flex:1;"><div style="height:12px;width:55%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:50%;background:#f7fafc;border-radius:6px;"></div></div>
-            </div>
-            <div style="display:flex;gap:12px;padding:10px 0;">
-                <div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#f1f5f9;"></div>
-                <div style="flex:1;"><div style="height:12px;width:40%;background:#f1f5f9;border-radius:6px;margin-bottom:8px;"></div><div style="height:10px;width:65%;background:#f7fafc;border-radius:6px;"></div></div>
-            </div>
-        </div>
-    </div>
-    <div id="globalFeedPaging" style="display:none;margin-top:14px;display:flex;justify-content:center;gap:8px;">
-    </div>
+    <h3 style="font-size:16px;font-weight:700;color:#1a2b3c;margin-bottom:14px;">Recent Lead Activity</h3>
+    <div id="recentLeadActivityList" style="font-size:13px;color:#5E7385;">Loading...</div>
 </section>
 
 <!-- Create Lead Modal -->
@@ -270,7 +585,14 @@
     </div>
 </div>
 
+<!-- Floating Action Button — Mobile only -->
+<button class="pipeline-fab" onclick="openCreateLeadModal()" aria-label="Create new lead">
+    <svg width="24" height="24" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+</button>
+
 @section Scripts {
-    <script src="~/js/sales/pipeline.js?v=8"></script>
+    <script src="~/js/sales/pipeline.js?v=10"></script>
     <script src="~/js/sales/follow-up-tasks.js?v=3"></script>
 }

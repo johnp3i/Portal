@@ -102,7 +102,7 @@
         .mini-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 12px 28px rgba(13,94,166,.06)}
         .mini-card strong{font-family:Manrope;font-size:20px}
         .mini-card p{margin-top:7px;color:var(--muted)}
-        .pricing-wrap{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch}
+        .pricing-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:28px;align-items:stretch}
         .pricing-card{position:relative;overflow:hidden;background:#fff;border:1px solid rgba(13,94,166,.14);border-radius:32px;padding:38px;box-shadow:var(--shadow)}
         .pricing-card::after{content:"";position:absolute;right:-90px;top:-90px;width:240px;height:240px;border-radius:999px;background:rgba(87,184,232,.12)}
         .pricing-card>*{position:relative;z-index:1}
@@ -414,6 +414,7 @@
                             <li>Automated payment reminders (3-tier escalation)</li>
                             <li>Open tracking &amp; email analytics</li>
                             <li>Payment schedules (instalment plans)</li>
+                            <li>Stripe Connect (accept card payments directly to your Stripe account)</li>
                             <li style="padding:16px 0 8px 0;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);position:relative;display:flex;align-items:center;gap:12px;" class="section-label">
                                 <span style="flex:0;white-space:nowrap;">Intelligence</span>
                                 <span style="flex:1;height:1px;background:var(--line);"></span>
@@ -439,7 +440,6 @@
                         </div>
                     </article>
 
-                    @* === HIDDEN UNTIL PAYROLL MODULE IS COMPLETE ===
                     <!-- Enterprise (Early Access) -->
                     <article class="pricing-card" style="display:flex;flex-direction:column;background:linear-gradient(180deg,#f8fbff 0%,#f0f7fd 100%);">
                         <span style="position:absolute;top:16px;right:16px;background:linear-gradient(135deg,#129867,#0fa75e);color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;border-radius:20px;">Early Access</span>
@@ -456,12 +456,12 @@
                             </li>
                             <li>Unlimited users</li>
                             <li>Full audit log (edit, export, advanced filtering)</li>
-                            <li>Stripe Connect (card payments)</li>
+                            <li>Payroll &amp; payslips (PAYE, batch generation, PDF, email)</li>
+                            <li>Employer contribution reports &amp; compliance integration</li>
                             <li style="padding:16px 0 8px 0;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);position:relative;display:flex;align-items:center;gap:12px;" class="section-label">
                                 <span style="flex:0;white-space:nowrap;">Coming Soon</span>
                                 <span style="flex:1;height:1px;background:var(--line);"></span>
                             </li>
-                            <li style="color:var(--muted);">Payroll &amp; payslips <span style="font-size:10px;background:rgba(18,152,103,.1);color:#129867;padding:2px 7px;border-radius:4px;font-weight:700;margin-left:6px;">Q1 2027</span></li>
                             <li style="color:var(--muted);">Client portal (customer self-service) <span style="font-size:10px;background:rgba(87,184,232,.12);color:#0D5EA6;padding:2px 7px;border-radius:4px;font-weight:700;margin-left:6px;">Soon</span></li>
                             <li style="color:var(--muted);">Multi-currency invoicing <span style="font-size:10px;background:rgba(87,184,232,.12);color:#0D5EA6;padding:2px 7px;border-radius:4px;font-weight:700;margin-left:6px;">Soon</span></li>
                             <li style="color:var(--muted);">API access &amp; webhooks <span style="font-size:10px;background:rgba(87,184,232,.12);color:#0D5EA6;padding:2px 7px;border-radius:4px;font-weight:700;margin-left:6px;">Soon</span></li>
@@ -473,7 +473,6 @@
                         </div>
                         <p style="margin-top:12px;font-size:12px;color:var(--muted);text-align:center;">Early adopters keep €129/mo for 12 months after full pricing takes effect.</p>
                     </article>
-                    === END HIDDEN === *@
 
                 </div>
 

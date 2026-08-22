@@ -295,6 +295,8 @@ builder.Services.AddScoped<LeadResponseTypeRepository>(sp =>
     new LeadResponseTypeRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<MeetingTypeRepository>(sp =>
     new MeetingTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<LeadTrackingHistoryRepository>(sp =>
+    new LeadTrackingHistoryRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<Portal.Infrastructure.Services.Sales.IContactService, Portal.Infrastructure.Services.Sales.ContactService>();
 builder.Services.AddScoped<ISalesProductService, SalesProductService>();
 builder.Services.AddScoped<ILeadRequestService, LeadRequestService>();

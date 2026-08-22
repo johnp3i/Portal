@@ -63,6 +63,37 @@ async function loadTodaysActions() {
             html += renderTaskCard(t);
         });
         list.innerHTML = html;
+
+        // Wire swipe gestures on mobile
+        if (typeof window.initSwipeGesture === 'function' && window.innerWidth <= 768) {
+            var cards = list.querySelectorAll('.task-card-action');
+            cards.forEach(function (card) {
+                var taskId = card.getAttribute('data-task-id');
+
+                // Create wrapper for swipe positioning
+                var wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position:relative;overflow:hidden;border-radius:14px;margin-bottom:10px;';
+
+                // Create hidden action panel
+                var actionPanel = document.createElement('div');
+                actionPanel.className = 'swipe-action-panel';
+                actionPanel.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:140px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(90deg,#f0f7ff,#e8f4fd);border-radius:0 14px 14px 0;';
+                actionPanel.innerHTML = '<button class="btn btn-sm" style="background:#129867;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;min-height:44px;" onclick="event.stopPropagation();completeTask(' + taskId + ')">&#10003;</button>' +
+                    '<button class="btn btn-sm" style="background:#1a8fc7;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;min-height:44px;" onclick="event.stopPropagation();snoozeTask(event,' + taskId + ',1)">Snooze</button>';
+
+                // Wrap the card
+                card.parentNode.insertBefore(wrapper, card);
+                wrapper.appendChild(actionPanel);
+                wrapper.appendChild(card);
+
+                // Ensure card has a background so it covers the action panel
+                card.style.position = 'relative';
+                card.style.zIndex = '1';
+                card.style.background = '#fff';
+
+                window.initSwipeGesture(card);
+            });
+        }
     } catch (e) {
         console.error('Failed to load today\'s actions', e);
     }

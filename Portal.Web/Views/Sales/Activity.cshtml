@@ -1,0 +1,95 @@
+@{
+    ViewData["Title"] = "Activity";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
+        <h1 class="topbar-heading">Activity</h1>
+        <p class="topbar-subtitle">All lead activity events across your pipeline.</p>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label for="filterActionType">Action Type</label>
+            <select id="filterActionType">
+                <option value="">All</option>
+                <option value="stage_changed">Stage Changed</option>
+                <option value="meeting_scheduled">Meeting Scheduled</option>
+                <option value="meeting_cancelled">Meeting Cancelled</option>
+                <option value="response_sent">Response Sent</option>
+                <option value="lead_created">Lead Created</option>
+                <option value="lead_cancelled">Lead Cancelled</option>
+                <option value="lead_reactivated">Lead Reactivated</option>
+                <option value="proposal_linked">Proposal Linked</option>
+                <option value="invoice_linked">Invoice Linked</option>
+                <option value="marked_as_won">Marked as Won</option>
+                <option value="assigned">Assigned</option>
+                <option value="unassigned">Unassigned</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="filterDateFrom">From</label>
+            <input type="date" id="filterDateFrom" />
+        </div>
+        <div class="field" style="min-width:140px;">
+            <label for="filterDateTo">To</label>
+            <input type="date" id="filterDateTo" />
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="loadActivityPage(1)">Filter</button>
+            <button class="btn btn-secondary" onclick="clearActivityFilters()">Clear</button>
+        </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;margin-right:4px;">Quick:</span>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'this_month')">This Month</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_month')">Last Month</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_3')">Last 3 Months</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_6')">Last 6 Months</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'this_year')">This Year</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_year')">Last Year</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'all')">All Time</button>
+        <select class="mobile-period-select" onchange="if(this.value) setQuickPeriod(null, this.value)">
+            <option value="">Quick date range...</option>
+            <option value="this_month">This Month</option>
+            <option value="last_month">Last Month</option>
+            <option value="last_3">Last 3 Months</option>
+            <option value="last_6">Last 6 Months</option>
+            <option value="this_year">This Year</option>
+            <option value="last_year">Last Year</option>
+            <option value="all">All Time</option>
+        </select>
+    </div>
+</section>
+
+<!-- Activity Table -->
+<section class="glass card-pad">
+    <table class="data-table" id="activityTable">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Action</th>
+                <th>Description</th>
+                <th>Contact/Lead</th>
+                <th>Performed By</th>
+            </tr>
+        </thead>
+        <tbody id="activityTableBody">
+            <tr><td colspan="5" style="text-align:center;color:#8a9bab;padding:32px;">Loading...</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div id="activityPagination" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="activityPaginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+        <div id="activityPaginationControls"></div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/sales/activity-feed.js?v=1"></script>
+}

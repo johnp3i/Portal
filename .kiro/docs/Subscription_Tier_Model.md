@@ -68,6 +68,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 
 -   Automated Payment Reminders (configurable schedule, escalating tone)
 -   Auto-generated Payment Links (included in invoice emails and shared pages)
+-   Stripe Connect (customers pay by card directly to the business's own Stripe account — no platform fee)
 -   Payment Schedules (instalment plans with auto-matching, VAT warnings, remainder tracking)
 -   Cash Flow Forecasting (30/60/90-day projections)
 -   Profit & Loss Summary (period-based financial overview)
@@ -132,6 +133,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Payment Links (auto-generated)            | ❌                   | ✅                   | ✅                   |
 | Payment Reminders (manual, one-at-a-time) | ✅                   | ✅                   | ✅                   |
 | Payment Reminders (automated schedule)    | ❌                   | ✅                   | ✅                   |
+| Stripe Connect (card payments)            | ❌                   | ✅                   | ✅                   |
 | **Financial Intelligence**                |                      |                      |                      |
 | Cash Flow Forecasting                     | ❌                   | ✅                   | ✅                   |
 | Profit & Loss Summary                     | ❌                   | ✅                   | ✅                   |
@@ -250,6 +252,7 @@ Request arrives
 | `payment_reminder_manual`      | Manual Reminders                                            | Foundation     |
 | `payment_link_auto`            | Auto Payment Links                                          | Professional   |
 | `payment_reminder_auto`        | Automated Reminders                                         | Professional   |
+| `stripe_connect`               | Stripe Connect (card payments to business's Stripe account) | Professional   |
 | `schedule_payments`            | Payment Schedules                                           | Professional   |
 | `cashflow`                     | Cash Flow Forecasting                                       | Professional   |
 | `pnl`                          | Profit & Loss                                               | Professional   |
@@ -365,7 +368,6 @@ The Enterprise tier launches before all exclusive features are complete. Rather 
 - ✅ All Professional features (full Phase 1 suite)
 - ✅ Unlimited users (vs 5 on Professional)
 - ✅ Full Audit Log (edit, export, advanced filtering — vs readonly on Professional)
-- ✅ Stripe Connect (card payments — if configured)
 
 ### What Enterprise Gets Next (Coming Soon — included in early access price)
 

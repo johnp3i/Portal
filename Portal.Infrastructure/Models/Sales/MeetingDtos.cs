@@ -144,3 +144,39 @@ public class DashboardMeetingBriefDto
     /// <summary>"today" or "tomorrow"</summary>
     public string Urgency { get; set; } = null!;
 }
+
+/// <summary>
+/// Filter model for the meetings paged list.
+/// </summary>
+public class MeetingFilter
+{
+    public string? Status { get; set; }
+    public int? MeetingTypeId { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
+}
+
+/// <summary>
+/// DTO for the paginated meetings table with urgency and contact details.
+/// </summary>
+public class MeetingPagedListDto
+{
+    public int Id { get; set; }
+    public string Subject { get; set; } = null!;
+    public string MeetingTypeName { get; set; } = null!;
+    public int MeetingTypeId { get; set; }
+    public string ContactName { get; set; } = null!;
+    public int ContactId { get; set; }
+    public int? LeadRequestId { get; set; }
+    public DateTime ScheduledAtUtc { get; set; }
+    public int DurationMinutes { get; set; }
+    public string? Location { get; set; }
+    public string? Notes { get; set; }
+    public string? Outcome { get; set; }
+    public bool IsCancelled { get; set; }
+
+    /// <summary>
+    /// Computed urgency: "today", "upcoming", "needs_outcome", "completed", "cancelled"
+    /// </summary>
+    public string Urgency { get; set; } = null!;
+}

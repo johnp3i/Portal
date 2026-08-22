@@ -15,6 +15,7 @@
     document.addEventListener('DOMContentLoaded', async function () {
         await loadLookups();
         await loadPipelineData();
+        initKpiToggle();
     });
 
     async function loadLookups() {
@@ -91,6 +92,7 @@
             if (result.success) {
                 window._lastPipelineStages = result.data;
                 renderKanban(result.data);
+                renderStagePillNav(result.data);
                 renderTable(result.data);
                 updatePipelineKpis(result.data);
                 renderCancelledLeads(result.cancelledLeads || []);
@@ -102,6 +104,35 @@
             Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load pipeline data.', confirmButtonColor: '#0D5EA6' });
         }
     };
+
+    function renderStagePillNav(stages) {
+        var existing = document.getElementById('stagePillNav');
+        if (existing) existing.remove();
+
+        var nav = document.createElement('div');
+        nav.id = 'stagePillNav';
+        nav.className = 'stage-pill-nav';
+
+        stages.forEach(function (stage, index) {
+            var pill = document.createElement('button');
+            pill.className = 'stage-pill';
+            pill.textContent = stage.stageName;
+            pill.style.cssText = 'background:' + (stage.colour || '#8a9bab') + '18;color:' + (stage.colour || '#8a9bab') + ';border:1.5px solid ' + (stage.colour || '#8a9bab') + '30;';
+            pill.setAttribute('aria-label', 'Scroll to ' + stage.stageName + ' stage');
+            pill.onclick = function () { scrollToStage(index); };
+            nav.appendChild(pill);
+        });
+
+        var board = document.getElementById('pipelineBoard');
+        board.parentNode.insertBefore(nav, board);
+    }
+
+    function scrollToStage(index) {
+        var columns = document.querySelectorAll('.pipeline-column');
+        if (columns[index]) {
+            columns[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+        }
+    }
 
     function renderKanban(stages) {
         var board = document.getElementById('pipelineBoard');
@@ -340,77 +371,105 @@
         loadPipelineData();
     };
 
-    // ── Global Activity Feed ──────────────────────────────────────────────
-    var globalFeedPage = 1;
-
-    async function loadGlobalFeed(page) {
-        var container = document.getElementById('globalActivityFeed');
+    // ── Recent Lead Activity ─────────────────────────────────────────────
+    async function loadRecentLeadActivity() {
+        var container = document.getElementById('recentLeadActivityList');
         try {
-            var response = await fetch('/Sales/AxGetGlobalActivityFeed?page=' + page);
+            var response = await fetch('/Sales/AxGetRecentLeadActivity');
             var result = await response.json();
-
-            // Remove skeleton if present
-            var skeleton = document.getElementById('activityFeedSkeleton');
-            if (skeleton) skeleton.remove();
-
-            if (!result.success || !result.data || result.data.length === 0) {
-                if (page === 1) container.innerHTML = '<p style="font-size:13px;color:#8a9bab;text-align:center;padding:16px 0;">No activity recorded yet.</p>';
-                document.getElementById('globalFeedPaging').style.display = 'none';
-                return;
-            }
-
-            var html = '';
-            result.data.forEach(function(entry) {
-                var dotColor = getGlobalFeedColor(entry.action);
-                var icon = getGlobalFeedIcon(entry.action);
-                var label = getGlobalFeedLabel(entry.action);
-                var timeStr = new Date(entry.createdAtUtc).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-
-                html += '<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.05);">';
-                html += '<div style="flex-shrink:0;width:26px;height:26px;border-radius:8px;background:' + dotColor + '18;color:' + dotColor + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">' + icon + '</div>';
-                html += '<div style="flex:1;min-width:0;">';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-                html += '<span style="font-size:12px;font-weight:700;color:#0B1B28;">' + label + '</span>';
-                html += '<span style="font-size:10px;color:#8a9bab;">' + timeStr + '</span>';
-                html += '</div>';
-                html += '<div style="font-size:12px;color:#5E7385;margin-top:2px;">' + entry.description + '</div>';
-                if (entry.performedByName) html += '<div style="font-size:10px;color:#8a9bab;margin-top:2px;">by ' + entry.performedByName + '</div>';
-                html += '</div></div>';
-            });
-
-            container.innerHTML = html;
-
-            // Paging
-            var paging = document.getElementById('globalFeedPaging');
-            paging.style.display = 'flex';
-            paging.innerHTML = '';
-            if (page > 1) {
-                var prevBtn = document.createElement('button');
-                prevBtn.className = 'btn btn-secondary';
-                prevBtn.style.cssText = 'padding:6px 14px;font-size:12px;';
-                prevBtn.textContent = 'Previous';
-                prevBtn.onclick = function() { globalFeedPage--; loadGlobalFeed(globalFeedPage); };
-                paging.appendChild(prevBtn);
-            }
-            if (result.data.length >= 15) {
-                var nextBtn = document.createElement('button');
-                nextBtn.className = 'btn btn-secondary';
-                nextBtn.style.cssText = 'padding:6px 14px;font-size:12px;';
-                nextBtn.textContent = 'Next';
-                nextBtn.onclick = function() { globalFeedPage++; loadGlobalFeed(globalFeedPage); };
-                paging.appendChild(nextBtn);
+            if (result.success && result.data && result.data.length > 0) {
+                var html = '';
+                result.data.forEach(function (entry) {
+                    var ts = new Date(entry.createdAtUtc).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    html += '<div style="display:flex;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px solid rgba(138,155,171,.08);">';
+                    html += '<span style="font-size:11px;color:#8a9bab;white-space:nowrap;">' + ts + '</span>';
+                    html += '<span>' + escapeHtml(entry.description) + '</span>';
+                    if (entry.leadName) {
+                        html += '<span style="margin-left:auto;font-size:11px;color:#0D5EA6;white-space:nowrap;">' + escapeHtml(entry.leadName) + '</span>';
+                    }
+                    html += '</div>';
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div style="color:#8a9bab;">No recent activity.</div>';
             }
         } catch (e) {
-            if (page === 1) container.innerHTML = '<p style="font-size:13px;color:#8a9bab;">Failed to load activity.</p>';
+            container.innerHTML = '<div style="color:#8a9bab;">Unable to load recent activity.</div>';
         }
     }
 
-    function getGlobalFeedColor(a) { return { lead_created:'#8a9bab', stage_changed:'#0D5EA6', lead_cancelled:'#C24A4A', lead_reactivated:'#129867', response_logged:'#129867', meeting_scheduled:'#C8912E', meeting_cancelled:'#C24A4A', proposal_linked:'#57B8E8', invoice_linked:'#57B8E8', marked_as_won:'#129867', assigned:'#0D5EA6', unassigned:'#8a9bab', request_details_updated:'#8a9bab', task_created:'#C8912E', task_completed:'#129867', task_snoozed:'#57B8E8' }[a] || '#8a9bab'; }
-    function getGlobalFeedIcon(a) { return { lead_created:'+', stage_changed:'→', lead_cancelled:'✕', lead_reactivated:'↺', response_logged:'💬', meeting_scheduled:'📅', meeting_cancelled:'📅', proposal_linked:'📄', invoice_linked:'📄', marked_as_won:'✓', assigned:'👤', unassigned:'👤', request_details_updated:'✏', task_created:'📋', task_completed:'✓', task_snoozed:'⏩' }[a] || '•'; }
-    function getGlobalFeedLabel(a) { return { lead_created:'Lead Created', stage_changed:'Stage Changed', lead_cancelled:'Lead Cancelled', lead_reactivated:'Lead Reactivated', response_logged:'Response Logged', meeting_scheduled:'Meeting Scheduled', meeting_cancelled:'Meeting Cancelled', proposal_linked:'Proposal Linked', invoice_linked:'Invoice Linked', marked_as_won:'Marked as Won', assigned:'Assigned', unassigned:'Unassigned', request_details_updated:'Details Updated', task_created:'Task Created', task_completed:'Task Completed', task_snoozed:'Task Snoozed' }[a] || a; }
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-    // Load global feed on page init
-    loadGlobalFeed(1);
+    function initKpiToggle() {
+        var kpiSection = document.getElementById('kpiFooterSection');
+        if (!kpiSection) return;
+
+        kpiSection.addEventListener('click', function () {
+            if (window.innerWidth > 768) return;
+            kpiSection.classList.toggle('kpi-expanded');
+        });
+    }
+
+    function initSwipeGesture(cardElement) {
+        if (window.innerWidth > 768) return;
+        if (!('ontouchstart' in window)) return;
+
+        var startX = 0;
+        var currentX = 0;
+        var isSwiping = false;
+        var threshold = 40;
+        var revealWidth = 140;
+
+        cardElement.style.transition = 'transform 0.2s ease';
+
+        cardElement.addEventListener('touchstart', function (e) {
+            startX = e.touches[0].clientX;
+            currentX = startX;
+            isSwiping = true;
+            cardElement.style.transition = 'none';
+        }, { passive: true });
+
+        cardElement.addEventListener('touchmove', function (e) {
+            if (!isSwiping) return;
+            currentX = e.touches[0].clientX;
+            var deltaX = startX - currentX;
+
+            if (Math.abs(deltaX) > threshold) {
+                var translate = Math.min(deltaX, revealWidth);
+                if (translate > 0) {
+                    cardElement.style.transform = 'translateX(-' + translate + 'px)';
+                }
+            }
+        }, { passive: true });
+
+        cardElement.addEventListener('touchend', function () {
+            isSwiping = false;
+            cardElement.style.transition = 'transform 0.2s ease';
+            var deltaX = startX - currentX;
+
+            if (deltaX > threshold) {
+                document.querySelectorAll('.swipe-revealed').forEach(function (other) {
+                    if (other !== cardElement) {
+                        other.style.transform = 'translateX(0)';
+                        other.classList.remove('swipe-revealed');
+                    }
+                });
+                cardElement.style.transform = 'translateX(-' + revealWidth + 'px)';
+                cardElement.classList.add('swipe-revealed');
+            } else {
+                cardElement.style.transform = 'translateX(0)';
+                cardElement.classList.remove('swipe-revealed');
+            }
+        }, { passive: true });
+    }
+
+    window.initSwipeGesture = initSwipeGesture;
+
+    // Load recent lead activity on page init
+    loadRecentLeadActivity();
 
     window.openCreateLeadModal = function () {
         document.getElementById('createLeadModal').style.display = 'flex';
@@ -419,29 +478,7 @@
         document.getElementById('createLeadModal').style.display = 'none';
     };
 
-    window.showActivityInfo = function () {
-        Swal.fire({
-            title: 'Activity Feed',
-            icon: 'info',
-            confirmButtonColor: '#0D5EA6',
-            html: '<div style="text-align:left;font-size:13px;line-height:1.8;color:#0B1B28;">'
-                + '<p style="margin-bottom:12px;color:#5E7385;">The activity feed automatically logs the following actions performed on leads:</p>'
-                + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Lead Created</td><td style="padding:6px 0;color:#5E7385;">A new lead is added to the pipeline</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Stage Changed</td><td style="padding:6px 0;color:#5E7385;">Lead moves to a different stage</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Response Logged</td><td style="padding:6px 0;color:#5E7385;">A response is composed and logged</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Meeting Scheduled</td><td style="padding:6px 0;color:#5E7385;">A meeting is scheduled from a lead</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Meeting Cancelled</td><td style="padding:6px 0;color:#5E7385;">A linked meeting is cancelled</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Proposal Linked</td><td style="padding:6px 0;color:#5E7385;">A quotation is linked to a lead</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Invoice Linked</td><td style="padding:6px 0;color:#5E7385;">An invoice is linked to a lead</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Assigned / Unassigned</td><td style="padding:6px 0;color:#5E7385;">A team member is assigned or removed</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Marked as Won</td><td style="padding:6px 0;color:#5E7385;">Lead is won and contact converted to customer</td></tr>'
-                + '<tr style="border-bottom:1px solid rgba(13,94,166,.08);"><td style="padding:6px 0;font-weight:700;">Lead Cancelled</td><td style="padding:6px 0;color:#5E7385;">Lead is cancelled with optional reason</td></tr>'
-                + '<tr><td style="padding:6px 0;font-weight:700;">Lead Reactivated</td><td style="padding:6px 0;color:#5E7385;">A cancelled lead is reactivated</td></tr>'
-                + '</table>'
-                + '</div>'
-        });
-    };
+
 
     window.submitCreateLead = async function () {
         var payload = {

@@ -26,7 +26,8 @@ public interface ILeadRequestService
     Task<LeadRequestDetailDto?> GetLeadDetailAsync(int id);
     Task<List<PipelineStageGroupDto>> GetPipelineDataAsync(string? assignedToUserId, int? productId, int? teamMemberId = null);
     Task<PagedResult<LeadTableRowDto>> GetLeadsPagedAsync(LeadFilterDto filter);
-    Task SuggestStageTransitionAsync(int leadRequestId, string eventType);
+    Task SuggestStageTransitionAsync(int leadRequestId, string eventType, int? relatedEntityId = null);
+    Task ReevaluateStageOnMeetingChangeAsync(int leadRequestId, string changeType, int? meetingId = null);
     Task<ServiceResult> SetPriorityAsync(int leadRequestId, int leadPriorityTypeId);
     Task<ServiceResult> ClearPriorityAsync(int leadRequestId);
     Task<List<LeadPriorityTypeDto>> GetPriorityTypesAsync();

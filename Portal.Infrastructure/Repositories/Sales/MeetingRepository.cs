@@ -302,4 +302,106 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets paged meetings with optional filtering.
+    /// </summary>
+    public async Task<(List<Meeting> Items, int TotalCount)> GetPagedAsync(
+        int businessId, string? status, int? meetingTypeId,
+        DateTime? dateFrom, DateTime? dateTo, int page, int pageSize)
+    {
+        try
+        {
+            var baseWhere = "[BusinessId] = @BusinessId AND [IsActive] = 1";
+            var parameters = new List<SqlParameter> { new SqlParameter("@BusinessId", businessId) };
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                switch (status.ToLower())
+                {
+                    case "upcoming":
+                        baseWhere += " AND [ScheduledAtUtc] > @Now AND [IsCancelled] = 0";
+                        parameters.Add(new SqlParameter("@Now", DateTime.UtcNow));
+                        break;
+                    case "completed":
+                        baseWhere += " AND [ScheduledAtUtc] < @Now AND [IsCancelled] = 0";
+                        parameters.Add(new SqlParameter("@Now", DateTime.UtcNow));
+                        break;
+                    case "cancelled":
+                        baseWhere += " AND [IsCancelled] = 1";
+                        break;
+                }
+            }
+
+            if (meetingTypeId.HasValue)
+            {
+                baseWhere += " AND [MeetingTypeId] = @MeetingTypeId";
+                parameters.Add(new SqlParameter("@MeetingTypeId", meetingTypeId.Value));
+            }
+
+            if (dateFrom.HasValue)
+            {
+                baseWhere += " AND [ScheduledAtUtc] >= @DateFrom";
+                parameters.Add(new SqlParameter("@DateFrom", dateFrom.Value));
+            }
+
+            if (dateTo.HasValue)
+            {
+                baseWhere += " AND [ScheduledAtUtc] <= @DateTo";
+                parameters.Add(new SqlParameter("@DateTo", dateTo.Value.Date.AddDays(1)));
+            }
+
+            // Count query
+            var countQuery = $"SELECT COUNT(*) FROM [sales].[Meeting] WHERE {baseWhere}";
+
+            var connection = _context.Database.GetDbConnection();
+            int totalCount;
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using (var countCommand = connection.CreateCommand())
+                {
+                    countCommand.CommandText = countQuery;
+                    var transaction = _context.Database.CurrentTransaction;
+                    if (transaction != null)
+                        countCommand.Transaction = transaction.GetDbTransaction();
+
+                    foreach (var p in parameters)
+                        countCommand.Parameters.Add(new SqlParameter(p.ParameterName, p.Value));
+
+                    totalCount = (int)(await countCommand.ExecuteScalarAsync())!;
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            // Data query
+            var offset = (page - 1) * pageSize;
+            var dataQuery = $@"
+                SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
+                       [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
+                       [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                FROM [sales].[Meeting]
+                WHERE {baseWhere}
+                ORDER BY [ScheduledAtUtc] DESC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            parameters.Add(new SqlParameter("@Offset", offset));
+            parameters.Add(new SqlParameter("@PageSize", pageSize));
+
+            var items = await ExecuteStoredProcedureUnfiltered(dataQuery, parameters.ToArray());
+            return (items.ToList(), totalCount);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 }

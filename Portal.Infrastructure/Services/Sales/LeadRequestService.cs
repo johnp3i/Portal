@@ -24,6 +24,7 @@ public class LeadRequestService : ILeadRequestService
     private readonly MeetingRepository _meetingRepository;
     private readonly MeetingTypeRepository _meetingTypeRepository;
     private readonly LeadPriorityTypeRepository _priorityTypeRepository;
+    private readonly LeadTrackingHistoryRepository _leadTrackingHistoryRepository;
     private readonly IContactService _contactService;
     private readonly ICurrentTenantService _tenantService;
     private readonly PortalDbContext _context;
@@ -40,6 +41,7 @@ public class LeadRequestService : ILeadRequestService
         MeetingRepository meetingRepository,
         MeetingTypeRepository meetingTypeRepository,
         LeadPriorityTypeRepository priorityTypeRepository,
+        LeadTrackingHistoryRepository leadTrackingHistoryRepository,
         IContactService contactService,
         ICurrentTenantService tenantService,
         PortalDbContext context)
@@ -55,6 +57,7 @@ public class LeadRequestService : ILeadRequestService
         _meetingRepository = meetingRepository;
         _meetingTypeRepository = meetingTypeRepository;
         _priorityTypeRepository = priorityTypeRepository;
+        _leadTrackingHistoryRepository = leadTrackingHistoryRepository;
         _contactService = contactService;
         _tenantService = tenantService;
         _context = context;
@@ -338,7 +341,7 @@ public class LeadRequestService : ILeadRequestService
                 new SqlParameter("@BusinessId", businessId));
 
             // Suggest stage transition to Proposal Sent (5)
-            await SuggestStageTransitionAsync(leadRequestId, "proposal_linked");
+            await SuggestStageTransitionAsync(leadRequestId, "proposal_linked", quotationId);
 
             // Record activity
             try
@@ -726,7 +729,7 @@ public class LeadRequestService : ILeadRequestService
     /// Suggests a stage transition based on a pipeline event.
     /// Only updates if the current stage is earlier than the suggested stage.
     /// </summary>
-    public async Task SuggestStageTransitionAsync(int leadRequestId, string eventType)
+    public async Task SuggestStageTransitionAsync(int leadRequestId, string eventType, int? relatedEntityId = null)
     {
         try
         {
@@ -750,6 +753,26 @@ public class LeadRequestService : ILeadRequestService
             if (suggestedStatusId.HasValue)
             {
                 await _leadRequestRepository.UpdateStageAsync(leadRequestId, businessId, suggestedStatusId.Value);
+
+                // Record tracking history
+                int actionTypeId = eventType switch
+                {
+                    "response_sent" => 4,
+                    "meeting_scheduled" => 1,
+                    "proposal_linked" => 5,
+                    _ => 6 // ManualStageChange fallback
+                };
+
+                await _leadTrackingHistoryRepository.InsertAsync(new LeadTrackingHistory
+                {
+                    LeadRequestId = leadRequestId,
+                    BusinessId = businessId,
+                    LeadTrackingActionTypeId = actionTypeId,
+                    FromLeadStatusTypeId = lead.LeadStatusTypeId,
+                    ToLeadStatusTypeId = suggestedStatusId.Value,
+                    RelatedEntityId = relatedEntityId,
+                    CreatedAtUtc = DateTime.UtcNow
+                });
             }
         }
         catch (Exception ex)
@@ -800,6 +823,127 @@ public class LeadRequestService : ILeadRequestService
                 Name = p.Name,
                 Colour = p.Colour
             }).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task ReevaluateStageOnMeetingChangeAsync(int leadRequestId, string changeType, int? meetingId = null)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var lead = await _leadRequestRepository.GetByIdAsync(leadRequestId, businessId);
+            if (lead == null) return;
+
+            var statuses = await _statusTypeRepository.GetAllAsync();
+            var currentStatus = statuses.FirstOrDefault(s => s.Id == lead.LeadStatusTypeId);
+            if (currentStatus?.IsTerminal == true) return;
+
+            if (changeType == "meeting_cancelled")
+            {
+                // Only regress if currently at Meetings stage (4)
+                if (lead.LeadStatusTypeId != 4) return;
+
+                // Query all tracking history for this lead
+                var history = await _leadTrackingHistoryRepository.GetByLeadRequestIdAsync(leadRequestId, businessId);
+
+                int targetStage;
+
+                // Cold-start fallback: if no history exists (pre-migration lead), use live-state check
+                if (!history.Any())
+                {
+                    var remainingMeetings = await _meetingRepository.GetByLeadRequestIdAsync(leadRequestId, businessId);
+                    if (remainingMeetings.Any())
+                    {
+                        targetStage = 4; // Other active meetings exist, stay at Meetings
+                    }
+                    else
+                    {
+                        var responses = await _responseRepository.GetByLeadRequestIdAsync(leadRequestId);
+                        targetStage = responses.Any() ? 2 : 1; // Contacted if responses exist, else New
+                    }
+                }
+                else
+                {
+                    // Filter to forward action types
+                    var forwardActionTypes = new[] { 1, 4, 5, 6 };
+                    var forwardRecords = history.Where(h => forwardActionTypes.Contains(h.LeadTrackingActionTypeId)).ToList();
+
+                    // Batch-load meeting statuses for MeetingScheduled records
+                    var meetingRecordIds = forwardRecords
+                        .Where(h => h.LeadTrackingActionTypeId == 1 && h.RelatedEntityId.HasValue)
+                        .Select(h => h.RelatedEntityId!.Value)
+                        .Distinct()
+                        .ToList();
+
+                    var activeMeetingIds = new HashSet<int>();
+                    foreach (var mId in meetingRecordIds)
+                    {
+                        var meeting = await _meetingRepository.GetByIdAsync(mId, businessId);
+                        if (meeting != null && !meeting.IsCancelled && meeting.IsActive)
+                            activeMeetingIds.Add(mId);
+                    }
+
+                    // Validate each forward record
+                    var validRecords = forwardRecords.Where(h =>
+                    {
+                        return h.LeadTrackingActionTypeId switch
+                        {
+                            1 => h.RelatedEntityId.HasValue && activeMeetingIds.Contains(h.RelatedEntityId.Value), // MeetingScheduled
+                            4 => true,  // ResponseSent — always valid
+                            5 => true,  // ProposalLinked — always valid
+                            6 => true,  // ManualStageChange — always valid
+                            _ => false
+                        };
+                    }).ToList();
+
+                    // Find highest ToLeadStatusTypeId among all valid records
+                    targetStage = validRecords.Any()
+                        ? validRecords.Max(h => h.ToLeadStatusTypeId)
+                        : 1; // Default to New if no valid forward records
+                }
+
+                // Write "MeetingCancelled" history record
+                await _leadTrackingHistoryRepository.InsertAsync(new LeadTrackingHistory
+                {
+                    LeadRequestId = leadRequestId,
+                    BusinessId = businessId,
+                    LeadTrackingActionTypeId = 2, // MeetingCancelled
+                    FromLeadStatusTypeId = lead.LeadStatusTypeId,
+                    ToLeadStatusTypeId = targetStage,
+                    RelatedEntityId = meetingId,
+                    CreatedAtUtc = DateTime.UtcNow
+                });
+
+                // Update stage only if different
+                if (targetStage != lead.LeadStatusTypeId)
+                {
+                    await _leadRequestRepository.UpdateStageAsync(leadRequestId, businessId, targetStage);
+                }
+            }
+            else if (changeType == "meeting_reactivated")
+            {
+                // Only advance if below Meetings stage (4)
+                if (lead.LeadStatusTypeId >= 4) return;
+
+                // Write "MeetingReactivated" history record
+                await _leadTrackingHistoryRepository.InsertAsync(new LeadTrackingHistory
+                {
+                    LeadRequestId = leadRequestId,
+                    BusinessId = businessId,
+                    LeadTrackingActionTypeId = 3, // MeetingReactivated
+                    FromLeadStatusTypeId = lead.LeadStatusTypeId,
+                    ToLeadStatusTypeId = 4,
+                    RelatedEntityId = meetingId,
+                    CreatedAtUtc = DateTime.UtcNow
+                });
+
+                // Advance to stage 4 (Meetings)
+                await _leadRequestRepository.UpdateStageAsync(leadRequestId, businessId, 4);
+            }
         }
         catch (Exception ex)
         {

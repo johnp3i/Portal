@@ -136,10 +136,9 @@ public class SalesController : Controller
     [HttpGet]
     public async Task<IActionResult> Meetings()
     {
-        var meetings = await _meetingService.GetAllMeetingsAsync();
         var meetingTypes = await _meetingTypeRepository.GetAllAsync();
         ViewBag.MeetingTypes = meetingTypes;
-        return View(meetings);
+        return View();
     }
 
     [HttpGet]
@@ -173,6 +172,12 @@ public class SalesController : Controller
 
     [HttpGet]
     public IActionResult Tasks()
+    {
+        return View();
+    }
+
+    [HttpGet]
+    public IActionResult Activity()
     {
         return View();
     }
@@ -648,6 +653,53 @@ public class SalesController : Controller
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> AxGetMeetingsPaged(string? status, int? meetingTypeId, DateTime? dateFrom, DateTime? dateTo, int page = 1)
+    {
+        try
+        {
+            var filter = new MeetingFilter
+            {
+                Status = status,
+                MeetingTypeId = meetingTypeId,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            var result = await _meetingService.GetMeetingsPagedAsync(filter, page, 15);
+            return Json(new
+            {
+                success = true,
+                data = result.Items,
+                totalCount = result.TotalCount,
+                currentPage = result.CurrentPage,
+                totalPages = result.TotalPages
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading paged meetings");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetMeetingDetail(int id)
+    {
+        try
+        {
+            var detail = await _meetingService.GetByIdAsync(id);
+            if (detail == null)
+                return Json(new { success = false, message = "Meeting not found." });
+
+            return Json(new { success = true, data = detail });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading meeting detail");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostCancelMeeting(int id, string? description)
@@ -1039,6 +1091,50 @@ public class SalesController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading global activity feed");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetActivityFeedPage(string? actionType, DateTime? dateFrom, DateTime? dateTo, int page = 1)
+    {
+        try
+        {
+            var filter = new ActivityFeedFilter
+            {
+                ActionType = actionType,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            var result = await _activityFeedService.GetPagedAsync(filter, page, 15);
+            return Json(new
+            {
+                success = true,
+                data = result.Items,
+                totalCount = result.TotalCount,
+                currentPage = result.CurrentPage,
+                totalPages = result.TotalPages,
+                pageSize = 15
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading activity feed page");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetRecentLeadActivity()
+    {
+        try
+        {
+            var result = await _activityFeedService.GetRecentAsync(10);
+            return Json(new { success = true, data = result });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading recent lead activity");
             return Json(new { success = false, message = "An error occurred." });
         }
     }

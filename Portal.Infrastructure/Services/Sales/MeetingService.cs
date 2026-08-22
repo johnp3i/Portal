@@ -65,7 +65,7 @@ public class MeetingService : IMeetingService
             // Suggest stage transition when linked to a lead
             if (request.LeadRequestId.HasValue)
             {
-                await _leadRequestService.SuggestStageTransitionAsync(request.LeadRequestId.Value, "meeting_scheduled");
+                await _leadRequestService.SuggestStageTransitionAsync(request.LeadRequestId.Value, "meeting_scheduled", id);
             }
 
             return ServiceResult.Ok(id);
@@ -106,7 +106,18 @@ public class MeetingService : IMeetingService
     {
         try
         {
-            await _meetingRepository.CancelAsync(id, _tenantService.CurrentBusinessId, description);
+            var businessId = _tenantService.CurrentBusinessId;
+            var meeting = await _meetingRepository.GetByIdAsync(id, businessId);
+            if (meeting == null)
+                return ServiceResult.Fail("Meeting not found.");
+
+            await _meetingRepository.CancelAsync(id, businessId, description);
+
+            if (meeting.LeadRequestId.HasValue)
+            {
+                await _leadRequestService.ReevaluateStageOnMeetingChangeAsync(meeting.LeadRequestId.Value, "meeting_cancelled", id);
+            }
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -119,7 +130,18 @@ public class MeetingService : IMeetingService
     {
         try
         {
-            await _meetingRepository.ReactivateAsync(id, _tenantService.CurrentBusinessId);
+            var businessId = _tenantService.CurrentBusinessId;
+            var meeting = await _meetingRepository.GetByIdAsync(id, businessId);
+            if (meeting == null)
+                return ServiceResult.Fail("Meeting not found.");
+
+            await _meetingRepository.ReactivateAsync(id, businessId);
+
+            if (meeting.LeadRequestId.HasValue)
+            {
+                await _leadRequestService.ReevaluateStageOnMeetingChangeAsync(meeting.LeadRequestId.Value, "meeting_reactivated", id);
+            }
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -385,6 +407,74 @@ public class MeetingService : IMeetingService
             }
 
             return briefs;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<PagedResult<MeetingPagedListDto>> GetMeetingsPagedAsync(MeetingFilter filter, int page, int pageSize)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var (items, totalCount) = await _meetingRepository.GetPagedAsync(
+                businessId, filter.Status, filter.MeetingTypeId,
+                filter.DateFrom, filter.DateTo, page, pageSize);
+
+            var meetingTypes = await _meetingTypeRepository.GetAllAsync();
+            var contactIds = items.Select(m => m.ContactId).Distinct();
+            var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
+            var now = DateTime.UtcNow;
+            var today = now.Date;
+
+            var dtos = items.Select(m =>
+            {
+                contactsLookup.TryGetValue(m.ContactId, out var contact);
+                var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId);
+
+                string urgency;
+                if (m.IsCancelled)
+                    urgency = "cancelled";
+                else if (m.ScheduledAtUtc.Date == today && !m.IsCancelled)
+                    urgency = "today";
+                else if (m.ScheduledAtUtc > now && !m.IsCancelled)
+                    urgency = "upcoming";
+                else if (m.ScheduledAtUtc < now && !m.IsCancelled && m.Outcome == null)
+                    urgency = "needs_outcome";
+                else
+                    urgency = "completed";
+
+                return new MeetingPagedListDto
+                {
+                    Id = m.Id,
+                    Subject = m.Subject,
+                    MeetingTypeName = meetingType?.Name ?? "Unknown",
+                    MeetingTypeId = m.MeetingTypeId,
+                    ContactName = contact != null
+                        ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
+                        : "Unknown",
+                    ContactId = m.ContactId,
+                    LeadRequestId = m.LeadRequestId,
+                    ScheduledAtUtc = m.ScheduledAtUtc,
+                    DurationMinutes = m.DurationMinutes,
+                    Location = m.Location,
+                    Notes = m.Notes,
+                    Outcome = m.Outcome,
+                    IsCancelled = m.IsCancelled,
+                    Urgency = urgency
+                };
+            }).ToList();
+
+            return new PagedResult<MeetingPagedListDto>
+            {
+                Items = dtos,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
         }
         catch (Exception ex)
         {

@@ -14,8 +14,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
 
 ## Tasks
 
-- [ ] 1. Database schema
-  - [ ] 1.1 Create PayeTaxBand table SQL migration
+- [x] 1. Database schema
+  - [x] 1.1 Create PayeTaxBand table SQL migration
     - Create SQL script `Portal.Database/Seeds/Seed_PayeTaxBand.sql`
     - USE [Portal] header
     - CREATE TABLE `[payroll].[PayeTaxBand]` with columns: Id (INT IDENTITY PK), CountryCode (NVARCHAR(3) NOT NULL), LowerBound (DECIMAL(18,2) NOT NULL), UpperBound (DECIMAL(18,2) NULL for top band), Rate (DECIMAL(5,4) NOT NULL), EffectiveFromYear (INT NOT NULL), EffectiveToYear (INT NULL for current), CreatedAtUtc (DATETIME NOT NULL DEFAULT GETUTCDATE())
@@ -24,7 +24,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Create index `IX_PayeTaxBand_Country_Year` on (CountryCode, EffectiveFromYear) INCLUDE (LowerBound, UpperBound, Rate, EffectiveToYear)
     - _Requirements: 1.7, 8.1, 8.2, 8.7_
 
-  - [ ] 1.2 Create CountryDeductionTemplate table SQL migration
+  - [x] 1.2 Create CountryDeductionTemplate table SQL migration
     - Create SQL script `Portal.Database/Seeds/Seed_CountryDeductionTemplate.sql`
     - USE [Portal] header
     - CREATE TABLE `[payroll].[CountryDeductionTemplate]` with columns: Id (INT IDENTITY PK), CountryCode (NVARCHAR(3) NOT NULL), DeductionName (NVARCHAR(100) NOT NULL), Code (NVARCHAR(50) NOT NULL), IsPercentage (BIT NOT NULL DEFAULT 1), DeductionCategoryTypeId (TINYINT NOT NULL FK), DefaultRate (DECIMAL(5,4) NOT NULL), IsPayeDeductible (BIT NOT NULL DEFAULT 0), SortOrder (INT NOT NULL DEFAULT 0), IsActive (BIT NOT NULL DEFAULT 1), CreatedAtUtc (DATETIME NOT NULL DEFAULT GETUTCDATE())
@@ -32,7 +32,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Create index `IX_CountryDeductionTemplate_Country` on (CountryCode, IsActive) INCLUDE (DeductionName, Code, DefaultRate, SortOrder)
     - _Requirements: 7.1, 7.4, 8.7_
 
-  - [ ] 1.3 Create PayslipPeriodComplianceFiling table SQL migration
+  - [x] 1.3 Create PayslipPeriodComplianceFiling table SQL migration
     - Create SQL script `Portal.Database/Seeds/Seed_PayslipPeriodComplianceFiling.sql`
     - USE [Portal] header
     - CREATE TABLE `[payroll].[PayslipPeriodComplianceFiling]` with columns: Id (INT IDENTITY PK), PayslipPeriodId (INT NOT NULL FK), ComplianceFilingId (INT NOT NULL FK), ContributionTotal (DECIMAL(18,2) NOT NULL), UpdatedAtUtc (DATETIME NOT NULL), UpdatedByUserId (NVARCHAR(450) NOT NULL), CreatedAtUtc (DATETIME NOT NULL DEFAULT GETUTCDATE())
@@ -41,13 +41,13 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Create index `IX_PayslipPeriodCF_Period` on (PayslipPeriodId) INCLUDE (ComplianceFilingId, ContributionTotal, UpdatedAtUtc)
     - _Requirements: 9.1, 9.2, 9.3, 9.5, 8.7_
 
-  - [ ] 1.4 Add IsPayeApplicable column to Employee table
+  - [x] 1.4 Add IsPayeApplicable column to Employee table
     - Create SQL script `Portal.Database/Seeds/Seed_Employee_IsPayeApplicable.sql`
     - USE [Portal] header
     - ALTER TABLE `[payroll].[Employee]` ADD [IsPayeApplicable] BIT NOT NULL DEFAULT 0
     - _Requirements: 2.1, 8.5_
 
-  - [ ] 1.5 Add IsPayeDeductible column to DeductionType table
+  - [x] 1.5 Add IsPayeDeductible column to DeductionType table
     - Create SQL script `Portal.Database/Seeds/Seed_DeductionType_IsPayeDeductible.sql`
     - USE [Portal] header
     - ALTER TABLE `[payroll].[DeductionType]` ADD [IsPayeDeductible] BIT NOT NULL DEFAULT 0
@@ -55,60 +55,60 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - This flag marks deductions that reduce the PAYE taxable base (replaces hard-coded Code matching)
     - _Requirements: 1.3, 3.2, 3.6_
 
-  - [ ] 1.6 Make DeductionRateHistoryId nullable on PayslipDeductionLine
+  - [x] 1.6 Make DeductionRateHistoryId nullable on PayslipDeductionLine
     - Create SQL script `Portal.Database/Seeds/Seed_PayslipDeductionLine_NullableRateHistory.sql`
     - USE [Portal] header
     - ALTER TABLE `[payroll].[PayslipDeductionLine]` ALTER COLUMN [DeductionRateHistoryId] INT NULL
     - PAYE lines will use NULL for this column since PAYE uses progressive bands, not rate history
     - _Requirements: 3.7_
 
-- [ ] 2. EF Core entities and DbContext configuration
-  - [ ] 2.1 Create PayeTaxBand entity and configuration
+- [x] 2. EF Core entities and DbContext configuration
+  - [x] 2.1 Create PayeTaxBand entity and configuration
     - Create `Portal.Infrastructure/Entities/PayeTaxBand.cs` with properties: Id, CountryCode, LowerBound, UpperBound (nullable), Rate, EffectiveFromYear, EffectiveToYear (nullable), CreatedAtUtc
     - Add DbSet<PayeTaxBand> to PortalDbContext
     - Configure entity in OnModelCreating: schema "payroll", PK, max lengths (CountryCode = 3), check constraints, default CreatedAtUtc
     - _Requirements: 1.7, 8.1, 8.2_
 
-  - [ ] 2.2 Create CountryDeductionTemplate entity and configuration
+  - [x] 2.2 Create CountryDeductionTemplate entity and configuration
     - Create `Portal.Infrastructure/Entities/CountryDeductionTemplate.cs` with properties: Id, CountryCode, DeductionName, Code, IsPercentage, DeductionCategoryTypeId, DefaultRate, IsPayeDeductible, SortOrder, IsActive, CreatedAtUtc
     - Add DbSet<CountryDeductionTemplate> to PortalDbContext
     - Configure entity: schema "payroll", PK, max lengths (CountryCode=3, DeductionName=100, Code=50), FK to DeductionCategoryType, defaults (IsPercentage=1, IsPayeDeductible=0, IsActive=1, SortOrder=0, CreatedAtUtc)
     - _Requirements: 7.1, 7.4_
 
-  - [ ] 2.3 Create PayslipPeriodComplianceFiling entity and configuration
+  - [x] 2.3 Create PayslipPeriodComplianceFiling entity and configuration
     - Create `Portal.Infrastructure/Entities/PayslipPeriodComplianceFiling.cs` with properties: Id, PayslipPeriodId, ComplianceFilingId, ContributionTotal, UpdatedAtUtc, UpdatedByUserId, CreatedAtUtc
     - Add DbSet<PayslipPeriodComplianceFiling> to PortalDbContext
     - Configure entity: schema "payroll", PK, max length (UpdatedByUserId=450), FK to PayslipPeriod, FK to BusinessApplication, default CreatedAtUtc
     - _Requirements: 9.1_
 
-  - [ ] 2.4 Add IsPayeApplicable property to existing Employee entity
+  - [x] 2.4 Add IsPayeApplicable property to existing Employee entity
     - Locate existing `Employee.cs` entity in `Portal.Infrastructure/Entities/`
     - Add `public bool IsPayeApplicable { get; set; }` property
     - Update EF Core configuration for Employee entity: add `.HasDefaultValue(false)` for IsPayeApplicable
     - _Requirements: 2.1, 8.5_
 
-  - [ ] 2.5 Add IsPayeDeductible property to existing DeductionType entity
+  - [x] 2.5 Add IsPayeDeductible property to existing DeductionType entity
     - Locate existing `DeductionType.cs` entity in `Portal.Infrastructure/Entities/`
     - Add `public bool IsPayeDeductible { get; set; }` property
     - Update EF Core configuration for DeductionType entity: add `.HasDefaultValue(false)` for IsPayeDeductible
     - _Requirements: 1.3, 3.2, 3.6_
 
-  - [ ] 2.6 Make DeductionRateHistoryId nullable on PayslipDeductionLine entity
+  - [x] 2.6 Make DeductionRateHistoryId nullable on PayslipDeductionLine entity
     - Locate existing `PayslipDeductionLine.cs` entity in `Portal.Infrastructure/Entities/`
     - Change `public int DeductionRateHistoryId { get; set; }` to `public int? DeductionRateHistoryId { get; set; }`
     - Update EF Core configuration: change FK relationship to optional (`.IsRequired(false)`)
     - Update any existing INSERT queries in PayrollRepository that reference DeductionRateHistoryId to handle NULL values
     - _Requirements: 3.7_
 
-- [ ] 3. Seed data
-  - [ ] 3.1 Seed Cyprus PAYE tax bands (2024)
+- [x] 3. Seed data
+  - [x] 3.1 Seed Cyprus PAYE tax bands (2024)
     - Create SQL script `Portal.Database/Seeds/Seed_CyprusPAYETaxBands2024.sql`
     - USE [Portal] header, IF NOT EXISTS guard
     - INSERT 5 bands: €0–€19,500 at 0%, €19,500.01–€28,000 at 20%, €28,000.01–€36,300 at 25%, €36,300.01–€60,000 at 30%, €60,000.01–NULL at 35%
     - CountryCode = 'CY', EffectiveFromYear = 2024, EffectiveToYear = NULL
     - _Requirements: 1.1, 7.7_
 
-  - [ ] 3.2 Seed Cyprus country deduction templates
+  - [x] 3.2 Seed Cyprus country deduction templates
     - Create SQL script `Portal.Database/Seeds/Seed_CyprusDeductionTemplates.sql`
     - USE [Portal] header, IF NOT EXISTS guard
     - INSERT 7 templates with IsPayeDeductible flag:
@@ -122,26 +122,26 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - All with CountryCode = 'CY', IsPercentage = 1, IsActive = 1
     - _Requirements: 7.2, 7.4_
 
-- [ ] 4. DTOs and request models
-  - [ ] 4.1 Create Phase D DTOs
+- [x] 4. DTOs and request models
+  - [x] 4.1 Create Phase D DTOs
     - Create `Portal.Infrastructure/Models/Payroll/PhaseDDtos.cs`
     - Include: PayeTaxBandDto, CountryDeductionTemplateDto, ContributionReportDto, ContributionTypeSummary, EmployeeContributionDetail, ContributionLineItem, ComplianceFilingLinkDto, PayslipPeriodComplianceFilingDto
     - All DTOs per design spec with full property lists
     - _Requirements: 5.2, 5.4, 5.5, 6.1, 6.3, 9.4_
 
-  - [ ] 4.2 Create Phase D request models
+  - [x] 4.2 Create Phase D request models
     - Create `Portal.Infrastructure/Models/Payroll/PhaseDRequests.cs`
     - Include: CreateCountryTemplateRequest, UpdateCountryTemplateRequest, CreateTaxBandRequest, UpdateTaxBandRequest
     - All request models per design spec
     - _Requirements: 7.3, 7.8_
 
-  - [ ] 4.3 Create PayeCalculationResult and PayeBandBreakdown models
+  - [x] 4.3 Create PayeCalculationResult and PayeBandBreakdown models
     - Create `Portal.Infrastructure/Models/Payroll/PayeCalculationResult.cs`
     - Include: PayeCalculationResult (IsValid, ValidationError, AnnualProjectedIncome, AnnualTax, MonthlyPaye, EffectiveRate, TopMarginalRate, BandBreakdowns list), PayeBandBreakdown (LowerBound, UpperBound, Rate, TaxableAmountInBand, TaxForBand)
     - _Requirements: 1.1, 1.4, 1.5, 1.6_
 
-- [ ] 5. Repository layer
-  - [ ] 5.1 Add PAYE tax band repository methods to PayrollRepository
+- [x] 5. Repository layer
+  - [x] 5.1 Add PAYE tax band repository methods to PayrollRepository
     - Add `GetTaxBandsAsync(string countryCode, int year)`: SELECT from PayeTaxBand WHERE CountryCode = @countryCode AND EffectiveFromYear <= @year AND (EffectiveToYear IS NULL OR EffectiveToYear >= @year), ORDER BY LowerBound ASC
     - Add `GetTaxBandByIdAsync(int id)`: SELECT single band
     - Add `InsertTaxBandAsync(PayeTaxBand band)`: INSERT with SqlParameters
@@ -149,7 +149,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Full table names in queries, `catch (Exception ex) { throw; }` pattern
     - _Requirements: 1.7, 1.8, 7.8, 8.1_
 
-  - [ ] 5.2 Add country template repository methods to PayrollRepository
+  - [x] 5.2 Add country template repository methods to PayrollRepository
     - Add `GetTemplatesByCountryAsync(string countryCode)`: SELECT from CountryDeductionTemplate WHERE CountryCode = @countryCode AND IsActive = 1 ORDER BY SortOrder
     - Add `GetTemplateByIdAsync(int id)`: SELECT single template
     - Add `InsertTemplateAsync(CountryDeductionTemplate template)`: INSERT with SqlParameters
@@ -158,34 +158,34 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Full table names in queries, `catch (Exception ex) { throw; }` pattern
     - _Requirements: 7.1, 7.3, 7.5_
 
-  - [ ] 5.3 Add compliance cross-reference repository methods
+  - [x] 5.3 Add compliance cross-reference repository methods
     - Add `GetComplianceFilingsByPeriodAsync(int periodId)`: SELECT from PayslipPeriodComplianceFiling WHERE PayslipPeriodId = @periodId ORDER BY CreatedAtUtc DESC
     - Add `InsertComplianceFilingLinkAsync(PayslipPeriodComplianceFiling link)`: INSERT with SqlParameters
     - Full table names in queries, `catch (Exception ex) { throw; }` pattern
     - _Requirements: 9.1, 9.2, 9.3, 9.5_
 
-  - [ ] 5.4 Add contribution report repository methods
+  - [x] 5.4 Add contribution report repository methods
     - Add `GetEmployerContributionsForPeriodAsync(int periodId, int businessId)`: SELECT deduction lines WHERE DeductionCategoryTypeId = 2 (employer) from finalised payslips in the period, JOIN to Payslip, PayslipPeriod, Employee, DeductionType
     - Add `GetPayeDeductionTypeIdForBusinessAsync(int businessId)`: SELECT Id FROM DeductionType WHERE BusinessId = @businessId AND Code = 'PAYE'
     - Add `UpdateEmployeePayeStatusAsync(int employeeId, int businessId, bool isPayeApplicable)`: UPDATE Employee SET IsPayeApplicable = @isPayeApplicable WHERE Id = @employeeId AND BusinessId = @businessId
     - Full table names in queries, `catch (Exception ex) { throw; }` pattern
     - _Requirements: 2.1, 5.2, 5.4, 5.6_
 
-  - [ ] 5.5 Add compliance repository helper methods
+  - [x] 5.5 Add compliance repository helper methods
     - Locate existing compliance repository or create a new method in an appropriate repository
     - Add `FindSocialInsuranceFilingAsync(int businessId, int year, int month)`: SELECT from [compliance].[BusinessApplication] WHERE BusinessId = @businessId AND ApplicationTypeId = (Social Insurance type) AND YEAR(DueDate) = @dueYear AND MONTH(DueDate) = @dueMonth. Apply 1-month offset: if month < 12, dueMonth = month + 1, dueYear = year; if month = 12, dueMonth = 1, dueYear = year + 1 (filing for July is due in August; filing for December is due in January of next year)
     - Add `UpdateEstimatedAmountAsync(int filingId, decimal amount)`: UPDATE [compliance].[BusinessApplication] SET EstimatedAmount = @amount WHERE Id = @filingId
     - Full table names in queries, `catch (Exception ex) { throw; }` pattern
     - _Requirements: 4.2, 4.3_
 
-- [ ] 6. Build checkpoint
+- [x] 6. Build checkpoint
   - Ensure the project compiles with all new entities, DTOs, repository methods
   - Verify DbContext configuration compiles and new DbSets are registered
   - Verify no missing references or type errors
   - Ask the user if questions arise
 
-- [ ] 7. PayeCalculationService — pure progressive tax calculation
-  - [ ] 7.1 Create IPayeCalculationService interface and implementation
+- [x] 7. PayeCalculationService — pure progressive tax calculation
+  - [x] 7.1 Create IPayeCalculationService interface and implementation
     - Create `Portal.Infrastructure/Services/IPayeCalculationService.cs` with method: `PayeCalculationResult CalculateMonthlyPaye(decimal monthlyTaxableIncome, List<PayeTaxBand> bands)`
     - Create `Portal.Infrastructure/Services/PayeCalculationService.cs` implementing the interface
     - Register as Singleton (pure calculation, no I/O, no state)
@@ -223,8 +223,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Test edge cases: zero income → €0, negative income → €0, no bands → IsValid = false
     - _Requirements: 11.2_
 
-- [ ] 8. PayslipCalculationOrchestrator — wraps existing engine + PAYE
-  - [ ] 8.1 Create IPayslipCalculationOrchestrator interface and implementation
+- [x] 8. PayslipCalculationOrchestrator — wraps existing engine + PAYE
+  - [x] 8.1 Create IPayslipCalculationOrchestrator interface and implementation
     - Create `Portal.Infrastructure/Services/IPayslipCalculationOrchestrator.cs` with method: `Task<PayslipCalculationResult> CalculateWithPayeAsync(PayslipCalculationInput input, bool isPayeApplicable)`
     - Create `Portal.Infrastructure/Services/PayslipCalculationOrchestrator.cs` implementing the interface
     - Register as Scoped (needs repository access for tax bands)
@@ -257,8 +257,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Tag format: `Feature: payroll-phase-d, Property N: {title}`
     - _Requirements: 11.2, 11.5, 11.6_
 
-- [ ] 9. ComplianceIntegrationService
-  - [ ] 9.1 Create IComplianceIntegrationService interface and implementation
+- [x] 9. ComplianceIntegrationService
+  - [x] 9.1 Create IComplianceIntegrationService interface and implementation
     - Create `Portal.Infrastructure/Services/IComplianceIntegrationService.cs` with method: `Task<ServiceResult> UpdateComplianceFilingFromPayrollAsync(int periodId, int businessId, string userId)`
     - Create `Portal.Infrastructure/Services/ComplianceIntegrationService.cs` implementing the interface
     - Register as Scoped
@@ -283,8 +283,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Tag format: `Feature: payroll-phase-d, Property 6: Compliance Sum Filters to SI Employer Only`
     - _Requirements: 4.6, 11.3_
 
-- [ ] 10. CountryTemplateService
-  - [ ] 10.1 Create ICountryTemplateService interface and implementation
+- [x] 10. CountryTemplateService
+  - [x] 10.1 Create ICountryTemplateService interface and implementation
     - Create `Portal.Infrastructure/Services/ICountryTemplateService.cs` with all method signatures per design
     - Create `Portal.Infrastructure/Services/CountryTemplateService.cs` implementing the interface
     - Register as Scoped
@@ -299,20 +299,20 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - `catch (Exception ex) { throw; }` pattern
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.8, 8.3, 8.4_
 
-- [ ] 11. Modify PayrollService — integration points
-  - [ ] 11.1 Integrate orchestrator into batch payslip generation and SaveEarningLinesAsync
+- [x] 11. Modify PayrollService — integration points
+  - [x] 11.1 Integrate orchestrator into batch payslip generation and SaveEarningLinesAsync
     - In the existing `ConfirmBatchGenerationAsync` method, replace direct `_calculationEngine.Calculate(input)` call with `await _orchestrator.CalculateWithPayeAsync(input, employee.IsPayeApplicable)`
     - In the existing `SaveEarningLinesAsync` method, ALSO replace direct `_calculationEngine.Calculate(input)` call with `await _orchestrator.CalculateWithPayeAsync(input, employee.IsPayeApplicable)` — ensures PAYE is recalculated when earnings change
     - Inject `IPayslipCalculationOrchestrator` into PayrollService constructor
     - When `IsPayeApplicable` is false, orchestrator returns same result as original engine (transparent)
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 11.2 Add PAYE toggle endpoint to PayrollService
+  - [x] 11.2 Add PAYE toggle endpoint to PayrollService
     - Add `UpdateEmployeePayeStatusAsync(int businessId, int employeeId, bool isPayeApplicable)` to IPayrollService
     - Implementation: validate employee belongs to business, call repository `UpdateEmployeePayeStatusAsync`, return ServiceResult
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [ ] 11.3 Add contribution report methods to PayrollService
+  - [x] 11.3 Add contribution report methods to PayrollService
     - Add `GetContributionReportAsync(int periodId, int businessId)` to IPayrollService
     - Implementation: load employer contributions for period, group by DeductionType, build per-employee detail, check for compliance filing link, return ContributionReportDto
     - Add `ExportContributionReportToExcelAsync(int periodId, int businessId)`: use ClosedXML, branded header, columns (Employee Name, SI, Redundancy, Industrial Training, Social Cohesion, GESY, Total), footer totals
@@ -320,8 +320,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Add `GetComplianceFilingHistoryAsync(int periodId, int businessId)`: load cross-reference records, join to AspNetUsers for UpdatedByUserName
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 9.4_
 
-- [ ] 12. Modify finalisation hooks — compliance integration call
-  - [ ] 12.1 Add compliance integration to FinalisePeriodAsync and RefinalisePeriodAsync
+- [x] 12. Modify finalisation hooks — compliance integration call
+  - [x] 12.1 Add compliance integration to FinalisePeriodAsync and RefinalisePeriodAsync
     - Locate existing `FinalisePeriodAsync` and `RefinalisePeriodAsync` in PayslipPeriodStatusService (or PayrollService)
     - After successful status transition to Finalised/ReFinalised, add: `await _complianceIntegrationService.UpdateComplianceFilingFromPayrollAsync(periodId, businessId, userId)`
     - Inject `IComplianceIntegrationService` into the service constructor
@@ -329,14 +329,14 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Wrap compliance call in try/catch — on failure log warning and continue
     - _Requirements: 4.1, 4.4, 4.5, 9.2_
 
-- [ ] 13. Build checkpoint
+- [x] 13. Build checkpoint
   - Ensure the project compiles with all service implementations (PayeCalculationService, PayslipCalculationOrchestrator, ComplianceIntegrationService, CountryTemplateService, PayrollService modifications)
   - Verify constructor injection resolves correctly
   - Verify orchestrator integration in ConfirmBatchGenerationAsync compiles
   - Ask the user if questions arise
 
-- [ ] 14. Controllers
-  - [ ] 14.1 Create PayrollComplianceController
+- [x] 14. Controllers
+  - [x] 14.1 Create PayrollComplianceController
     - Create `Portal.Web/Controllers/PayrollComplianceController.cs`
     - Apply `[Authorize]` and `[ModuleAccess(PortalModules.Payroll)]` attributes
     - Inject: `IPayrollService`, `ICurrentTenantService`
@@ -348,7 +348,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - `catch (Exception ex)` → Json error response pattern
     - _Requirements: 5.1, 5.8, 5.9, 10.1, 10.2_
 
-  - [ ] 14.2 Create PayrollTemplateController (SuperAdmin only)
+  - [x] 14.2 Create PayrollTemplateController (SuperAdmin only)
     - Create `Portal.Web/Controllers/PayrollTemplateController.cs`
     - Apply `[Authorize(Roles = "SuperAdmin")]` attribute
     - Inject: `ICountryTemplateService`
@@ -363,7 +363,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - `catch (Exception ex)` → Json error response pattern
     - _Requirements: 7.3, 7.8, 10.3_
 
-  - [ ] 14.3 Add PAYE toggle endpoint to PayrollController
+  - [x] 14.3 Add PAYE toggle endpoint to PayrollController
     - Add to existing `PayrollController`:
       - `[HttpPost] [ValidateAntiForgeryToken] AxPostToggleEmployeePaye(int employeeId, bool isPayeApplicable)` — call PayrollService.UpdateEmployeePayeStatusAsync, return Json success/fail
     - Check Owner or SuperAdmin role before allowing toggle
@@ -371,8 +371,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - `catch (Exception ex)` → Json error response pattern
     - _Requirements: 2.1, 2.2, 2.6, 10.4_
 
-- [ ] 15. Views — PAYE toggle on Employee form
-  - [ ] 15.1 Add PAYE toggle to Employee profile edit view
+- [x] 15. Views — PAYE toggle on Employee form
+  - [x] 15.1 Add PAYE toggle to Employee profile edit view
     - Locate existing Employee edit view
     - Add PAYE section with checkbox toggle: `<input type="checkbox" id="isPayeApplicable" />`
     - Label: "Subject to PAYE Income Tax"
@@ -386,8 +386,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Include antiforgery token in POST header
     - _Requirements: 2.4, 2.5, 2.6_
 
-- [ ] 16. Views — Contribution Report
-  - [ ] 16.1 Create ContributionReport view
+- [x] 16. Views — Contribution Report
+  - [x] 16.1 Create ContributionReport view
     - Create `Portal.Web/Views/PayrollCompliance/ContributionReport.cshtml`
     - Topbar: eyebrow "Payroll", heading "Employer Contribution Report", muted description
     - Filter card (`.glass.card-pad`, margin-bottom:22px): Year dropdown, Month dropdown, Filter button, Clear button
@@ -400,15 +400,15 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - JavaScript: filter submits → BlockUI → fetch AxGetContributionReportData → BlockUI.hide → render table; download buttons trigger file downloads
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10_
 
-  - [ ] 16.2 Add Contribution Report navigation link to payroll sidebar
+  - [x] 16.2 Add Contribution Report navigation link to payroll sidebar
     - Locate the payroll sidebar navigation partial view (same file that contains "Earnings Breakdown" and "Period Summary" links from Phase C)
     - Add "Contribution Report" navigation link: `/PayrollCompliance/ContributionReport`
     - Place in the same section as other payroll report links
     - Use consistent icon and styling with existing sidebar items
     - _Requirements: 10.1, 10.2_
 
-- [ ] 17. Views — SuperAdmin Template Management
-  - [ ] 17.1 Create PayrollTemplate Index view (country templates)
+- [x] 17. Views — SuperAdmin Template Management
+  - [x] 17.1 Create PayrollTemplate Index view (country templates)
     - Create `Portal.Web/Views/PayrollTemplate/Index.cshtml`
     - Topbar: eyebrow "Platform Admin", heading "Country Deduction Templates"
     - Country filter: dropdown or tabs for country codes (CY, MT, UK, etc.)
@@ -420,7 +420,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Include antiforgery token in POST headers
     - _Requirements: 7.3, 7.8, 10.3_
 
-  - [ ] 17.2 Create PayrollTemplate TaxBands view
+  - [x] 17.2 Create PayrollTemplate TaxBands view
     - Create `Portal.Web/Views/PayrollTemplate/TaxBands.cshtml`
     - Topbar: eyebrow "Platform Admin", heading "PAYE Tax Bands — {CountryName}"
     - Tax band table (`.glass.card-pad`): columns — Lower Bound (€), Upper Bound (€ or "No limit"), Rate %, From Year, To Year (or "Current"), Actions (Edit)
@@ -430,8 +430,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Include antiforgery token in POST headers
     - _Requirements: 7.8, 8.1_
 
-- [ ] 18. Views — Compliance Filing Detail Enhancement
-  - [ ] 18.1 Extend compliance filing detail view with payroll source indicator
+- [x] 18. Views — Compliance Filing Detail Enhancement
+  - [x] 18.1 Extend compliance filing detail view with payroll source indicator
     - Locate existing compliance filing detail view (Business Applications Tracker)
     - Add payroll source section when EstimatedAmount was populated from payroll:
       - Source label: "Auto-calculated from Payroll — {Month Name} {Year}"
@@ -441,8 +441,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Display only when PayslipPeriodComplianceFiling records exist for this filing
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
-- [ ] 19. DI registration
-  - [ ] 19.1 Register all Phase D services in DI container
+- [x] 19. DI registration
+  - [x] 19.1 Register all Phase D services in DI container
     - Register `IPayeCalculationService` / `PayeCalculationService` as Singleton
     - Register `IPayslipCalculationOrchestrator` / `PayslipCalculationOrchestrator` as Scoped
     - Register `IComplianceIntegrationService` / `ComplianceIntegrationService` as Scoped
@@ -452,7 +452,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - No new NuGet packages needed — FsCheck, ClosedXML, PuppeteerSharp already in project
     - _Requirements: 10.1_
 
-- [ ] 20. Build checkpoint
+- [x] 20. Build checkpoint
   - Ensure the entire Phase D compiles: all services, controllers, views, DI registrations
   - Verify controller routes are accessible
   - Verify new view paths resolve correctly
@@ -493,8 +493,8 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - Use Moq for IPayslipCalculationEngine, IPayeCalculationService, PayrollRepository
     - _Requirements: 2.3, 3.1, 3.3, 3.7, 11.5, 11.6_
 
-- [ ] 22. What's New announcement
-  - [ ] 22.1 Create What's New announcement seed SQL for Phase D
+- [x] 22. What's New announcement
+  - [x] 22.1 Create What's New announcement seed SQL for Phase D
     - Create `Portal.Database/Seeds/Seed_WhatsNew_PayrollPhaseD.sql`
     - USE [Portal] header, IF NOT EXISTS guard on Title
     - Title: "PAYE Tax & Compliance Integration"
@@ -505,7 +505,7 @@ Phase D is the final integration layer of the Payroll module. It introduces PAYE
     - IsActive: 1, PublishedAtUtc: GETUTCDATE()
     - _Requirements: N/A (user-facing announcement)_
 
-- [ ] 23. Final checkpoint
+- [x] 23. Final checkpoint
   - Ensure all Phase D code compiles end-to-end
   - Verify PAYE calculation produces correct results for boundary test cases
   - Verify compliance integration hook fires on finalisation without blocking

@@ -20,4 +20,5 @@ public interface IMeetingService
     Task<ServiceResult> CreateOpportunityAsync(CreateMeetingOpportunityDto request);
     Task<List<MeetingBriefDto>> GetUpcomingMeetingsBriefAsync(int businessId);
     Task<List<DashboardMeetingBriefDto>> GetDashboardMeetingsBriefAsync(int businessId);
+    Task<PagedResult<MeetingPagedListDto>> GetMeetingsPagedAsync(MeetingFilter filter, int page, int pageSize);
 }

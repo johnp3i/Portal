@@ -12,7 +12,7 @@
 
 <!-- Date Range Filter -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <div id="insightsDatePresets" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <button class="btn btn-secondary date-preset" data-period="ThisWeek">This Week</button>
         <button class="btn btn-secondary date-preset active" data-period="ThisMonth">This Month</button>
         <button class="btn btn-secondary date-preset" data-period="LastMonth">Last Month</button>
@@ -166,6 +166,56 @@
         font-weight: 600;
         color: #5E7385;
         margin-top: 2px;
+    }
+
+    /* Mobile responsive — Insights page */
+    @@media (max-width: 768px) {
+        /* Date presets — horizontal scroll row */
+        #insightsDatePresets {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            gap: 8px !important;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        #insightsDatePresets::-webkit-scrollbar { display: none; }
+        #insightsDatePresets .date-preset {
+            flex-shrink: 0 !important;
+            width: auto !important;
+            padding: 8px 14px !important;
+            font-size: 12px !important;
+            min-height: 36px !important;
+            white-space: nowrap;
+        }
+
+        /* Custom date range — stack on mobile */
+        #customRange {
+            flex-direction: column !important;
+            gap: 8px !important;
+            margin-left: 0 !important;
+            width: 100%;
+        }
+        #customRange input[type="date"] {
+            width: 100% !important;
+        }
+
+        /* Metric cards — 2-column grid, compact */
+        .metric-card {
+            padding: 14px 16px !important;
+            border-radius: 12px !important;
+            gap: 4px !important;
+        }
+        .metric-card .metric-label {
+            font-size: 10px !important;
+            letter-spacing: 0.5px;
+        }
+        .metric-card .metric-value {
+            font-size: 20px !important;
+        }
     }
 </style>
 

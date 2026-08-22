@@ -98,6 +98,13 @@
             <span class="nav-text">Meetings</span>
         </a>
         @{
+            var isSalesActivityActive = currentController.Equals("Sales", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Activity", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-sub-item @(isSalesActivityActive ? "active" : "")" asp-controller="Sales" asp-action="Activity">
+            <span class="nav-icon"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+            <span class="nav-text">Activity</span>
+        </a>
+        @{
             var isTasksActive = currentController.Equals("Sales", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Tasks", StringComparison.OrdinalIgnoreCase);
         }
         <a class="nav-sub-item @(isTasksActive ? "active" : "")" asp-controller="Sales" asp-action="Tasks">

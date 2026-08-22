@@ -17,6 +17,36 @@
     </div>
 </div>
 
+@{
+    var validUntil = Model.Quotation.ValidUntil;
+    var isExpired = Model.IsExpired;
+    var isExpiringSoon = !isExpired && validUntil.HasValue
+        && validUntil.Value <= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7))
+        && validUntil.Value >= DateOnly.FromDateTime(DateTime.UtcNow);
+    var daysUntilExpiry = validUntil.HasValue ? (validUntil.Value.ToDateTime(TimeOnly.MinValue) - DateTime.UtcNow.Date).Days : 0;
+}
+
+@if (isExpired && Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
+{
+    <div style="margin-bottom:18px;padding:14px 20px;border-radius:12px;background:rgba(194,74,74,.06);border:1.5px solid rgba(194,74,74,.18);display:flex;align-items:center;gap:12px;">
+        <svg width="20" height="20" fill="none" stroke="#C24A4A" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+        <div>
+            <span style="font-size:14px;font-weight:700;color:#C24A4A;">This quotation has expired</span>
+            <span style="font-size:13px;color:#5a6a7a;margin-left:8px;">Valid until @validUntil.Value.ToString("dd MMM yyyy") — consider archiving or creating a new version.</span>
+        </div>
+    </div>
+}
+else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Quotation.QuotationStatusTypeId != 5)
+{
+    <div style="margin-bottom:18px;padding:14px 20px;border-radius:12px;background:rgba(200,145,46,.06);border:1.5px solid rgba(200,145,46,.18);display:flex;align-items:center;gap:12px;">
+        <svg width="20" height="20" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <div>
+            <span style="font-size:14px;font-weight:700;color:#C8912E;">Expiring soon</span>
+            <span style="font-size:13px;color:#5a6a7a;margin-left:8px;">This quotation expires in @daysUntilExpiry day@(daysUntilExpiry == 1 ? "" : "s") (@validUntil.Value.ToString("dd MMM yyyy")). Follow up with the customer before it expires.</span>
+        </div>
+    </div>
+}
+
 <!-- Action Bar -->
 <section class="glass card-pad" style="margin-bottom:22px;padding:14px 20px;">
     <!-- Primary actions (always visible) -->

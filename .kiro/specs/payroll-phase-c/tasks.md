@@ -39,8 +39,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - All DTOs per design spec
     - _Requirements: 3.5, 3.6, 4.2, 4.3, 4.4, 4.5, 5.2, 5.7, 5.8, 6.2, 6.4, 10.3, 10.5_
 
-- [ ] 3. Repository layer
-  - [~] 3.1 Create PayslipEmailLogRepository
+- [x] 3. Repository layer
+  - [x] 3.1 Create PayslipEmailLogRepository
     - Create `Portal.Infrastructure/Repositories/PayslipEmailLogRepository.cs`
     - Extend `GenericStoredProcedureRepository<PayslipEmailLog>`
     - Implement `InsertAsync(PayslipEmailLog entity)`: INSERT with SqlParameters, null-safe FailureReason
@@ -49,7 +49,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Full table names in queries, `catch (Exception ex) { throw; }` pattern
     - _Requirements: 7.9, 7.12, 10.1, 10.3, 10.4_
 
-  - [~] 3.2 Add report query methods to PayrollRepository
+  - [x] 3.2 Add report query methods to PayrollRepository
     - Add `GetPayslipsByEmployeeAsync(int employeeId, int businessId, int? year)`: all payslips for an employee, optional year filter
     - Add `GetFinalisedPayslipsForEmployeeYearAsync(int employeeId, int businessId, int year)`: WHERE PayslipStatusTypeId IN (3, 5)
     - Add `GetEarningLinesForPayslipsAsync(int[] payslipIds)`: earning lines for multiple payslips
@@ -62,14 +62,14 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - All queries filter to PayslipStatusTypeId IN (3, 5) where applicable
     - _Requirements: 3.2, 3.4, 4.2, 4.8, 5.2, 5.9, 6.2, 6.5, 10.5_
 
-- [~] 4. Build checkpoint
+- [x] 4. Build checkpoint
   - Ensure the project compiles with all new entities, DTOs, repository methods
   - Verify DbContext configuration compiles and new DbSet is registered
   - Verify no missing references or type errors
   - Ask the user if questions arise
 
-- [ ] 5. PayslipRenderer — replace stub with full implementation
-  - [~] 5.1 Replace PayslipRenderer stub with Razor-based implementation
+- [x] 5. PayslipRenderer — replace stub with full implementation
+  - [x] 5.1 Replace PayslipRenderer stub with Razor-based implementation
     - Delete the existing stub at `Portal.Infrastructure/Services/PayslipRenderer.cs`
     - Create the implementation at `Portal.Web/Services/PayslipRenderer.cs` (same location as InvoiceRenderer)
     - Inject `IViewRenderService` and `ILogoService` via constructor
@@ -78,7 +78,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Ensure DI registration resolves correctly (interface `IPayslipRenderer` stays in Infrastructure)
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [~] 5.2 Create Payslip PDF Razor template
+  - [x] 5.2 Create Payslip PDF Razor template
     - Create `Portal.Web/Views/Payroll/PdfTemplates/Payslip.cshtml`
     - `@model PayslipPdfViewModel` directive
     - Self-contained HTML with inline CSS for PDF compatibility
@@ -88,8 +88,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Match approved mockup at `.kiro/docs/mockups/payroll-phase-c-payslip-pdf.html`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10_
 
-- [ ] 6. PayslipPdfService — replace stub with PuppeteerSharp implementation
-  - [~] 6.1 Replace PayslipPdfService stub with PuppeteerSharp implementation
+- [x] 6. PayslipPdfService — replace stub with PuppeteerSharp implementation
+  - [x] 6.1 Replace PayslipPdfService stub with PuppeteerSharp implementation
     - Delete the existing stub at `Portal.Infrastructure/Services/PayslipPdfService.cs`
     - Create the implementation at `Portal.Web/Services/PayslipPdfService.cs` (same location as InvoicePdfService)
     - Update the `IPayslipPdfService` interface (in Portal.Infrastructure) to add `CancellationToken` parameter and `GenerateBatchPdfAsync` method:
@@ -104,8 +104,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Verify DI registration resolves correctly (interface `IPayslipPdfService` stays in Infrastructure)
     - _Requirements: 2.1, 2.2, 2.8_
 
-- [ ] 7. PayslipEmailService — replace stub with production implementation
-  - [~] 7.1 Add SendPayslipEmailAsync method to IEmailService
+- [x] 7. PayslipEmailService — replace stub with production implementation
+  - [x] 7.1 Add SendPayslipEmailAsync method to IEmailService
     - Extend `IEmailService` interface with: `Task SendPayslipEmailAsync(string toEmail, string employeeName, string businessName, string monthName, int year, byte[] pdfBytes, string filename)`
     - Implement in `PortalEmailService`: use existing `SendEmailWithAttachmentAsync` infrastructure
     - Subject: "Your Payslip - {MonthName} {Year}"
@@ -113,7 +113,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Department: `EmailDepartmentEnum.Payroll`
     - _Requirements: 7.7, 7.8_
 
-  - [~] 7.2 Replace PayslipEmailService stub with full implementation
+  - [x] 7.2 Replace PayslipEmailService stub with full implementation
     - **Note:** Read the existing implementation first. If Phase A created a working version, extend/complete it rather than blindly overwriting. The existing code may already have some of the logic in place.
     - Rewrite `Portal.Infrastructure/Services/PayslipEmailService.cs`
     - Inject: `IPayslipPdfService`, `IPayslipRenderer`, `IEmailService`, `PayslipEmailLogRepository`, `PayrollRepository`, `IBusinessService`, `ICurrentTenantService`
@@ -128,7 +128,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
       8. On failure: log with IsSuccess=false and FailureReason, rethrow
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.9, 7.10_
 
-  - [~] 7.3 Implement SendAllPayslipsAsync for batch email sending
+  - [x] 7.3 Implement SendAllPayslipsAsync for batch email sending
     - **Note:** Read the existing implementation first. If Phase A created a working version, extend/complete it rather than blindly overwriting. The existing code may already have some of the logic in place.
     - In `PayslipEmailService`, implement `SendAllPayslipsAsync(int periodId, int businessId, string userId, bool includeSignature)`:
       1. Get all finalised payslips for period (PayslipStatusTypeId IN (3, 5))
@@ -142,7 +142,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
       9. Return ServiceResult with summary message: "{sent} sent, {failed} failed, {skipped} skipped"
     - _Requirements: 7.5, 7.10, 7.11_
 
-  - [ ] 7.4 Add batch email configuration and SignalR progress notifications
+  - [x] 7.4 Add batch email configuration and SignalR progress notifications
     - Create `Portal.Infrastructure/Models/PayrollSettings.cs` with `BatchEmailMaxSize` (default 50) and `BatchEmailDelayBetweenSendsMs` (default 500)
     - Add `"Payroll"` section to `appsettings.json` with the two settings
     - Register `IOptions<PayrollSettings>` in Program.cs via `builder.Services.Configure<PayrollSettings>(builder.Configuration.GetSection("Payroll"))`
@@ -152,21 +152,21 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Map hub endpoint in Program.cs: `app.MapHub<PayrollHub>("/hubs/payroll")`
     - _Requirements: 7.5, 7.10, 7.11_
 
-- [ ] 8. PayrollReportService — new report orchestration service
-  - [~] 8.1 Create IPayrollReportService interface and basic class structure
+- [x] 8. PayrollReportService — new report orchestration service
+  - [x] 8.1 Create IPayrollReportService interface and basic class structure
     - Create `Portal.Infrastructure/Services/IPayrollReportService.cs` with all method signatures per design
     - Create `Portal.Infrastructure/Services/PayrollReportService.cs` implementing the interface
     - Inject: `PayrollRepository`, `IPayslipPdfService`, `IPayslipRenderer`, `IBusinessService`, `PayslipEmailLogRepository`, `IViewRenderService`, `ILogoService`
     - _Requirements: 3.1, 4.1, 5.1, 6.1_
 
-  - [~] 8.2 Implement GetEmployeeHistoryAsync
+  - [x] 8.2 Implement GetEmployeeHistoryAsync
     - Call `_payrollRepository.GetPayslipsByEmployeeAsync(employeeId, businessId, year)`
     - Call `_payrollRepository.GetAvailableYearsForEmployeeAsync(employeeId, businessId)`
     - Map to `EmployeePayslipHistoryDto` with summary totals (TotalGross, TotalNet, Count)
     - Return DTO with ordered payslip list (newest first)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-  - [~] 8.3 Implement GetAnnualSummaryAsync and GenerateAnnualSummaryPdfAsync
+  - [x] 8.3 Implement GetAnnualSummaryAsync and GenerateAnnualSummaryPdfAsync
     - `GetAnnualSummaryAsync`: load finalised payslips for year, load earning + deduction lines, aggregate by month/type, return `AnnualSummaryDto`
     - Monthly breakdown: Gross, Deductions, Net, Contributions per month
     - Deduction breakdown: group by DeductionType, sum amounts, count months applied
@@ -175,7 +175,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - `GenerateAnnualSummaryPdfAsync`: build `AnnualSummaryPdfViewModel`, render via `IViewRenderService` ("~/Views/Payroll/PdfTemplates/AnnualSummary.cshtml"), generate PDF via `IPayslipPdfService`
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
 
-  - [~] 8.4 Implement GetEarningsBreakdownAsync and ExportEarningsBreakdownToExcelAsync
+  - [x] 8.4 Implement GetEarningsBreakdownAsync and ExportEarningsBreakdownToExcelAsync
     - `GetEarningsBreakdownAsync`: call repository with filter, aggregate totals per earning type, return `EarningsBreakdownDto`
     - `ExportEarningsBreakdownToExcelAsync`: use ClosedXML to create XLSX workbook
       - Header row with branded styling (#0D5EA6 background, white text, bold)
@@ -184,14 +184,14 @@ Phase C implements the reporting and export layer for the Payroll module, replac
       - Amount column formatted as `#,##0.00`
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10_
 
-  - [~] 8.5 Implement GetPeriodSummaryAsync with PDF and Excel export
+  - [x] 8.5 Implement GetPeriodSummaryAsync with PDF and Excel export
     - `GetPeriodSummaryAsync`: call repository, map to `PeriodSummaryDto` with aggregate totals footer
     - `GeneratePeriodSummaryPdfAsync`: build model, render via `IViewRenderService` ("~/Views/Payroll/PdfTemplates/PeriodSummary.cshtml"), generate PDF
     - `ExportPeriodSummaryToExcelAsync`: ClosedXML workbook with columns: Employee Name, Department, Gross, Deductions, Net, Employer Contributions, Total Cost. Branded header row. Footer totals row.
     - Optional department filter
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7, 6.8, 6.9_
 
-  - [~] 8.6 Implement GenerateEmployeeStatementPdfAsync
+  - [x] 8.6 Implement GenerateEmployeeStatementPdfAsync
     - Load all finalised payslips for employee within date range (startYear/Month to endYear/Month)
     - If no payslips found, return empty result (controller will handle validation message)
     - Build `EmployeeStatementPdfViewModel` with cover section (name, position, SIN, ID, period), summary totals, and individual payslip details
@@ -199,7 +199,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Generate PDF with filename: "{EmployeeName}_Statement_{StartMonth}{StartYear}_to_{EndMonth}{EndYear}.pdf"
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.8, 8.9_
 
-  - [~] 8.7 Implement GenerateAllPayslipsPdfZipAsync
+  - [x] 8.7 Implement GenerateAllPayslipsPdfZipAsync
     - Load all finalised payslips for period
     - Render all HTML documents first via PayslipRenderer
     - Use `IPayslipPdfService.GenerateBatchPdfAsync(htmlDocuments)` to generate all PDFs with browser reuse (single browser instance)
@@ -208,20 +208,20 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Return ZIP bytes
     - _Requirements: 2.6_
 
-  - [~] 8.8 Implement email log query methods
+  - [x] 8.8 Implement email log query methods
     - `GetEmailLogForPayslipAsync(int payslipId)`: call repository, map to `PayslipEmailLogDto` list (join to AspNetUsers for SentByUserName)
     - `GetLastEmailForPayslipAsync(int payslipId)`: call repository for last successful send (for duplicate detection)
     - `GetEmailSummaryForPeriodAsync(int periodId, int businessId)`: call repository for aggregate counts
     - _Requirements: 7.12, 10.3, 10.5_
 
-- [~] 9. Build checkpoint
+- [x] 9. Build checkpoint
   - Ensure the project compiles with all service implementations (PayslipRenderer, PayslipPdfService, PayslipEmailService, PayrollReportService)
   - Verify constructor injection resolves correctly for replaced stubs
   - Verify IEmailService extension compiles with existing implementations
   - Ask the user if questions arise
 
-- [ ] 10. PDF Razor templates (Annual Summary, Period Summary, Employee Statement)
-  - [~] 10.1 Create Annual Summary PDF Razor template
+- [x] 10. PDF Razor templates (Annual Summary, Period Summary, Employee Statement)
+  - [x] 10.1 Create Annual Summary PDF Razor template
     - Create `Portal.Web/Views/Payroll/PdfTemplates/AnnualSummary.cshtml`
     - `@model AnnualSummaryPdfViewModel`
     - Self-contained HTML with inline CSS, A4 dimensions
@@ -229,7 +229,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Brand styling matching Payslip template
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6_
 
-  - [~] 10.2 Create Period Summary PDF Razor template
+  - [x] 10.2 Create Period Summary PDF Razor template
     - Create `Portal.Web/Views/Payroll/PdfTemplates/PeriodSummary.cshtml`
     - `@model PeriodSummaryDto`
     - Self-contained HTML with inline CSS, A4 dimensions (landscape for wide table)
@@ -237,7 +237,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Brand styling
     - _Requirements: 6.7_
 
-  - [~] 10.3 Create Employee Statement PDF Razor template
+  - [x] 10.3 Create Employee Statement PDF Razor template
     - Create `Portal.Web/Views/Payroll/PdfTemplates/EmployeeStatement.cshtml`
     - `@model EmployeeStatementPdfViewModel`
     - Self-contained HTML with inline CSS, A4 dimensions
@@ -245,8 +245,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Same branded styling as individual payslip PDF
     - _Requirements: 8.3, 8.4, 8.5, 8.8_
 
-- [ ] 11. PayrollReportController — new controller with page actions and endpoints
-  - [~] 11.1 Create PayrollReportController with page actions
+- [x] 11. PayrollReportController — new controller with page actions and endpoints
+  - [x] 11.1 Create PayrollReportController with page actions
     - Create `Portal.Web/Controllers/PayrollReportController.cs`
     - Apply `[Authorize]` and `[ModuleAccess(PortalModules.Payroll)]` attributes
     - Inject: `IPayrollReportService`, `IPayrollService`, `ICurrentTenantService`, `IPayslipEmailService`
@@ -258,7 +258,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Set ViewBag.CanSendEmail flag based on user claims (Owner/SuperAdmin)
     - _Requirements: 3.1, 4.1, 5.1, 6.1, 11.1, 11.2_
 
-  - [~] 11.2 Add download and export AJAX endpoints
+  - [x] 11.2 Add download and export AJAX endpoints
     - **Important:** All download/export endpoints MUST pass `_tenantService.CurrentBusinessId` to every service call. This ensures tenant isolation — a user cannot download payslips from another business by manipulating query parameters. The repository queries already filter by businessId, so passing the correct business ID is sufficient.
     - `AxGetDownloadPayslipPdf(int payslipId)`: generate single payslip PDF, return File result with content-type "application/pdf"
     - `AxGetDownloadAllPayslipsPdf(int periodId)`: generate ZIP of all payslips, return File with "application/zip" and filename "Payslips_{MonthName}_{Year}.zip"
@@ -270,7 +270,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - All endpoints: try/catch with Json error on failure, validate business ownership
     - _Requirements: 2.4, 2.5, 2.6, 4.7, 5.10, 6.7, 6.8, 8.1, 8.9, 12.7_
 
-  - [~] 11.3 Add email send and log AJAX endpoints
+  - [x] 11.3 Add email send and log AJAX endpoints
     - `AxPostSendPayslipEmail(int payslipId, bool confirmResend = false)`:
       - Check Owner/SuperAdmin role, return 403 if unauthorised
       - If not confirmResend: check for existing successful send, return `{ success: false, alreadySent: true, sentDate }` if found
@@ -284,8 +284,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - `AxGetPeriodEmailSummary(int periodId)`: return Json with total/successful/failed counts
     - _Requirements: 7.2, 7.5, 7.9, 7.11, 7.12, 10.3, 10.5, 11.3, 11.4, 11.5_
 
-- [ ] 12. DI registration
-  - [~] 12.1 Register Phase C services in DI container
+- [x] 12. DI registration
+  - [x] 12.1 Register Phase C services in DI container
     - Register `IPayrollReportService` / `PayrollReportService` as Scoped
     - Register `PayslipEmailLogRepository` as Scoped (resolve PortalDbContext)
     - Register `IOptions<PayrollSettings>` via `builder.Services.Configure<PayrollSettings>(builder.Configuration.GetSection("Payroll"))`
@@ -294,14 +294,14 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Verify constructor injection auto-resolves new dependencies for replaced stubs (IViewRenderService, ILogoService, IWebHostEnvironment, IOptions<PayrollSettings>, IHubContext<PayrollHub>, etc.)
     - _Requirements: 11.1_
 
-- [~] 13. Build checkpoint
+- [x] 13. Build checkpoint
   - Ensure the project compiles with PayrollReportController, all service registrations, and PDF templates
   - Verify route resolution for new controller
   - Verify no missing view paths or model type mismatches
   - Ask the user if questions arise
 
-- [ ] 14. Report views — Employee History and Annual Summary
-  - [~] 14.1 Create Employee History view
+- [x] 14. Report views — Employee History and Annual Summary
+  - [x] 14.1 Create Employee History view
     - Create `Portal.Web/Views/PayrollReport/EmployeeHistory.cshtml`
     - `@model EmployeePayslipHistoryDto`
     - Topbar: eyebrow "Payroll Reports", heading "Employee History — {EmployeeName}", muted description
@@ -312,7 +312,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - JavaScript: year filter triggers page reload with query param, Download PDF calls `AxGetDownloadPayslipPdf`
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [~] 14.2 Create Annual Summary view
+  - [x] 14.2 Create Annual Summary view
     - Create `Portal.Web/Views/PayrollReport/AnnualSummary.cshtml`
     - `@model AnnualSummaryDto`
     - Topbar: eyebrow "Payroll Reports", heading "Annual Summary — {EmployeeName}", year in description
@@ -327,8 +327,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Empty state: "No finalised payslips for {Year}" when no data
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8_
 
-- [ ] 15. Report views — Earnings Breakdown and Period Summary
-  - [~] 15.1 Create Earnings Breakdown view
+- [x] 15. Report views — Earnings Breakdown and Period Summary
+  - [x] 15.1 Create Earnings Breakdown view
     - Create `Portal.Web/Views/PayrollReport/EarningsBreakdown.cshtml`
     - `@model EarningsBreakdownDto`
     - Topbar: eyebrow "Payroll Reports", heading "Earnings Breakdown"
@@ -339,7 +339,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - JavaScript: filter form submits as GET with query params, Export triggers file download
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10_
 
-  - [~] 15.2 Create Period Summary view
+  - [x] 15.2 Create Period Summary view
     - Create `Portal.Web/Views/PayrollReport/PeriodSummary.cshtml`
     - `@model PeriodSummaryDto`
     - Topbar: eyebrow "Payroll Reports", heading "Period Summary — {MonthName} {Year}"
@@ -350,8 +350,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Empty state: "No finalised payslips for {Month Name} {Year}"
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9_
 
-- [ ] 16. Email UI integration (payslip detail and period views)
-  - [~] 16.1 Add email send buttons and duplicate detection to existing views
+- [x] 16. Email UI integration (payslip detail and period views)
+  - [x] 16.1 Add email send buttons and duplicate detection to existing views
     - On PayslipDetail view: add "Send by Email" button (visible only to Owner/SuperAdmin via ViewBag.CanSendEmail)
     - Disable button with tooltip "Employee email address not configured" when employee has no email
     - On PeriodDetail view: add "Send All by Email" button (visible only to Owner/SuperAdmin)
@@ -359,7 +359,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - On PeriodDetail view: add email summary badge (total sent/failed) fetched via `AxGetPeriodEmailSummary`
     - _Requirements: 7.2, 7.4, 7.5, 10.3, 10.5, 11.3, 11.4, 11.6_
 
-  - [~] 16.2 Implement email send JavaScript with SweetAlert2 flows
+  - [x] 16.2 Implement email send JavaScript with SweetAlert2 flows
     - `sendPayslipEmail(payslipId)` function:
       - BlockUI.show('Sending payslip...')
       - POST to AxPostSendPayslipEmail
@@ -375,21 +375,21 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Include antiforgery token in POST headers
     - _Requirements: 7.2, 7.5, 7.6, 7.11, 7.12, 11.5_
 
-  - [~] 16.3 Add Download PDF and Download All buttons to existing payslip views
+  - [x] 16.3 Add Download PDF and Download All buttons to existing payslip views
     - On PayslipDetail view: add "Download PDF" button for Finalised/Re-finalised payslips
     - JavaScript: `downloadPayslipPdf(payslipId)` triggers file download via `window.location.href` to `AxGetDownloadPayslipPdf`
     - On PeriodDetail view: add "Download All (ZIP)" button for Finalised/Re-finalised periods
     - JavaScript: `downloadAllPayslips(periodId)` triggers file download to `AxGetDownloadAllPayslipsPdf`
     - _Requirements: 2.5, 2.6_
 
-  - [~] 16.4 Add Export Statement action to employee views
+  - [x] 16.4 Add Export Statement action to employee views
     - On Employee detail and EmployeeHistory views: add "Export Statement" button
     - JavaScript: SweetAlert2 modal with date range picker (start month/year, end month/year selects)
     - On confirm: trigger file download to `AxGetDownloadEmployeeStatement` with selected range
     - Validate start is before end before submitting
     - _Requirements: 8.1, 8.2, 8.7_
 
-  - [ ] 16.5 Add Payroll Reports navigation links
+  - [x] 16.5 Add Payroll Reports navigation links
     - In the payroll navigation section (sidebar or submenu), add links to:
       - "Earnings Breakdown" → /PayrollReport/EarningsBreakdown
       - "Period Summary" → /PayrollReport/PeriodSummary
@@ -398,8 +398,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Add links from Employee detail page: "View History" → /PayrollReport/EmployeeHistory?employeeId={id}, "Annual Summary" → /PayrollReport/AnnualSummary?employeeId={id}
     - _Requirements: 3.1, 4.1, 5.1, 6.1_
 
-- [ ] 17. Mobile responsive CSS
-  - [~] 17.1 Add responsive CSS for Phase C report views
+- [x] 17. Mobile responsive CSS
+  - [x] 17.1 Add responsive CSS for Phase C report views
     - Add CSS rules (in site.css or a payroll-specific stylesheet) for breakpoints at 810px and 375px
     - At ≤810px: stack filter controls vertically (flex-direction: column, 100% width), convert wide data tables to horizontally scrollable containers (overflow-x: auto), ensure action buttons meet 44px minimum touch target
     - At ≤375px: reduce topbar heading to 28px, ensure body text minimum 14px
@@ -407,7 +407,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Apply to all four report views (EmployeeHistory, AnnualSummary, EarningsBreakdown, PeriodSummary)
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
 
-- [~] 18. Build and integration checkpoint
+- [x] 18. Build and integration checkpoint
   - Ensure the entire Phase C compiles: all services, repository methods, controller, views, templates, CSS
   - Verify replaced stubs resolve correctly at runtime (DI)
   - Verify PDF template view paths resolve (no missing cshtml files)
@@ -455,8 +455,8 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - Use Moq for IViewRenderService and ILogoService
     - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 20. What's New announcement
-  - [~] 20.1 Create What's New announcement seed SQL for Phase C
+- [x] 20. What's New announcement
+  - [x] 20.1 Create What's New announcement seed SQL for Phase C
     - Create `Portal.Database/Seeds/Seed_WhatsNew_PayrollPhaseC.sql`
     - USE [Portal] header, IF NOT EXISTS guard on Title
     - Title: "Payroll Reports & PDF Export"
@@ -467,7 +467,7 @@ Phase C implements the reporting and export layer for the Payroll module, replac
     - IsActive: 1, PublishedAtUtc: GETUTCDATE()
     - _Requirements: N/A (user-facing announcement)_
 
-- [~] 21. Final checkpoint
+- [x] 21. Final checkpoint
   - Ensure all Phase C code compiles end-to-end
   - Verify all replaced stubs have correct constructor dependencies resolved by DI
   - Verify all PDF templates render without missing model properties
