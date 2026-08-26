@@ -391,7 +391,7 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                        [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[Meeting]
                 WHERE {baseWhere}
-                ORDER BY [ScheduledAtUtc] DESC
+                ORDER BY [ScheduledAtUtc] ASC
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             parameters.Add(new SqlParameter("@Offset", offset));
