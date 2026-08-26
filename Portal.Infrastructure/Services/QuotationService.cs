@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Repositories;
@@ -22,6 +25,7 @@ public class QuotationService : IQuotationService
     private readonly ILineItemCatalogService _lineItemCatalogService;
     private readonly IProductService _productService;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly PortalDbContext _portalDbContext;
     private readonly ILogger<QuotationService> _logger;
 
     private static readonly Dictionary<int, List<int>> ValidTransitionsMap = new()
@@ -52,6 +56,7 @@ public class QuotationService : IQuotationService
         ILineItemCatalogService lineItemCatalogService,
         IProductService productService,
         IHttpContextAccessor httpContextAccessor,
+        PortalDbContext portalDbContext,
         ILogger<QuotationService> logger)
     {
         _quotationRepository = quotationRepository;
@@ -64,6 +69,7 @@ public class QuotationService : IQuotationService
         _lineItemCatalogService = lineItemCatalogService;
         _productService = productService;
         _httpContextAccessor = httpContextAccessor;
+        _portalDbContext = portalDbContext;
         _logger = logger;
     }
 
@@ -393,6 +399,9 @@ public class QuotationService : IQuotationService
             throw new InvalidOperationException("Line item not found");
         }
 
+        if (line.IsAdjustmentLine)
+            throw new InvalidOperationException("Adjustment lines cannot be modified through the line item editing flow. Use the Bulk Discount feature instead.");
+
         var quotation = await _quotationRepository.GetByIdAndBusinessIdAsync(line.QuotationId, _currentTenantService.CurrentBusinessId);
         if (quotation == null)
         {
@@ -431,6 +440,9 @@ public class QuotationService : IQuotationService
         {
             throw new InvalidOperationException("Line item not found");
         }
+
+        if (line.IsAdjustmentLine)
+            throw new InvalidOperationException("Adjustment lines cannot be modified through the line item editing flow. Use the Bulk Discount feature instead.");
 
         var quotation = await _quotationRepository.GetByIdAndBusinessIdAsync(line.QuotationId, _currentTenantService.CurrentBusinessId);
         if (quotation == null)
@@ -473,11 +485,15 @@ public class QuotationService : IQuotationService
         var subscriptionSectionIds = new HashSet<int>(
             sections.Where(s => s.ColumnConfiguration == "Subscription").Select(s => s.Id));
 
+        // Separate normal lines from adjustment lines
+        var normalLines = lines.Where(l => !l.IsAdjustmentLine).ToList();
+        var adjustmentLine = lines.FirstOrDefault(l => l.IsAdjustmentLine);
+
         // Calculate totals — annualize subscription lines (×12)
         decimal subtotal = 0;
         decimal taxAmount = 0;
 
-        foreach (var line in lines)
+        foreach (var line in normalLines)
         {
             var multiplier = (line.ProposalSectionId.HasValue && subscriptionSectionIds.Contains(line.ProposalSectionId.Value))
                 ? 12m
@@ -487,9 +503,28 @@ public class QuotationService : IQuotationService
             taxAmount += line.LineTotal * multiplier * line.VatRate / 100m;
         }
 
-        quotation.Subtotal = Math.Round(subtotal, 2);
-        quotation.TaxAmount = Math.Round(taxAmount, 2);
-        quotation.TotalAmount = quotation.Subtotal + quotation.TaxAmount;
+        subtotal = Math.Round(subtotal, 2);
+        taxAmount = Math.Round(taxAmount, 2);
+
+        // Auto-recalculate percentage adjustment lines when subtotal changes
+        if (adjustmentLine != null && adjustmentLine.DiscountType == "Percentage")
+        {
+            var expectedLineTotal = -Math.Round(subtotal * adjustmentLine.Discount / 100m, 2, MidpointRounding.AwayFromZero);
+            if (adjustmentLine.LineTotal != expectedLineTotal)
+            {
+                adjustmentLine.LineTotal = expectedLineTotal;
+                adjustmentLine.Description = $"Quotation Discount ({adjustmentLine.Discount}%)";
+                await _quotationLineRepository.UpdateAsync(adjustmentLine);
+            }
+        }
+
+        // TotalAmount = subtotal + adjustment + tax
+        var adjustmentAmount = adjustmentLine?.LineTotal ?? 0m;
+        var totalAmount = subtotal + adjustmentAmount + taxAmount;
+
+        quotation.Subtotal = subtotal;
+        quotation.TaxAmount = taxAmount;
+        quotation.TotalAmount = totalAmount;
         quotation.UpdatedAtUtc = DateTime.UtcNow;
 
         await _quotationRepository.UpdateAsync(quotation);
@@ -545,5 +580,276 @@ public class QuotationService : IQuotationService
 
         // Percentage
         return Math.Round(gross * (1 - (discount / 100)), 2);
+    }
+
+    // Bulk Discount — full implementations
+    public async Task<BulkDiscountResult> ApplyBulkDiscountAsync(int quotationId, string discountType, decimal discountValue)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var quotation = await _quotationRepository.GetByIdAndBusinessIdAsync(quotationId, businessId);
+        if (quotation == null)
+            throw new InvalidOperationException("Quotation not found");
+        if (quotation.QuotationStatusTypeId != 1)
+            throw new InvalidOperationException("Quotation can only be edited in Draft status");
+
+        // Validate discount type
+        if (discountType != "Percentage" && discountType != "Fixed")
+            throw new ArgumentException("Discount type must be 'Percentage' or 'Fixed'");
+
+        // Get normal lines and compute subtotal
+        var lines = await _quotationLineRepository.GetByQuotationIdAsync(quotationId);
+        var normalLines = lines.Where(l => !l.IsAdjustmentLine).ToList();
+
+        // Match RecalculateQuotationTotalsAsync: annualize subscription lines
+        var sections = await _sectionRepository.GetByQuotationIdAsync(quotationId);
+        var subscriptionSectionIds = new HashSet<int>(
+            sections.Where(s => s.ColumnConfiguration == "Subscription").Select(s => s.Id));
+
+        decimal subtotal = 0;
+        foreach (var line in normalLines)
+        {
+            var multiplier = (line.ProposalSectionId.HasValue && subscriptionSectionIds.Contains(line.ProposalSectionId.Value))
+                ? 12m : 1m;
+            subtotal += line.LineTotal * multiplier;
+        }
+        subtotal = Math.Round(subtotal, 2);
+        var netAmount = subtotal;
+
+        // Validate value and compute LineTotal
+        decimal lineTotal;
+        if (discountType == "Percentage")
+        {
+            if (discountValue < 0.01m || discountValue > 100m)
+                throw new ArgumentException("Percentage must be between 0.01 and 100 inclusive");
+            if (subtotal == 0)
+                throw new ArgumentException("Cannot apply percentage discount to a quotation with zero subtotal");
+            lineTotal = -Math.Round(subtotal * discountValue / 100m, 2, MidpointRounding.AwayFromZero);
+        }
+        else // Fixed
+        {
+            if (discountValue < 0.01m || discountValue > 999_999_999.99m)
+                throw new ArgumentException("Fixed amount must be between 0.01 and 999,999,999.99");
+            if (Math.Round(discountValue, 2) != discountValue)
+                throw new ArgumentException("Fixed amount must have at most 2 decimal places");
+            if (discountValue > netAmount)
+                throw new ArgumentException($"Discount cannot exceed the available net amount (EUR {netAmount:F2})"); // TODO: replace "EUR" with quotation.CurrencyCode when property is added
+            lineTotal = -discountValue;
+        }
+
+        // Resolve currency symbol for description
+        // TODO: replace "EUR" with quotation.CurrencyCode when property is added to Quotation entity
+        var currencySymbol = GetCurrencySymbol("EUR");
+        var description = discountType == "Percentage"
+            ? $"Quotation Discount ({discountValue}%)"
+            : $"Quotation Discount (-{currencySymbol}{discountValue:F2})";
+
+        // Wrap in transaction
+        var ownsTransaction = _portalDbContext.Database.CurrentTransaction == null;
+        IDbContextTransaction? transaction = ownsTransaction
+            ? await _portalDbContext.Database.BeginTransactionAsync()
+            : null;
+
+        try
+        {
+            // Capture old adjustment for audit
+            var existingAdjustment = lines.FirstOrDefault(l => l.IsAdjustmentLine);
+            string? oldDiscountType = existingAdjustment?.DiscountType;
+            decimal? oldDiscountValue = existingAdjustment?.Discount;
+            decimal? oldLineTotal = existingAdjustment?.LineTotal;
+
+            // Delete existing adjustment line if present
+            if (existingAdjustment != null)
+            {
+                await _quotationLineRepository.DeleteAsync(existingAdjustment.Id);
+            }
+
+            // Determine next SortOrder
+            var maxSortOrder = normalLines.Count > 0 ? normalLines.Max(l => l.SortOrder) : 0;
+
+            // Insert new adjustment line
+            var adjustmentLine = new QuotationLine
+            {
+                QuotationId = quotationId,
+                Description = description,
+                Quantity = 1,
+                UnitPrice = 0,
+                VatRate = 0,
+                Discount = discountValue,
+                DiscountType = discountType,
+                CostPrice = null,
+                LineTotal = lineTotal,
+                SortOrder = maxSortOrder + 1,
+                ReferenceUrl = null,
+                Subtitle = null,
+                ProposalSectionId = null,
+                ProductCode = null,
+                IsReverseCharge = false,
+                IsAdjustmentLine = true,
+                ProductPriceTierId = null,
+                PriceTierName = null
+            };
+
+            await _quotationLineRepository.InsertAsync(adjustmentLine);
+
+            // Recompute totals
+            await RecalculateQuotationTotalsAsync(quotation);
+
+            // Audit log
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var auditDescription = existingAdjustment != null
+                ? $"Bulk discount replaced: {oldDiscountType} {oldDiscountValue} (LineTotal {oldLineTotal}) → {discountType} {discountValue} (LineTotal {lineTotal})"
+                : $"Bulk discount applied: {discountType} {discountValue} (LineTotal {lineTotal})";
+
+            var auditLog = new AuditLog
+            {
+                BusinessId = businessId,
+                UserId = userId,
+                Action = existingAdjustment != null ? "BulkDiscountReplaced" : "BulkDiscountApplied",
+                TableName = "Quotation",
+                RecordId = quotationId.ToString(),
+                OldValues = existingAdjustment != null ? $"DiscountType={oldDiscountType}, Discount={oldDiscountValue}, LineTotal={oldLineTotal}" : null,
+                NewValues = $"DiscountType={discountType}, Discount={discountValue}, LineTotal={lineTotal}",
+                Timestamp = DateTime.UtcNow
+            };
+            await _auditLogRepository.InsertAsync(auditLog);
+
+            // Get totals while still in transaction context
+            var totals = await GetTotalsBreakdownAsync(quotationId);
+
+            if (ownsTransaction) await transaction!.CommitAsync();
+
+            // Return totals breakdown
+            return BulkDiscountResult.Ok(totals);
+        }
+        catch (Exception ex)
+        {
+            if (ownsTransaction && transaction != null) await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<BulkDiscountResult> RemoveBulkDiscountAsync(int quotationId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var quotation = await _quotationRepository.GetByIdAndBusinessIdAsync(quotationId, businessId);
+        if (quotation == null)
+            throw new InvalidOperationException("Quotation not found");
+        if (quotation.QuotationStatusTypeId != 1)
+            throw new InvalidOperationException("Quotation can only be edited in Draft status");
+
+        var adjustmentLine = await _quotationLineRepository.GetAdjustmentLineByQuotationIdAsync(quotationId);
+        if (adjustmentLine == null)
+            throw new InvalidOperationException("No bulk discount exists on this quotation");
+
+        // Capture for audit
+        var oldDiscountType = adjustmentLine.DiscountType;
+        var oldDiscountValue = adjustmentLine.Discount;
+        var oldLineTotal = adjustmentLine.LineTotal;
+
+        var ownsTransaction = _portalDbContext.Database.CurrentTransaction == null;
+        IDbContextTransaction? transaction = ownsTransaction
+            ? await _portalDbContext.Database.BeginTransactionAsync()
+            : null;
+
+        try
+        {
+            await _quotationLineRepository.DeleteAsync(adjustmentLine.Id);
+            await RecalculateQuotationTotalsAsync(quotation);
+
+            // Audit log
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var auditLog = new AuditLog
+            {
+                BusinessId = businessId,
+                UserId = userId,
+                Action = "BulkDiscountRemoved",
+                TableName = "Quotation",
+                RecordId = quotationId.ToString(),
+                OldValues = $"DiscountType={oldDiscountType}, Discount={oldDiscountValue}, LineTotal={oldLineTotal}",
+                NewValues = null,
+                Timestamp = DateTime.UtcNow
+            };
+            await _auditLogRepository.InsertAsync(auditLog);
+
+            // Get totals while still in transaction context
+            var totals = await GetTotalsBreakdownAsync(quotationId);
+
+            if (ownsTransaction) await transaction!.CommitAsync();
+
+            return BulkDiscountResult.Ok(totals);
+        }
+        catch (Exception ex)
+        {
+            if (ownsTransaction && transaction != null) await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<DocumentTotalsBreakdown> GetTotalsBreakdownAsync(int quotationId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var quotation = await _quotationRepository.GetByIdAndBusinessIdAsync(quotationId, businessId);
+        if (quotation == null)
+            throw new InvalidOperationException("Quotation not found");
+
+        var lines = await _quotationLineRepository.GetByQuotationIdAsync(quotationId);
+        var normalLines = lines.Where(l => !l.IsAdjustmentLine).ToList();
+        var adjustmentLine = lines.FirstOrDefault(l => l.IsAdjustmentLine);
+
+        var sections = await _sectionRepository.GetByQuotationIdAsync(quotationId);
+        var subscriptionSectionIds = new HashSet<int>(
+            sections.Where(s => s.ColumnConfiguration == "Subscription").Select(s => s.Id));
+
+        decimal grossSubtotal = 0;
+        decimal netSubtotal = 0;
+        foreach (var line in normalLines)
+        {
+            var multiplier = (line.ProposalSectionId.HasValue && subscriptionSectionIds.Contains(line.ProposalSectionId.Value))
+                ? 12m : 1m;
+            grossSubtotal += line.Quantity * line.UnitPrice * multiplier;
+            netSubtotal += line.LineTotal * multiplier;
+        }
+        grossSubtotal = Math.Round(grossSubtotal, 2);
+        netSubtotal = Math.Round(netSubtotal, 2);
+        var lineDiscounts = grossSubtotal - netSubtotal;
+        var invoiceDiscount = adjustmentLine != null ? Math.Abs(adjustmentLine.LineTotal) : 0m;
+        var netAmount = netSubtotal - invoiceDiscount;
+        decimal vatRaw = 0;
+        foreach (var line in normalLines)
+        {
+            var multiplier = (line.ProposalSectionId.HasValue && subscriptionSectionIds.Contains(line.ProposalSectionId.Value))
+                ? 12m : 1m;
+            vatRaw += line.LineTotal * multiplier * line.VatRate / 100m;
+        }
+        var vat = Math.Round(vatRaw, 2);
+        var total = netAmount + vat;
+
+        return new DocumentTotalsBreakdown
+        {
+            GrossSubtotal = grossSubtotal,
+            NetSubtotal = netSubtotal,
+            LineDiscounts = lineDiscounts,
+            InvoiceDiscount = invoiceDiscount,
+            NetAmount = netAmount,
+            Vat = vat,
+            Total = total,
+            DiscountType = adjustmentLine?.DiscountType,
+            DiscountValue = adjustmentLine?.Discount,
+            HasInvoiceDiscount = adjustmentLine != null,
+            HasLineDiscounts = lineDiscounts > 0,
+            CurrencyCode = "EUR" // TODO: replace with quotation.CurrencyCode when property is added to Quotation entity
+        };
+    }
+
+    private static string GetCurrencySymbol(string currencyCode)
+    {
+        return currencyCode switch
+        {
+            "EUR" => "€",
+            "GBP" => "£",
+            "USD" => "$",
+            "ZAR" => "R",
+            _ => currencyCode + " "
+        };
     }
 }

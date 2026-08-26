@@ -2,8 +2,18 @@
 @{
     ViewData["Title"] = "Edit Invoice";
     var customers = ViewBag.Customers as IEnumerable<Portal.Infrastructure.Entities.Customer> ?? Enumerable.Empty<Portal.Infrastructure.Entities.Customer>();
-    var lines = ViewBag.Lines as List<Portal.Infrastructure.Entities.InvoiceLine> ?? new List<Portal.Infrastructure.Entities.InvoiceLine>();
+    var allLines = ViewBag.Lines as List<Portal.Infrastructure.Entities.InvoiceLine> ?? new List<Portal.Infrastructure.Entities.InvoiceLine>();
+    var lines = allLines.Where(l => !l.IsAdjustmentLine).ToList();
+    var adjustmentLine = allLines.FirstOrDefault(l => l.IsAdjustmentLine);
     var sections = ViewBag.Sections as List<Portal.Infrastructure.Entities.InvoiceSection> ?? new List<Portal.Infrastructure.Entities.InvoiceSection>();
+    var currencySymbol = ViewBag.CurrencySymbol as string ?? "€";
+    var hasInvoiceDiscount = adjustmentLine != null;
+    var invoiceDiscountAmount = hasInvoiceDiscount ? Math.Abs(adjustmentLine.LineTotal) : 0m;
+    var grossSubtotal = lines.Sum(l => l.Quantity * l.UnitPrice);
+    var netSubtotal = lines.Sum(l => l.LineTotal);
+    var lineDiscounts = grossSubtotal - netSubtotal;
+    var hasLineDiscounts = lineDiscounts > 0;
+    var netAmount = netSubtotal - invoiceDiscountAmount;
 }
 
 <div class="topbar">
@@ -13,6 +23,10 @@
         <p class="topbar-subtitle">Update invoice details, manage line items and sections.</p>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        @if (Model.InvoiceStatusTypeId == 1)
+        {
+            <button id="bulkDiscountActionBtn" class="btn btn-secondary" onclick="openBulkDiscountModal(@netSubtotal, @netSubtotal, '@currencySymbol', '/Invoice/AxPostApplyBulkDiscount', '/Invoice/AxPostRemoveBulkDiscount', @Model.Id, 'invoiceId')">Bulk Discount</button>
+        }
         <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>
     </div>
 </div>
@@ -95,6 +109,8 @@
                     <th class="col-description">Description</th>
                     <th class="col-qty">Qty</th>
                     <th class="col-unit-price">Unit Price</th>
+                    <th class="col-subtotal">Subtotal</th>
+                    <th class="col-vat">VAT %</th>
                     <th class="col-discount">Discount</th>
                     <th class="col-total">Total</th>
                     <th class="col-actions">Actions</th>
@@ -131,6 +147,8 @@
                         </td>
                         <td class="col-qty">@line.Quantity.ToString("N2")</td>
                         <td class="col-unit-price">€@line.UnitPrice.ToString("N2")</td>
+                        <td class="col-subtotal" style="font-weight:600;color:#0D5EA6;">€@((line.Quantity * line.UnitPrice).ToString("N2"))</td>
+                        <td class="col-vat">@line.VatRate.ToString("N2")%</td>
                         <td class="col-discount">
                             @if (line.Discount > 0)
                             {
@@ -141,7 +159,7 @@
                                 <span>-</span>
                             }
                         </td>
-                        <td class="col-total"><strong>€@line.LineTotal.ToString("N2")</strong></td>
+                        <td class="col-total"><strong>€@((line.LineTotal + line.LineTotal * line.VatRate / 100m).ToString("N2"))</strong></td>
                         <td class="col-actions">
                             <button type="button" class="btn-edit" onclick="showEditInvoiceLineModal(@line.Id)">Edit</button>
                             <button type="button" class="btn-remove" onclick="confirmRemoveInvoiceLine(@line.Id)">×</button>
@@ -162,10 +180,54 @@
     <!-- + Add Line button -->
     <button type="button" class="btn-add-line" onclick="showAddInvoiceLineModal()">+ Add Line</button>
 
-    <div class="surface card-pad totals" style="margin-top:18px;">
-        <div class="row"><span class="muted">Subtotal</span><strong id="totals-subtotal">@Model.Subtotal.ToString("N2")</strong></div>
-        <div class="row"><span class="muted">Tax</span><strong id="totals-tax">@Model.TaxAmount.ToString("N2")</strong></div>
-        <div class="row"><span>Total</span><span class="big-total" id="totals-total">@Model.TotalAmount.ToString("N2")</span></div>
+    @if (adjustmentLine != null)
+    {
+        <!-- Adjustment Line (non-editable, system-managed) -->
+        <div id="adjustmentLineBanner" style="margin-top:14px;padding:12px 16px;background:rgba(18,152,103,.04);border:1px solid rgba(18,152,103,.12);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <span style="font-size:13px;font-weight:600;color:#129867;">@adjustmentLine.Description</span>
+                <span style="font-size:11px;color:#5E7385;margin-left:8px;">System-managed discount</span>
+            </div>
+            <span style="font-size:14px;font-weight:700;color:#129867;">€@adjustmentLine.LineTotal.ToString("N2")</span>
+        </div>
+    }
+
+    <!-- Totals Breakdown -->
+    <div id="invoiceTotalsBreakdown" style="margin-top:18px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">Gross Subtotal</span>
+            <span style="font-weight:600;" id="totalsGrossSubtotal">@grossSubtotal.ToString("N2")</span>
+        </div>
+        <div id="totalsLineDiscountsRow" style="display:@(hasLineDiscounts ? "flex" : "none");justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#129867;">Line Discounts</span>
+            <span style="font-weight:600;color:#129867;" id="totalsLineDiscounts">-@lineDiscounts.ToString("N2")</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">Net Subtotal</span>
+            <span style="font-weight:600;" id="totalsNetSubtotal">@netSubtotal.ToString("N2")</span>
+        </div>
+        <div id="totalsInvoiceDiscountRow" style="display:@(hasInvoiceDiscount ? "flex" : "none");justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#129867;">Invoice Discount</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;color:#129867;" id="totalsInvoiceDiscount">-@invoiceDiscountAmount.ToString("N2")</span>
+                @if (Model.InvoiceStatusTypeId == 1 && hasInvoiceDiscount)
+                {
+                    <button id="removeBulkDiscountBtn" type="button" class="btn btn-sm" style="padding:2px 8px;font-size:11px;color:#C24A4A;background:rgba(194,74,74,.06);border:1px solid rgba(194,74,74,.15);border-radius:6px;cursor:pointer;" onclick="removeBulkDiscount('/Invoice/AxPostRemoveBulkDiscount', @Model.Id, 'invoiceId')">Remove</button>
+                }
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">Net Amount</span>
+            <span style="font-weight:600;" id="totalsNetAmount">@netAmount.ToString("N2")</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">VAT</span>
+            <span style="font-weight:600;" id="totalsVat">@Model.TaxAmount.ToString("N2")</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;">
+            <span style="font-size:15px;font-weight:700;color:#0B1B28;">Total</span>
+            <span style="font-size:15px;font-weight:700;color:#0D5EA6;" id="totalsTotal">@Model.TotalAmount.ToString("N2")</span>
+        </div>
     </div>
 </section>
 
@@ -225,6 +287,7 @@
 
 @await Html.PartialAsync("_CustomerModal")
 @await Html.PartialAsync("_InvoiceLineItemModal", Model)
+@await Html.PartialAsync("_BulkDiscountModal")
 
 <!-- Bottom spacer for sticky action bar -->
 <div style="height:80px;"></div>
@@ -527,5 +590,6 @@
         })();
     </script>
     <script src="~/js/invoice-tier-selector.js"></script>
+    <script src="~/js/bulk-discount.js?v=4"></script>
     @Html.AntiForgeryToken()
 }

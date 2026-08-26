@@ -827,7 +827,8 @@
                             }
 
                             <div class="table-wrap">
-                                @{ var sectionHasDiscount = section.Lines.Any(l => l.Discount > 0); }
+                                @{ var sectionNormalLines = section.Lines.Where(l => !l.IsAdjustmentLine).ToList(); }
+                                @{ var sectionHasDiscount = sectionNormalLines.Any(l => l.Discount > 0); }
                                 <table>
                                     <thead>
                                         <tr>
@@ -853,7 +854,7 @@
                                     </thead>
                                     <tbody>
                                         @{ var lineNumber = 0; }
-                                        @foreach (var line in section.Lines.OrderBy(l => l.SortOrder))
+                                        @foreach (var line in sectionNormalLines.OrderBy(l => l.SortOrder))
                                         {
                                             lineNumber++;
                                             <tr>
@@ -946,10 +947,10 @@
 
                             @if (section.ColumnConfiguration == "Subscription")
                             {
-                                var sectionMonthlyTotal = section.Lines.Sum(l => l.LineTotal);
+                                var sectionMonthlyTotal = sectionNormalLines.Sum(l => l.LineTotal);
                                 var sectionDailyCost = Math.Round(sectionMonthlyTotal / 30, 2);
                                 var sectionAnnualTotal = sectionMonthlyTotal * 12;
-                                var sectionMonthlyVat = section.Lines.Sum(l => l.LineTotal * l.VatRate / 100m);
+                                var sectionMonthlyVat = sectionNormalLines.Sum(l => l.LineTotal * l.VatRate / 100m);
                                 var sectionAnnualVat = Math.Round(sectionMonthlyVat * 12, 2);
                                 var sectionAnnualWithVat = sectionAnnualTotal + sectionAnnualVat;
 
@@ -981,13 +982,13 @@
                             }
                             else if (section.IsTotalsTableShown)
                             {
-                                var secSubtotal = section.Lines.Sum(l => l.Quantity * l.UnitPrice);
-                                var secDiscount = section.Lines
+                                var secSubtotal = sectionNormalLines.Sum(l => l.Quantity * l.UnitPrice);
+                                var secDiscount = sectionNormalLines
                                     .Where(l => l.Discount > 0)
                                     .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
                                 var secNetSubtotal = secSubtotal - secDiscount;
-                                var secVat = section.Lines.Sum(l => l.LineTotal * (l.VatRate / 100));
-                                var secTotal = section.Lines.Sum(l => l.LineTotal) + secVat;
+                                var secVat = sectionNormalLines.Sum(l => l.LineTotal * (l.VatRate / 100));
+                                var secTotal = sectionNormalLines.Sum(l => l.LineTotal) + secVat;
 
                                 <div class="section-total-box">
                                     <div class="total-row">
@@ -1021,9 +1022,15 @@
                 <!-- TOTAL BOX -->
                 @if (Model.IsGrandTotalShown)
                 {
-                    var totalDiscount = Model.Sections.SelectMany(s => s.Lines)
-                        .Where(l => l.Discount > 0)
-                        .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
+                    var allNormalLines = Model.Sections.SelectMany(s => s.Lines).Where(l => !l.IsAdjustmentLine).ToList();
+                    var proposalAdjustmentLine = Model.Sections.SelectMany(s => s.Lines).FirstOrDefault(l => l.IsAdjustmentLine);
+                    var totalGrossSubtotal = allNormalLines.Sum(l => l.Quantity * l.UnitPrice);
+                    var totalNetSubtotal = allNormalLines.Sum(l => l.LineTotal);
+                    var totalLineDiscounts = totalGrossSubtotal - totalNetSubtotal;
+                    var totalInvoiceDiscount = proposalAdjustmentLine != null ? Math.Abs(proposalAdjustmentLine.LineTotal) : 0m;
+                    var totalNetAmount = totalNetSubtotal - totalInvoiceDiscount;
+                    var totalVat = Math.Round(allNormalLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
+                    var totalGrand = totalNetAmount + totalVat;
 
                     <!-- Per-section breakdown table (full width) -->
                     <div class="section-card" style="margin-top:24px;">
@@ -1040,14 +1047,15 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var sec in lineItemSections.Where(s => s.Lines.Any()))
+                                    @foreach (var sec in lineItemSections.Where(s => s.Lines.Any(l => !l.IsAdjustmentLine)))
                                     {
-                                        var secGross = sec.Lines.Sum(l => l.Quantity * l.UnitPrice);
-                                        var secDisc = sec.Lines
+                                        var secNormal = sec.Lines.Where(l => !l.IsAdjustmentLine).ToList();
+                                        var secGross = secNormal.Sum(l => l.Quantity * l.UnitPrice);
+                                        var secDisc = secNormal
                                             .Where(l => l.Discount > 0)
                                             .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
-                                        var secNet = sec.Lines.Sum(l => l.LineTotal);
-                                        var secVat = sec.Lines.Sum(l => l.LineTotal * (l.VatRate / 100));
+                                        var secNet = secNormal.Sum(l => l.LineTotal);
+                                        var secVat = secNormal.Sum(l => l.LineTotal * (l.VatRate / 100));
                                         var secTotal = secNet + secVat;
 
                                         <tr>
@@ -1067,25 +1075,32 @@
                     <div class="total-box">
                         <div class="total-row">
                             <span class="total-label">Subtotal</span>
-                            <span class="total-value">@fmt(Model.Subtotal)</span>
+                            <span class="total-value">@fmt(totalGrossSubtotal)</span>
                         </div>
-                        @if (totalDiscount > 0)
+                        @if (totalLineDiscounts > 0)
                         {
                             <div class="total-row">
-                                <span class="total-label" style="color:#129867;">Discount</span>
-                                <span class="total-value" style="color:#129867;">-@fmt(totalDiscount)</span>
+                                <span class="total-label" style="color:#129867;">Line Discounts</span>
+                                <span class="total-value" style="color:#129867;">-@fmt(totalLineDiscounts)</span>
                             </div>
                         }
-                        @if (Model.TaxAmount > 0)
+                        @if (proposalAdjustmentLine != null)
+                        {
+                            <div class="total-row">
+                                <span class="total-label" style="color:#129867;">@proposalAdjustmentLine.Description</span>
+                                <span class="total-value" style="color:#129867;">@fmt(proposalAdjustmentLine.LineTotal)</span>
+                            </div>
+                        }
+                        @if (totalVat > 0)
                         {
                             <div class="total-row">
                                 <span class="total-label">VAT</span>
-                                <span class="total-value">@fmt(Model.TaxAmount)</span>
+                                <span class="total-value">@fmt(totalVat)</span>
                             </div>
                         }
                         <div class="total-row">
                             <span class="total-label">Total</span>
-                            <span class="total-value">@fmt(Model.TotalAmount)</span>
+                            <span class="total-value">@fmt(totalGrand)</span>
                         </div>
                     </div>
                 }

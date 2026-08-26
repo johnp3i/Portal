@@ -21,14 +21,14 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 SELECT [Id], [InvoiceId], [Description], [Quantity], [UnitPrice], [VatRate],
                        [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
                        [ReferenceUrl], [Subtitle], [InvoiceSectionId], [ProductCode],
-                       [IsReverseCharge], [ProductTypeId], [ProductPriceTierId], [PriceTierName]
+                       [IsReverseCharge], [IsAdjustmentLine], [ProductTypeId], [ProductPriceTierId], [PriceTierName]
                 FROM [invoice].[InvoiceLine]
                 WHERE [InvoiceId] = @InvoiceId
                 ORDER BY [SortOrder]";
 
             return await ExecuteStoredProcedure(query, new SqlParameter("@InvoiceId", invoiceId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -42,13 +42,13 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 SELECT [Id], [InvoiceId], [Description], [Quantity], [UnitPrice], [VatRate],
                        [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
                        [ReferenceUrl], [Subtitle], [InvoiceSectionId], [ProductCode],
-                       [IsReverseCharge], [ProductTypeId], [ProductPriceTierId], [PriceTierName]
+                       [IsReverseCharge], [IsAdjustmentLine], [ProductTypeId], [ProductPriceTierId], [PriceTierName]
                 FROM [invoice].[InvoiceLine]
                 WHERE [Id] = @Id";
 
             return await ExecuteSingleRecordStoredProcedure(query, new SqlParameter("@Id", id));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -63,13 +63,13 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                     ([InvoiceId], [Description], [Quantity], [UnitPrice], [VatRate],
                      [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
                      [ReferenceUrl], [Subtitle], [InvoiceSectionId], [ProductCode],
-                     [IsReverseCharge], [ProductTypeId], [ProductPriceTierId], [PriceTierName])
+                     [IsReverseCharge], [IsAdjustmentLine], [ProductTypeId], [ProductPriceTierId], [PriceTierName])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@InvoiceId, @Description, @Quantity, @UnitPrice, @VatRate,
                      @Discount, @DiscountType, @CostPrice, @LineTotal, @SortOrder,
                      @ReferenceUrl, @Subtitle, @InvoiceSectionId, @ProductCode,
-                     @IsReverseCharge, @ProductTypeId, @ProductPriceTierId, @PriceTierName)";
+                     @IsReverseCharge, @IsAdjustmentLine, @ProductTypeId, @ProductPriceTierId, @PriceTierName)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -100,6 +100,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 command.Parameters.Add(new SqlParameter("@InvoiceSectionId", entity.InvoiceSectionId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@ProductCode", entity.ProductCode ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@IsReverseCharge", entity.IsReverseCharge));
+                command.Parameters.Add(new SqlParameter("@IsAdjustmentLine", entity.IsAdjustmentLine));
                 command.Parameters.Add(new SqlParameter("@ProductTypeId", entity.ProductTypeId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@ProductPriceTierId", entity.ProductPriceTierId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@PriceTierName", entity.PriceTierName ?? (object)DBNull.Value));
@@ -113,7 +114,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -133,7 +134,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
 
             return insertedIds;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -160,6 +161,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                     [InvoiceSectionId] = @InvoiceSectionId,
                     [ProductCode] = @ProductCode,
                     [IsReverseCharge] = @IsReverseCharge,
+                    [IsAdjustmentLine] = @IsAdjustmentLine,
                     [ProductTypeId] = @ProductTypeId
                 WHERE [Id] = @Id";
 
@@ -179,10 +181,11 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 new SqlParameter("@InvoiceSectionId", entity.InvoiceSectionId ?? (object)DBNull.Value),
                 new SqlParameter("@ProductCode", entity.ProductCode ?? (object)DBNull.Value),
                 new SqlParameter("@IsReverseCharge", entity.IsReverseCharge),
+                new SqlParameter("@IsAdjustmentLine", entity.IsAdjustmentLine),
                 new SqlParameter("@ProductTypeId", entity.ProductTypeId ?? (object)DBNull.Value)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -198,7 +201,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
 
             await _context.Database.ExecuteSqlRawAsync(query, new SqlParameter("@Id", id));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -218,7 +221,7 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 new SqlParameter("@InvoiceSectionId", sectionId ?? (object)DBNull.Value)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -241,7 +244,27 @@ public class InvoiceLineRepository : GenericStoredProcedureRepository<InvoiceLin
                 );
             }
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<InvoiceLine?> GetAdjustmentLineByInvoiceIdAsync(int invoiceId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [InvoiceId], [Description], [Quantity], [UnitPrice], [VatRate],
+                       [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
+                       [ReferenceUrl], [Subtitle], [InvoiceSectionId], [ProductCode],
+                       [IsReverseCharge], [IsAdjustmentLine], [ProductTypeId], [ProductPriceTierId], [PriceTierName]
+                FROM [invoice].[InvoiceLine]
+                WHERE [InvoiceId] = @InvoiceId AND [IsAdjustmentLine] = 1";
+
+            return await ExecuteSingleRecordStoredProcedure(query, new SqlParameter("@InvoiceId", invoiceId));
+        }
+        catch (Exception ex)
         {
             throw;
         }

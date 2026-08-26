@@ -1,6 +1,27 @@
 @model Portal.Web.Models.QuotationEditViewModel
 @{
     ViewData["Title"] = "Edit Quotation";
+    var allLines = Model.Lines;
+    var lines = allLines.Where(l => !l.IsAdjustmentLine).ToList();
+    var adjustmentLine = allLines.FirstOrDefault(l => l.IsAdjustmentLine);
+    var currencySymbol = ViewBag.CurrencySymbol as string ?? "€";
+    var hasQuotationDiscount = adjustmentLine != null;
+    var invoiceDiscountAmount = hasQuotationDiscount ? Math.Abs(adjustmentLine.LineTotal) : 0m;
+    var quotationSections = Model.Sections?.ToList() ?? new List<Portal.Infrastructure.Entities.ProposalSection>();
+    var subSectionIds = new HashSet<int>(quotationSections.Where(s => s.ColumnConfiguration == "Subscription").Select(s => s.Id));
+    decimal grossSubtotal = 0;
+    decimal netSubtotal = 0;
+    foreach (var l in lines)
+    {
+        var mult = (l.ProposalSectionId.HasValue && subSectionIds.Contains(l.ProposalSectionId.Value)) ? 12m : 1m;
+        grossSubtotal += l.Quantity * l.UnitPrice * mult;
+        netSubtotal += l.LineTotal * mult;
+    }
+    grossSubtotal = Math.Round(grossSubtotal, 2);
+    netSubtotal = Math.Round(netSubtotal, 2);
+    var lineDiscounts = grossSubtotal - netSubtotal;
+    var hasLineDiscounts = lineDiscounts > 0;
+    var netAmount = netSubtotal - invoiceDiscountAmount;
 }
 
 <div class="topbar">
@@ -8,6 +29,13 @@
         <div class="eyebrow"><span class="dot"></span> Edit Quotation</div>
         <h1 class="topbar-heading">@Model.Reference</h1>
         <p class="topbar-subtitle">Update quotation details and manage line items.</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        @if (Model.QuotationStatusTypeId == 1)
+        {
+            <button id="bulkDiscountActionBtn" class="btn btn-secondary" onclick="openBulkDiscountModal(@netSubtotal, @netSubtotal, '@currencySymbol', '/Quotation/AxPostApplyBulkDiscount', '/Quotation/AxPostRemoveBulkDiscount', @Model.Id, 'quotationId')">Bulk Discount</button>
+        }
+        <a asp-action="Detail" asp-controller="Quotation" asp-route-id="@Model.Id" class="btn btn-outline">&larr; Back to Detail</a>
     </div>
 </div>
 
@@ -138,12 +166,55 @@ else if (isExpiringSoon)
 <!-- Line Item Modal -->
 @await Html.PartialAsync("_LineItemModal", Model)
 
-<!-- Totals -->
+<!-- Totals Breakdown -->
 <div class="glass card-pad" style="margin-top:24px;">
-    <div class="surface card-pad totals">
-        <div class="row"><span class="muted">Subtotal</span><strong>@Model.Subtotal.ToString("N2")</strong></div>
-        <div class="row"><span class="muted">Tax</span><strong>@Model.TaxAmount.ToString("N2")</strong></div>
-        <div class="row"><span>Grand Total</span><span class="big-total">@Model.TotalAmount.ToString("N2")</span></div>
+    @if (adjustmentLine != null)
+    {
+        <!-- Adjustment Line (non-editable, system-managed) -->
+        <div style="margin-bottom:14px;padding:12px 16px;background:rgba(18,152,103,.04);border:1px solid rgba(18,152,103,.12);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <span style="font-size:13px;font-weight:600;color:#129867;">@adjustmentLine.Description</span>
+                <span style="font-size:11px;color:#5E7385;margin-left:8px;">System-managed discount</span>
+            </div>
+            <span style="font-size:14px;font-weight:700;color:#129867;">@currencySymbol@adjustmentLine.LineTotal.ToString("N2")</span>
+        </div>
+    }
+
+    <div id="invoiceTotalsBreakdown">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">Gross Subtotal</span>
+            <span style="font-weight:600;" id="totalsGrossSubtotal">@grossSubtotal.ToString("N2")</span>
+        </div>
+        <div id="totalsLineDiscountsRow" style="display:@(hasLineDiscounts ? "flex" : "none");justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#129867;">Line Discounts</span>
+            <span style="font-weight:600;color:#129867;" id="totalsLineDiscounts">-@lineDiscounts.ToString("N2")</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">Net Subtotal</span>
+            <span style="font-weight:600;" id="totalsNetSubtotal">@netSubtotal.ToString("N2")</span>
+        </div>
+        <div id="totalsInvoiceDiscountRow" style="display:@(hasQuotationDiscount ? "flex" : "none");justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#129867;">Quotation Discount</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;color:#129867;" id="totalsInvoiceDiscount">-@invoiceDiscountAmount.ToString("N2")</span>
+                @if (Model.QuotationStatusTypeId == 1 && hasQuotationDiscount)
+                {
+                    <button id="removeBulkDiscountBtn" type="button" class="btn btn-sm" style="padding:2px 8px;font-size:11px;color:#C24A4A;background:rgba(194,74,74,.06);border:1px solid rgba(194,74,74,.15);border-radius:6px;cursor:pointer;" onclick="removeBulkDiscount('/Quotation/AxPostRemoveBulkDiscount', @Model.Id, 'quotationId')">Remove</button>
+                }
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">Net Amount</span>
+            <span style="font-weight:600;" id="totalsNetAmount">@netAmount.ToString("N2")</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(13,94,166,.06);">
+            <span style="font-size:13px;color:#5E7385;">VAT</span>
+            <span style="font-weight:600;" id="totalsVat">@Model.TaxAmount.ToString("N2")</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;">
+            <span style="font-size:15px;font-weight:700;color:#0B1B28;">Total</span>
+            <span style="font-size:15px;font-weight:700;color:#0D5EA6;" id="totalsTotal">@Model.TotalAmount.ToString("N2")</span>
+        </div>
     </div>
 </div>
 
@@ -159,6 +230,7 @@ else if (isExpiringSoon)
 </div>
 
 @await Html.PartialAsync("_CustomerModal")
+@await Html.PartialAsync("_BulkDiscountModal")
 
 @section Scripts {
 <link rel="stylesheet" href="~/css/quotation-line-save.css" />
@@ -638,4 +710,6 @@ function toggleReverseCharge(checkbox) {
 <script src="~/js/quotation-line-save.js"></script>
 <script src="~/js/quotation-tier-selector.js"></script>
 <script src="~/js/customer-modal.js"></script>
+<script src="~/js/bulk-discount.js?v=4"></script>
+@Html.AntiForgeryToken()
 }

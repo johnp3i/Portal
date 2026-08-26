@@ -38,6 +38,8 @@ public class QuotationLine
 
     public bool IsReverseCharge { get; set; }
 
+    public bool IsAdjustmentLine { get; set; }
+
     public int? ProductPriceTierId { get; set; }
 
     public string? PriceTierName { get; set; }

@@ -148,14 +148,14 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: Verify each placeholder resolves correctly based on source data; null sources produce empty string; NextStage returns "Completed" for terminal stages
     - **Validates: Requirements 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10**
 
-- [ ] 6. Service layer — InsightsService (new service)
-  - [~] 6.1 Create IInsightsService interface and InsightsService class
+- [x] 6. Service layer — InsightsService (new service)
+  - [x] 6.1 Create IInsightsService interface and InsightsService class
     - Define interface with methods: GetMetricsAsync, GetNewLeadsCountAsync, GetResponseSlaPercentageAsync, GetConversionRatesAsync, GetRevenueByProductAsync, GetRevenueBySourceAsync, GetAverageSalesCycleDaysAsync
     - Register in DI container
     - Inject ICurrentTenantService for BusinessId scoping, plus required repositories
     - _Requirements: 5.1, 6.1, 7.1, 8.1, 9.1_
 
-  - [~] 6.2 Implement GetNewLeadsCountAsync
+  - [x] 6.2 Implement GetNewLeadsCountAsync
     - Count LeadRequest records with CreatedAtUtc in [startDate, endDate) for the business, IsActive = 1
     - _Requirements: 5.1_
 
@@ -164,7 +164,7 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: For any set of leads and date range, count equals number of active leads with CreatedAtUtc in range for the business
     - **Validates: Requirements 5.1**
 
-  - [~] 6.4 Implement GetResponseSlaPercentageAsync
+  - [x] 6.4 Implement GetResponseSlaPercentageAsync
     - For leads created within date range with at least one response: compute elapsed hours from CreatedAtUtc to earliest SentAtUtc
     - Compare against ResponseTimeInHours (matched by ProductId template, or 24h default)
     - Return (leads within threshold / leads with response) × 100, or null if no responses
@@ -175,7 +175,7 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: Verify SLA percentage formula and null case when no responses exist
     - **Validates: Requirements 6.1, 6.3**
 
-  - [~] 6.6 Implement GetConversionRatesAsync
+  - [x] 6.6 Implement GetConversionRatesAsync
     - Demo Conversion: leads with stage_changed to "Meeting Scheduled" in range / leads at New/Contacted during range
     - Proposal Conversion: leads with stage_changed to "Proposal Sent" in range / leads at non-terminal during range
     - Win Rate: leads with ClosedAtUtc in range at Won / (Won + Lost), excluding Inactive
@@ -187,7 +187,7 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: Win Rate = Won/(Won+Lost)×100, excludes Inactive, returns null if no terminal leads
     - **Validates: Requirements 7.3, 7.5**
 
-  - [~] 6.8 Implement GetRevenueByProductAsync and GetRevenueBySourceAsync
+  - [x] 6.8 Implement GetRevenueByProductAsync and GetRevenueBySourceAsync
     - Revenue by Product: sum Invoice.TotalAmount grouped by SalesProduct.Name (or "General Enquiry" for null ProductId) for Won leads with ClosedAtUtc in range
     - Revenue by Source: same pattern grouped by LeadSourceType.Name
     - Compute percentage of total for each row
@@ -199,7 +199,7 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: Grouped sums equal invoice totals; percentages sum to 100%; null ProductId grouped as "General Enquiry"; leads without invoices excluded
     - **Validates: Requirements 8.1, 8.2, 8.5, 8.6**
 
-  - [~] 6.10 Implement GetAverageSalesCycleDaysAsync
+  - [x] 6.10 Implement GetAverageSalesCycleDaysAsync
     - Mean of DATEDIFF(DAY, CreatedAtUtc, ClosedAtUtc) for Won/Lost leads with ClosedAtUtc in range
     - Exclude Inactive leads
     - Return null if no qualifying leads
@@ -210,19 +210,19 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: Mean of (ClosedAtUtc - CreatedAtUtc).TotalDays for Won/Lost; excludes Inactive; null when no qualifying leads
     - **Validates: Requirements 9.1, 9.3, 9.4**
 
-  - [~] 6.12 Implement GetMetricsAsync (orchestrator)
+  - [x] 6.12 Implement GetMetricsAsync (orchestrator)
     - Call all individual metric methods and assemble InsightsMetricsDto
     - Validate date range (startDate < endDate), return error if invalid
     - _Requirements: 5.1, 6.1, 7.1, 8.1, 9.1_
 
-- [ ] 7. Service layer — TimelineService (new service)
-  - [~] 7.1 Create ITimelineService interface and TimelineService class
+- [x] 7. Service layer — TimelineService (new service)
+  - [x] 7.1 Create ITimelineService interface and TimelineService class
     - Define interface with `GetTimelineAsync(int leadRequestId, int page, int pageSize)`
     - Register in DI container
     - Inject LeadResponseRepository, MeetingRepository, ActivityFeedRepository, TeamMemberRepository, ICurrentTenantService
     - _Requirements: 11.1, 11.4_
 
-  - [~] 7.2 Implement timeline event aggregation logic
+  - [x] 7.2 Implement timeline event aggregation logic
     - Source responses from LeadResponse entity table (EventType "response", Colour "#129867")
     - Source meetings from Meeting entity table (EventType "meeting", Colour "#C8912E")
     - Source all other events from ActivityFeed: stage_changed (#0D5EA6), assigned/unassigned (#0D5EA6), proposal_linked (#57B8E8), invoice_linked (#57B8E8), marked_as_won (#129867), task_created (#8a9bab)
@@ -231,7 +231,7 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - No duplication: responses/meetings ONLY from entity tables, all others ONLY from ActivityFeed
     - _Requirements: 11.1, 11.3, 12.6_
 
-  - [~] 7.3 Implement timeline ordering and pagination
+  - [x] 7.3 Implement timeline ordering and pagination
     - Sort all merged events by Timestamp descending
     - Apply pagination: page size 20, return PagedResult with hasMore flag
     - hasMore = true when (page × pageSize) < totalCount
@@ -252,45 +252,45 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: Page P returns events at indices [(P-1)*20, min(P*20, N)); hasMore = true iff P*20 < N
     - **Validates: Requirements 12.3**
 
-- [~] 8. Checkpoint — Ensure all service layer tests pass
+- [x] 8. Checkpoint — Ensure all service layer tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Controller layer — SalesController extensions
-  - [~] 9.1 Add Insights page action to SalesController
+- [x] 9. Controller layer — SalesController extensions
+  - [x] 9.1 Add Insights page action to SalesController
     - Implement `Insights()` action at route /Sales/Insights
     - Check `IPlanCheckService.IsModuleInPlanAsync("sales")` — redirect if not in plan
     - Return the Insights view
     - _Requirements: 10.1_
 
-  - [~] 9.2 Implement AxPostSetLeadPriority and AxPostClearLeadPriority
+  - [x] 9.2 Implement AxPostSetLeadPriority and AxPostClearLeadPriority
     - `AxPostSetLeadPriority(int leadRequestId, int leadPriorityTypeId)` — call LeadRequestService.SetPriorityAsync, return JSON {success, message}
     - `AxPostClearLeadPriority(int leadRequestId)` — call LeadRequestService.ClearPriorityAsync, return JSON {success, message}
     - Both: catch `Exception ex`, return {success: false, message: "Something went wrong. Please try again."}
     - _Requirements: 1.6, 1.7, 2.4_
 
-  - [~] 9.3 Implement AxGetInsightsMetrics
+  - [x] 9.3 Implement AxGetInsightsMetrics
     - `AxGetInsightsMetrics(DateTime startDate, DateTime endDate)` — call InsightsService.GetMetricsAsync, return JSON {success, data}
     - Validate date range, catch `Exception ex`
     - _Requirements: 5.1, 5.2, 6.1, 7.1, 8.1, 9.1, 10.5_
 
-  - [~] 9.4 Implement AxGetLeadTimeline
+  - [x] 9.4 Implement AxGetLeadTimeline
     - `AxGetLeadTimeline(int leadRequestId, int page = 1)` — call TimelineService.GetTimelineAsync with pageSize=20, return JSON {success, data, hasMore}
     - Catch `Exception ex`
     - _Requirements: 12.1, 12.3_
 
-  - [~] 9.5 Implement AxGetLeadPriorityTypes
+  - [x] 9.5 Implement AxGetLeadPriorityTypes
     - `AxGetLeadPriorityTypes()` — call LeadRequestService.GetPriorityTypesAsync, return JSON {success, data}
     - Catch `Exception ex`
     - _Requirements: 2.4_
 
-- [ ] 10. Views — Pipeline card enhancements
-  - [~] 10.1 Update pipeline card partial view with priority badge
+- [x] 10. Views — Pipeline card enhancements
+  - [x] 10.1 Update pipeline card partial view with priority badge
     - Add coloured priority badge to each lead card when LeadPriorityTypeId is assigned
     - Display priority name text in the corresponding PriorityColour
     - Show no badge when LeadPriorityTypeId is null
     - _Requirements: 2.1, 2.2_
 
-  - [~] 10.2 Update pipeline card partial view with DaysSinceLastActivity
+  - [x] 10.2 Update pipeline card partial view with DaysSinceLastActivity
     - Display "{N}d ago" text on each card; display "Today" when value is 0
     - Apply warning colour (#C8912E) when value > 7
     - Apply danger colour (#C24A4A) when value > 14
@@ -301,8 +301,8 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Test: N=0 → "Today"; N>0 → "{N}d ago"
     - **Validates: Requirements 3.3, 3.4**
 
-- [ ] 11. Views — Insights page
-  - [~] 11.1 Create Insights.cshtml Razor view
+- [x] 11. Views — Insights page
+  - [x] 11.1 Create Insights.cshtml Razor view
     - Add date range filter at top with presets: This Week, This Month (default), Last Month, This Quarter, Last 6 Months, This Year, Custom
     - Create responsive metric card grid (3 cols desktop, 2 tablet, 1 mobile)
     - Add metric cards: New Leads, Response SLA (colour-coded: green >80%, amber 50-80%, red <50%), Demo Conversion, Proposal Conversion, Win Rate (green >30%, amber 15-30%, red <15%), Avg. Sales Cycle
@@ -311,51 +311,51 @@ Phase 2 extends the Sales Pipeline module with lead priority indicators, days-si
     - Follow `.glass.card-pad` layout with filter card `margin-bottom:22px`
     - _Requirements: 5.2, 5.3, 6.2, 6.3, 7.4, 7.5, 8.3, 8.4, 9.2, 9.3, 10.3, 10.4_
 
-  - [~] 11.2 Add Insights navigation item to Sales sidebar
+  - [x] 11.2 Add Insights navigation item to Sales sidebar
     - Add "Insights" sub-navigation item positioned after "Pipeline" and before "Contacts"
     - _Requirements: 10.2_
 
-- [ ] 12. Views — Lead Detail page enhancements
-  - [~] 12.1 Add priority dropdown to Lead Detail page
+- [x] 12. Views — Lead Detail page enhancements
+  - [x] 12.1 Add priority dropdown to Lead Detail page
     - Add dropdown listing all active LeadPriorityType values plus "Clear Priority" option
     - Wire to AxPostSetLeadPriority / AxPostClearLeadPriority endpoints
     - _Requirements: 2.4_
 
-  - [~] 12.2 Add Timeline section to Lead Detail page
+  - [x] 12.2 Add Timeline section to Lead Detail page
     - Render vertical chronological timeline with coloured dots per event type
     - Show event title, actor name, relative timestamp ("3 days ago"), expandable description
     - Retain existing Meetings section as secondary panel for full CRUD
     - _Requirements: 12.2, 12.4_
 
-  - [~] 12.3 Implement timeline pagination (Load More)
+  - [x] 12.3 Implement timeline pagination (Load More)
     - Show first 20 events; display "Load More" button when hasMore = true
     - Fetch next page via AxGetLeadTimeline on click
     - _Requirements: 12.3_
 
-- [ ] 13. Views — Template editor placeholder guide
-  - [~] 13.1 Update template editor to display new placeholders
+- [x] 13. Views — Template editor placeholder guide
+  - [x] 13.1 Update template editor to display new placeholders
     - Add the 9 new placeholders ({{AssignedSalesperson}}, {{MeetingDate}}, {{MeetingLink}}, {{ProposalLink}}, {{Company}}, {{Phone}}, {{BusinessWebsite}}, {{NextStage}}, {{SupportEmail}}) to the placeholder guide alongside existing ones
     - _Requirements: 4.12_
 
-- [ ] 14. Client-side JavaScript
-  - [~] 14.1 Implement Insights page JS (date filter + AJAX metrics loading)
+- [x] 14. Client-side JavaScript
+  - [x] 14.1 Implement Insights page JS (date filter + AJAX metrics loading)
     - On date range change: BlockUI.show → fetch AxGetInsightsMetrics → BlockUI.hide → render metric cards
     - Default to current month on page load
     - Use vanilla fetch API, antiforgery token for POST if needed
     - Handle errors with Swal.fire error dialog
     - _Requirements: 10.5, 5.3_
 
-  - [~] 14.2 Implement priority assignment JS on Lead Detail page
+  - [x] 14.2 Implement priority assignment JS on Lead Detail page
     - On dropdown change: BlockUI.show → fetch AxPostSetLeadPriority or AxPostClearLeadPriority → BlockUI.hide → Swal.fire success/error → update badge display
     - _Requirements: 2.4_
 
-  - [~] 14.3 Implement timeline JS on Lead Detail page
+  - [x] 14.3 Implement timeline JS on Lead Detail page
     - On page load: fetch AxGetLeadTimeline(page=1) → render timeline
     - On "Load More" click: fetch next page → append events
     - On new activity (response sent, meeting scheduled, stage changed): prepend event optimistically after successful AJAX call
     - _Requirements: 12.2, 12.3, 12.5_
 
-- [~] 15. Final checkpoint — Ensure all tests pass
+- [x] 15. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

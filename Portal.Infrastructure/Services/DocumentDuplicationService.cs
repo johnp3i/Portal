@@ -121,27 +121,41 @@ public class DocumentDuplicationService : IDocumentDuplicationService
             var sourceLines = await _invoiceLineRepository.GetByInvoiceIdAsync(sourceInvoiceId);
             decimal subtotal = 0;
             decimal taxAmount = 0;
+            decimal adjustmentAmount = 0;
 
             foreach (var line in sourceLines)
             {
-                // Compute discountedPrice based on DiscountType
-                decimal discountedPrice;
-                if (line.DiscountType == "Percentage")
-                {
-                    discountedPrice = line.UnitPrice * (1 - line.Discount / 100m);
-                }
-                else // Fixed
-                {
-                    discountedPrice = line.UnitPrice - line.Discount;
-                }
-
-                var lineTotal = line.Quantity * discountedPrice;
-
                 // Map section
                 int? newSectionId = null;
                 if (line.InvoiceSectionId.HasValue && sectionMapping.ContainsKey(line.InvoiceSectionId.Value))
                 {
                     newSectionId = sectionMapping[line.InvoiceSectionId.Value];
+                }
+
+                decimal lineTotal;
+
+                if (line.IsAdjustmentLine)
+                {
+                    // Adjustment lines: copy LineTotal as-is (will be recalculated for percentage by totals recomputation)
+                    lineTotal = line.LineTotal;
+                    adjustmentAmount += lineTotal;
+                }
+                else
+                {
+                    // Compute discountedPrice based on DiscountType
+                    decimal discountedPrice;
+                    if (line.DiscountType == "Percentage")
+                    {
+                        discountedPrice = line.UnitPrice * (1 - line.Discount / 100m);
+                    }
+                    else // Fixed
+                    {
+                        discountedPrice = line.UnitPrice - line.Discount;
+                    }
+
+                    lineTotal = line.Quantity * discountedPrice;
+                    subtotal += lineTotal;
+                    taxAmount += Math.Round(lineTotal * line.VatRate / 100m, 2);
                 }
 
                 var newLine = new InvoiceLine
@@ -158,23 +172,26 @@ public class DocumentDuplicationService : IDocumentDuplicationService
                     SortOrder = line.SortOrder,
                     ReferenceUrl = line.ReferenceUrl,
                     Subtitle = line.Subtitle,
-                    InvoiceSectionId = newSectionId
+                    InvoiceSectionId = newSectionId,
+                    IsAdjustmentLine = line.IsAdjustmentLine
                 };
 
                 await _invoiceLineRepository.InsertAsync(newLine);
-
-                subtotal += lineTotal;
-                taxAmount += Math.Round(lineTotal * line.VatRate / 100m, 2);
             }
 
             // 8. Update duplicate with computed totals
-            var totalAmount = subtotal + taxAmount;
+            var totalAmount = subtotal + adjustmentAmount + taxAmount;
             duplicate.Subtotal = subtotal;
             duplicate.TaxAmount = taxAmount;
             duplicate.TotalAmount = totalAmount;
             duplicate.UpdatedAtUtc = DateTime.UtcNow;
 
             await _invoiceRepository.UpdateAsync(duplicate);
+
+            // NOTE: We don't call RecomputeAndUpdateTotalsAsync/RecalculateQuotationTotalsAsync here because:
+            // 1. We're already inside a transaction (calling it would nest transactions)
+            // 2. Lines are exact copies, so inline computation produces correct results
+            // 3. For percentage adjustments, the copied LineTotal is valid since the subtotal is identical
 
             // 9. Write audit log
             var auditLog = new AuditLog
@@ -283,27 +300,41 @@ public class DocumentDuplicationService : IDocumentDuplicationService
             var sourceLines = await _quotationLineRepository.GetByQuotationIdAsync(sourceQuotationId);
             decimal subtotal = 0;
             decimal taxAmount = 0;
+            decimal adjustmentAmount = 0;
 
             foreach (var line in sourceLines)
             {
-                // Compute discountedPrice based on DiscountType
-                decimal discountedPrice;
-                if (line.DiscountType == "Percentage")
-                {
-                    discountedPrice = line.UnitPrice * (1 - line.Discount / 100m);
-                }
-                else // Fixed
-                {
-                    discountedPrice = line.UnitPrice - line.Discount;
-                }
-
-                var lineTotal = line.Quantity * discountedPrice;
-
                 // Map section
                 int? newSectionId = null;
                 if (line.ProposalSectionId.HasValue && sectionMapping.ContainsKey(line.ProposalSectionId.Value))
                 {
                     newSectionId = sectionMapping[line.ProposalSectionId.Value];
+                }
+
+                decimal lineTotal;
+
+                if (line.IsAdjustmentLine)
+                {
+                    // Adjustment lines: copy LineTotal as-is
+                    lineTotal = line.LineTotal;
+                    adjustmentAmount += lineTotal;
+                }
+                else
+                {
+                    // Compute discountedPrice based on DiscountType
+                    decimal discountedPrice;
+                    if (line.DiscountType == "Percentage")
+                    {
+                        discountedPrice = line.UnitPrice * (1 - line.Discount / 100m);
+                    }
+                    else // Fixed
+                    {
+                        discountedPrice = line.UnitPrice - line.Discount;
+                    }
+
+                    lineTotal = line.Quantity * discountedPrice;
+                    subtotal += lineTotal;
+                    taxAmount += Math.Round(lineTotal * line.VatRate / 100m, 2);
                 }
 
                 var newLine = new QuotationLine
@@ -320,23 +351,26 @@ public class DocumentDuplicationService : IDocumentDuplicationService
                     SortOrder = line.SortOrder,
                     ReferenceUrl = line.ReferenceUrl,
                     Subtitle = line.Subtitle,
-                    ProposalSectionId = newSectionId
+                    ProposalSectionId = newSectionId,
+                    IsAdjustmentLine = line.IsAdjustmentLine
                 };
 
                 await _quotationLineRepository.InsertAsync(newLine);
-
-                subtotal += lineTotal;
-                taxAmount += Math.Round(lineTotal * line.VatRate / 100m, 2);
             }
 
             // 8. Update duplicate with computed totals
-            var totalAmount = subtotal + taxAmount;
+            var totalAmount = subtotal + adjustmentAmount + taxAmount;
             duplicate.Subtotal = subtotal;
             duplicate.TaxAmount = taxAmount;
             duplicate.TotalAmount = totalAmount;
             duplicate.UpdatedAtUtc = DateTime.UtcNow;
 
             await _quotationRepository.UpdateAsync(duplicate);
+
+            // NOTE: We don't call RecomputeAndUpdateTotalsAsync/RecalculateQuotationTotalsAsync here because:
+            // 1. We're already inside a transaction (calling it would nest transactions)
+            // 2. Lines are exact copies, so inline computation produces correct results
+            // 3. For percentage adjustments, the copied LineTotal is valid since the subtotal is identical
 
             // 9. Write audit log
             var auditLog = new AuditLog
@@ -357,7 +391,7 @@ public class DocumentDuplicationService : IDocumentDuplicationService
 
             return duplicate;
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
             throw;

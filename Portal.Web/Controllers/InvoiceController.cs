@@ -397,10 +397,12 @@ public class InvoiceController : Controller
         var lines = await _invoiceService.GetInvoiceLinesAsync(id);
         var sections = await _sectionService.GetByInvoiceIdAsync(id);
         var customers = await _customerService.GetCustomersAsync(null, true);
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
 
         ViewBag.Lines = lines;
         ViewBag.Sections = sections;
         ViewBag.Customers = customers;
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
         return View(invoice);
     }
@@ -424,10 +426,12 @@ public class InvoiceController : Controller
             var lines = await _invoiceService.GetInvoiceLinesAsync(id);
             var sections = await _sectionService.GetByInvoiceIdAsync(id);
             var customers = await _customerService.GetCustomersAsync(null, true);
+            var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
 
             ViewBag.Lines = lines;
             ViewBag.Sections = sections;
             ViewBag.Customers = customers;
+            ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
             return View(invoice);
         }
@@ -756,6 +760,48 @@ public class InvoiceController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to update setting." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostApplyBulkDiscount(int invoiceId, string discountType, decimal discountValue)
+    {
+        try
+        {
+            var result = await _invoiceService.ApplyBulkDiscountAsync(invoiceId, discountType, discountValue);
+            return Json(new { success = true, data = result.Totals });
+        }
+        catch (ArgumentException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRemoveBulkDiscount(int invoiceId)
+    {
+        try
+        {
+            var result = await _invoiceService.RemoveBulkDiscountAsync(invoiceId);
+            return Json(new { success = true, data = result.Totals });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
         }
     }
 

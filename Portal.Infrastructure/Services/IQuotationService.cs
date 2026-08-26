@@ -27,4 +27,9 @@ public interface IQuotationService
     Task RemoveLineAsync(int lineId);
     bool IsExpired(Quotation quotation);
     Dictionary<int, List<int>> GetValidTransitions();
+
+    // Bulk Discount
+    Task<BulkDiscountResult> ApplyBulkDiscountAsync(int quotationId, string discountType, decimal discountValue);
+    Task<BulkDiscountResult> RemoveBulkDiscountAsync(int quotationId);
+    Task<DocumentTotalsBreakdown> GetTotalsBreakdownAsync(int quotationId);
 }

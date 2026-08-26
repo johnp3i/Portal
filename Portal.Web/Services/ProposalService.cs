@@ -335,6 +335,7 @@ public class ProposalService : IProposalService
         LineTotal = line.LineTotal,
         SortOrder = line.SortOrder,
         ReferenceUrl = line.ReferenceUrl,
-        Subtitle = line.Subtitle
+        Subtitle = line.Subtitle,
+        IsAdjustmentLine = line.IsAdjustmentLine
     };
 }

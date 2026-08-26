@@ -85,6 +85,7 @@ public class ReverseChargeQuotationLinePropertyTests
             lineItemCatalogServiceMock.Object,
             productServiceMock.Object,
             httpContextAccessorMock.Object,
+            new Mock<PortalDbContext>(MockBehavior.Loose, new object[] { new DbContextOptions<PortalDbContext>() }).Object,
             loggerMock.Object);
     }
 

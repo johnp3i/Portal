@@ -290,7 +290,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                   AND [sales].[Meeting].[BusinessId] = @BusinessId
                   AND [sales].[Meeting].[ScheduledAtUtc] >= @TodayStart
                   AND [sales].[Meeting].[ScheduledAtUtc] < @DayAfterTomorrow
-                ORDER BY [sales].[Meeting].[ScheduledAtUtc] ASC";
+                ORDER BY [sales].[Meeting].[ScheduledAtUtc] ASC
+                OFFSET 0 ROWS";
 
             return await ExecuteStoredProcedure(query,
                 new SqlParameter("@BusinessId", businessId),

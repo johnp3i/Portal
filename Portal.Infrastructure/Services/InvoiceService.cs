@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
@@ -223,25 +224,18 @@ public class InvoiceService : IInvoiceService
                     IsReverseCharge = line.IsReverseCharge,
                     ProductTypeId = productTypeId,
                     ProductPriceTierId = line.ProductPriceTierId,
-                    PriceTierName = line.PriceTierName
+                    PriceTierName = line.PriceTierName,
+                    IsAdjustmentLine = line.IsAdjustmentLine
                 };
 
                 await _invoiceLineRepository.InsertAsync(invoiceLine);
             }
 
-            // 9. Compute totals (respecting RC lines with VatRate=0)
-            var invoiceLines = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
-            var subtotal = invoiceLines.Sum(l => l.LineTotal);
-            var taxAmount = Math.Round(invoiceLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
-            var totalAmount = subtotal + taxAmount;
+            // 9. Recompute totals (handles adjustment lines correctly)
+            await RecomputeAndUpdateTotalsAsync(invoiceId);
 
-            // 10. Update invoice with computed totals
-            invoice.Subtotal = subtotal;
-            invoice.TaxAmount = taxAmount;
-            invoice.TotalAmount = totalAmount;
-            invoice.UpdatedAtUtc = DateTime.UtcNow;
-
-            await _invoiceRepository.UpdateAsync(invoice);
+            // Re-fetch the invoice to get updated totals
+            invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
 
             // 11. Update quotation status to 4 (Converted)
             quotation.QuotationStatusTypeId = 4;
@@ -293,7 +287,7 @@ public class InvoiceService : IInvoiceService
 
             return invoice;
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
             throw;
@@ -800,6 +794,9 @@ public class InvoiceService : IInvoiceService
             throw new InvalidOperationException("Invoice line not found");
         }
 
+        if (line.IsAdjustmentLine)
+            throw new InvalidOperationException("Adjustment lines cannot be modified through the line item editing flow. Use the Bulk Discount feature instead.");
+
         var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(line.InvoiceId, businessId);
         if (invoice == null)
         {
@@ -871,6 +868,9 @@ public class InvoiceService : IInvoiceService
         {
             throw new InvalidOperationException("Invoice line not found");
         }
+
+        if (line.IsAdjustmentLine)
+            throw new InvalidOperationException("Adjustment lines cannot be modified through the line item editing flow. Use the Bulk Discount feature instead.");
 
         var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(line.InvoiceId, businessId);
         if (invoice == null)
@@ -1058,21 +1058,297 @@ public class InvoiceService : IInvoiceService
     {
         var businessId = _currentTenantService.CurrentBusinessId;
 
-        var lines = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
+        // Transaction nesting safety — avoid nested transaction exceptions
+        var ownsTransaction = _portalDbContext.Database.CurrentTransaction == null;
+        IDbContextTransaction? transaction = ownsTransaction
+            ? await _portalDbContext.Database.BeginTransactionAsync()
+            : null;
 
-        var subtotal = lines.Sum(l => l.LineTotal);
-        var taxAmount = Math.Round(lines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
-        var totalAmount = subtotal + taxAmount;
-
-        var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
-        if (invoice != null)
+        try
         {
-            invoice.Subtotal = subtotal;
-            invoice.TaxAmount = taxAmount;
-            invoice.TotalAmount = totalAmount;
-            invoice.UpdatedAtUtc = DateTime.UtcNow;
+            var lines = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
 
-            await _invoiceRepository.UpdateAsync(invoice);
+            var normalLines = lines.Where(l => !l.IsAdjustmentLine).ToList();
+            var adjustmentLine = lines.FirstOrDefault(l => l.IsAdjustmentLine);
+
+            // Subtotal = sum of normal line totals only (after per-line discounts)
+            var subtotal = normalLines.Sum(l => l.LineTotal);
+
+            // Auto-recalculate percentage adjustment lines when subtotal changes
+            if (adjustmentLine != null && adjustmentLine.DiscountType == "Percentage")
+            {
+                var expectedLineTotal = -Math.Round(subtotal * adjustmentLine.Discount / 100m, 2, MidpointRounding.AwayFromZero);
+                if (adjustmentLine.LineTotal != expectedLineTotal)
+                {
+                    adjustmentLine.LineTotal = expectedLineTotal;
+                    adjustmentLine.Description = $"Invoice Discount ({adjustmentLine.Discount}%)";
+                    await _invoiceLineRepository.UpdateAsync(adjustmentLine);
+                }
+            }
+
+            // Tax = sum of per-line tax (only normal lines contribute tax)
+            // Rounded at aggregate level to match existing production behavior
+            var taxAmount = Math.Round(normalLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
+
+            // TotalAmount = sum of ALL line totals (including adjustment) + tax
+            var adjustmentAmount = adjustmentLine?.LineTotal ?? 0m;
+            var totalAmount = subtotal + adjustmentAmount + taxAmount;
+
+            var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
+            if (invoice != null)
+            {
+                invoice.Subtotal = subtotal;
+                invoice.TaxAmount = taxAmount;
+                invoice.TotalAmount = totalAmount;
+                invoice.UpdatedAtUtc = DateTime.UtcNow;
+                await _invoiceRepository.UpdateAsync(invoice);
+            }
+
+            if (ownsTransaction) await transaction!.CommitAsync();
         }
+        catch (Exception ex)
+        {
+            if (ownsTransaction) await transaction!.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<BulkDiscountResult> ApplyBulkDiscountAsync(int invoiceId, string discountType, decimal discountValue)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
+        if (invoice == null)
+            throw new InvalidOperationException("Invoice not found");
+        if (invoice.InvoiceStatusTypeId != 1)
+            throw new InvalidOperationException("Invoice can only be edited in Draft status");
+
+        // Validate discount type
+        if (discountType != "Percentage" && discountType != "Fixed")
+            throw new ArgumentException("Discount type must be 'Percentage' or 'Fixed'");
+
+        // Get normal lines and compute subtotal
+        var lines = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
+        var normalLines = lines.Where(l => !l.IsAdjustmentLine).ToList();
+        var subtotal = normalLines.Sum(l => l.LineTotal);
+        var grossSubtotal = normalLines.Sum(l => l.Quantity * l.UnitPrice);
+        var lineDiscounts = grossSubtotal - subtotal;
+        var netAmount = subtotal; // net before invoice discount
+
+        // Validate value and compute LineTotal
+        decimal lineTotal;
+        if (discountType == "Percentage")
+        {
+            if (discountValue < 0.01m || discountValue > 100m)
+                throw new ArgumentException("Percentage must be between 0.01 and 100 inclusive");
+            if (subtotal == 0)
+                throw new ArgumentException("Cannot apply percentage discount to an invoice with zero subtotal");
+            lineTotal = -Math.Round(subtotal * discountValue / 100m, 2, MidpointRounding.AwayFromZero);
+        }
+        else // Fixed
+        {
+            if (discountValue < 0.01m || discountValue > 999_999_999.99m)
+                throw new ArgumentException("Fixed amount must be between 0.01 and 999,999,999.99");
+            if (Math.Round(discountValue, 2) != discountValue)
+                throw new ArgumentException("Fixed amount must have at most 2 decimal places");
+            if (discountValue > netAmount)
+                throw new ArgumentException($"Discount cannot exceed the available net amount ({invoice.CurrencyCode} {netAmount:F2})");
+            lineTotal = -discountValue;
+        }
+
+        // Resolve currency symbol for description
+        var currencySymbol = GetCurrencySymbol(invoice.CurrencyCode);
+        var description = discountType == "Percentage"
+            ? $"Invoice Discount ({discountValue}%)"
+            : $"Invoice Discount (-{currencySymbol}{discountValue:F2})";
+
+        // Wrap in transaction
+        var ownsTransaction = _portalDbContext.Database.CurrentTransaction == null;
+        IDbContextTransaction? transaction = ownsTransaction
+            ? await _portalDbContext.Database.BeginTransactionAsync()
+            : null;
+
+        try
+        {
+            // Capture old adjustment for audit
+            var existingAdjustment = lines.FirstOrDefault(l => l.IsAdjustmentLine);
+            string? oldDiscountType = existingAdjustment?.DiscountType;
+            decimal? oldDiscountValue = existingAdjustment?.Discount;
+            decimal? oldLineTotal = existingAdjustment?.LineTotal;
+
+            // Delete existing adjustment line if present
+            if (existingAdjustment != null)
+            {
+                await _invoiceLineRepository.DeleteAsync(existingAdjustment.Id);
+            }
+
+            // Determine next SortOrder
+            var maxSortOrder = normalLines.Count > 0 ? normalLines.Max(l => l.SortOrder) : 0;
+
+            // Insert new adjustment line
+            var adjustmentLine = new InvoiceLine
+            {
+                InvoiceId = invoiceId,
+                Description = description,
+                Quantity = 1,
+                UnitPrice = 0,
+                VatRate = 0,
+                Discount = discountValue,
+                DiscountType = discountType,
+                CostPrice = null,
+                LineTotal = lineTotal,
+                SortOrder = maxSortOrder + 1,
+                ReferenceUrl = null,
+                Subtitle = null,
+                InvoiceSectionId = null,
+                ProductCode = null,
+                IsReverseCharge = false,
+                IsAdjustmentLine = true,
+                ProductTypeId = null,
+                ProductPriceTierId = null,
+                PriceTierName = null
+            };
+
+            await _invoiceLineRepository.InsertAsync(adjustmentLine);
+
+            // Recompute totals
+            await RecomputeAndUpdateTotalsAsync(invoiceId);
+
+            // Audit log
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var auditDescription = existingAdjustment != null
+                ? $"Bulk discount replaced: {oldDiscountType} {oldDiscountValue} (LineTotal {oldLineTotal}) → {discountType} {discountValue} (LineTotal {lineTotal})"
+                : $"Bulk discount applied: {discountType} {discountValue} (LineTotal {lineTotal})";
+
+            var auditLog = new AuditLog
+            {
+                BusinessId = businessId,
+                UserId = userId,
+                Action = existingAdjustment != null ? "BulkDiscountReplaced" : "BulkDiscountApplied",
+                TableName = "Invoice",
+                RecordId = invoiceId.ToString(),
+                OldValues = existingAdjustment != null ? $"DiscountType={oldDiscountType}, Discount={oldDiscountValue}, LineTotal={oldLineTotal}" : null,
+                NewValues = $"DiscountType={discountType}, Discount={discountValue}, LineTotal={lineTotal}",
+                Timestamp = DateTime.UtcNow
+            };
+            await _auditLogRepository.InsertAsync(auditLog);
+
+            // Get totals while still in transaction context
+            var totals = await GetTotalsBreakdownAsync(invoiceId);
+
+            if (ownsTransaction) await transaction!.CommitAsync();
+
+            // Return totals breakdown
+            return BulkDiscountResult.Ok(totals);
+        }
+        catch (Exception ex)
+        {
+            if (ownsTransaction && transaction != null) await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<BulkDiscountResult> RemoveBulkDiscountAsync(int invoiceId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
+        if (invoice == null)
+            throw new InvalidOperationException("Invoice not found");
+        if (invoice.InvoiceStatusTypeId != 1)
+            throw new InvalidOperationException("Invoice can only be edited in Draft status");
+
+        var adjustmentLine = await _invoiceLineRepository.GetAdjustmentLineByInvoiceIdAsync(invoiceId);
+        if (adjustmentLine == null)
+            throw new InvalidOperationException("No bulk discount exists on this invoice");
+
+        // Capture for audit
+        var oldDiscountType = adjustmentLine.DiscountType;
+        var oldDiscountValue = adjustmentLine.Discount;
+        var oldLineTotal = adjustmentLine.LineTotal;
+
+        var ownsTransaction = _portalDbContext.Database.CurrentTransaction == null;
+        IDbContextTransaction? transaction = ownsTransaction
+            ? await _portalDbContext.Database.BeginTransactionAsync()
+            : null;
+
+        try
+        {
+            await _invoiceLineRepository.DeleteAsync(adjustmentLine.Id);
+            await RecomputeAndUpdateTotalsAsync(invoiceId);
+
+            // Audit log
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var auditLog = new AuditLog
+            {
+                BusinessId = businessId,
+                UserId = userId,
+                Action = "BulkDiscountRemoved",
+                TableName = "Invoice",
+                RecordId = invoiceId.ToString(),
+                OldValues = $"DiscountType={oldDiscountType}, Discount={oldDiscountValue}, LineTotal={oldLineTotal}",
+                NewValues = null,
+                Timestamp = DateTime.UtcNow
+            };
+            await _auditLogRepository.InsertAsync(auditLog);
+
+            // Get totals while still in transaction context
+            var totals = await GetTotalsBreakdownAsync(invoiceId);
+
+            if (ownsTransaction) await transaction!.CommitAsync();
+
+            return BulkDiscountResult.Ok(totals);
+        }
+        catch (Exception ex)
+        {
+            if (ownsTransaction && transaction != null) await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<DocumentTotalsBreakdown> GetTotalsBreakdownAsync(int invoiceId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
+        if (invoice == null)
+            throw new InvalidOperationException("Invoice not found");
+
+        var lines = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
+        var normalLines = lines.Where(l => !l.IsAdjustmentLine).ToList();
+        var adjustmentLine = lines.FirstOrDefault(l => l.IsAdjustmentLine);
+
+        var grossSubtotal = normalLines.Sum(l => l.Quantity * l.UnitPrice);
+        var netSubtotal = normalLines.Sum(l => l.LineTotal);
+        var lineDiscounts = grossSubtotal - netSubtotal;
+        var invoiceDiscount = adjustmentLine != null ? Math.Abs(adjustmentLine.LineTotal) : 0m;
+        var netAmount = netSubtotal - invoiceDiscount;
+        var vat = Math.Round(normalLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
+        var total = netAmount + vat;
+
+        return new DocumentTotalsBreakdown
+        {
+            GrossSubtotal = grossSubtotal,
+            NetSubtotal = netSubtotal,
+            LineDiscounts = lineDiscounts,
+            InvoiceDiscount = invoiceDiscount,
+            NetAmount = netAmount,
+            Vat = vat,
+            Total = total,
+            DiscountType = adjustmentLine?.DiscountType,
+            DiscountValue = adjustmentLine?.Discount,
+            HasInvoiceDiscount = adjustmentLine != null,
+            HasLineDiscounts = lineDiscounts > 0,
+            CurrencyCode = invoice.CurrencyCode
+        };
+    }
+
+    private static string GetCurrencySymbol(string currencyCode)
+    {
+        return currencyCode switch
+        {
+            "EUR" => "€",
+            "GBP" => "£",
+            "USD" => "$",
+            "ZAR" => "R",
+            _ => currencyCode + " "
+        };
     }
 }

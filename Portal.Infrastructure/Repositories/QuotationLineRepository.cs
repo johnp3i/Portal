@@ -16,7 +16,10 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode], [ProductPriceTierId], [PriceTierName]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate],
+                       [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
+                       [ReferenceUrl], [ProposalSectionId], [Subtitle], [ProductCode],
+                       [IsReverseCharge], [IsAdjustmentLine], [ProductPriceTierId], [PriceTierName]
                 FROM [quotation].[QuotationLine]
                 WHERE [QuotationId] = @QuotationId
                 ORDER BY [SortOrder]";
@@ -34,11 +37,34 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         try
         {
             const string query = @"
-                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [IsReverseCharge], [ProductCode], [ProductPriceTierId], [PriceTierName]
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate],
+                       [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
+                       [ReferenceUrl], [ProposalSectionId], [Subtitle], [ProductCode],
+                       [IsReverseCharge], [IsAdjustmentLine], [ProductPriceTierId], [PriceTierName]
                 FROM [quotation].[QuotationLine]
                 WHERE [Id] = @Id";
 
             return await ExecuteSingleRecordStoredProcedure(query, new SqlParameter("@Id", id));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<QuotationLine?> GetAdjustmentLineByQuotationIdAsync(int quotationId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [QuotationId], [Description], [Quantity], [UnitPrice], [VatRate],
+                       [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder],
+                       [ReferenceUrl], [ProposalSectionId], [Subtitle], [ProductCode],
+                       [IsReverseCharge], [IsAdjustmentLine], [ProductPriceTierId], [PriceTierName]
+                FROM [quotation].[QuotationLine]
+                WHERE [QuotationId] = @QuotationId AND [IsAdjustmentLine] = 1";
+
+            return await ExecuteSingleRecordStoredProcedure(query, new SqlParameter("@QuotationId", quotationId));
         }
         catch (Exception ex)
         {
@@ -52,9 +78,13 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
         {
             const string query = @"
                 INSERT INTO [quotation].[QuotationLine]
-                    ([QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType], [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle], [ProductCode], [IsReverseCharge], [ProductPriceTierId], [PriceTierName])
+                    ([QuotationId], [Description], [Quantity], [UnitPrice], [VatRate], [Discount], [DiscountType],
+                     [CostPrice], [LineTotal], [SortOrder], [ReferenceUrl], [ProposalSectionId], [Subtitle],
+                     [ProductCode], [IsReverseCharge], [IsAdjustmentLine], [ProductPriceTierId], [PriceTierName])
                 VALUES
-                    (@QuotationId, @Description, @Quantity, @UnitPrice, @VatRate, @Discount, @DiscountType, @CostPrice, @LineTotal, @SortOrder, @ReferenceUrl, @ProposalSectionId, @Subtitle, @ProductCode, @IsReverseCharge, @ProductPriceTierId, @PriceTierName)";
+                    (@QuotationId, @Description, @Quantity, @UnitPrice, @VatRate, @Discount, @DiscountType,
+                     @CostPrice, @LineTotal, @SortOrder, @ReferenceUrl, @ProposalSectionId, @Subtitle,
+                     @ProductCode, @IsReverseCharge, @IsAdjustmentLine, @ProductPriceTierId, @PriceTierName)";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@QuotationId", entity.QuotationId),
@@ -72,6 +102,7 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
                 new SqlParameter("@Subtitle", entity.Subtitle ?? (object)DBNull.Value),
                 new SqlParameter("@ProductCode", entity.ProductCode ?? (object)DBNull.Value),
                 new SqlParameter("@IsReverseCharge", entity.IsReverseCharge),
+                new SqlParameter("@IsAdjustmentLine", entity.IsAdjustmentLine),
                 new SqlParameter("@ProductPriceTierId", entity.ProductPriceTierId ?? (object)DBNull.Value),
                 new SqlParameter("@PriceTierName", entity.PriceTierName ?? (object)DBNull.Value)
             );
@@ -121,7 +152,7 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
                 new SqlParameter("@IsReverseCharge", entity.IsReverseCharge)
             );
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -137,7 +168,7 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
 
             await _context.Database.ExecuteSqlRawAsync(query, new SqlParameter("@Id", id));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -153,7 +184,7 @@ public class QuotationLineRepository : GenericStoredProcedureRepository<Quotatio
 
             await _context.Database.ExecuteSqlRawAsync(query, new SqlParameter("@QuotationId", quotationId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }

@@ -62,4 +62,9 @@ public interface IInvoiceService
 
     // VAT Period Reassignment
     Task<ServiceResult<ReassignmentImpactDto>> GetReassignmentImpactAsync(int invoiceId, int targetPeriodId);
+
+    // Bulk Discount
+    Task<BulkDiscountResult> ApplyBulkDiscountAsync(int invoiceId, string discountType, decimal discountValue);
+    Task<BulkDiscountResult> RemoveBulkDiscountAsync(int invoiceId);
+    Task<DocumentTotalsBreakdown> GetTotalsBreakdownAsync(int invoiceId);
 }

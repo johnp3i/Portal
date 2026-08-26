@@ -38,6 +38,8 @@ public class InvoiceLine
 
     public bool IsReverseCharge { get; set; }
 
+    public bool IsAdjustmentLine { get; set; }
+
     public int? ProductTypeId { get; set; }
 
     public int? ProductPriceTierId { get; set; }

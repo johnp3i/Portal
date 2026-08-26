@@ -1,0 +1,43 @@
+@*
+    Bulk Discount Modal — Shared between Invoice and Quotation edit views.
+    Allows users to apply a percentage or fixed-amount document-level discount.
+    All data is passed via JavaScript (no Razor model needed).
+    Usage: @await Html.PartialAsync("_BulkDiscountModal")
+*@
+
+<div id="bulkDiscountModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(13,94,166,.18);margin:auto;">
+
+        <h2 style="font-family:'Manrope',sans-serif;font-weight:700;font-size:20px;margin:0 0 20px 0;letter-spacing:-0.3px;color:#0B1B28;">
+            Bulk Discount
+        </h2>
+
+        <!-- Discount Type Toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+            <button type="button" id="bdTypePercentage" class="btn btn-primary" onclick="setBulkDiscountType('Percentage')" style="flex:1;text-align:center;">Percentage (%)</button>
+            <button type="button" id="bdTypeFixed" class="btn btn-secondary" onclick="setBulkDiscountType('Fixed')" style="flex:1;text-align:center;">Fixed Amount</button>
+        </div>
+
+        <!-- Discount Value Input -->
+        <div class="field" style="margin-bottom:16px;">
+            <label id="bdValueLabel" for="bdValue">Discount Percentage</label>
+            <input type="number" id="bdValue" step="0.01" min="0.01" max="100" placeholder="e.g. 15" inputmode="decimal" oninput="updateBulkDiscountPreview()" />
+        </div>
+
+        <!-- Validation Message -->
+        <div id="bdValidation" style="display:none;font-size:12px;color:#C24A4A;margin-top:-8px;margin-bottom:12px;"></div>
+
+        <!-- Preview -->
+        <div id="bdPreview" style="display:none;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.15);border-radius:12px;padding:12px 16px;margin-bottom:20px;">
+            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-bottom:4px;">Discount Preview</div>
+            <div id="bdPreviewAmount" style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;color:#129867;">-€0.00</div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeBulkDiscountModal()">Cancel</button>
+            <button type="button" id="bdConfirmBtn" class="btn btn-primary" onclick="confirmBulkDiscount()" disabled>Apply Discount</button>
+        </div>
+
+    </div>
+</div>

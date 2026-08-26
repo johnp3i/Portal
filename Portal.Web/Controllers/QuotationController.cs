@@ -198,6 +198,7 @@ public class QuotationController : Controller
             Notes = quotation.Notes,
             QuotationContactId = quotation.QuotationContactId,
             IsGrandTotalShown = quotation.IsGrandTotalShown,
+            QuotationStatusTypeId = quotation.QuotationStatusTypeId,
             Lines = lines,
             DisplayLines = displayLines,
             Sections = sections,
@@ -207,6 +208,9 @@ public class QuotationController : Controller
             Customers = customers,
             Contacts = contacts
         };
+
+        var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
+        ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
         return View(viewModel);
     }
@@ -735,6 +739,33 @@ public class QuotationController : Controller
         }
 
         return displayLines;
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostApplyBulkDiscount(int quotationId, string discountType, decimal discountValue)
+    {
+        try
+        {
+            var result = await _quotationService.ApplyBulkDiscountAsync(quotationId, discountType, discountValue);
+            return Json(new { success = true, data = result.Totals });
+        }
+        catch (ArgumentException ex) { return Json(new { success = false, message = ex.Message }); }
+        catch (InvalidOperationException ex) { return Json(new { success = false, message = ex.Message }); }
+        catch (Exception ex) { return Json(new { success = false, message = "An unexpected error occurred." }); }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRemoveBulkDiscount(int quotationId)
+    {
+        try
+        {
+            var result = await _quotationService.RemoveBulkDiscountAsync(quotationId);
+            return Json(new { success = true, data = result.Totals });
+        }
+        catch (InvalidOperationException ex) { return Json(new { success = false, message = ex.Message }); }
+        catch (Exception ex) { return Json(new { success = false, message = "An unexpected error occurred." }); }
     }
 
     [HttpGet]

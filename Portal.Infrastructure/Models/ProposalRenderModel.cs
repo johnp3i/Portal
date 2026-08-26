@@ -71,6 +71,7 @@ public class ProposalLineRenderModel
     public int SortOrder { get; set; }
     public string? ReferenceUrl { get; set; }
     public string? Subtitle { get; set; }
+    public bool IsAdjustmentLine { get; set; }
 }
 
 public class ProposalLogoRenderModel
