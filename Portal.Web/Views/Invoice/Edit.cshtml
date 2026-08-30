@@ -68,9 +68,12 @@
                 <label for="dueDate">Due Date *</label>
                 <input type="date" name="dueDate" id="dueDate" required value="@Model.DueDate.ToString("yyyy-MM-dd")" />
             </div>
-            <div class="field" style="grid-column:1 / -1;">
+            <div class="field" style="grid-column:1 / -1;position:relative;">
+                <button type="button" onclick="var t=this.parentElement.querySelector('textarea');var svg=this.querySelector('svg');if(t.style.display==='none'){t.style.display='';svg.style.transform='rotate(180deg)';}else{t.style.display='none';svg.style.transform='rotate(0deg)';}" style="position:absolute;top:0;right:0;background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:rotate(@(string.IsNullOrWhiteSpace(Model.Notes) ? "0deg" : "180deg"));"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
                 <label for="notes">Notes</label>
-                <textarea name="notes" id="notes" placeholder="Optional notes for this invoice">@Model.Notes</textarea>
+                <textarea name="notes" id="notes" placeholder="Optional notes for this invoice" style="display:@(string.IsNullOrWhiteSpace(Model.Notes) ? "none" : "block");margin-top:8px;">@Model.Notes</textarea>
             </div>
             <div class="field">
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -94,7 +97,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
             <div class="label">Line Items</div>
-            <h2 style="margin-top:8px;font-size:24px;">Invoice lines</h2>
+            <h2 style="margin-top:8px;font-size:24px;">Invoice lines <span style="font-size:14px;font-weight:600;color:#5E7385;margin-left:8px;">· @lines.Count item@(lines.Count != 1 ? "s" : "")</span></h2>
         </div>
     </div>
 
@@ -234,49 +237,54 @@
 <!-- Sections Management -->
 @if (sections.Any())
 {
-    <section class="glass card-pad" style="margin-top:24px;">
+    <section class="glass card-pad" style="margin-top:24px;position:relative;">
+        <button type="button" onclick="var b=document.getElementById('sectionsManageBody');var svg=this.querySelector('svg');if(b.style.display==='none'){b.style.display='';svg.style.transform='rotate(180deg)';}else{b.style.display='none';svg.style.transform='rotate(0deg)';}" style="position:absolute;top:18px;right:20px;background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
         <div>
             <div class="label">Sections</div>
             <h2 style="margin-top:8px;font-size:24px;">Manage sections</h2>
         </div>
 
-        @foreach (var sec in sections.OrderBy(s => s.SortOrder))
-        {
-            <div class="surface card-pad" style="margin-top:16px;position:relative;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <strong style="font-size:15px;">@sec.Name</strong>
-                        <span class="muted" style="margin-left:8px;font-size:12px;">(@sec.SectionType)</span>
+        <div id="sectionsManageBody" style="display:none;">
+            @foreach (var sec in sections.OrderBy(s => s.SortOrder))
+            {
+                <div class="surface card-pad" style="margin-top:16px;position:relative;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <strong style="font-size:15px;">@sec.Name</strong>
+                            <span class="muted" style="margin-left:8px;font-size:12px;">(@sec.SectionType)</span>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="showEditSectionForm(@sec.Id)">Edit</button>
+                            <button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="removeSection(@sec.Id)">Remove</button>
+                        </div>
                     </div>
-                    <div style="display:flex;gap:8px;">
-                        <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="showEditSectionForm(@sec.Id)">Edit</button>
-                        <button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="removeSection(@sec.Id)">Remove</button>
-                    </div>
-                </div>
 
-                <!-- Edit Section Form (hidden) -->
-                <div id="edit-section-@sec.Id" style="display:none;margin-top:16px;">
-                    <div class="form-grid">
-                        <div class="field">
-                            <label>Name *</label>
-                            <input type="text" id="editSec_name_@sec.Id" value="@sec.Name" />
+                    <!-- Edit Section Form (hidden) -->
+                    <div id="edit-section-@sec.Id" style="display:none;margin-top:16px;">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label>Name *</label>
+                                <input type="text" id="editSec_name_@sec.Id" value="@sec.Name" />
+                            </div>
+                            <div class="field" style="grid-column:1 / -1;">
+                                <label>Description</label>
+                                <div id="editSec_description_@sec.Id" contenteditable="true" class="richtext-editor">@Html.Raw(sec.Description ?? "")</div>
+                            </div>
+                            <div class="field" style="grid-column:1 / -1;">
+                                <label>Notes</label>
+                                <div id="editSec_notes_@sec.Id" contenteditable="true" class="richtext-editor">@Html.Raw(sec.Notes ?? "")</div>
+                            </div>
                         </div>
-                        <div class="field" style="grid-column:1 / -1;">
-                            <label>Description</label>
-                            <div id="editSec_description_@sec.Id" contenteditable="true" class="richtext-editor">@Html.Raw(sec.Description ?? "")</div>
+                        <div style="margin-top:12px;display:flex;gap:12px;">
+                            <button type="button" class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="updateSection(@sec.Id)">Save</button>
+                            <button type="button" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="hideEditSectionForm(@sec.Id)">Cancel</button>
                         </div>
-                        <div class="field" style="grid-column:1 / -1;">
-                            <label>Notes</label>
-                            <div id="editSec_notes_@sec.Id" contenteditable="true" class="richtext-editor">@Html.Raw(sec.Notes ?? "")</div>
-                        </div>
-                    </div>
-                    <div style="margin-top:12px;display:flex;gap:12px;">
-                        <button type="button" class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="updateSection(@sec.Id)">Save</button>
-                        <button type="button" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="hideEditSectionForm(@sec.Id)">Cancel</button>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </section>
 }
 

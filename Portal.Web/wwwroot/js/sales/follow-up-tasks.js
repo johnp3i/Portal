@@ -126,6 +126,7 @@ function renderTaskCard(t) {
     var urgencyBadge = getUrgencyBadge(t);
     var assignedTo = t.assignedToName ? ' &middot; Assigned to: <strong>' + escapeHtml(t.assignedToName) + '</strong>' : '';
     var snoozedNote = t.snoozedCount >= 3 ? ' &middot; Snoozed ' + t.snoozedCount + ' times' : '';
+    var meetingRef = t.meetingSubject ? '<div style="font-size:11px;color:#8a9bab;margin-top:2px;">from: ' + escapeHtml(t.meetingSubject) + '</div>' : '';
 
     return '<div class="task-card-action" data-task-id="' + t.id + '"' + snoozedWarning + '>' +
         '<span style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;"></span>' +
@@ -133,6 +134,7 @@ function renderTaskCard(t) {
         '<div style="flex:1;min-width:0;">' +
             '<div style="font-size:14px;font-weight:600;color:#0B1B28;">' + (t.scheduledTimeUtc ? '<span style="font-size:12px;font-weight:600;color:#5a6a7a;margin-right:6px;">' + t.scheduledTimeUtc.substring(0, 5) + '</span>' : '') + (t.leadRequestId ? '<a href="/Sales/LeadDetail/' + t.leadRequestId + '" style="color:#0B1B28;text-decoration:none;border-bottom:1px dashed rgba(13,94,166,.3);">' + escapeHtml(t.title) + '</a>' : escapeHtml(t.title)) + '</div>' +
             '<div style="font-size:12px;color:#8a9bab;margin-top:3px;">' + urgencyBadge + assignedTo + snoozedNote + '</div>' +
+            meetingRef +
         '</div>' +
         '<div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">' +
             (t.isCompleted ? getTaskOutcomeBadge(t.taskOutcome) :

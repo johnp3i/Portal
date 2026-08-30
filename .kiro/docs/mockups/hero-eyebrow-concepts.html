@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hero Eyebrow — Concept Explorations · 3 Inventors Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;
+            --warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;
+            --bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+        }
+        body{
+            font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);
+            background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);
+            line-height:1.6;-webkit-font-smoothing:antialiased;padding:48px 28px 96px;
+        }
+        h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}
+        .page{max-width:1080px;margin:0 auto}
+        .page-head{text-align:center;max-width:760px;margin:0 auto 8px}
+        .page-head .kicker{font-size:12px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-dark)}
+        .page-head h1{font-size:38px;margin-top:12px}
+        .page-head p{margin-top:14px;color:var(--muted);font-size:16px}
+
+        .concept{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(244,249,253,.98));border:1px solid var(--line);border-radius:26px;padding:34px 34px 30px;box-shadow:0 16px 38px rgba(13,94,166,.07);margin-top:26px}
+        .concept-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px dashed rgba(13,94,166,.16);padding-bottom:16px;margin-bottom:26px}
+        .concept-head h2{font-size:22px}
+        .concept-head .num{font-family:Manrope;font-weight:800;color:var(--cyan);font-size:14px;letter-spacing:.05em}
+        .concept-head p{color:var(--muted);font-size:14px;max-width:520px;margin-top:4px}
+        .stage{display:flex;flex-direction:column;gap:22px}
+        .stage .row{display:flex;flex-wrap:wrap;gap:22px;align-items:center}
+        .note{margin-top:20px;font-size:13px;color:var(--muted);background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-radius:12px;padding:12px 14px}
+        .note b{color:var(--blue-dark)}
+
+        /* ===== Baseline (current) for reference ===== */
+        .eyebrow{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(13,94,166,.12);background:rgba(255,255,255,.86);border-radius:999px;padding:10px 15px;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-dark);box-shadow:0 10px 25px rgba(13,94,166,.06)}
+        .eyebrow .dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 8px rgba(87,184,232,.12)}
+
+        /* ===== A · Status ledger ===== */
+        .c-ledger{display:inline-flex;align-items:stretch;border:1px solid rgba(13,94,166,.14);background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 26px rgba(13,94,166,.08);font-size:12px;font-weight:800}
+        .c-ledger .seg{display:flex;align-items:center;gap:8px;padding:11px 15px;letter-spacing:.08em;text-transform:uppercase}
+        .c-ledger .seg + .seg{border-left:1px solid rgba(13,94,166,.1)}
+        .c-ledger .seg.lead-seg{background:var(--blue-dark);color:#fff}
+        .c-ledger .seg.stat{color:var(--blue-dark)}
+        .c-ledger .seg.stat b{font-family:Manrope;color:var(--green);letter-spacing:0}
+        .c-ledger .live{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(18,152,103,.18)}
+
+        /* ===== B · Operational Intelligence badge ===== */
+        .c-oi{display:inline-flex;align-items:center;gap:12px;border:1px solid rgba(13,94,166,.14);background:linear-gradient(180deg,#0B2233,#071B2A);color:#fff;border-radius:999px;padding:9px 9px 9px 18px;box-shadow:0 16px 34px rgba(7,27,42,.28)}
+        .c-oi .label{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+        .c-oi .label span{color:var(--cyan)}
+        .c-oi .tag{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;background:rgba(87,184,232,.16);color:#bfe4f7;border-radius:999px;padding:6px 12px}
+        .c-oi .tag .pulse{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 0 rgba(87,184,232,.6);animation:pulse 2.2s infinite}
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(87,184,232,.55)}70%{box-shadow:0 0 0 9px rgba(87,184,232,0)}100%{box-shadow:0 0 0 0 rgba(87,184,232,0)}}
+
+        /* ===== C · Module pipeline chips ===== */
+        .c-pipe{display:inline-flex;align-items:center;gap:0;border:1px solid rgba(13,94,166,.13);background:rgba(255,255,255,.9);border-radius:999px;padding:7px;box-shadow:0 10px 26px rgba(13,94,166,.07)}
+        .c-pipe .chip{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 13px;border-radius:999px;white-space:nowrap}
+        .c-pipe .chip.on{background:rgba(13,94,166,.1);color:var(--blue-dark)}
+        .c-pipe .arrow{color:rgba(13,94,166,.32);font-size:12px;padding:0 1px}
+
+        /* ===== D · Framed eyebrow (structured, corner ticks) ===== */
+        .c-frame{position:relative;display:inline-flex;align-items:center;gap:11px;padding:12px 20px;font-size:12px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-dark);background:rgba(255,255,255,.7)}
+        .c-frame .sq{width:9px;height:9px;background:var(--cyan);transform:rotate(45deg)}
+        .c-frame::before,.c-frame::after{content:"";position:absolute;width:12px;height:12px;border-color:var(--blue);border-style:solid}
+        .c-frame::before{top:0;left:0;border-width:2px 0 0 2px}
+        .c-frame::after{bottom:0;right:0;border-width:0 2px 2px 0}
+
+        /* ===== E · Underline / kicker (no pill) ===== */
+        .c-kicker{display:inline-flex;flex-direction:column;gap:8px}
+        .c-kicker .top{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-dark)}
+        .c-kicker .top .idx{font-family:Manrope;color:var(--cyan);font-size:13px}
+        .c-kicker .rule{height:3px;width:132px;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+
+        /* ===== F · Metric strip ===== */
+        .c-metric{display:inline-flex;align-items:center;gap:16px;border:1px solid rgba(13,94,166,.12);background:rgba(255,255,255,.88);border-radius:16px;padding:12px 18px;box-shadow:0 10px 26px rgba(13,94,166,.07)}
+        .c-metric .m{display:flex;flex-direction:column;line-height:1.1}
+        .c-metric .m .v{font-family:Manrope;font-weight:800;font-size:16px;color:var(--blue-dark)}
+        .c-metric .m .k{font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+        .c-metric .div{width:1px;align-self:stretch;background:rgba(13,94,166,.12)}
+        .c-metric .m .v.green{color:var(--green)}
+
+        /* dark preview wrapper for contrast-checking */
+        .on-dark{background:#071B2A;border-radius:18px;padding:26px}
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="page-head">
+        <div class="kicker">3 Inventors · Landing Hero</div>
+        <h1>Hero eyebrow — concept explorations</h1>
+        <p>Alternatives to the generic "dot + text" pill, built around the Operational Intelligence identity: structured, financially aware, live, and modular. Same tokens and fonts as the real landing page.</p>
+    </div>
+
+    <!-- Baseline -->
+    <section class="concept">
+        <div class="concept-head">
+            <div>
+                <span class="num">00</span>
+                <h2>Current — baseline</h2>
+                <p>The existing pattern, shown for direct comparison.</p>
+            </div>
+        </div>
+        <div class="stage">
+            <div class="eyebrow"><span class="dot"></span> Business Management Platform</div>
+        </div>
+    </section>
+
+    <!-- A -->
+    <section class="concept">
+        <div class="concept-head">
+            <div>
+                <span class="num">A</span>
+                <h2>Operational status ledger</h2>
+                <p>Reads like a live system readout — a label segment plus a real-time status. Signals reliability and "always-on operations".</p>
+            </div>
+        </div>
+        <div class="stage">
+            <div class="row">
+                <div class="c-ledger">
+                    <div class="seg lead-seg">Operational Intelligence</div>
+                    <div class="seg stat"><span class="live"></span> Systems <b>Live</b></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="c-ledger">
+                    <div class="seg lead-seg">Business Platform</div>
+                    <div class="seg stat"><span class="live"></span> Uptime <b>99.9%</b></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- B -->
+    <section class="concept">
+        <div class="concept-head">
+            <div>
+                <span class="num">B</span>
+                <h2>Operational Intelligence tag</h2>
+                <p>A dark, considered badge with a pulsing intelligence marker — positions the product as the OI platform, not just admin software.</p>
+            </div>
+        </div>
+        <div class="stage">
+            <div class="row">
+                <div class="c-oi">
+                    <span class="label">Operational <span>Intelligence</span></span>
+                    <span class="tag"><span class="pulse"></span> Ready</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- C -->
+    <section class="concept">
+        <div class="concept-head">
+            <div>
+                <span class="num">C</span>
+                <h2>Module pipeline</h2>
+                <p>Shows the operational flow across modules. Communicates breadth and structure at a glance — the connected workspace story.</p>
+            </div>
+        </div>
+        <div class="stage">
+            <div class="row">
+                <div class="c-pipe">
+                    <span class="chip on">Quote</span><span class="arrow">→</span>
+                    <span class="chip on">Invoice</span><span class="arrow">→</span>
+                    <span class="chip on">Collect</span><span class="arrow">→</span>
+                    <span class="chip">Control</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- D -->
+    <section class="concept">
+        <div class="concept-head">
+            <div>
+                <span class="num">D</span>
+                <h2>Structured frame</h2>
+                <p>Corner ticks and a diamond marker evoke precision and structure — no rounded pill. Calm and engineered.</p>
+            </div>
+        </div>
+        <div class="stage">
+            <div class="row">
+                <div class="c-frame"><span class="sq"></span> Structured Business Operations</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- E -->
+    <section class="concept">
+        <div class="concept-head">
+            <div>
+                <span class="num">E</span>
+                <h2>Indexed kicker</h2>
+                <p>Drops the container entirely. An editorial kicker with a gradient rule — lighter, more premium, less "SaaS badge".</p>
+            </div>
+        </div>
+        <div class="stage">
+            <div class="row">
+                <div class="c-kicker">
+                    <span class="top"><span class="idx">01</span> The Operational Backbone</span>
+                    <span class="rule"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- F -->
+    <section class="concept">
+        <div class="concept-head">
+            <div>
+                <span class="num">F</span>
+                <h2>Live metric strip</h2>
+                <p>Leads with proof. Tiny KPIs echo the product's own dashboard, reinforcing "financial awareness and visibility" immediately.</p>
+            </div>
+        </div>
+        <div class="stage">
+            <div class="row">
+                <div class="c-metric">
+                    <div class="m"><span class="v green">€12,480</span><span class="k">Revenue tracked</span></div>
+                    <div class="div"></div>
+                    <div class="m"><span class="v">6</span><span class="k">Modules</span></div>
+                    <div class="div"></div>
+                    <div class="m"><span class="v">1</span><span class="k">Workspace</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="note"><b>Contrast check</b> — several concepts on the dark hero variant:</div>
+        <div class="stage" style="margin-top:16px">
+            <div class="on-dark row">
+                <div class="c-oi">
+                    <span class="label">Operational <span>Intelligence</span></span>
+                    <span class="tag"><span class="pulse"></span> Ready</span>
+                </div>
+                <div class="c-pipe" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)">
+                    <span class="chip on" style="background:rgba(87,184,232,.2);color:#bfe4f7">Quote</span><span class="arrow" style="color:rgba(255,255,255,.35)">→</span>
+                    <span class="chip on" style="background:rgba(87,184,232,.2);color:#bfe4f7">Invoice</span><span class="arrow" style="color:rgba(255,255,255,.35)">→</span>
+                    <span class="chip" style="color:rgba(255,255,255,.5)">Control</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="note" style="margin-top:26px;text-align:center">
+        Open this file directly in a browser to preview. Once you pick a direction (or a blend), I can wire it into <b>Views/Landing/Index.cshtml</b> and add the matching CSS.
+    </div>
+</div>
+</body>
+</html>

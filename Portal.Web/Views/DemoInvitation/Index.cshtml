@@ -382,7 +382,7 @@
     var currentPermissionsInvitationId = null;
     var moduleLabels = {
         customer: 'Customers', quotation: 'Quotations', invoice: 'Invoices',
-        revenue: 'Revenue', purchase: 'Purchases', vat: 'VAT',
+        revenue: 'Revenue', purchase: 'Purchases & Suppliers', vat: 'VAT',
         credit: 'Credit Notes', audit: 'Audit', products: 'Products',
         sales: 'Opportunities', pnl: 'Profit & Loss', cashflow: 'Cash Flow',
         expense_insights: 'Expense Insights', schedule_payments: 'Payment Schedules',
@@ -392,20 +392,23 @@
         purchase_import: 'Purchase Import', zreport_import: 'Sales Invoice Import',
         attachments: 'Attachments', audit_log: 'Activity Log',
         activity_timeline: 'Activity Timeline', client_portal: 'Client Portal',
-        api: 'API Access', webhooks: 'Webhooks', multi_currency: 'Multi-Currency'
+        api: 'API Access', webhooks: 'Webhooks', multi_currency: 'Multi-Currency',
+        stripe_connect: 'Card Payments (Stripe)', compliance: 'Compliance', payroll: 'Payroll'
     };
     var modules = ['customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'audit', 'products',
         'sales', 'pnl', 'cashflow', 'expense_insights', 'schedule_payments',
         'payment_link_manual', 'payment_reminder_manual', 'payment_link_auto', 'payment_reminder_auto',
         'recurring_expense_validation', 'purchase_import', 'zreport_import', 'attachments', 'audit_log',
-        'activity_timeline', 'client_portal', 'api', 'webhooks', 'multi_currency'];
+        'activity_timeline', 'client_portal', 'api', 'webhooks', 'multi_currency',
+        'stripe_connect', 'compliance', 'payroll'];
 
     var moduleGroups = [
         { title: 'Core (Foundation)', tier: 'foundation', modules: ['customer', 'quotation', 'invoice', 'revenue', 'purchase', 'vat', 'credit', 'products', 'audit'] },
         { title: 'Intelligence (Professional)', tier: 'professional', modules: ['sales', 'pnl', 'cashflow', 'expense_insights', 'schedule_payments', 'recurring_expense_validation'] },
         { title: 'Automation (Professional)', tier: 'professional', modules: ['payment_link_manual', 'payment_reminder_manual', 'payment_link_auto', 'payment_reminder_auto', 'purchase_import', 'zreport_import'] },
         { title: 'Documents (Professional)', tier: 'professional', modules: ['attachments', 'audit_log'] },
-        { title: 'Enterprise', tier: 'enterprise', modules: ['activity_timeline', 'client_portal', 'api', 'webhooks', 'multi_currency'] }
+        { title: 'Enterprise', tier: 'enterprise', modules: ['activity_timeline', 'client_portal', 'api', 'webhooks', 'multi_currency', 'stripe_connect'] },
+        { title: 'Operations', tier: 'professional', modules: ['compliance', 'payroll'] }
     ];
 
     var moduleTiers = {};

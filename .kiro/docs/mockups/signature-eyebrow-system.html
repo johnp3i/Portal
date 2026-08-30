@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3 Inventors — Signature Eyebrow System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;
+            --warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;
+            --bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+            /* per-platform accent — the ONLY thing that changes */
+            --accent:var(--blue);
+        }
+        body{
+            font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);
+            background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);
+            line-height:1.6;-webkit-font-smoothing:antialiased;padding:48px 28px 110px;
+        }
+        h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}
+        .page{max-width:1000px;margin:0 auto}
+        .page-head{text-align:center;max-width:780px;margin:0 auto 10px}
+        .page-head .kicker{font-size:12px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-dark)}
+        .page-head h1{font-size:40px;margin-top:12px}
+        .page-head p{margin-top:14px;color:var(--muted);font-size:16px}
+
+        .block{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(244,249,253,.98));border:1px solid var(--line);border-radius:26px;padding:36px;box-shadow:0 16px 38px rgba(13,94,166,.07);margin-top:26px}
+        .block > .head{border-bottom:1px dashed rgba(13,94,166,.16);padding-bottom:16px;margin-bottom:30px}
+        .block > .head h2{font-size:22px}
+        .block > .head p{color:var(--muted);font-size:14px;max-width:620px;margin-top:6px}
+        .stage{display:flex;flex-wrap:wrap;gap:30px 40px;align-items:center}
+        .swatch-row{display:flex;flex-wrap:wrap;gap:18px;margin-top:26px}
+
+        /* ============================================================
+           THE SIGNATURE — "The Trimark"
+           A fixed left glyph of three ascending marks (the 3 Inventors "3"),
+           joined to text by a hairline seam. Not a pill. Notched corner.
+           ============================================================ */
+        .oi{
+            --accent:var(--blue);
+            display:inline-flex;align-items:stretch;
+            font-weight:800;color:var(--blue-dark);
+            background:#fff;
+            border:1px solid rgba(13,94,166,.14);
+            /* notched top-right + bottom-left — the ownable silhouette */
+            clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+            box-shadow:0 14px 30px rgba(13,94,166,.10);
+        }
+        .oi{align-items:center}
+        .oi .mark{
+            display:flex;align-items:flex-end;justify-content:center;gap:3px;align-self:stretch;
+            padding:0 14px;background:linear-gradient(180deg,rgba(13,94,166,.05),rgba(87,184,232,.06));
+            border-right:1px solid rgba(13,94,166,.12);
+        }
+        .oi .mark i{width:4px;border-radius:2px;background:var(--accent);opacity:.4}
+        .oi .mark i:nth-child(1){height:11px;opacity:.4}
+        .oi .mark i:nth-child(2){height:17px;opacity:.65}
+        .oi .mark i:nth-child(3){height:23px;opacity:1}
+        .oi .body{display:flex;flex-direction:column;justify-content:center;padding:9px 18px 9px 15px;text-align:left}
+        .oi .body .sys{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+        .oi .body .name{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-top:2px;color:var(--blue-dark)}
+
+        /* size + tone variants of the SAME system */
+        .oi.lg .mark i:nth-child(1){height:14px}
+        .oi.lg .mark i:nth-child(2){height:22px}
+        .oi.lg .mark i:nth-child(3){height:30px}
+        .oi.lg .body{padding:12px 22px 12px 18px}
+        .oi.lg .body .name{font-size:15px}
+        .oi.lg .body .sys{font-size:10px}
+
+        .oi.dark{background:#071B2A;border-color:rgba(255,255,255,.12);box-shadow:0 18px 40px rgba(7,27,42,.35)}
+        .oi.dark .mark{background:rgba(87,184,232,.10);border-right-color:rgba(255,255,255,.12)}
+        .oi.dark .body .name{color:#eaf3fa}
+        .oi.dark .body .sys{color:var(--cyan)}
+
+        /* accent overrides per platform */
+        .a-green{--accent:var(--green)}
+        .a-warning{--accent:var(--warning)}
+        .a-cyan{--accent:var(--cyan)}
+
+        /* hero context demo */
+        .hero-demo{border-radius:22px;padding:40px;background:radial-gradient(circle at 18% 0%,rgba(13,94,166,.10),transparent 40%),linear-gradient(180deg,#FBFDFF,#EEF4F8)}
+        .hero-demo h3{font-family:Manrope;font-size:38px;margin-top:22px;max-width:560px;letter-spacing:-.04em}
+        .hero-demo .hl{background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+        .hero-demo.grid{background:linear-gradient(180deg,#F2F8FC,#e8f1f8);background-image:linear-gradient(rgba(13,94,166,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(13,94,166,.05) 1px,transparent 1px);background-size:26px 26px}
+
+        .label{font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);width:100%;margin-bottom:-8px}
+        .note{margin-top:24px;font-size:13px;color:var(--muted);background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-radius:12px;padding:14px 16px}
+        .note b{color:var(--blue-dark)}
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="page-head">
+        <div class="kicker">3 Inventors · Brand System</div>
+        <h1>The signature eyebrow</h1>
+        <p>One fixed form used across every 3 Inventors platform — the "Trimark". A three-mark glyph (the ascending 3) locked to a notched, engineered container. The silhouette and glyph never change; only the words and accent colour vary per platform.</p>
+    </div>
+
+    <!-- The core mark -->
+    <section class="block">
+        <div class="head">
+            <h2>The mark</h2>
+            <p>Three ascending bars = the "3" in 3 Inventors, reading as growth and structured operational intelligence. Sealed to the label by a hairline seam. The notched corners (top-right, bottom-left) are the ownable silhouette — deliberately not a capsule.</p>
+        </div>
+        <div class="stage">
+            <div class="oi lg">
+                <div class="mark"><i></i><i></i><i></i></div>
+                <div class="body">
+                    <span class="sys">Operational Intelligence</span>
+                    <span class="name">Business Platform</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Same system, one accent variable, many platforms -->
+    <section class="block">
+        <div class="head">
+            <h2>One system · every platform</h2>
+            <p>The form is identical. Only <b>--accent</b> and the platform name change. Instantly recognisable as a 3 Inventors surface regardless of product.</p>
+        </div>
+        <div class="swatch-row">
+            <div class="oi">
+                <div class="mark"><i></i><i></i><i></i></div>
+                <div class="body"><span class="sys">Operational Intelligence</span><span class="name">Business Platform</span></div>
+            </div>
+            <div class="oi a-green">
+                <div class="mark"><i></i><i></i><i></i></div>
+                <div class="body"><span class="sys">Operational Intelligence</span><span class="name">Order Intake</span></div>
+            </div>
+            <div class="oi a-warning">
+                <div class="mark"><i></i><i></i><i></i></div>
+                <div class="body"><span class="sys">Operational Intelligence</span><span class="name">Production · JDS</span></div>
+            </div>
+            <div class="oi a-cyan">
+                <div class="mark"><i></i><i></i><i></i></div>
+                <div class="body"><span class="sys">Canonical Model</span><span class="name">COM Ingestion</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dark + light tone -->
+    <section class="block">
+        <div class="head">
+            <h2>Tone</h2>
+            <p>Works on light and dark hero surfaces without losing identity.</p>
+        </div>
+        <div class="stage">
+            <div class="oi">
+                <div class="mark"><i></i><i></i><i></i></div>
+                <div class="body"><span class="sys">Operational Intelligence</span><span class="name">Business Platform</span></div>
+            </div>
+            <div class="oi dark">
+                <div class="mark"><i></i><i></i><i></i></div>
+                <div class="body"><span class="sys">Operational Intelligence</span><span class="name">Business Platform</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- In context -->
+    <section class="block">
+        <div class="head">
+            <h2>In the hero</h2>
+            <p>How it sits above the headline — on the Portal light hero and on a grid-backed platform hero.</p>
+        </div>
+        <div class="stage" style="flex-direction:column;align-items:stretch;gap:22px">
+            <div class="hero-demo">
+                <div class="oi lg">
+                    <div class="mark"><i></i><i></i><i></i></div>
+                    <div class="body"><span class="sys">Operational Intelligence</span><span class="name">Business Platform</span></div>
+                </div>
+                <h3>Run your business with <span class="hl">structure, clarity, and control.</span></h3>
+            </div>
+            <div class="hero-demo grid">
+                <div class="oi lg a-green">
+                    <div class="mark"><i></i><i></i><i></i></div>
+                    <div class="body"><span class="sys">Operational Intelligence</span><span class="name">Order Intake</span></div>
+                </div>
+                <h3>Private order intake, <span class="hl" style="background:linear-gradient(135deg,#129867,#57B8E8);-webkit-background-clip:text;background-clip:text;color:transparent">structured from the first signal.</span></h3>
+            </div>
+        </div>
+    </section>
+
+    <div class="note">
+        <b>Why this is ownable:</b> the three-bar glyph literally is the "3", the notched silhouette is unusual for SaaS (which almost universally uses capsules), and the two-line label (mono system tag + platform name) reads as an operational readout rather than a marketing badge. Change only the accent + name per platform.
+        <br><br>
+        Pick this direction (or ask for tweaks — glyph shape, notch depth, mono vs. sans system tag) and I'll wire it into <b>Views/Landing/Index.cshtml</b> plus a shared CSS class you can reuse across platforms.
+    </div>
+</div>
+</body>
+</html>

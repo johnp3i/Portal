@@ -15,7 +15,7 @@ public class BusinessRepository : GenericStoredProcedureRepository<Business>
     {
         try
         {
-            const string query = "SELECT [Id], [Name], [IsActive], [IsDemoAccount], [IsPaymentInstructionsEnabled], [IsAutoReceiptEnabled], [IsAutoInvoiceSignatureEnabled], [IsOnboardingDismissed], [CreatedAtUtc], [UpdatedAtUtc] FROM [portal].[Business]";
+            const string query = "SELECT [Id], [Name], [IsActive], [IsDemoAccount], [IsPaymentInstructionsEnabled], [IsAutoReceiptEnabled], [IsAutoInvoiceSignatureEnabled], [IsOnboardingDismissed], [IsReminderSystemEnabled], [CreatedAtUtc], [UpdatedAtUtc] FROM [portal].[Business]";
             return await ExecuteStoredProcedure(query);
         }
         catch (Exception)
@@ -28,7 +28,7 @@ public class BusinessRepository : GenericStoredProcedureRepository<Business>
     {
         try
         {
-            const string query = "SELECT [Id], [Name], [IsActive], [IsDemoAccount], [IsPaymentInstructionsEnabled], [IsAutoReceiptEnabled], [IsAutoInvoiceSignatureEnabled], [IsOnboardingDismissed], [CreatedAtUtc], [UpdatedAtUtc] FROM [portal].[Business] WHERE [Id] = @Id";
+            const string query = "SELECT [Id], [Name], [IsActive], [IsDemoAccount], [IsPaymentInstructionsEnabled], [IsAutoReceiptEnabled], [IsAutoInvoiceSignatureEnabled], [IsOnboardingDismissed], [IsReminderSystemEnabled], [CreatedAtUtc], [UpdatedAtUtc] FROM [portal].[Business] WHERE [Id] = @Id";
             return await ExecuteSingleRecordStoredProcedure(query, new SqlParameter("@Id", id));
         }
         catch (Exception)

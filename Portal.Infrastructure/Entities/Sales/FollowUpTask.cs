@@ -43,6 +43,11 @@ public class FollowUpTask
     /// </summary>
     public TimeOnly? ScheduledTimeUtc { get; set; }
 
+    /// <summary>
+    /// Optional link to the meeting that spawned this task. NULL for standalone tasks.
+    /// </summary>
+    public int? MeetingId { get; set; }
+
     public string CreatedByUserId { get; set; } = null!;
 
     public DateTime CreatedAtUtc { get; set; }
@@ -55,4 +60,6 @@ public class FollowUpTask
     public SalesContact? Contact { get; set; }
 
     public TeamMember? TeamMember { get; set; }
+
+    public Meeting? Meeting { get; set; }
 }

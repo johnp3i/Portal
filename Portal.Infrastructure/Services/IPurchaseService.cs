@@ -11,6 +11,7 @@ public interface IPurchaseService
     Task<List<Purchase>> GetPurchasesAsync();
     Task<List<Purchase>> GetFilteredPurchasesAsync(int? supplierId, int? expenseCategoryId, DateOnly? dateFrom, DateOnly? dateTo);
     Task<Purchase?> GetPurchaseByIdAsync(int id);
+    Task<Purchase?> GetMostRecentBySupplierAsync(int supplierId);
     Task<ServiceResult> CreatePurchaseAsync(Purchase purchase);
     Task<ServiceResult> UpdatePurchaseAsync(Purchase purchase);
     Task<ServiceResult> CancelPurchaseAsync(int id);

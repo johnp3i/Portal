@@ -211,7 +211,7 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
 <!-- Line Items (full width) -->
 <section class="glass card-pad" style="margin-top:24px;">
     <div class="label">Line Items</div>
-    <h2 style="margin-top:8px;font-size:24px;">Pricing breakdown</h2>
+    <h2 style="margin-top:8px;font-size:24px;">Pricing breakdown <span style="font-size:14px;font-weight:600;color:#5E7385;margin-left:8px;">· @Model.Lines.Count item@(Model.Lines.Count != 1 ? "s" : "")</span></h2>
 
     <div style="margin-top:18px;">
         @if (Model.Lines != null && Model.Lines.Count > 0)
@@ -228,25 +228,38 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
                 <div class="table-responsive">
                     <table style="table-layout:fixed;">
                         <colgroup>
-                            <col style="width:40%;" />
+                            <col style="width:5%;" />
+                            <col style="width:25%;" />
+                            <col style="width:10%;" />
+                            <col style="width:14%;" />
+                            <col style="width:14%;" />
+                            <col style="width:10%;" />
+                            <col style="width:10%;" />
                             <col style="width:12%;" />
-                            <col style="width:18%;" />
-                            <col style="width:12%;" />
-                            <col style="width:18%;" />
                         </colgroup>
                         <thead>
                             <tr>
+                                <th>#</th>
                                 <th>Description</th>
                                 <th>Months</th>
                                 <th>Monthly Price</th>
+                                <th>Subtotal</th>
                                 <th>VAT %</th>
+                                <th>Discount</th>
                                 <th>Annual Total</th>
                             </tr>
                         </thead>
                         <tbody>
+                            @{ var subRowNum = 0; }
                             @foreach (var line in subscriptionLines)
                             {
+                                subRowNum++;
+                                var subAnnualGross = line.UnitPrice * 12;
+                                var subDiscountAmount = line.DiscountType == "Percentage"
+                                    ? (subAnnualGross * line.Discount / 100m)
+                                    : line.Discount;
                                 <tr>
+                                    <td><span class="muted">@subRowNum</span></td>
                                     <td>
                                         <strong>@line.Description</strong>
                                         @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
@@ -255,8 +268,19 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
                                         }
                                     </td>
                                     <td>12</td>
-                                    <td>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")/mo</td>
+                                    <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")/mo</td>
+                                    <td style="font-weight:600;color:#0D5EA6;">@(ViewBag.CurrencySymbol)@subAnnualGross.ToString("N2")</td>
                                     <td>@line.VatRate.ToString("G29")%</td>
+                                    <td>
+                                        @if (subDiscountAmount > 0)
+                                        {
+                                            <span style="color:#129867;">-@(ViewBag.CurrencySymbol)@subDiscountAmount.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
                                     <td><strong>@(ViewBag.CurrencySymbol)@((line.LineTotal * 12).ToString("N2"))</strong></td>
                                 </tr>
                             }
@@ -275,25 +299,38 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
                 <div class="table-responsive">
                     <table style="table-layout:fixed;">
                         <colgroup>
-                            <col style="width:40%;" />
+                            <col style="width:5%;" />
+                            <col style="width:25%;" />
+                            <col style="width:10%;" />
+                            <col style="width:14%;" />
+                            <col style="width:14%;" />
+                            <col style="width:10%;" />
+                            <col style="width:10%;" />
                             <col style="width:12%;" />
-                            <col style="width:18%;" />
-                            <col style="width:12%;" />
-                            <col style="width:18%;" />
                         </colgroup>
                         <thead>
                             <tr>
+                                <th>#</th>
                                 <th>Description</th>
                                 <th>Qty</th>
                                 <th>Unit Price</th>
+                                <th>Subtotal</th>
                                 <th>VAT %</th>
+                                <th>Discount</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
+                            @{ var otRowNum = 0; }
                             @foreach (var line in oneTimeLines)
                             {
+                                otRowNum++;
+                                var otSubtotal = line.Quantity * line.UnitPrice;
+                                var otDiscountAmount = line.DiscountType == "Percentage"
+                                    ? (line.Quantity * line.UnitPrice * line.Discount / 100m)
+                                    : line.Discount;
                                 <tr>
+                                    <td><span class="muted">@otRowNum</span></td>
                                     <td>
                                         <strong>@line.Description</strong>
                                         @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
@@ -303,7 +340,18 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
                                     </td>
                                     <td>@line.Quantity.ToString("G29")</td>
                                     <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
+                                    <td style="font-weight:600;color:#0D5EA6;">@(ViewBag.CurrencySymbol)@otSubtotal.ToString("N2")</td>
                                     <td>@line.VatRate.ToString("G29")%</td>
+                                    <td>
+                                        @if (otDiscountAmount > 0)
+                                        {
+                                            <span style="color:#129867;">-@(ViewBag.CurrencySymbol)@otDiscountAmount.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
                                     <td><strong>@(ViewBag.CurrencySymbol)@line.LineTotal.ToString("N2")</strong></td>
                                 </tr>
                             }
@@ -326,87 +374,92 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
 </section>
 
 <!-- Share Proposal (full width) -->
-<section class="glass card-pad" style="margin-top:24px;">
+<section class="glass card-pad" style="margin-top:24px;position:relative;">
+    <button type="button" onclick="var b=document.getElementById('proposalSharingBody');var svg=this.querySelector('svg');if(b.style.display==='none'){b.style.display='';svg.style.transform='rotate(180deg)';}else{b.style.display='none';svg.style.transform='rotate(0deg)';}" style="position:absolute;top:18px;right:20px;background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
     <div class="label">Proposal Sharing</div>
     <h2 style="margin-top:8px;font-size:24px;">Share with customer</h2>
     <p class="muted" style="margin-top:8px;font-size:14px;">Generate a branded proposal and send a secure link to your customer.</p>
 
-    <form id="shareProposalForm" method="post" asp-action="Share" asp-controller="Quotation" asp-route-id="@quotationId" style="margin-top:24px;">
-        @Html.AntiForgeryToken()
+    <div id="proposalSharingBody" style="display:none;">
+        <form id="shareProposalForm" method="post" asp-action="Share" asp-controller="Quotation" asp-route-id="@quotationId" style="margin-top:24px;">
+            @Html.AntiForgeryToken()
 
-        <div class="form-grid">
-            <div class="field">
-                <label for="RecipientEmail">Recipient Email</label>
-                <input type="email" id="RecipientEmail" name="RecipientEmail"
-                       value="@(ViewBag.CustomerEmail ?? "")" />
-                <small class="muted">Pre-filled with customer email. Change to send to an alternative address.</small>
-            </div>
-            <div class="field">
-                <label for="ExpiresAtUtc">Link Expiration</label>
-                <input type="datetime-local" id="ExpiresAtUtc" name="ExpiresAtUtc"
-                       value="@defaultExpiration.ToString("yyyy-MM-ddTHH:mm")" required />
-                <small class="muted">Must be at least 1 day in the future.</small>
-            </div>
-            <div class="field" style="grid-column:1 / -1;">
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                    <input type="checkbox" name="SendEmail" value="true" checked style="width:16px;height:16px;" />
-                    <span style="font-size:14px;font-weight:500;color:#334155;">Send email notification to recipient</span>
-                </label>
-            </div>
-        </div>
-
-        @if (logos.Any())
-        {
-            <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);">
-                <div class="label" style="margin-bottom:12px;">Hero Logos</div>
-                <p class="muted" style="font-size:13px;margin-bottom:12px;">Select logos to display prominently at the top of the proposal.</p>
-                <div style="display:flex;gap:16px;flex-wrap:wrap;">
-                    @foreach (var logo in logos)
-                    {
-                        <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;transition:border-color .2s;">
-                            <input type="checkbox" name="HeroLogoIds" value="@logo.Id" style="width:16px;height:16px;" @(logo.IsPrimary ? "checked" : "") />
-                            <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:36px;max-width:72px;object-fit:contain;" />
-                            <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
-                            @if (logo.IsPrimary)
-                            {
-                                <span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0D5EA6;">Primary</span>
-                            }
-                        </label>
-                    }
+            <div class="form-grid">
+                <div class="field">
+                    <label for="RecipientEmail">Recipient Email</label>
+                    <input type="email" id="RecipientEmail" name="RecipientEmail"
+                           value="@(ViewBag.CustomerEmail ?? "")" />
+                    <small class="muted">Pre-filled with customer email. Change to send to an alternative address.</small>
                 </div>
-            </div>
-
-            <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);">
-                <div class="label" style="margin-bottom:12px;">Metadata Logo</div>
-                <p class="muted" style="font-size:13px;margin-bottom:12px;">Small logo displayed next to the business name in the proposal header.</p>
-                <div style="display:flex;gap:16px;flex-wrap:wrap;">
-                    <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
-                        <input type="radio" name="MetaLogoId" value="" @(!logos.Any(l => l.IsPrimary) ? "checked" : "") style="width:16px;height:16px;" />
-                        <span style="font-size:13px;font-weight:600;color:#5E7385;">None</span>
+                <div class="field">
+                    <label for="ExpiresAtUtc">Link Expiration</label>
+                    <input type="datetime-local" id="ExpiresAtUtc" name="ExpiresAtUtc"
+                           value="@defaultExpiration.ToString("yyyy-MM-ddTHH:mm")" required />
+                    <small class="muted">Must be at least 1 day in the future.</small>
+                </div>
+                <div class="field" style="grid-column:1 / -1;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" name="SendEmail" value="true" checked style="width:16px;height:16px;" />
+                        <span style="font-size:14px;font-weight:500;color:#334155;">Send email notification to recipient</span>
                     </label>
-                    @foreach (var logo in logos)
-                    {
-                        <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
-                            <input type="radio" name="MetaLogoId" value="@logo.Id" @(logo.IsPrimary ? "checked" : "") style="width:16px;height:16px;" />
-                            <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:28px;max-width:56px;object-fit:contain;" />
-                            <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
-                        </label>
-                    }
                 </div>
             </div>
-        }
-        else
-        {
-            <div style="margin-top:18px;padding:16px;background:rgba(13,94,166,.03);border-radius:12px;border:1px solid rgba(13,94,166,.08);">
-                <p class="muted" style="font-size:14px;margin:0;">No logos uploaded yet. <a href="@Url.Action("Index", "MyBusiness", new { tab = "logos" })" style="color:var(--blue);font-weight:700;">Upload logos</a> in My Business to include them in proposals.</p>
-            </div>
-        }
 
-        <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);display:flex;gap:12px;">
-            <button type="button" id="btnShareProposal" class="btn btn-primary">Share Proposal</button>
-            <button type="button" id="btnPreviewProposal" class="btn btn-secondary">Preview First</button>
-        </div>
-    </form>
+            @if (logos.Any())
+            {
+                <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);">
+                    <div class="label" style="margin-bottom:12px;">Hero Logos</div>
+                    <p class="muted" style="font-size:13px;margin-bottom:12px;">Select logos to display prominently at the top of the proposal.</p>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                        @foreach (var logo in logos)
+                        {
+                            <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;transition:border-color .2s;">
+                                <input type="checkbox" name="HeroLogoIds" value="@logo.Id" style="width:16px;height:16px;" @(logo.IsPrimary ? "checked" : "") />
+                                <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:36px;max-width:72px;object-fit:contain;" />
+                                <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
+                                @if (logo.IsPrimary)
+                                {
+                                    <span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0D5EA6;">Primary</span>
+                                }
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);">
+                    <div class="label" style="margin-bottom:12px;">Metadata Logo</div>
+                    <p class="muted" style="font-size:13px;margin-bottom:12px;">Small logo displayed next to the business name in the proposal header.</p>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                        <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
+                            <input type="radio" name="MetaLogoId" value="" @(!logos.Any(l => l.IsPrimary) ? "checked" : "") style="width:16px;height:16px;" />
+                            <span style="font-size:13px;font-weight:600;color:#5E7385;">None</span>
+                        </label>
+                        @foreach (var logo in logos)
+                        {
+                            <label style="display:flex;align-items:center;gap:10px;padding:10px 16px;border:1.5px solid rgba(13,94,166,.10);border-radius:12px;cursor:pointer;">
+                                <input type="radio" name="MetaLogoId" value="@logo.Id" @(logo.IsPrimary ? "checked" : "") style="width:16px;height:16px;" />
+                                <img src="@logo.PublicUrl" alt="@logo.DisplayName" style="max-height:28px;max-width:56px;object-fit:contain;" />
+                                <span style="font-size:13px;font-weight:600;color:#334155;">@logo.DisplayName</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="margin-top:18px;padding:16px;background:rgba(13,94,166,.03);border-radius:12px;border:1px solid rgba(13,94,166,.08);">
+                    <p class="muted" style="font-size:14px;margin:0;">No logos uploaded yet. <a href="@Url.Action("Index", "MyBusiness", new { tab = "logos" })" style="color:var(--blue);font-weight:700;">Upload logos</a> in My Business to include them in proposals.</p>
+                </div>
+            }
+
+            <div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(13,94,166,.08);display:flex;gap:12px;">
+                <button type="button" id="btnShareProposal" class="btn btn-primary">Share Proposal</button>
+                <button type="button" id="btnPreviewProposal" class="btn btn-secondary">Preview First</button>
+            </div>
+        </form>
+    </div>
 </section>
 
 <!-- Acceptance Status -->

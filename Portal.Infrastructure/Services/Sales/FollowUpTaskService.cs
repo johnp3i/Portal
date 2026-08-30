@@ -12,6 +12,7 @@ public class FollowUpTaskService : IFollowUpTaskService
 {
     private readonly FollowUpTaskRepository _taskRepository;
     private readonly SalesContactRepository _contactRepository;
+    private readonly MeetingRepository _meetingRepository;
     private readonly ICurrentTenantService _tenantService;
 
     private static readonly string[] ValidTaskTypes = { "Call", "Email", "Follow-up", "Meeting Prep", "Other" };
@@ -19,10 +20,12 @@ public class FollowUpTaskService : IFollowUpTaskService
     public FollowUpTaskService(
         FollowUpTaskRepository taskRepository,
         SalesContactRepository contactRepository,
+        MeetingRepository meetingRepository,
         ICurrentTenantService tenantService)
     {
         _taskRepository = taskRepository;
         _contactRepository = contactRepository;
+        _meetingRepository = meetingRepository;
         _tenantService = tenantService;
     }
 
@@ -45,6 +48,7 @@ public class FollowUpTaskService : IFollowUpTaskService
                 LeadRequestId = request.LeadRequestId,
                 ContactId = request.ContactId,
                 TeamMemberId = request.TeamMemberId,
+                MeetingId = request.MeetingId,
                 Title = request.Title.Trim(),
                 TaskType = request.TaskType,
                 DueAtUtc = request.DueAtUtc,
@@ -191,7 +195,11 @@ public class FollowUpTaskService : IFollowUpTaskService
             var contactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
 
-            return tasks.Select(t => MapToDto(t, contactsLookup)).ToList();
+            // Batch-fetch meeting subjects for tasks linked to a meeting
+            var meetingIds = tasks.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct();
+            var meetingSubjectsLookup = await _meetingRepository.GetSubjectsByIdsAsync(meetingIds, businessId);
+
+            return tasks.Select(t => MapToDto(t, contactsLookup, meetingSubjectsLookup)).ToList();
         }
         catch (Exception ex)
         {
@@ -209,7 +217,11 @@ public class FollowUpTaskService : IFollowUpTaskService
             var contactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
 
-            return tasks.Select(t => MapToDto(t, contactsLookup)).ToList();
+            // Batch-fetch meeting subjects for tasks linked to a meeting
+            var meetingIds = tasks.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct();
+            var meetingSubjectsLookup = await _meetingRepository.GetSubjectsByIdsAsync(meetingIds, businessId);
+
+            return tasks.Select(t => MapToDto(t, contactsLookup, meetingSubjectsLookup)).ToList();
         }
         catch (Exception ex)
         {
@@ -229,9 +241,13 @@ public class FollowUpTaskService : IFollowUpTaskService
             var contactIds = items.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
 
+            // Batch-fetch meeting subjects for tasks linked to a meeting
+            var meetingIds = items.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct();
+            var meetingSubjectsLookup = await _meetingRepository.GetSubjectsByIdsAsync(meetingIds, businessId);
+
             return new PagedResult<FollowUpTaskDto>
             {
-                Items = items.Select(t => MapToDto(t, contactsLookup)).ToList(),
+                Items = items.Select(t => MapToDto(t, contactsLookup, meetingSubjectsLookup)).ToList(),
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalCount = totalCount
@@ -294,7 +310,7 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
-    private static FollowUpTaskDto MapToDto(FollowUpTask entity, Dictionary<int, SalesContact> contactsLookup)
+    private static FollowUpTaskDto MapToDto(FollowUpTask entity, Dictionary<int, SalesContact> contactsLookup, Dictionary<int, string>? meetingSubjectsLookup = null)
     {
         var today = DateTime.UtcNow.Date;
         var dueDate = entity.DueAtUtc.Date;
@@ -319,6 +335,12 @@ public class FollowUpTaskService : IFollowUpTaskService
                 : $"{contact.FirstName} {contact.LastName}";
         }
 
+        string? meetingSubject = null;
+        if (entity.MeetingId.HasValue && meetingSubjectsLookup != null)
+        {
+            meetingSubjectsLookup.TryGetValue(entity.MeetingId.Value, out meetingSubject);
+        }
+
         return new FollowUpTaskDto
         {
             Id = entity.Id,
@@ -334,6 +356,8 @@ public class FollowUpTaskService : IFollowUpTaskService
             SnoozedCount = entity.SnoozedCount,
             TaskOutcome = entity.TaskOutcome,
             ScheduledTimeUtc = entity.ScheduledTimeUtc,
+            MeetingId = entity.MeetingId,
+            MeetingSubject = meetingSubject,
             Urgency = urgency
         };
     }

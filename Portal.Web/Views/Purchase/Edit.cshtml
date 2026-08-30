@@ -56,6 +56,21 @@
                 <span asp-validation-for="InvoiceDate" class="field-validation-error"></span>
             </div>
 
+            <!-- Supplier Due Date -->
+            <div class="field">
+                <label asp-for="SupplierDueDate">Supplier Due Date</label>
+                <input asp-for="SupplierDueDate" type="date" id="SupplierDueDate" />
+                <small class="muted" style="font-size:12px;color:#5E7385;">The actual payment deadline from the supplier's invoice.</small>
+            </div>
+
+            <!-- Target Payment Date -->
+            <div class="field">
+                <label asp-for="TargetPaymentDate">Target Payment Date</label>
+                <input asp-for="TargetPaymentDate" type="date" id="TargetPaymentDate" />
+                <small class="muted" style="font-size:12px;color:#5E7385;">When you want to pay — can be earlier than the supplier deadline.</small>
+                <div id="targetDateWarning" style="display:none;margin-top:6px;font-size:12px;color:#C8912E;">Target date is after the supplier deadline.</div>
+            </div>
+
             <!-- Description -->
             <div class="field" style="grid-column:1 / -1;">
                 <label asp-for="Description">Description</label>
@@ -247,6 +262,25 @@ else
                 link.href = '/Purchase' + saved;
             });
         }
+    })();
+
+    // Target-after-supplier date warning
+    (function() {
+        var supplierInput = document.getElementById('SupplierDueDate');
+        var targetInput = document.getElementById('TargetPaymentDate');
+        var warning = document.getElementById('targetDateWarning');
+        if (!supplierInput || !targetInput || !warning) return;
+
+        function checkDates() {
+            if (supplierInput.value && targetInput.value && targetInput.value > supplierInput.value) {
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+        supplierInput.addEventListener('change', checkDates);
+        targetInput.addEventListener('change', checkDates);
+        checkDates();
     })();
 </script>
 

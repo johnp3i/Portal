@@ -654,7 +654,7 @@ public class SalesController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> AxGetMeetingsPaged(string? status, int? meetingTypeId, DateTime? dateFrom, DateTime? dateTo, int page = 1)
+    public async Task<IActionResult> AxGetMeetingsPaged(string? status, int? meetingTypeId, DateTime? dateFrom, DateTime? dateTo, int? outcomeClassificationId, int page = 1)
     {
         try
         {
@@ -663,7 +663,8 @@ public class SalesController : Controller
                 Status = status,
                 MeetingTypeId = meetingTypeId,
                 DateFrom = dateFrom,
-                DateTo = dateTo
+                DateTo = dateTo,
+                OutcomeClassificationId = outcomeClassificationId
             };
             var result = await _meetingService.GetMeetingsPagedAsync(filter, page, 15);
             return Json(new
@@ -1235,7 +1236,25 @@ public class SalesController : Controller
             var result = await _followUpTaskService.CreateTaskAsync(request, userId);
 
             if (result.Success && request.LeadRequestId.HasValue)
-                await RecordActivityAsync(request.LeadRequestId.Value, "task_created", $"Follow-up task created: {request.Title}");
+            {
+                var activityDescription = $"Follow-up task created: {request.Title}";
+
+                if (request.MeetingId.HasValue)
+                {
+                    try
+                    {
+                        var meetingSubject = await _meetingService.GetSubjectAsync(request.MeetingId.Value);
+                        if (meetingSubject != null)
+                            activityDescription = $"Follow-up task created from meeting: {meetingSubject}";
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Could not resolve meeting subject for activity feed");
+                    }
+                }
+
+                await RecordActivityAsync(request.LeadRequestId.Value, "task_created", activityDescription);
+            }
 
             return Json(new { success = result.Success, message = result.Message, id = result.Id });
         }

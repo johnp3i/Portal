@@ -194,41 +194,51 @@
         piBgColor = "rgba(94,115,133,0.06)";
     }
 }
-<section class="glass card-pad" style="margin-top:24px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-radius:10px;background:@piBgColor;">
-        <div>
-            <div style="font-size:13px;font-weight:600;color:#0B1B28;">Payment Instructions</div>
-            <p style="font-size:13px;color:#5E7385;margin-top:4px;">@piMessage</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
-                <input type="checkbox" id="piOverrideToggle" @(piEffectivelyShown ? "checked" : "") onchange="setPaymentInstructionsOverride(this.checked)" style="opacity:0;width:0;height:0;position:absolute;" />
-                <span style="position:absolute;cursor:pointer;inset:0;background:@(piEffectivelyShown ? "#129867" : "#d0dbe5");border-radius:12px;transition:background 0.2s;"></span>
-                <span style="position:absolute;top:2px;left:@(piEffectivelyShown ? "22px" : "2px");width:20px;height:20px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
-            </label>
+<section class="glass card-pad" style="margin-top:24px;position:relative;">
+    <button type="button" onclick="var b=document.getElementById('paymentInstructionsBody');var svg=this.querySelector('svg');if(b.style.display==='none'){b.style.display='';svg.style.transform='rotate(180deg)';}else{b.style.display='none';svg.style.transform='rotate(0deg)';}" style="position:absolute;top:18px;right:20px;background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="label">Payment Instructions</div>
+    <p class="muted" style="margin-top:4px;font-size:13px;">Control whether bank transfer details appear on the shared invoice page.</p>
+    <div id="paymentInstructionsBody" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-radius:10px;background:@piBgColor;margin-top:14px;">
+            <div>
+                <p style="font-size:13px;color:#5E7385;margin:0;">@piMessage</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+                    <input type="checkbox" id="piOverrideToggle" @(piEffectivelyShown ? "checked" : "") onchange="setPaymentInstructionsOverride(this.checked)" style="opacity:0;width:0;height:0;position:absolute;" />
+                    <span style="position:absolute;cursor:pointer;inset:0;background:@(piEffectivelyShown ? "#129867" : "#d0dbe5");border-radius:12px;transition:background 0.2s;"></span>
+                    <span style="position:absolute;top:2px;left:@(piEffectivelyShown ? "22px" : "2px");width:20px;height:20px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+                </label>
+            </div>
         </div>
     </div>
 </section>
 
 <!-- VAT Period Reassignment -->
-<section class="glass card-pad" style="margin-top:24px;">
+<section class="glass card-pad" style="margin-top:24px;position:relative;">
+    <button type="button" onclick="var b=document.getElementById('vatReassignBody');var svg=this.querySelector('svg');if(b.style.display==='none'){b.style.display='';svg.style.transform='rotate(180deg)';}else{b.style.display='none';svg.style.transform='rotate(0deg)';}" style="position:absolute;top:18px;right:20px;background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
     <div class="label">VAT Period</div>
     <h2 style="margin-top:8px;font-size:24px;">Reassign VAT Period</h2>
     <p class="muted" style="margin-top:6px;font-size:14px;line-height:1.6;">
         Move this invoice to a different unsubmitted VAT period. This affects the Output VAT totals for both the source and target periods.
     </p>
-
-    <div style="margin-top:18px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
-        <div class="field" style="min-width:220px;">
-            <label style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Target Period</label>
-            <select id="vatPeriodSelect" style="margin-top:6px;width:100%;">
-                <option value="">Loading periods...</option>
-            </select>
-        </div>
-        <div style="padding-bottom:2px;">
-            <button type="button" class="btn btn-danger" id="btnReassignVatPeriod" onclick="initiateReassignment()" disabled>
-                Reassign Period
-            </button>
+    <div id="vatReassignBody" style="display:none;">
+        <div style="margin-top:18px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:220px;">
+                <label style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Target Period</label>
+                <select id="vatPeriodSelect" style="margin-top:6px;width:100%;">
+                    <option value="">Loading periods...</option>
+                </select>
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="button" class="btn btn-danger" id="btnReassignVatPeriod" onclick="initiateReassignment()" disabled>
+                    Reassign Period
+                </button>
+            </div>
         </div>
     </div>
 </section>
@@ -236,7 +246,7 @@
 <!-- Line Items -->
 <section class="glass card-pad" style="margin-top:24px;">
     <div class="label">Line Items</div>
-    <h2 style="margin-top:8px;font-size:24px;">Pricing breakdown</h2>
+    <h2 style="margin-top:8px;font-size:24px;">Pricing breakdown <span style="font-size:14px;font-weight:600;color:#5E7385;margin-left:8px;">· @lines.Count item@(lines.Count != 1 ? "s" : "")</span></h2>
 
     <div style="margin-top:18px;">
         @if (lines.Count > 0)
@@ -246,20 +256,26 @@
             <table>
                 <thead>
                     <tr>
+                        <th>#</th>
                         <th>Description</th>
                         <th>Qty</th>
                         <th>Unit Price</th>
+                        <th>Subtotal</th>
                         <th>VAT %</th>
+                        <th>Discount</th>
                         <th>Total</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @{ var invRowNum = 0; }
                     @foreach (var line in lines)
                     {
-                        var discountedPrice = line.DiscountType == "Percentage"
-                            ? line.UnitPrice * (1 - line.Discount / 100)
-                            : line.UnitPrice - line.Discount;
-                        var lineTotal = line.Quantity * discountedPrice;
+                        invRowNum++;
+                        var discountAmount = line.DiscountType == "Percentage"
+                            ? (line.Quantity * line.UnitPrice * line.Discount / 100m)
+                            : line.Discount;
+                        var subtotal = line.Quantity * line.UnitPrice;
+                        var lineTotal = subtotal - discountAmount;
                         var productTypeName = line.ProductTypeId switch
                         {
                             1 => "Services",
@@ -267,6 +283,7 @@
                             _ => (string?)null
                         };
                         <tr>
+                            <td><span class="muted">@invRowNum</span></td>
                             <td>
                                 <strong>@line.Description</strong>
                                 @if (!string.IsNullOrWhiteSpace(line.ReferenceUrl))
@@ -284,7 +301,18 @@
                             </td>
                             <td>@line.Quantity.ToString("N2")</td>
                             <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")</td>
+                            <td style="font-weight:600;color:#0D5EA6;">@(ViewBag.CurrencySymbol)@subtotal.ToString("N2")</td>
                             <td>@line.VatRate.ToString("N2")%</td>
+                            <td>
+                                @if (discountAmount > 0)
+                                {
+                                    <span style="color:#129867;">-@(ViewBag.CurrencySymbol)@discountAmount.ToString("N2")</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
                             <td><strong>@(ViewBag.CurrencySymbol)@lineTotal.ToString("N2")</strong></td>
                         </tr>
                     }
@@ -422,10 +450,17 @@
 @if (ViewBag.HasPaymentReminderAccess == true)
 {
     <!-- Reminder History Panel -->
-    <section class="glass card-pad" style="margin-top:24px;">
-        @await Html.PartialAsync("_ReminderHistoryPanel")
-        <div style="margin-top:16px;">
-            <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 16px;" onclick="openTestSendModal(@invoice.Id, '@invoice.InvoiceNumber', '@ViewBag.CustomerName', '€@invoice.TotalAmount.ToString("N2")')">Send Test Reminder</button>
+    <section class="glass card-pad" style="margin-top:24px;position:relative;">
+        <button type="button" onclick="var b=document.getElementById('reminderHistoryBody');var svg=this.querySelector('svg');if(b.style.display==='none'){b.style.display='';svg.style.transform='rotate(180deg)';}else{b.style.display='none';svg.style.transform='rotate(0deg)';}" style="position:absolute;top:18px;right:20px;background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="label">Payment Reminders</div>
+        <p class="muted" style="margin-top:4px;font-size:13px;">View reminder history and send test reminders for this invoice.</p>
+        <div id="reminderHistoryBody" style="display:none;margin-top:14px;">
+            @await Html.PartialAsync("_ReminderHistoryPanel")
+            <div style="margin-top:16px;">
+                <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 16px;" onclick="openTestSendModal(@invoice.Id, '@invoice.InvoiceNumber', '@ViewBag.CustomerName', '€@invoice.TotalAmount.ToString("N2")')">Send Test Reminder</button>
+            </div>
         </div>
     </section>
 

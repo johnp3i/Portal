@@ -81,7 +81,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                     [DurationMinutes] = @DurationMinutes,
                     [Location] = @Location,
                     [Notes] = @Notes,
-                    [Outcome] = @Outcome
+                    [Outcome] = @Outcome,
+                    [MeetingOutcomeClassificationId] = @MeetingOutcomeClassificationId
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -93,7 +94,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 new SqlParameter("@DurationMinutes", entity.DurationMinutes),
                 new SqlParameter("@Location", entity.Location ?? (object)DBNull.Value),
                 new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value),
-                new SqlParameter("@Outcome", entity.Outcome ?? (object)DBNull.Value)
+                new SqlParameter("@Outcome", entity.Outcome ?? (object)DBNull.Value),
+                new SqlParameter("@MeetingOutcomeClassificationId", entity.MeetingOutcomeClassificationId ?? (object)DBNull.Value)
             );
         }
         catch (Exception ex)
@@ -156,7 +158,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
                        [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc],
+                       [MeetingOutcomeClassificationId]
                 FROM [sales].[Meeting]
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
@@ -178,7 +181,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
                        [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc],
+                       [MeetingOutcomeClassificationId]
                 FROM [sales].[Meeting]
                 WHERE [LeadRequestId] = @LeadRequestId
                   AND [BusinessId] = @BusinessId
@@ -205,7 +209,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                        [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
                        [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc],
+                       [MeetingOutcomeClassificationId]
                 FROM [sales].[Meeting]
                 WHERE [LeadRequestId] = @LeadRequestId
                   AND [BusinessId] = @BusinessId
@@ -232,7 +237,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
                        [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc],
+                       [MeetingOutcomeClassificationId]
                 FROM [sales].[Meeting]
                 WHERE [BusinessId] = @BusinessId AND [IsActive] = 1";
 
@@ -254,7 +260,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                        [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
                        [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc],
+                       [MeetingOutcomeClassificationId]
                 FROM [sales].[Meeting]
                 WHERE [sales].[Meeting].[BusinessId] = @BusinessId
                   AND [sales].[Meeting].[IsActive] = 1
@@ -283,7 +290,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
                        [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc],
+                       [MeetingOutcomeClassificationId]
                 FROM [sales].[Meeting]
                 WHERE [sales].[Meeting].[IsActive] = 1
                   AND [sales].[Meeting].[IsCancelled] = 0
@@ -309,7 +317,7 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
     /// </summary>
     public async Task<(List<Meeting> Items, int TotalCount)> GetPagedAsync(
         int businessId, string? status, int? meetingTypeId,
-        DateTime? dateFrom, DateTime? dateTo, int page, int pageSize)
+        DateTime? dateFrom, DateTime? dateTo, int? outcomeClassificationId, int page, int pageSize)
     {
         try
         {
@@ -352,6 +360,12 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 parameters.Add(new SqlParameter("@DateTo", dateTo.Value.Date.AddDays(1)));
             }
 
+            if (outcomeClassificationId.HasValue)
+            {
+                baseWhere += " AND [MeetingOutcomeClassificationId] = @OutcomeClassificationId";
+                parameters.Add(new SqlParameter("@OutcomeClassificationId", outcomeClassificationId.Value));
+            }
+
             // Count query
             var countQuery = $"SELECT COUNT(*) FROM [sales].[Meeting] WHERE {baseWhere}";
 
@@ -388,7 +402,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [MeetingTypeId],
                        [Subject], [ScheduledAtUtc], [DurationMinutes], [Location],
                        [Notes], [Outcome], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [CreatedByUserId], [CreatedAtUtc],
+                       [MeetingOutcomeClassificationId]
                 FROM [sales].[Meeting]
                 WHERE {baseWhere}
                 ORDER BY [ScheduledAtUtc] ASC
@@ -399,6 +414,70 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
 
             var items = await ExecuteStoredProcedureUnfiltered(dataQuery, parameters.ToArray());
             return (items.ToList(), totalCount);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Batch-fetches meeting subjects by IDs. Used for enriching task DTOs with meeting context.
+    /// </summary>
+    public async Task<Dictionary<int, string>> GetSubjectsByIdsAsync(IEnumerable<int> ids, int businessId)
+    {
+        var result = new Dictionary<int, string>();
+        var idsList = ids.ToList();
+        if (idsList.Count == 0) return result;
+
+        try
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                var paramNames = new List<string>();
+                var parameters = new List<SqlParameter> { new SqlParameter("@BusinessId", businessId) };
+
+                for (int i = 0; i < idsList.Count; i++)
+                {
+                    var paramName = $"@Id{i}";
+                    paramNames.Add(paramName);
+                    parameters.Add(new SqlParameter(paramName, idsList[i]));
+                }
+
+                var inClause = string.Join(", ", paramNames);
+                var query = $@"
+                    SELECT [Id], [Subject]
+                    FROM [sales].[Meeting]
+                    WHERE [Id] IN ({inClause}) AND [BusinessId] = @BusinessId";
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                foreach (var p in parameters)
+                    command.Parameters.Add(p);
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    result[reader.GetInt32(0)] = reader.GetString(1);
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return result;
         }
         catch (Exception ex)
         {

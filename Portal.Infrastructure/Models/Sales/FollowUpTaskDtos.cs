@@ -29,6 +29,16 @@ public class FollowUpTaskDto
     public TimeOnly? ScheduledTimeUtc { get; set; }
 
     /// <summary>
+    /// Optional link to the meeting that spawned this task.
+    /// </summary>
+    public int? MeetingId { get; set; }
+
+    /// <summary>
+    /// Meeting subject for display. Populated when MeetingId is set.
+    /// </summary>
+    public string? MeetingSubject { get; set; }
+
+    /// <summary>
     /// Computed urgency: "overdue", "today", "tomorrow", "upcoming"
     /// </summary>
     public string Urgency { get; set; } = null!;
@@ -42,6 +52,12 @@ public class CreateFollowUpTaskRequest
     public int? LeadRequestId { get; set; }
     public int? ContactId { get; set; }
     public int? TeamMemberId { get; set; }
+
+    /// <summary>
+    /// Optional link to the meeting that spawned this task.
+    /// </summary>
+    public int? MeetingId { get; set; }
+
     public string Title { get; set; } = null!;
     public string TaskType { get; set; } = null!;
     public DateTime DueAtUtc { get; set; }

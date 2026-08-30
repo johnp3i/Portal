@@ -82,6 +82,8 @@
         <thead>
             <tr>
                 <th>Date</th>
+                <th>Supplier Due</th>
+                <th>Target Date</th>
                 <th>Invoice #</th>
                 <th>Supplier</th>
                 <th>Category</th>
@@ -122,6 +124,8 @@
                 };
                 <tr>
                     <td>@p.InvoiceDate.ToString("dd MMM yyyy")</td>
+                    <td>@(p.SupplierDueDate.HasValue ? p.SupplierDueDate.Value.ToString("dd MMM yyyy") : "")</td>
+                    <td>@(p.TargetPaymentDate.HasValue ? p.TargetPaymentDate.Value.ToString("dd MMM yyyy") : "")</td>
                     <td>@p.InvoiceNumber</td>
                     <td><strong>@p.Supplier?.Name</strong></td>
                     <td>@p.ExpenseCategory?.Name</td>

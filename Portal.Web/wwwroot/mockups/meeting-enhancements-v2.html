@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meeting Enhancements v2 — Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #0D5EA6; --blue-dark: #0B4E89; --cyan: #57B8E8; --green: #129867;
+            --warning: #C8912E; --danger: #C24A4A; --text: #0B1B28; --muted: #5E7385;
+            --bg: #F7FAFC; --bg2: #EEF4F8; --line: rgba(13,94,166,.11);
+        }
+        body { font-family: Inter, system-ui, sans-serif; color: var(--text); background: var(--bg2); line-height: 1.6; padding: 32px; }
+        h1, h2, h3, h4 { font-family: Manrope, Inter, sans-serif; letter-spacing: -.025em; }
+
+        .mockup-label { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--blue); background: rgba(13,94,166,.06); display: inline-block; padding: 6px 14px; border-radius: 8px; margin-bottom: 18px; }
+        .mockup-section { margin-bottom: 48px; }
+
+        /* Modal simulation */
+        .modal-bg { background: rgba(11,27,40,.4); border-radius: 20px; padding: 32px; }
+        .modal { background: #fff; border-radius: 20px; max-width: 540px; margin: 0 auto; padding: 32px; box-shadow: 0 24px 70px rgba(13,94,166,.18); }
+        .modal h2 { font-size: 22px; margin-bottom: 20px; }
+
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+        .field input, .field select, .field textarea {
+            width: 100%; padding: 10px 14px; border: 1.5px solid rgba(13,94,166,.15); border-radius: 10px;
+            font-size: 14px; font-family: Inter, sans-serif; color: var(--text); background: #fff; outline: none;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(13,94,166,.08); }
+        .field textarea { resize: vertical; }
+        .field select { cursor: pointer; appearance: auto; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; padding: 10px 18px; font-weight: 700; font-size: 13px; border: 1.5px solid transparent; cursor: pointer; font-family: Inter, sans-serif; }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-secondary { background: rgba(13,94,166,.06); color: var(--blue-dark); border-color: rgba(13,94,166,.12); }
+        .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-danger-sm { padding: 5px 10px; font-size: 11px; border-radius: 8px; background: rgba(194,74,74,.06); color: var(--danger); border: 1px solid rgba(194,74,74,.15); cursor: pointer; font-family: Inter, sans-serif; font-weight: 700; }
+
+        .divider { border-top: 1.5px solid rgba(138,155,171,.1); margin: 18px 0; padding-top: 16px; }
+
+        /* Classification pills */
+        .pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+        .pill-green { background: rgba(18,152,103,.08); color: #129867; }
+        .pill-blue { background: rgba(13,94,166,.08); color: #0D5EA6; }
+        .pill-red { background: rgba(194,74,74,.08); color: #C24A4A; }
+        .pill-amber { background: rgba(200,145,46,.08); color: #C8912E; }
+
+        /* Task card */
+        .task-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(13,94,166,.03); border: 1px solid rgba(13,94,166,.08); border-radius: 10px; margin-bottom: 8px; }
+        .task-card .task-title { font-size: 13px; font-weight: 600; color: var(--text); }
+        .task-card .task-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .task-card .task-actions { display: flex; gap: 6px; }
+
+        /* Inline task form */
+        .task-form { background: rgba(13,94,166,.03); border: 1.5px solid rgba(13,94,166,.08); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+
+        /* Meetings table preview */
+        .glass { background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(244,249,253,.98)); border: 1px solid var(--line); border-radius: 22px; padding: 28px; box-shadow: 0 16px 38px rgba(13,94,166,.07); }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 2px solid rgba(13,94,166,.08); }
+        td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(13,94,166,.06); }
+
+        .annotation { margin-top: 8px; padding: 10px 14px; background: rgba(200,145,46,.06); border: 1px solid rgba(200,145,46,.2); border-radius: 8px; font-size: 12px; color: #8B6914; line-height: 1.6; }
+        .new-badge { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: var(--green); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+    <h1 style="font-size: 28px; margin-bottom: 8px;">Meeting Enhancements v2 — Mockup</h1>
+    <p style="color: var(--muted); font-size: 15px; margin-bottom: 32px;">Preview of the two enhancements: Outcome Classification dropdown + Task Due Date with Time picker.</p>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECTION 1: Edit Meeting Modal                          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="mockup-section">
+        <div class="mockup-label">1. Edit Meeting Modal — with Classification + Task Time</div>
+
+        <div class="modal-bg">
+            <div class="modal">
+                <h2>Edit Meeting</h2>
+
+                <!-- Contact (read-only) -->
+                <div class="field">
+                    <label>Contact</label>
+                    <input type="text" value="Maria Theocleous" disabled style="background: #f8fafc; color: #5E7385;" />
+                </div>
+
+                <!-- Subject -->
+                <div class="field">
+                    <label>Subject *</label>
+                    <input type="text" value="Guardian Demo" />
+                </div>
+
+                <!-- Meeting Type -->
+                <div class="field">
+                    <label>Meeting Type</label>
+                    <select>
+                        <option>On-Site</option>
+                        <option>Video Call</option>
+                        <option>Phone Call</option>
+                    </select>
+                </div>
+
+                <!-- Date & Duration -->
+                <div class="form-row">
+                    <div class="field">
+                        <label>Date &amp; Time</label>
+                        <input type="datetime-local" value="2026-08-27T10:00" />
+                    </div>
+                    <div class="field">
+                        <label>Duration (min)</label>
+                        <input type="number" value="60" min="15" step="15" />
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="field">
+                    <label>Location</label>
+                    <input type="text" value="Palazzo Kindergarten" />
+                </div>
+
+                <!-- Notes -->
+                <div class="field">
+                    <label>Notes</label>
+                    <textarea rows="2" placeholder="Pre-meeting preparation notes..."></textarea>
+                </div>
+
+                <!-- ═══ NEW: Outcome Classification ═══ -->
+                <div class="field">
+                    <label>Classification <span class="new-badge">New</span></label>
+                    <select>
+                        <option value="">— Select outcome —</option>
+                        <option value="1" selected>Positive</option>
+                        <option value="2">Neutral</option>
+                        <option value="3">Negative</option>
+                        <option value="4">Rescheduled</option>
+                        <option value="5">No Show</option>
+                    </select>
+                </div>
+
+                <!-- Outcome (free text, unchanged) -->
+                <div class="field">
+                    <label>Outcome</label>
+                    <textarea rows="3" placeholder="Record the outcome of the meeting...">Has shown an interest in the Guardian platform. Wants a demo account to try with 3 classrooms.</textarea>
+                </div>
+
+                <div class="annotation">
+                    <strong>What changed:</strong> The "Classification" dropdown is new — it sits above the existing Outcome textarea. Classification enables filtering on the Meetings page. The free-text Outcome stays for descriptive detail.
+                </div>
+
+                <!-- ═══ Meeting Tasks Section ═══ -->
+                <div class="divider">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="font-size: 15px; font-weight: 700;">Meeting Tasks (2)</h4>
+                        <button class="btn btn-sm btn-secondary">+ Add Task</button>
+                    </div>
+
+                    <!-- Inline task form (expanded) -->
+                    <div class="task-form">
+                        <div class="field" style="margin-bottom: 10px;">
+                            <label style="font-size: 12px;">Title *</label>
+                            <input type="text" placeholder="e.g. Send demo account credentials" value="Send demo credentials" />
+                        </div>
+                        <div class="form-row" style="margin-bottom: 10px;">
+                            <div class="field">
+                                <label style="font-size: 12px;">Type</label>
+                                <select><option>Follow-up</option><option>Call</option><option selected>Email</option><option>Meeting Prep</option><option>Other</option></select>
+                            </div>
+                            <!-- ═══ CHANGED: datetime-local instead of date ═══ -->
+                            <div class="field">
+                                <label style="font-size: 12px;">Due Date &amp; Time * <span class="new-badge">Updated</span></label>
+                                <input type="datetime-local" value="2026-08-28T09:00" />
+                            </div>
+                        </div>
+                        <div class="field" style="margin-bottom: 12px;">
+                            <label style="font-size: 12px;">Notes</label>
+                            <textarea rows="1" placeholder="Optional notes...">Include login URL and classroom setup instructions</textarea>
+                        </div>
+                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                            <button class="btn btn-sm btn-secondary">Cancel</button>
+                            <button class="btn btn-sm btn-primary">Create Task</button>
+                        </div>
+
+                        <div class="annotation" style="margin-top: 12px;">
+                            <strong>What changed:</strong> "Due Date" is now "Due Date &amp; Time" using <code>datetime-local</code> input. The time portion is stored in the existing <code>ScheduledTimeUtc</code> column.
+                        </div>
+                    </div>
+
+                    <!-- Existing tasks -->
+                    <div class="task-card">
+                        <div>
+                            <div class="task-title">Prepare Guardian demo environment</div>
+                            <div class="task-meta">Meeting Prep · Due: 26 Aug 2026, 14:00</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-sm btn-secondary" style="padding: 4px 10px; font-size: 11px;">Complete</button>
+                        </div>
+                    </div>
+                    <div class="task-card">
+                        <div>
+                            <div class="task-title">Follow up on pricing discussion</div>
+                            <div class="task-meta">Follow-up · Due: 29 Aug 2026</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-sm btn-secondary" style="padding: 4px 10px; font-size: 11px;">Complete</button>
+                        </div>
+                    </div>
+
+                    <div class="annotation">
+                        <strong>Task display:</strong> First task shows time ("14:00") because ScheduledTimeUtc is set. Second task shows date only — time is null (all-day task).
+                    </div>
+                </div>
+
+                <!-- Modal buttons -->
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 18px;">
+                    <button class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECTION 2: Meetings List Page — Classification Column  -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="mockup-section">
+        <div class="mockup-label">2. Meetings List Page — with Classification pill + filter</div>
+
+        <!-- Filter bar -->
+        <div class="glass" style="margin-bottom: 22px;">
+            <div style="display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="field" style="min-width: 160px; margin-bottom: 0;">
+                    <label>Status</label>
+                    <select><option>All</option><option>Upcoming</option><option>Completed</option><option>Cancelled</option></select>
+                </div>
+                <div class="field" style="min-width: 160px; margin-bottom: 0;">
+                    <label>Meeting Type</label>
+                    <select><option>All Types</option><option>On-Site</option><option>Video Call</option><option>Phone Call</option></select>
+                </div>
+                <!-- ═══ NEW: Classification Filter ═══ -->
+                <div class="field" style="min-width: 160px; margin-bottom: 0;">
+                    <label>Classification <span class="new-badge">New</span></label>
+                    <select>
+                        <option>All</option>
+                        <option>Positive</option>
+                        <option>Neutral</option>
+                        <option>Negative</option>
+                        <option>Rescheduled</option>
+                        <option>No Show</option>
+                    </select>
+                </div>
+                <div class="field" style="min-width: 140px; margin-bottom: 0;">
+                    <label>Date From</label>
+                    <input type="date" />
+                </div>
+                <div class="field" style="min-width: 140px; margin-bottom: 0;">
+                    <label>Date To</label>
+                    <input type="date" />
+                </div>
+                <div style="padding-bottom: 2px;">
+                    <button class="btn btn-primary">Filter</button>
+                    <button class="btn btn-secondary" style="margin-left: 6px;">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="glass">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Type</th>
+                        <th>Contact</th>
+                        <th>Scheduled</th>
+                        <th>Duration</th>
+                        <th>Classification</th>
+                        <th>Outcome</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Guardian Demo</strong></td>
+                        <td>On-Site</td>
+                        <td>Maria Theocleous</td>
+                        <td>27 Aug 2026, 10:00 <div style="font-size:11px;color:#8a9bab;">in 3 days</div></td>
+                        <td>60 min</td>
+                        <td><span class="pill pill-green">Positive</span></td>
+                        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Has shown an interest in the Guardian...</td>
+                        <td><span class="pill pill-blue">Upcoming</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-sm btn-secondary" style="padding:4px 8px;font-size:11px;border:1px solid rgba(13,94,166,.15);border-radius:6px;background:#fff;cursor:pointer;">Edit</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Workforce Pi, Portal</strong></td>
+                        <td>On-Site</td>
+                        <td>Vasilis Pantziaris</td>
+                        <td>02 Sept 2026, 11:00 <div style="font-size:11px;color:#8a9bab;">in 9 days</div></td>
+                        <td>60 min</td>
+                        <td><span style="color:#8a9bab;">—</span></td>
+                        <td><span style="color:#8a9bab;">—</span></td>
+                        <td><span class="pill pill-blue">Upcoming</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-sm btn-secondary" style="padding:4px 8px;font-size:11px;border:1px solid rgba(13,94,166,.15);border-radius:6px;background:#fff;cursor:pointer;">Edit</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Follow-up: Pricing Review</strong></td>
+                        <td>Video Call</td>
+                        <td>Andreas Georgiou</td>
+                        <td>20 Aug 2026, 15:30 <div style="font-size:11px;color:#8a9bab;">4 days ago</div></td>
+                        <td>30 min</td>
+                        <td><span class="pill pill-amber">Rescheduled</span></td>
+                        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Client requested to reschedule to next...</td>
+                        <td><span class="pill" style="background:rgba(18,152,103,.08);color:#129867;">Completed</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-sm btn-secondary" style="padding:4px 8px;font-size:11px;border:1px solid rgba(13,94,166,.15);border-radius:6px;background:#fff;cursor:pointer;">Edit</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Initial Discovery</strong></td>
+                        <td>Phone Call</td>
+                        <td>Elena Kosta</td>
+                        <td>18 Aug 2026, 09:00 <div style="font-size:11px;color:#8a9bab;">6 days ago</div></td>
+                        <td>45 min</td>
+                        <td><span class="pill pill-red">Negative</span></td>
+                        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Not interested at this time. Budget allocated...</td>
+                        <td><span class="pill" style="background:rgba(18,152,103,.08);color:#129867;">Completed</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-sm btn-secondary" style="padding:4px 8px;font-size:11px;border:1px solid rgba(13,94,166,.15);border-radius:6px;background:#fff;cursor:pointer;">Edit</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Product Walkthrough</strong></td>
+                        <td>On-Site</td>
+                        <td>Nikos Papas</td>
+                        <td>15 Aug 2026, 14:00 <div style="font-size:11px;color:#8a9bab;">9 days ago</div></td>
+                        <td>90 min</td>
+                        <td><span class="pill pill-red">No Show</span></td>
+                        <td><span style="color:#8a9bab;">—</span></td>
+                        <td><span class="pill" style="background:rgba(194,74,74,.08);color:#C24A4A;">Needs Outcome</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-sm btn-secondary" style="padding:4px 8px;font-size:11px;border:1px solid rgba(13,94,166,.15);border-radius:6px;background:#fff;cursor:pointer;">Edit</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
+                <div style="font-size:14px;color:#5a6a7a;">Showing 1–5 of 5 meetings</div>
+            </div>
+
+            <div class="annotation" style="margin-top: 18px;">
+                <strong>What changed:</strong> New "Classification" column between Duration and Outcome. Shows coloured pill when set (Positive=green, Neutral=blue, Negative=red, Rescheduled=amber, No Show=red), or a dash when unclassified. New "Classification" filter in the filter bar.
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECTION 3: Classification Pill Reference               -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="mockup-section">
+        <div class="mockup-label">3. Classification Pill Colour Reference</div>
+
+        <div class="glass" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+            <div style="display:flex;align-items:center;gap:8px;"><span class="pill pill-green">Positive</span> <span style="font-size:12px;color:var(--muted);">#129867</span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="pill pill-blue">Neutral</span> <span style="font-size:12px;color:var(--muted);">#0D5EA6</span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="pill pill-red">Negative</span> <span style="font-size:12px;color:var(--muted);">#C24A4A</span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="pill pill-amber">Rescheduled</span> <span style="font-size:12px;color:var(--muted);">#C8912E</span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="pill pill-red">No Show</span> <span style="font-size:12px;color:var(--muted);">#C24A4A</span></div>
+        </div>
+    </div>
+
+</body>
+</html>

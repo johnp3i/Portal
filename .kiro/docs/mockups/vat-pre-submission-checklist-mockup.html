@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAT Pre-Submission Checklist — Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F7FAFC;
+            color: #0B1B28;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --info: #0D5EA6;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-secondary: #5E7385;
+            --border: #e2e8f0;
+            --card-shadow: 0 8px 32px rgba(11, 27, 40, 0.06);
+        }
+
+        .page-container { max-width: 960px; margin: 0 auto; padding: 40px 28px 80px; }
+
+        .mock-note {
+            background: #fff8e6;
+            border: 1px solid rgba(200,145,46,.3);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: #7a5a12;
+            margin-bottom: 28px;
+        }
+
+        .state-label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin: 36px 0 14px;
+        }
+
+        /* ===== Advisory card (matches .glass.card-pad) ===== */
+        .glass {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+        }
+        .card-pad { padding: 26px 28px; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .panel-header__left { display: flex; align-items: center; gap: 14px; }
+
+        .icon-tile {
+            width: 42px; height: 42px; border-radius: 12px;
+            background: linear-gradient(135deg, rgba(13,94,166,.08), rgba(87,184,232,.08));
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .eyebrow {
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--primary-blue);
+        }
+
+        .panel-title { font-family: 'Manrope', sans-serif; font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+        .panel-header__right { display: flex; align-items: center; gap: 12px; }
+
+        .summary-badge {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; letter-spacing: .02em;
+        }
+        .summary-badge--clear { background: rgba(18,152,103,.10); color: var(--success); }
+        .summary-badge--review { background: rgba(200,145,46,.12); color: var(--warning); }
+        .summary-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+        .chevron { transition: transform .2s; color: #5E7385; }
+
+        .advisory-note {
+            font-size: 12.5px; color: var(--text-secondary);
+            margin-top: 16px; padding: 10px 14px;
+            background: var(--bg-secondary); border-radius: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .checklist { margin-top: 18px; display: flex; flex-direction: column; gap: 2px; }
+
+        .check-row {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 14px 6px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .check-row:last-child { border-bottom: none; }
+
+        .status-dot {
+            width: 22px; height: 22px; border-radius: 50%;
+            flex-shrink: 0; margin-top: 1px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .status-dot svg { width: 13px; height: 13px; }
+        .status-dot--pass { background: rgba(18,152,103,.12); color: var(--success); }
+        .status-dot--warning { background: rgba(200,145,46,.14); color: var(--warning); }
+        .status-dot--info { background: rgba(13,94,166,.10); color: var(--info); }
+
+        .check-body { flex: 1; }
+        .check-title { font-size: 14.5px; font-weight: 700; color: #0B1B28; }
+        .check-detail { font-size: 13px; color: var(--text-secondary); margin-top: 2px; line-height: 1.55; }
+
+        .check-row--figure .check-title { font-weight: 600; }
+        .figure-value { font-family: 'Manrope', sans-serif; font-weight: 800; color: var(--primary-blue); }
+        .figure-value--owed { color: var(--danger); }
+        .figure-value--refund { color: var(--success); }
+
+        .section-divider {
+            font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+            color: #98a8b6; padding: 14px 6px 6px;
+        }
+
+        /* ===== Fake submit confirmation (SweetAlert2 look) ===== */
+        .swal-mock-backdrop {
+            background: rgba(11,27,40,.35);
+            border-radius: 16px;
+            padding: 40px 20px;
+            margin-top: 14px;
+            display: flex; justify-content: center;
+        }
+        .swal-mock {
+            background: #fff; border-radius: 18px; padding: 30px 28px;
+            max-width: 440px; width: 100%; text-align: center;
+            box-shadow: 0 20px 60px rgba(11,27,40,.2);
+        }
+        .swal-mock__icon {
+            width: 56px; height: 56px; border-radius: 50%;
+            border: 3px solid var(--warning); color: var(--warning);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 18px; font-size: 30px; font-weight: 700;
+        }
+        .swal-mock__title { font-family: 'Manrope', sans-serif; font-size: 21px; font-weight: 800; margin-bottom: 10px; }
+        .swal-mock__text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+        .swal-mock__list { text-align: left; font-size: 13px; color: #0B1B28; margin: 14px auto 0; max-width: 320px; }
+        .swal-mock__list li { margin: 6px 0; }
+        .swal-mock__buttons { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+        .btn {
+            border: 0; border-radius: 12px; padding: 11px 22px;
+            font-size: 13.5px; font-weight: 700; font-family: inherit; cursor: pointer;
+        }
+        .btn--primary { background: var(--primary-blue); color: #fff; }
+        .btn--warning { background: var(--warning); color: #fff; }
+        .btn--ghost { background: #eef2f6; color: #5E7385; }
+
+        .mark-btn {
+            margin-top: 18px;
+            background: var(--primary-blue); color: #fff;
+            border: 0; border-radius: 12px; padding: 12px 24px;
+            font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+        }
+        .filing-card .label { font-family:'Manrope',sans-serif; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-secondary); }
+    </style>
+</head>
+<body>
+<div class="page-container">
+
+    <div class="mock-note">
+        <strong>Mockup only.</strong> This previews the Pre-Submission Checklist advisory panel that would appear on
+        <code>/Vat/Detail</code>, above the existing Recurring Expense Check. Two states are shown: with warnings, and all-clear.
+        The bottom shows the submit-time confirmation dialog. Nothing here is wired to the server.
+    </div>
+
+    <!-- ============ STATE 1: items to review ============ -->
+    <div class="state-label">State A — Items to review (unsubmitted period)</div>
+
+    <section class="glass card-pad">
+        <div class="panel-header">
+            <div class="panel-header__left">
+                <div class="icon-tile">
+                    <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                </div>
+                <div>
+                    <div class="eyebrow">Advisory Check</div>
+                    <div class="panel-title">Pre-Submission Checklist</div>
+                </div>
+            </div>
+            <div class="panel-header__right">
+                <span class="summary-badge summary-badge--review"><span class="dot"></span>3 items to review</span>
+                <svg class="chevron" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+        </div>
+
+        <div class="checklist">
+            <!-- Warning: unassigned purchases -->
+            <div class="check-row">
+                <span class="status-dot status-dot--warning">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </span>
+                <div class="check-body">
+                    <div class="check-title">Unassigned purchases</div>
+                    <div class="check-detail">3 purchase(s) in this period's date range are not assigned to a VAT period. They are still included via the date range, but assigning them keeps your records explicit.</div>
+                </div>
+            </div>
+
+            <!-- Warning: purchase count trend -->
+            <div class="check-row">
+                <span class="status-dot status-dot--warning">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </span>
+                <div class="check-body">
+                    <div class="check-title">Purchase count vs previous period</div>
+                    <div class="check-detail">This period: <strong>12 purchases</strong>. Previous period: <strong>20 purchases</strong>. 40% fewer — is this expected, or are some expenses not yet recorded?</div>
+                </div>
+            </div>
+
+            <!-- Warning: input vat discrepancy -->
+            <div class="check-row">
+                <span class="status-dot status-dot--warning">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </span>
+                <div class="check-body">
+                    <div class="check-title">Input VAT discrepancy</div>
+                    <div class="check-detail">Input VAT by invoice date (€380.00) differs from the reported figure (€420.00). 1 late purchase from a previous period is included here; 0 purchases from this period were reported later.</div>
+                </div>
+            </div>
+
+            <!-- Info: unassigned invoices -->
+            <div class="check-row">
+                <span class="status-dot status-dot--info">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                </span>
+                <div class="check-body">
+                    <div class="check-title">Unassigned issued invoices</div>
+                    <div class="check-detail">2 issued invoice(s) dated in this period have no explicit VAT period. They are included via the date-range fallback.</div>
+                </div>
+            </div>
+
+            <!-- Info: zero-vat invoices -->
+            <div class="check-row">
+                <span class="status-dot status-dot--info">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                </span>
+                <div class="check-body">
+                    <div class="check-title">Zero-VAT invoices</div>
+                    <div class="check-detail">1 issued invoice has a subtotal but €0.00 VAT. Review whether VAT should apply, or confirm the zero-rating is intentional.</div>
+                </div>
+            </div>
+
+            <div class="section-divider">Computed figures</div>
+
+            <!-- Pass figures -->
+            <div class="check-row check-row--figure">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Output VAT (Sales) &mdash; <span class="figure-value">€1,240.00</span></div></div>
+            </div>
+            <div class="check-row check-row--figure">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Input VAT (Purchases) &mdash; <span class="figure-value">€420.00</span></div></div>
+            </div>
+            <div class="check-row check-row--figure">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Net VAT &mdash; Tax owed <span class="figure-value figure-value--owed">€820.00</span></div></div>
+            </div>
+        </div>
+
+        <div class="advisory-note">
+            <svg width="15" height="15" fill="none" stroke="#5E7385" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            This checklist is advisory only. It highlights potential issues but does not block submission — you stay in control.
+        </div>
+    </section>
+
+    <!-- ============ STATE 2: all clear ============ -->
+    <div class="state-label">State B — All clear</div>
+
+    <section class="glass card-pad">
+        <div class="panel-header">
+            <div class="panel-header__left">
+                <div class="icon-tile">
+                    <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                </div>
+                <div>
+                    <div class="eyebrow">Advisory Check</div>
+                    <div class="panel-title">Pre-Submission Checklist</div>
+                </div>
+            </div>
+            <div class="panel-header__right">
+                <span class="summary-badge summary-badge--clear"><span class="dot"></span>All clear</span>
+                <svg class="chevron" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+        </div>
+
+        <div class="checklist">
+            <div class="check-row">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Unassigned purchases</div><div class="check-detail">All purchases in this period are assigned. Nothing to review.</div></div>
+            </div>
+            <div class="check-row">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Purchase count vs previous period</div><div class="check-detail">This period: 19 purchases. Previous period: 20 purchases. Consistent.</div></div>
+            </div>
+            <div class="check-row">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Input VAT discrepancy</div><div class="check-detail">Input VAT by date matches the reported figure. No discrepancy.</div></div>
+            </div>
+            <div class="check-row">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Unassigned issued invoices</div><div class="check-detail">Every issued invoice in this period is explicitly assigned.</div></div>
+            </div>
+            <div class="check-row">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Zero-VAT invoices</div><div class="check-detail">No zero-VAT issued invoices with a positive subtotal.</div></div>
+            </div>
+
+            <div class="section-divider">Computed figures</div>
+            <div class="check-row check-row--figure">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Output VAT (Sales) &mdash; <span class="figure-value">€2,050.00</span></div></div>
+            </div>
+            <div class="check-row check-row--figure">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Input VAT (Purchases) &mdash; <span class="figure-value">€610.00</span></div></div>
+            </div>
+            <div class="check-row check-row--figure">
+                <span class="status-dot status-dot--pass"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <div class="check-body"><div class="check-title">Net VAT &mdash; Tax owed <span class="figure-value figure-value--owed">€1,440.00</span></div></div>
+            </div>
+        </div>
+
+        <div class="advisory-note">
+            <svg width="15" height="15" fill="none" stroke="#5E7385" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            This checklist is advisory only. It highlights potential issues but does not block submission — you stay in control.
+        </div>
+    </section>
+
+    <!-- ============ Filing status + submit confirmation ============ -->
+    <div class="state-label">State C — "Mark as Submitted" confirmation (when warnings exist)</div>
+
+    <section class="glass card-pad filing-card">
+        <div class="label">Filing Status</div>
+        <p style="margin-top:10px;color:#5E7385;font-size:14px;">This submission has not yet been marked as filed with the tax authority.</p>
+        <button class="mark-btn">Mark as Submitted</button>
+    </section>
+
+    <div class="swal-mock-backdrop">
+        <div class="swal-mock">
+            <div class="swal-mock__icon">!</div>
+            <div class="swal-mock__title">Checklist items flagged</div>
+            <div class="swal-mock__text">
+                The pre-submission checklist found <strong>3 item(s)</strong> worth reviewing before you file:
+            </div>
+            <ul class="swal-mock__list">
+                <li>&bull; 3 unassigned purchases in this period</li>
+                <li>&bull; Purchase count 40% lower than last period</li>
+                <li>&bull; Input VAT discrepancy (€380 vs €420)</li>
+            </ul>
+            <div class="swal-mock__text" style="margin-top:14px;">You can review these first, or submit anyway.</div>
+            <div class="swal-mock__buttons">
+                <button class="btn btn--primary">Submit Anyway</button>
+                <button class="btn btn--warning">Review First</button>
+                <button class="btn btn--ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

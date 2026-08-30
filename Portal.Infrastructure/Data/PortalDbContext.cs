@@ -384,6 +384,10 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsOnboardingDismissed)
                 .IsRequired()
                 .HasDefaultValue(false);
+
+            entity.Property(e => e.IsReminderSystemEnabled)
+                .IsRequired()
+                .HasDefaultValue(true);
         });
     }
 
@@ -1964,7 +1968,7 @@ public class PortalDbContext : DbContext
 
             entity.ToTable(t => t.HasCheckConstraint(
                 "CK_BillingInvoice_Status",
-                "[Status] IN ('draft','open','paid','void','uncollectible')"));
+                "[Status] IN ('draft','open','paid','void','uncollectible','partially_paid')"));
 
             entity.Property(e => e.InvoiceNumber)
                 .HasMaxLength(50);
@@ -2014,6 +2018,15 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.StripePaymentIntentId)
                 .HasMaxLength(100);
+
+            entity.Property(e => e.Reference)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Notes)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.RecordedByUserId)
+                .HasMaxLength(450);
 
             entity.Property(e => e.CreatedAtUtc)
                 .IsRequired()
@@ -3757,6 +3770,12 @@ public class PortalDbContext : DbContext
             entity.HasOne(e => e.TeamMember)
                 .WithMany()
                 .HasForeignKey(e => e.TeamMemberId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.Tasks)
+                .HasForeignKey(e => e.MeetingId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.NoAction);
         });

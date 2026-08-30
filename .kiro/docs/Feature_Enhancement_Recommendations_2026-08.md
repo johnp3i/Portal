@@ -223,7 +223,7 @@ Allow business owners to export all their data (customers, invoices, quotations,
 | 4 | Quotation Expiry Warning | Sep 2026 W1 | Sep 2026 W1 | Foundation | ✅ Completed 2026-08-20 |
 | 3 | Product Usage Trend Indicators | Sep 2026 W2 | Sep 2026 W2 | Foundation | 🔲 Not Started |
 | 2 | Invoice Partial Payment Reminders | Sep 2026 W2 | Sep 2026 W2 | Professional | 🔲 Not Started |
-| 9 | Dashboard Brief Enhancement | Sep 2026 W2–W3 | Sep 2026 W3 | Foundation | 🔲 Not Started |
+| 9 | Dashboard Brief Enhancement | Sep 2026 W2–W3 | Sep 2026 W3 | Foundation | ✅ Completed (sales-tasks-meetings-enhancements, Aug 2026) |
 | 7 | Customer Intelligence (basic) | Sep 2026 W3–W4 | Oct 2026 W1 | Professional | 🔲 Not Started |
 | 8 | Document Templates | Oct 2026 W1–W2 | Oct 2026 W2 | Foundation + Professional | 🔲 Not Started |
 | 6 | Recurring Expenses Auto-Detection | Oct 2026 W2–W3 | Oct 2026 W3 | Professional | 🔲 Not Started |

@@ -397,6 +397,7 @@ public class PaymentReminderService : IPaymentReminderService
         {
             return await _dbContext.BusinessPlans
                 .Where(bp => bp.IsActive)
+                .Where(bp => bp.Business.IsReminderSystemEnabled)
                 .Where(bp => bp.Plan.PlanFeatures
                     .Any(pf => pf.ModuleName == PortalModules.PaymentReminderAuto && pf.IsIncluded))
                 .Select(bp => bp.BusinessId)

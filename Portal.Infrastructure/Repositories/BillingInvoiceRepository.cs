@@ -33,6 +33,8 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                        [billing].[Invoice].[PeriodEnd],
                        [billing].[Invoice].[Status],
                        [billing].[Invoice].[PaidAtUtc],
+                       [billing].[Invoice].[InvoiceNumber],
+                       [billing].[Invoice].[IsEmailSent],
                        [billing].[Invoice].[CreatedAtUtc],
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [billing].[Invoice]
@@ -74,6 +76,8 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                         PeriodEnd = reader.GetDateTime(reader.GetOrdinal("PeriodEnd")),
                         Status = reader.GetString(reader.GetOrdinal("Status")),
                         PaidAtUtc = reader.IsDBNull(reader.GetOrdinal("PaidAtUtc")) ? null : reader.GetDateTime(reader.GetOrdinal("PaidAtUtc")),
+                        InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber")),
+                        IsEmailSent = reader.GetBoolean(reader.GetOrdinal("IsEmailSent")),
                         CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
                     });
                 }
@@ -86,7 +90,7 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
 
             return (results, totalCount);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -108,6 +112,8 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                        [billing].[Invoice].[PeriodEnd],
                        [billing].[Invoice].[Status],
                        [billing].[Invoice].[PaidAtUtc],
+                       [billing].[Invoice].[InvoiceNumber],
+                       [billing].[Invoice].[IsEmailSent],
                        [billing].[Invoice].[CreatedAtUtc]
                 FROM [billing].[Invoice]
                 WHERE [billing].[Invoice].[Id] = @Id
@@ -117,7 +123,7 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                 new SqlParameter("@Id", id),
                 new SqlParameter("@BusinessId", businessId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -172,7 +178,7 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -215,7 +221,7 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -275,7 +281,64 @@ public class BillingInvoiceRepository : GenericStoredProcedureRepository<Billing
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates the status and optionally the PaidAtUtc of an invoice by Id.
+    /// Used when an instalment completes the invoice (partially_paid → paid).
+    /// </summary>
+    public virtual async Task UpdateStatusAsync(int id, string status, DateTime? paidAtUtc = null)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [billing].[Invoice]
+                SET [Status] = @Status,
+                    [PaidAtUtc] = @PaidAtUtc
+                WHERE [billing].[Invoice].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@Status", status),
+                new SqlParameter("@PaidAtUtc", paidAtUtc ?? (object)DBNull.Value));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets a single billing invoice by Id without business scoping.
+    /// Admin-only — used by the AddPayment flow to load the invoice for validation.
+    /// </summary>
+    public virtual async Task<BillingInvoice?> GetByInvoiceIdAsync(int id)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [billing].[Invoice].[Id],
+                       [billing].[Invoice].[BusinessId],
+                       [billing].[Invoice].[StripeInvoiceId],
+                       [billing].[Invoice].[AmountEur],
+                       [billing].[Invoice].[PeriodStart],
+                       [billing].[Invoice].[PeriodEnd],
+                       [billing].[Invoice].[Status],
+                       [billing].[Invoice].[PaidAtUtc],
+                       [billing].[Invoice].[InvoiceNumber],
+                       [billing].[Invoice].[IsEmailSent],
+                       [billing].[Invoice].[CreatedAtUtc]
+                FROM [billing].[Invoice]
+                WHERE [billing].[Invoice].[Id] = @Id";
+
+            return await ExecuteSingleRecordStoredProcedureUnfiltered(query,
+                new SqlParameter("@Id", id));
+        }
+        catch (Exception ex)
         {
             throw;
         }

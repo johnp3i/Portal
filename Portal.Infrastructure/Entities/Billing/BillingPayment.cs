@@ -18,6 +18,21 @@ public class BillingPayment
 
     public string? StripePaymentIntentId { get; set; }
 
+    /// <summary>
+    /// Payment reference number (bank transfer ref, cheque number, etc.). NULL for Stripe payments.
+    /// </summary>
+    public string? Reference { get; set; }
+
+    /// <summary>
+    /// Free-text notes about the payment. NULL for Stripe payments.
+    /// </summary>
+    public string? Notes { get; set; }
+
+    /// <summary>
+    /// The SuperAdmin who recorded this manual payment. NULL for Stripe payments.
+    /// </summary>
+    public string? RecordedByUserId { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties

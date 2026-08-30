@@ -153,7 +153,7 @@
                     : '<div style="font-size:11px;color:#b8c4d0;margin-top:2px;">All day</div>';
 
                 html += '<tr>';
-                html += '<td style="font-weight:600;">' + escapeHtml(t.title) + '</td>';
+                html += '<td style="font-weight:600;">' + escapeHtml(t.title) + (t.meetingSubject ? '<div style="font-size:11px;color:#8a9bab;margin-top:2px;">from: ' + escapeHtml(t.meetingSubject) + '</div>' : '') + '</td>';
                 html += '<td>' + (t.contactName ? '<span style="color:#0D5EA6;">' + escapeHtml(t.contactName) + '</span>' : '<span style="color:#8a9bab;">\u2014</span>') + '</td>';
                 html += '<td>' + getTypeBadgeHtml(t.taskType) + '</td>';
                 html += '<td style="' + dueColor + '">' + dueStr + timeStr + '</td>';

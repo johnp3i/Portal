@@ -40,6 +40,8 @@ public class Meeting
 
     public DateTime CreatedAtUtc { get; set; }
 
+    public int? MeetingOutcomeClassificationId { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 
@@ -52,4 +54,6 @@ public class Meeting
     public ICollection<MeetingProductRequest> ProductRequests { get; set; } = new List<MeetingProductRequest>();
 
     public ICollection<MeetingOpportunity> Opportunities { get; set; } = new List<MeetingOpportunity>();
+
+    public ICollection<FollowUpTask> Tasks { get; set; } = new List<FollowUpTask>();
 }

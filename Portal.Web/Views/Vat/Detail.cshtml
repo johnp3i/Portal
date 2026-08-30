@@ -283,6 +283,34 @@
     </section>
 }
 
+<!-- Pre-Submission Checklist -->
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChecklistPanel()">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,rgba(13,94,166,.08),rgba(87,184,232,.08));display:flex;align-items:center;justify-content:center;">
+                <svg width="20" height="20" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+            </div>
+            <div>
+                <div class="label">Advisory Check</div>
+                <h2 style="margin-top:4px;font-size:20px;">Pre-Submission Checklist</h2>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span id="checklistBadge" style="display:none;"></span>
+            <svg id="checklistChevron" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+    </div>
+    <div id="checklistPanel" style="margin-top:20px;">
+        <div id="checklistContent">
+            <p class="muted" style="font-size:14px;">Loading...</p>
+        </div>
+        <div class="advisory-note" style="font-size:12.5px;color:#5E7385;margin-top:16px;padding:10px 14px;background:#EEF4F8;border-radius:10px;display:flex;align-items:center;gap:8px;">
+            <svg width="15" height="15" fill="none" stroke="#5E7385" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            This checklist is advisory only. It highlights potential issues but does not block submission &mdash; you stay in control.
+        </div>
+    </div>
+</section>
+
 <!-- Recurring Expense Check -->
 <section class="glass card-pad" style="margin-top:24px;">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleRecurringPanel()">
@@ -326,6 +354,11 @@
         var purchaseSearch = '';
         var invoiceSearchTimer = null;
         var purchaseSearchTimer = null;
+
+        // Pre-submission checklist state (null = not loaded / unknown → submit falls back to legacy pre-flight)
+        var checklistWarningCount = null;
+        var checklistWarningTitles = [];
+        var checklistHasUnassignedWarning = false;
 
         // ── Invoice Breakdown ──────────────────────────────────────────────────
 
@@ -603,15 +636,22 @@
         // ── markAsSubmitted ────────────────────────────────────────────────────
 
         async function markAsSubmitted() {
-            // Check for unassigned purchases first
-            try {
-                var countResp = await fetch('/Vat/AxGetUnassignedCount?periodId=' + periodId);
-                var countData = await countResp.json();
-
-                if (countData.count > 0) {
+            // Pre-flight: prefer the consolidated pre-submission checklist. It already
+            // includes the unassigned-purchases check, so it replaces the standalone
+            // pre-flight when it loaded successfully. If the checklist failed to load
+            // (warning count unknown), fall back to the legacy unassigned-purchases check.
+            if (checklistWarningCount !== null) {
+                if (checklistWarningCount > 0) {
+                    var listHtml = checklistWarningTitles.length > 0
+                        ? '<ul style="text-align:left;margin:12px auto 0;max-width:320px;font-size:13px;color:#0B1B28;">'
+                            + checklistWarningTitles.map(function (t) { return '<li style="margin:4px 0;">&bull; ' + escapeHtml(t) + '</li>'; }).join('')
+                            + '</ul>'
+                        : '';
                     var result = await Swal.fire({
-                        title: 'Unassigned Purchases',
-                        html: '<p>There are <strong>' + countData.count + '</strong> unassigned purchase(s) within this period\'s date range.</p><p style="color:#5E7385;font-size:13px;margin-top:8px;">These purchases won\'t be included in the submission unless you assign them first.</p>',
+                        title: 'Checklist items flagged',
+                        html: '<p>The pre-submission checklist found <strong>' + checklistWarningCount + '</strong> item(s) worth reviewing before you file.</p>'
+                            + listHtml
+                            + '<p style="color:#5E7385;font-size:13px;margin-top:12px;">You can review these first, or submit anyway.</p>',
                         icon: 'warning',
                         showCancelButton: true,
                         showDenyButton: true,
@@ -623,16 +663,17 @@
                     });
 
                     if (result.isDenied) {
-                        // Scroll to unassigned panel
-                        var panel = document.getElementById('unassignedSection');
-                        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Prefer the unassigned-purchases section (it offers the fix affordance)
+                        // when that is one of the flagged items; otherwise scroll to the checklist.
+                        var target = checklistHasUnassignedWarning
+                            ? (document.getElementById('unassignedSection') || document.getElementById('checklistPanel'))
+                            : document.getElementById('checklistPanel');
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         return;
                     }
-
                     if (!result.isConfirmed) return;
                     // User chose "Submit Anyway" — proceed below
                 } else {
-                    // No unassigned — standard confirmation
                     var confirmed = await Swal.fire({
                         title: 'Confirm Submission',
                         text: 'Are you sure you want to mark this VAT submission as filed?',
@@ -641,21 +682,56 @@
                         confirmButtonColor: '#0D5EA6',
                         confirmButtonText: 'Yes, mark as submitted'
                     });
-
                     if (!confirmed.isConfirmed) return;
                 }
-            } catch (e) {
-                // If check fails, proceed with standard confirmation
-                var confirmed = await Swal.fire({
-                    title: 'Confirm Submission',
-                    text: 'Are you sure you want to mark this VAT submission as filed?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#0D5EA6',
-                    confirmButtonText: 'Yes, mark as submitted'
-                });
+            } else {
+                // Fallback: checklist unavailable — legacy unassigned-purchases pre-flight
+                try {
+                    var countResp = await fetch('/Vat/AxGetUnassignedCount?periodId=' + periodId);
+                    var countData = await countResp.json();
 
-                if (!confirmed.isConfirmed) return;
+                    if (countData.count > 0) {
+                        var result = await Swal.fire({
+                            title: 'Unassigned Purchases',
+                            html: '<p>There are <strong>' + countData.count + '</strong> unassigned purchase(s) within this period\'s date range.</p><p style="color:#5E7385;font-size:13px;margin-top:8px;">These purchases won\'t be included in the submission unless you assign them first.</p>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            showDenyButton: true,
+                            confirmButtonText: 'Submit Anyway',
+                            denyButtonText: 'Review First',
+                            cancelButtonText: 'Cancel',
+                            confirmButtonColor: '#0D5EA6',
+                            denyButtonColor: '#C8912E'
+                        });
+
+                        if (result.isDenied) {
+                            var panel = document.getElementById('unassignedSection');
+                            if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            return;
+                        }
+                        if (!result.isConfirmed) return;
+                    } else {
+                        var confirmed = await Swal.fire({
+                            title: 'Confirm Submission',
+                            text: 'Are you sure you want to mark this VAT submission as filed?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#0D5EA6',
+                            confirmButtonText: 'Yes, mark as submitted'
+                        });
+                        if (!confirmed.isConfirmed) return;
+                    }
+                } catch (e) {
+                    var confirmed = await Swal.fire({
+                        title: 'Confirm Submission',
+                        text: 'Are you sure you want to mark this VAT submission as filed?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#0D5EA6',
+                        confirmButtonText: 'Yes, mark as submitted'
+                    });
+                    if (!confirmed.isConfirmed) return;
+                }
             }
 
             // Proceed with submission
@@ -696,6 +772,114 @@
                     confirmButtonColor: '#0D5EA6'
                 });
             }
+        }
+
+        // ── Pre-Submission Checklist ───────────────────────────────────────────
+
+        var checklistPanelVisible = true;
+
+        function toggleChecklistPanel() {
+            checklistPanelVisible = !checklistPanelVisible;
+            var panel = document.getElementById('checklistPanel');
+            var chevron = document.getElementById('checklistChevron');
+            panel.style.display = checklistPanelVisible ? 'block' : 'none';
+            chevron.style.transform = checklistPanelVisible ? 'rotate(0deg)' : 'rotate(-90deg)';
+        }
+
+        var checklistStatusColors = { pass: '#129867', warning: '#C8912E', info: '#0D5EA6' };
+        var checklistStatusBg = {
+            pass: 'rgba(18,152,103,.12)',
+            warning: 'rgba(200,145,46,.14)',
+            info: 'rgba(13,94,166,.10)'
+        };
+
+        function checklistDotSvg(status) {
+            if (status === 'pass') {
+                return '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+            }
+            if (status === 'warning') {
+                return '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
+            }
+            return '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>';
+        }
+
+        var checklistFigureKeys = { output_vat: true, input_vat: true, net_vat: true };
+
+        async function loadPreSubmissionChecklist() {
+            var container = document.getElementById('checklistContent');
+            try {
+                var response = await fetch('/Vat/AxGetPreSubmissionChecklist?periodId=' + periodId);
+                var data = await response.json();
+                if (!data.success) {
+                    container.innerHTML = '<p class="muted" style="font-size:14px;">Unable to load the checklist.</p>';
+                    checklistWarningCount = null;
+                    return;
+                }
+                renderChecklistItems(data, container);
+                checklistWarningCount = data.warningCount;
+                var warningItems = (data.items || []).filter(function (i) { return i.status === 'warning'; });
+                checklistWarningTitles = warningItems.map(function (i) { return i.title; });
+                // Track whether unassigned purchases is among the warnings, so "Review First"
+                // can scroll to the section that offers the fix affordance.
+                checklistHasUnassignedWarning = warningItems.some(function (i) { return i.key === 'unassigned_purchases'; });
+            } catch (e) {
+                container.innerHTML = '<p class="muted" style="font-size:14px;">Unable to load the checklist.</p>';
+                checklistWarningCount = null;
+            }
+        }
+
+        function renderChecklistItems(data, container) {
+            // Header badge
+            var badge = document.getElementById('checklistBadge');
+            if (badge) {
+                badge.style.display = 'inline-flex';
+                badge.style.alignItems = 'center';
+                badge.style.gap = '7px';
+                badge.style.padding = '6px 14px';
+                badge.style.borderRadius = '20px';
+                badge.style.fontSize = '12px';
+                badge.style.fontWeight = '700';
+                if (data.allClear) {
+                    badge.style.background = 'rgba(18,152,103,.10)';
+                    badge.style.color = '#129867';
+                    badge.textContent = '\u2713 All clear';
+                } else {
+                    badge.style.background = 'rgba(200,145,46,.12)';
+                    badge.style.color = '#C8912E';
+                    badge.textContent = data.warningCount + ' item' + (data.warningCount !== 1 ? 's' : '') + ' to review';
+                }
+            }
+
+            var items = data.items || [];
+            if (items.length === 0) {
+                container.innerHTML = '<p class="muted" style="font-size:14px;">No checks to display.</p>';
+                return;
+            }
+
+            var html = '<div style="display:flex;flex-direction:column;">';
+            var figureDividerAdded = false;
+
+            items.forEach(function (item) {
+                var isFigure = checklistFigureKeys[item.key] === true;
+                if (isFigure && !figureDividerAdded) {
+                    html += '<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#98a8b6;padding:14px 6px 6px;">Computed figures</div>';
+                    figureDividerAdded = true;
+                }
+
+                var color = checklistStatusColors[item.status] || '#0D5EA6';
+                var bg = checklistStatusBg[item.status] || 'rgba(13,94,166,.10)';
+
+                html += '<div style="display:flex;align-items:flex-start;gap:14px;padding:14px 6px;border-bottom:1px solid #eef2f6;">'
+                    + '<span style="width:22px;height:22px;border-radius:50%;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;background:' + bg + ';color:' + color + ';">' + checklistDotSvg(item.status) + '</span>'
+                    + '<div style="flex:1;">'
+                    + '<div style="font-size:14.5px;font-weight:' + (isFigure ? '600' : '700') + ';color:#0B1B28;">' + escapeHtml(item.title) + (isFigure ? ' &mdash; <strong>' + escapeHtml(item.detail) + '</strong>' : '') + '</div>'
+                    + (isFigure ? '' : '<div style="font-size:13px;color:#5E7385;margin-top:2px;line-height:1.55;">' + escapeHtml(item.detail) + '</div>')
+                    + '</div>'
+                    + '</div>';
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         // ── Recurring Expense Validation ───────────────────────────────────────
@@ -939,6 +1123,7 @@
         }
 
         // ── Initial load ───────────────────────────────────────────────────────
+        loadPreSubmissionChecklist();
         loadInvoiceBreakdown();
         loadPurchaseBreakdown();
         loadRecurringValidation();

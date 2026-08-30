@@ -109,12 +109,18 @@ public class DemoController : Controller
             await _roleManager.CreateAsync(new IdentityRole("DemoUser"));
         }
 
+        // Load permissions and serialize into claims for in-session enforcement (no DB calls per request)
+        var permissionsDict = await _demoInvitationService.GetPermissionsForInvitationAsync(invitation.Id);
+        var permissionsJson = System.Text.Json.JsonSerializer.Serialize(permissionsDict);
+
         // Sign in with demo-specific claims
         var additionalClaims = new List<Claim>
         {
             new Claim("DemoInvitationId", invitation.Id.ToString()),
             new Claim("BusinessId", invitation.BusinessId.ToString()),
-            new Claim("IsDemoSession", "true")
+            new Claim("IsDemoSession", "true"),
+            new Claim("DemoPermissions", permissionsJson),
+            new Claim("DemoInvitationExpiresAtUtc", invitation.ExpiresAtUtc.ToString("O"))
         };
 
         await _signInManager.SignInWithClaimsAsync(user, new Microsoft.AspNetCore.Authentication.AuthenticationProperties

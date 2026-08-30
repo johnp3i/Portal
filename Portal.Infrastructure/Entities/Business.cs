@@ -26,6 +26,8 @@ public class Business
 
     public bool IsOnboardingDismissed { get; set; }
 
+    public bool IsReminderSystemEnabled { get; set; }
+
     // Navigation properties
     public BusinessProfile? BusinessProfile { get; set; }
 

@@ -44,6 +44,12 @@ public class BillingInvoicePdfModel
     // Payment info
     public string? PaymentMethod { get; set; }
     public DateTime? PaymentDate { get; set; }
+
+    // Multi-payment / instalment support
+    public List<PaymentLineItem> Payments { get; set; } = new();
+    public decimal AmountPaid { get; set; }
+    public decimal Outstanding { get; set; }
+    public bool IsPartiallyPaid { get; set; }
 }
 
 /// <summary>
@@ -55,4 +61,15 @@ public class BillingInvoiceLineItem
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal Total { get; set; }
+}
+
+/// <summary>
+/// A payment line for the invoice PDF — shown in the payment history section for instalments.
+/// </summary>
+public class PaymentLineItem
+{
+    public decimal Amount { get; set; }
+    public string Method { get; set; } = string.Empty;
+    public DateTime PaidAtUtc { get; set; }
+    public string? Reference { get; set; }
 }

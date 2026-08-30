@@ -67,6 +67,9 @@ public class DashboardViewModel
     public bool HasAnyKpiSection { get; set; } = true;
     public bool ShowPnlTeaser { get; set; }
 
+    // Upcoming Supplier Payments (Payables)
+    public List<UpcomingSupplierPaymentDto> UpcomingSupplierPayments { get; set; } = new();
+
     // Empty state
     public string? BusinessName { get; set; }
 }

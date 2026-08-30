@@ -122,6 +122,32 @@ public class VatSubmissionPeriodRepository : GenericStoredProcedureRepository<Va
         }
     }
 
+    /// <summary>
+    /// Gets the period immediately preceding the given start date for a business —
+    /// the period with the greatest PeriodStartDate strictly less than the given date.
+    /// Used by the pre-submission checklist to compare purchase counts against the prior period.
+    /// </summary>
+    public virtual async Task<VatSubmissionPeriod?> GetImmediatelyPrecedingPeriodAsync(int businessId, DateOnly beforeStartDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 1 [Id], [BusinessId], [PeriodStartDate], [PeriodEndDate], [PeriodLabel], [CreatedAtUtc]
+                FROM [vat].[VatSubmissionPeriod]
+                WHERE [vat].[VatSubmissionPeriod].[BusinessId] = @BusinessId
+                  AND [vat].[VatSubmissionPeriod].[PeriodStartDate] < @BeforeStartDate
+                ORDER BY [vat].[VatSubmissionPeriod].[PeriodStartDate] DESC";
+
+            return await ExecuteSingleRecordStoredProcedure(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@BeforeStartDate", beforeStartDate));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task InsertAsync(VatSubmissionPeriod entity)
     {
         try

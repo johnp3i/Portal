@@ -17,7 +17,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         {
             const string query = @"
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
-                       [InvoiceNumber], [InvoiceDate], [Description],
+                       [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
                        [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
@@ -37,7 +37,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         {
             const string query = @"
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
-                       [InvoiceNumber], [InvoiceDate], [Description],
+                       [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
                        [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
@@ -53,6 +53,35 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         }
     }
 
+    /// <summary>
+    /// Gets the most recent non-cancelled purchase for a supplier, used to suggest a default
+    /// expense category when recording a new purchase for the same supplier.
+    /// </summary>
+    public virtual async Task<Purchase?> GetMostRecentBySupplierAsync(int businessId, int supplierId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 1 [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
+                       [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
+                       [AmountExcludingVat], [VatAmount], [TotalAmount],
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                FROM [purchase].[Purchase]
+                WHERE Purchase.BusinessId = @BusinessId
+                  AND Purchase.SupplierId = @SupplierId
+                  AND Purchase.IsCancelled = 0
+                ORDER BY Purchase.InvoiceDate DESC, Purchase.CreatedAtUtc DESC";
+
+            return await ExecuteSingleRecordStoredProcedure(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@SupplierId", supplierId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public virtual async Task InsertAsync(Purchase entity)
     {
         try
@@ -60,12 +89,12 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
             const string query = @"
                 INSERT INTO [purchase].[Purchase]
                     ([BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
-                     [InvoiceNumber], [InvoiceDate], [Description],
+                     [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                      [AmountExcludingVat], [VatAmount], [TotalAmount],
                      [Country], [Notes], [PayslipPeriodId], [CreatedAtUtc], [UpdatedAtUtc])
                 VALUES
                     (@BusinessId, @SupplierId, @ExpenseCategoryId, @PurchaseOriginTypeId, @PurchaseTypeId,
-                     @InvoiceNumber, @InvoiceDate, @Description,
+                     @InvoiceNumber, @InvoiceDate, @SupplierDueDate, @TargetPaymentDate, @Description,
                      @AmountExcludingVat, @VatAmount, @TotalAmount,
                      @Country, @Notes, @PayslipPeriodId, @CreatedAtUtc, @UpdatedAtUtc)";
 
@@ -77,6 +106,8 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 new SqlParameter("@PurchaseTypeId", entity.PurchaseTypeId),
                 new SqlParameter("@InvoiceNumber", entity.InvoiceNumber ?? (object)DBNull.Value),
                 new SqlParameter("@InvoiceDate", entity.InvoiceDate),
+                new SqlParameter("@SupplierDueDate", entity.SupplierDueDate ?? (object)DBNull.Value),
+                new SqlParameter("@TargetPaymentDate", entity.TargetPaymentDate ?? (object)DBNull.Value),
                 new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value),
                 new SqlParameter("@AmountExcludingVat", entity.AmountExcludingVat),
                 new SqlParameter("@VatAmount", entity.VatAmount),
@@ -107,6 +138,8 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                     [PurchaseTypeId] = @PurchaseTypeId,
                     [InvoiceNumber] = @InvoiceNumber,
                     [InvoiceDate] = @InvoiceDate,
+                    [SupplierDueDate] = @SupplierDueDate,
+                    [TargetPaymentDate] = @TargetPaymentDate,
                     [Description] = @Description,
                     [AmountExcludingVat] = @AmountExcludingVat,
                     [VatAmount] = @VatAmount,
@@ -126,6 +159,8 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 new SqlParameter("@PurchaseTypeId", entity.PurchaseTypeId),
                 new SqlParameter("@InvoiceNumber", entity.InvoiceNumber ?? (object)DBNull.Value),
                 new SqlParameter("@InvoiceDate", entity.InvoiceDate),
+                new SqlParameter("@SupplierDueDate", entity.SupplierDueDate ?? (object)DBNull.Value),
+                new SqlParameter("@TargetPaymentDate", entity.TargetPaymentDate ?? (object)DBNull.Value),
                 new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value),
                 new SqlParameter("@AmountExcludingVat", entity.AmountExcludingVat),
                 new SqlParameter("@VatAmount", entity.VatAmount),
@@ -195,7 +230,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         {
             var sql = @"
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
-                       [InvoiceNumber], [InvoiceDate], [Description],
+                       [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
                        [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
@@ -396,7 +431,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         {
             const string query = @"
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
-                       [InvoiceNumber], [InvoiceDate], [Description],
+                       [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
                        [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
@@ -412,6 +447,37 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 new SqlParameter("@EndDate", endDate));
 
             return results.OrderByDescending(p => p.InvoiceDate).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets non-cancelled purchases with an effective due date (TargetPaymentDate ?? SupplierDueDate)
+    /// on or before the cutoff date, ordered by effective due date ascending.
+    /// Used for the dashboard "Upcoming Supplier Payments" widget.
+    /// </summary>
+    public virtual async Task<List<Purchase>> GetUpcomingDueByBusinessIdAsync(int businessId, DateOnly cutoffDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
+                       [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
+                       [AmountExcludingVat], [VatAmount], [TotalAmount],
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                FROM [purchase].[Purchase]
+                WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                  AND [purchase].[Purchase].[IsCancelled] = 0
+                  AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) IS NOT NULL
+                  AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) <= @CutoffDate
+                ORDER BY COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) ASC";
+
+            return await ExecuteStoredProcedure(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@CutoffDate", cutoffDate));
         }
         catch (Exception ex)
         {

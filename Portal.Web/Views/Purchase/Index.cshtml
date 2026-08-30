@@ -243,6 +243,7 @@
                     <th>Description</th>
                     <th>Supplier</th>
                     <th>Date</th>
+                    <th>Due</th>
                     <th>Category</th>
                     <th>File</th>
                     <th style="text-align:right;">Excl. VAT</th>
@@ -278,6 +279,42 @@
                         </td>
                         <td>@purchase.Supplier?.Name</td>
                         <td data-mobile="hide">@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
+                        <td data-mobile="hide">
+                            @{
+                                var effectiveDue = purchase.TargetPaymentDate ?? purchase.SupplierDueDate;
+                                var isSupplierOnly = purchase.TargetPaymentDate == null && purchase.SupplierDueDate != null;
+                            }
+                            @if (effectiveDue == null)
+                            {
+                                <span class="muted">—</span>
+                            }
+                            else
+                            {
+                                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                                var days = effectiveDue.Value.DayNumber - today.DayNumber;
+                                if (!purchase.IsCancelled && days < 0)
+                                {
+                                    <span style="color:#C24A4A;font-weight:600;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
+                                    <span class="pill pill-red" style="margin-left:4px;">Overdue</span>
+                                }
+                                else if (!purchase.IsCancelled && days == 0)
+                                {
+                                    <span style="color:#C8912E;font-weight:600;">Today</span>
+                                }
+                                else if (!purchase.IsCancelled && days <= 7)
+                                {
+                                    <span style="color:#C8912E;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span>@effectiveDue.Value.ToString("dd MMM yyyy")</span>
+                                }
+                                if (isSupplierOnly)
+                                {
+                                    <span class="muted" style="font-size:11px;display:block;">(supplier)</span>
+                                }
+                            }
+                        </td>
                         <td data-mobile="hide">@purchase.ExpenseCategory?.Name</td>
                         <td data-mobile="hide" style="cursor:pointer;text-decoration:none;" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
                             @await Component.InvokeAsync("AttachmentCount", new { entityType = "Purchase", entityId = purchase.Id })

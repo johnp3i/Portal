@@ -44,6 +44,7 @@ public class UpdateMeetingRequest
     public string? Location { get; set; }
     public string? Notes { get; set; }
     public string? Outcome { get; set; }
+    public int? MeetingOutcomeClassificationId { get; set; }
 }
 
 /// <summary>
@@ -63,10 +64,12 @@ public class MeetingDetailDto
     public string? Location { get; set; }
     public string? Notes { get; set; }
     public string? Outcome { get; set; }
+    public int? MeetingOutcomeClassificationId { get; set; }
     public bool IsCancelled { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public List<MeetingProductRequestDto> ProductRequests { get; set; } = new();
     public List<MeetingOpportunityDto> Opportunities { get; set; } = new();
+    public List<MeetingTaskBriefDto> Tasks { get; set; } = new();
 }
 
 /// <summary>
@@ -114,6 +117,21 @@ public class CreateMeetingOpportunityDto
 }
 
 /// <summary>
+/// Lightweight task representation for the meeting detail response.
+/// </summary>
+public class MeetingTaskBriefDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = null!;
+    public string TaskType { get; set; } = null!;
+    public DateTime DueAtUtc { get; set; }
+    public TimeOnly? ScheduledTimeUtc { get; set; }
+    public bool IsCompleted { get; set; }
+    public DateTime? CompletedAtUtc { get; set; }
+    public string? TaskOutcome { get; set; }
+}
+
+/// <summary>
 /// Brief DTO for the Upcoming Meetings panel on the Pipeline page.
 /// </summary>
 public class MeetingBriefDto
@@ -152,6 +170,7 @@ public class MeetingFilter
 {
     public string? Status { get; set; }
     public int? MeetingTypeId { get; set; }
+    public int? OutcomeClassificationId { get; set; }
     public DateTime? DateFrom { get; set; }
     public DateTime? DateTo { get; set; }
 }
@@ -173,7 +192,19 @@ public class MeetingPagedListDto
     public string? Location { get; set; }
     public string? Notes { get; set; }
     public string? Outcome { get; set; }
+    public int? MeetingOutcomeClassificationId { get; set; }
+    public string? OutcomeClassificationName { get; set; }
     public bool IsCancelled { get; set; }
+
+    /// <summary>
+    /// Total count of tasks linked to this meeting.
+    /// </summary>
+    public int TaskCount { get; set; }
+
+    /// <summary>
+    /// Count of pending (incomplete) tasks linked to this meeting.
+    /// </summary>
+    public int PendingTaskCount { get; set; }
 
     /// <summary>
     /// Computed urgency: "today", "upcoming", "needs_outcome", "completed", "cancelled"

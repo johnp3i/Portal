@@ -25,6 +25,10 @@ public class PurchaseFormViewModel
     [Required(ErrorMessage = "Invoice date is required")]
     public DateOnly InvoiceDate { get; set; }
 
+    public DateOnly? SupplierDueDate { get; set; }
+
+    public DateOnly? TargetPaymentDate { get; set; }
+
     [MaxLength(500)]
     public string? Description { get; set; }
 

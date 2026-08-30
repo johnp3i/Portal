@@ -27,4 +27,11 @@ public interface IVatSubmissionService
     /// Returns null if no submission exists for the period.
     /// </summary>
     Task<VatSubmission?> GetByPeriodIdAsync(int vatSubmissionPeriodId);
+
+    /// <summary>
+    /// Builds the advisory, non-blocking pre-submission checklist for a period:
+    /// automated checks (unassigned purchases/invoices, zero-VAT invoices, purchase-count
+    /// trend, input VAT discrepancy) plus the computed Output/Input/Net VAT figures.
+    /// </summary>
+    Task<ServiceResult<VatPreSubmissionChecklistDto>> GetPreSubmissionChecklistAsync(int vatSubmissionPeriodId);
 }

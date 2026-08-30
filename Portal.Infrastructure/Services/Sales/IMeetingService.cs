@@ -13,6 +13,7 @@ public interface IMeetingService
     Task<ServiceResult> CancelMeetingAsync(int id, string? description);
     Task<ServiceResult> ReactivateMeetingAsync(int id);
     Task<MeetingDetailDto?> GetByIdAsync(int id);
+    Task<string?> GetSubjectAsync(int id);
     Task<List<MeetingListDto>> GetMeetingsForLeadAsync(int leadRequestId);
     Task<List<MeetingListDto>> GetAllMeetingsAsync();
     Task<byte[]> GenerateIcsFileAsync(int id);

@@ -145,9 +145,12 @@ public class BillingService : IBillingService
                 throw new InvalidOperationException($"Invoice {invoiceId} not found for business {businessId}.");
             }
 
-            // Get payment info for the invoice
+            // Get payment info for the invoice — load ALL payments (not just first) for instalment support
             var payments = await _billingPaymentRepository.GetByInvoiceIdAsync(invoiceId);
-            var payment = payments.FirstOrDefault();
+            var amountPaid = payments.Sum(p => p.AmountEur);
+            var outstanding = invoice.AmountEur - amountPaid;
+            var isPartiallyPaid = invoice.Status == "partially_paid";
+            var firstPayment = payments.FirstOrDefault();
 
             // Get subscription to resolve plan name
             var subscription = await _subscriptionRepository.GetByBusinessIdAsync(businessId);
@@ -218,8 +221,20 @@ public class BillingService : IBillingService
                 ReverseChargeNotation = vatResult.ReverseChargeNotation,
 
                 // Payment info
-                PaymentMethod = payment?.Method,
-                PaymentDate = payment?.PaidAtUtc
+                PaymentMethod = payments.Count == 1 ? firstPayment?.Method : (payments.Count > 1 ? "Multiple" : null),
+                PaymentDate = firstPayment?.PaidAtUtc,
+
+                // Multi-payment / instalment support
+                Payments = payments.Select(p => new PaymentLineItem
+                {
+                    Amount = p.AmountEur,
+                    Method = p.Method,
+                    PaidAtUtc = p.PaidAtUtc,
+                    Reference = p.Reference
+                }).ToList(),
+                AmountPaid = amountPaid,
+                Outstanding = outstanding > 0 ? outstanding : 0,
+                IsPartiallyPaid = isPartiallyPaid
             };
 
             // Render the Razor view to HTML

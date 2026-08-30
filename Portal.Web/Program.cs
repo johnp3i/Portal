@@ -495,6 +495,7 @@ builder.Services.AddScoped<ComplianceRepository>(sp =>
 builder.Services.AddScoped<IComplianceService, ComplianceService>();
 
 // --- MVC ---
+builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {

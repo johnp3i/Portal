@@ -702,6 +702,89 @@ public class DashboardService : IDashboardService
     }
 
     /// <inheritdoc />
+    public async Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(int businessId)
+    {
+        try
+        {
+            var results = new List<UpcomingSupplierPaymentDto>();
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var cutoff = today.AddDays(14);
+
+            var connection = _dbContext.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                var transaction = _dbContext.Database.CurrentTransaction;
+
+                const string query = @"
+                    SELECT TOP 5
+                           [purchase].[Purchase].[Id] AS [PurchaseId],
+                           [purchase].[Supplier].[Name] AS [SupplierName],
+                           [purchase].[Purchase].[Description] AS [Description],
+                           [purchase].[Purchase].[TotalAmount] AS [TotalAmount],
+                           [purchase].[Purchase].[SupplierDueDate] AS [SupplierDueDate],
+                           [purchase].[Purchase].[TargetPaymentDate] AS [TargetPaymentDate]
+                    FROM [purchase].[Purchase]
+                    INNER JOIN [purchase].[Supplier] ON [purchase].[Purchase].[SupplierId] = [purchase].[Supplier].[Id]
+                    WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
+                      AND [purchase].[Purchase].[IsCancelled] = 0
+                      AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) IS NOT NULL
+                      AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) <= @Cutoff
+                    ORDER BY COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) ASC";
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = query;
+                    if (transaction != null) command.Transaction = transaction.GetDbTransaction();
+
+                    command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                    command.Parameters.Add(new SqlParameter("@Cutoff", cutoff.ToDateTime(TimeOnly.MinValue)));
+
+                    using var reader = await command.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var supplierDue = reader.IsDBNull(4) ? (DateOnly?)null : DateOnly.FromDateTime(reader.GetDateTime(4));
+                        var targetDate = reader.IsDBNull(5) ? (DateOnly?)null : DateOnly.FromDateTime(reader.GetDateTime(5));
+                        var effectiveDue = targetDate ?? supplierDue!.Value;
+
+                        var days = effectiveDue.DayNumber - today.DayNumber;
+                        var status = days < 0 ? "overdue"
+                            : days == 0 ? "today"
+                            : days <= 7 ? "due_soon"
+                            : "upcoming";
+
+                        results.Add(new UpcomingSupplierPaymentDto
+                        {
+                            PurchaseId = reader.GetInt32(0),
+                            SupplierName = reader.GetString(1),
+                            Description = reader.IsDBNull(2) ? null : reader.GetString(2),
+                            TotalAmount = reader.GetDecimal(3),
+                            SupplierDueDate = supplierDue,
+                            TargetPaymentDate = targetDate,
+                            EffectiveDueDate = effectiveDue,
+                            Status = status
+                        });
+                    }
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _dbContext.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<List<RevenueVsExpensesDto>> GetRevenueVsExpensesAsync(int businessId)
     {
         try

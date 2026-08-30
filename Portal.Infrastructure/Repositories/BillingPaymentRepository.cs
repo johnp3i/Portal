@@ -23,11 +23,11 @@ public class BillingPaymentRepository : GenericStoredProcedureRepository<Billing
             const string query = @"
                 INSERT INTO [billing].[Payment]
                     ([InvoiceId], [AmountEur], [Method], [PaidAtUtc],
-                     [StripePaymentIntentId], [CreatedAtUtc])
+                     [StripePaymentIntentId], [Reference], [Notes], [RecordedByUserId], [CreatedAtUtc])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@InvoiceId, @AmountEur, @Method, @PaidAtUtc,
-                     @StripePaymentIntentId, @CreatedAtUtc)";
+                     @StripePaymentIntentId, @Reference, @Notes, @RecordedByUserId, @CreatedAtUtc)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -48,6 +48,9 @@ public class BillingPaymentRepository : GenericStoredProcedureRepository<Billing
                 command.Parameters.Add(new SqlParameter("@Method", entity.Method));
                 command.Parameters.Add(new SqlParameter("@PaidAtUtc", entity.PaidAtUtc));
                 command.Parameters.Add(new SqlParameter("@StripePaymentIntentId", entity.StripePaymentIntentId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Reference", entity.Reference ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@RecordedByUserId", entity.RecordedByUserId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
 
                 var result = await command.ExecuteScalarAsync();
@@ -59,7 +62,7 @@ public class BillingPaymentRepository : GenericStoredProcedureRepository<Billing
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -79,6 +82,9 @@ public class BillingPaymentRepository : GenericStoredProcedureRepository<Billing
                        [billing].[Payment].[Method],
                        [billing].[Payment].[PaidAtUtc],
                        [billing].[Payment].[StripePaymentIntentId],
+                       [billing].[Payment].[Reference],
+                       [billing].[Payment].[Notes],
+                       [billing].[Payment].[RecordedByUserId],
                        [billing].[Payment].[CreatedAtUtc]
                 FROM [billing].[Payment]
                 WHERE [billing].[Payment].[InvoiceId] = @InvoiceId
@@ -87,7 +93,51 @@ public class BillingPaymentRepository : GenericStoredProcedureRepository<Billing
             return await ExecuteStoredProcedure(query,
                 new SqlParameter("@InvoiceId", invoiceId));
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the total amount already paid for a given invoice (sum of all linked payments).
+    /// Returns 0 if no payments exist.
+    /// </summary>
+    public virtual async Task<decimal> GetTotalPaidByInvoiceIdAsync(int invoiceId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT ISNULL(SUM([billing].[Payment].[AmountEur]), 0)
+                FROM [billing].[Payment]
+                WHERE [billing].[Payment].[InvoiceId] = @InvoiceId";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != System.Data.ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@InvoiceId", invoiceId));
+
+                var result = await command.ExecuteScalarAsync();
+                return result != null && result != DBNull.Value ? (decimal)result : 0m;
+            }
+            finally
+            {
+                if (connection.State == System.Data.ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
         {
             throw;
         }

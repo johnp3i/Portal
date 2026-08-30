@@ -5,6 +5,10 @@
     'use strict';
 
     var _currentPage = 1;
+    var _editMeetingId = null;
+    var _editMeetingContactId = null;
+    var _editMeetingLeadRequestId = null;
+    var _meetingTasksDirty = false;
 
     function getAntiForgeryToken() {
         var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -33,6 +37,21 @@
             default:
                 return '';
         }
+    }
+
+    // ─── Classification Pill ────────────────────────────────────
+
+    function getClassificationPillHtml(classificationName) {
+        if (!classificationName) return '<span style="color:#8a9bab;">\u2014</span>';
+        var colors = {
+            'Positive': { bg: 'rgba(18,152,103,.08)', color: '#129867' },
+            'Neutral': { bg: 'rgba(13,94,166,.08)', color: '#0D5EA6' },
+            'Negative': { bg: 'rgba(194,74,74,.08)', color: '#C24A4A' },
+            'Rescheduled': { bg: 'rgba(200,145,46,.08)', color: '#C8912E' },
+            'No Show': { bg: 'rgba(194,74,74,.08)', color: '#C24A4A' }
+        };
+        var c = colors[classificationName] || { bg: 'rgba(94,115,133,.08)', color: '#5E7385' };
+        return '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:' + c.bg + ';color:' + c.color + ';">' + escapeHtml(classificationName) + '</span>';
     }
 
     // ─── Relative Time Label ────────────────────────────────────
@@ -72,6 +91,7 @@
 
         var status = document.getElementById('filterStatus').value;
         var meetingTypeId = document.getElementById('filterMeetingType').value;
+        var outcomeClassificationId = document.getElementById('filterOutcomeClassification').value;
         var dateFrom = document.getElementById('filterDateFrom').value;
         var dateTo = document.getElementById('filterDateTo').value;
 
@@ -79,12 +99,13 @@
         params.append('page', page);
         if (status) params.append('status', status);
         if (meetingTypeId) params.append('meetingTypeId', meetingTypeId);
+        if (outcomeClassificationId) params.append('outcomeClassificationId', outcomeClassificationId);
         if (dateFrom) params.append('dateFrom', dateFrom);
         if (dateTo) params.append('dateTo', dateTo);
 
         // Show loading indicator in table body (no BlockUI for table loading)
         var tbody = document.getElementById('meetingsTableBody');
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8a9bab;padding:32px;">Loading meetings...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8a9bab;padding:32px;">Loading meetings...</td></tr>';
 
         fetch('/Sales/AxGetMeetingsPaged?' + params.toString())
             .then(function (response) { return response.json(); })
@@ -92,12 +113,12 @@
                 if (result.success) {
                     renderMeetingsTable(result.data, result.totalCount, result.currentPage, result.totalPages);
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#C24A4A;padding:32px;">Failed to load meetings. Please try again.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#C24A4A;padding:32px;">Failed to load meetings. Please try again.</td></tr>';
                     document.getElementById('meetingsPagination').style.display = 'none';
                 }
             })
             .catch(function () {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#C24A4A;padding:32px;">Failed to load meetings. Please try again.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#C24A4A;padding:32px;">Failed to load meetings. Please try again.</td></tr>';
                 document.getElementById('meetingsPagination').style.display = 'none';
             });
     };
@@ -111,7 +132,7 @@
         var paginationControls = document.getElementById('meetingsPaginationControls');
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8a9bab;padding:32px;">No meetings found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8a9bab;padding:32px;">No meetings found.</td></tr>';
             pagination.style.display = 'none';
             return;
         }
@@ -139,11 +160,12 @@
             }
 
             html += '<tr>';
-            html += '<td>' + escapeHtml(m.subject) + leadLink + '</td>';
+            html += '<td>' + escapeHtml(m.subject) + leadLink + getTaskBadgeHtml(m.taskCount, m.pendingTaskCount) + '</td>';
             html += '<td>' + escapeHtml(m.meetingTypeName || '') + '</td>';
             html += '<td>' + escapeHtml(m.contactName || '') + '</td>';
             html += '<td>' + scheduledDisplay + relativeHtml + '</td>';
             html += '<td>' + (m.durationMinutes || 60) + ' min</td>';
+            html += '<td>' + getClassificationPillHtml(m.outcomeClassificationName) + '</td>';
             var outcomeDisplay = m.outcome ? (m.outcome.length > 80 ? escapeHtml(m.outcome.substring(0, 80)) + '…' : escapeHtml(m.outcome)) : '—';
             html += '<td>' + outcomeDisplay + '</td>';
             html += '<td>' + getUrgencyBadgeHtml(m.urgency) + '</td>';
@@ -199,6 +221,7 @@
     window.clearMeetingFilters = function () {
         document.getElementById('filterStatus').value = '';
         document.getElementById('filterMeetingType').value = '';
+        document.getElementById('filterOutcomeClassification').value = '';
         document.getElementById('filterDateFrom').value = '';
         document.getElementById('filterDateTo').value = '';
         // Remove active class from quick period buttons
@@ -288,6 +311,13 @@
                 document.getElementById('editMeetingLocation').value = m.location || '';
                 document.getElementById('editMeetingNotes').value = m.notes || '';
                 document.getElementById('editMeetingOutcome').value = m.outcome || '';
+                document.getElementById('editMeetingClassification').value = m.meetingOutcomeClassificationId || '';
+
+                // Store meeting context for task creation
+                _editMeetingId = m.id;
+                _editMeetingContactId = m.contactId;
+                _editMeetingLeadRequestId = m.leadRequestId;
+                _meetingTasksDirty = false;
 
                 // Convert ISO datetime to datetime-local format (YYYY-MM-DDTHH:mm)
                 if (m.scheduledAtUtc) {
@@ -301,6 +331,10 @@
                 } else {
                     document.getElementById('editMeetingScheduledAt').value = '';
                 }
+
+                // Render meeting tasks
+                renderMeetingTasks(m.tasks || []);
+                hideMeetingTaskForm();
 
                 document.getElementById('editMeetingModal').style.display = 'flex';
             })
@@ -327,7 +361,8 @@
             durationMinutes: parseInt(document.getElementById('editMeetingDuration').value) || 60,
             location: document.getElementById('editMeetingLocation').value || null,
             notes: document.getElementById('editMeetingNotes').value || null,
-            outcome: document.getElementById('editMeetingOutcome').value || null
+            outcome: document.getElementById('editMeetingOutcome').value || null,
+            meetingOutcomeClassificationId: parseInt(document.getElementById('editMeetingClassification').value) || null
         };
 
         BlockUI.show('Updating...');
@@ -359,6 +394,10 @@
 
     window.closeEditMeetingModal = function () {
         document.getElementById('editMeetingModal').style.display = 'none';
+        if (_meetingTasksDirty) {
+            _meetingTasksDirty = false;
+            loadMeetingsPage(_currentPage);
+        }
     };
 
     // ─── Create Meeting Modal ───────────────────────────────────
@@ -492,6 +531,170 @@
             }
         });
     };
+
+    // ─── Task Badge for Meeting Rows ────────────────────────────
+
+    function getTaskBadgeHtml(taskCount, pendingTaskCount) {
+        if (!taskCount || taskCount === 0) return '';
+
+        if (pendingTaskCount > 0) {
+            return ' <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(13,94,166,.08);color:#0D5EA6;margin-left:6px;">' + taskCount + (taskCount === 1 ? ' task' : ' tasks') + '</span>';
+        } else {
+            return ' <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(18,152,103,.08);color:#129867;margin-left:6px;">' + taskCount + ' &#10003;</span>';
+        }
+    }
+
+    // ─── Meeting Tasks in Edit Modal ────────────────────────────
+
+    function renderMeetingTasks(tasks) {
+        var container = document.getElementById('editMeetingTasksList');
+        var heading = document.getElementById('meetingTasksHeading');
+
+        heading.textContent = 'Meeting Tasks (' + tasks.length + ')';
+
+        if (!tasks || tasks.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#8a9bab;padding:16px 0;font-size:13px;">No tasks yet.</div>';
+            return;
+        }
+
+        var pending = tasks.filter(function (t) { return !t.isCompleted; });
+        var completed = tasks.filter(function (t) { return t.isCompleted; });
+
+        var html = '';
+
+        pending.forEach(function (t) {
+            var dueDate = new Date(t.dueAtUtc);
+            var dueStr = dueDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            if (t.scheduledTimeUtc) {
+                var timeParts = t.scheduledTimeUtc.split(':');
+                dueStr += ', ' + timeParts[0] + ':' + timeParts[1];
+            }
+            var isOverdue = dueDate < new Date(new Date().toDateString());
+            var dueLabelStyle = isOverdue ? 'color:#C24A4A;font-weight:600;' : 'color:#8a9bab;';
+            var dueLabel = isOverdue ? 'Overdue: ' + dueStr : 'Due: ' + dueStr;
+            var dotHtml = isOverdue ? '<span style="width:6px;height:6px;border-radius:50%;background:#C24A4A;flex-shrink:0;"></span>' : '';
+
+            html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(138,155,171,.08);">';
+            html += '<button type="button" style="width:22px;height:22px;border-radius:6px;border:1.5px solid rgba(18,152,103,.3);background:rgba(18,152,103,.06);color:#129867;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" onclick="completeMeetingTask(' + t.id + ')" title="Complete">&#10003;</button>';
+            html += '<div style="flex:1;min-width:0;">';
+            html += '<div style="font-size:13px;font-weight:600;color:#0B1B28;">' + escapeHtml(t.title) + '</div>';
+            html += '<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:4px;">' + dotHtml + '<span style="' + dueLabelStyle + '">' + escapeHtml(t.taskType) + ' &middot; ' + dueLabel + '</span></div>';
+            html += '</div>';
+            html += '</div>';
+        });
+
+        if (completed.length > 0) {
+            completed.forEach(function (t) {
+                var completedStr = t.completedAtUtc ? new Date(t.completedAtUtc).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+                html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(138,155,171,.08);opacity:0.5;">';
+                html += '<span style="width:22px;height:22px;border-radius:6px;background:rgba(18,152,103,.1);color:#129867;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">&#10003;</span>';
+                html += '<div style="flex:1;min-width:0;">';
+                html += '<div style="font-size:13px;font-weight:600;color:#5E7385;text-decoration:line-through;">' + escapeHtml(t.title) + '</div>';
+                html += '<div style="font-size:11px;color:#8a9bab;margin-top:2px;">' + escapeHtml(t.taskType) + (completedStr ? ' &middot; Completed: ' + completedStr : '') + '</div>';
+                html += '</div>';
+                html += '</div>';
+            });
+        }
+
+        container.innerHTML = html;
+    }
+
+    window.showMeetingTaskForm = function () {
+        document.getElementById('meetingTaskForm').style.display = 'block';
+        document.getElementById('meetingTaskTitle').focus();
+    };
+
+    window.hideMeetingTaskForm = function () {
+        document.getElementById('meetingTaskForm').style.display = 'none';
+        document.getElementById('meetingTaskTitle').value = '';
+        document.getElementById('meetingTaskType').value = 'Follow-up';
+        document.getElementById('meetingTaskDueDate').value = '';
+        document.getElementById('meetingTaskNotes').value = '';
+    };
+
+    window.submitMeetingTask = async function () {
+        var title = document.getElementById('meetingTaskTitle').value.trim();
+        var dueDate = document.getElementById('meetingTaskDueDate').value;
+
+        if (!title || !dueDate) {
+            Swal.fire({ icon: 'warning', title: 'Validation', text: 'Title and due date are required.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        var dtObj = new Date(dueDate);
+        var dateOnly = dueDate.substring(0, 10);
+        var hours = dtObj.getHours();
+        var minutes = dtObj.getMinutes();
+        var hasTime = (hours !== 0 || minutes !== 0);
+
+        var payload = {
+            meetingId: _editMeetingId,
+            contactId: _editMeetingContactId,
+            leadRequestId: _editMeetingLeadRequestId,
+            title: title,
+            taskType: document.getElementById('meetingTaskType').value,
+            dueAtUtc: dateOnly,
+            scheduledTimeUtc: hasTime ? String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') : null,
+            notes: document.getElementById('meetingTaskNotes').value || null
+        };
+
+        BlockUI.show('Creating task...');
+        try {
+            var response = await fetch('/Sales/AxPostCreateTask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: JSON.stringify(payload)
+            });
+            var result = await response.json();
+            BlockUI.hide();
+
+            if (result.success) {
+                hideMeetingTaskForm();
+                _meetingTasksDirty = true;
+                Swal.fire({ icon: 'success', title: 'Task Created', text: 'Task added to this meeting.', confirmButtonColor: '#0D5EA6', timer: 2000, showConfirmButton: false });
+                // Re-fetch meeting detail to refresh task list
+                refreshMeetingTasks(_editMeetingId);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Failed to create task.', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    window.completeMeetingTask = async function (taskId) {
+        BlockUI.show('Completing...');
+        try {
+            var response = await fetch('/Sales/AxPostCompleteTask?id=' + taskId, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var result = await response.json();
+            BlockUI.hide();
+
+            if (result.success) {
+                _meetingTasksDirty = true;
+                refreshMeetingTasks(_editMeetingId);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Failed to complete task.', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    };
+
+    function refreshMeetingTasks(meetingId) {
+        fetch('/Sales/AxGetMeetingDetail?id=' + meetingId)
+            .then(function (response) { return response.json(); })
+            .then(function (result) {
+                if (result.success && result.data.tasks) {
+                    renderMeetingTasks(result.data.tasks);
+                }
+            })
+            .catch(function () { /* silently fail — tasks already created */ });
+    }
 
     // ─── Contacts for Create Modal ──────────────────────────────
 

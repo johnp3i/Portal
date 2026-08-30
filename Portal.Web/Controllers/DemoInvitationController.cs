@@ -45,7 +45,15 @@ public class DemoInvitationController : Controller
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var result = await _demoInvitationService.CreateAsync(request, userId);
-            return Json(new { success = true, message = $"Invitation sent to {request.RecipientEmail}" });
+
+            if (result.IsEmailSent)
+            {
+                return Json(new { success = true, message = $"Invitation sent to {request.RecipientEmail}" });
+            }
+            else
+            {
+                return Json(new { success = true, warning = true, message = $"Invitation created but email delivery failed. Use Resend to retry." });
+            }
         }
         catch (ValidationException ex)
         {
@@ -129,6 +137,22 @@ public class DemoInvitationController : Controller
         {
             Log.Error(ex, "Failed to update permissions for InvitationId={InvitationId}", request.InvitationId);
             return Json(new { success = false, message = "An unexpected error occurred. Please try again." });
+        }
+    }
+
+    // GET /Admin/DemoInvitations/SearchContacts
+    [HttpGet("SearchContacts")]
+    public async Task<IActionResult> AxGetSearchContacts(string? search)
+    {
+        try
+        {
+            var contacts = await _demoInvitationService.SearchSalesContactsAsync(search);
+            return Json(new { success = true, data = contacts });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to search contacts");
+            return Json(new { success = false, message = "Failed to load contacts." });
         }
     }
 }

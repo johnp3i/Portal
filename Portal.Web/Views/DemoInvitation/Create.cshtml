@@ -8,7 +8,8 @@
         new { Title = "Intelligence (Professional)", Tier = "Pro", TierClass = "perm-tier-professional", Modules = new[] { "sales", "pnl", "cashflow", "expense_insights", "schedule_payments", "recurring_expense_validation" } },
         new { Title = "Automation (Professional)", Tier = "Pro", TierClass = "perm-tier-professional", Modules = new[] { "payment_link_manual", "payment_reminder_manual", "payment_link_auto", "payment_reminder_auto", "purchase_import", "zreport_import" } },
         new { Title = "Documents (Professional)", Tier = "Pro", TierClass = "perm-tier-professional", Modules = new[] { "attachments", "audit_log" } },
-        new { Title = "Enterprise", Tier = "Ent", TierClass = "perm-tier-enterprise", Modules = new[] { "activity_timeline", "client_portal", "api", "webhooks", "multi_currency" } }
+        new { Title = "Enterprise", Tier = "Ent", TierClass = "perm-tier-enterprise", Modules = new[] { "activity_timeline", "client_portal", "api", "webhooks", "multi_currency", "stripe_connect" } },
+        new { Title = "Operations", Tier = "Ops", TierClass = "perm-tier-professional", Modules = new[] { "compliance", "payroll" } }
     };
 
     var moduleLabels = new Dictionary<string, string>
@@ -17,7 +18,7 @@
         { "quotation", "Quotations" },
         { "invoice", "Invoices" },
         { "revenue", "Revenue" },
-        { "purchase", "Purchases" },
+        { "purchase", "Purchases & Suppliers" },
         { "vat", "VAT" },
         { "credit", "Credit Notes" },
         { "products", "Products" },
@@ -40,7 +41,10 @@
         { "client_portal", "Client Portal" },
         { "api", "API Access" },
         { "webhooks", "Webhooks" },
-        { "multi_currency", "Multi-Currency" }
+        { "multi_currency", "Multi-Currency" },
+        { "stripe_connect", "Card Payments (Stripe)" },
+        { "compliance", "Compliance" },
+        { "payroll", "Payroll" }
     };
 
     // Flat list for JS serialization
@@ -75,7 +79,10 @@
             </div>
             <div class="field">
                 <label for="recipientEmail">Recipient Email *</label>
-                <input type="email" id="recipientEmail" placeholder="prospect@example.com" required />
+                <div style="display:flex;gap:8px;">
+                    <input type="email" id="recipientEmail" placeholder="prospect@example.com" required style="flex:1;" />
+                    <button type="button" class="btn btn-secondary" style="white-space:nowrap;font-size:12px;padding:8px 14px;" onclick="openContactPicker()">Import from Contacts</button>
+                </div>
             </div>
             <div class="field">
                 <label for="recipientName">Recipient Name</label>
@@ -92,6 +99,11 @@
             <label style="font-weight:700;font-size:15px;color:#1a2b3c;display:block;margin-bottom:10px;">Module Permissions</label>
             <div style="margin-bottom:16px;padding:10px 14px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);border-radius:10px;font-size:12px;color:#5E7385;line-height:1.6;">
                 <strong>F</strong> = Full access &nbsp;|&nbsp; <strong>R</strong> = Read Only (view only, no editing) &nbsp;|&nbsp; <strong>N</strong> = None (hidden from menu)
+            </div>
+            <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="setAllPermissions('full')">Set All → Full</button>
+                <button type="button" class="btn btn-sm" style="background:rgba(13,94,166,.06);color:#0D5EA6;border:1.5px solid rgba(13,94,166,.12);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="setAllPermissions('readonly')">Set All → Read Only</button>
+                <button type="button" class="btn btn-sm" style="background:rgba(138,155,171,.06);color:#5E7385;border:1.5px solid rgba(138,155,171,.15);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="setAllPermissions('none')">Set All → None</button>
             </div>
             <div class="perm-grid">
                 @foreach (var group in moduleGroups)
@@ -137,6 +149,21 @@
     .perm-radios input[type="radio"] { width:15px; height:15px; accent-color:#0D5EA6; cursor:pointer; }
 </style>
 
+<!-- Contact Picker Modal -->
+<div id="contactPickerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:28px;max-width:600px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,0.15);max-height:80vh;display:flex;flex-direction:column;">
+        <h3 style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#1a2b3c;">Import from Sales Contacts</h3>
+        <div style="margin-bottom:14px;display:flex;gap:8px;">
+            <input type="text" id="contactSearchInput" placeholder="Search by name, email, or company..." style="flex:1;padding:8px 12px;border:1px solid #d0dce8;border-radius:8px;font-size:13px;" />
+            <button type="button" class="btn btn-primary" style="font-size:12px;padding:8px 14px;" onclick="searchContacts()">Search</button>
+        </div>
+        <div id="contactPickerResults" style="overflow-y:auto;flex:1;min-height:0;"></div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeContactPicker()">Cancel</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 (function() {
@@ -152,6 +179,73 @@
         var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
         return tokenInput ? tokenInput.value : '';
     }
+
+    // Bulk permission setter — sets all radio buttons to the given access level
+    window.setAllPermissions = function(accessLevel) {
+        var radios = document.querySelectorAll('.perm-radios input[type="radio"][value="' + accessLevel + '"]');
+        radios.forEach(function(radio) { radio.checked = true; });
+    };
+
+    // ─── Contact Picker Modal ────────────────────────────────────
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.openContactPicker = function() {
+        document.getElementById('contactSearchInput').value = '';
+        document.getElementById('contactPickerResults').innerHTML = '<div style="text-align:center;color:#8a9bab;padding:32px 0;font-size:13px;">Type a name, email, or company and click Search.</div>';
+        document.getElementById('contactPickerModal').style.display = 'flex';
+        document.getElementById('contactSearchInput').focus();
+    };
+
+    window.closeContactPicker = function() {
+        document.getElementById('contactPickerModal').style.display = 'none';
+    };
+
+    // Allow Enter key in search input
+    document.getElementById('contactSearchInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); searchContacts(); }
+    });
+
+    window.searchContacts = async function() {
+        var search = document.getElementById('contactSearchInput').value.trim();
+        var container = document.getElementById('contactPickerResults');
+
+        container.innerHTML = '<div style="text-align:center;color:#8a9bab;padding:24px 0;font-size:13px;">Searching...</div>';
+
+        try {
+            var response = await fetch('/Admin/DemoInvitations/SearchContacts?search=' + encodeURIComponent(search));
+            var result = await response.json();
+
+            if (!result.success || !result.data || result.data.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#8a9bab;padding:24px 0;font-size:13px;">No contacts found.</div>';
+                return;
+            }
+
+            var html = '';
+            result.data.forEach(function(c) {
+                var company = c.companyName ? '<span style="color:#8a9bab;"> — ' + escapeHtml(c.companyName) + '</span>' : '';
+                html += '<div class="contact-pick-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(138,155,171,.08);cursor:pointer;" onmouseover="this.style.background=\'rgba(13,94,166,.03)\'" onmouseout="this.style.background=\'\'" onclick="selectContact(\'' + escapeHtml(c.email).replace(/'/g, "\\'") + '\', \'' + escapeHtml(c.fullName).replace(/'/g, "\\'") + '\')">';
+                html += '<div>';
+                html += '<div style="font-weight:600;font-size:13px;color:#0B1B28;">' + escapeHtml(c.fullName) + company + '</div>';
+                html += '<div style="font-size:12px;color:#5E7385;margin-top:2px;">' + escapeHtml(c.email) + '</div>';
+                html += '</div>';
+                html += '<span style="font-size:11px;color:#0D5EA6;font-weight:700;">Select</span>';
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = '<div style="text-align:center;color:#C24A4A;padding:24px 0;font-size:13px;">Failed to load contacts.</div>';
+        }
+    };
+
+    window.selectContact = function(email, fullName) {
+        document.getElementById('recipientEmail').value = email;
+        document.getElementById('recipientName').value = fullName;
+        closeContactPicker();
+    };
 
     function getPermissions() {
         var modules = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(allModules));
@@ -238,9 +332,9 @@
 
                 if (data.success) {
                     await Swal.fire({
-                        title: 'Invitation Sent!',
+                        title: data.warning ? 'Warning' : 'Invitation Sent!',
                         text: data.message || 'Demo invitation created successfully.',
-                        icon: 'success',
+                        icon: data.warning ? 'warning' : 'success',
                         confirmButtonColor: '#0D5EA6'
                     });
                     window.location.href = '/Admin/DemoInvitations';

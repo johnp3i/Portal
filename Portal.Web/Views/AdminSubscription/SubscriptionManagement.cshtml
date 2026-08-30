@@ -54,10 +54,17 @@
                         var statusLabel = business.Status != null
                             ? System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(business.Status)
                             : "No Plan";
+                        var annualPrice = business.PlanAnnualPriceEur ?? 0;
+                        var planNameSafe = (business.PlanName ?? "").Replace("'", "\\'");
+                        var businessNameSafe = business.BusinessName.Replace("'", "\\'");
 
                         <tr data-business-name="@business.BusinessName.ToLowerInvariant()">
                             <td>
                                 <strong>@business.BusinessName</strong>
+                                @if (business.IsDemoAccount)
+                                {
+                                    <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(87,184,232,.1);color:#1a8fc7;margin-left:6px;">Demo</span>
+                                }
                                 @if (!business.IsActive)
                                 {
                                     <span style="font-size:11px;color:#C24A4A;margin-left:6px;">(Inactive)</span>
@@ -108,14 +115,10 @@
                                 </select>
                             </td>
                             <td>
-                                @(business.StartedAtUtc.HasValue
-                                    ? business.StartedAtUtc.Value.ToString("dd MMM yyyy")
-                                    : "—")
+                                @(business.StartedAtUtc.HasValue ? business.StartedAtUtc.Value.ToString("dd MMM yyyy") : "—")
                             </td>
                             <td>
-                                @(business.ExpiresAtUtc.HasValue
-                                    ? business.ExpiresAtUtc.Value.ToString("dd MMM yyyy")
-                                    : "—")
+                                @(business.ExpiresAtUtc.HasValue ? business.ExpiresAtUtc.Value.ToString("dd MMM yyyy") : "—")
                             </td>
                             <td>
                                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -128,6 +131,15 @@
                                             onclick="changeStatus(@business.BusinessPlanId)"
                                             @(business.BusinessPlanId == null ? "disabled" : "")>
                                         Change Status
+                                    </button>
+                                    <button type="button" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;"
+                                            onclick="openRecordPaymentModal(@business.BusinessId, '@businessNameSafe', '@planNameSafe', @annualPrice)"
+                                            @(business.BusinessPlanId == null ? "disabled" : "")>
+                                        Record Payment
+                                    </button>
+                                    <button type="button" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;"
+                                            onclick="openPaymentHistory(@business.BusinessId, '@businessNameSafe')">
+                                        History
                                     </button>
                                 </div>
                             </td>
@@ -147,64 +159,254 @@
 
 @Html.AntiForgeryToken()
 
+<!-- ============ RECORD PAYMENT MODAL ============ -->
+<div id="recordPaymentModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:560px;">
+        <h3 style="margin-bottom:4px;">Record Payment</h3>
+        <div id="recordPaymentSubtitle" style="font-size:13px;color:#5a6b7c;margin-bottom:20px;"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field"><label>Invoice Amount (EUR) *</label><input type="number" id="rpInvoiceAmount" step="0.01" min="0.01" /><div style="font-size:11px;color:#8a9bac;margin-top:2px;">Total due for the period</div></div>
+            <div class="field"><label>Payment Amount (EUR) *</label><input type="number" id="rpPaymentAmount" step="0.01" min="0.01" /><div style="font-size:11px;color:#8a9bac;margin-top:2px;">Amount being paid now</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field"><label>Payment Method *</label>
+                <select id="rpMethod"><option value="bank_transfer" selected>Bank Transfer</option><option value="cheque">Cheque</option><option value="cash">Cash</option><option value="other">Other</option></select>
+            </div>
+            <div class="field"><label>Reference</label><input type="text" id="rpReference" placeholder="e.g. TRF-2026-0042" maxlength="200" /></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field"><label>Period Start *</label><input type="date" id="rpPeriodStart" /></div>
+            <div class="field"><label>Period End *</label><input type="date" id="rpPeriodEnd" /></div>
+        </div>
+        <div class="field" style="margin-bottom:20px;"><label>Notes</label><textarea id="rpNotes" rows="2" placeholder="Optional notes..." maxlength="500"></textarea></div>
+        <input type="hidden" id="rpBusinessId" />
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeRecordPaymentModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="submitRecordPayment()">Record Payment</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ PAYMENT HISTORY MODAL ============ -->
+<div id="paymentHistoryModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:780px;">
+        <h3 style="margin-bottom:4px;">Payment History</h3>
+        <div id="phSubtitle" style="font-size:13px;color:#5a6b7c;margin-bottom:12px;"></div>
+        <div id="phSummary" style="padding:10px 14px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.08);border-radius:10px;font-size:13px;color:#5a6b7c;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap;"></div>
+        <div id="phContent" style="overflow-y:auto;flex:1;min-height:0;max-height:400px;"></div>
+        <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closePaymentHistoryModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ ADD PAYMENT MODAL (Instalment) ============ -->
+<div id="addPaymentModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+        <h3 style="margin-bottom:4px;">Add Payment</h3>
+        <div id="apSubtitle" style="font-size:13px;color:#5a6b7c;margin-bottom:12px;"></div>
+        <div id="apSummary" style="padding:10px 14px;background:rgba(200,145,46,.04);border:1px solid rgba(200,145,46,.15);border-radius:10px;font-size:13px;color:#5a6b7c;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field"><label>Payment Amount (EUR) *</label><input type="number" id="apPaymentAmount" step="0.01" min="0.01" /><div id="apMaxHint" style="font-size:11px;color:#8a9bac;margin-top:2px;"></div></div>
+            <div class="field"><label>Payment Method *</label>
+                <select id="apMethod"><option value="bank_transfer" selected>Bank Transfer</option><option value="cheque">Cheque</option><option value="cash">Cash</option><option value="other">Other</option></select>
+            </div>
+        </div>
+        <div class="field" style="margin-bottom:14px;"><label>Reference</label><input type="text" id="apReference" placeholder="e.g. TRF-2026-0098" maxlength="200" /></div>
+        <div class="field" style="margin-bottom:20px;"><label>Notes</label><textarea id="apNotes" rows="2" placeholder="Optional notes..." maxlength="500"></textarea></div>
+        <input type="hidden" id="apInvoiceId" />
+        <input type="hidden" id="apBusinessId" />
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeAddPaymentModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="submitAddPayment()">Add Payment</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
+(function() {
+    'use strict';
+
+    var _phBusinessId = null;
+    var _phBusinessName = '';
+    var _apAmountDue = 0;
+    var _apAmountPaid = 0;
+
     function getAntiForgeryToken() {
         return document.querySelector('input[name="__RequestVerificationToken"]').value;
     }
 
-    function filterTable() {
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatDate(d) {
+        if (!d) return '—';
+        var dt = new Date(d);
+        return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function formatPeriod(start, end) {
+        var s = new Date(start);
+        var e = new Date(end);
+        return s.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) + ' – ' + e.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    }
+
+    function methodBadge(method) {
+        var map = {
+            'stripe': { bg: 'rgba(13,94,166,.08)', color: '#0D5EA6', label: 'Stripe' },
+            'bank_transfer': { bg: 'rgba(18,152,103,.08)', color: '#129867', label: 'Bank Transfer' },
+            'cheque': { bg: 'rgba(200,145,46,.08)', color: '#C8912E', label: 'Cheque' },
+            'cash': { bg: 'rgba(138,155,171,.08)', color: '#5a6b7c', label: 'Cash' },
+            'other': { bg: 'rgba(138,155,171,.08)', color: '#5a6b7c', label: 'Other' }
+        };
+        var m = map[method] || map['other'];
+        return '<span style="display:inline-flex;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:' + m.bg + ';color:' + m.color + ';">' + m.label + '</span>';
+    }
+
+    function statusBadge(status) {
+        if (status === 'paid') return '<span style="display:inline-flex;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(18,152,103,.08);color:#129867;">Paid</span>';
+        if (status === 'partially_paid') return '<span style="display:inline-flex;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(200,145,46,.08);color:#C8912E;">Partially Paid</span>';
+        return '<span style="display:inline-flex;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(138,155,171,.08);color:#5a6b7c;">' + escapeHtml(status) + '</span>';
+    }
+
+    // ─── Filter ─────────────────────────────────────────────────
+    window.filterTable = function() {
         var input = document.getElementById('searchInput').value.toLowerCase();
         var rows = document.querySelectorAll('#subscriptionTable tbody tr');
-        rows.forEach(function (row) {
+        rows.forEach(function(row) {
             var name = row.getAttribute('data-business-name') || '';
             row.style.display = name.includes(input) ? '' : 'none';
         });
-    }
-
-    function clearFilter() {
+    };
+    window.clearFilter = function() {
         document.getElementById('searchInput').value = '';
         filterTable();
-    }
+    };
 
-    async function changePlan(businessId) {
+    // ─── Change Plan ────────────────────────────────────────────
+    window.changePlan = async function(businessId) {
         var planSelect = document.getElementById('plan-' + businessId);
         var planId = planSelect.value;
-
-        if (!planId) {
-            Swal.fire({ icon: 'warning', title: 'No Plan Selected', text: 'Please select a plan first.', confirmButtonColor: '#0D5EA6' });
-            return;
-        }
-
+        if (!planId) { Swal.fire({ icon: 'warning', title: 'No Plan Selected', text: 'Please select a plan first.', confirmButtonColor: '#0D5EA6' }); return; }
         var planName = planSelect.options[planSelect.selectedIndex].text;
+        var confirm = await Swal.fire({ title: 'Change Plan', text: 'Change this business to the ' + planName + ' plan?', icon: 'question', showCancelButton: true, confirmButtonColor: '#0D5EA6', cancelButtonColor: '#6c757d', confirmButtonText: 'Confirm' });
+        if (!confirm.isConfirmed) return;
+        BlockUI.show('Changing plan...');
+        try {
+            var response = await fetch('/Admin/Subscriptions/ChangePlan', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() }, body: JSON.stringify({ businessId: businessId, planId: parseInt(planId) }) });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) { Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function() { location.reload(); }); }
+            else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+        } catch (e) { BlockUI.hide(); Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' }); }
+    };
+
+    // ─── Change Status ──────────────────────────────────────────
+    window.changeStatus = async function(businessPlanId) {
+        var statusSelect = document.getElementById('status-' + businessPlanId);
+        if (!statusSelect) { Swal.fire({ icon: 'warning', title: 'No Subscription', text: 'This business has no active subscription record.', confirmButtonColor: '#0D5EA6' }); return; }
+        var status = statusSelect.value;
+        if (!status) { Swal.fire({ icon: 'warning', title: 'No Status', text: 'Please select a status first.', confirmButtonColor: '#0D5EA6' }); return; }
+        var statusLabel = statusSelect.options[statusSelect.selectedIndex].text;
+        var confirmColor = (status === 'cancelled' || status === 'expired') ? '#C24A4A' : '#0D5EA6';
+        var confirm = await Swal.fire({ title: 'Change Status', text: 'Change subscription status to ' + statusLabel + '?', icon: 'question', showCancelButton: true, confirmButtonColor: confirmColor, cancelButtonColor: '#6c757d', confirmButtonText: 'Confirm' });
+        if (!confirm.isConfirmed) return;
+        BlockUI.show('Changing status...');
+        try {
+            var response = await fetch('/Admin/Subscriptions/ChangeStatus', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() }, body: JSON.stringify({ businessPlanId: parseInt(businessPlanId), status: status }) });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) { Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function() { location.reload(); }); }
+            else { Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' }); }
+        } catch (e) { BlockUI.hide(); Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' }); }
+    };
+
+    // ─── Record Payment Modal ───────────────────────────────────
+    window.openRecordPaymentModal = function(businessId, businessName, planName, annualPrice) {
+        document.getElementById('rpBusinessId').value = businessId;
+        document.getElementById('recordPaymentSubtitle').textContent = businessName + ' — ' + planName + ' plan (€' + (annualPrice || 0).toFixed(2) + '/year)';
+        document.getElementById('rpInvoiceAmount').value = (annualPrice || 0).toFixed(2);
+        document.getElementById('rpPaymentAmount').value = (annualPrice || 0).toFixed(2);
+        document.getElementById('rpMethod').value = 'bank_transfer';
+        document.getElementById('rpReference').value = '';
+        document.getElementById('rpNotes').value = '';
+
+        var today = new Date();
+        var nextYear = new Date(today);
+        nextYear.setFullYear(nextYear.getFullYear() + 1);
+        document.getElementById('rpPeriodStart').value = today.toISOString().split('T')[0];
+        document.getElementById('rpPeriodEnd').value = nextYear.toISOString().split('T')[0];
+
+        document.getElementById('recordPaymentModal').style.display = 'flex';
+    };
+
+    window.closeRecordPaymentModal = function() {
+        document.getElementById('recordPaymentModal').style.display = 'none';
+    };
+
+    window.submitRecordPayment = async function() {
+        var invoiceAmount = parseFloat(document.getElementById('rpInvoiceAmount').value);
+        var paymentAmount = parseFloat(document.getElementById('rpPaymentAmount').value);
+        var periodStart = document.getElementById('rpPeriodStart').value;
+        var periodEnd = document.getElementById('rpPeriodEnd').value;
+        var method = document.getElementById('rpMethod').value;
+
+        if (!invoiceAmount || invoiceAmount <= 0) { Swal.fire({ icon: 'warning', title: 'Validation', text: 'Invoice amount must be greater than zero.', confirmButtonColor: '#0D5EA6' }); return; }
+        if (!paymentAmount || paymentAmount <= 0) { Swal.fire({ icon: 'warning', title: 'Validation', text: 'Payment amount must be greater than zero.', confirmButtonColor: '#0D5EA6' }); return; }
+        if (paymentAmount > invoiceAmount) { Swal.fire({ icon: 'warning', title: 'Validation', text: 'Payment amount cannot exceed the invoice total.', confirmButtonColor: '#0D5EA6' }); return; }
+        if (!periodStart || !periodEnd) { Swal.fire({ icon: 'warning', title: 'Validation', text: 'Period start and end dates are required.', confirmButtonColor: '#0D5EA6' }); return; }
+        if (periodEnd <= periodStart) { Swal.fire({ icon: 'warning', title: 'Validation', text: 'Period end must be after period start.', confirmButtonColor: '#0D5EA6' }); return; }
+
+        var isPartial = paymentAmount < invoiceAmount;
+        var methodLabels = { bank_transfer: 'Bank Transfer', cheque: 'Cheque', cash: 'Cash', other: 'Other' };
+        var statusNote = isPartial ? 'Invoice will be marked as Partially Paid.' : 'Invoice will be marked as Paid.';
+        var statusColor = isPartial ? '#C8912E' : '#129867';
 
         var confirm = await Swal.fire({
-            title: 'Change Plan',
-            text: 'Change this business to the ' + planName + ' plan?',
+            title: 'Confirm Payment Recording',
+            html: '<div style="text-align:left;font-size:14px;line-height:1.8;">' +
+                '<strong>Invoice Total:</strong> €' + invoiceAmount.toFixed(2) + '<br>' +
+                '<strong>Payment:</strong> €' + paymentAmount.toFixed(2) + '<br>' +
+                '<strong>Method:</strong> ' + (methodLabels[method] || method) + '<br>' +
+                '<strong>Period:</strong> ' + periodStart + ' → ' + periodEnd + '<br>' +
+                '<div style="margin-top:8px;font-weight:700;color:' + statusColor + ';">' + statusNote + '</div></div>',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#0D5EA6',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Confirm'
+            confirmButtonText: 'Confirm & Record'
         });
-
         if (!confirm.isConfirmed) return;
 
-        BlockUI.show('Changing plan...');
+        BlockUI.show('Recording payment...');
         try {
-            var response = await fetch('/Admin/Subscriptions/ChangePlan', {
+            var response = await fetch('/Admin/Subscriptions/RecordPayment', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': getAntiForgeryToken()
-                },
-                body: JSON.stringify({ businessId: businessId, planId: parseInt(planId) })
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: JSON.stringify({
+                    businessId: parseInt(document.getElementById('rpBusinessId').value),
+                    invoiceAmount: invoiceAmount,
+                    paymentAmount: paymentAmount,
+                    method: method,
+                    reference: document.getElementById('rpReference').value || null,
+                    periodStart: periodStart,
+                    periodEnd: periodEnd,
+                    notes: document.getElementById('rpNotes').value || null
+                })
             });
             var data = await response.json();
             BlockUI.hide();
 
             if (data.success) {
-                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () { location.reload(); });
+                closeRecordPaymentModal();
+                Swal.fire({ icon: 'success', title: 'Payment Recorded', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function() { location.reload(); });
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
             }
@@ -212,51 +414,165 @@
             BlockUI.hide();
             Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
         }
-    }
+    };
 
-    async function changeStatus(businessPlanId) {
-        var statusSelect = document.getElementById('status-' + businessPlanId);
-        if (!statusSelect) {
-            Swal.fire({ icon: 'warning', title: 'No Subscription', text: 'This business has no active subscription record.', confirmButtonColor: '#0D5EA6' });
-            return;
+    // ─── Payment History Modal ──────────────────────────────────
+    window.openPaymentHistory = async function(businessId, businessName) {
+        _phBusinessId = businessId;
+        _phBusinessName = businessName;
+        document.getElementById('phSubtitle').textContent = businessName;
+
+        BlockUI.show('Loading payment history...');
+        try {
+            var response = await fetch('/Admin/Subscriptions/PaymentHistory/' + businessId);
+            var result = await response.json();
+            BlockUI.hide();
+
+            if (!result.success) {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Failed to load payment history.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            // Revenue summary
+            var s = result.summary;
+            document.getElementById('phSummary').innerHTML =
+                '<div>Total Revenue: <strong>€' + s.totalRevenue.toFixed(2) + '</strong></div>' +
+                '<div>Invoices: <strong>' + s.invoiceCount + '</strong></div>' +
+                (s.outstanding > 0 ? '<div>Outstanding: <strong style="color:#C8912E;">€' + s.outstanding.toFixed(2) + '</strong></div>' : '');
+
+            // Invoice list with nested payments
+            var container = document.getElementById('phContent');
+            if (!result.data || result.data.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#8a9bac;padding:32px 0;font-size:13px;">No payment records found.</div>';
+            } else {
+                var html = '';
+                result.data.forEach(function(inv) {
+                    html += '<div style="padding:14px 0;border-bottom:1.5px solid #f0f4f8;">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">';
+                    html += '<div><div style="font-weight:700;font-size:14px;">' + escapeHtml(inv.invoiceNumber) + '</div>';
+                    html += '<div style="font-size:12px;color:#5a6b7c;margin-top:2px;">' + formatPeriod(inv.periodStart, inv.periodEnd) + '</div></div>';
+                    html += '<div style="text-align:right;"><div style="font-size:13px;color:#5a6b7c;">Due: <strong>€' + inv.amountDue.toFixed(2) + '</strong>';
+                    if (inv.outstanding > 0) html += ' &nbsp;Paid: <strong>€' + inv.amountPaid.toFixed(2) + '</strong>';
+                    html += '</div>';
+                    if (inv.outstanding > 0) html += '<div style="font-size:12px;color:#C8912E;font-weight:700;margin-top:2px;">Outstanding: €' + inv.outstanding.toFixed(2) + '</div>';
+                    html += '</div></div>';
+
+                    // Actions row
+                    html += '<div style="display:flex;gap:8px;align-items:center;margin-top:8px;">' + statusBadge(inv.status);
+                    if (inv.status === 'partially_paid') {
+                        html += ' <button type="button" style="background:rgba(200,145,46,.08);color:#C8912E;border:1.5px solid rgba(200,145,46,.2);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openAddPaymentModal(' + inv.invoiceId + ',' + businessId + ',\'' + escapeHtml(inv.invoiceNumber).replace(/'/g, "\\'") + '\',' + inv.amountDue + ',' + inv.amountPaid + ')">+ Add Payment</button>';
+                    }
+                    html += ' <a href="/Admin/Subscriptions/DownloadInvoice/' + inv.invoiceId + '?businessId=' + businessId + '" target="_blank" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;">Download</a>';
+                    html += '</div>';
+
+                    // Nested payments
+                    if (inv.payments && inv.payments.length > 0) {
+                        inv.payments.forEach(function(p) {
+                            html += '<div style="padding:8px 0 8px 28px;border-bottom:1px solid #f8fafb;">';
+                            html += '<div><span style="font-weight:600;font-size:13px;">€' + p.amount.toFixed(2) + '</span> ' + methodBadge(p.method) + ' <span style="font-size:12px;color:#8a9bac;margin-left:8px;">' + formatDate(p.paidAtUtc) + '</span></div>';
+                            var details = [];
+                            if (p.reference) details.push('Ref: ' + escapeHtml(p.reference));
+                            if (p.notes) details.push(escapeHtml(p.notes));
+                            if (details.length > 0) html += '<div style="font-size:11px;color:#8a9bac;margin-top:3px;">' + details.join(' · ') + '</div>';
+                            html += '</div>';
+                        });
+                    }
+                    html += '</div>';
+                });
+                container.innerHTML = html;
+            }
+
+            document.getElementById('paymentHistoryModal').style.display = 'flex';
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load payment history.', confirmButtonColor: '#0D5EA6' });
         }
+    };
 
-        var status = statusSelect.value;
-        if (!status) {
-            Swal.fire({ icon: 'warning', title: 'No Status Selected', text: 'Please select a status first.', confirmButtonColor: '#0D5EA6' });
-            return;
-        }
+    window.closePaymentHistoryModal = function() {
+        document.getElementById('paymentHistoryModal').style.display = 'none';
+    };
 
-        var statusLabel = statusSelect.options[statusSelect.selectedIndex].text;
-        var confirmColor = (status === 'cancelled' || status === 'expired') ? '#C24A4A' : '#0D5EA6';
+    // ─── Add Payment Modal (Instalment) ─────────────────────────
+    window.openAddPaymentModal = function(invoiceId, businessId, invoiceNumber, amountDue, amountPaid) {
+        _apAmountDue = amountDue;
+        _apAmountPaid = amountPaid;
+        var remaining = amountDue - amountPaid;
+
+        document.getElementById('apInvoiceId').value = invoiceId;
+        document.getElementById('apBusinessId').value = businessId;
+        document.getElementById('apSubtitle').textContent = invoiceNumber;
+        document.getElementById('apSummary').innerHTML =
+            '<div>Total Due: <strong>€' + amountDue.toFixed(2) + '</strong></div>' +
+            '<div>Paid: <strong>€' + amountPaid.toFixed(2) + '</strong></div>' +
+            '<div>Remaining: <strong style="color:#C8912E;">€' + remaining.toFixed(2) + '</strong></div>';
+        document.getElementById('apPaymentAmount').value = remaining.toFixed(2);
+        document.getElementById('apMaxHint').textContent = 'Max: €' + remaining.toFixed(2) + ' (remaining)';
+        document.getElementById('apMethod').value = 'bank_transfer';
+        document.getElementById('apReference').value = '';
+        document.getElementById('apNotes').value = '';
+
+        // Close history modal, open add payment modal
+        document.getElementById('paymentHistoryModal').style.display = 'none';
+        document.getElementById('addPaymentModal').style.display = 'flex';
+    };
+
+    window.closeAddPaymentModal = function() {
+        document.getElementById('addPaymentModal').style.display = 'none';
+        // Reopen payment history
+        if (_phBusinessId) openPaymentHistory(_phBusinessId, _phBusinessName);
+    };
+
+    window.submitAddPayment = async function() {
+        var paymentAmount = parseFloat(document.getElementById('apPaymentAmount').value);
+        var remaining = _apAmountDue - _apAmountPaid;
+        var method = document.getElementById('apMethod').value;
+
+        if (!paymentAmount || paymentAmount <= 0) { Swal.fire({ icon: 'warning', title: 'Validation', text: 'Payment amount must be greater than zero.', confirmButtonColor: '#0D5EA6' }); return; }
+        if (paymentAmount > remaining + 0.001) { Swal.fire({ icon: 'warning', title: 'Validation', text: 'Payment amount cannot exceed the remaining balance of €' + remaining.toFixed(2) + '.', confirmButtonColor: '#0D5EA6' }); return; }
+
+        var willComplete = Math.abs(paymentAmount - remaining) < 0.01;
+        var methodLabels = { bank_transfer: 'Bank Transfer', cheque: 'Cheque', cash: 'Cash', other: 'Other' };
+        var statusNote = willComplete ? 'This will complete the invoice. Status → Paid.' : 'Invoice will remain Partially Paid.';
+        var statusColor = willComplete ? '#129867' : '#C8912E';
 
         var confirm = await Swal.fire({
-            title: 'Change Status',
-            text: 'Change subscription status to ' + statusLabel + '?',
+            title: 'Confirm Instalment Payment',
+            html: '<div style="text-align:left;font-size:14px;line-height:1.8;">' +
+                '<strong>Payment:</strong> €' + paymentAmount.toFixed(2) + '<br>' +
+                '<strong>Method:</strong> ' + (methodLabels[method] || method) + '<br>' +
+                '<div style="margin-top:8px;font-weight:700;color:' + statusColor + ';">' + statusNote + '</div></div>',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: confirmColor,
+            confirmButtonColor: '#0D5EA6',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Confirm'
+            confirmButtonText: 'Confirm & Add'
         });
-
         if (!confirm.isConfirmed) return;
 
-        BlockUI.show('Changing status...');
+        BlockUI.show('Adding payment...');
         try {
-            var response = await fetch('/Admin/Subscriptions/ChangeStatus', {
+            var response = await fetch('/Admin/Subscriptions/AddPayment', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': getAntiForgeryToken()
-                },
-                body: JSON.stringify({ businessPlanId: parseInt(businessPlanId), status: status })
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
+                body: JSON.stringify({
+                    invoiceId: parseInt(document.getElementById('apInvoiceId').value),
+                    businessId: parseInt(document.getElementById('apBusinessId').value),
+                    paymentAmount: paymentAmount,
+                    method: method,
+                    reference: document.getElementById('apReference').value || null,
+                    notes: document.getElementById('apNotes').value || null
+                })
             });
             var data = await response.json();
             BlockUI.hide();
 
             if (data.success) {
-                Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function () { location.reload(); });
+                document.getElementById('addPaymentModal').style.display = 'none';
+                Swal.fire({ icon: 'success', title: 'Payment Added', text: data.message, confirmButtonColor: '#0D5EA6' }).then(function() {
+                    // Refresh payment history
+                    if (_phBusinessId) openPaymentHistory(_phBusinessId, _phBusinessName);
+                });
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
             }
@@ -264,6 +580,7 @@
             BlockUI.hide();
             Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
         }
-    }
+    };
+})();
 </script>
 }

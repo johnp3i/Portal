@@ -1049,6 +1049,64 @@ else if (Model.ShowQuotation)
 <div style="margin-top:24px;">
     @await Component.InvokeAsync("UpcomingFilings")
 </div>
+
+@if (Model.ShowPurchase)
+{
+    <!-- Upcoming Supplier Payments Widget -->
+    <section class="glass card-pad" style="margin-top:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+                <div class="label" style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0D5EA6;">Payables</div>
+                <h3 style="margin-top:4px;">Upcoming Supplier Payments</h3>
+            </div>
+            <a asp-controller="Purchase" asp-action="Index" class="btn btn-secondary" style="font-size:13px;">View All</a>
+        </div>
+
+        @if (Model.UpcomingSupplierPayments.Any())
+        {
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1.5px solid rgba(13,94,166,.1);">Supplier</th>
+                        <th style="text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1.5px solid rgba(13,94,166,.1);">Description</th>
+                        <th style="text-align:right;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1.5px solid rgba(13,94,166,.1);">Amount</th>
+                        <th style="text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1.5px solid rgba(13,94,166,.1);">Due</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.UpcomingSupplierPayments)
+                    {
+                        var (pillBg, pillColor, statusLabel) = p.Status switch
+                        {
+                            "overdue" => ("rgba(194,74,74,.08)", "#C24A4A", "Overdue"),
+                            "today" => ("rgba(200,145,46,.08)", "#C8912E", "Today"),
+                            "due_soon" => ("rgba(200,145,46,.08)", "#C8912E", "Due Soon"),
+                            _ => ("rgba(13,94,166,.08)", "#0D5EA6", "Upcoming")
+                        };
+                        <tr>
+                            <td style="padding:10px;font-size:13px;border-bottom:1px solid rgba(13,94,166,.06);font-weight:600;">@p.SupplierName</td>
+                            <td style="padding:10px;font-size:13px;border-bottom:1px solid rgba(13,94,166,.06);color:var(--muted);">@(string.IsNullOrWhiteSpace(p.Description) ? "—" : (p.Description.Length > 40 ? p.Description.Substring(0, 40) + "…" : p.Description))</td>
+                            <td style="padding:10px;font-size:13px;border-bottom:1px solid rgba(13,94,166,.06);text-align:right;font-weight:700;">@Model.CurrencySymbol@p.TotalAmount.ToString("N2")</td>
+                            <td style="padding:10px;font-size:13px;border-bottom:1px solid rgba(13,94,166,.06);">
+                                <span>@p.EffectiveDueDate.ToString("dd MMM yyyy")</span>
+                                <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:@pillBg;color:@pillColor;margin-left:6px;">@statusLabel</span>
+                                @if (p.TargetPaymentDate.HasValue && p.SupplierDueDate.HasValue && p.TargetPaymentDate != p.SupplierDueDate)
+                                {
+                                    <span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">(supplier: @p.SupplierDueDate.Value.ToString("dd MMM"))</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="font-size:14px;color:var(--muted);text-align:center;padding:24px 0;">No upcoming supplier payments.</p>
+        }
+    </section>
+}
+
 <!-- Cash Flow Widget (self-loading via AJAX) -->
 <div style="margin-top:24px;">
     @await Html.PartialAsync("_CashFlowWidget")

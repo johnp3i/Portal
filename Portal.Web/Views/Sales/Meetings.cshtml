@@ -37,6 +37,17 @@
                 }
             </select>
         </div>
+        <div class="field" style="min-width:160px;">
+            <label for="filterOutcomeClassification">Classification</label>
+            <select id="filterOutcomeClassification">
+                <option value="">All</option>
+                <option value="1">Positive</option>
+                <option value="2">Neutral</option>
+                <option value="3">Negative</option>
+                <option value="4">Rescheduled</option>
+                <option value="5">No Show</option>
+            </select>
+        </div>
         <div class="field" style="min-width:140px;">
             <label for="filterDateFrom">From</label>
             <input type="date" id="filterDateFrom" />
@@ -95,6 +106,7 @@
                 <th>Contact</th>
                 <th>Scheduled</th>
                 <th>Duration</th>
+                <th>Classification</th>
                 <th>Outcome</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -141,7 +153,7 @@
 
 <!-- Edit Meeting Modal -->
 <div id="editMeetingModal" class="modal-overlay" style="display:none;">
-    <div class="modal-content" style="max-width:520px;">
+    <div class="modal-content" style="max-width:600px;">
         <h3 style="margin-bottom:16px;">Edit Meeting</h3>
         <input type="hidden" id="editMeetingId" />
         <div class="field">
@@ -163,7 +175,52 @@
         </div>
         <div class="field"><label>Location</label><input type="text" id="editMeetingLocation" /></div>
         <div class="field"><label>Notes</label><textarea id="editMeetingNotes" rows="2"></textarea></div>
+        <div class="field">
+            <label>Classification</label>
+            <select id="editMeetingClassification">
+                <option value="">— Select outcome —</option>
+                <option value="1">Positive</option>
+                <option value="2">Neutral</option>
+                <option value="3">Negative</option>
+                <option value="4">Rescheduled</option>
+                <option value="5">No Show</option>
+            </select>
+        </div>
         <div class="field"><label>Outcome</label><textarea id="editMeetingOutcome" rows="3" placeholder="Record the outcome of the meeting..."></textarea></div>
+
+        <!-- Meeting Tasks Section -->
+        <div style="margin-top:18px;border-top:1.5px solid rgba(138,155,171,.1);padding-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h4 id="meetingTasksHeading" style="margin:0;font-size:15px;font-weight:700;color:#0B1B28;">Meeting Tasks (0)</h4>
+                <button type="button" class="btn btn-sm" style="background:rgba(13,94,166,.06);color:#0D5EA6;border:1.5px solid rgba(13,94,166,.12);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="showMeetingTaskForm()">+ Add Task</button>
+            </div>
+
+            <!-- Inline task creation form (hidden by default) -->
+            <div id="meetingTaskForm" style="display:none;background:rgba(13,94,166,.03);border:1.5px solid rgba(13,94,166,.08);border-radius:10px;padding:14px;margin-bottom:12px;">
+                <div class="field" style="margin-bottom:10px;"><label style="font-size:12px;">Title *</label><input type="text" id="meetingTaskTitle" placeholder="e.g. Send demo account credentials" /></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                    <div class="field"><label style="font-size:12px;">Type</label>
+                        <select id="meetingTaskType">
+                            <option value="Follow-up" selected>Follow-up</option>
+                            <option value="Call">Call</option>
+                            <option value="Email">Email</option>
+                            <option value="Meeting Prep">Meeting Prep</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="field"><label style="font-size:12px;">Due Date &amp; Time *</label><input type="datetime-local" id="meetingTaskDueDate" /></div>
+                </div>
+                <div class="field" style="margin-bottom:12px;"><label style="font-size:12px;">Notes</label><textarea id="meetingTaskNotes" rows="1" placeholder="Optional notes..."></textarea></div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" class="btn btn-secondary btn-sm" style="padding:5px 12px;font-size:12px;" onclick="hideMeetingTaskForm()">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" style="padding:5px 12px;font-size:12px;" onclick="submitMeetingTask()">Create Task</button>
+                </div>
+            </div>
+
+            <!-- Task list rendered by JS -->
+            <div id="editMeetingTasksList" style="max-height:200px;overflow-y:auto;"></div>
+        </div>
+
         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
             <button class="btn btn-secondary" onclick="closeEditMeetingModal()">Cancel</button>
             <button class="btn btn-primary" onclick="submitEditMeeting()">Save Changes</button>
@@ -172,5 +229,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/meetings.js?v=6"></script>
+    <script src="~/js/sales/meetings.js?v=8"></script>
 }

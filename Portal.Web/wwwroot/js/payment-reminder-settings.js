@@ -13,7 +13,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         bindSaveButton();
         bindTierToggles();
-        bindSystemToggle();
         initTierToggleStates();
     });
 
@@ -27,14 +26,19 @@
     }
 
     async function saveSchedule() {
-        var tiers = ['Friendly', 'Firm', 'Formal'].map(function (tier) {
+        var tierNames = ['friendly', 'firm', 'formal'];
+        var tiers = tierNames.map(function (tier) {
+            var absOffset = parseInt(document.getElementById('offset-' + tier).value, 10);
+            var direction = document.getElementById('direction-' + tier).value;
+            var signedOffset = direction === 'before' ? -absOffset : absOffset;
+
             return {
-                escalationTier: tier,
-                daysOffset: parseInt(document.getElementById('daysOffset-' + tier).value, 10),
-                maxRemindersPerTier: parseInt(document.getElementById('maxReminders-' + tier).value, 10),
-                minIntervalDays: parseInt(document.getElementById('minInterval-' + tier).value, 10),
-                partialPaymentSuppressionDays: parseInt(document.getElementById('suppressionDays').value, 10),
-                isEnabled: document.getElementById('tierEnabled-' + tier).checked
+                escalationTier: tier.charAt(0).toUpperCase() + tier.slice(1),
+                daysOffset: signedOffset,
+                maxRemindersPerTier: parseInt(document.getElementById('max-' + tier).value, 10),
+                minIntervalDays: parseInt(document.getElementById('interval-' + tier).value, 10),
+                partialPaymentSuppressionDays: parseInt(document.getElementById('suppression-days').value, 10),
+                isEnabled: document.getElementById('toggle-' + tier).checked
             };
         });
 
@@ -131,21 +135,6 @@
     }
 
     // =========================================================================
-    // System Reminder Toggle
-    // =========================================================================
-    function bindSystemToggle() {
-        var toggle = document.getElementById('systemReminderToggle');
-        if (!toggle) return;
-
-        toggle.addEventListener('change', function () {
-            var label = document.getElementById('systemReminderStatus');
-            if (!label) return;
-            label.textContent = this.checked ? 'Enabled' : 'Disabled';
-            label.style.color = this.checked ? '#129867' : '#5a6a7a';
-        });
-    }
-
-    // =========================================================================
     // Antiforgery Token Helper
     // =========================================================================
     function getAntiForgeryToken() {
@@ -174,18 +163,32 @@
         }
     };
 
-    // System toggle — called from inline onchange="onSystemToggle()"
-    window.onSystemToggle = function () {
-        var toggle = document.getElementById('system-toggle');
+    // System toggle — persists to database via AJAX
+    window.toggleReminderSystem = async function (enabled) {
         var label = document.getElementById('system-toggle-label');
-        if (!toggle || !label) return;
-
-        if (toggle.checked) {
-            label.textContent = 'Enabled';
-            label.style.color = '#129867';
-        } else {
-            label.textContent = 'Disabled';
-            label.style.color = '#5a6a7a';
+        BlockUI.show(enabled ? 'Enabling...' : 'Disabling...');
+        try {
+            var response = await fetch('/PaymentReminder/AxPostToggleReminderSystem?enabled=' + enabled, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+            });
+            var data = await response.json();
+            BlockUI.hide();
+            if (data.success) {
+                if (label) {
+                    label.textContent = enabled ? 'Enabled' : 'Disabled';
+                    label.style.color = enabled ? '#129867' : '#5a6a7a';
+                }
+                Swal.fire({ icon: 'success', title: enabled ? 'Enabled' : 'Disabled', text: data.message, confirmButtonColor: '#0D5EA6', timer: 2000, showConfirmButton: false });
+            } else {
+                // Revert toggle on failure
+                document.getElementById('system-toggle').checked = !enabled;
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to update.', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            document.getElementById('system-toggle').checked = !enabled;
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
         }
     };
 

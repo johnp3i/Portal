@@ -66,6 +66,29 @@
     </div>
 </details>
 
+@{
+    var isSystemEnabled = (bool)(ViewBag.IsReminderSystemEnabled ?? true);
+}
+
+<!-- Master Toggle: Reminder System -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:280px;">
+            <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;">Reminder System</h2>
+            <p style="font-size:14px;color:var(--muted);line-height:1.7;margin:0;">
+                Master switch for automated payment reminders. When disabled, no automated reminder emails will be sent to any customer — regardless of the schedule configuration below. Manual reminders from the invoice detail page are not affected.
+            </p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+            <label class="reminder-toggle" title="Enable or disable the reminder system">
+                <input type="checkbox" id="system-toggle" @(isSystemEnabled ? "checked" : "") onchange="toggleReminderSystem(this.checked)" />
+                <span class="reminder-slider"></span>
+            </label>
+            <span id="system-toggle-label" style="font-size:14px;font-weight:700;color:@(isSystemEnabled ? "var(--green)" : "var(--muted)");">@(isSystemEnabled ? "Enabled" : "Disabled")</span>
+        </div>
+    </div>
+</section>
+
 <!-- Card 1: Reminder Schedule -->
 <section class="glass card-pad" style="margin-bottom:22px;">
     <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;">Reminder Schedule</h2>
@@ -213,15 +236,6 @@
             <input type="number" id="suppression-days" class="reminder-number-input" value="@suppressionDays" min="1" max="30" style="width:72px;" />
             <span style="font-size:13px;color:var(--muted);">days</span>
         </div>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:14px;padding-top:20px;border-top:1px solid #f0f4f7;">
-        <div style="font-size:14px;font-weight:600;color:var(--text);">Reminder System</div>
-        <label class="reminder-toggle" title="Enable or disable the reminder system">
-            <input type="checkbox" id="system-toggle" checked onchange="onSystemToggle()" />
-            <span class="reminder-slider"></span>
-        </label>
-        <span id="system-toggle-label" style="font-size:13px;font-weight:600;color:var(--green);">Enabled</span>
     </div>
 </section>
 
@@ -428,5 +442,5 @@
             if (el) el.textContent = localHours + ':' + localMinutes + ' (' + tzName + ')';
         })();
     </script>
-    <script src="/js/payment-reminder-settings.js"></script>
+    <script src="/js/payment-reminder-settings.js?v=2"></script>
 }

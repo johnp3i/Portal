@@ -22,6 +22,10 @@ public class Purchase
 
     public DateOnly InvoiceDate { get; set; }
 
+    public DateOnly? SupplierDueDate { get; set; }
+
+    public DateOnly? TargetPaymentDate { get; set; }
+
     public string? Description { get; set; }
 
     public decimal AmountExcludingVat { get; set; }

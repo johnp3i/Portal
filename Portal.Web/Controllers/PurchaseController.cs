@@ -123,7 +123,7 @@ public class PurchaseController : Controller
         var currencySymbol = profile?.CurrencySymbol ?? "€";
 
         var csv = new StringBuilder();
-        csv.AppendLine("Invoice Number,Supplier,Date,Description,Excl. VAT,VAT,Total,Origin,Category,Type,Status");
+        csv.AppendLine("Invoice Number,Supplier,Date,Supplier Due Date,Target Payment Date,Description,Excl. VAT,VAT,Total,Origin,Category,Type,Status");
         foreach (var p in purchases)
         {
             var originName = p.PurchaseOriginTypeId switch
@@ -141,7 +141,9 @@ public class PurchaseController : Controller
                 3 => "Expense",
                 _ => ""
             };
-            csv.AppendLine($"\"{p.InvoiceNumber}\",\"{p.Supplier?.Name}\",{p.InvoiceDate:yyyy-MM-dd},\"{p.Description}\",{p.AmountExcludingVat:F2},{p.VatAmount:F2},{p.TotalAmount:F2},\"{originName}\",\"{p.ExpenseCategory?.Name}\",\"{typeName}\",\"{(p.IsCancelled ? "Cancelled" : "Active")}\"");
+            var supplierDueStr = p.SupplierDueDate.HasValue ? p.SupplierDueDate.Value.ToString("yyyy-MM-dd") : "";
+            var targetDateStr = p.TargetPaymentDate.HasValue ? p.TargetPaymentDate.Value.ToString("yyyy-MM-dd") : "";
+            csv.AppendLine($"\"{p.InvoiceNumber}\",\"{p.Supplier?.Name}\",{p.InvoiceDate:yyyy-MM-dd},{supplierDueStr},{targetDateStr},\"{p.Description}\",{p.AmountExcludingVat:F2},{p.VatAmount:F2},{p.TotalAmount:F2},\"{originName}\",\"{p.ExpenseCategory?.Name}\",\"{typeName}\",\"{(p.IsCancelled ? "Cancelled" : "Active")}\"");
         }
 
         var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
@@ -237,6 +239,8 @@ public class PurchaseController : Controller
         model.PurchaseTypeId = purchase.PurchaseTypeId;
         model.InvoiceNumber = purchase.InvoiceNumber;
         model.InvoiceDate = purchase.InvoiceDate;
+        model.SupplierDueDate = purchase.SupplierDueDate;
+        model.TargetPaymentDate = purchase.TargetPaymentDate;
         model.Description = purchase.Description;
         model.AmountExcludingVat = purchase.AmountExcludingVat;
         model.VatAmount = purchase.VatAmount;
@@ -289,6 +293,45 @@ public class PurchaseController : Controller
     {
         var result = await _purchaseService.CancelPurchaseAsync(id);
         return Json(new { success = result.Success, message = result.Success ? "Purchase cancelled successfully." : result.Message });
+    }
+
+    /// <summary>
+    /// Returns the expense category used on the supplier's most recent purchase,
+    /// to suggest a default category when recording a new purchase for that supplier.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetRecentCategoryForSupplier(int supplierId)
+    {
+        try
+        {
+            if (supplierId <= 0)
+                return Json(new { success = true, found = false });
+
+            var recent = await _purchaseService.GetMostRecentBySupplierAsync(supplierId);
+            if (recent == null)
+                return Json(new { success = true, found = false });
+
+            var businessId = _currentTenantService.CurrentBusinessId;
+            var categoryName = await _dbContext.ExpenseCategories
+                .Where(c => c.Id == recent.ExpenseCategoryId && c.BusinessId == businessId)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrEmpty(categoryName))
+                return Json(new { success = true, found = false });
+
+            return Json(new
+            {
+                success = true,
+                found = true,
+                expenseCategoryId = recent.ExpenseCategoryId,
+                categoryName
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load recent category." });
+        }
     }
 
     [HttpGet]
@@ -648,6 +691,8 @@ public class PurchaseController : Controller
             PurchaseTypeId = model.PurchaseTypeId,
             InvoiceNumber = model.InvoiceNumber,
             InvoiceDate = model.InvoiceDate,
+            SupplierDueDate = model.SupplierDueDate,
+            TargetPaymentDate = model.TargetPaymentDate,
             Description = model.Description,
             AmountExcludingVat = model.AmountExcludingVat,
             VatAmount = model.VatAmount,

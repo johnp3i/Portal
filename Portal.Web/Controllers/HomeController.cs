@@ -151,10 +151,12 @@ public class HomeController : Controller
 
         // Purchase-scoped calls
         var expensesData = new ExpensesKpiDto();
+        var upcomingSupplierPayments = new List<UpcomingSupplierPaymentDto>();
 
         if (scope.ShowPurchase)
         {
             expensesData = await _dashboardService.GetExpensesThisMonthAsync(businessId);
+            upcomingSupplierPayments = await _dashboardService.GetUpcomingSupplierPaymentsAsync(businessId);
         }
 
         // VAT-scoped calls
@@ -218,6 +220,9 @@ public class HomeController : Controller
 
             // Top Customers
             TopCustomers = topCustomers,
+
+            // Upcoming Supplier Payments
+            UpcomingSupplierPayments = upcomingSupplierPayments,
 
             // Scope visibility flags
             ShowRevenue = scope.ShowRevenue,

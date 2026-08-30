@@ -22,11 +22,13 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                     ([BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                      [Title], [TaskType], [DueAtUtc], [Notes],
                      [IsCompleted], [SnoozedCount], [ScheduledTimeUtc],
+                     [MeetingId],
                      [CreatedByUserId], [CreatedAtUtc])
                 VALUES
                     (@BusinessId, @LeadRequestId, @ContactId, @TeamMemberId,
                      @Title, @TaskType, @DueAtUtc, @Notes,
                      0, 0, @ScheduledTimeUtc,
+                     @MeetingId,
                      @CreatedByUserId, @CreatedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -53,6 +55,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 command.Parameters.Add(new SqlParameter("@DueAtUtc", entity.DueAtUtc));
                 command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@ScheduledTimeUtc", SqlDbType.Time) { Value = entity.ScheduledTimeUtc.HasValue ? entity.ScheduledTimeUtc.Value.ToTimeSpan() : DBNull.Value });
+                command.Parameters.Add(new SqlParameter("@MeetingId", entity.MeetingId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CreatedByUserId", entity.CreatedByUserId));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
 
@@ -198,7 +201,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
-                       [TaskOutcome], [ScheduledTimeUtc],
+                       [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
@@ -225,7 +228,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT TOP 10 [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
-                       [TaskOutcome], [ScheduledTimeUtc],
+                       [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE [BusinessId] = @BusinessId
@@ -264,7 +267,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
-                       [TaskOutcome], [ScheduledTimeUtc],
+                       [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE [LeadRequestId] = @LeadRequestId AND [BusinessId] = @BusinessId
@@ -355,7 +358,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
-                       [TaskOutcome], [ScheduledTimeUtc],
+                       [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE [BusinessId] = @BusinessId
@@ -471,7 +474,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
                        [Title], [TaskType], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
-                       [TaskOutcome], [ScheduledTimeUtc],
+                       [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
                 FROM [sales].[FollowUpTask]
                 WHERE {baseWhere}
@@ -483,6 +486,108 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
 
             var items = await ExecuteStoredProcedureUnfiltered(dataQuery, parameters.ToArray());
             return (items.ToList(), totalCount);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all tasks linked to a specific meeting (pending first, then completed).
+    /// </summary>
+    public async Task<List<FollowUpTask>> GetByMeetingIdAsync(int meetingId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
+                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [IsCompleted], [CompletedAtUtc], [SnoozedCount],
+                       [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
+                       [CreatedByUserId], [CreatedAtUtc]
+                FROM [sales].[FollowUpTask]
+                WHERE [MeetingId] = @MeetingId AND [BusinessId] = @BusinessId
+                ORDER BY [IsCompleted] ASC,
+                         CASE WHEN [IsCompleted] = 0 THEN [DueAtUtc] END ASC,
+                         CASE WHEN [IsCompleted] = 1 THEN [CompletedAtUtc] END DESC";
+
+            var results = await ExecuteStoredProcedureUnfiltered(query,
+                new SqlParameter("@MeetingId", meetingId),
+                new SqlParameter("@BusinessId", businessId));
+            return results.ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Batch-fetches task counts (total and pending) grouped by MeetingId.
+    /// </summary>
+    public async Task<Dictionary<int, (int Total, int Pending)>> GetTaskCountsByMeetingIdsAsync(
+        IEnumerable<int> meetingIds, int businessId)
+    {
+        var result = new Dictionary<int, (int Total, int Pending)>();
+        var idsList = meetingIds.ToList();
+        if (idsList.Count == 0) return result;
+
+        try
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                // Build parameterised IN clause
+                var paramNames = new List<string>();
+                var parameters = new List<SqlParameter> { new SqlParameter("@BusinessId", businessId) };
+
+                for (int i = 0; i < idsList.Count; i++)
+                {
+                    var paramName = $"@MeetingId{i}";
+                    paramNames.Add(paramName);
+                    parameters.Add(new SqlParameter(paramName, idsList[i]));
+                }
+
+                var inClause = string.Join(", ", paramNames);
+                var query = $@"
+                    SELECT [MeetingId],
+                           COUNT(*) AS Total,
+                           SUM(CASE WHEN [IsCompleted] = 0 THEN 1 ELSE 0 END) AS Pending
+                    FROM [sales].[FollowUpTask]
+                    WHERE [MeetingId] IN ({inClause}) AND [BusinessId] = @BusinessId
+                    GROUP BY [MeetingId]";
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                foreach (var p in parameters)
+                    command.Parameters.Add(p);
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    var meetingId = reader.GetInt32(0);
+                    var total = reader.GetInt32(1);
+                    var pending = reader.GetInt32(2);
+                    result[meetingId] = (total, pending);
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return result;
         }
         catch (Exception ex)
         {

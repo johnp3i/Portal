@@ -1,4 +1,4 @@
-# Lead Email Response — Design Exploration
+ # Lead Email Response — Design Exploration
 
 **Date:** August 2026  
 **Status:** Exploration — NOT ready for implementation  

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Services;
@@ -17,17 +18,20 @@ public class PaymentReminderController : Controller
     private readonly IPaymentReminderScheduleService _scheduleService;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly IConfiguration _configuration;
+    private readonly Portal.Infrastructure.Data.PortalDbContext _dbContext;
 
     public PaymentReminderController(
         IPaymentReminderService reminderService,
         IPaymentReminderScheduleService scheduleService,
         ICurrentTenantService currentTenantService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Portal.Infrastructure.Data.PortalDbContext dbContext)
     {
         _reminderService = reminderService;
         _scheduleService = scheduleService;
         _currentTenantService = currentTenantService;
         _configuration = configuration;
+        _dbContext = dbContext;
     }
 
     // --- Page Actions ---
@@ -44,6 +48,10 @@ public class PaymentReminderController : Controller
             var businessId = _currentTenantService.CurrentBusinessId;
             var schedule = await _scheduleService.GetScheduleAsync(businessId);
             ViewBag.ScheduledTimeUtc = _configuration.GetValue<string>("PaymentReminders:ScheduledTimeUtc", "06:00");
+
+            var business = await _dbContext.Businesses.FindAsync(businessId);
+            ViewBag.IsReminderSystemEnabled = business?.IsReminderSystemEnabled ?? true;
+
             return View(schedule);
         }
         catch (Exception ex)
@@ -247,6 +255,29 @@ public class PaymentReminderController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Failed to load reminder history." });
+        }
+    }
+
+    /// <summary>
+    /// Master toggle for the reminder system. When disabled, no automated reminders fire for this business.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.PaymentReminderAuto, AccessLevels.Full)]
+    public async Task<IActionResult> AxPostToggleReminderSystem(bool enabled)
+    {
+        try
+        {
+            var businessId = _currentTenantService.CurrentBusinessId;
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE [portal].[Business] SET [IsReminderSystemEnabled] = @Enabled WHERE [Id] = @Id",
+                new Microsoft.Data.SqlClient.SqlParameter("@Enabled", enabled),
+                new Microsoft.Data.SqlClient.SqlParameter("@Id", businessId));
+            return Json(new { success = true, message = enabled ? "Reminder system enabled." : "Reminder system disabled. No automated reminders will be sent." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to update reminder system setting." });
         }
     }
 }

@@ -18,7 +18,7 @@ public static class ModuleControllerMap
         [PortalModules.Customer] = new[] { "Customer", "Customers" },
         [PortalModules.Quotation] = new[] { "Quotation", "Quotations", "Proposal", "ProposalSection", "LineItemCatalog", "LineItemCatalogManagement", "Logo" },
         [PortalModules.Invoice] = new[] { "Invoice", "Invoices" },
-        [PortalModules.Revenue] = new[] { "Payment", "Payments", "Revenue", "Statement", "ZReport" },
+        [PortalModules.Revenue] = new[] { "Payment", "Payments", "Revenue", "Statement", "ZReport", "Receipt" },
         [PortalModules.ZReportImport] = new[] { "ZReportImport", "SalesImport" },
         [PortalModules.Purchase] = new[] { "Purchase", "Purchases", "Supplier", "Expense", "ExpenseCategory", "ExpenseCategoryLimit" },
         [PortalModules.Vat] = new[] { "Vat", "VatSubmission" },
@@ -45,17 +45,34 @@ public static class ModuleControllerMap
         [PortalModules.Sales] = new[] { "Sales" },
         [PortalModules.StripeConnect] = new[] { "CardPayments" },
         [PortalModules.Compliance] = new[] { "Compliance", "AdminCompliance" },
-        [PortalModules.Payroll] = new[] { "Payroll", "AdminPayroll" },
+        [PortalModules.Payroll] = new[] { "Payroll", "AdminPayroll", "PayrollReport", "PayrollCompliance" },
     };
 
     /// <summary>
-    /// Resolves which module a controller belongs to by searching the map.
+    /// Reverse lookup: controller name (case-insensitive) → module key. O(1) per lookup.
+    /// Built once at class initialization from the forward Map.
+    /// </summary>
+    private static readonly Dictionary<string, string> ReverseMap = BuildReverseMap();
+
+    private static Dictionary<string, string> BuildReverseMap()
+    {
+        var reverse = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kv in Map)
+        {
+            foreach (var controllerName in kv.Value)
+            {
+                reverse[controllerName] = kv.Key;
+            }
+        }
+        return reverse;
+    }
+
+    /// <summary>
+    /// Resolves which module a controller belongs to by searching the reverse map.
     /// Returns null if the controller is not mapped to any module.
     /// </summary>
     public static string? ResolveModule(string controllerName)
     {
-        return Map
-            .FirstOrDefault(kv => kv.Value.Contains(controllerName, StringComparer.OrdinalIgnoreCase))
-            .Key;
+        return ReverseMap.TryGetValue(controllerName, out var module) ? module : null;
     }
 }

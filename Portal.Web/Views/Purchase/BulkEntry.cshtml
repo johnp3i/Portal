@@ -394,6 +394,89 @@
             indicator.style.display = 'none';
         }
     }
+
+    // ─── Auto-fill row category from supplier's last purchase ─────────────────
+    // Cache results per supplierId so multiple rows using the same supplier only hit the server once.
+    var recentCategoryCache = {};
+
+    // A row category hidden input is "empty" when it has no value or a placeholder "0".
+    function isRowCategoryEmpty(hiddenEl) {
+        if (!hiddenEl) return false;
+        var v = (hiddenEl.value || '').trim();
+        return v === '' || v === '0';
+    }
+
+    // The row category can be overwritten by a supplier change when it is either empty
+    // or still holds a value we auto-filled (the user hasn't manually chosen one).
+    function isRowCategoryAutoReplaceable(hiddenEl) {
+        if (!hiddenEl) return false;
+        return isRowCategoryEmpty(hiddenEl) || hiddenEl.getAttribute('data-autofilled') === '1';
+    }
+
+    // Resets a row's category to empty (used when a newly selected supplier has no
+    // purchase history and the current row category was auto-filled, not user-chosen).
+    function clearRowCategoryField(tr) {
+        var categoryText = tr.querySelector('.cell-category-text');
+        var categoryHidden = tr.querySelector('.cell-category');
+        var statusEl = tr.querySelector('.cell-category-text').parentNode.querySelector('.ac-status');
+        categoryText.value = '';
+        categoryHidden.value = '';
+        categoryHidden.removeAttribute('data-autofilled');
+        if (statusEl) { statusEl.textContent = ''; statusEl.className = 'ac-status'; }
+        updateExpenseTypeIndicator(tr);
+        debouncedCheckRowLimits(tr);
+        loadRowProgress(tr);
+    }
+
+    function autoFillRowCategoryFromSupplier(tr, supplierId) {
+        if (!supplierId || !tr) return;
+        var categoryHidden = tr.querySelector('.cell-category');
+        // Only fill/replace if the row category is empty or was previously auto-filled.
+        if (!isRowCategoryAutoReplaceable(categoryHidden)) return;
+
+        function apply(data) {
+            if (!data || !data.success) return;
+            // Re-check in case the user set a category while the request was in flight
+            if (!isRowCategoryAutoReplaceable(categoryHidden)) return;
+
+            // New supplier has no purchase history — clear a previously auto-filled
+            // row category so it doesn't misrepresent this supplier.
+            if (!data.found) {
+                if (categoryHidden.getAttribute('data-autofilled') === '1') {
+                    clearRowCategoryField(tr);
+                }
+                return;
+            }
+
+            var categoryText = tr.querySelector('.cell-category-text');
+            categoryText.value = data.categoryName;
+            categoryHidden.value = data.expenseCategoryId;
+            // Mark as auto-filled so a later supplier change may replace it,
+            // but a manual edit (which clears this flag) will not be overwritten.
+            categoryHidden.setAttribute('data-autofilled', '1');
+
+            // Fire the existing row category resolution chain
+            updateExpenseTypeIndicator(tr);
+            debouncedCheckRowLimits(tr);
+            loadRowProgress(tr);
+
+            var statusEl = tr.querySelector('.cell-category-text').parentNode.querySelector('.ac-status');
+            if (statusEl) { statusEl.textContent = '\u2713'; statusEl.className = 'ac-status resolved'; }
+        }
+
+        if (Object.prototype.hasOwnProperty.call(recentCategoryCache, supplierId)) {
+            apply(recentCategoryCache[supplierId]);
+            return;
+        }
+
+        fetch('/Purchase/AxGetRecentCategoryForSupplier?supplierId=' + encodeURIComponent(supplierId))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                recentCategoryCache[supplierId] = data;
+                apply(data);
+            })
+            .catch(function () { /* silently ignore — suggestion is best-effort */ });
+    }
     var purchaseTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(purchaseTypes.Select(p => new { p.Id, p.Name }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
 
     var vatPeriods = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(unsubmittedPeriods.Select(p => new { p.Id, p.PeriodLabel }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
@@ -797,7 +880,8 @@
         initAutocomplete(supplierInput, supplierHidden, supplierStatus,
             function() { return suppliers; },
             '/Supplier/Create',
-            suppliers
+            suppliers,
+            function(supplierId) { autoFillRowCategoryFromSupplier(tr, supplierId); }
         );
 
         // Initialize autocomplete for category
@@ -808,7 +892,12 @@
             function() { return categories; },
             '/ExpenseCategory/Create',
             categories,
-            function() { updateExpenseTypeIndicator(tr); debouncedCheckRowLimits(tr); loadRowProgress(tr); }
+            function() {
+                // A manual category change clears the auto-filled flag so a later
+                // supplier change won't overwrite the user's deliberate choice.
+                categoryHidden.removeAttribute('data-autofilled');
+                updateExpenseTypeIndicator(tr); debouncedCheckRowLimits(tr); loadRowProgress(tr);
+            }
         );
 
         // Set initial expense type indicator if category is prefilled

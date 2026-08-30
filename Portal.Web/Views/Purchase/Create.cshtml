@@ -77,6 +77,21 @@
                 <span asp-validation-for="InvoiceDate" class="field-validation-error"></span>
             </div>
 
+            <!-- Supplier Due Date -->
+            <div class="field">
+                <label asp-for="SupplierDueDate">Supplier Due Date</label>
+                <input asp-for="SupplierDueDate" type="date" id="SupplierDueDate" />
+                <small class="muted" style="font-size:12px;color:#5E7385;">The actual payment deadline from the supplier's invoice.</small>
+            </div>
+
+            <!-- Target Payment Date -->
+            <div class="field">
+                <label asp-for="TargetPaymentDate">Target Payment Date</label>
+                <input asp-for="TargetPaymentDate" type="date" id="TargetPaymentDate" />
+                <small class="muted" style="font-size:12px;color:#5E7385;">When you want to pay — can be earlier than the supplier deadline.</small>
+                <div id="targetDateWarning" style="display:none;margin-top:6px;font-size:12px;color:#C8912E;">Target date is after the supplier deadline.</div>
+            </div>
+
             <!-- Description -->
             <div class="field" style="grid-column:1 / -1;">
                 <label asp-for="Description">Description</label>
@@ -229,6 +244,25 @@
                 link.href = '/Purchase' + saved;
             });
         }
+    })();
+
+    // Target-after-supplier date warning
+    (function() {
+        var supplierInput = document.getElementById('SupplierDueDate');
+        var targetInput = document.getElementById('TargetPaymentDate');
+        var warning = document.getElementById('targetDateWarning');
+        if (!supplierInput || !targetInput || !warning) return;
+
+        function checkDates() {
+            if (supplierInput.value && targetInput.value && targetInput.value > supplierInput.value) {
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+        supplierInput.addEventListener('change', checkDates);
+        targetInput.addEventListener('change', checkDates);
+        checkDates();
     })();
 </script>
 
@@ -1122,6 +1156,76 @@
             return parseFloat(value).toFixed(2);
         }
 
+        // ─── Auto-fill category from supplier's last purchase ─────────────────
+        // A category hidden input is "empty" when it has no value or a placeholder "0"
+        // (asp-for renders value="0" for an unset non-nullable int).
+        function isCategoryEmpty(hiddenEl) {
+            if (!hiddenEl) return false;
+            var v = (hiddenEl.value || '').trim();
+            return v === '' || v === '0';
+        }
+
+        // The category can be overwritten by a supplier change when it is either empty
+        // or still holds a value we auto-filled (the user hasn't manually chosen one).
+        function isCategoryAutoReplaceable(hiddenEl) {
+            if (!hiddenEl) return false;
+            return isCategoryEmpty(hiddenEl) || hiddenEl.getAttribute('data-autofilled') === '1';
+        }
+
+        // Resets the category field to empty (used when a newly selected supplier has no
+        // purchase history and the current category was auto-filled, not user-chosen).
+        function clearCategoryField() {
+            var categoryText = document.getElementById('categoryText');
+            var categoryHidden = document.getElementById('categoryHidden');
+            var statusEl = document.getElementById('categoryStatus');
+            categoryText.value = '';
+            categoryHidden.value = '';
+            categoryHidden.removeAttribute('data-autofilled');
+            if (statusEl) { statusEl.textContent = ''; statusEl.className = 'ac-status'; }
+            updateExpenseTypeIndicator(null);
+            debouncedCheckLimits();
+            loadCategoryProgressPanel(null);
+        }
+
+        function autoFillCategoryFromSupplier(supplierId) {
+            if (!supplierId) return;
+            var categoryHidden = document.getElementById('categoryHidden');
+            if (!isCategoryAutoReplaceable(categoryHidden)) return;
+
+            fetch('/Purchase/AxGetRecentCategoryForSupplier?supplierId=' + encodeURIComponent(supplierId))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.success) return;
+                    // Re-check in case the user set a category while the request was in flight
+                    if (!isCategoryAutoReplaceable(categoryHidden)) return;
+
+                    // New supplier has no purchase history — clear a previously auto-filled
+                    // category so it doesn't misrepresent this supplier.
+                    if (!data.found) {
+                        if (categoryHidden.getAttribute('data-autofilled') === '1') {
+                            clearCategoryField();
+                        }
+                        return;
+                    }
+
+                    var categoryText = document.getElementById('categoryText');
+                    categoryText.value = data.categoryName;
+                    categoryHidden.value = data.expenseCategoryId;
+                    // Mark as auto-filled so a later supplier change may replace it,
+                    // but a manual edit (which clears this flag) will not be overwritten.
+                    categoryHidden.setAttribute('data-autofilled', '1');
+
+                    // Fire the existing category resolution chain
+                    updateExpenseTypeIndicator(data.expenseCategoryId);
+                    debouncedCheckLimits();
+                    loadCategoryProgressPanel(data.expenseCategoryId);
+
+                    var statusEl = document.getElementById('categoryStatus');
+                    if (statusEl) { statusEl.textContent = '\u2713'; statusEl.className = 'ac-status resolved'; }
+                })
+                .catch(function () { /* silently ignore — suggestion is best-effort */ });
+        }
+
         // ─── Initialize on page load ──────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
             // Init supplier autocomplete
@@ -1131,7 +1235,8 @@
                 document.getElementById('supplierStatus'),
                 function() { return suppliers; },
                 '/Supplier/Create',
-                suppliers
+                suppliers,
+                function(supplierId) { autoFillCategoryFromSupplier(supplierId); }
             );
 
             // Init category autocomplete
@@ -1143,6 +1248,9 @@
                 '/ExpenseCategory/Create',
                 categories,
                 function(categoryId) {
+                    // A manual category change clears the auto-filled flag so a later
+                    // supplier change won't overwrite the user's deliberate choice.
+                    document.getElementById('categoryHidden').removeAttribute('data-autofilled');
                     updateExpenseTypeIndicator(categoryId);
                     debouncedCheckLimits();
                     loadCategoryProgressPanel(categoryId);

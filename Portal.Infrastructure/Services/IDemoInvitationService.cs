@@ -11,8 +11,9 @@ public interface IDemoInvitationService
 {
     /// <summary>
     /// Creates a new demo invitation, persists it with permissions, and triggers the invitation email.
+    /// Returns a result containing the invitation and email delivery status.
     /// </summary>
-    Task<DemoInvitation> CreateAsync(CreateDemoInvitationRequest request, string createdByUserId);
+    Task<DemoInvitationCreateResult> CreateAsync(CreateDemoInvitationRequest request, string createdByUserId);
 
     /// <summary>
     /// Validates the invitation token, checks expiry/revocation status, and tracks access metrics.
@@ -59,4 +60,16 @@ public interface IDemoInvitationService
     /// Updates the module permissions for an existing invitation (delete + reinsert).
     /// </summary>
     Task UpdatePermissionsAsync(int invitationId, List<ModulePermissionEntry> permissions);
+
+    /// <summary>
+    /// Gets the current status of an invitation by Id (lightweight — status string only).
+    /// Used by DemoPermissionFilter for periodic revalidation. Returns null if not found.
+    /// </summary>
+    Task<string?> GetInvitationStatusAsync(int invitationId);
+
+    /// <summary>
+    /// Searches Sales contacts across all businesses. Used by the demo invitation Create page
+    /// to import recipient details from existing contacts. Returns contacts with email only.
+    /// </summary>
+    Task<List<SalesContactBriefItem>> SearchSalesContactsAsync(string? search);
 }

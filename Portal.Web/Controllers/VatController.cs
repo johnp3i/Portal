@@ -364,6 +364,43 @@ public class VatController : Controller
         return Json(new { success = result.Success, message = result.Success ? "Submission marked as submitted successfully." : result.Message });
     }
 
+    /// <summary>
+    /// Returns the advisory, non-blocking pre-submission checklist for a period.
+    /// Read-only; auto-permitted for read-only users via the AxGet naming convention.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetPreSubmissionChecklist(int periodId)
+    {
+        try
+        {
+            var result = await _vatSubmissionService.GetPreSubmissionChecklistAsync(periodId);
+            if (!result.Success || result.Data == null)
+            {
+                return Json(new { success = false, message = result.Message ?? "Unable to load the pre-submission checklist." });
+            }
+
+            var d = result.Data;
+            return Json(new
+            {
+                success = true,
+                isSubmitted = d.IsSubmitted,
+                warningCount = d.WarningCount,
+                allClear = d.AllClear,
+                items = d.Items.Select(i => new
+                {
+                    key = i.Key,
+                    status = i.Status,
+                    title = i.Title,
+                    detail = i.Detail
+                })
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load the pre-submission checklist." });
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetUnassignedPurchases(int periodId)
     {

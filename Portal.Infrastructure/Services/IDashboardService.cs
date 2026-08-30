@@ -48,6 +48,12 @@ public interface IDashboardService
     Task<ExpensesKpiDto> GetExpensesThisMonthAsync(int businessId);
 
     /// <summary>
+    /// Returns up to 5 upcoming supplier payments (effective due date within the next 14 days,
+    /// including overdue), ordered by effective due date ascending.
+    /// </summary>
+    Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(int businessId);
+
+    /// <summary>
     /// Returns monthly revenue and expense totals for the last 6 months (including current).
     /// </summary>
     Task<List<RevenueVsExpensesDto>> GetRevenueVsExpensesAsync(int businessId);

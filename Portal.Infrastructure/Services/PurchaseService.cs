@@ -59,6 +59,11 @@ public class PurchaseService : IPurchaseService
         return await _purchaseRepository.GetByIdAndBusinessIdAsync(id, _currentTenantService.CurrentBusinessId);
     }
 
+    public async Task<Purchase?> GetMostRecentBySupplierAsync(int supplierId)
+    {
+        return await _purchaseRepository.GetMostRecentBySupplierAsync(_currentTenantService.CurrentBusinessId, supplierId);
+    }
+
     public async Task<ServiceResult> CreatePurchaseAsync(Purchase purchase)
     {
         var validationResult = await ValidatePurchaseAsync(purchase);

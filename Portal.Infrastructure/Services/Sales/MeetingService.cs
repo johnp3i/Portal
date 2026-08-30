@@ -17,6 +17,7 @@ public class MeetingService : IMeetingService
     private readonly SalesContactRepository _contactRepository;
     private readonly SalesProductRepository _productRepository;
     private readonly MeetingTypeRepository _meetingTypeRepository;
+    private readonly FollowUpTaskRepository _followUpTaskRepository;
     private readonly ILeadRequestService _leadRequestService;
     private readonly ICurrentTenantService _tenantService;
 
@@ -27,6 +28,7 @@ public class MeetingService : IMeetingService
         SalesContactRepository contactRepository,
         SalesProductRepository productRepository,
         MeetingTypeRepository meetingTypeRepository,
+        FollowUpTaskRepository followUpTaskRepository,
         ILeadRequestService leadRequestService,
         ICurrentTenantService tenantService)
     {
@@ -36,6 +38,7 @@ public class MeetingService : IMeetingService
         _contactRepository = contactRepository;
         _productRepository = productRepository;
         _meetingTypeRepository = meetingTypeRepository;
+        _followUpTaskRepository = followUpTaskRepository;
         _leadRequestService = leadRequestService;
         _tenantService = tenantService;
     }
@@ -92,6 +95,7 @@ public class MeetingService : IMeetingService
             existing.Location = request.Location;
             existing.Notes = request.Notes;
             existing.Outcome = request.Outcome;
+            existing.MeetingOutcomeClassificationId = request.MeetingOutcomeClassificationId;
 
             await _meetingRepository.UpdateAsync(existing);
             return ServiceResult.Ok();
@@ -164,6 +168,7 @@ public class MeetingService : IMeetingService
 
             var productRequests = await _productRequestRepository.GetByMeetingIdAsync(id);
             var opportunities = await _opportunityRepository.GetByMeetingIdAsync(id);
+            var linkedTasks = await _followUpTaskRepository.GetByMeetingIdAsync(id, businessId);
 
             var productRequestDtos = new List<MeetingProductRequestDto>();
             foreach (var pr in productRequests)
@@ -194,6 +199,7 @@ public class MeetingService : IMeetingService
                 Location = meeting.Location,
                 Notes = meeting.Notes,
                 Outcome = meeting.Outcome,
+                MeetingOutcomeClassificationId = meeting.MeetingOutcomeClassificationId,
                 IsCancelled = meeting.IsCancelled,
                 CreatedAtUtc = meeting.CreatedAtUtc,
                 ProductRequests = productRequestDtos,
@@ -204,8 +210,33 @@ public class MeetingService : IMeetingService
                     Description = o.Description,
                     EstimatedValue = o.EstimatedValue,
                     CreatedAtUtc = o.CreatedAtUtc
+                }).ToList(),
+                Tasks = linkedTasks.Select(t => new MeetingTaskBriefDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    TaskType = t.TaskType,
+                    DueAtUtc = t.DueAtUtc,
+                    ScheduledTimeUtc = t.ScheduledTimeUtc,
+                    IsCompleted = t.IsCompleted,
+                    CompletedAtUtc = t.CompletedAtUtc,
+                    TaskOutcome = t.TaskOutcome
                 }).ToList()
             };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<string?> GetSubjectAsync(int id)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var subjects = await _meetingRepository.GetSubjectsByIdsAsync(new[] { id }, businessId);
+            return subjects.TryGetValue(id, out var subject) ? subject : null;
         }
         catch (Exception ex)
         {
@@ -421,11 +452,15 @@ public class MeetingService : IMeetingService
             var businessId = _tenantService.CurrentBusinessId;
             var (items, totalCount) = await _meetingRepository.GetPagedAsync(
                 businessId, filter.Status, filter.MeetingTypeId,
-                filter.DateFrom, filter.DateTo, page, pageSize);
+                filter.DateFrom, filter.DateTo, filter.OutcomeClassificationId, page, pageSize);
 
             var meetingTypes = await _meetingTypeRepository.GetAllAsync();
             var contactIds = items.Select(m => m.ContactId).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
+
+            // Batch-fetch task counts for all meetings on this page
+            var meetingIds = items.Select(m => m.Id);
+            var taskCounts = await _followUpTaskRepository.GetTaskCountsByMeetingIdsAsync(meetingIds, businessId);
 
             var now = DateTime.UtcNow;
             var today = now.Date;
@@ -447,6 +482,8 @@ public class MeetingService : IMeetingService
                 else
                     urgency = "completed";
 
+                var tc = taskCounts.TryGetValue(m.Id, out var taskCount) ? taskCount : (Total: 0, Pending: 0);
+
                 return new MeetingPagedListDto
                 {
                     Id = m.Id,
@@ -463,7 +500,11 @@ public class MeetingService : IMeetingService
                     Location = m.Location,
                     Notes = m.Notes,
                     Outcome = m.Outcome,
+                    MeetingOutcomeClassificationId = m.MeetingOutcomeClassificationId,
+                    OutcomeClassificationName = ResolveClassificationName(m.MeetingOutcomeClassificationId),
                     IsCancelled = m.IsCancelled,
+                    TaskCount = tc.Total,
+                    PendingTaskCount = tc.Pending,
                     Urgency = urgency
                 };
             }).ToList();
@@ -519,5 +560,20 @@ public class MeetingService : IMeetingService
             .Replace(",", "\\,")
             .Replace("\n", "\\n")
             .Replace("\r", string.Empty);
+    }
+
+    private static readonly Dictionary<int, string> _classificationNames = new()
+    {
+        { 1, "Positive" },
+        { 2, "Neutral" },
+        { 3, "Negative" },
+        { 4, "Rescheduled" },
+        { 5, "No Show" }
+    };
+
+    private static string? ResolveClassificationName(int? classificationId)
+    {
+        if (!classificationId.HasValue) return null;
+        return _classificationNames.TryGetValue(classificationId.Value, out var name) ? name : null;
     }
 }

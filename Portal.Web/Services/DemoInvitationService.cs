@@ -54,7 +54,7 @@ public class DemoInvitationService : IDemoInvitationService
     }
 
     /// <inheritdoc />
-    public async Task<DemoInvitation> CreateAsync(CreateDemoInvitationRequest request, string createdByUserId)
+    public async Task<DemoInvitationCreateResult> CreateAsync(CreateDemoInvitationRequest request, string createdByUserId)
     {
         try
         {
@@ -81,6 +81,14 @@ public class DemoInvitationService : IDemoInvitationService
                 {
                     throw new ValidationException("This email belongs to an existing user. Demo invitations can only be sent to new prospects.");
                 }
+            }
+
+            // Reject invitations to email addresses that belong to an existing customer
+            var trimmedEmail = request.RecipientEmail.Trim();
+            var isExistingCustomer = await _repository.IsCustomerEmailAsync(trimmedEmail);
+            if (isExistingCustomer)
+            {
+                throw new ValidationException("This email belongs to an existing customer. Demo invitations should only be sent to new prospects, not current customers.");
             }
 
             // Validate business is a demo account
@@ -154,7 +162,8 @@ public class DemoInvitationService : IDemoInvitationService
             // Persist invitation and permissions
             await _repository.InsertAsync(invitation, permissions);
 
-            // Send invitation email
+            // Send invitation email — track whether delivery succeeded
+            var emailSent = true;
             try
             {
                 var magicLink = BuildMagicLink(token);
@@ -169,21 +178,26 @@ public class DemoInvitationService : IDemoInvitationService
             }
             catch (Exception ex)
             {
+                emailSent = false;
                 _logger.LogError(ex, "Failed to send demo invitation email to {Email}. Invitation persisted with Id {InvitationId}",
                     request.RecipientEmail, invitation.Id);
             }
 
-            return invitation;
+            return new DemoInvitationCreateResult
+            {
+                Invitation = invitation,
+                IsEmailSent = emailSent
+            };
         }
-        catch (ValidationException)
+        catch (ValidationException ex)
         {
             throw;
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -251,7 +265,7 @@ public class DemoInvitationService : IDemoInvitationService
                 Invitation = invitation
             };
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -267,7 +281,7 @@ public class DemoInvitationService : IDemoInvitationService
 
             _logger.LogInformation("Demo invitation {InvitationId} revoked at {RevokedAtUtc}", invitationId, now);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -278,8 +292,7 @@ public class DemoInvitationService : IDemoInvitationService
     {
         try
         {
-            var invitations = await _repository.GetAllAsync();
-            var invitation = invitations.FirstOrDefault(i => i.Id == invitationId);
+            var invitation = await _repository.GetByIdAsync(invitationId);
 
             if (invitation == null)
             {
@@ -312,7 +325,7 @@ public class DemoInvitationService : IDemoInvitationService
             _logger.LogInformation("Demo invitation email resent to {Email} for invitation {InvitationId}",
                 invitation.RecipientEmail, invitationId);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -352,7 +365,7 @@ public class DemoInvitationService : IDemoInvitationService
                 TotalCount = totalCount
             };
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -371,7 +384,7 @@ public class DemoInvitationService : IDemoInvitationService
                 Name = b.Name
             }).ToList();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -386,7 +399,7 @@ public class DemoInvitationService : IDemoInvitationService
 
             return permissions.ToDictionary(p => p.Module, p => p.AccessLevel);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -419,7 +432,7 @@ public class DemoInvitationService : IDemoInvitationService
                     userId, businessId);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -439,9 +452,7 @@ public class DemoInvitationService : IDemoInvitationService
                 throw new ValidationException("At least one module must have 'full' or 'readonly' access.");
             }
 
-            // Delete existing permissions and reinsert
-            await _repository.DeletePermissionsByInvitationIdAsync(invitationId);
-
+            // Replace permissions atomically (delete + reinsert in one transaction)
             var permissionEntities = permissions
                 .Select(p => new DemoInvitationPermission
                 {
@@ -452,15 +463,48 @@ public class DemoInvitationService : IDemoInvitationService
                 })
                 .ToList();
 
-            await _repository.InsertPermissionsAsync(invitationId, permissionEntities);
+            await _repository.ReplacePermissionsAsync(invitationId, permissionEntities);
 
             _logger.LogInformation("Updated permissions for invitation {InvitationId}", invitationId);
         }
-        catch (ValidationException)
+        catch (ValidationException ex)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> GetInvitationStatusAsync(int invitationId)
+    {
+        try
+        {
+            var invitation = await _repository.GetByIdAsync(invitationId);
+            if (invitation == null) return null;
+
+            // Also check expiry — if expired but status not yet updated, treat as expired
+            if (invitation.Status != "revoked" && invitation.ExpiresAtUtc <= DateTime.UtcNow)
+                return "expired";
+
+            return invitation.Status;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<List<SalesContactBriefItem>> SearchSalesContactsAsync(string? search)
+    {
+        try
+        {
+            return await _repository.SearchSalesContactsAsync(search);
+        }
+        catch (Exception ex)
         {
             throw;
         }

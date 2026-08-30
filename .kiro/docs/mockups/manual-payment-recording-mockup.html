@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Management — Manual Payment Recording — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F7FAFC;
+            color: #1a2b3c;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        :root {
+            --primary-blue: #0D5EA6;
+            --accent-cyan: #57B8E8;
+            --success: #129867;
+            --warning: #C8912E;
+            --danger: #C24A4A;
+            --bg-base: #F7FAFC;
+            --bg-secondary: #EEF4F8;
+            --text-primary: #1a2b3c;
+            --text-secondary: #5a6b7c;
+            --text-muted: #8a9bac;
+            --border: #e2e8f0;
+        }
+        .page-container { max-width: 1200px; margin: 0 auto; padding: 48px 32px; }
+        .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+        .eyebrow { font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--primary-blue); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .eyebrow .dot { width: 6px; height: 6px; background: var(--primary-blue); border-radius: 50%; }
+        .topbar-heading { font-family: 'Manrope', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); margin-bottom: 4px; }
+        .topbar-subtitle { font-size: 15px; color: var(--text-secondary); }
+        .glass { background: #fff; border-radius: 20px; box-shadow: 0 8px 32px rgba(11,27,40,0.06); border: 1.5px solid rgba(226,232,240,0.5); }
+        .card-pad { padding: 28px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 12px 14px; text-align: left; border-bottom: 1.5px solid var(--border); }
+        .data-table td { padding: 14px; border-bottom: 1px solid #f4f7fa; font-size: 14px; vertical-align: middle; }
+        .data-table tbody tr:hover { background: rgba(13,94,166,0.015); }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all 0.15s ease; text-decoration: none; }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: #EEF4F8; color: var(--text-secondary); border: 1.5px solid var(--border); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-success-sm { background: rgba(18,152,103,.08); color: var(--success); border: 1.5px solid rgba(18,152,103,.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .btn-info-sm { background: rgba(87,184,232,.08); color: #1a8fc7; border: 1.5px solid rgba(87,184,232,.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .btn-warning-sm { background: rgba(200,145,46,.08); color: var(--warning); border: 1.5px solid rgba(200,145,46,.2); padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+        .pill-active { background: rgba(18,152,103,.08); color: var(--success); }
+        .pill-trial { background: rgba(13,94,166,.08); color: var(--primary-blue); }
+        .pill-partial { background: rgba(200,145,46,.08); color: var(--warning); }
+        .pill-demo { background: rgba(87,184,232,.1); color: #1a8fc7; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 6px; }
+        .field { margin-bottom: 0; }
+        .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .field input, .field select, .field textarea {
+            width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-size: 14px; font-family: 'Inter', sans-serif; color: var(--text-primary);
+            background: #fff; transition: border-color 0.15s;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary-blue); outline: none; }
+        .form-select { padding: 6px 10px; border-radius: 8px; border: 1px solid #d0dce8; font-size: 13px; font-weight: 600; min-width: 140px; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: #fff; border-radius: 16px; padding: 32px; width: 92%;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15); max-height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .modal-content h3 { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+        .modal-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .method-stripe { background: rgba(13,94,166,.08); color: var(--primary-blue); padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .method-bank { background: rgba(18,152,103,.08); color: var(--success); padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .method-cheque { background: rgba(200,145,46,.08); color: var(--warning); padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .method-cash { background: rgba(138,155,171,.08); color: var(--text-secondary); padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .confirm-summary { background: #F7FAFC; border: 1.5px solid var(--border); border-radius: 12px; padding: 18px; margin: 16px 0; }
+        .confirm-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+        .confirm-label { color: var(--text-secondary); font-weight: 600; }
+        .confirm-value { color: var(--text-primary); font-weight: 700; }
+        .table-responsive { overflow-x: auto; }
+        .revenue-summary { padding: 12px 16px; background: rgba(13,94,166,.03); border: 1px solid rgba(13,94,166,.08); border-radius: 10px; font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; display: flex; gap: 24px; flex-wrap: wrap; }
+        .revenue-summary strong { color: var(--text-primary); }
+        .invoice-row { padding: 16px 0; border-bottom: 1.5px solid #f0f4f8; }
+        .payment-row { padding: 8px 0 8px 28px; border-bottom: 1px solid #f8fafb; }
+        .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+    <div class="topbar">
+        <div>
+            <div class="eyebrow"><span class="dot"></span> Administration</div>
+            <h1 class="topbar-heading">Subscription Management</h1>
+            <p class="topbar-subtitle">View and manage business subscription plans and statuses.</p>
+        </div>
+    </div>
+
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:240px;">
+                <label>Search</label>
+                <input type="text" placeholder="Business name..." />
+            </div>
+            <div style="padding-bottom:2px;"><button class="btn btn-secondary btn-sm">Clear</button></div>
+        </div>
+    </section>
+
+    <section class="glass card-pad">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Business Name</th>
+                        <th>Current Plan</th>
+                        <th>Status</th>
+                        <th>Started</th>
+                        <th>Expires</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>3 Inventors Limited</strong></td>
+                        <td><select class="form-select"><option>Foundation</option><option selected>Professional</option><option>Enterprise</option></select></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td>04 Jul 2026</td>
+                        <td>04 Jul 2027</td>
+                        <td>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <button class="btn-primary btn-sm">Change Plan</button>
+                                <button class="btn-secondary btn-sm">Change Status</button>
+                                <button class="btn-success-sm" onclick="document.getElementById('recordPaymentModal').style.display='flex'">Record Payment</button>
+                                <button class="btn-info-sm" onclick="document.getElementById('paymentHistoryModal').style.display='flex'">History</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Le Paris Roasting</strong> <span class="pill-demo">Demo</span></td>
+                        <td><select class="form-select"><option>Foundation</option><option>Professional</option><option selected>Enterprise</option></select></td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td>10 Jun 2026</td>
+                        <td>10 Jun 2036</td>
+                        <td>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <button class="btn-primary btn-sm">Change Plan</button>
+                                <button class="btn-secondary btn-sm">Change Status</button>
+                                <button class="btn-success-sm">Record Payment</button>
+                                <button class="btn-info-sm">History</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>WT Miami AGL Limited</strong></td>
+                        <td><select class="form-select"><option>Foundation</option><option selected>Professional</option><option>Enterprise</option></select></td>
+                        <td><span class="pill pill-trial">Trial</span></td>
+                        <td>23 Jul 2026</td>
+                        <td>&mdash;</td>
+                        <td>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <button class="btn-primary btn-sm">Change Plan</button>
+                                <button class="btn-secondary btn-sm">Change Status</button>
+                                <button class="btn-success-sm">Record Payment</button>
+                                <button class="btn-info-sm">History</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>M.C. ROAD67 LIMITED</strong></td>
+                        <td><select class="form-select"><option>Foundation</option><option selected>Professional</option><option>Enterprise</option></select></td>
+                        <td><span class="pill pill-trial">Trial</span></td>
+                        <td>27 Jul 2026</td>
+                        <td>&mdash;</td>
+                        <td>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <button class="btn-primary btn-sm">Change Plan</button>
+                                <button class="btn-secondary btn-sm">Change Status</button>
+                                <button class="btn-success-sm">Record Payment</button>
+                                <button class="btn-info-sm">History</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<!-- ============ RECORD PAYMENT MODAL (Full Payment) ============ -->
+<div id="recordPaymentModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:560px;">
+        <h3>Record Payment</h3>
+        <div class="modal-subtitle">3 Inventors Limited &mdash; <strong>Professional</strong> plan (&euro;890.00/year)</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field">
+                <label>Invoice Amount (EUR) *</label>
+                <input type="number" value="890.00" step="0.01" min="0.01" />
+                <div class="hint">Total due for the period</div>
+            </div>
+            <div class="field">
+                <label>Payment Amount (EUR) *</label>
+                <input type="number" value="890.00" step="0.01" min="0.01" />
+                <div class="hint">Amount being paid now</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field">
+                <label>Payment Method *</label>
+                <select>
+                    <option value="bank_transfer" selected>Bank Transfer</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="cash">Cash</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Reference</label>
+                <input type="text" placeholder="e.g. TRF-2026-0042" value="TRF-2026-0042" />
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field">
+                <label>Period Start *</label>
+                <input type="date" value="2026-08-28" />
+            </div>
+            <div class="field">
+                <label>Period End *</label>
+                <input type="date" value="2027-08-28" />
+            </div>
+        </div>
+
+        <div class="field" style="margin-bottom:20px;">
+            <label>Notes</label>
+            <textarea rows="2" placeholder="Optional notes...">Annual subscription &mdash; Professional plan, paid via bank transfer</textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button class="btn btn-secondary" onclick="document.getElementById('recordPaymentModal').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" onclick="document.getElementById('recordPaymentModal').style.display='none';document.getElementById('confirmDialog').style.display='flex'">Record Payment</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ CONFIRMATION DIALOG ============ -->
+<div id="confirmDialog" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:440px;">
+        <div style="text-align:center;margin-bottom:8px;">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(200,145,46,.1);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                <svg width="28" height="28" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 style="margin-bottom:4px;">Confirm Payment Recording</h3>
+            <p style="font-size:13px;color:var(--text-secondary);">Please verify the details before recording.</p>
+        </div>
+        <div class="confirm-summary">
+            <div class="confirm-row"><span class="confirm-label">Business</span><span class="confirm-value">3 Inventors Limited</span></div>
+            <div class="confirm-row"><span class="confirm-label">Invoice Total</span><span class="confirm-value">&euro;890.00</span></div>
+            <div class="confirm-row"><span class="confirm-label">Payment</span><span class="confirm-value">&euro;890.00</span></div>
+            <div class="confirm-row"><span class="confirm-label">Method</span><span class="confirm-value">Bank Transfer</span></div>
+            <div class="confirm-row"><span class="confirm-label">Period</span><span class="confirm-value">28 Aug 2026 &rarr; 28 Aug 2027</span></div>
+            <div class="confirm-row"><span class="confirm-label">Reference</span><span class="confirm-value">TRF-2026-0042</span></div>
+        </div>
+        <div style="text-align:center;font-size:13px;color:var(--success);font-weight:600;margin-bottom:8px;">Invoice will be marked as Paid.</div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="document.getElementById('confirmDialog').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" onclick="document.getElementById('confirmDialog').style.display='none';document.getElementById('successToast').style.display='flex'">Confirm &amp; Record</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ SUCCESS TOAST ============ -->
+<div id="successToast" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:380px;text-align:center;">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(18,152,103,.1);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg width="28" height="28" fill="none" stroke="#129867" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h3 style="margin-bottom:8px;">Payment Recorded</h3>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:4px;">Invoice number: <strong>BILI-INV-2026-0003</strong></p>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Subscription activated for 3 Inventors Limited until 28 Aug 2027.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('successToast').style.display='none'" style="margin:0 auto;">Done</button>
+    </div>
+</div>
+
+<!-- ============ PAYMENT HISTORY MODAL ============ -->
+<div id="paymentHistoryModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:780px;">
+        <h3>Payment History</h3>
+        <div class="modal-subtitle">3 Inventors Limited</div>
+
+        <div class="revenue-summary">
+            <div>Total Revenue: <strong>&euro;1,068.00</strong></div>
+            <div>Invoices: <strong>3</strong></div>
+            <div>Outstanding: <strong style="color:var(--warning);">&euro;860.00</strong></div>
+        </div>
+
+        <div style="overflow-y:auto;flex:1;min-height:0;">
+            <!-- Invoice 1: Partially Paid (instalment) -->
+            <div class="invoice-row">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div style="font-weight:700;font-size:14px;">BILI-INV-2026-0057</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Aug 2026 &ndash; Aug 2027</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:13px;color:var(--text-secondary);">Due: <strong>&euro;1,290.00</strong> &nbsp; Paid: <strong>&euro;430.00</strong></div>
+                        <div style="font-size:12px;color:var(--warning);font-weight:700;margin-top:2px;">Outstanding: &euro;860.00</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                    <span class="pill pill-partial">Partially Paid</span>
+                    <button class="btn-warning-sm" onclick="document.getElementById('paymentHistoryModal').style.display='none';document.getElementById('addPaymentModal').style.display='flex'">+ Add Payment</button>
+                    <a href="#" class="btn-info-sm" style="text-decoration:none;">Download</a>
+                </div>
+                <!-- Nested payment -->
+                <div class="payment-row">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                        <div>
+                            <span style="font-weight:600;font-size:13px;">&euro;430.00</span>
+                            <span class="method-bank" style="margin-left:6px;">Bank Transfer</span>
+                            <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">28 Aug 2026</span>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Ref: TRF-2026-0042 &middot; First instalment &mdash; Enterprise annual</div>
+                </div>
+            </div>
+
+            <!-- Invoice 2: Fully Paid (manual) -->
+            <div class="invoice-row">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div style="font-weight:700;font-size:14px;">BILI-INV-2026-0056</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Jul 2026 &ndash; Aug 2026</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:700;font-size:15px;">&euro;89.00</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                    <span class="pill pill-active">Paid</span>
+                    <a href="#" class="btn-info-sm" style="text-decoration:none;">Download</a>
+                </div>
+                <div class="payment-row">
+                    <div>
+                        <span style="font-weight:600;font-size:13px;">&euro;89.00</span>
+                        <span class="method-bank" style="margin-left:6px;">Bank Transfer</span>
+                        <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">04 Jul 2026</span>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Ref: TRF-2026-0030 &middot; Monthly subscription</div>
+                </div>
+            </div>
+
+            <!-- Invoice 3: Stripe -->
+            <div class="invoice-row">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div style="font-weight:700;font-size:14px;">BILI-INV-2026-0055</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Jun 2026 &ndash; Jul 2026</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:700;font-size:15px;">&euro;89.00</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                    <span class="pill pill-active">Paid</span>
+                    <a href="#" class="btn-info-sm" style="text-decoration:none;">Download</a>
+                </div>
+                <div class="payment-row">
+                    <div>
+                        <span style="font-weight:600;font-size:13px;">&euro;89.00</span>
+                        <span class="method-stripe" style="margin-left:6px;">Stripe</span>
+                        <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">04 Jun 2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+            <button class="btn btn-secondary" onclick="document.getElementById('paymentHistoryModal').style.display='none'">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ ADD PAYMENT MODAL (Instalment) ============ -->
+<div id="addPaymentModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+        <h3>Add Payment</h3>
+        <div class="modal-subtitle">BILI-INV-2026-0057</div>
+
+        <div class="revenue-summary" style="margin-bottom:16px;">
+            <div>Total Due: <strong>&euro;1,290.00</strong></div>
+            <div>Paid: <strong>&euro;430.00</strong></div>
+            <div>Remaining: <strong style="color:var(--warning);">&euro;860.00</strong></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="field">
+                <label>Payment Amount (EUR) *</label>
+                <input type="number" value="860.00" step="0.01" min="0.01" />
+                <div class="hint">Max: &euro;860.00 (remaining)</div>
+            </div>
+            <div class="field">
+                <label>Payment Method *</label>
+                <select>
+                    <option value="bank_transfer" selected>Bank Transfer</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="cash">Cash</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field" style="margin-bottom:14px;">
+            <label>Reference</label>
+            <input type="text" placeholder="e.g. TRF-2026-0098" value="TRF-2026-0098" />
+        </div>
+
+        <div class="field" style="margin-bottom:20px;">
+            <label>Notes</label>
+            <textarea rows="2" placeholder="Optional notes...">Second instalment &mdash; Enterprise annual</textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button class="btn btn-secondary" onclick="document.getElementById('addPaymentModal').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" onclick="document.getElementById('addPaymentModal').style.display='none';document.getElementById('addPaymentConfirm').style.display='flex'">Add Payment</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ ADD PAYMENT CONFIRMATION ============ -->
+<div id="addPaymentConfirm" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:440px;">
+        <div style="text-align:center;margin-bottom:8px;">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(200,145,46,.1);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                <svg width="28" height="28" fill="none" stroke="#C8912E" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 style="margin-bottom:4px;">Confirm Instalment Payment</h3>
+            <p style="font-size:13px;color:var(--text-secondary);">Adding payment to BILI-INV-2026-0057</p>
+        </div>
+        <div class="confirm-summary">
+            <div class="confirm-row"><span class="confirm-label">Invoice</span><span class="confirm-value">BILI-INV-2026-0057</span></div>
+            <div class="confirm-row"><span class="confirm-label">Payment</span><span class="confirm-value">&euro;860.00</span></div>
+            <div class="confirm-row"><span class="confirm-label">Method</span><span class="confirm-value">Bank Transfer</span></div>
+            <div class="confirm-row"><span class="confirm-label">Reference</span><span class="confirm-value">TRF-2026-0098</span></div>
+        </div>
+        <div style="text-align:center;font-size:13px;color:var(--success);font-weight:600;margin-bottom:8px;">This will complete the invoice (&euro;430 + &euro;860 = &euro;1,290). Invoice will be marked as Paid.</div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="document.getElementById('addPaymentConfirm').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" onclick="document.getElementById('addPaymentConfirm').style.display='none';document.getElementById('addPaymentSuccess').style.display='flex'">Confirm &amp; Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ ADD PAYMENT SUCCESS ============ -->
+<div id="addPaymentSuccess" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:380px;text-align:center;">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(18,152,103,.1);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg width="28" height="28" fill="none" stroke="#129867" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h3 style="margin-bottom:8px;">Payment Added</h3>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:4px;">BILI-INV-2026-0057 is now fully paid.</p>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Total: &euro;1,290.00 across 2 payments.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('addPaymentSuccess').style.display='none'" style="margin:0 auto;">Done</button>
+    </div>
+</div>
+
+</body>
+</html>

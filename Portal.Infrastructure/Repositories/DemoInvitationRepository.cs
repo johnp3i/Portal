@@ -43,7 +43,42 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
             return await ExecuteSingleRecordStoredProcedureUnfiltered(query,
                 new SqlParameter("@Token", token));
         }
-        catch (Exception)
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets a demo invitation by its Id.
+    /// Returns null if no matching record exists.
+    /// </summary>
+    public virtual async Task<DemoInvitation?> GetByIdAsync(int id)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [portal].[DemoInvitation].[Id],
+                       [portal].[DemoInvitation].[BusinessId],
+                       [portal].[DemoInvitation].[Token],
+                       [portal].[DemoInvitation].[RecipientEmail],
+                       [portal].[DemoInvitation].[RecipientName],
+                       [portal].[DemoInvitation].[ExpiresAtUtc],
+                       [portal].[DemoInvitation].[Status],
+                       [portal].[DemoInvitation].[CreatedByUserId],
+                       [portal].[DemoInvitation].[FirstAccessedAtUtc],
+                       [portal].[DemoInvitation].[LastAccessedAtUtc],
+                       [portal].[DemoInvitation].[AccessCount],
+                       [portal].[DemoInvitation].[RevokedAtUtc],
+                       [portal].[DemoInvitation].[ConvertedAtUtc],
+                       [portal].[DemoInvitation].[CreatedAtUtc]
+                FROM [portal].[DemoInvitation]
+                WHERE [portal].[DemoInvitation].[Id] = @Id";
+
+            return await ExecuteSingleRecordStoredProcedureUnfiltered(query,
+                new SqlParameter("@Id", id));
+        }
+        catch (Exception ex)
         {
             throw;
         }
@@ -76,7 +111,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
 
             return await ExecuteStoredProcedureUnfiltered(query);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -115,7 +150,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                 new SqlParameter("@Offset", offset),
                 new SqlParameter("@PageSize", pageSize));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -155,7 +190,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -243,7 +278,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                     await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -267,7 +302,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                 new SqlParameter("@Status", status),
                 new SqlParameter("@RevokedAtUtc", revokedAtUtc ?? (object)DBNull.Value));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -306,7 +341,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                 new SqlParameter("@Id", id),
                 new SqlParameter("@AccessedAtUtc", accessedAtUtc));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -332,7 +367,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                 .FromSqlRaw(query, new SqlParameter("@InvitationId", invitationId))
                 .ToListAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -353,6 +388,8 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                        [portal].[Business].[IsPaymentInstructionsEnabled],
                        [portal].[Business].[IsAutoReceiptEnabled],
                        [portal].[Business].[IsAutoInvoiceSignatureEnabled],
+                       [portal].[Business].[IsOnboardingDismissed],
+                       [portal].[Business].[IsReminderSystemEnabled],
                        [portal].[Business].[CreatedAtUtc],
                        [portal].[Business].[UpdatedAtUtc]
                 FROM [portal].[Business]
@@ -363,55 +400,74 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                 .IgnoreQueryFilters()
                 .ToListAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
     }
 
     /// <summary>
-    /// Deletes all permissions for a given invitation.
+    /// Deletes all permissions for a given invitation and reinserts the new set within a transaction.
+    /// Ensures atomicity — if any insert fails, the delete is rolled back.
     /// </summary>
-    public async Task DeletePermissionsByInvitationIdAsync(int invitationId)
+    public async Task ReplacePermissionsAsync(int invitationId, List<DemoInvitationPermission> permissions)
     {
         try
         {
-            const string query = @"
-                DELETE FROM [portal].[DemoInvitationPermission]
-                WHERE [portal].[DemoInvitationPermission].[DemoInvitationId] = @InvitationId";
+            var connection = _context.Database.GetDbConnection();
 
-            await _context.Database.ExecuteSqlRawAsync(query,
-                new SqlParameter("@InvitationId", invitationId));
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Inserts a list of permission entities for a given invitation.
-    /// </summary>
-    public async Task InsertPermissionsAsync(int invitationId, List<DemoInvitationPermission> permissions)
-    {
-        try
-        {
-            foreach (var perm in permissions)
+            try
             {
-                const string query = @"
-                    INSERT INTO [portal].[DemoInvitationPermission]
-                        ([DemoInvitationId], [Module], [AccessLevel], [CreatedAtUtc])
-                    VALUES
-                        (@DemoInvitationId, @Module, @AccessLevel, @CreatedAtUtc)";
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
 
-                await _context.Database.ExecuteSqlRawAsync(query,
-                    new SqlParameter("@DemoInvitationId", invitationId),
-                    new SqlParameter("@Module", perm.Module),
-                    new SqlParameter("@AccessLevel", perm.AccessLevel),
-                    new SqlParameter("@CreatedAtUtc", perm.CreatedAtUtc));
+                using var transaction = await connection.BeginTransactionAsync();
+
+                try
+                {
+                    // Delete existing permissions
+                    using (var deleteCommand = connection.CreateCommand())
+                    {
+                        deleteCommand.Transaction = transaction;
+                        deleteCommand.CommandText = @"
+                            DELETE FROM [portal].[DemoInvitationPermission]
+                            WHERE [portal].[DemoInvitationPermission].[DemoInvitationId] = @InvitationId";
+                        deleteCommand.Parameters.Add(new SqlParameter("@InvitationId", invitationId));
+                        await deleteCommand.ExecuteNonQueryAsync();
+                    }
+
+                    // Insert new permissions
+                    foreach (var perm in permissions)
+                    {
+                        using var insertCommand = connection.CreateCommand();
+                        insertCommand.Transaction = transaction;
+                        insertCommand.CommandText = @"
+                            INSERT INTO [portal].[DemoInvitationPermission]
+                                ([DemoInvitationId], [Module], [AccessLevel], [CreatedAtUtc])
+                            VALUES
+                                (@DemoInvitationId, @Module, @AccessLevel, @CreatedAtUtc)";
+                        insertCommand.Parameters.Add(new SqlParameter("@DemoInvitationId", invitationId));
+                        insertCommand.Parameters.Add(new SqlParameter("@Module", perm.Module));
+                        insertCommand.Parameters.Add(new SqlParameter("@AccessLevel", perm.AccessLevel));
+                        insertCommand.Parameters.Add(new SqlParameter("@CreatedAtUtc", perm.CreatedAtUtc));
+                        await insertCommand.ExecuteNonQueryAsync();
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    await connection.CloseAsync();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw;
         }
@@ -437,6 +493,127 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@RecipientEmail", recipientEmail));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Checks whether the given email address belongs to an existing customer in any business.
+    /// Used to prevent sending demo invitations to current customers.
+    /// </summary>
+    public async Task<bool> IsCustomerEmailAsync(string email)
+    {
+        try
+        {
+            const string query = @"
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM [customer].[Customer]
+                    WHERE [customer].[Customer].[Email] = @Email
+                ) THEN 1 ELSE 0 END";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@Email", email));
+
+                var result = await command.ExecuteScalarAsync();
+                return result != null && (int)result == 1;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Searches Sales contacts across all businesses by name, email, or company.
+    /// Returns only contacts that have an email address (max 20 results).
+    /// </summary>
+    public async Task<List<Portal.Infrastructure.Models.SalesContactBriefItem>> SearchSalesContactsAsync(string? search)
+    {
+        try
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                var searchParam = string.IsNullOrWhiteSpace(search) ? (object)DBNull.Value : search;
+                var patternParam = string.IsNullOrWhiteSpace(search) ? (object)DBNull.Value : $"%{search}%";
+
+                const string query = @"
+                    SELECT TOP 20
+                           [sales].[Contact].[Id],
+                           [sales].[Contact].[FirstName],
+                           [sales].[Contact].[LastName],
+                           [sales].[Contact].[Email],
+                           [sales].[Contact].[CompanyName]
+                    FROM [sales].[Contact]
+                    WHERE [sales].[Contact].[Email] IS NOT NULL
+                      AND [sales].[Contact].[Email] <> ''
+                      AND [sales].[Contact].[IsActive] = 1
+                      AND (@Search IS NULL
+                           OR [sales].[Contact].[FirstName] LIKE @Pattern
+                           OR [sales].[Contact].[LastName] LIKE @Pattern
+                           OR [sales].[Contact].[Email] LIKE @Pattern
+                           OR [sales].[Contact].[CompanyName] LIKE @Pattern)
+                    ORDER BY [sales].[Contact].[FirstName], [sales].[Contact].[LastName]";
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@Search", searchParam));
+                command.Parameters.Add(new SqlParameter("@Pattern", patternParam));
+
+                var results = new List<Portal.Infrastructure.Models.SalesContactBriefItem>();
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    var firstName = reader.GetString(1);
+                    var lastName = reader.IsDBNull(2) ? null : reader.GetString(2);
+                    results.Add(new Portal.Infrastructure.Models.SalesContactBriefItem
+                    {
+                        Id = reader.GetInt32(0),
+                        FullName = string.IsNullOrWhiteSpace(lastName) ? firstName : $"{firstName} {lastName}",
+                        Email = reader.GetString(3),
+                        CompanyName = reader.IsDBNull(4) ? null : reader.GetString(4)
+                    });
+                }
+
+                return results;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception ex)
         {
