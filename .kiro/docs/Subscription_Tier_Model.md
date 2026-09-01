@@ -76,6 +76,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 -   Recurring Expense Validation (define expected supplier purchases, validate before VAT submission)
 -   Purchase Import (bulk CSV/Excel upload with configurable parser templates)
 -   Sales Invoice Import (bulk CSV/Excel upload for POS transaction data with optional customer tracking)
+-   External Platform Sales Import (import line-level sales from other billing platforms — e.g. multi-platform operators — into the correct VAT period for consolidated VAT reporting; includes downloadable CSV/Excel templates)
 -   Opportunities (sales pipeline: lead board, contacts, team, meetings, templates, activity feed)
 -   Document Attachments (attach PDFs/images to purchases, invoices, quotations)
 -   Business Applications Tracker (compliance filings: tax, employee, regulatory — with country-specific templates)
@@ -143,6 +144,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Purchase Import (CSV/Excel)               | ❌                   | ✅                   | ✅                   |
 | Revenue Summary Entry (Z-Reports)         | ✅                   | ✅                   | ✅                   |
 | Sales Invoice Import (POS data)           | ❌                   | ✅                   | ✅                   |
+| External Platform Sales Import            | ❌                   | ✅                   | ✅                   |
 | Customer Behaviour Analytics              | ❌                   | ❌                   | ✅                   |
 | **Operational Tools**                     |                      |                      |                      |
 | Document Attachments                      | ❌                   | ✅                   | ✅                   |
@@ -260,6 +262,7 @@ Request arrives
 | `recurring_expense_validation` | Recurring Expense Validation                                | Professional   |
 | `purchase_import`              | Purchase Import (CSV/Excel)                                 | Professional   |
 | `zreport_import`               | Sales Invoice Import (POS data)                             | Professional   |
+| `external_platform_import`     | External Platform Sales Import (import sales from other billing platforms for VAT consolidation) | Professional   |
 | `sales`                        | Opportunities (sales pipeline & lead tracking)              | Professional   |
 | `attachments`                  | Document Attachments                                        | Professional   |
 | `audit_log`                    | Activity Log (readonly on Professional, full on Enterprise) | Professional   |

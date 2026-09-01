@@ -26,7 +26,7 @@ External Platform (Guardian, MyChair, …)
    sales-export.csv  (UTF-8, InvoiceNumber, InvoiceDate, NetAmount, VatAmount, TotalAmount, …)
         │  upload
         ▼
-SalesImportController ──► ISalesImportService.ParseAndPreviewAsync(stream, fileName, platformId)
+SalesImportController ──► ISalesImportService.ParseAndPreviewForPlatformAsync(stream, fileName, platformId)
         │                        │
         │                        ├─ ExternalPlatformRepository (validate platform, prefix)
         │                        ├─ ExternalSalesRecordRepository (duplicate detection)
@@ -36,7 +36,7 @@ SalesImportController ──► ISalesImportService.ParseAndPreviewAsync(stream,
    Preview view ──► confirm (with excluded rows)
         │
         ▼
-ISalesImportService.ConfirmImportAsync(preview, excludes)
+ISalesImportService.ConfirmImportForPlatformAsync(preview, excludes)
         │  transaction
         ├─ ExternalSalesRecordRepository.InsertAsync (per row, with ExternalPlatformId + VatSubmissionPeriodId)
         └─ AuditLogRepository.InsertAsync (batch entry)
@@ -48,7 +48,7 @@ ISalesImportService.ConfirmImportAsync(preview, excludes)
 
 Consistent with the project's Controller → Service → Repository pattern:
 
-- **Controller**: `SalesImportController` gains a platform-aware overload path; new `ExternalPlatformController` for CRUD. Both `[Authorize]` + module gate.
+- **Controller**: `SalesImportController` gains a platform-aware overload path; new `ExternalPlatformController` for CRUD. Both `[Authorize]` + a new `[ModuleAccess(PortalModules.ExternalPlatformImport)]` gate (Professional + Enterprise). Note the platform-import endpoints on `SalesImportController` are gated by the new key even though the controller's POS import path keeps `ZReportImport` — see Access Control below.
 - **Service**: `SalesImportService` extended to accept a platform id, run prefix validation, and resolve the VAT period. New `ExternalPlatformService` for CRUD + validation.
 - **Repository**: New `ExternalPlatformRepository` (table repository). Extend `ExternalSalesRecordRepository` (new column) and reuse `VatSubmissionPeriodRepository`.
 
@@ -160,6 +160,7 @@ public class ExternalPlatformRepository : GenericStoredProcedureRepository<Exter
 - Add `[ExternalPlatformId]` to the `InsertAsync` column list, VALUES, and SqlParameters (null-safe).
 - Add `[ExternalPlatformId]` to the `GetPagedAsync` SELECT and an optional `@ExternalPlatformId` filter parameter.
 - Duplicate detection: keep the existing `ExistsDuplicateAsync`, but the import will pass the platform id so duplicates are scoped correctly. Add an overload/param so `ExistsDuplicateAsync` can key on `ExternalPlatformId` (the current signature keys on `RevenueSourceId`). To avoid churn, add `ExistsDuplicateByPlatformAsync(businessId, externalPlatformId, invoiceNumber, transactionDate)` mirroring the existing method.
+- **Cross-source/cross-platform warning**: add `FindCrossSourceOrPlatformDuplicateAsync(businessId, excludePlatformId, invoiceNumber, transactionDate)`. This queries `ExternalSalesRecord` rows where `InvoiceNumber + TransactionDate` match and `ExternalPlatformId != excludePlatformId` (or `RevenueSourceId IS NOT NULL`), returning the platform/source name. Surfaces a warning in the preview, same as the existing cross-source pattern. This closes a detection gap: without it, the same invoice imported under both a POS source and a platform would go unnoticed.
 
 #### `VatSubmissionPeriodRepository` (reuse + add lookup)
 
@@ -208,12 +209,37 @@ Behavior differences from the existing `ParseAndPreviewAsync`:
 - **VAT period resolution (preview)**: call `GetCoveringUnsubmittedPeriodAsync` per distinct `TransactionDate` (memoized in a local dictionary to avoid N queries), set a `SalesImportRow.TargetPeriodLabel` ("Q3 2026" / "Unassigned" / "Locked — period submitted").
 - Duplicate detection uses `ExistsDuplicateByPlatformAsync`.
 
-`ConfirmImportAsync` extended (or a `ConfirmImportForPlatformAsync`) to:
-- Set `ExternalPlatformId` on each inserted record.
+A distinct `ConfirmImportForPlatformAsync(preview, excludeRowIndexes)` (rather than overloading the existing `ConfirmImportAsync`, keeping the POS path untouched):
+- Set `ExternalPlatformId` on each inserted record (and `RevenueSourceId = null`).
 - Set `VatSubmissionPeriodId` by re-resolving the covering unsubmitted period at commit time (re-checked, not trusting cached preview, so a period submitted between preview and confirm is respected).
 - Audit log `Action = "ExternalPlatformSalesImport"`, `TableName = "revenue.ExternalSalesRecord"`, `NewValues` includes platform name, file, count, total.
 
-To keep the preview model serializable in `IMemoryCache`, extend `SalesImportPreview` with `ExternalPlatformId`, `ExternalPlatformName`, and `SalesImportRow` with `HasPrefixWarning`, `PrefixWarning`, `TargetPeriodLabel`.
+**Confirm dispatch (single endpoint):** the existing `AxPostConfirmImport` retrieves the cached `SalesImportPreview` and branches — when `preview.ExternalPlatformId` has a value it calls `ConfirmImportForPlatformAsync`, otherwise the existing `ConfirmImportAsync` (POS path). One endpoint, one cache key, two service methods. This keeps the client unchanged.
+
+To keep the preview model serializable in `IMemoryCache`, extend `SalesImportPreview` with `ExternalPlatformId`, `ExternalPlatformName`, and `SalesImportRow` with `HasPrefixWarning`, `PrefixWarning`, `TargetPeriodLabel`. The cross-source/cross-platform warning **reuses the existing `SalesImportRow.HasCrossSourceWarning` / `CrossSourceWarning` fields** (already present for the POS path) — do not add parallel fields.
+
+### 4a. Import Template Generation
+
+A small `ImportTemplateService` (`IImportTemplateService`) produces the downloadable templates so the logic is testable and reused by the controller.
+
+```csharp
+public interface IImportTemplateService
+{
+    // platformCode is optional; when null a neutral placeholder ("ABC") is used in example rows
+    (byte[] Content, string FileName, string ContentType) BuildCsvTemplate(string? platformCode);
+    (byte[] Content, string FileName, string ContentType) BuildExcelTemplate(string? platformCode);
+}
+```
+
+- **CSV** (`text/csv`): UTF-8, header row in canonical order + two example rows. File name `external-sales-import-template.csv`.
+- **Excel** (`.xlsx`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`): generated with **ClosedXML** (already used by `PayrollReportService`). Sheet 1 "Sales" = header (bold, fill `#0D5EA6`, white font — the MyChair primary, matching existing exports) + two example rows, with the `InvoiceNumber` column set to text format (`@`) so `GRD-INV-2026-0001` isn't mangled. Sheet 2 "Instructions" = one row per column: name, required/optional, type, format notes. File name `external-sales-import-template.xlsx`.
+- **The two example rows** (canonical): a standard 19% VAT sale and a zero-VAT sale, mirroring the guideline's worked example:
+  - `{CODE}-INV-2026-0001, 2026-08-01, 100.00, 19.00, 119.00, 19, Acme Ltd, Consulting services, bank_transfer, EUR`
+  - `{CODE}-INV-2026-0002, 2026-08-02, 80.00, 0.00, 80.00, 0, Gamma NGO, Exempt supply, card, EUR`
+  - `{CODE}` is the selected platform's `PlatformCode` uppercased, or `ABC` when none selected.
+
+Served from `SalesImportController` (module-gated) rather than a new controller, since it belongs to the import flow:
+- `AxGetDownloadTemplate(string format, int? externalPlatformId)` — resolves the platform code (validating tenant ownership when an id is supplied), builds the template, returns `File(...)`. `format` ∈ {`csv`,`xlsx`}; default `csv`. (Named `AxGet` per the golden-rule convention even though it returns a file; it is invoked from the page via a direct link / fetch.)
 
 ### 5. Controllers
 
@@ -230,7 +256,17 @@ CRUD UI + AJAX endpoints, `[Authorize]` + module gate. Methods follow the `AxPos
 Add platform-based endpoints alongside the existing source-based ones:
 - `Index` gains an `ExternalPlatforms` view-data list (in addition to `RevenueSources`), and the UI lets the user choose "Import from external platform".
 - `AxPostParseFileForPlatform(IFormFile file, int externalPlatformId)` → caches preview, returns cache key.
+- `AxGetDownloadTemplate(string format, int? externalPlatformId)` → returns the CSV or Excel template (see §4a).
 - Reuse `Preview` and `AxPostConfirmImport` (the preview object already carries the platform id; confirm dispatches to the platform path when `ExternalPlatformId` is set).
+
+**Access control note:** `SalesImportController` currently carries a class-level `[ModuleAccess(PortalModules.ZReportImport)]`. The new platform-import endpoints require the new `external_platform_import` key instead. Since a single controller-level attribute can't express "different key per action", apply `[ModuleAccess(PortalModules.ExternalPlatformImport)]` at the **action level** on the new platform endpoints (`AxPostParseFileForPlatform`, and the confirm branch), and gate the platform selection UI in `Index` by checking the key server-side. Both keys are Professional+, so in practice a Professional/Enterprise business sees both paths; the distinction matters for the feature matrix and future independent pricing. `ExternalPlatformController` uses the new key at the class level.
+
+### Access Control
+
+- New module key: **`external_platform_import`** — "External Platform Sales Import" — available on **Professional** and **Enterprise** (seeded in `PlanModulePermission` with `IsIncluded = 1`, `AccessLevel = 'full'`), excluded on Foundation.
+- Add `PortalModules.ExternalPlatformImport = "external_platform_import"` to the module-key constants.
+- Enforcement reuses the existing `PlanPermissionFilter` / `[ModuleAccess]` and `UserPermissionFilter` layers — no new mechanism. Soft-gating (teaser) and hard-gating (feature-not-available page) follow the established Professional-feature behaviour.
+- A DB migration seeds the new `PlanModulePermission` rows for Professional and Enterprise plan ids.
 
 ### 6. Request Models
 
@@ -256,7 +292,7 @@ public class UpdateExternalPlatformRequest : CreateExternalPlatformRequest
 
 ### 8. Program.cs Registrations
 
-Register `ExternalPlatformRepository`, `IExternalPlatformService → ExternalPlatformService`. `ExternalSalesRecordRepository`, `ISalesImportService`, `VatSubmissionPeriodRepository`, `AuditLogRepository`, `IMemoryCache` already registered.
+Register `ExternalPlatformRepository`, `IExternalPlatformService → ExternalPlatformService`, and `IImportTemplateService → ImportTemplateService`. `ExternalSalesRecordRepository`, `ISalesImportService`, `VatSubmissionPeriodRepository`, `AuditLogRepository`, `IMemoryCache` already registered.
 
 ## Data Models
 
@@ -320,3 +356,4 @@ UTF-8, comma-delimited (semicolon tolerated), first row = header.
 - **Line-level vs summary** (user chose line-level): preserves each external invoice number for auditability; summaries can be derived later.
 - **Fixed contract vs flexible mapping**: since 3 Inventors controls the exporters, a fixed schema removes per-file mapping friction and makes validation deterministic. Tolerant parsing helpers remain for the generic third-party case.
 - **Auto-assign VAT period on import**: closes the existing gap (records were inserted unassigned) so imported sales actually appear in the return without a manual step, while strictly refusing submitted periods.
+- **Dedicated `external_platform_import` module key (Professional + Enterprise)** rather than reusing `zreport_import`: per the Subscription Tier Model, `zreport_import` = "Sales Invoice Import (POS data)". External platform consolidation is a distinct capability. A separate key keeps the feature matrix accurate and lets it be gated/priced independently later. Both happen to be Professional+, so no user-facing conflict today.

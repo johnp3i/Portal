@@ -46,7 +46,7 @@ Payment Instructions replaces Module 4 (Stripe Connect) with a lightweight bank-
     - Create `ToggleResult` DTO (Success, Message)
     - _Requirements: 3.1, 3.2, 4.2_
 
-- [ ] 5. Implement PaymentInstructionsService
+- [x] 5. Implement PaymentInstructionsService
   - [x] 5.1 Implement GetPaymentInstructionsAsync
     - Query business toggle status, fetch active `BusinessPaymentDetail` with lowest `SortOrder`
     - Calculate outstanding amount (TotalAmount minus sum of confirmed payments)
@@ -110,7 +110,7 @@ Payment Instructions replaces Module 4 (Stripe Connect) with a lightweight bank-
     - Return `Json(new { success, data })` with payment instructions or error
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6_
 
-- [ ] 9. Add declare-payment POST endpoint to InvoiceViewController
+- [x] 9. Add declare-payment POST endpoint to InvoiceViewController
   - [x] 9.1 Implement declare-payment endpoint
     - Add `[HttpPost][AllowAnonymous]` method at route `/invoice-view/{token}/declare-payment`
     - Extract client IP address from `HttpContext.Connection.RemoteIpAddress`
@@ -154,7 +154,7 @@ Payment Instructions replaces Module 4 (Stripe Connect) with a lightweight bank-
     - Ensure business owner can still record payments and change status manually
     - _Requirements: 5.2, 5.3_
 
-- [ ] 14. Update invoice list and filters for PaymentOnboard status
+- [x] 14. Update invoice list and filters for PaymentOnboard status
   - [x] 14.1 Add PaymentOnboard to invoice list filters and display
     - Add "PaymentOnboard" option to financial status filter dropdowns on invoice list page
     - Ensure PaymentOnboard invoices render with appropriate badge styling in the list
@@ -175,6 +175,12 @@ Payment Instructions replaces Module 4 (Stripe Connect) with a lightweight bank-
 
 - [x] 16. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
+
+## Status
+
+Module complete and deployed. All implementation tasks (1–4, 5.1–5.4, 6–8, 9.1, 10–13, 14.1, 15–16) are done.
+The optional property-test tasks (5.5, 5.6, 5.7, 9.2, 14.2) were **intentionally not implemented** for this MVP
+and remain marked `[~]` (skipped). If test coverage is added later, revisit those tasks specifically.
 
 ## Notes
 

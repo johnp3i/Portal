@@ -19,7 +19,8 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
     /// </summary>
     public async Task<(List<ExternalSalesRecord> Items, int TotalCount)> GetPagedAsync(
         int businessId, int? revenueSourceId, DateOnly? dateFrom, DateOnly? dateTo,
-        int? customerId, int offset, int pageSize, bool includeInactive = false)
+        int? customerId, int offset, int pageSize, bool includeInactive = false,
+        int? externalPlatformId = null)
     {
         try
         {
@@ -31,6 +32,7 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
                 WHERE ExternalSalesRecord.BusinessId = @BusinessId
                   {activeFilter}
                   AND (@RevenueSourceId IS NULL OR ExternalSalesRecord.RevenueSourceId = @RevenueSourceId)
+                  AND (@ExternalPlatformId IS NULL OR ExternalSalesRecord.ExternalPlatformId = @ExternalPlatformId)
                   AND (@DateFrom IS NULL OR ExternalSalesRecord.TransactionDate >= @DateFrom)
                   AND (@DateTo IS NULL OR ExternalSalesRecord.TransactionDate <= @DateTo)
                   AND (@CustomerId IS NULL OR ExternalSalesRecord.CustomerId = @CustomerId)";
@@ -38,11 +40,12 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
             string dataQuery = $@"
                 SELECT [Id], [BusinessId], [RevenueSourceId], [TransactionDate], [InvoiceNumber],
                        [CustomerId], [NetAmount], [VatAmount], [TotalAmount], [Description],
-                       [PaymentMethod], [ImportSessionId], [VatSubmissionPeriodId], [IsActive], [CreatedAtUtc]
+                       [PaymentMethod], [ImportSessionId], [ExternalPlatformId], [VatSubmissionPeriodId], [IsActive], [CreatedAtUtc]
                 FROM [revenue].[ExternalSalesRecord]
                 WHERE ExternalSalesRecord.BusinessId = @BusinessId
                   {activeFilter}
                   AND (@RevenueSourceId IS NULL OR ExternalSalesRecord.RevenueSourceId = @RevenueSourceId)
+                  AND (@ExternalPlatformId IS NULL OR ExternalSalesRecord.ExternalPlatformId = @ExternalPlatformId)
                   AND (@DateFrom IS NULL OR ExternalSalesRecord.TransactionDate >= @DateFrom)
                   AND (@DateTo IS NULL OR ExternalSalesRecord.TransactionDate <= @DateTo)
                   AND (@CustomerId IS NULL OR ExternalSalesRecord.CustomerId = @CustomerId)
@@ -65,6 +68,7 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
 
                     countCmd.Parameters.Add(new SqlParameter("@BusinessId", businessId));
                     countCmd.Parameters.Add(new SqlParameter("@RevenueSourceId", revenueSourceId ?? (object)DBNull.Value));
+                    countCmd.Parameters.Add(new SqlParameter("@ExternalPlatformId", externalPlatformId ?? (object)DBNull.Value));
                     countCmd.Parameters.Add(new SqlParameter("@DateFrom", dateFrom.HasValue ? dateFrom.Value.ToDateTime(TimeOnly.MinValue) : DBNull.Value));
                     countCmd.Parameters.Add(new SqlParameter("@DateTo", dateTo.HasValue ? dateTo.Value.ToDateTime(TimeOnly.MaxValue) : DBNull.Value));
                     countCmd.Parameters.Add(new SqlParameter("@CustomerId", customerId ?? (object)DBNull.Value));
@@ -85,6 +89,7 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
                 new SqlParameter("@Offset", offset),
                 new SqlParameter("@PageSize", pageSize),
                 new SqlParameter("@RevenueSourceId", revenueSourceId ?? (object)DBNull.Value),
+                new SqlParameter("@ExternalPlatformId", externalPlatformId ?? (object)DBNull.Value),
                 new SqlParameter("@DateFrom", dateFrom.HasValue ? dateFrom.Value.ToDateTime(TimeOnly.MinValue) : DBNull.Value),
                 new SqlParameter("@DateTo", dateTo.HasValue ? dateTo.Value.ToDateTime(TimeOnly.MaxValue) : DBNull.Value),
                 new SqlParameter("@CustomerId", customerId ?? (object)DBNull.Value)
@@ -110,12 +115,12 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
                 INSERT INTO [revenue].[ExternalSalesRecord]
                     ([BusinessId], [RevenueSourceId], [TransactionDate], [InvoiceNumber],
                      [CustomerId], [NetAmount], [VatAmount], [TotalAmount], [Description],
-                     [PaymentMethod], [ImportSessionId], [VatSubmissionPeriodId], [IsActive], [CreatedAtUtc])
+                     [PaymentMethod], [ImportSessionId], [ExternalPlatformId], [VatSubmissionPeriodId], [IsActive], [CreatedAtUtc])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@BusinessId, @RevenueSourceId, @TransactionDate, @InvoiceNumber,
                      @CustomerId, @NetAmount, @VatAmount, @TotalAmount, @Description,
-                     @PaymentMethod, @ImportSessionId, @VatSubmissionPeriodId, @IsActive, @CreatedAtUtc)";
+                     @PaymentMethod, @ImportSessionId, @ExternalPlatformId, @VatSubmissionPeriodId, @IsActive, @CreatedAtUtc)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -140,6 +145,7 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
                 command.Parameters.Add(new SqlParameter("@Description", entity.Description ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@PaymentMethod", entity.PaymentMethod ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@ImportSessionId", entity.ImportSessionId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ExternalPlatformId", entity.ExternalPlatformId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@VatSubmissionPeriodId", entity.VatSubmissionPeriodId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
@@ -283,6 +289,110 @@ public class ExternalSalesRecordRepository : GenericStoredProcedureRepository<Ex
 
                 command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
                 command.Parameters.Add(new SqlParameter("@ExcludeSourceId", excludeSourceId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@InvoiceNumber", invoiceNumber));
+                command.Parameters.Add(new SqlParameter("@TransactionDate", transactionDate.ToDateTime(TimeOnly.MinValue)));
+
+                var result = await command.ExecuteScalarAsync();
+                return result as string;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Checks for an exact duplicate scoped to an external platform:
+    /// same InvoiceNumber + TransactionDate already imported under the given ExternalPlatformId.
+    /// </summary>
+    public async Task<bool> ExistsDuplicateByPlatformAsync(int businessId, int? externalPlatformId, string invoiceNumber, DateOnly transactionDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT COUNT(1)
+                FROM [revenue].[ExternalSalesRecord]
+                WHERE ExternalSalesRecord.BusinessId = @BusinessId
+                  AND ExternalSalesRecord.IsActive = 1
+                  AND ExternalSalesRecord.InvoiceNumber = @InvoiceNumber
+                  AND ExternalSalesRecord.TransactionDate = @TransactionDate
+                  AND (@ExternalPlatformId IS NULL OR ExternalSalesRecord.ExternalPlatformId = @ExternalPlatformId)";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null) command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@ExternalPlatformId", externalPlatformId ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@InvoiceNumber", invoiceNumber));
+                command.Parameters.Add(new SqlParameter("@TransactionDate", transactionDate.ToDateTime(TimeOnly.MinValue)));
+
+                var result = await command.ExecuteScalarAsync();
+                return Convert.ToInt32(result) > 0;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Cross-source/cross-platform warning: same InvoiceNumber + TransactionDate exists under a
+    /// DIFFERENT external platform, or under any POS revenue source, for the business.
+    /// Returns the platform/source name if found, null otherwise.
+    /// </summary>
+    public async Task<string?> FindCrossSourceOrPlatformDuplicateAsync(int businessId, int? excludePlatformId, string invoiceNumber, DateOnly transactionDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 1 COALESCE(ExternalPlatform.[Name], RevenueSource.[Name])
+                FROM [revenue].[ExternalSalesRecord]
+                LEFT JOIN [revenue].[ExternalPlatform] ON ExternalSalesRecord.ExternalPlatformId = ExternalPlatform.Id
+                LEFT JOIN [revenue].[RevenueSource] ON ExternalSalesRecord.RevenueSourceId = RevenueSource.Id
+                WHERE ExternalSalesRecord.BusinessId = @BusinessId
+                  AND ExternalSalesRecord.IsActive = 1
+                  AND ExternalSalesRecord.InvoiceNumber = @InvoiceNumber
+                  AND ExternalSalesRecord.TransactionDate = @TransactionDate
+                  AND (
+                        ExternalSalesRecord.RevenueSourceId IS NOT NULL
+                     OR (@ExcludePlatformId IS NULL OR ExternalSalesRecord.ExternalPlatformId != @ExcludePlatformId)
+                  )";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null) command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@ExcludePlatformId", excludePlatformId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@InvoiceNumber", invoiceNumber));
                 command.Parameters.Add(new SqlParameter("@TransactionDate", transactionDate.ToDateTime(TimeOnly.MinValue)));
 

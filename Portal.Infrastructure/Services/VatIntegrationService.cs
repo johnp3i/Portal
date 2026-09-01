@@ -62,6 +62,14 @@ public class VatIntegrationService : IVatIntegrationService
             outputVat += zReportVat;
         }
 
+        // External sales records (imported POS + external platform sales) assigned to this period
+        var externalSalesVat = await _dbContext.ExternalSalesRecords
+            .Where(esr => esr.BusinessId == businessId
+                && esr.IsActive
+                && esr.VatSubmissionPeriodId == currentPeriod.Id)
+            .SumAsync(esr => (decimal?)esr.VatAmount) ?? 0m;
+        outputVat += externalSalesVat;
+
         // Compute Input VAT: sum of Purchase.VatAmount for non-cancelled purchases
         // with InvoiceDate in current period
         var inputVat = await _dbContext.Purchases
@@ -119,6 +127,14 @@ public class VatIntegrationService : IVatIntegrationService
                     .SumAsync(rs => (decimal?)rs.TotalVat) ?? 0m;
                 outputVat += zReportVat;
             }
+
+            // External sales records (imported POS + external platform sales) assigned to this period
+            var externalSalesVat = await _dbContext.ExternalSalesRecords
+                .Where(esr => esr.BusinessId == businessId
+                    && esr.IsActive
+                    && esr.VatSubmissionPeriodId == period.Id)
+                .SumAsync(esr => (decimal?)esr.VatAmount) ?? 0m;
+            outputVat += externalSalesVat;
 
             // Compute Input VAT for this period: sum of Purchase.VatAmount for non-cancelled purchases
             var inputVat = await _dbContext.Purchases

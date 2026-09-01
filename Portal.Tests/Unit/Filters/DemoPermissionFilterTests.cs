@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Services;
@@ -26,7 +27,7 @@ public class DemoPermissionFilterTests
     public DemoPermissionFilterTests()
     {
         _demoServiceMock = new Mock<IDemoInvitationService>();
-        _filter = new DemoPermissionFilter(_demoServiceMock.Object);
+        _filter = new DemoPermissionFilter(_demoServiceMock.Object, new MemoryCache(new MemoryCacheOptions()));
     }
 
     #region Helpers

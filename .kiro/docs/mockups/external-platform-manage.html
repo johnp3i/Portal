@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>External Platforms — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #F7FAFC; color: #1a2b3c; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        :root {
+            --primary-blue: #0D5EA6; --accent-cyan: #57B8E8; --success: #129867; --warning: #C8912E; --danger: #C24A4A;
+            --bg-base: #F7FAFC; --bg-secondary: #EEF4F8; --text-primary: #1a2b3c; --text-secondary: #5a6b7c; --text-muted: #8a9bac; --border: #e2e8f0;
+        }
+        .page-container { max-width: 1200px; margin: 0 auto; padding: 48px 32px; }
+        .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+        .eyebrow { font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--primary-blue); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .eyebrow .dot { width: 6px; height: 6px; background: var(--primary-blue); border-radius: 50%; }
+        .topbar-heading { font-family: 'Manrope', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); margin-bottom: 4px; }
+        .topbar-subtitle { font-size: 15px; color: var(--text-secondary); max-width: 640px; }
+        .glass { background: #fff; border-radius: 20px; box-shadow: 0 8px 32px rgba(11,27,40,0.06); border: 1.5px solid rgba(226,232,240,0.5); }
+        .card-pad { padding: 28px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 12px 14px; text-align: left; border-bottom: 1.5px solid var(--border); }
+        .data-table td { padding: 14px; border-bottom: 1px solid #f4f7fa; font-size: 14px; vertical-align: middle; }
+        .data-table tbody tr:hover { background: rgba(13,94,166,0.015); }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all 0.15s ease; text-decoration: none; }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: #EEF4F8; color: var(--text-secondary); border: 1.5px solid var(--border); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-info-sm { background: rgba(87,184,232,.08); color: #1a8fc7; border: 1.5px solid rgba(87,184,232,.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .btn-warning-sm { background: rgba(200,145,46,.08); color: var(--warning); border: 1.5px solid rgba(200,145,46,.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .btn-success-sm { background: rgba(18,152,103,.08); color: var(--success); border: 1.5px solid rgba(18,152,103,.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+        .pill-active { background: rgba(18,152,103,.08); color: var(--success); }
+        .pill-inactive { background: rgba(138,155,171,.1); color: var(--text-secondary); }
+        .code-badge { font-family: 'Manrope', monospace; font-weight: 700; letter-spacing: 0.5px; background: rgba(13,94,166,.07); color: var(--primary-blue); padding: 4px 10px; border-radius: 7px; font-size: 12px; }
+        .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .field input, .field select, .field textarea { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; color: var(--text-primary); background: #fff; transition: border-color 0.15s; }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary-blue); outline: none; }
+        .hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: #fff; border-radius: 16px; padding: 32px; width: 92%; max-width: 480px; box-shadow: 0 16px 48px rgba(0,0,0,0.15); }
+        .modal-content h3 { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+        .modal-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .mock-note { max-width:1200px; margin: 0 auto 0; padding: 10px 32px 40px; font-size:12px; color:var(--text-muted); }
+        .icon { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+    <div class="topbar">
+        <div>
+            <div class="eyebrow"><span class="dot"></span> Revenue &middot; External Platforms</div>
+            <h1 class="topbar-heading">External Platforms</h1>
+            <p class="topbar-subtitle">Register the external systems you import sales from. Each platform is identified by its invoice code (e.g. <strong>GRD</strong> for Guardian invoices like <code>GRD-INV-2026-0042</code>).</p>
+        </div>
+        <div style="display:flex;align-items:center;">
+            <button class="btn btn-primary" onclick="document.getElementById('platformModal').style.display='flex'">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                New Platform
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter card -->
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:240px;">
+                <label>Search</label>
+                <input type="text" placeholder="Platform name or code..." />
+            </div>
+            <div class="field" style="min-width:180px;">
+                <label>Status</label>
+                <select><option>All</option><option>Active</option><option>Inactive</option></select>
+            </div>
+            <div style="padding-bottom:2px;display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm">Filter</button>
+                <button class="btn btn-secondary btn-sm">Clear</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Table card -->
+    <section class="glass card-pad">
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Platform Name</th>
+                        <th>Invoice Code</th>
+                        <th>Description</th>
+                        <th>Imported Records</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight:700;">Guardian</td>
+                        <td><span class="code-badge">GRD</span></td>
+                        <td style="color:var(--text-secondary);">School safeguarding platform</td>
+                        <td>1,284</td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td style="color:var(--text-secondary);">10 Jun 2026</td>
+                        <td style="text-align:right;white-space:nowrap;">
+                            <button class="btn-info-sm">Edit</button>
+                            <button class="btn-warning-sm">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700;">MyChair</td>
+                        <td><span class="code-badge">MYC</span></td>
+                        <td style="color:var(--text-secondary);">Salon &amp; chair booking</td>
+                        <td>642</td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td style="color:var(--text-secondary);">10 Jun 2026</td>
+                        <td style="text-align:right;white-space:nowrap;">
+                            <button class="btn-info-sm">Edit</button>
+                            <button class="btn-warning-sm">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700;">BiliBooks</td>
+                        <td><span class="code-badge">BILI</span></td>
+                        <td style="color:var(--text-secondary);">Bookkeeping SaaS</td>
+                        <td>318</td>
+                        <td><span class="pill pill-active">Active</span></td>
+                        <td style="color:var(--text-secondary);">12 Jun 2026</td>
+                        <td style="text-align:right;white-space:nowrap;">
+                            <button class="btn-info-sm">Edit</button>
+                            <button class="btn-warning-sm">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700;color:var(--text-secondary);">Legacy Store</td>
+                        <td><span class="code-badge" style="opacity:.6;">OLD</span></td>
+                        <td style="color:var(--text-secondary);">Retired 2025 web shop</td>
+                        <td>2,910</td>
+                        <td><span class="pill pill-inactive">Inactive</span></td>
+                        <td style="color:var(--text-secondary);">10 Jun 2026</td>
+                        <td style="text-align:right;white-space:nowrap;">
+                            <button class="btn-info-sm">Edit</button>
+                            <button class="btn-success-sm">Reactivate</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<p class="mock-note">Mockup &middot; External Platforms management (Requirement 2). Inactive platforms keep their imported records; only new imports are blocked. AJAX actions use BlockUI + SweetAlert2.</p>
+
+<!-- Create / Edit modal -->
+<div class="modal-overlay" id="platformModal" style="display:none;">
+    <div class="modal-content">
+        <h3>New External Platform</h3>
+        <p class="modal-subtitle">Register a system you import sales from.</p>
+        <div class="field" style="margin-bottom:16px;">
+            <label>Platform Name</label>
+            <input type="text" placeholder="e.g. Guardian" />
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+            <label>Invoice Code</label>
+            <input type="text" placeholder="e.g. GRD" maxlength="10" style="text-transform:uppercase;" />
+            <p class="hint">1&ndash;10 letters/numbers. Must match the prefix on this platform's invoices (<code>{CODE}-INV-yyyy-NNNN</code>). Unique per business.</p>
+        </div>
+        <div class="field" style="margin-bottom:24px;">
+            <label>Description <span style="font-weight:400;text-transform:none;color:var(--text-muted);">(optional)</span></label>
+            <textarea rows="2" placeholder="Short description of the platform"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <button class="btn btn-secondary" onclick="document.getElementById('platformModal').style.display='none'">Cancel</button>
+            <button class="btn btn-primary">Save Platform</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

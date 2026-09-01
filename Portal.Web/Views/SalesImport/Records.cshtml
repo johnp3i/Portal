@@ -2,7 +2,12 @@
 @{
     ViewData["Title"] = "Sales Records";
     var sources = (List<Portal.Infrastructure.Entities.RevenueSource>)ViewData["RevenueSources"]!;
+    var platforms = ViewData["ExternalPlatforms"] as List<Portal.Infrastructure.Entities.ExternalPlatform>
+        ?? new List<Portal.Infrastructure.Entities.ExternalPlatform>();
+    var platformNameMap = ViewData["ExternalPlatformNameMap"] as Dictionary<int, string>
+        ?? new Dictionary<int, string>();
     var filterSourceId = ViewData["SourceId"] as int?;
+    var filterPlatformId = ViewData["PlatformId"] as int?;
     var filterDateFrom = ViewData["DateFrom"] as string;
     var filterDateTo = ViewData["DateTo"] as string;
 }
@@ -37,6 +42,21 @@
                     }
                 </select>
             </div>
+            @if (platforms.Any())
+            {
+                <div class="field" style="min-width:180px;">
+                    <label for="platformId">External Platform</label>
+                    <select id="platformId" name="platformId">
+                        <option value="">All Platforms</option>
+                        @foreach (var platform in platforms)
+                        {
+                            var isSelected = filterPlatformId == platform.Id;
+                            if (isSelected) { <option value="@platform.Id" selected>@platform.Name (@platform.PlatformCode)</option> }
+                            else { <option value="@platform.Id">@platform.Name (@platform.PlatformCode)</option> }
+                        }
+                    </select>
+                </div>
+            }
             <div class="field" style="min-width:160px;">
                 <label for="dateFrom">From Date</label>
                 <input type="date" id="dateFrom" name="dateFrom" value="@filterDateFrom" />
@@ -82,6 +102,10 @@
                     <tr>
                         <th>Date</th>
                         <th>Invoice #</th>
+                        @if (platforms.Any())
+                        {
+                            <th>Platform</th>
+                        }
                         <th>Description</th>
                         <th>Payment</th>
                         <th style="text-align:right;">Net</th>
@@ -99,6 +123,14 @@
                         <tr style="@rowStyle">
                             <td>@item.TransactionDate.ToString("dd/MM/yyyy")</td>
                             <td><strong>@(item.InvoiceNumber ?? "—")</strong></td>
+                            @if (platforms.Any())
+                            {
+                                <td>
+                                    @(item.ExternalPlatformId.HasValue && platformNameMap.ContainsKey(item.ExternalPlatformId.Value)
+                                        ? platformNameMap[item.ExternalPlatformId.Value]
+                                        : "—")
+                                </td>
+                            }
                             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(item.Description ?? "—")</td>
                             <td>@(item.PaymentMethod ?? "—")</td>
                             <td style="text-align:right;">€@item.NetAmount.ToString("N2")</td>

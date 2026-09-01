@@ -9,6 +9,10 @@ public interface ISalesImportService
 {
     Task<ServiceResult<SalesImportPreview>> ParseAndPreviewAsync(Stream fileStream, string fileName, int? revenueSourceId);
     Task<ServiceResult<SalesImportResult>> ConfirmImportAsync(SalesImportPreview preview, List<int>? excludeRowIndexes = null);
+
+    // External platform import path (canonical contract, prefix validation, VAT-period auto-assignment)
+    Task<ServiceResult<SalesImportPreview>> ParseAndPreviewForPlatformAsync(Stream fileStream, string fileName, int externalPlatformId);
+    Task<ServiceResult<SalesImportResult>> ConfirmImportForPlatformAsync(SalesImportPreview preview, List<int>? excludeRowIndexes = null);
 }
 
 public class SalesImportPreview
@@ -16,6 +20,10 @@ public class SalesImportPreview
     public string FileName { get; set; } = null!;
     public int? RevenueSourceId { get; set; }
     public string? RevenueSourceName { get; set; }
+    // External platform import (null for the POS/revenue-source path)
+    public int? ExternalPlatformId { get; set; }
+    public string? ExternalPlatformName { get; set; }
+    public string? ExternalPlatformCode { get; set; }
     public int TotalRows { get; set; }
     public int ValidRows { get; set; }
     public int DuplicateCount { get; set; }
@@ -38,6 +46,10 @@ public class SalesImportRow
     public bool IsDuplicate { get; set; }
     public bool HasCrossSourceWarning { get; set; }
     public string? CrossSourceWarning { get; set; }
+    // External platform import: prefix validation + resolved VAT period preview
+    public bool HasPrefixWarning { get; set; }
+    public string? PrefixWarning { get; set; }
+    public string? TargetPeriodLabel { get; set; }
     public bool IsValid { get; set; } = true;
     public string? ValidationError { get; set; }
 }

@@ -148,6 +148,44 @@ public class VatSubmissionPeriodRepository : GenericStoredProcedureRepository<Va
         }
     }
 
+    /// <summary>
+    /// Returns the VatSubmissionPeriod whose [PeriodStartDate, PeriodEndDate] contains the given date,
+    /// for the business, ONLY when that period has no submitted VatSubmission (IsSubmitted = 0 or none).
+    /// Returns null when no covering period exists or the covering period is already submitted.
+    /// Used by the external platform sales import to auto-assign records to a VAT period without
+    /// ever attaching to an already-filed return.
+    /// </summary>
+    public virtual async Task<VatSubmissionPeriod?> GetCoveringUnsubmittedPeriodAsync(int businessId, DateOnly date)
+    {
+        try
+        {
+            const string query = @"
+                SELECT TOP 1 [vat].[VatSubmissionPeriod].[Id],
+                       [vat].[VatSubmissionPeriod].[BusinessId],
+                       [vat].[VatSubmissionPeriod].[PeriodStartDate],
+                       [vat].[VatSubmissionPeriod].[PeriodEndDate],
+                       [vat].[VatSubmissionPeriod].[PeriodLabel],
+                       [vat].[VatSubmissionPeriod].[CreatedAtUtc]
+                FROM [vat].[VatSubmissionPeriod]
+                LEFT JOIN [vat].[VatSubmission]
+                    ON [vat].[VatSubmissionPeriod].[Id] = [vat].[VatSubmission].[VatSubmissionPeriodId]
+                   AND [vat].[VatSubmission].[BusinessId] = @BusinessId
+                WHERE [vat].[VatSubmissionPeriod].[BusinessId] = @BusinessId
+                  AND [vat].[VatSubmissionPeriod].[PeriodStartDate] <= @Date
+                  AND [vat].[VatSubmissionPeriod].[PeriodEndDate] >= @Date
+                  AND ([vat].[VatSubmission].[Id] IS NULL OR [vat].[VatSubmission].[IsSubmitted] = 0)
+                ORDER BY [vat].[VatSubmissionPeriod].[PeriodStartDate] ASC";
+
+            return await ExecuteSingleRecordStoredProcedure(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@Date", date));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task InsertAsync(VatSubmissionPeriod entity)
     {
         try

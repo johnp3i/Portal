@@ -1,15 +1,17 @@
 @{
-    ViewData["Title"] = "Import Sales Records";
-    var sources = (List<Portal.Infrastructure.Entities.RevenueSource>)ViewData["RevenueSources"]!;
+    ViewData["Title"] = "Import Platform Sales";
+    var platforms = ViewData["ExternalPlatforms"] as List<Portal.Infrastructure.Entities.ExternalPlatform>
+        ?? new List<Portal.Infrastructure.Entities.ExternalPlatform>();
 }
 
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Sales Records</div>
-        <h1 class="topbar-heading">Import Sales Records</h1>
-        <p class="topbar-subtitle">Upload transaction-level POS sales data from a CSV file.</p>
+        <h1 class="topbar-heading">Import Platform Sales</h1>
+        <p class="topbar-subtitle">Upload a sales file exported from one of your external platforms. Each invoice is imported and assigned to the covering VAT period.</p>
     </div>
     <div style="display:flex;gap:12px;">
+        <a href="/ExternalPlatform" class="btn btn-outline">Manage Platforms</a>
         <a href="/SalesImport/Records" class="btn btn-outline">View Records</a>
     </div>
 </div>
@@ -18,27 +20,51 @@
     <div style="display:flex;align-items:flex-start;gap:12px;padding:4px 0;">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#57B8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <div style="font-size:13px;color:#4a6278;line-height:1.7;">
-            <strong style="color:#0B1B28;">CSV Format:</strong> One row per transaction. Customer ID is optional (FK to existing customers).
+            <strong style="color:#0B1B28;">Canonical CSV Format:</strong> One row per invoice. Required columns:
             <br/>
-            <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">Date, Invoice No, Net, VAT, Total, Description, Payment Method, Customer ID</code>
+            <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">InvoiceNumber, InvoiceDate, NetAmount, VatAmount, TotalAmount</code>
+            <br/>
+            Optional: <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">VatRate, CustomerName, Description, PaymentMethod, Currency</code>. Download a template below.
         </div>
     </div>
 </section>
+
+@if (!platforms.Any())
+{
+    <section class="glass card-pad">
+        <div class="empty-state" style="text-align:center;padding:24px 0;">
+            <p style="font-size:14px;color:#5a6a7a;">You haven't registered any external platforms yet.</p>
+            <a href="/ExternalPlatform" class="btn btn-primary" style="margin-top:16px;">Register a Platform</a>
+        </div>
+    </section>
+    return;
+}
 
 <section class="glass card-pad">
     <form id="importForm" onsubmit="return false;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
             <div class="field">
-                <label for="revenueSourceId">Revenue Source (optional)</label>
-                <select id="revenueSourceId">
-                    <option value="">— No source (general) —</option>
-                    @foreach (var source in sources)
+                <label for="externalPlatformId">External Platform *</label>
+                <select id="externalPlatformId" onchange="onPlatformChange()">
+                    <option value="">— Select a platform —</option>
+                    @foreach (var platform in platforms)
                     {
-                        <option value="@source.Id">@source.Name</option>
+                        <option value="@platform.Id" data-code="@platform.PlatformCode">@platform.Name (@platform.PlatformCode)</option>
                     }
                 </select>
+                <span class="hint" style="font-size:11px;color:#8a9bac;">Sales are imported under this platform. Invoice numbers should start with the platform code.</span>
             </div>
             <div></div>
+        </div>
+
+        <div style="margin-top:18px;padding:14px 18px;background:rgba(13,94,166,.035);border:1px solid rgba(13,94,166,.1);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div style="font-size:13px;color:#5a6a7a;">
+                <strong style="color:#1a2b3c;">Import template</strong> — download a ready-made file with the required columns and two example rows.
+            </div>
+            <div style="display:flex;gap:10px;">
+                <a class="btn btn-outline btn-sm" id="tplCsv" href="/SalesImport/AxGetDownloadTemplate?format=csv">CSV</a>
+                <a class="btn btn-outline btn-sm" id="tplXlsx" href="/SalesImport/AxGetDownloadTemplate?format=xlsx">Excel (.xlsx)</a>
+            </div>
         </div>
 
         <div style="margin-top:22px;">
@@ -48,7 +74,7 @@
                     <path d="M12 16V4M8 8l4-4 4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <p style="margin:8px 0 4px;font-size:14px;color:#334155;">Drag & drop or <label for="importFile" style="color:#0D5EA6;font-weight:600;cursor:pointer;text-decoration:underline;">browse</label></p>
-                <span style="font-size:12px;color:#94a3b8;">CSV — Max 5 MB, 500 rows</span>
+                <span style="font-size:12px;color:#94a3b8;">CSV — Max 5 MB, 1000 rows</span>
                 <input type="file" id="importFile" accept=".csv" style="display:none;" />
             </div>
             <div id="selectedFile" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;background:#EEF4F8;font-size:13px;font-weight:600;color:#1e293b;"></div>
@@ -74,11 +100,14 @@
 
     var dropArea = document.getElementById('dropArea');
     var fileInput = document.getElementById('importFile');
-    dropArea.addEventListener('click', function() { fileInput.click(); });
-    ['dragenter','dragover'].forEach(function(e) { dropArea.addEventListener(e, function(ev) { ev.preventDefault(); dropArea.classList.add('drag-over'); }); });
-    ['dragleave','drop'].forEach(function(e) { dropArea.addEventListener(e, function(ev) { ev.preventDefault(); dropArea.classList.remove('drag-over'); }); });
-    dropArea.addEventListener('drop', function(e) { if (e.dataTransfer.files.length > 0) setFile(e.dataTransfer.files[0]); });
-    fileInput.addEventListener('change', function() { if (this.files.length > 0) setFile(this.files[0]); });
+    // Guard: the upload form is absent when no platforms are registered (empty state)
+    if (dropArea && fileInput) {
+        dropArea.addEventListener('click', function() { fileInput.click(); });
+        ['dragenter','dragover'].forEach(function(e) { dropArea.addEventListener(e, function(ev) { ev.preventDefault(); dropArea.classList.add('drag-over'); }); });
+        ['dragleave','drop'].forEach(function(e) { dropArea.addEventListener(e, function(ev) { ev.preventDefault(); dropArea.classList.remove('drag-over'); }); });
+        dropArea.addEventListener('drop', function(e) { if (e.dataTransfer.files.length > 0) setFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', function() { if (this.files.length > 0) setFile(this.files[0]); });
+    }
 
     function setFile(file) {
         selectedFile = file;
@@ -87,16 +116,42 @@
         document.getElementById('btnUpload').disabled = false;
     }
 
+    function getSelectedPlatformId() {
+        var el = document.getElementById('externalPlatformId');
+        return el && el.value ? el.value : '';
+    }
+
+    // Keep the template download links pointing at the selected platform's code
+    function onPlatformChange() {
+        var platformId = getSelectedPlatformId();
+        var csv = document.getElementById('tplCsv');
+        var xlsx = document.getElementById('tplXlsx');
+        var csvUrl = '/SalesImport/AxGetDownloadTemplate?format=csv';
+        var xlsxUrl = '/SalesImport/AxGetDownloadTemplate?format=xlsx';
+        if (platformId) {
+            csvUrl += '&externalPlatformId=' + encodeURIComponent(platformId);
+            xlsxUrl += '&externalPlatformId=' + encodeURIComponent(platformId);
+        }
+        if (csv) csv.href = csvUrl;
+        if (xlsx) xlsx.href = xlsxUrl;
+    }
+
     async function uploadFile() {
         if (!selectedFile) return;
+
+        var platformId = getSelectedPlatformId();
+        if (!platformId) {
+            Swal.fire({ icon:'warning', title:'Select a platform', text:'Please choose the external platform these sales belong to.', confirmButtonColor:'#0D5EA6' });
+            return;
+        }
+
         var formData = new FormData();
         formData.append('file', selectedFile);
-        var sourceId = document.getElementById('revenueSourceId').value;
-        if (sourceId) formData.append('revenueSourceId', sourceId);
+        formData.append('externalPlatformId', platformId);
 
         BlockUI.show('Parsing file...');
         try {
-            var response = await fetch('/SalesImport/AxPostParseFile', {
+            var response = await fetch('/SalesImport/AxPostParseFileForPlatform', {
                 method: 'POST',
                 headers: { 'RequestVerificationToken': getAntiForgeryToken() },
                 body: formData

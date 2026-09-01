@@ -444,7 +444,17 @@ public class VatSubmissionService : IVatSubmissionService
                 .SumAsync(rs => (decimal?)rs.TotalVat) ?? 0m;
         }
 
-        var totalOutputVat = explicitOutputVat + dateRangeOutputVat + zReportOutputVat - creditNoteTaxReduction;
+        // External sales records (imported POS transactions AND external platform sales):
+        // sum ExternalSalesRecord.VatAmount for active records assigned to this period.
+        // These are line-level recorded sales VAT and contribute to Output VAT the same way
+        // Z-Report summaries do. Assigned records only (VatSubmissionPeriodId set at import time).
+        var externalSalesOutputVat = await _portalDbContext.ExternalSalesRecords
+            .Where(esr => esr.BusinessId == businessId
+                && esr.IsActive
+                && esr.VatSubmissionPeriodId == periodId)
+            .SumAsync(esr => (decimal?)esr.VatAmount) ?? 0m;
+
+        var totalOutputVat = explicitOutputVat + dateRangeOutputVat + zReportOutputVat + externalSalesOutputVat - creditNoteTaxReduction;
 
         // Input VAT — Part 1: purchases explicitly assigned (origin type != 2 = exclude EU reverse charge, VAT is 0)
         var explicitInputVat = await _portalDbContext.Purchases

@@ -20,6 +20,7 @@ public static class ModuleControllerMap
         [PortalModules.Invoice] = new[] { "Invoice", "Invoices" },
         [PortalModules.Revenue] = new[] { "Payment", "Payments", "Revenue", "Statement", "ZReport", "Receipt" },
         [PortalModules.ZReportImport] = new[] { "ZReportImport", "SalesImport" },
+        [PortalModules.ExternalPlatformImport] = new[] { "ExternalPlatform" },
         [PortalModules.Purchase] = new[] { "Purchase", "Purchases", "Supplier", "Expense", "ExpenseCategory", "ExpenseCategoryLimit" },
         [PortalModules.Vat] = new[] { "Vat", "VatSubmission" },
         [PortalModules.Credit] = new[] { "CreditNote", "CreditNotes" },

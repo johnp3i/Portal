@@ -1,0 +1,188 @@
+@model List<Portal.Infrastructure.Entities.ExternalPlatform>
+@{
+    ViewData["Title"] = "External Platforms";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Revenue &middot; External Platforms</div>
+        <h1 class="topbar-heading">External Platforms</h1>
+        <p class="topbar-subtitle">Register the external systems you import sales from. Each platform is identified by its invoice code (e.g. <strong>GRD</strong> for invoices like <code>GRD-INV-2026-0042</code>).</p>
+    </div>
+    <div style="display:flex;gap:12px;">
+        <a href="/SalesImport" class="btn btn-outline">Import Sales</a>
+        <button type="button" class="btn btn-primary" onclick="openCreate()">New Platform</button>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    @if (Model.Any())
+    {
+        <div class="table-responsive index-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Platform Name</th>
+                        <th>Invoice Code</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var platform in Model)
+                    {
+                        var isInactive = !platform.IsActive;
+                        var rowStyle = isInactive ? "opacity:0.55;" : "";
+                        <tr style="@rowStyle">
+                            <td><strong>@platform.Name</strong></td>
+                            <td><span class="pill" style="background:rgba(13,94,166,.07);color:#0D5EA6;font-weight:700;letter-spacing:.5px;">@platform.PlatformCode</span></td>
+                            <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(string.IsNullOrWhiteSpace(platform.Description) ? "—" : platform.Description)</td>
+                            <td>
+                                @if (isInactive) { <span class="pill" style="background:rgba(138,155,171,.12);color:#5a6a7a;font-weight:700;">Inactive</span> }
+                                else { <span class="pill pill-green">Active</span> }
+                            </td>
+                            <td>@platform.CreatedAtUtc.ToString("dd/MM/yyyy")</td>
+                            <td style="white-space:nowrap;">
+                                <button type="button" class="tbl-action"
+                                        data-id="@platform.Id" data-name="@platform.Name" data-code="@platform.PlatformCode" data-desc="@platform.Description"
+                                        onclick="openEditFromButton(this)">Edit</button>
+                                @if (isInactive)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--success" onclick="setActive(@platform.Id, true)">Reactivate</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="tbl-action tbl-action--danger" onclick="setActive(@platform.Id, false)">Deactivate</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No external platforms registered yet.</p>
+            <button type="button" class="btn btn-primary" style="margin-top:16px;" onclick="openCreate()">Register your first platform</button>
+        </div>
+    }
+</section>
+
+@Html.AntiForgeryToken()
+
+<!-- Create / Edit modal -->
+<div class="modal-overlay" id="platformModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+    <div class="modal-content" style="background:#fff;border-radius:16px;padding:32px;width:92%;max-width:480px;box-shadow:0 16px 48px rgba(0,0,0,0.15);">
+        <h3 id="modalTitle" style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px;">New External Platform</h3>
+        <p style="font-size:13px;color:#5a6b7c;margin-bottom:20px;">Register a system you import sales from.</p>
+
+        <input type="hidden" id="platformId" value="" />
+        <div class="field" style="margin-bottom:16px;">
+            <label for="platformName">Platform Name</label>
+            <input type="text" id="platformName" placeholder="e.g. Guardian" maxlength="200" />
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+            <label for="platformCode">Invoice Code</label>
+            <input type="text" id="platformCode" placeholder="e.g. GRD" maxlength="10" style="text-transform:uppercase;" />
+            <span class="hint" style="font-size:11px;color:#8a9bac;">1&ndash;10 letters/numbers. Must match the prefix on this platform's invoices. Unique per business.</span>
+        </div>
+        <div class="field" style="margin-bottom:24px;">
+            <label for="platformDesc">Description (optional)</label>
+            <textarea id="platformDesc" rows="2" maxlength="500" placeholder="Short description of the platform"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="savePlatform()">Save Platform</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function getAntiForgeryToken() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+
+    function openCreate() {
+        document.getElementById('modalTitle').textContent = 'New External Platform';
+        document.getElementById('platformId').value = '';
+        document.getElementById('platformName').value = '';
+        document.getElementById('platformCode').value = '';
+        document.getElementById('platformDesc').value = '';
+        document.getElementById('platformModal').style.display = 'flex';
+    }
+
+    function openEditFromButton(btn) {
+        document.getElementById('modalTitle').textContent = 'Edit External Platform';
+        document.getElementById('platformId').value = btn.getAttribute('data-id');
+        document.getElementById('platformName').value = btn.getAttribute('data-name') || '';
+        document.getElementById('platformCode').value = btn.getAttribute('data-code') || '';
+        document.getElementById('platformDesc').value = btn.getAttribute('data-desc') || '';
+        document.getElementById('platformModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('platformModal').style.display = 'none'; }
+
+    async function savePlatform() {
+        var id = document.getElementById('platformId').value;
+        var name = document.getElementById('platformName').value.trim();
+        var code = document.getElementById('platformCode').value.trim().toUpperCase();
+        var desc = document.getElementById('platformDesc').value.trim();
+
+        if (!name) { Swal.fire({ icon:'warning', title:'Name required', text:'Please enter a platform name.', confirmButtonColor:'#0D5EA6' }); return; }
+        if (!/^[A-Za-z0-9]{1,10}$/.test(code)) { Swal.fire({ icon:'warning', title:'Invalid code', text:'Invoice code must be 1–10 letters or numbers.', confirmButtonColor:'#0D5EA6' }); return; }
+
+        var fd = new FormData();
+        fd.append('Name', name);
+        fd.append('PlatformCode', code);
+        fd.append('Description', desc);
+        var url = '/ExternalPlatform/AxPostCreatePlatform';
+        if (id) { fd.append('Id', id); url = '/ExternalPlatform/AxPostUpdatePlatform'; }
+
+        BlockUI.show('Saving...');
+        try {
+            var resp = await fetch(url, { method:'POST', headers:{ 'RequestVerificationToken': getAntiForgeryToken() }, body: fd });
+            var data = await resp.json();
+            BlockUI.hide();
+            if (data.success) {
+                await Swal.fire({ icon:'success', title:'Saved', text:data.message, confirmButtonColor:'#0D5EA6' });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon:'error', title:'Error', text:data.message, confirmButtonColor:'#0D5EA6' });
+            }
+        } catch(e) {
+            BlockUI.hide();
+            Swal.fire({ icon:'error', title:'Error', text:'An unexpected error occurred.', confirmButtonColor:'#0D5EA6' });
+        }
+    }
+
+    async function setActive(id, isActive) {
+        var r = await Swal.fire({
+            title: isActive ? 'Reactivate platform?' : 'Deactivate platform?',
+            text: isActive ? 'This platform will be selectable for imports again.' : 'Existing imported records keep their association; only new imports are blocked.',
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: isActive ? '#0D5EA6' : '#C24A4A',
+            confirmButtonText: isActive ? 'Yes, reactivate' : 'Yes, deactivate'
+        });
+        if (!r.isConfirmed) return;
+
+        var fd = new FormData();
+        fd.append('id', id);
+        fd.append('isActive', isActive);
+
+        BlockUI.show('Updating...');
+        try {
+            var resp = await fetch('/ExternalPlatform/AxPostSetPlatformActive', { method:'POST', headers:{ 'RequestVerificationToken': getAntiForgeryToken() }, body: fd });
+            var data = await resp.json();
+            BlockUI.hide();
+            if (data.success) { window.location.reload(); }
+            else { Swal.fire({ icon:'error', title:'Error', text:data.message, confirmButtonColor:'#0D5EA6' }); }
+        } catch(e) {
+            BlockUI.hide();
+            Swal.fire({ icon:'error', title:'Error', text:'An unexpected error occurred.', confirmButtonColor:'#0D5EA6' });
+        }
+    }
+</script>
+}

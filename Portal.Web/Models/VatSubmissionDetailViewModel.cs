@@ -30,6 +30,23 @@ public class VatSubmissionDetailViewModel
     public bool HasExcludedZReports { get; set; }
     public int ExcludedZReportCount { get; set; }
     public decimal ExcludedZReportVat { get; set; }
+
+    // External Platform Sales: imported external platform + POS sales assigned to this period
+    public List<ExternalSalesDetailRow> ExternalSalesRows { get; set; } = new();
+    public decimal ExternalSalesTotalVat { get; set; }
+}
+
+/// <summary>
+/// One imported external sales record (external platform or POS) for the VAT Detail page.
+/// </summary>
+public class ExternalSalesDetailRow
+{
+    public string SourceName { get; set; } = null!;
+    public string? InvoiceNumber { get; set; }
+    public string TransactionDateDisplay { get; set; } = null!;
+    public decimal NetAmount { get; set; }
+    public decimal VatAmount { get; set; }
+    public decimal TotalAmount { get; set; }
 }
 
 /// <summary>

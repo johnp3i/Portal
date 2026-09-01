@@ -192,6 +192,61 @@
 </section>
 }
 
+<!-- External Platform Sales -->
+@if (Model.ExternalSalesRows.Any())
+{
+<section class="glass card-pad" style="margin-top:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+            <div class="label">Output VAT</div>
+            <h2 style="margin-top:8px;font-size:24px;">External Platform Sales &nbsp;<span style="font-size:14px;font-weight:500;color:#5E7385;font-family:'Inter',sans-serif;">(@Model.ExternalSalesRows.Count)</span></h2>
+            <p class="muted" style="font-size:13px;margin-top:4px;">Imported sales from external platforms contributing to Output VAT for this period.</p>
+        </div>
+        <div style="background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:14px;padding:10px 20px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D5EA6;">External Sales VAT Total</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#0D5EA6;margin-top:3px;">@Model.CurrencySymbol@Model.ExternalSalesTotalVat.ToString("N2")</div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Platform / Source</th>
+                    <th>Invoice #</th>
+                    <th>Date</th>
+                    <th class="text-right">Net</th>
+                    <th class="text-right">VAT Amount</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.ExternalSalesRows)
+                {
+                    <tr>
+                        <td><strong>@row.SourceName</strong></td>
+                        <td>@(row.InvoiceNumber ?? "—")</td>
+                        <td>@row.TransactionDateDisplay</td>
+                        <td class="text-right">@Model.CurrencySymbol@row.NetAmount.ToString("N2")</td>
+                        <td class="text-right" style="font-weight:700;">@Model.CurrencySymbol@row.VatAmount.ToString("N2")</td>
+                        <td class="text-right">@Model.CurrencySymbol@row.TotalAmount.ToString("N2")</td>
+                    </tr>
+                }
+                <tr style="font-weight:700;background:rgba(13,94,166,.03);border-top:2px solid rgba(13,94,166,.12);">
+                    <td colspan="4">Total</td>
+                    <td class="text-right">@Model.CurrencySymbol@Model.ExternalSalesTotalVat.ToString("N2")</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(13,94,166,.10);flex-wrap:wrap;gap:10px;">
+        <div style="font-size:13px;color:#5E7385;">Showing 1&ndash;@Model.ExternalSalesRows.Count of @Model.ExternalSalesRows.Count</div>
+        <div></div>
+    </div>
+</section>
+}
+
 <!-- Purchases (Input VAT Breakdown) -->
 <section class="glass card-pad" style="margin-top:24px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">

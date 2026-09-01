@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Services;
@@ -112,7 +113,7 @@ public class DemoPermissionEnforcementPropertyTests
             .Setup(s => s.GetPermissionsForInvitationAsync(invitationId))
             .ReturnsAsync(permissions);
 
-        return new DemoPermissionFilter(mockService.Object);
+        return new DemoPermissionFilter(mockService.Object, new MemoryCache(new MemoryCacheOptions()));
     }
 
     /// <summary>

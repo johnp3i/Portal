@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Platform Sales — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #F7FAFC; color: #1a2b3c; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        :root {
+            --primary-blue: #0D5EA6; --accent-cyan: #57B8E8; --success: #129867; --warning: #C8912E; --danger: #C24A4A;
+            --bg-base: #F7FAFC; --bg-secondary: #EEF4F8; --text-primary: #1a2b3c; --text-secondary: #5a6b7c; --text-muted: #8a9bac; --border: #e2e8f0;
+        }
+        .page-container { max-width: 1000px; margin: 0 auto; padding: 48px 32px; }
+        .topbar { margin-bottom: 28px; }
+        .eyebrow { font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--primary-blue); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .eyebrow .dot { width: 6px; height: 6px; background: var(--primary-blue); border-radius: 50%; }
+        .topbar-heading { font-family: 'Manrope', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); margin-bottom: 4px; }
+        .topbar-subtitle { font-size: 15px; color: var(--text-secondary); max-width: 640px; }
+        .glass { background: #fff; border-radius: 20px; box-shadow: 0 8px 32px rgba(11,27,40,0.06); border: 1.5px solid rgba(226,232,240,0.5); }
+        .card-pad { padding: 28px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all 0.15s ease; text-decoration: none; }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: #EEF4F8; color: var(--text-secondary); border: 1.5px solid var(--border); }
+        .btn-outline { background:#fff; color: var(--primary-blue); border: 1.5px solid rgba(13,94,166,.3); }
+        .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 9px; }
+        .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .field select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; color: var(--text-primary); background: #fff; }
+        .field select:focus { border-color: var(--primary-blue); outline: none; }
+        .hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+        .section-label { font-family:'Manrope',sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin-bottom: 14px; }
+        .dropzone { border: 2px dashed #cbd8e6; border-radius: 14px; padding: 40px 24px; text-align: center; background: #fbfdff; transition: all .15s; }
+        .dropzone:hover { border-color: var(--accent-cyan); background: rgba(87,184,232,.04); }
+        .dropzone .big { font-size: 32px; margin-bottom: 8px; }
+        .dropzone p { color: var(--text-secondary); font-size: 14px; }
+        .dropzone .filetypes { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+        .template-bar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding: 16px 20px; background: rgba(13,94,166,.035); border: 1px solid rgba(13,94,166,.1); border-radius: 12px; flex-wrap: wrap; }
+        .template-bar .txt { font-size: 13px; color: var(--text-secondary); }
+        .template-bar .txt strong { color: var(--text-primary); }
+        .divider { height: 1px; background: var(--border); margin: 24px 0; }
+        .steps { display:flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+        .step { display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color: var(--text-muted); }
+        .step .n { width: 22px; height: 22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; background:#EEF4F8; color:var(--text-muted); border:1.5px solid var(--border); }
+        .step.active { color: var(--primary-blue); }
+        .step.active .n { background: var(--primary-blue); color:#fff; border-color: var(--primary-blue); }
+        .step .arrow { color: #cbd8e6; }
+        .mono { font-family: 'Manrope', monospace; }
+        .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+        .mock-note { max-width:1000px; margin: 0 auto; padding: 16px 32px 40px; font-size:12px; color:var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+    <div class="topbar">
+        <div class="eyebrow"><span class="dot"></span> Revenue &middot; Sales Import</div>
+        <h1 class="topbar-heading">Import Platform Sales</h1>
+        <p class="topbar-subtitle">Upload a sales file exported from one of your external platforms. Each invoice is imported as a line-level record and assigned to the VAT period covering its date.</p>
+    </div>
+
+    <div class="steps">
+        <div class="step active"><span class="n">1</span> Select &amp; upload</div>
+        <span class="step arrow">&rarr;</span>
+        <div class="step"><span class="n">2</span> Preview</div>
+        <span class="step arrow">&rarr;</span>
+        <div class="step"><span class="n">3</span> Confirm</div>
+    </div>
+
+    <section class="glass card-pad">
+        <div class="section-label">1. Choose the source platform</div>
+        <div class="field" style="max-width:420px;margin-bottom:8px;">
+            <label>External Platform</label>
+            <select>
+                <option>&mdash; Select a platform &mdash;</option>
+                <option selected>Guardian (GRD)</option>
+                <option>MyChair (MYC)</option>
+                <option>BiliBooks (BILI)</option>
+            </select>
+            <p class="hint">Invoice numbers in the file should start with <span class="mono">GRD-INV-</span>. Rows with a different prefix are imported but flagged for review.</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-label">2. Need the format? Download a template</div>
+        <div class="template-bar">
+            <div class="txt">
+                <strong>Import template</strong> &mdash; pre-filled with the required columns and two example rows using the <span class="mono">GRD</span> code.
+            </div>
+            <div style="display:flex;gap:10px;">
+                <a class="btn btn-outline btn-sm" href="#">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+                    CSV
+                </a>
+                <a class="btn btn-outline btn-sm" href="#">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+                    Excel (.xlsx)
+                </a>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-label">3. Upload the sales file</div>
+        <label for="file" style="cursor:pointer;">
+            <div class="dropzone">
+                <div class="big">&#128228;</div>
+                <p><strong style="color:var(--primary-blue);">Click to choose a file</strong> or drag it here</p>
+                <p class="filetypes">CSV, UTF-8 &middot; max 5 MB &middot; up to 1,000 rows</p>
+            </div>
+        </label>
+        <input type="file" id="file" style="display:none;" />
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-primary">Parse &amp; Preview</button>
+        </div>
+    </section>
+</div>
+
+<p class="mock-note">Mockup &middot; Import upload step (Requirements 3a, 4). Template download uses the selected platform's code in the example rows. Parse caches a preview for 30 min; nothing is saved until confirmed.</p>
+
+</body>
+</html>

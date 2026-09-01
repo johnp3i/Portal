@@ -31,6 +31,8 @@ public class ExternalSalesRecord
 
     public int? ImportSessionId { get; set; }
 
+    public int? ExternalPlatformId { get; set; }
+
     public int? VatSubmissionPeriodId { get; set; }
 
     public bool IsActive { get; set; }
@@ -41,6 +43,8 @@ public class ExternalSalesRecord
     public Business Business { get; set; } = null!;
 
     public RevenueSource? RevenueSource { get; set; }
+
+    public ExternalPlatform? ExternalPlatform { get; set; }
 
     public Customer? Customer { get; set; }
 

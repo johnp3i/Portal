@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Preview — Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #F7FAFC; color: #1a2b3c; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        :root {
+            --primary-blue: #0D5EA6; --accent-cyan: #57B8E8; --success: #129867; --warning: #C8912E; --danger: #C24A4A;
+            --bg-base: #F7FAFC; --bg-secondary: #EEF4F8; --text-primary: #1a2b3c; --text-secondary: #5a6b7c; --text-muted: #8a9bac; --border: #e2e8f0;
+        }
+        .page-container { max-width: 1240px; margin: 0 auto; padding: 48px 32px; }
+        .topbar { margin-bottom: 24px; }
+        .eyebrow { font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--primary-blue); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .eyebrow .dot { width: 6px; height: 6px; background: var(--primary-blue); border-radius: 50%; }
+        .topbar-heading { font-family: 'Manrope', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); margin-bottom: 4px; }
+        .topbar-subtitle { font-size: 15px; color: var(--text-secondary); }
+        .glass { background: #fff; border-radius: 20px; box-shadow: 0 8px 32px rgba(11,27,40,0.06); border: 1.5px solid rgba(226,232,240,0.5); }
+        .card-pad { padding: 28px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all 0.15s ease; text-decoration: none; }
+        .btn-primary { background: var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: #0a4d8a; }
+        .btn-secondary { background: #EEF4F8; color: var(--text-secondary); border: 1.5px solid var(--border); }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 11px 12px; text-align: left; border-bottom: 1.5px solid var(--border); white-space:nowrap; }
+        .data-table td { padding: 11px 12px; border-bottom: 1px solid #f4f7fa; font-size: 13.5px; vertical-align: middle; }
+        .data-table tbody tr:hover { background: rgba(13,94,166,0.015); }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .mono { font-family: 'Manrope', monospace; font-size: 13px; }
+        .pill { display: inline-flex; align-items: center; gap:5px; padding: 3px 9px; border-radius: 8px; font-size: 11px; font-weight: 700; white-space:nowrap; }
+        .pill-ok { background: rgba(18,152,103,.08); color: var(--success); }
+        .pill-warn { background: rgba(200,145,46,.1); color: var(--warning); }
+        .pill-dup { background: rgba(138,155,171,.12); color: var(--text-secondary); }
+        .pill-err { background: rgba(194,74,74,.08); color: var(--danger); }
+        .pill-period { background: rgba(13,94,166,.07); color: var(--primary-blue); }
+        .pill-unassigned { background: rgba(138,155,171,.12); color: var(--text-secondary); }
+        .row-dup td { background: rgba(138,155,171,.04); color: var(--text-muted); }
+        .row-err td { background: rgba(194,74,74,.03); }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+        .stat { background: #fff; border-radius: 16px; padding: 18px 20px; border: 1.5px solid rgba(226,232,240,0.6); }
+        .stat .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+        .stat .value { font-family:'Manrope',sans-serif; font-size: 26px; font-weight: 800; color: var(--text-primary); }
+        .stat.ok .value { color: var(--success); }
+        .stat.warn .value { color: var(--warning); }
+        .stat.total .value { color: var(--primary-blue); }
+        .callout { display:flex; gap:10px; align-items:flex-start; padding: 14px 18px; border-radius: 12px; font-size: 13.5px; margin-bottom: 20px; }
+        .callout-warn { background: rgba(200,145,46,.06); border: 1px solid rgba(200,145,46,.2); color: #8a6414; }
+        .callout .ic { font-size: 15px; line-height: 1.4; }
+        .filekey { font-size: 13px; color: var(--text-secondary); }
+        .filekey strong { color: var(--text-primary); }
+        .cb { width:16px; height:16px; accent-color: var(--primary-blue); cursor:pointer; }
+        .mock-note { max-width:1240px; margin: 0 auto; padding: 16px 32px 40px; font-size:12px; color:var(--text-muted); }
+        .legend { display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; font-size:12px; color:var(--text-secondary); }
+        .legend span { display:inline-flex; align-items:center; gap:6px; }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+    <div class="topbar">
+        <div class="eyebrow"><span class="dot"></span> Revenue &middot; Sales Import &middot; Preview</div>
+        <h1 class="topbar-heading">Review before import</h1>
+        <p class="topbar-subtitle">Check the rows below. Duplicates and invalid rows are excluded automatically. You can also untick any row you don't want to import.</p>
+    </div>
+
+    <div class="filekey" style="margin-bottom:20px;">
+        Platform: <strong>Guardian (GRD)</strong> &middot; File: <strong>guardian-sales-2026-08.csv</strong> &middot; 8 rows parsed
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-grid">
+        <div class="stat ok"><div class="label">Will import</div><div class="value">5</div></div>
+        <div class="stat warn"><div class="label">Warnings</div><div class="value">2</div></div>
+        <div class="stat"><div class="label">Duplicates / invalid</div><div class="value">3</div></div>
+        <div class="stat total"><div class="label">Batch total</div><div class="value">&euro;1,879</div></div>
+    </div>
+
+    <div class="callout callout-warn">
+        <span class="ic">&#9888;</span>
+        <div><strong>2 rows need a look.</strong> One invoice's number doesn't start with <span class="mono">GRD-INV-</span>, and one falls in a VAT period that's already been submitted &mdash; it will import as <em>Unassigned</em> so your filed return isn't touched. Both still import unless you untick them.</div>
+    </div>
+
+    <section class="glass card-pad">
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:34px;"><input type="checkbox" class="cb" checked></th>
+                        <th>Invoice #</th>
+                        <th>Prefix</th>
+                        <th>Date</th>
+                        <th class="num">Net</th>
+                        <th class="num">VAT</th>
+                        <th class="num">Total</th>
+                        <th>VAT Period</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox" class="cb" checked></td>
+                        <td class="mono">GRD-INV-2026-0040</td>
+                        <td><span class="pill pill-ok">&#10003;</span></td>
+                        <td>2026-08-01</td>
+                        <td class="num">100.00</td>
+                        <td class="num">19.00</td>
+                        <td class="num">119.00</td>
+                        <td><span class="pill pill-period">Q3 2026 (Jul&ndash;Aug)</span></td>
+                        <td><span class="pill pill-ok">Valid</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="cb" checked></td>
+                        <td class="mono">GRD-INV-2026-0041</td>
+                        <td><span class="pill pill-ok">&#10003;</span></td>
+                        <td>2026-08-03</td>
+                        <td class="num">250.00</td>
+                        <td class="num">47.50</td>
+                        <td class="num">297.50</td>
+                        <td><span class="pill pill-period">Q3 2026 (Jul&ndash;Aug)</span></td>
+                        <td><span class="pill pill-ok">Valid</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="cb" checked></td>
+                        <td class="mono">GRD-INV-2026-0042</td>
+                        <td><span class="pill pill-ok">&#10003;</span></td>
+                        <td>2026-08-05</td>
+                        <td class="num">80.00</td>
+                        <td class="num">0.00</td>
+                        <td class="num">80.00</td>
+                        <td><span class="pill pill-period">Q3 2026 (Jul&ndash;Aug)</span></td>
+                        <td><span class="pill pill-ok">Valid &middot; 0% VAT</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="cb" checked></td>
+                        <td class="mono">GRD-INV-2026-0043</td>
+                        <td><span class="pill pill-ok">&#10003;</span></td>
+                        <td>2026-08-19</td>
+                        <td class="num">540.00</td>
+                        <td class="num">102.60</td>
+                        <td class="num">642.60</td>
+                        <td><span class="pill pill-period">Q3 2026 (Jul&ndash;Aug)</span></td>
+                        <td><span class="pill pill-ok">Valid</span></td>
+                    </tr>
+                    <!-- Prefix mismatch warning -->
+                    <tr>
+                        <td><input type="checkbox" class="cb" checked></td>
+                        <td class="mono">MYC-INV-2026-0088</td>
+                        <td><span class="pill pill-warn">&#9888; MYC</span></td>
+                        <td>2026-08-20</td>
+                        <td class="num">640.00</td>
+                        <td class="num">121.60</td>
+                        <td class="num">761.60</td>
+                        <td><span class="pill pill-period">Q3 2026 (Jul&ndash;Aug)</span></td>
+                        <td><span class="pill pill-warn">Prefix mismatch</span></td>
+                    </tr>
+                    <!-- Submitted period -->
+                    <tr>
+                        <td><input type="checkbox" class="cb" checked></td>
+                        <td class="mono">GRD-INV-2026-0031</td>
+                        <td><span class="pill pill-ok">&#10003;</span></td>
+                        <td>2026-06-14</td>
+                        <td class="num">200.00</td>
+                        <td class="num">38.00</td>
+                        <td class="num">238.00</td>
+                        <td><span class="pill pill-unassigned">Locked &middot; period submitted</span></td>
+                        <td><span class="pill pill-warn">Import as Unassigned</span></td>
+                    </tr>
+                    <!-- Duplicate -->
+                    <tr class="row-dup">
+                        <td><input type="checkbox" class="cb" disabled></td>
+                        <td class="mono">GRD-INV-2026-0040</td>
+                        <td><span class="pill pill-ok">&#10003;</span></td>
+                        <td>2026-08-01</td>
+                        <td class="num">100.00</td>
+                        <td class="num">19.00</td>
+                        <td class="num">119.00</td>
+                        <td>&mdash;</td>
+                        <td><span class="pill pill-dup">Duplicate</span></td>
+                    </tr>
+                    <!-- Invalid -->
+                    <tr class="row-err">
+                        <td><input type="checkbox" class="cb" disabled></td>
+                        <td class="mono">GRD-INV-2026-0044</td>
+                        <td><span class="pill pill-ok">&#10003;</span></td>
+                        <td style="color:var(--danger);">31/13/2026</td>
+                        <td class="num">90.00</td>
+                        <td class="num">17.10</td>
+                        <td class="num">107.10</td>
+                        <td>&mdash;</td>
+                        <td><span class="pill pill-err">Invalid date</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legend">
+            <span><span class="pill pill-ok">&#10003;</span> Prefix matches platform</span>
+            <span><span class="pill pill-warn">&#9888;</span> Different / mismatched prefix</span>
+            <span><span class="pill pill-dup">Duplicate</span> Already imported (skipped)</span>
+            <span><span class="pill pill-err">Invalid</span> Excluded from import</span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;flex-wrap:wrap;gap:12px;">
+            <div style="font-size:13px;color:var(--text-secondary);">5 rows ticked &middot; <strong style="color:var(--text-primary);">&euro;1,879.10</strong> will be recorded</div>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-secondary">Back</button>
+                <button class="btn btn-primary">Confirm Import (5)</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<p class="mock-note">Mockup &middot; Import preview (Requirements 4, 6). Prefix mismatch and submitted-period are non-blocking warnings. Duplicates and invalid rows are auto-excluded. Confirm re-checks the VAT period at commit time.</p>
+
+</body>
+</html>

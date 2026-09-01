@@ -17,6 +17,10 @@ Add a first-class `ExternalPlatform` lookup and a canonical fixed-schema sales i
     - Idempotent column add (INT NULL) + FK to [revenue].[ExternalPlatform]
     - _Requirements: 1.7_
 
+  - [ ] 1.3 Seed `external_platform_import` module key for Professional + Enterprise
+    - Idempotent INSERT into [portal].[PlanModulePermission] (IsIncluded=1, AccessLevel='full') for the Professional and Enterprise SubscriptionPlan ids
+    - _Requirements: 9.3, 9a.1_
+
 - [ ] 2. Entities and EF configuration
   - [ ] 2.1 Create `ExternalPlatform` entity
     - Properties + nav to Business and ExternalSalesRecords
@@ -46,8 +50,9 @@ Add a first-class `ExternalPlatform` lookup and a canonical fixed-schema sales i
     - Add `[ExternalPlatformId]` to SELECT + optional `@ExternalPlatformId` filter
     - _Requirements: 8.1, 8.2_
 
-  - [ ] 3.4 Add `ExternalSalesRecordRepository.ExistsDuplicateByPlatformAsync`
-    - Mirror `ExistsDuplicateAsync` but key on ExternalPlatformId
+  - [ ] 3.4 Add `ExternalSalesRecordRepository.ExistsDuplicateByPlatformAsync` and `FindCrossSourceOrPlatformDuplicateAsync`
+    - `ExistsDuplicateByPlatformAsync`: mirror `ExistsDuplicateAsync` but key on ExternalPlatformId (exact same-platform duplicate)
+    - `FindCrossSourceOrPlatformDuplicateAsync`: same invoice+date under a different platform OR any POS source → return name for a warning
     - _Requirements: 4.7_
 
   - [ ] 3.5 Add `VatSubmissionPeriodRepository.GetCoveringUnsubmittedPeriodAsync(businessId, date)`
@@ -81,14 +86,29 @@ Add a first-class `ExternalPlatform` lookup and a canonical fixed-schema sales i
     - Support ExcludeRowIndexes; roll back whole batch on failure
     - _Requirements: 5.1–5.6, 6.1, 6.2, 6.3_
 
-- [ ] 6. Controllers
-  - [ ] 6.1 Create `ExternalPlatformController`
-    - Index; AxPostCreatePlatform; AxPostUpdatePlatform; AxPostSetPlatformActive; [Authorize] + module gate
-    - _Requirements: 2.1–2.9, 9.3_
+  - [ ] 5.4 Create `ImportTemplateService` (`IImportTemplateService`)
+    - `BuildCsvTemplate(platformCode)` — UTF-8, canonical header + two example rows (standard VAT + zero-VAT)
+    - `BuildExcelTemplate(platformCode)` — ClosedXML; "Sales" sheet (bold header, fill #0D5EA6, white font; InvoiceNumber column text-formatted) + "Instructions" sheet (per-column reference)
+    - Example rows use selected platform code or `ABC` placeholder
+    - _Requirements: 3a.1–3a.8_
 
-  - [ ] 6.2 Extend `SalesImportController` for platform import
-    - Index: add ExternalPlatforms to ViewData; AxPostParseFileForPlatform; dispatch confirm to platform path when preview.ExternalPlatformId set
-    - _Requirements: 4.1, 4.2, 5.1, 9.2_
+- [ ] 6. Controllers and access control
+  - [ ] 6.1 Add `PortalModules.ExternalPlatformImport = "external_platform_import"` constant
+    - _Requirements: 9.3, 9a.4_
+
+  - [ ] 6.2 Create `ExternalPlatformController`
+    - Index; AxPostCreatePlatform; AxPostUpdatePlatform; AxPostSetPlatformActive
+    - `[Authorize]` + class-level `[ModuleAccess(PortalModules.ExternalPlatformImport)]`
+    - _Requirements: 2.1–2.9, 9.3, 9a.2, 9a.3_
+
+  - [ ] 6.3 Extend `SalesImportController` for platform import
+    - Index: add ExternalPlatforms to ViewData (server-side check the new key to show the platform path)
+    - `AxPostParseFileForPlatform` with action-level `[ModuleAccess(PortalModules.ExternalPlatformImport)]`; dispatch confirm to platform path when preview.ExternalPlatformId set
+    - _Requirements: 4.1, 4.2, 5.1, 9.2, 9a.3_
+
+  - [ ] 6.4 Add `AxGetDownloadTemplate(format, externalPlatformId?)` to `SalesImportController`
+    - Resolve/validate platform code (tenant-owned when id supplied); return CSV or .xlsx via ImportTemplateService; module-gated
+    - _Requirements: 3a.1, 3a.4, 3a.7_
 
 - [ ] 7. Checkpoint — backend build
   - Build; verify 0 errors before UI work
@@ -98,8 +118,9 @@ Add a first-class `ExternalPlatform` lookup and a canonical fixed-schema sales i
     - Filter/table cards per layout steering; BlockUI + Swal + fetch + antiforgery
     - _Requirements: 2.1–2.7_
 
-  - [ ] 8.2 Extend `Views/SalesImport/Index.cshtml` — platform selector + upload path
-    - _Requirements: 4.1, 4.2_
+  - [ ] 8.2 Extend `Views/SalesImport/Index.cshtml` — platform selector + upload path + template download
+    - "Download template" split control (CSV / Excel) linking to `AxGetDownloadTemplate`, passing the selected platform id
+    - _Requirements: 4.1, 4.2, 3a.1, 3a.4_
 
   - [ ] 8.3 Extend `Views/SalesImport/Preview.cshtml` — Platform prefix (✓/⚠) + VAT period columns
     - _Requirements: 4.5, 6.4, 6.5_
@@ -108,7 +129,7 @@ Add a first-class `ExternalPlatform` lookup and a canonical fixed-schema sales i
     - _Requirements: 8.1, 8.2_
 
 - [ ] 9. Wiring and VAT integration verification
-  - [ ] 9.1 Register `ExternalPlatformRepository` and `IExternalPlatformService` in Program.cs
+  - [ ] 9.1 Register `ExternalPlatformRepository`, `IExternalPlatformService`, `IImportTemplateService` in Program.cs
     - _Requirements: (wiring)_
 
   - [ ] 9.2 Verify Output VAT includes platform-imported records
@@ -124,6 +145,7 @@ Add a first-class `ExternalPlatform` lookup and a canonical fixed-schema sales i
   - Build 0 errors; run unit tests
   - Manual: register a platform (e.g. GRD) → import sample file → records tagged + assigned to correct period → Output VAT reflects it
   - Test prefix-mismatch warning path; submitted-period lock path; duplicate re-import skip
+  - Test: download CSV template and Excel template → headers + two example rows correct; re-import the downloaded template unchanged imports cleanly (round-trip)
   - Verify existing revenue-source imports and existing records still work
 
 ## Notes
@@ -141,11 +163,11 @@ Add a first-class `ExternalPlatform` lookup and a canonical fixed-schema sales i
 ```json
 {
   "waves": [
-    { "id": 0, "tasks": ["1.1", "1.2"] },
+    { "id": 0, "tasks": ["1.1", "1.2", "1.3"] },
     { "id": 1, "tasks": ["2.1", "2.2", "2.3", "2.4"] },
     { "id": 2, "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5", "4.1", "4.2", "4.3"] },
     { "id": 3, "tasks": ["5.1", "5.2", "5.3"] },
-    { "id": 4, "tasks": ["6.1", "6.2"] },
+    { "id": 4, "tasks": ["6.1", "6.2", "6.3"] },
     { "id": 5, "tasks": ["7"] },
     { "id": 6, "tasks": ["8.1", "8.2", "8.3", "8.4"] },
     { "id": 7, "tasks": ["9.1", "9.2"] },

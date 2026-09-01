@@ -266,6 +266,12 @@ builder.Services.AddScoped<ExternalSalesRecordRepository>(sp =>
     new ExternalSalesRecordRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ISalesImportService, SalesImportService>();
 
+// --- External Platform Sales Import ---
+builder.Services.AddScoped<ExternalPlatformRepository>(sp =>
+    new ExternalPlatformRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<IExternalPlatformService, ExternalPlatformService>();
+builder.Services.AddScoped<IImportTemplateService, ImportTemplateService>();
+
 // --- Sales Pipeline ---
 builder.Services.AddScoped<SalesContactRepository>(sp =>
     new SalesContactRepository(sp.GetRequiredService<PortalDbContext>()));

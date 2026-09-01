@@ -153,7 +153,7 @@ public class DemoInvitationServiceTests
 
         // Assert — should succeed after retries
         Assert.NotNull(result);
-        Assert.Equal("sent", result.Status);
+        Assert.Equal("sent", result.Invitation.Status);
         Assert.Equal(3, callCount); // 2 collisions + 1 success
     }
 
@@ -361,7 +361,7 @@ public class DemoInvitationServiceTests
 
         // Assert — invitation was persisted (InsertAsync was called)
         Assert.NotNull(result);
-        Assert.Equal("sent", result.Status);
+        Assert.Equal("sent", result.Invitation.Status);
         _repositoryMock.Verify(
             r => r.InsertAsync(It.IsAny<DemoInvitation>(), It.IsAny<List<DemoInvitationPermission>>()),
             Times.Once);

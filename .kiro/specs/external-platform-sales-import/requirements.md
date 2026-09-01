@@ -68,6 +68,21 @@ This feature **extends the existing Revenue Ingestion pipeline** (`ExternalSales
 6. THE Portal SHALL reject a file whose header is missing any required column, reporting which column is missing.
 7. THE canonical contract SHALL be documented in a shared guideline file that can be handed to external platforms' engineering teams (see Requirement 10).
 
+### Requirement 3a: Downloadable Import Template
+
+**User Story:** As a business user, I want to download a ready-made template file that shows exactly how the import file should be structured, so that I (or the external platform's team) can produce a conforming file without guessing.
+
+#### Acceptance Criteria
+
+1. THE import page SHALL provide a "Download template" control offering two formats: **CSV** and **Excel (.xlsx)**.
+2. THE template SHALL contain the header row with all Canonical Import Contract columns in canonical order: `InvoiceNumber, InvoiceDate, NetAmount, VatAmount, TotalAmount, VatRate, CustomerName, Description, PaymentMethod, Currency`.
+3. THE template SHALL contain exactly **two example data rows** demonstrating a standard VAT sale and a zero-VAT sale, using realistic, contract-valid values.
+4. WHEN a target External Platform is selected, THE example rows' `InvoiceNumber` values SHALL use that platform's `PlatformCode` (e.g., `GRD-INV-2026-0001`); WHEN no platform is selected, a neutral placeholder code (e.g., `ABC`) SHALL be used.
+5. THE Excel template SHALL format the header row distinctly (bold, MyChair primary colour fill) consistent with existing Excel exports, and SHALL set text formatting on the `InvoiceNumber` column so codes/numbers are not coerced by spreadsheet software.
+6. THE CSV template SHALL be UTF-8 encoded, comma-delimited, with the same header and two example rows.
+7. THE template download SHALL be served through an authenticated, module-gated endpoint (same gating as the import feature).
+8. THE Excel template SHALL include a second worksheet (or header comments) briefly describing each column's meaning, required/optional status, and the date/decimal formats — a lightweight in-file reference.
+
 ### Requirement 4: Import — Upload, Parse, and Preview
 
 **User Story:** As a business user, I want to upload an external platform's sales file and preview what will be imported before committing, so that I can catch errors and duplicates first.
@@ -136,8 +151,19 @@ This feature **extends the existing Revenue Ingestion pipeline** (`ExternalSales
 
 1. ALL queries against `ExternalPlatform` and `ExternalSalesRecord` SHALL filter by the authenticated user's `BusinessId`.
 2. THE import endpoints SHALL set `BusinessId` from the authenticated session; the client SHALL NOT provide `BusinessId`.
-3. THE import and platform-management features SHALL be gated behind the same module access used by Sales Import today (`PortalModules.ZReportImport` / the `zreport_import` plan feature) OR a dedicated capability toggle — the exact gate SHALL be decided in design, but access SHALL require an active subscription.
+3. THE import and platform-management features SHALL be gated behind a dedicated module key `external_platform_import`, available on the **Professional and Enterprise** tiers (not Foundation). Access SHALL require an active subscription. (Rationale: this is a distinct capability from POS Sales Invoice Import (`zreport_import`); a dedicated key keeps the feature matrix honest and allows independent gating/pricing.)
 4. THE platform dropdown and import shall verify the selected `ExternalPlatformId` belongs to the current Business before parsing or persisting.
+
+### Requirement 9a: Subscription Tier Gating
+
+**User Story:** As a platform operator, I want external platform sales import available on Professional and Enterprise tiers, so that it fits the established tier model.
+
+#### Acceptance Criteria
+
+1. THE `external_platform_import` module key SHALL be included (IsIncluded = 1) for the Professional and Enterprise plans and excluded for Foundation.
+2. WHEN a Foundation business navigates to the External Platforms or import area, THE Portal SHALL apply the standard soft-gating behaviour (feature teaser + upgrade prompt) consistent with other Professional features.
+3. WHEN a Foundation business attempts to reach the import or platform-management endpoints directly, THE Portal SHALL hard-gate with the standard "Feature not available on your current plan" response.
+4. THE gating SHALL reuse the existing plan-permission enforcement (`PlanPermissionFilter` / `ModuleAccess`) rather than a new mechanism.
 
 ### Requirement 10: External Platform Export Guideline (Documentation Deliverable)
 
@@ -159,3 +185,4 @@ This feature **extends the existing Revenue Ingestion pipeline** (`ExternalSales
 - Multi-currency conversion (records stored in the submitted currency; conversion is future work).
 - Roll-up summary reporting per platform (line-level import now; summaries later, per user decision).
 - Editing individual imported records (import + list + cancel/restore only).
+- **Refunds / credit notes in the import contract** — negative rows are rejected this phase. If a need arises in practice, we handle it at that point rather than over-engineering upfront (user decision). A v1.1 contract revision can add negative-row handling when needed.

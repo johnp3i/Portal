@@ -145,6 +145,7 @@ public class PortalDbContext : DbContext
     public DbSet<RevenueSummary> RevenueSummaries { get; set; } = null!;
     public DbSet<RevenueSummaryLine> RevenueSummaryLines { get; set; } = null!;
     public DbSet<ExternalSalesRecord> ExternalSalesRecords { get; set; } = null!;
+    public DbSet<ExternalPlatform> ExternalPlatforms { get; set; } = null!;
 
     // Sales pipeline schema
     public DbSet<SalesProduct> SalesProducts { get; set; } = null!;
@@ -279,6 +280,7 @@ public class PortalDbContext : DbContext
         ConfigureSupplierImportProfile(modelBuilder);
         ConfigureImportSession(modelBuilder);
         ConfigureRevenueSource(modelBuilder);
+        ConfigureExternalPlatform(modelBuilder);
         ConfigureRevenueSummary(modelBuilder);
         ConfigureRevenueSummaryLine(modelBuilder);
         ConfigureExternalSalesRecord(modelBuilder);
@@ -3278,6 +3280,43 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureExternalPlatform(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ExternalPlatform>(entity =>
+        {
+            entity.ToTable("ExternalPlatform", "revenue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.PlatformCode)
+                .IsRequired()
+                .HasMaxLength(10);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.PlatformCode })
+                .IsUnique()
+                .HasDatabaseName("UQ_ExternalPlatform_Business_Code");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
     private static void ConfigureRevenueSummary(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<RevenueSummary>(entity =>
@@ -3360,6 +3399,12 @@ public class PortalDbContext : DbContext
             entity.HasOne(e => e.RevenueSource)
                 .WithMany()
                 .HasForeignKey(e => e.RevenueSourceId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ExternalPlatform)
+                .WithMany(p => p.ExternalSalesRecords)
+                .HasForeignKey(e => e.ExternalPlatformId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
@@ -4429,6 +4474,9 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<ExternalSalesRecord>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<ExternalPlatform>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<Signature>()

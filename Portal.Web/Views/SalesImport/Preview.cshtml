@@ -19,7 +19,15 @@
         <div class="summary-box"><span class="summary-label">Valid</span><span class="summary-value" style="color:#129867;">@Model.ValidRows</span></div>
         <div class="summary-box"><span class="summary-label">Duplicates</span><span class="summary-value" style="color:@(Model.DuplicateCount > 0 ? "#C8912E" : "#129867");">@Model.DuplicateCount</span></div>
         <div class="summary-box"><span class="summary-label">Warnings</span><span class="summary-value" style="color:@(Model.Rows.Count(r => r.HasCrossSourceWarning) > 0 ? "#C8912E" : "#129867");">@Model.Rows.Count(r => r.HasCrossSourceWarning)</span></div>
-        <div class="summary-box"><span class="summary-label">Source</span><span class="summary-value" style="font-size:14px;">@(Model.RevenueSourceName ?? "General")</span></div>
+        @if (Model.ExternalPlatformId.HasValue)
+        {
+            <div class="summary-box"><span class="summary-label">Platform</span><span class="summary-value" style="font-size:14px;">@Model.ExternalPlatformName (@Model.ExternalPlatformCode)</span></div>
+            <div class="summary-box"><span class="summary-label">Prefix issues</span><span class="summary-value" style="color:@(Model.Rows.Count(r => r.HasPrefixWarning) > 0 ? "#C8912E" : "#129867");">@Model.Rows.Count(r => r.HasPrefixWarning)</span></div>
+        }
+        else
+        {
+            <div class="summary-box"><span class="summary-label">Source</span><span class="summary-value" style="font-size:14px;">@(Model.RevenueSourceName ?? "General")</span></div>
+        }
         <div class="summary-box"><span class="summary-label">Batch Total</span><span class="summary-value summary-value--bold">€@Model.BatchTotal.ToString("N2")</span></div>
     </div>
 </section>
@@ -32,9 +40,17 @@
                     <th>#</th>
                     <th>Date</th>
                     <th>Invoice #</th>
+                    @if (Model.ExternalPlatformId.HasValue)
+                    {
+                        <th>Prefix</th>
+                    }
                     <th style="text-align:right;">Net</th>
                     <th style="text-align:right;">VAT</th>
                     <th style="text-align:right;">Total</th>
+                    @if (Model.ExternalPlatformId.HasValue)
+                    {
+                        <th>VAT Period</th>
+                    }
                     <th>Description</th>
                     <th>Payment</th>
                     <th>Status</th>
@@ -49,9 +65,38 @@
                         <td>@(i + 1)</td>
                         <td>@(row.TransactionDate != default ? row.TransactionDate.ToString("dd/MM/yyyy") : "—")</td>
                         <td>@(row.InvoiceNumber ?? "—")</td>
+                        @if (Model.ExternalPlatformId.HasValue)
+                        {
+                            <td>
+                                @if (row.HasPrefixWarning)
+                                {
+                                    <span class="pill" style="background:#fef3cd;color:#856404;font-weight:700;font-size:11px;" title="@row.PrefixWarning">⚠</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-green" style="font-size:11px;" title="Prefix matches platform">✓</span>
+                                }
+                            </td>
+                        }
                         <td style="text-align:right;">€@row.NetAmount.ToString("N2")</td>
                         <td style="text-align:right;">€@row.VatAmount.ToString("N2")</td>
                         <td style="text-align:right;font-weight:700;">€@row.TotalAmount.ToString("N2")</td>
+                        @if (Model.ExternalPlatformId.HasValue)
+                        {
+                            <td>
+                                @if (!string.IsNullOrEmpty(row.TargetPeriodLabel))
+                                {
+                                    var isLocked = row.TargetPeriodLabel.StartsWith("Locked", StringComparison.OrdinalIgnoreCase);
+                                    var isUnassigned = row.TargetPeriodLabel.Equals("Unassigned", StringComparison.OrdinalIgnoreCase);
+                                    var periodBg = isLocked || isUnassigned ? "background:rgba(138,155,171,.12);color:#5a6a7a;" : "background:rgba(13,94,166,.07);color:#0D5EA6;";
+                                    <span class="pill" style="@periodBg font-weight:700;font-size:11px;">@row.TargetPeriodLabel</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                        }
                         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(row.Description ?? "—")</td>
                         <td>@(row.PaymentMethod ?? "—")</td>
                         <td>
@@ -63,10 +108,17 @@
                             {
                                 <span class="pill" style="background:#fef3cd;color:#856404;font-weight:700;font-size:11px;">Duplicate</span>
                             }
-                            else if (row.HasCrossSourceWarning)
+                            else if (row.HasCrossSourceWarning || row.HasPrefixWarning)
                             {
                                 <span class="pill" style="background:#fef3cd;color:#856404;font-weight:700;font-size:11px;">Warning</span>
-                                <div style="font-size:11px;color:#856404;margin-top:3px;line-height:1.4;">@row.CrossSourceWarning</div>
+                                @if (row.HasCrossSourceWarning)
+                                {
+                                    <div style="font-size:11px;color:#856404;margin-top:3px;line-height:1.4;">@row.CrossSourceWarning</div>
+                                }
+                                @if (row.HasPrefixWarning)
+                                {
+                                    <div style="font-size:11px;color:#856404;margin-top:3px;line-height:1.4;">@row.PrefixWarning</div>
+                                }
                             }
                             else
                             {

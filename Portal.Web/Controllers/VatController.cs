@@ -351,6 +351,38 @@ public class VatController : Controller
             }
         }
 
+        // External Platform Sales: imported external platform + POS sales assigned to this period.
+        // These are ExternalSalesRecord rows that contribute to Output VAT (added in VatSubmissionService).
+        var externalSales = await _dbContext.ExternalSalesRecords
+            .Where(esr => esr.BusinessId == businessId
+                && esr.IsActive
+                && esr.VatSubmissionPeriodId == periodId)
+            .OrderByDescending(esr => esr.TransactionDate)
+            .Select(esr => new
+            {
+                SourceName = esr.ExternalPlatform != null
+                    ? esr.ExternalPlatform.Name
+                    : (esr.RevenueSource != null ? esr.RevenueSource.Name : "External"),
+                esr.InvoiceNumber,
+                esr.TransactionDate,
+                esr.NetAmount,
+                esr.VatAmount,
+                esr.TotalAmount
+            })
+            .ToListAsync();
+
+        viewModel.ExternalSalesRows = externalSales.Select(x => new ExternalSalesDetailRow
+        {
+            SourceName = x.SourceName,
+            InvoiceNumber = x.InvoiceNumber,
+            TransactionDateDisplay = x.TransactionDate.ToString("dd/MM/yyyy"),
+            NetAmount = x.NetAmount,
+            VatAmount = x.VatAmount,
+            TotalAmount = x.TotalAmount
+        }).ToList();
+
+        viewModel.ExternalSalesTotalVat = externalSales.Sum(x => x.VatAmount);
+
         return View(viewModel);
     }
 

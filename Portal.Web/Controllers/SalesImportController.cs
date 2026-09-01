@@ -20,6 +20,8 @@ public class SalesImportController : Controller
 {
     private readonly ISalesImportService _importService;
     private readonly IRevenueSourceService _revenueSourceService;
+    private readonly IExternalPlatformService _externalPlatformService;
+    private readonly IImportTemplateService _templateService;
     private readonly ExternalSalesRecordRepository _recordRepository;
     private readonly ICurrentTenantService _tenantService;
     private readonly IBusinessService _businessService;
@@ -28,6 +30,8 @@ public class SalesImportController : Controller
     public SalesImportController(
         ISalesImportService importService,
         IRevenueSourceService revenueSourceService,
+        IExternalPlatformService externalPlatformService,
+        IImportTemplateService templateService,
         ExternalSalesRecordRepository recordRepository,
         ICurrentTenantService tenantService,
         IBusinessService businessService,
@@ -35,6 +39,8 @@ public class SalesImportController : Controller
     {
         _importService = importService;
         _revenueSourceService = revenueSourceService;
+        _externalPlatformService = externalPlatformService;
+        _templateService = templateService;
         _recordRepository = recordRepository;
         _tenantService = tenantService;
         _businessService = businessService;
@@ -46,13 +52,13 @@ public class SalesImportController : Controller
     // ════════════════════════════════════════════
 
     [HttpGet]
+    [ModuleAccess(PortalModules.ExternalPlatformImport)]
     public async Task<IActionResult> Index()
     {
-        if (!await IsZReportEnabledAsync())
-            return RedirectToAction("Dashboard", "Revenue");
+        // The Index page is the "Import Platform Sales" screen — driven by registered external
+        // platforms, not POS revenue sources. Gated by the external_platform_import module.
+        ViewData["ExternalPlatforms"] = await _externalPlatformService.GetActiveAsync();
 
-        var sources = await _revenueSourceService.GetActiveAsync();
-        ViewData["RevenueSources"] = sources;
         return View();
     }
 
@@ -82,6 +88,66 @@ public class SalesImportController : Controller
         }
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ModuleAccess(PortalModules.ExternalPlatformImport)]
+    public async Task<IActionResult> AxPostParseFileForPlatform(IFormFile file, int externalPlatformId)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+                return Json(new { success = false, message = "Please select a file to upload." });
+
+            // Buffer into a seekable MemoryStream so the service can validate the header
+            // and then re-read the rows from the start.
+            using var stream = new MemoryStream();
+            using (var upload = file.OpenReadStream())
+            {
+                await upload.CopyToAsync(stream);
+            }
+            stream.Position = 0;
+
+            var result = await _importService.ParseAndPreviewForPlatformAsync(stream, file.FileName, externalPlatformId);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            var cacheKey = $"SalesImport_{_tenantService.CurrentBusinessId}_{DateTime.UtcNow.Ticks}";
+            _cache.Set(cacheKey, result.Data, TimeSpan.FromMinutes(30));
+
+            return Json(new { success = true, cacheKey });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to process file." });
+        }
+    }
+
+    [HttpGet]
+    [ModuleAccess(PortalModules.ExternalPlatformImport)]
+    public async Task<IActionResult> AxGetDownloadTemplate(string format = "csv", int? externalPlatformId = null)
+    {
+        try
+        {
+            string? platformCode = null;
+            if (externalPlatformId.HasValue)
+            {
+                var platform = await _externalPlatformService.GetByIdAsync(externalPlatformId.Value);
+                platformCode = platform?.PlatformCode; // null falls back to placeholder in the service
+            }
+
+            var (content, fileName, contentType) = string.Equals(format, "xlsx", StringComparison.OrdinalIgnoreCase)
+                ? _templateService.BuildExcelTemplate(platformCode)
+                : _templateService.BuildCsvTemplate(platformCode);
+
+            return File(content, contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
     [HttpGet]
     public IActionResult Preview(string cacheKey)
     {
@@ -104,7 +170,9 @@ public class SalesImportController : Controller
                 return Json(new { success = false, message = "Import session expired. Please upload the file again." });
             }
 
-            var result = await _importService.ConfirmImportAsync(preview, request?.ExcludeRowIndexes);
+            var result = preview.ExternalPlatformId.HasValue
+                ? await _importService.ConfirmImportForPlatformAsync(preview, request?.ExcludeRowIndexes)
+                : await _importService.ConfirmImportAsync(preview, request?.ExcludeRowIndexes);
 
             if (!result.Success)
                 return Json(new { success = false, message = result.Message });
@@ -129,7 +197,7 @@ public class SalesImportController : Controller
     // ════════════════════════════════════════════
 
     [HttpGet]
-    public async Task<IActionResult> Records(int? sourceId, DateOnly? dateFrom, DateOnly? dateTo, int page = 1)
+    public async Task<IActionResult> Records(int? sourceId, DateOnly? dateFrom, DateOnly? dateTo, int? platformId, int page = 1)
     {
         if (!await IsZReportEnabledAsync())
             return RedirectToAction("Dashboard", "Revenue");
@@ -139,7 +207,8 @@ public class SalesImportController : Controller
         int offset = (page - 1) * pageSize;
 
         var (items, totalCount) = await _recordRepository.GetPagedAsync(
-            businessId, sourceId, dateFrom, dateTo, null, offset, pageSize, includeInactive: true);
+            businessId, sourceId, dateFrom, dateTo, null, offset, pageSize, includeInactive: true,
+            externalPlatformId: platformId);
 
         ViewData["CurrentPage"] = page;
         ViewData["TotalPages"] = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -148,11 +217,17 @@ public class SalesImportController : Controller
         ViewData["HasPreviousPage"] = page > 1;
         ViewData["HasNextPage"] = page * pageSize < totalCount;
         ViewData["SourceId"] = sourceId;
+        ViewData["PlatformId"] = platformId;
         ViewData["DateFrom"] = dateFrom?.ToString("yyyy-MM-dd");
         ViewData["DateTo"] = dateTo?.ToString("yyyy-MM-dd");
 
         var sources = await _revenueSourceService.GetActiveAsync();
         ViewData["RevenueSources"] = sources;
+
+        // Platform lookup for the filter + name display. Keyed by Id for the view.
+        var platforms = await _externalPlatformService.GetAllAsync(includeInactive: true);
+        ViewData["ExternalPlatforms"] = platforms;
+        ViewData["ExternalPlatformNameMap"] = platforms.ToDictionary(p => p.Id, p => $"{p.Name} ({p.PlatformCode})");
 
         return View(new PagedResult<Portal.Infrastructure.Entities.ExternalSalesRecord>
         {
