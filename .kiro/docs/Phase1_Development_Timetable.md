@@ -82,16 +82,20 @@ This timetable covers the implementation of all Phase 1 (Professional tier) feat
 - [x] 4.13 Visual QA and mobile responsiveness check
 - [x] 4.14 End-to-end testing: toggle → share → pay button → declare → verify status *(bank transfer only — informative flow verified; Stripe Connect deferred to future)*
 
-### Option C: Stripe Connect (Future Upgrade)
+### Option C: Stripe Connect (Card Payments) — ✅ IMPLEMENTED
 
-Bank transfer instructions can be supplemented (not replaced) with Stripe Connect for card payments and automatic reconciliation. This would require:
-- Stripe Connect platform registration
-- OAuth connect/disconnect flow
-- Webhook endpoint with signature verification
-- Auto-reconciliation (webhook → Payment record → invoice status update)
-- Database tables: BusinessPaymentGateway, InvoicePaymentLink
+> **Status update:** Stripe Connect has been implemented (it was originally scoped as a future upgrade, but is now live). Bank transfer instructions and card payments **coexist** on the shared invoice page — customers can choose "Pay by Card" or "Pay by Bank Transfer".
 
-Both payment methods would coexist on the shared invoice page — customers could choose "Pay by Card" or "Pay by Bank Transfer".
+Delivered:
+- [x] Stripe Connect onboarding + OAuth connect/disconnect flow (`MyBusinessController.StripeConnect` / `StripeConnectCallback`)
+- [x] `StripeConnectService` / `IStripeConnectService` (onboarding, checkout sessions, webhook processing)
+- [x] Webhook endpoint with signature verification (`WebhookEvent`)
+- [x] Checkout session creation from the shared invoice ("Pay by Card" button in `InvoiceViewController.ViewInvoice`)
+- [x] `CardPaymentsController` management view (completed sessions)
+- [x] Encrypted key storage/resolution (`StripeKeyEncryptionService`, `StripeKeyResolutionService`, `BusinessApiKey`)
+- [x] Database tables: `stripe.ConnectedAccount` (`StripeConnectedAccount`), `StripeCheckoutSession`, `WebhookEvent`, `BusinessApiKey`
+- [x] Plan/module gate: `stripe_connect` → `CardPayments` controller
+- [x] Test scenarios + mockups: `scenarios/stripe-connect-testing.md`, `mockups/stripe-shared-invoice-pay.html`, `mockups/stripe-card-payments-view.html`
 
 ---
 
@@ -175,7 +179,7 @@ Module 6 (Permission Infrastructure) ←── Must be first or parallel with Mo
     │
     ├── Module 3 (Payment Reminders) ←── Needs background job setup
     │
-    ├── Module 4 (Stripe Connect) ←── External integration
+    ├── Module 4 (Payment Instructions + Stripe Connect card payments) ←── shared-invoice payment options
     │
     └── Module 5 (Cash Flow) ←── Benefits from 1–4 being complete
 
@@ -184,7 +188,7 @@ Module 7 (Payment Schedules) ←── Uses Revenue + Payments + VAT infrastruct
 
 **Recommended parallel tracks:**
 - Track A: Module 6 (permissions) → Module 1 (P&L) → Module 2 (Expenses)
-- Track B: Module 3 (Reminders) → Module 4 (Stripe) → Module 5 (Cash Flow)
+- Track B: Module 3 (Reminders) → Module 4 (Payment Instructions + Stripe Connect) → Module 5 (Cash Flow)
 
 Track A can start immediately. Track B can start once the background job infrastructure from 3.6 is in place.
 

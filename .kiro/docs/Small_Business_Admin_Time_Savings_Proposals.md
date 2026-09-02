@@ -211,7 +211,9 @@ This gives a complete cash picture: what customers owe you (receivables) AND wha
 
 ***
 
-### Proposal 9: VAT Period Pre-Submission Checklist
+### Proposal 9: VAT Period Pre-Submission Checklist — ✅ COMPLETED
+
+> **Status:** Implemented (Aug 2026). Advisory, non-blocking checklist on `/Vat/Detail` (spec: `.kiro/specs/vat-pre-submission-checklist/`, test scenarios: `.kiro/docs/scenarios/vat-pre-submission-checklist-testing.md`).
 
 **Problem:** Before submitting VAT, the business owner manually checks: "Have I recorded all purchases? Are there unassigned invoices? Do my numbers look right?" They often miss something, submit incorrect VAT, and discover the error later.
 
@@ -313,7 +315,7 @@ This doesn't email the customer automatically — it reminds the owner to take a
 | 6  | Favourite Line Items         | Re-typing the same descriptions        | 10–15 min/batch              | 2–3 days  | Foundation   | Quick win   |
 | 7  | Weekly Financial Snapshot    | No visibility into financial position  | 30 min/week                  | 3–5 days  | Professional | Quick win   |
 | 8  | Supplier Payment Due Dates   | Missing supplier deadlines             | 30 min/week                  | 1 week    | Foundation   | Medium      |
-| 9  | VAT Pre-Submission Checklist | Errors in VAT filings                  | 1–2 hours/quarter            | 3–5 days  | Foundation   | Quick win   |
+| 9  | VAT Pre-Submission Checklist ✅ | Errors in VAT filings               | 1–2 hours/quarter            | 3–5 days  | Foundation   | ✅ Completed |
 | 10 | Daily/Weekly Action Prompt   | Work piling up unnoticed               | 20 min/week                  | 3–5 days  | Foundation   | Quick win   |
 | 11 | Unrecorded Revenue Detection | Lost Stripe payments                   | Prevents lost revenue        | 1 week    | Professional | Medium      |
 | 12 | Quotation Follow-Up Reminder | Forgotten quotation follow-ups         | 30 min/week                  | 2–3 days  | Foundation   | Quick win   |
@@ -347,7 +349,7 @@ Medium-effort features that fill structural gaps.
 
 | Priority | Feature                            | Effort   | Why Then                                |
 |----------|------------------------------------|----------|-----------------------------------------|
-| 8        | VAT Pre-Submission Checklist (\#9) | 3–5 days | Aligns with Q3 VAT submission deadlines |
+| 8        | VAT Pre-Submission Checklist (\#9) ✅ Completed | 3–5 days | Aligns with Q3 VAT submission deadlines |
 | 9        | Supplier Payment Due Dates (\#8)   | 1 week   | Completes the cash visibility picture   |
 | 10       | Smart Reminder Timing (\#1)        | 2–3 days | Enhances existing automation            |
 

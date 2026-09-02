@@ -18,6 +18,7 @@ public class MeetingService : IMeetingService
     private readonly SalesProductRepository _productRepository;
     private readonly MeetingTypeRepository _meetingTypeRepository;
     private readonly FollowUpTaskRepository _followUpTaskRepository;
+    private readonly FollowUpTaskTypeRepository _followUpTaskTypeRepository;
     private readonly ILeadRequestService _leadRequestService;
     private readonly ICurrentTenantService _tenantService;
 
@@ -29,6 +30,7 @@ public class MeetingService : IMeetingService
         SalesProductRepository productRepository,
         MeetingTypeRepository meetingTypeRepository,
         FollowUpTaskRepository followUpTaskRepository,
+        FollowUpTaskTypeRepository followUpTaskTypeRepository,
         ILeadRequestService leadRequestService,
         ICurrentTenantService tenantService)
     {
@@ -39,6 +41,7 @@ public class MeetingService : IMeetingService
         _productRepository = productRepository;
         _meetingTypeRepository = meetingTypeRepository;
         _followUpTaskRepository = followUpTaskRepository;
+        _followUpTaskTypeRepository = followUpTaskTypeRepository;
         _leadRequestService = leadRequestService;
         _tenantService = tenantService;
     }
@@ -88,6 +91,7 @@ public class MeetingService : IMeetingService
             if (existing == null)
                 return ServiceResult.Fail("Meeting not found.");
 
+            existing.LeadRequestId = request.LeadRequestId;
             existing.MeetingTypeId = request.MeetingTypeId;
             existing.Subject = request.Subject;
             existing.ScheduledAtUtc = request.ScheduledAtUtc;
@@ -169,6 +173,8 @@ public class MeetingService : IMeetingService
             var productRequests = await _productRequestRepository.GetByMeetingIdAsync(id);
             var opportunities = await _opportunityRepository.GetByMeetingIdAsync(id);
             var linkedTasks = await _followUpTaskRepository.GetByMeetingIdAsync(id, businessId);
+            var taskTypeNames = (await _followUpTaskTypeRepository.GetAllAsync())
+                .ToDictionary(t => t.Id, t => t.Name);
 
             var productRequestDtos = new List<MeetingProductRequestDto>();
             foreach (var pr in productRequests)
@@ -215,7 +221,8 @@ public class MeetingService : IMeetingService
                 {
                     Id = t.Id,
                     Title = t.Title,
-                    TaskType = t.TaskType,
+                    FollowUpTaskTypeId = t.FollowUpTaskTypeId,
+                    TaskType = taskTypeNames.TryGetValue(t.FollowUpTaskTypeId, out var ttn) ? ttn : string.Empty,
                     DueAtUtc = t.DueAtUtc,
                     ScheduledTimeUtc = t.ScheduledTimeUtc,
                     IsCompleted = t.IsCompleted,

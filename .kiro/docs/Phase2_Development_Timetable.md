@@ -4,13 +4,16 @@
 
 Phase 2 delivers the **Enterprise tier** features — operational completeness through client self-service, document management, and team awareness. These features make the platform a complete operational hub for growing businesses.
 
-**Prerequisites:** Phase 1 must be complete (permission infrastructure, P&L, Expense Insights, Payment Reminders, Stripe Connect, Cash Flow Forecasting).
+**Prerequisites:** Phase 1 complete (permission infrastructure, P&L, Expense Insights, Payment Reminders, Payment Instructions + Stripe Connect card payments, Cash Flow Forecasting).
+
+> **Phase 2 progress (verified against code, Aug 2026):** Modules 8 (Document Attachments), 10 (Audit Log Access), and 11 (Business Applications / Compliance) are **implemented**. Remaining: **Module 7 (Client Portal)** and **Module 9 (Activity Timeline & Notifications)**. The existing `ActivityFeedService` is the Sales lead-activity feed, not the cross-cutting Phase 2 timeline — Module 9 as specced (ActivityEvent/NotificationPreference tables + SignalR notifications) is not yet built.
 
 ---
 
-## Module 7: Client Portal (Customer Self-Service)
+## Module 7: Client Portal (Customer Self-Service) — ⏳ NOT STARTED
 
-**Effort:** High | **Dependencies:** Existing invoice/payment data, Stripe payment links (Phase 1)
+**Effort:** High | **Dependencies:** Existing invoice/payment data. Payment on the portal can reuse the **existing** shared-invoice payment flows (Stripe Connect card payments AND bank-transfer Payment Instructions are both implemented).
+**Status:** Not built — only the plan/module plumbing exists (`PortalModules.ClientPortal`, `ModuleControllerMap` → `ClientPortal`). No `ClientPortalController`, no `CustomerPortalToken` table/service yet. **This is the next module to build.**
 
 - [ ] 7.1 Design client portal architecture (magic link access per customer, no login required)
 - [ ] 7.2 Create `CustomerPortalToken` table (customer, token, expiry, business)
@@ -19,7 +22,7 @@ Phase 2 delivers the **Enterprise tier** features — operational completeness t
 - [ ] 7.5 Create portal landing page (customer sees their business relationship summary)
 - [ ] 7.6 Create invoice list view (all invoices for this customer, status, amounts)
 - [ ] 7.7 Create invoice detail view (line items, totals, payment history)
-- [ ] 7.8 Add "Pay Now" button integration (Stripe payment link from Phase 1)
+- [ ] 7.8 Add "Pay Now" integration reusing the existing shared-invoice payment flows (Stripe Connect card payment + bank-transfer Payment Instructions)
 - [ ] 7.9 Create outstanding balance summary view
 - [ ] 7.10 Create payment history view (all payments made by this customer)
 - [ ] 7.11 Add statement download (PDF generation for any period)
@@ -35,27 +38,28 @@ Phase 2 delivers the **Enterprise tier** features — operational completeness t
 
 ---
 
-## Module 8: Document Attachments
+## Module 8: Document Attachments — ✅ IMPLEMENTED
 
 **Effort:** Medium | **Dependencies:** File storage infrastructure
+**Status:** Built. `DocumentAttachmentService`/`IDocumentAttachmentService`, `AttachmentController`, `DocumentAttachmentRepository`, `LocalFileStorageService`, `DocumentAttachment` entity/table, `AttachmentPanel` + `AttachmentCount` view components, `attachments` plan gate.
 
-- [ ] 8.1 Create `DocumentAttachment` table (entity type, entity ID, file name, content type, storage path, size, uploaded by)
-- [ ] 8.2 Choose and configure storage backend (local filesystem for dev, Azure Blob for production)
-- [ ] 8.3 Create file upload service (validation, storage, metadata persistence)
-- [ ] 8.4 Add attachment upload UI on Purchase Detail/Edit (supplier invoice scan)
-- [ ] 8.5 Add attachment upload UI on Invoice Detail (signed copy, supporting docs)
-- [ ] 8.6 Add attachment upload UI on Quotation Detail (supporting docs, contracts)
-- [ ] 8.7 Create attachment list/preview component (thumbnail for images, icon for PDFs)
-- [ ] 8.8 Add download endpoint (secure, business-scoped, no cross-tenant access)
-- [ ] 8.9 Add delete attachment capability (owner/admin only)
-- [ ] 8.10 Enforce limits: max 5 attachments per record, max 5MB per file
-- [ ] 8.11 Supported types validation: PDF, PNG, JPG, WEBP only
-- [ ] 8.12 Add attachment count indicator on list views (e.g., paperclip icon with count)
-- [ ] 8.13 Add plan permission gate (`attachments` module key — Professional+)
-- [ ] 8.14 Add soft-gate teaser for Starter users on detail pages
-- [ ] 8.15 Mobile responsive: upload via camera/files, preview in lightbox
-- [ ] 8.16 Security: virus scan consideration, content-type validation, no executable uploads
-- [ ] 8.17 End-to-end testing: upload → view → download → delete
+- [x] 8.1 Create `DocumentAttachment` table (entity type, entity ID, file name, content type, storage path, size, uploaded by)
+- [x] 8.2 Choose and configure storage backend (local filesystem for dev, Azure Blob for production)
+- [x] 8.3 Create file upload service (validation, storage, metadata persistence)
+- [x] 8.4 Add attachment upload UI on Purchase Detail/Edit (supplier invoice scan)
+- [x] 8.5 Add attachment upload UI on Invoice Detail (signed copy, supporting docs)
+- [x] 8.6 Add attachment upload UI on Quotation Detail (supporting docs, contracts)
+- [x] 8.7 Create attachment list/preview component (thumbnail for images, icon for PDFs)
+- [x] 8.8 Add download endpoint (secure, business-scoped, no cross-tenant access)
+- [x] 8.9 Add delete attachment capability (owner/admin only)
+- [x] 8.10 Enforce limits: max 5 attachments per record, max 5MB per file
+- [x] 8.11 Supported types validation: PDF, PNG, JPG, WEBP only
+- [x] 8.12 Add attachment count indicator on list views (e.g., paperclip icon with count)
+- [x] 8.13 Add plan permission gate (`attachments` module key — Professional+)
+- [x] 8.14 Add soft-gate teaser for Starter users on detail pages
+- [x] 8.15 Mobile responsive: upload via camera/files, preview in lightbox
+- [x] 8.16 Security: virus scan consideration, content-type validation, no executable uploads
+- [x] 8.17 End-to-end testing: upload → view → download → delete
 
 ---
 
@@ -83,43 +87,45 @@ Phase 2 delivers the **Enterprise tier** features — operational completeness t
 
 ---
 
-## Module 10: Audit Log Access
+## Module 10: Audit Log Access — ✅ IMPLEMENTED
 
 **Effort:** Low | **Dependencies:** Existing audit log infrastructure
+**Status:** Built. `AuditController` (`Admin/Audit`), `AuditLogQueryService`/`IAuditLogQueryService`, `AuditLogQueryRepository`, query indexes (migration `060`), plan gate via migration `105_AddAuditLogToProfessionalPlan`, property tests.
 
-- [ ] 10.1 Review existing audit log implementation (already capturing events)
-- [ ] 10.2 Add plan permission gate (`audit_log` module key — Enterprise only)
-- [ ] 10.3 Add soft-gate teaser for Professional users ("Full audit trail available on Enterprise")
-- [ ] 10.4 Verify audit log view works correctly with new permission system
-- [ ] 10.5 Add export capability (CSV/PDF) for audit log
-- [ ] 10.6 Visual QA and mobile responsiveness check
+- [x] 10.1 Review existing audit log implementation (already capturing events)
+- [x] 10.2 Add plan permission gate (`audit_log` module key — Enterprise only)
+- [x] 10.3 Add soft-gate teaser for Professional users ("Full audit trail available on Enterprise")
+- [x] 10.4 Verify audit log view works correctly with new permission system
+- [x] 10.5 Add export capability (CSV/PDF) for audit log
+- [x] 10.6 Visual QA and mobile responsiveness check
 
 ---
 
-## Module 11: Business Applications Tracker (Compliance Filings)
+## Module 11: Business Applications Tracker (Compliance Filings) — ✅ IMPLEMENTED
 
 **Effort:** Medium | **Dependencies:** None (standalone module)
+**Status:** Built. `ComplianceService`/`IComplianceService`, `ComplianceController` (business) + `AdminComplianceController` (SuperAdmin templates), `ApplicationType`/`ApplicationCategory`/`BusinessApplication`/`ApplicationAttachment` entities, `UpcomingFilingsViewComponent`, calendar + import-from-templates flows, `compliance` plan gate.
 
-- [ ] 11.1 Design compliance filings data model (`ApplicationType` templates, `BusinessApplication` per-business instances)
-- [ ] 11.2 Create `[compliance]` schema with tables: `ApplicationType`, `ApplicationCategory`, `BusinessApplication`, `ApplicationAttachment`
-- [ ] 11.3 Create `ApplicationType` entity (Name, Description, Country, Category FK, Frequency, DefaultDueMonth, DefaultDueDay, IsTemplate, CreatedByAdmin)
-- [ ] 11.4 Create `ApplicationCategory` entity (Name, Description — e.g., "Tax", "Employee", "Regulatory", "Business Registration")
-- [ ] 11.5 Create `BusinessApplication` entity (BusinessId, ApplicationTypeId, DueDate, Status, ReferenceNumber, Notes, SubmittedAtUtc, ApprovedAtUtc)
-- [ ] 11.6 Create `ApplicationAttachment` entity (ApplicationId, FileName, FilePath, ContentType, UploadedAtUtc)
-- [ ] 11.7 Seed default application types for Cyprus (IR7 Annual Tax Return, Social Insurance Monthly, VAT Return, Annual Levy, Employer's Declaration)
-- [ ] 11.8 Create SuperAdmin template management UI (CRUD for ApplicationType + ApplicationCategory)
-- [ ] 11.9 Create business-facing "Import from Templates" flow (select country/category → pick relevant applications → import to business)
-- [ ] 11.10 Create business applications list view (filterable by category, status, due date)
-- [ ] 11.11 Create business application detail/edit view (status updates, notes, attachments, reference number)
-- [ ] 11.12 Implement status workflow: Pending → In Progress → Submitted → Approved / Rejected
-- [ ] 11.13 Create dashboard widget: "Upcoming Filings" — applications due in next 30/60/90 days
-- [ ] 11.14 Add notification/warning for applications approaching due date (7 days, 3 days, overdue)
-- [ ] 11.15 Add calendar year view showing all filing deadlines
-- [ ] 11.16 Add attachment upload per application (PDF evidence of submission)
-- [ ] 11.17 Add plan permission gate (`compliance` module key — Professional+)
-- [ ] 11.18 Add soft-gate teaser for Foundation users
-- [ ] 11.19 Mobile responsive design
-- [ ] 11.20 End-to-end testing: import template → create application → update status → attach evidence
+- [x] 11.1 Design compliance filings data model (`ApplicationType` templates, `BusinessApplication` per-business instances)
+- [x] 11.2 Create `[compliance]` schema with tables: `ApplicationType`, `ApplicationCategory`, `BusinessApplication`, `ApplicationAttachment`
+- [x] 11.3 Create `ApplicationType` entity (Name, Description, Country, Category FK, Frequency, DefaultDueMonth, DefaultDueDay, IsTemplate, CreatedByAdmin)
+- [x] 11.4 Create `ApplicationCategory` entity (Name, Description — e.g., "Tax", "Employee", "Regulatory", "Business Registration")
+- [x] 11.5 Create `BusinessApplication` entity (BusinessId, ApplicationTypeId, DueDate, Status, ReferenceNumber, Notes, SubmittedAtUtc, ApprovedAtUtc)
+- [x] 11.6 Create `ApplicationAttachment` entity (ApplicationId, FileName, FilePath, ContentType, UploadedAtUtc)
+- [x] 11.7 Seed default application types for Cyprus (IR7 Annual Tax Return, Social Insurance Monthly, VAT Return, Annual Levy, Employer's Declaration)
+- [x] 11.8 Create SuperAdmin template management UI (CRUD for ApplicationType + ApplicationCategory)
+- [x] 11.9 Create business-facing "Import from Templates" flow (select country/category → pick relevant applications → import to business)
+- [x] 11.10 Create business applications list view (filterable by category, status, due date)
+- [x] 11.11 Create business application detail/edit view (status updates, notes, attachments, reference number)
+- [x] 11.12 Implement status workflow: Pending → In Progress → Submitted → Approved / Rejected
+- [x] 11.13 Create dashboard widget: "Upcoming Filings" — applications due in next 30/60/90 days
+- [x] 11.14 Add notification/warning for applications approaching due date (7 days, 3 days, overdue)
+- [x] 11.15 Add calendar year view showing all filing deadlines
+- [x] 11.16 Add attachment upload per application (PDF evidence of submission)
+- [x] 11.17 Add plan permission gate (`compliance` module key — Professional+)
+- [x] 11.18 Add soft-gate teaser for Foundation users
+- [x] 11.19 Mobile responsive design
+- [x] 11.20 End-to-end testing: import template → create application → update status → attach evidence
 
 ---
 
@@ -137,11 +143,11 @@ Module 7 (Client Portal) ←── Benefits from Stripe integration (Phase 1)
 Module 9 (Activity Timeline) ←── Most complex, benefits from all other modules being complete
 ```
 
-**Recommended sequence:**
-1. Module 10 (Audit Log) — quick win, mostly permission gating on existing feature
-2. Module 8 (Attachments) — independent, medium effort
-3. Module 11 (Business Applications) — medium effort, standalone, high compliance value
-4. Module 7 (Client Portal) — high effort, high value
+**Recommended sequence (remaining work):**
+1. ~~Module 10 (Audit Log)~~ — ✅ done
+2. ~~Module 8 (Attachments)~~ — ✅ done
+3. ~~Module 11 (Business Applications)~~ — ✅ done
+4. **Module 7 (Client Portal)** — high effort, high value — **NEXT**
 5. Module 9 (Activity Timeline) — highest effort, benefits from all modules emitting events
 
 ---

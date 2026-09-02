@@ -297,6 +297,23 @@ async function snoozeTask(event, taskId, days) {
 function openCreateTaskModal(leadRequestId, contactId, contactName) {
     var titleDefault = contactName ? 'Follow up \u2014 ' + contactName : '';
 
+    // When a contact is supplied by the caller (e.g. from a lead), keep it implicit via a hidden
+    // field. When no contact is supplied (standalone Tasks page), render a Contact selector.
+    var hasContactContext = !!contactId;
+    var contactBlock;
+    if (hasContactContext) {
+        contactBlock =
+            '<div class="field" style="margin-bottom:18px;"><label>Contact</label>' +
+                '<input type="text" value="' + escapeAttr(contactName || '') + '" disabled style="background:#f5f8fb;color:#5a6a7a;" />' +
+            '</div>' +
+            '<input type="hidden" id="taskContactId" value="' + contactId + '" />';
+    } else {
+        contactBlock =
+            '<div class="field" style="margin-bottom:18px;"><label>Contact (optional)</label>' +
+                '<select id="taskContactId"><option value="">Loading contacts...</option></select>' +
+            '</div>';
+    }
+
     var modalHtml = '<div id="createTaskModal" style="position:fixed;inset:0;background:rgba(11,27,40,.4);display:flex;align-items:center;justify-content:center;z-index:1000;">' +
         '<div style="background:#fff;border-radius:20px;padding:32px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.15);">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
@@ -304,13 +321,8 @@ function openCreateTaskModal(leadRequestId, contactId, contactName) {
                 '<button onclick="closeCreateTaskModal()" style="background:none;border:none;cursor:pointer;color:#8a9bab;font-size:22px;">&times;</button>' +
             '</div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Title</label><input type="text" id="taskTitle" value="' + escapeAttr(titleDefault) + '" maxlength="200" /></div>' +
-            '<div class="field" style="margin-bottom:18px;"><label>Type</label><select id="taskType">' +
-                '<option value="Call">Call</option>' +
-                '<option value="Email">Email</option>' +
-                '<option value="Follow-up" selected>Follow-up</option>' +
-                '<option value="Meeting Prep">Meeting Prep</option>' +
-                '<option value="Other">Other</option>' +
-            '</select></div>' +
+            contactBlock +
+            '<div class="field" style="margin-bottom:18px;"><label>Type</label><select id="taskType"><option value="">Loading...</option></select></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Due Date</label>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
                     '<button class="preset-btn" onclick="setTaskPreset(event, 1)">Tomorrow</button>' +
@@ -323,7 +335,6 @@ function openCreateTaskModal(leadRequestId, contactId, contactName) {
             '<div class="field" style="margin-bottom:18px;"><label>Scheduled Time</label><input type="time" id="taskScheduledTime" value="" /><div style="font-size:11px;color:#8a9bab;margin-top:4px;">Leave blank for all-day task</div></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Notes (optional)</label><textarea id="taskNotes" rows="2" placeholder="Add context for the follow-up..."></textarea></div>' +
             '<input type="hidden" id="taskLeadRequestId" value="' + (leadRequestId || '') + '" />' +
-            '<input type="hidden" id="taskContactId" value="' + (contactId || '') + '" />' +
             '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">' +
                 '<button class="btn btn-secondary" onclick="closeCreateTaskModal()">Cancel</button>' +
                 '<button class="btn btn-primary" onclick="submitCreateTask()">Create Task</button>' +
@@ -332,6 +343,74 @@ function openCreateTaskModal(leadRequestId, contactId, contactName) {
     '</div>';
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Populate the Type dropdown from the lookup (default: Follow-up).
+    populateTaskTypeSelect('taskType');
+
+    // Populate the contact selector when no contact context was supplied
+    if (!hasContactContext) {
+        loadContactsForTaskModal();
+    }
+}
+
+// ─── Task Type lookup (loaded once from AxGetLookups) ────────
+
+var _taskTypesCache = null;
+
+// The default create-form selection (Follow-up). Matched by name to stay correct
+// even if the seeded id ever changes.
+var TASK_TYPE_DEFAULT_NAME = 'Follow-up';
+
+async function getTaskTypes() {
+    if (_taskTypesCache) return _taskTypesCache;
+    try {
+        var response = await fetch('/Sales/AxGetLookups');
+        var result = await response.json();
+        if (result.success && result.data && Array.isArray(result.data.taskTypes)) {
+            _taskTypesCache = result.data.taskTypes;
+        } else {
+            _taskTypesCache = [];
+        }
+    } catch (e) {
+        _taskTypesCache = [];
+    }
+    return _taskTypesCache;
+}
+
+// Populates a <select> (by id) with task types. selectedId selects a specific id;
+// when omitted, the 'Follow-up' type is selected by default.
+async function populateTaskTypeSelect(selectId, selectedId) {
+    var select = document.getElementById(selectId);
+    if (!select) return;
+    var types = await getTaskTypes();
+    var html = '';
+    types.forEach(function (t) {
+        var isSelected = (selectedId != null)
+            ? String(t.id) === String(selectedId)
+            : (t.name === TASK_TYPE_DEFAULT_NAME);
+        html += '<option value="' + t.id + '"' + (isSelected ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>';
+    });
+    select.innerHTML = html;
+}
+
+async function loadContactsForTaskModal() {
+    var select = document.getElementById('taskContactId');
+    if (!select) return;
+    try {
+        var response = await fetch('/Sales/AxGetContactsSearch?page=1');
+        var result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+            var html = '<option value="">\u2014 No contact \u2014</option>';
+            result.data.forEach(function (c) {
+                html += '<option value="' + c.id + '">' + escapeHtml(c.fullName) + '</option>';
+            });
+            select.innerHTML = html;
+        } else {
+            select.innerHTML = '<option value="">\u2014 No contact \u2014</option>';
+        }
+    } catch (e) {
+        select.innerHTML = '<option value="">\u2014 No contact \u2014</option>';
+    }
 }
 
 function closeCreateTaskModal() {
@@ -382,7 +461,7 @@ async function submitCreateTask() {
 
     var payload = {
         title: title,
-        taskType: document.getElementById('taskType').value,
+        followUpTaskTypeId: parseInt(document.getElementById('taskType').value),
         dueAtUtc: dueDate + 'T09:00:00Z',
         scheduledTimeUtc: scheduledTime,
         notes: document.getElementById('taskNotes').value.trim() || null,
@@ -478,13 +557,7 @@ function openEditTaskModal(taskId) {
                 '<button onclick="closeEditTaskModal()" style="background:none;border:none;cursor:pointer;color:#8a9bab;font-size:22px;">&times;</button>' +
             '</div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Title</label><input type="text" id="editTaskTitle" value="' + escapeAttr(t.title) + '" maxlength="200" /></div>' +
-            '<div class="field" style="margin-bottom:18px;"><label>Type</label><select id="editTaskType">' +
-                '<option value="Call"' + (t.taskType === 'Call' ? ' selected' : '') + '>Call</option>' +
-                '<option value="Email"' + (t.taskType === 'Email' ? ' selected' : '') + '>Email</option>' +
-                '<option value="Follow-up"' + (t.taskType === 'Follow-up' ? ' selected' : '') + '>Follow-up</option>' +
-                '<option value="Meeting Prep"' + (t.taskType === 'Meeting Prep' ? ' selected' : '') + '>Meeting Prep</option>' +
-                '<option value="Other"' + (t.taskType === 'Other' ? ' selected' : '') + '>Other</option>' +
-            '</select></div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Type</label><select id="editTaskType"><option value="">Loading...</option></select></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Due Date</label><input type="date" id="editTaskDueDate" value="' + dueDate + '" /></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Scheduled Time</label><input type="time" id="editTaskScheduledTime" value="' + scheduledTime + '" /><div style="font-size:11px;color:#8a9bab;margin-top:4px;">Leave blank for all-day task</div></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Notes</label><textarea id="editTaskNotes" rows="4" placeholder="Add notes, comments, or context...">' + escapeHtml(t.notes || '') + '</textarea></div>' +
@@ -497,6 +570,9 @@ function openEditTaskModal(taskId) {
     '</div>';
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Populate the Type dropdown from the lookup, preselecting the task's current type.
+    populateTaskTypeSelect('editTaskType', t.followUpTaskTypeId);
 }
 
 function closeEditTaskModal() {
@@ -526,7 +602,7 @@ async function submitEditTask() {
     var payload = {
         id: parseInt(document.getElementById('editTaskId').value),
         title: title,
-        taskType: document.getElementById('editTaskType').value,
+        followUpTaskTypeId: parseInt(document.getElementById('editTaskType').value),
         dueAtUtc: dueValue + 'T09:00:00Z',
         scheduledTimeUtc: scheduledTime,
         notes: document.getElementById('editTaskNotes').value.trim() || null

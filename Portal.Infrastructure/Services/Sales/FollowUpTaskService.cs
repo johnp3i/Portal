@@ -11,19 +11,20 @@ namespace Portal.Infrastructure.Services.Sales;
 public class FollowUpTaskService : IFollowUpTaskService
 {
     private readonly FollowUpTaskRepository _taskRepository;
+    private readonly FollowUpTaskTypeRepository _taskTypeRepository;
     private readonly SalesContactRepository _contactRepository;
     private readonly MeetingRepository _meetingRepository;
     private readonly ICurrentTenantService _tenantService;
 
-    private static readonly string[] ValidTaskTypes = { "Call", "Email", "Follow-up", "Meeting Prep", "Other" };
-
     public FollowUpTaskService(
         FollowUpTaskRepository taskRepository,
+        FollowUpTaskTypeRepository taskTypeRepository,
         SalesContactRepository contactRepository,
         MeetingRepository meetingRepository,
         ICurrentTenantService tenantService)
     {
         _taskRepository = taskRepository;
+        _taskTypeRepository = taskTypeRepository;
         _contactRepository = contactRepository;
         _meetingRepository = meetingRepository;
         _tenantService = tenantService;
@@ -39,7 +40,8 @@ public class FollowUpTaskService : IFollowUpTaskService
             if (request.Title.Length > 200)
                 return ServiceResult.Fail("Title must be 200 characters or fewer.");
 
-            if (!ValidTaskTypes.Contains(request.TaskType))
+            var taskType = await ResolveTaskTypeAsync(request.FollowUpTaskTypeId);
+            if (taskType == null)
                 return ServiceResult.Fail("Invalid task type.");
 
             var entity = new FollowUpTask
@@ -50,7 +52,7 @@ public class FollowUpTaskService : IFollowUpTaskService
                 TeamMemberId = request.TeamMemberId,
                 MeetingId = request.MeetingId,
                 Title = request.Title.Trim(),
-                TaskType = request.TaskType,
+                FollowUpTaskTypeId = taskType.Id,
                 DueAtUtc = request.DueAtUtc,
                 Notes = request.Notes?.Trim(),
                 ScheduledTimeUtc = request.ScheduledTimeUtc,
@@ -156,7 +158,7 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
-    public async Task<ServiceResult> UpdateTaskAsync(int taskId, string title, string taskType, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
+    public async Task<ServiceResult> UpdateTaskAsync(int taskId, string title, byte followUpTaskTypeId, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
     {
         try
         {
@@ -166,7 +168,8 @@ public class FollowUpTaskService : IFollowUpTaskService
             if (title.Length > 200)
                 return ServiceResult.Fail("Title must be 200 characters or fewer.");
 
-            if (!ValidTaskTypes.Contains(taskType))
+            var taskType = await ResolveTaskTypeAsync(followUpTaskTypeId);
+            if (taskType == null)
                 return ServiceResult.Fail("Invalid task type.");
 
             var businessId = _tenantService.CurrentBusinessId;
@@ -175,8 +178,42 @@ public class FollowUpTaskService : IFollowUpTaskService
             if (task == null)
                 return ServiceResult.Fail("Task not found.");
 
-            await _taskRepository.UpdateAsync(taskId, businessId, title.Trim(), taskType, dueAtUtc, notes?.Trim(), scheduledTimeUtc);
+            await _taskRepository.UpdateAsync(taskId, businessId, title.Trim(), taskType.Id, dueAtUtc, notes?.Trim(), scheduledTimeUtc);
             return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Validates a submitted FollowUpTaskTypeId against the lookup table and returns
+    /// the matching type (Id + Name), or null when the id is not a valid type.
+    /// </summary>
+    private async Task<FollowUpTaskType?> ResolveTaskTypeAsync(byte followUpTaskTypeId)
+    {
+        try
+        {
+            var types = await _taskTypeRepository.GetAllAsync();
+            return types.FirstOrDefault(t => t.Id == followUpTaskTypeId);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Builds an id → name map of all follow-up task types for resolving display
+    /// names when projecting tasks to DTOs (the type column was dropped in Phase 2).
+    /// </summary>
+    private async Task<Dictionary<byte, string>> GetTaskTypeNamesAsync()
+    {
+        try
+        {
+            var types = await _taskTypeRepository.GetAllAsync();
+            return types.ToDictionary(t => t.Id, t => t.Name);
         }
         catch (Exception ex)
         {
@@ -199,7 +236,9 @@ public class FollowUpTaskService : IFollowUpTaskService
             var meetingIds = tasks.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct();
             var meetingSubjectsLookup = await _meetingRepository.GetSubjectsByIdsAsync(meetingIds, businessId);
 
-            return tasks.Select(t => MapToDto(t, contactsLookup, meetingSubjectsLookup)).ToList();
+            var typeNames = await GetTaskTypeNamesAsync();
+
+            return tasks.Select(t => MapToDto(t, contactsLookup, typeNames, meetingSubjectsLookup)).ToList();
         }
         catch (Exception ex)
         {
@@ -221,7 +260,9 @@ public class FollowUpTaskService : IFollowUpTaskService
             var meetingIds = tasks.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct();
             var meetingSubjectsLookup = await _meetingRepository.GetSubjectsByIdsAsync(meetingIds, businessId);
 
-            return tasks.Select(t => MapToDto(t, contactsLookup, meetingSubjectsLookup)).ToList();
+            var typeNames = await GetTaskTypeNamesAsync();
+
+            return tasks.Select(t => MapToDto(t, contactsLookup, typeNames, meetingSubjectsLookup)).ToList();
         }
         catch (Exception ex)
         {
@@ -235,7 +276,7 @@ public class FollowUpTaskService : IFollowUpTaskService
         {
             var businessId = _tenantService.CurrentBusinessId;
             var (items, totalCount) = await _taskRepository.GetPagedAsync(
-                businessId, filter.Status, filter.TaskType, filter.TeamMemberId,
+                businessId, filter.Status, filter.FollowUpTaskTypeId, filter.TeamMemberId,
                 filter.DateFrom, filter.DateTo, page, pageSize);
 
             var contactIds = items.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
@@ -245,9 +286,11 @@ public class FollowUpTaskService : IFollowUpTaskService
             var meetingIds = items.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct();
             var meetingSubjectsLookup = await _meetingRepository.GetSubjectsByIdsAsync(meetingIds, businessId);
 
+            var typeNames = await GetTaskTypeNamesAsync();
+
             return new PagedResult<FollowUpTaskDto>
             {
-                Items = items.Select(t => MapToDto(t, contactsLookup, meetingSubjectsLookup)).ToList(),
+                Items = items.Select(t => MapToDto(t, contactsLookup, typeNames, meetingSubjectsLookup)).ToList(),
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalCount = totalCount
@@ -282,6 +325,8 @@ public class FollowUpTaskService : IFollowUpTaskService
             var contactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
 
+            var typeNames = await GetTaskTypeNamesAsync();
+
             return tasks.Select(t =>
             {
                 string? contactName = null;
@@ -296,7 +341,7 @@ public class FollowUpTaskService : IFollowUpTaskService
                 {
                     Id = t.Id,
                     Title = t.Title,
-                    TaskType = t.TaskType,
+                    TaskType = typeNames.TryGetValue(t.FollowUpTaskTypeId, out var tn) ? tn : string.Empty,
                     DueAtUtc = t.DueAtUtc,
                     ScheduledTimeUtc = t.ScheduledTimeUtc,
                     ContactName = contactName,
@@ -310,7 +355,7 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
-    private static FollowUpTaskDto MapToDto(FollowUpTask entity, Dictionary<int, SalesContact> contactsLookup, Dictionary<int, string>? meetingSubjectsLookup = null)
+    private static FollowUpTaskDto MapToDto(FollowUpTask entity, Dictionary<int, SalesContact> contactsLookup, Dictionary<byte, string> typeNames, Dictionary<int, string>? meetingSubjectsLookup = null)
     {
         var today = DateTime.UtcNow.Date;
         var dueDate = entity.DueAtUtc.Date;
@@ -348,7 +393,9 @@ public class FollowUpTaskService : IFollowUpTaskService
             ContactName = contactName,
             AssignedToName = null, // TeamMember names resolved separately if needed
             Title = entity.Title,
-            TaskType = entity.TaskType,
+            FollowUpTaskTypeId = entity.FollowUpTaskTypeId,
+            TaskTypeName = typeNames.TryGetValue(entity.FollowUpTaskTypeId, out var tn) ? tn : string.Empty,
+            TaskType = typeNames.TryGetValue(entity.FollowUpTaskTypeId, out var tn2) ? tn2 : string.Empty,
             DueAtUtc = entity.DueAtUtc,
             Notes = entity.Notes,
             IsCompleted = entity.IsCompleted,

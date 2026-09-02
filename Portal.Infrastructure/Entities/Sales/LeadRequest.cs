@@ -10,6 +10,12 @@ public class LeadRequest
 
     public int BusinessId { get; set; }
 
+    /// <summary>
+    /// Human-friendly, per-business sequential lead number (1, 2, 3... within each business).
+    /// Used for display so the global database Id is never exposed to users.
+    /// </summary>
+    public int LeadNumber { get; set; }
+
     public int ContactId { get; set; }
 
     public int? ProductId { get; set; }

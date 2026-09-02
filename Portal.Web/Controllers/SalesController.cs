@@ -26,6 +26,7 @@ public class SalesController : Controller
     private readonly LeadSourceReferenceTypeRepository _sourceRefTypeRepository;
     private readonly LeadResponseTypeRepository _responseTypeRepository;
     private readonly MeetingTypeRepository _meetingTypeRepository;
+    private readonly FollowUpTaskTypeRepository _followUpTaskTypeRepository;
     private readonly ICurrentTenantService _tenantService;
     private readonly IBusinessService _businessService;
     private readonly ITeamMemberService _teamMemberService;
@@ -47,6 +48,7 @@ public class SalesController : Controller
         LeadSourceReferenceTypeRepository sourceRefTypeRepository,
         LeadResponseTypeRepository responseTypeRepository,
         MeetingTypeRepository meetingTypeRepository,
+        FollowUpTaskTypeRepository followUpTaskTypeRepository,
         ICurrentTenantService tenantService,
         IBusinessService businessService,
         ITeamMemberService teamMemberService,
@@ -67,6 +69,7 @@ public class SalesController : Controller
         _sourceRefTypeRepository = sourceRefTypeRepository;
         _responseTypeRepository = responseTypeRepository;
         _meetingTypeRepository = meetingTypeRepository;
+        _followUpTaskTypeRepository = followUpTaskTypeRepository;
         _tenantService = tenantService;
         _businessService = businessService;
         _teamMemberService = teamMemberService;
@@ -324,6 +327,43 @@ public class SalesController : Controller
         {
             _logger.LogError(ex, "Error searching contacts");
             return Json(new { success = false, message = "Failed to search contacts." });
+        }
+    }
+
+    /// <summary>
+    /// Lightweight lead lookup for dropdowns (e.g. the Schedule Meeting modal).
+    /// Returns active (non-cancelled) leads with a human-readable label.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetLeadsLookup(string? search)
+    {
+        try
+        {
+            var filter = new LeadFilterDto { SearchTerm = search, Page = 1, PageSize = 500 };
+            var paged = await _leadRequestService.GetLeadsPagedAsync(filter);
+
+            var items = paged.Items
+                .Where(l => !l.IsCancelled)
+                .Select(l =>
+                {
+                    var who = string.IsNullOrWhiteSpace(l.CompanyName)
+                        ? l.ContactName
+                        : $"{l.ContactName} ({l.CompanyName})";
+                    if (!string.IsNullOrWhiteSpace(l.ProductName))
+                        who = $"{who} — {l.ProductName}";
+                    return new
+                    {
+                        l.Id,
+                        Label = $"Lead #{l.LeadNumber} — {who}"
+                    };
+                });
+
+            return Json(new { success = true, data = items });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading leads lookup");
+            return Json(new { success = false, message = "Failed to load leads." });
         }
     }
 
@@ -1194,6 +1234,7 @@ public class SalesController : Controller
             var sourceRefs = await _sourceRefTypeRepository.GetAllAsync();
             var responseTypes = await _responseTypeRepository.GetAllAsync();
             var meetingTypes = await _meetingTypeRepository.GetAllAsync();
+            var taskTypes = await _followUpTaskTypeRepository.GetAllAsync();
             var products = await _productService.GetActiveProductsAsync();
             var teamMembers = await _teamMemberService.GetActiveAsync();
 
@@ -1207,6 +1248,7 @@ public class SalesController : Controller
                     sourceReferences = sourceRefs.Select(s => new { s.Id, s.Name }),
                     responseTypes = responseTypes.Select(r => new { r.Id, r.Name }),
                     meetingTypes = meetingTypes.Select(m => new { m.Id, m.Name }),
+                    taskTypes = taskTypes.Select(t => new { t.Id, t.Name }),
                     products = products.Select(p => new { p.Id, p.Name }),
                     teamMembers = teamMembers.Select(t => new { t.Id, t.DisplayName })
                 }
@@ -1328,7 +1370,7 @@ public class SalesController : Controller
             if (request == null)
                 return Json(new { success = false, message = "Invalid request data." });
 
-            var result = await _followUpTaskService.UpdateTaskAsync(request.Id, request.Title, request.TaskType, request.DueAtUtc, request.Notes, request.ScheduledTimeUtc);
+            var result = await _followUpTaskService.UpdateTaskAsync(request.Id, request.Title, request.FollowUpTaskTypeId, request.DueAtUtc, request.Notes, request.ScheduledTimeUtc);
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)
@@ -1401,14 +1443,14 @@ public class SalesController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> AxGetTasksPaged(string? status, string? taskType, int? teamMemberId, DateTime? dateFrom, DateTime? dateTo, int page = 1)
+    public async Task<IActionResult> AxGetTasksPaged(string? status, byte? followUpTaskTypeId, int? teamMemberId, DateTime? dateFrom, DateTime? dateTo, int page = 1)
     {
         try
         {
             var filter = new FollowUpTaskFilter
             {
                 Status = status,
-                TaskType = taskType,
+                FollowUpTaskTypeId = followUpTaskTypeId,
                 TeamMemberId = teamMemberId,
                 DateFrom = dateFrom,
                 DateTo = dateTo
@@ -1505,10 +1547,15 @@ public class SalesController : Controller
     {
         try
         {
-            if (startDate >= endDate)
+            // Dates arrive as date-only (midnight). Treat the end date as inclusive through the end
+            // of that day so a same-day range (e.g. "This Month" on the 1st) still captures records.
+            var rangeStart = startDate.Date;
+            var rangeEnd = endDate.Date.AddDays(1).AddTicks(-1);
+
+            if (rangeStart > rangeEnd)
                 return Json(new { success = false, message = "Start date must be before end date." });
 
-            var metrics = await _insightsService.GetMetricsAsync(startDate, endDate);
+            var metrics = await _insightsService.GetMetricsAsync(rangeStart, rangeEnd);
             return Json(new { success = true, data = metrics });
         }
         catch (Exception ex)

@@ -31,11 +31,6 @@
             <label for="filterType">Type</label>
             <select id="filterType">
                 <option value="">All Types</option>
-                <option value="Call">Call</option>
-                <option value="Email">Email</option>
-                <option value="Follow-up">Follow-up</option>
-                <option value="Meeting Prep">Meeting Prep</option>
-                <option value="Other">Other</option>
             </select>
         </div>
         <div class="field" style="min-width:140px;">
@@ -102,7 +97,7 @@
 </section>
 
 @section Scripts {
-    <script src="~/js/sales/follow-up-tasks.js?v=1"></script>
+    <script src="~/js/sales/follow-up-tasks.js?v=4"></script>
     <script>
         var _tasksCurrentPage = 1;
 
@@ -115,7 +110,7 @@
 
             var params = new URLSearchParams();
             if (status) params.append('status', status);
-            if (taskType) params.append('taskType', taskType);
+            if (taskType) params.append('followUpTaskTypeId', taskType);
             if (dateFrom) params.append('dateFrom', dateFrom);
             if (dateTo) params.append('dateTo', dateTo);
             params.append('page', page);
@@ -304,6 +299,20 @@
             document.getElementById('filterDateTo').value = '';
             loadTasksPage(1);
         }
+
+        // Populate the Type filter from the lookup (keeps the leading "All Types" option).
+        async function populateTypeFilter() {
+            if (typeof getTaskTypes !== 'function') return;
+            var types = await getTaskTypes();
+            var select = document.getElementById('filterType');
+            if (!select) return;
+            var html = '<option value="">All Types</option>';
+            types.forEach(function (t) {
+                html += '<option value="' + t.id + '">' + escapeHtml(t.name) + '</option>';
+            });
+            select.innerHTML = html;
+        }
+        populateTypeFilter();
 
         // Load on page ready
         loadTasksPage(1);

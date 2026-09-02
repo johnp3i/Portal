@@ -56,6 +56,7 @@ public class LeadStageReevaluationPreservationTests
         var mockProductRepo = new Mock<SalesProductRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -65,6 +66,7 @@ public class LeadStageReevaluationPreservationTests
             mockProductRepo.Object,
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
+            mockFollowUpTaskTypeRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object);
 
@@ -117,6 +119,7 @@ public class LeadStageReevaluationPreservationTests
         var mockProductRepo = new Mock<SalesProductRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -126,6 +129,7 @@ public class LeadStageReevaluationPreservationTests
             mockProductRepo.Object,
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
+            mockFollowUpTaskTypeRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object);
 
@@ -182,6 +186,7 @@ public class LeadStageReevaluationPreservationTests
         var mockProductRepo = new Mock<SalesProductRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -191,6 +196,7 @@ public class LeadStageReevaluationPreservationTests
             mockProductRepo.Object,
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
+            mockFollowUpTaskTypeRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object);
 
@@ -247,6 +253,7 @@ public class LeadStageReevaluationPreservationTests
         var mockProductRepo = new Mock<SalesProductRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -256,6 +263,7 @@ public class LeadStageReevaluationPreservationTests
             mockProductRepo.Object,
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
+            mockFollowUpTaskTypeRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object);
 
@@ -309,6 +317,7 @@ public class LeadStageReevaluationPreservationTests
         var mockProductRepo = new Mock<SalesProductRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -318,6 +327,7 @@ public class LeadStageReevaluationPreservationTests
             mockProductRepo.Object,
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
+            mockFollowUpTaskTypeRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object);
 
@@ -374,6 +384,7 @@ public class LeadStageReevaluationPreservationTests
         var mockProductRepo = new Mock<SalesProductRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -383,6 +394,7 @@ public class LeadStageReevaluationPreservationTests
             mockProductRepo.Object,
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
+            mockFollowUpTaskTypeRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object);
 

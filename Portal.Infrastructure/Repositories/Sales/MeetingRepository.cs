@@ -75,7 +75,8 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
         {
             const string query = @"
                 UPDATE [sales].[Meeting]
-                SET [MeetingTypeId] = @MeetingTypeId,
+                SET [LeadRequestId] = @LeadRequestId,
+                    [MeetingTypeId] = @MeetingTypeId,
                     [Subject] = @Subject,
                     [ScheduledAtUtc] = @ScheduledAtUtc,
                     [DurationMinutes] = @DurationMinutes,
@@ -88,6 +89,7 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", entity.Id),
                 new SqlParameter("@BusinessId", entity.BusinessId),
+                new SqlParameter("@LeadRequestId", entity.LeadRequestId ?? (object)DBNull.Value),
                 new SqlParameter("@MeetingTypeId", entity.MeetingTypeId),
                 new SqlParameter("@Subject", entity.Subject),
                 new SqlParameter("@ScheduledAtUtc", entity.ScheduledAtUtc),

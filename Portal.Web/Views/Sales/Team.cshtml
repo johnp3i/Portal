@@ -17,6 +17,8 @@
 <section class="glass card-pad">
     @if (Model != null && Model.Count > 0)
     {
+        <div class="scroll-hint">Swipe to see more &rarr;</div>
+        <div class="table-responsive">
         <table>
             <thead>
                 <tr>
@@ -74,6 +76,7 @@
                 }
             </tbody>
         </table>
+        </div>
     }
     else
     {
@@ -84,23 +87,23 @@
 </section>
 
 <!-- Team KPIs -->
-<section class="glass card-pad" style="margin-top:22px;">
-    <div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:16px;text-align:center;">
-        <div>
-            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">@ViewBag.ActiveMembers</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Active Members</div>
+<section class="glass card-pad team-kpis" style="margin-top:22px;">
+    <div class="kpi-grid team-kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-value" style="color:#0B1B28;">@ViewBag.ActiveMembers</div>
+            <div class="kpi-label">Active Members</div>
         </div>
-        <div>
-            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">@ViewBag.TotalActiveLeads</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Total Active Leads</div>
+        <div class="kpi-card">
+            <div class="kpi-value" style="color:#0B1B28;">@ViewBag.TotalActiveLeads</div>
+            <div class="kpi-label">Total Active Leads</div>
         </div>
-        <div>
-            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:#0B1B28;">@ViewBag.AvgLeadsPerMember</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Avg. Leads / Member</div>
+        <div class="kpi-card">
+            <div class="kpi-value" style="color:#0B1B28;">@ViewBag.AvgLeadsPerMember</div>
+            <div class="kpi-label">Avg. Leads / Member</div>
         </div>
-        <div>
-            <div style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;color:@(((int)ViewBag.UnassignedLeads) > 0 ? "#C8912E" : "#0B1B28");">@ViewBag.UnassignedLeads</div>
-            <div style="font-size:12px;font-weight:600;color:#5E7385;margin-top:4px;">Unassigned Leads</div>
+        <div class="kpi-card">
+            <div class="kpi-value" style="color:@(((int)ViewBag.UnassignedLeads) > 0 ? "#C8912E" : "#0B1B28");">@ViewBag.UnassignedLeads</div>
+            <div class="kpi-label">Unassigned Leads</div>
         </div>
     </div>
 </section>

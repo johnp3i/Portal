@@ -20,13 +20,13 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
             const string query = @"
                 INSERT INTO [sales].[FollowUpTask]
                     ([BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
-                     [Title], [TaskType], [DueAtUtc], [Notes],
+                     [Title], [FollowUpTaskTypeId], [DueAtUtc], [Notes],
                      [IsCompleted], [SnoozedCount], [ScheduledTimeUtc],
                      [MeetingId],
                      [CreatedByUserId], [CreatedAtUtc])
                 VALUES
                     (@BusinessId, @LeadRequestId, @ContactId, @TeamMemberId,
-                     @Title, @TaskType, @DueAtUtc, @Notes,
+                     @Title, @FollowUpTaskTypeId, @DueAtUtc, @Notes,
                      0, 0, @ScheduledTimeUtc,
                      @MeetingId,
                      @CreatedByUserId, @CreatedAtUtc);
@@ -51,7 +51,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 command.Parameters.Add(new SqlParameter("@ContactId", entity.ContactId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@TeamMemberId", entity.TeamMemberId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@Title", entity.Title));
-                command.Parameters.Add(new SqlParameter("@TaskType", entity.TaskType));
+                command.Parameters.Add(new SqlParameter("@FollowUpTaskTypeId", entity.FollowUpTaskTypeId));
                 command.Parameters.Add(new SqlParameter("@DueAtUtc", entity.DueAtUtc));
                 command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@ScheduledTimeUtc", SqlDbType.Time) { Value = entity.ScheduledTimeUtc.HasValue ? entity.ScheduledTimeUtc.Value.ToTimeSpan() : DBNull.Value });
@@ -164,14 +164,14 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         }
     }
 
-    public async Task UpdateAsync(int id, int businessId, string title, string taskType, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
+    public async Task UpdateAsync(int id, int businessId, string title, byte followUpTaskTypeId, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
     {
         try
         {
             const string query = @"
                 UPDATE [sales].[FollowUpTask]
                 SET [Title] = @Title,
-                    [TaskType] = @TaskType,
+                    [FollowUpTaskTypeId] = @FollowUpTaskTypeId,
                     [DueAtUtc] = @DueAtUtc,
                     [Notes] = @Notes,
                     [ScheduledTimeUtc] = @ScheduledTimeUtc
@@ -181,7 +181,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 new SqlParameter("@Id", id),
                 new SqlParameter("@BusinessId", businessId),
                 new SqlParameter("@Title", title),
-                new SqlParameter("@TaskType", taskType),
+                new SqlParameter("@FollowUpTaskTypeId", followUpTaskTypeId),
                 new SqlParameter("@DueAtUtc", dueAtUtc),
                 new SqlParameter("@Notes", notes ?? (object)DBNull.Value),
                 new SqlParameter("@ScheduledTimeUtc", SqlDbType.Time) { Value = scheduledTimeUtc.HasValue ? scheduledTimeUtc.Value.ToTimeSpan() : DBNull.Value }
@@ -199,7 +199,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         {
             const string query = @"
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
-                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [Title], [FollowUpTaskTypeId], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
                        [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
@@ -226,7 +226,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         {
             var query = @"
                 SELECT TOP 10 [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
-                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [Title], [FollowUpTaskTypeId], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
                        [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
@@ -265,7 +265,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         {
             const string query = @"
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
-                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [Title], [FollowUpTaskTypeId], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
                        [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
@@ -356,7 +356,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
 
             const string query = @"
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
-                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [Title], [FollowUpTaskTypeId], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
                        [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
@@ -383,7 +383,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
     /// Gets paged tasks with optional filtering.
     /// </summary>
     public async Task<(List<FollowUpTask> Items, int TotalCount)> GetPagedAsync(
-        int businessId, string? status, string? taskType, int? teamMemberId,
+        int businessId, string? status, byte? followUpTaskTypeId, int? teamMemberId,
         DateTime? dateFrom, DateTime? dateTo, int page, int pageSize)
     {
         try
@@ -414,10 +414,10 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 }
             }
 
-            if (!string.IsNullOrEmpty(taskType))
+            if (followUpTaskTypeId.HasValue)
             {
-                baseWhere += " AND [TaskType] = @TaskType";
-                parameters.Add(new SqlParameter("@TaskType", taskType));
+                baseWhere += " AND [FollowUpTaskTypeId] = @FollowUpTaskTypeId";
+                parameters.Add(new SqlParameter("@FollowUpTaskTypeId", followUpTaskTypeId.Value));
             }
 
             if (teamMemberId.HasValue)
@@ -472,7 +472,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
             var offset = (page - 1) * pageSize;
             var dataQuery = $@"
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
-                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [Title], [FollowUpTaskTypeId], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
                        [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]
@@ -502,7 +502,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         {
             const string query = @"
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
-                       [Title], [TaskType], [DueAtUtc], [Notes],
+                       [Title], [FollowUpTaskTypeId], [DueAtUtc], [Notes],
                        [IsCompleted], [CompletedAtUtc], [SnoozedCount],
                        [TaskOutcome], [ScheduledTimeUtc], [MeetingId],
                        [CreatedByUserId], [CreatedAtUtc]

@@ -251,6 +251,7 @@ public class LeadRequestService : ILeadRequestService
                 result.Add(new LeadCardDto
                 {
                     Id = lead.Id,
+                    LeadNumber = lead.LeadNumber,
                     ContactName = contactName,
                     CompanyName = contact?.CompanyName,
                     CreatedAtUtc = lead.CreatedAtUtc,
@@ -476,6 +477,7 @@ public class LeadRequestService : ILeadRequestService
             var dto = new LeadRequestDetailDto
             {
                 Id = lead.Id,
+                LeadNumber = lead.LeadNumber,
                 ContactId = lead.ContactId,
                 ContactName = contact != null
                     ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
@@ -608,6 +610,7 @@ public class LeadRequestService : ILeadRequestService
                     .Select(l => new LeadCardDto
                     {
                         Id = l.Id,
+                        LeadNumber = l.LeadNumber,
                         ContactName = string.Empty, // Will be filled below
                         AssignedToUserId = l.AssignedToUserId,
                         CreatedAtUtc = l.CreatedAtUtc,
@@ -698,6 +701,7 @@ public class LeadRequestService : ILeadRequestService
                 rows.Add(new LeadTableRowDto
                 {
                     Id = lead.Id,
+                    LeadNumber = lead.LeadNumber,
                     ContactName = contact != null
                         ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
                         : "Unknown",

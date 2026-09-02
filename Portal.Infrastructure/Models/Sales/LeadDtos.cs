@@ -15,6 +15,7 @@ public class LeadActivityDateDto
 public class LeadCardDto
 {
     public int Id { get; set; }
+    public int LeadNumber { get; set; }
     public string ContactName { get; set; } = null!;
     public string? CompanyName { get; set; }
     public string? ProductName { get; set; }
@@ -35,6 +36,7 @@ public class LeadCardDto
 public class LeadTableRowDto
 {
     public int Id { get; set; }
+    public int LeadNumber { get; set; }
     public string ContactName { get; set; } = null!;
     public string? CompanyName { get; set; }
     public string? ProductName { get; set; }
@@ -78,6 +80,7 @@ public class CreateLeadRequestDto
 public class LeadRequestDetailDto
 {
     public int Id { get; set; }
+    public int LeadNumber { get; set; }
     public int ContactId { get; set; }
     public string ContactName { get; set; } = null!;
     public string? ContactEmail { get; set; }

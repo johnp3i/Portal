@@ -37,6 +37,7 @@ public class CreateMeetingRequest
 public class UpdateMeetingRequest
 {
     public int Id { get; set; }
+    public int? LeadRequestId { get; set; }
     public int MeetingTypeId { get; set; }
     public string Subject { get; set; } = null!;
     public DateTime ScheduledAtUtc { get; set; }
@@ -123,6 +124,7 @@ public class MeetingTaskBriefDto
 {
     public int Id { get; set; }
     public string Title { get; set; } = null!;
+    public byte FollowUpTaskTypeId { get; set; }
     public string TaskType { get; set; } = null!;
     public DateTime DueAtUtc { get; set; }
     public TimeOnly? ScheduledTimeUtc { get; set; }

@@ -73,18 +73,18 @@ Payment Instructions replaces Module 4 (Stripe Connect) with a lightweight bank-
     - Simple query to return `Business.IsPaymentInstructionsEnabled` value
     - _Requirements: 2.1, 2.2_
 
-  - [~] 5.5 Write property tests for PaymentInstructionsService — toggle logic
+  - [x] 5.5 Write property tests for PaymentInstructionsService — toggle logic _(SKIPPED — optional, not implemented for MVP)_
     - **Property 1: Toggle persistence** — enabling/disabling results in correct persisted value
     - **Property 2: Toggle requires active bank details** — toggle rejected when no active records exist
     - **Validates: Requirements 1.2, 1.3, 1.5**
 
-  - [~] 5.6 Write property tests for PaymentInstructionsService — payment instructions data
+  - [x] 5.6 Write property tests for PaymentInstructionsService — payment instructions data _(SKIPPED — optional, not implemented for MVP)_
     - **Property 5: Transfer reference format** — format is always `{InvoiceNumber} — {BusinessName}`
     - **Property 6: Lowest SortOrder selection** — always returns record with minimum SortOrder
     - **Property 7: Outstanding amount calculation** — equals TotalAmount minus sum of payments, minimum 0
     - **Validates: Requirements 3.2, 3.5, 3.6**
 
-  - [~] 5.7 Write property tests for PaymentInstructionsService — payment declaration
+  - [x] 5.7 Write property tests for PaymentInstructionsService — payment declaration _(SKIPPED — optional, not implemented for MVP)_
     - **Property 8: Payment declaration state transition** — eligible invoice transitions to PaymentOnboard with audit entry
     - **Property 13: Share token validation** — invalid/expired tokens rejected
     - **Property 14: Rate limiting** — 3+ declarations in last hour are rejected
@@ -118,7 +118,7 @@ Payment Instructions replaces Module 4 (Stripe Connect) with a lightweight bank-
     - Return `Json(new { success, message })` result
     - _Requirements: 4.2, 4.3, 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [~] 9.2 Write property tests for button visibility logic
+  - [x] 9.2 Write property tests for button visibility logic _(SKIPPED — optional, not implemented for MVP)_
     - **Property 3: Button visibility rule** — button visible iff toggle enabled AND status in {1, 2, 4}
     - **Property 11: SwiftBic conditional display** — SWIFT/BIC appears iff non-null and non-empty
     - **Validates: Requirements 2.1, 2.2, 2.3, 6.3, 6.4**
@@ -160,7 +160,7 @@ Payment Instructions replaces Module 4 (Stripe Connect) with a lightweight bank-
     - Ensure PaymentOnboard invoices render with appropriate badge styling in the list
     - _Requirements: 5.4_
 
-  - [~] 14.2 Write property tests for PaymentOnboard status behaviour
+  - [x] 14.2 Write property tests for PaymentOnboard status behaviour _(SKIPPED — optional, not implemented for MVP)_
     - **Property 9: PaymentOnboard does not lock invoice** — business can still record payments and change status
     - **Property 10: Auto-transition to Paid on full payment** — status becomes Paid when payments >= TotalAmount, regardless of previous PaymentOnboard
     - **Property 12: Audit log creation on declaration** — audit entry contains invoice ID, token, UTC timestamp, IP

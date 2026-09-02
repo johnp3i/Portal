@@ -9,6 +9,31 @@
     var _editMeetingContactId = null;
     var _editMeetingLeadRequestId = null;
     var _meetingTasksDirty = false;
+    var _taskTypesCache = null;
+    var TASK_TYPE_DEFAULT_NAME = 'Follow-up';
+
+    // Loads follow-up task types from AxGetLookups (once) and populates the
+    // meeting-task Type dropdown, defaulting to 'Follow-up'.
+    async function populateMeetingTaskTypeSelect() {
+        var select = document.getElementById('meetingTaskType');
+        if (!select) return;
+        if (!_taskTypesCache) {
+            try {
+                var response = await fetch('/Sales/AxGetLookups');
+                var result = await response.json();
+                _taskTypesCache = (result.success && result.data && Array.isArray(result.data.taskTypes))
+                    ? result.data.taskTypes : [];
+            } catch (e) {
+                _taskTypesCache = [];
+            }
+        }
+        var html = '';
+        _taskTypesCache.forEach(function (t) {
+            var isSelected = (t.name === TASK_TYPE_DEFAULT_NAME);
+            html += '<option value="' + t.id + '"' + (isSelected ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>';
+        });
+        select.innerHTML = html;
+    }
 
     function getAntiForgeryToken() {
         var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -319,6 +344,13 @@
                 _editMeetingLeadRequestId = m.leadRequestId;
                 _meetingTasksDirty = false;
 
+                // Populate the editable Lead dropdown and preselect the meeting's current lead
+                fetchLeadsOnce().then(function (leads) {
+                    var leadSelect = document.getElementById('editMeetingLeadRequestId');
+                    populateLeadSelect(leadSelect, leads, m.leadRequestId);
+                    leadSelect.value = m.leadRequestId ? String(m.leadRequestId) : '';
+                });
+
                 // Convert ISO datetime to datetime-local format (YYYY-MM-DDTHH:mm)
                 if (m.scheduledAtUtc) {
                     var dt = new Date(m.scheduledAtUtc);
@@ -353,8 +385,12 @@
             return;
         }
 
+        var editLeadSelect = document.getElementById('editMeetingLeadRequestId');
+        var editLeadId = editLeadSelect && editLeadSelect.value ? parseInt(editLeadSelect.value) : null;
+
         var payload = {
             id: parseInt(document.getElementById('editMeetingId').value),
+            leadRequestId: editLeadId,
             subject: subject,
             meetingTypeId: parseInt(document.getElementById('editMeetingTypeId').value),
             scheduledAtUtc: scheduledAt,
@@ -408,6 +444,13 @@
         document.getElementById('meetingDuration').value = '60';
         document.getElementById('meetingLocation').value = '';
         document.getElementById('meetingNotes').value = '';
+
+        // Reset the lead dropdown unless it was pre-locked from a ?leadRequestId context
+        var leadSelect = document.getElementById('meetingLeadRequestId');
+        if (leadSelect && !leadSelect.disabled) {
+            leadSelect.value = '';
+        }
+
         document.getElementById('meetingModal').style.display = 'flex';
     };
 
@@ -425,6 +468,12 @@
             return;
         }
 
+        // Prefer the lead selected in the modal; fall back to a query-string lead (arriving from Lead Detail)
+        var leadSelect = document.getElementById('meetingLeadRequestId');
+        var selectedLeadId = leadSelect && leadSelect.value ? parseInt(leadSelect.value) : null;
+        var queryLeadId = new URLSearchParams(window.location.search).get('leadRequestId');
+        var leadRequestId = selectedLeadId || (queryLeadId ? parseInt(queryLeadId) : null);
+
         var payload = {
             contactId: parseInt(contactId),
             meetingTypeId: parseInt(document.getElementById('meetingTypeId').value),
@@ -433,7 +482,7 @@
             durationMinutes: parseInt(document.getElementById('meetingDuration').value) || 60,
             location: document.getElementById('meetingLocation').value || null,
             notes: document.getElementById('meetingNotes').value || null,
-            leadRequestId: new URLSearchParams(window.location.search).get('leadRequestId') ? parseInt(new URLSearchParams(window.location.search).get('leadRequestId')) : null
+            leadRequestId: leadRequestId
         };
 
         BlockUI.show('Scheduling...');
@@ -601,13 +650,15 @@
 
     window.showMeetingTaskForm = function () {
         document.getElementById('meetingTaskForm').style.display = 'block';
+        populateMeetingTaskTypeSelect();
         document.getElementById('meetingTaskTitle').focus();
     };
 
     window.hideMeetingTaskForm = function () {
         document.getElementById('meetingTaskForm').style.display = 'none';
         document.getElementById('meetingTaskTitle').value = '';
-        document.getElementById('meetingTaskType').value = 'Follow-up';
+        // Re-populate to reset the Type back to the 'Follow-up' default.
+        populateMeetingTaskTypeSelect();
         document.getElementById('meetingTaskDueDate').value = '';
         document.getElementById('meetingTaskNotes').value = '';
     };
@@ -632,7 +683,7 @@
             contactId: _editMeetingContactId,
             leadRequestId: _editMeetingLeadRequestId,
             title: title,
-            taskType: document.getElementById('meetingTaskType').value,
+            followUpTaskTypeId: parseInt(document.getElementById('meetingTaskType').value),
             dueAtUtc: dateOnly,
             scheduledTimeUtc: hasTime ? String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') : null,
             notes: document.getElementById('meetingTaskNotes').value || null
@@ -696,6 +747,65 @@
             .catch(function () { /* silently fail — tasks already created */ });
     }
 
+    // ─── Leads for Create Modal ─────────────────────────────────
+
+    // Cache of leads for reuse across the create and edit modals
+    var _leadsCache = null;
+
+    async function fetchLeadsOnce() {
+        if (_leadsCache) return _leadsCache;
+        try {
+            var response = await fetch('/Sales/AxGetLeadsLookup');
+            var result = await response.json();
+            if (result.success && Array.isArray(result.data)) {
+                _leadsCache = result.data;
+            } else {
+                _leadsCache = [];
+            }
+        } catch (e) {
+            console.error('Failed to load leads', e);
+            _leadsCache = [];
+        }
+        return _leadsCache;
+    }
+
+    // Populate a lead <select> with the loaded leads, ensuring a specific lead id is always present.
+    function populateLeadSelect(select, leads, ensureLeadId) {
+        if (!select) return;
+        var html = '<option value="">\u2014 Not linked to a lead \u2014</option>';
+        var ensureFound = false;
+        leads.forEach(function (l) {
+            if (ensureLeadId && String(l.id) === String(ensureLeadId)) ensureFound = true;
+            html += '<option value="' + l.id + '">' + escapeHtml(l.label) + '</option>';
+        });
+        // Two leads can share a contact, so the exact lead must always be selectable —
+        // even if it's cancelled or beyond the lookup page. Use a neutral label; never
+        // expose the database id in the visible text (the value still carries the real id).
+        if (ensureLeadId && !ensureFound) {
+            html += '<option value="' + ensureLeadId + '">Currently linked lead</option>';
+        }
+        select.innerHTML = html;
+    }
+
+    async function loadLeadsForMeetingForm() {
+        var select = document.getElementById('meetingLeadRequestId');
+        if (!select) return;
+
+        var params = new URLSearchParams(window.location.search);
+        var preselectedLead = params.get('leadRequestId');
+
+        var leads = await fetchLeadsOnce();
+        populateLeadSelect(select, leads, preselectedLead);
+
+        // Pre-select + lock the lead when arriving from Lead Detail
+        if (preselectedLead) {
+            select.value = preselectedLead;
+            select.disabled = true;
+            select.style.opacity = '0.7';
+            select.style.cursor = 'not-allowed';
+        }
+    }
+
     // ─── Contacts for Create Modal ──────────────────────────────
 
     async function loadContactsForMeetingForm() {
@@ -706,7 +816,8 @@
                 var select = document.getElementById('meetingContactId');
                 select.innerHTML = '<option value="">Select contact...</option>';
                 result.data.forEach(function (c) {
-                    select.innerHTML += '<option value="' + c.id + '">' + escapeHtml(c.fullName) + '</option>';
+                    var label = c.fullName + (c.companyName ? ' \u2014 ' + c.companyName : '');
+                    select.innerHTML += '<option value="' + c.id + '">' + escapeHtml(label) + '</option>';
                 });
 
                 // Pre-select contact from query string if present
@@ -734,6 +845,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         loadMeetingsPage(1);
+        loadLeadsForMeetingForm();
         loadContactsForMeetingForm();
     });
 

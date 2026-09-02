@@ -19,9 +19,10 @@ public class FollowUpTask
     public string Title { get; set; } = null!;
 
     /// <summary>
-    /// One of: Call, Email, Follow-up, Meeting Prep, Other
+    /// Reference to the follow-up task type ([sales].[FollowUpTaskTypes]).
+    /// The display name is resolved via the <see cref="FollowUpTaskType"/> lookup.
     /// </summary>
-    public string TaskType { get; set; } = null!;
+    public byte FollowUpTaskTypeId { get; set; }
 
     public DateTime DueAtUtc { get; set; }
 
@@ -62,4 +63,6 @@ public class FollowUpTask
     public TeamMember? TeamMember { get; set; }
 
     public Meeting? Meeting { get; set; }
+
+    public FollowUpTaskType FollowUpTaskType { get; set; } = null!;
 }

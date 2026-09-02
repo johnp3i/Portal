@@ -12,7 +12,7 @@ public interface IFollowUpTaskService
     Task<ServiceResult> CompleteTaskAsync(int taskId);
     Task<ServiceResult> MarkTaskUnprocessedAsync(int taskId);
     Task<ServiceResult> ReopenTaskAsync(int taskId);
-    Task<ServiceResult> UpdateTaskAsync(int taskId, string title, string taskType, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc);
+    Task<ServiceResult> UpdateTaskAsync(int taskId, string title, byte followUpTaskTypeId, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc);
     Task<ServiceResult> SnoozeTaskAsync(int taskId, DateTime newDueDate);
     Task<List<FollowUpTaskDto>> GetTodaysActionsAsync(int? teamMemberId = null);
     Task<List<FollowUpTaskDto>> GetByLeadIdAsync(int leadRequestId);

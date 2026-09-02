@@ -11,6 +11,17 @@ public class FollowUpTaskDto
     public string? LeadProductName { get; set; }
     public string? AssignedToName { get; set; }
     public string Title { get; set; } = null!;
+
+    /// <summary>Reference to the follow-up task type ([sales].[FollowUpTaskTypes]).</summary>
+    public byte FollowUpTaskTypeId { get; set; }
+
+    /// <summary>Resolved type name for display (Call, Email, Follow-up, Meeting Prep, Other).</summary>
+    public string TaskTypeName { get; set; } = null!;
+
+    /// <summary>
+    /// Resolved type name (alias of <see cref="TaskTypeName"/>). Kept so existing UI that
+    /// reads <c>taskType</c> and keys badge colours by name continues to work unchanged.
+    /// </summary>
     public string TaskType { get; set; } = null!;
     public DateTime DueAtUtc { get; set; }
     public string? Notes { get; set; }
@@ -59,7 +70,10 @@ public class CreateFollowUpTaskRequest
     public int? MeetingId { get; set; }
 
     public string Title { get; set; } = null!;
-    public string TaskType { get; set; } = null!;
+
+    /// <summary>Reference to the follow-up task type ([sales].[FollowUpTaskTypes]).</summary>
+    public byte FollowUpTaskTypeId { get; set; }
+
     public DateTime DueAtUtc { get; set; }
     public string? Notes { get; set; }
 
@@ -84,7 +98,7 @@ public class SnoozeFollowUpTaskRequest
 public class FollowUpTaskFilter
 {
     public string? Status { get; set; } // pending, completed, overdue
-    public string? TaskType { get; set; }
+    public byte? FollowUpTaskTypeId { get; set; }
     public int? TeamMemberId { get; set; }
     public DateTime? DateFrom { get; set; }
     public DateTime? DateTo { get; set; }
@@ -97,7 +111,10 @@ public class UpdateFollowUpTaskRequest
 {
     public int Id { get; set; }
     public string Title { get; set; } = null!;
-    public string TaskType { get; set; } = null!;
+
+    /// <summary>Reference to the follow-up task type ([sales].[FollowUpTaskTypes]).</summary>
+    public byte FollowUpTaskTypeId { get; set; }
+
     public DateTime DueAtUtc { get; set; }
     public string? Notes { get; set; }
 

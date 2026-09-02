@@ -164,6 +164,7 @@ public class PortalDbContext : DbContext
     public DbSet<LeadPriorityType> LeadPriorityTypes { get; set; } = null!;
     public DbSet<Entities.Sales.LeadResponseType> LeadResponseTypes { get; set; } = null!;
     public DbSet<Entities.Sales.MeetingType> MeetingTypes { get; set; } = null!;
+    public DbSet<Entities.Sales.FollowUpTaskType> FollowUpTaskTypes { get; set; } = null!;
     public DbSet<FollowUpTask> FollowUpTasks { get; set; } = null!;
 
     // Compliance schema
@@ -294,6 +295,7 @@ public class PortalDbContext : DbContext
         ConfigureLeadPriorityType(modelBuilder);
         ConfigureLeadResponseType(modelBuilder);
         ConfigureMeetingType(modelBuilder);
+        ConfigureFollowUpTaskTypes(modelBuilder);
         ConfigureLeadRequest(modelBuilder);
         ConfigureLeadResponseTemplate(modelBuilder);
         ConfigureLeadResponse(modelBuilder);
@@ -3552,6 +3554,17 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureFollowUpTaskTypes(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Sales.FollowUpTaskType>(entity =>
+        {
+            entity.ToTable("FollowUpTaskTypes", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+        });
+    }
+
     private static void ConfigureLeadRequest(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<LeadRequest>(entity =>
@@ -3785,7 +3798,6 @@ public class PortalDbContext : DbContext
             entity.HasKey(e => e.Id);
 
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.TaskType).IsRequired().HasMaxLength(50);
             entity.Property(e => e.DueAtUtc).IsRequired();
             entity.Property(e => e.Notes).HasMaxLength(500);
             entity.Property(e => e.IsCompleted).IsRequired().HasDefaultValue(false);
@@ -3823,6 +3835,11 @@ public class PortalDbContext : DbContext
                 .HasForeignKey(e => e.MeetingId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.FollowUpTaskType)
+                .WithMany()
+                .HasForeignKey(e => e.FollowUpTaskTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
     }
 

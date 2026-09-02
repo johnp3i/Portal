@@ -19,13 +19,21 @@ public class LeadRequestRepository : GenericStoredProcedureRepository<LeadReques
     {
         try
         {
+            // Assign the next per-business LeadNumber atomically. HOLDLOCK + UPDLOCK on the
+            // MAX read serializes concurrent inserts for the same business so two new leads
+            // can't receive the same number. Runs in one batch with the INSERT.
             const string query = @"
+                DECLARE @NextLeadNumber INT;
+                SELECT @NextLeadNumber = ISNULL(MAX([LeadNumber]), 0) + 1
+                FROM [sales].[LeadRequest] WITH (HOLDLOCK, UPDLOCK)
+                WHERE [BusinessId] = @BusinessId;
+
                 INSERT INTO [sales].[LeadRequest]
-                    ([BusinessId], [ContactId], [ProductId], [LeadSourceTypeId],
+                    ([BusinessId], [LeadNumber], [ContactId], [ProductId], [LeadSourceTypeId],
                      [LeadSourceReferenceTypeId], [LeadStatusTypeId], [SourceUrl],
                      [RequestText], [AssignedToUserId], [IsCancelled], [IsActive], [CreatedAtUtc])
                 VALUES
-                    (@BusinessId, @ContactId, @ProductId, @LeadSourceTypeId,
+                    (@BusinessId, @NextLeadNumber, @ContactId, @ProductId, @LeadSourceTypeId,
                      @LeadSourceReferenceTypeId, @LeadStatusTypeId, @SourceUrl,
                      @RequestText, @AssignedToUserId, 0, 1, @CreatedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
@@ -255,7 +263,7 @@ public class LeadRequestRepository : GenericStoredProcedureRepository<LeadReques
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [ContactId], [ProductId], [LeadSourceTypeId],
+                SELECT [Id], [BusinessId], [LeadNumber], [ContactId], [ProductId], [LeadSourceTypeId],
                        [LeadSourceReferenceTypeId], [LeadStatusTypeId], [SourceUrl], [RequestText],
                        [AssignedToUserId], [TeamMemberId], [IsCancelled], [CancellationTimestamp],
                        [CancellationDescription], [IsActive], [LeadPriorityTypeId], [ClosedAtUtc], [CreatedAtUtc]
@@ -277,7 +285,7 @@ public class LeadRequestRepository : GenericStoredProcedureRepository<LeadReques
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [ContactId], [ProductId], [LeadSourceTypeId],
+                SELECT [Id], [BusinessId], [LeadNumber], [ContactId], [ProductId], [LeadSourceTypeId],
                        [LeadSourceReferenceTypeId], [LeadStatusTypeId], [SourceUrl], [RequestText],
                        [AssignedToUserId], [TeamMemberId], [IsCancelled], [CancellationTimestamp],
                        [CancellationDescription], [IsActive], [LeadPriorityTypeId], [ClosedAtUtc], [CreatedAtUtc]
@@ -298,7 +306,7 @@ public class LeadRequestRepository : GenericStoredProcedureRepository<LeadReques
         try
         {
             const string query = @"
-                SELECT [Id], [BusinessId], [ContactId], [ProductId], [LeadSourceTypeId],
+                SELECT [Id], [BusinessId], [LeadNumber], [ContactId], [ProductId], [LeadSourceTypeId],
                        [LeadSourceReferenceTypeId], [LeadStatusTypeId], [SourceUrl], [RequestText],
                        [AssignedToUserId], [TeamMemberId], [IsCancelled], [CancellationTimestamp],
                        [CancellationDescription], [IsActive], [LeadPriorityTypeId], [ClosedAtUtc], [CreatedAtUtc]
@@ -332,10 +340,10 @@ public class LeadRequestRepository : GenericStoredProcedureRepository<LeadReques
                   AND (@LeadStatusTypeId IS NULL OR [sales].[LeadRequest].[LeadStatusTypeId] = @LeadStatusTypeId)";
 
             const string dataQuery = @"
-                SELECT [Id], [BusinessId], [ContactId], [ProductId], [LeadSourceTypeId],
+                SELECT [Id], [BusinessId], [LeadNumber], [ContactId], [ProductId], [LeadSourceTypeId],
                        [LeadSourceReferenceTypeId], [LeadStatusTypeId], [SourceUrl], [RequestText],
                        [AssignedToUserId], [TeamMemberId], [IsCancelled], [CancellationTimestamp],
-                       [CancellationDescription], [IsActive], [CreatedAtUtc]
+                       [CancellationDescription], [IsActive], [LeadPriorityTypeId], [ClosedAtUtc], [CreatedAtUtc]
                 FROM [sales].[LeadRequest]
                 WHERE [sales].[LeadRequest].[BusinessId] = @BusinessId
                   AND [sales].[LeadRequest].[IsActive] = 1

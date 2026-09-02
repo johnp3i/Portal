@@ -176,6 +176,7 @@
 
                 cards += '<div class="pipeline-card" style="background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(13,94,166,.06);border:1px solid rgba(13,94,166,.06);cursor:pointer;transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow=\'0 6px 16px rgba(13,94,166,.12)\';this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.boxShadow=\'0 2px 8px rgba(13,94,166,.06)\';this.style.transform=\'none\'" onclick="window.open(\'/Sales/LeadDetail/' + lead.id + '\', \'_blank\')">'
                     + priorityBadge
+                    + (lead.leadNumber ? '<div style="font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8a9bab;margin-bottom:4px;">Lead #' + lead.leadNumber + '</div>' : '')
                     + '<div style="font-weight:700;font-size:14px;color:#0B1B28;">' + lead.contactName + '</div>'
                     + (lead.companyName ? '<div style="font-size:12px;color:#5E7385;margin-top:2px;">' + lead.companyName + '</div>' : '')
                     + (lead.productName ? '<div style="margin-top:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(13,94,166,.08);color:#0D5EA6;">' + lead.productName + '</span></div>' : '')
@@ -199,6 +200,7 @@
             stage.leads.forEach(function (lead) {
                 allLeads.push({
                     id: lead.id,
+                    leadNumber: lead.leadNumber,
                     contactName: lead.contactName || '—',
                     companyName: lead.companyName || '—',
                     productName: lead.productName || '—',
@@ -216,7 +218,7 @@
         });
 
         if (allLeads.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#8a9bab;padding:24px;">No leads found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8a9bab;padding:24px;">No leads found.</td></tr>';
             document.getElementById('paginationInfo').textContent = '';
             document.getElementById('paginationControls').innerHTML = '';
             return;
@@ -234,6 +236,7 @@
         pageLeads.forEach(function (lead) {
             var dateStr = new Date(lead.createdAtUtc).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             html += '<tr>'
+                + '<td style="font-weight:700;color:#5E7385;white-space:nowrap;">' + (lead.leadNumber ? '#' + lead.leadNumber : '—') + '</td>'
                 + '<td style="font-weight:600;">' + lead.contactName + '</td>'
                 + '<td>' + lead.companyName + '</td>'
                 + '<td>' + lead.productName + '</td>'

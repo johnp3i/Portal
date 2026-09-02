@@ -15,7 +15,10 @@
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Sales Pipeline / Lead Detail</div>
-        <h1 class="topbar-heading">@Model.ContactName</h1>
+        <h1 class="topbar-heading" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            @Model.ContactName
+            <span style="font-family:'Inter',sans-serif;font-size:14px;font-weight:700;letter-spacing:.02em;color:#0D5EA6;background:rgba(13,94,166,.08);border:1px solid rgba(13,94,166,.18);padding:4px 12px;border-radius:10px;">Lead #@Model.LeadNumber</span>
+        </h1>
         <p class="topbar-subtitle">
             @(Model.ProductName ?? "No product") · @Model.SourceName
             @if (Model.IsCancelled) { <span class="pill pill-red">Cancelled</span> }
@@ -215,7 +218,10 @@
 
 <!-- Meetings -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <h4 style="margin-bottom:12px;">Meetings (@Model.Meetings.Count)</h4>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h4 style="margin:0;">Meetings (@Model.Meetings.Count)</h4>
+        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="openScheduleMeetingModal(@Model.Id, @Model.ContactId)">+ Schedule Meeting</button>
+    </div>
     @if (Model.Meetings.Count == 0)
     {
         <p style="color:#5a6a7a;">No meetings scheduled for this lead.</p>
@@ -385,7 +391,7 @@
         };
     </script>
     <script src="~/js/sales/lead-detail.js?v=8"></script>
-    <script src="~/js/sales/follow-up-tasks.js?v=2"></script>
+    <script src="~/js/sales/follow-up-tasks.js?v=4"></script>
     <script>
         var activityPage = 1;
 
