@@ -54,6 +54,13 @@ public interface IDashboardService
     Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(int businessId);
 
     /// <summary>
+    /// Upcoming supplier payments with a configurable result cap and look-ahead window.
+    /// <paramref name="take"/> null returns all due payables (no TOP). Used by the Weekly
+    /// Outstanding Balance Digest, which wants more than the dashboard's top-5/14-day view.
+    /// </summary>
+    Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(int businessId, int? take, int windowDays);
+
+    /// <summary>
     /// Returns monthly revenue and expense totals for the last 6 months (including current).
     /// </summary>
     Task<List<RevenueVsExpensesDto>> GetRevenueVsExpensesAsync(int businessId);

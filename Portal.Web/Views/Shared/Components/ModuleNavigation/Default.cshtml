@@ -40,6 +40,7 @@
     var hasPurchaseImportAccess = Model.TryGetValue("purchase_import", out var piAccess) && piAccess != "none";
     var hasZReportImportAccess = Model.TryGetValue("zreport_import", out var zriAccess) && zriAccess != "none";
     var hasExternalPlatformImportAccess = Model.TryGetValue("external_platform_import", out var epiAccess) && epiAccess != "none";
+    var hasDigitalAssistantsAccess = Model.TryGetValue("digital_assistants", out var daAccess) && daAccess != "none";
 
     var hasSalesSection = hasCustomerAccess || hasQuotationAccess || hasInvoiceAccess || hasCreditAccess;
     var hasFinanceSection = hasRevenueAccess || hasVatAccess || hasPnlAccess || hasPaymentReminderAccess || hasPaymentReminderAutoAccess || hasCashflowAccess || hasSchedulePaymentsAccess || hasAuditLogAccess;
@@ -494,6 +495,21 @@
         <a class="nav-item @(currentController.Equals("PayrollCompliance", StringComparison.OrdinalIgnoreCase) ? "active" : "")" href="/PayrollCompliance/ContributionReport">
             <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></span>
             <span class="nav-text">Contribution Report</span>
+        </a>
+    </div>
+}
+
+@* ═══ AUTOMATION ═══ *@
+@if (hasDigitalAssistantsAccess)
+{
+    <div class="nav-section">
+        <div class="nav-title">Automation</div>
+        @{
+            var isAssistantsActive = currentController.Equals("Assistants", StringComparison.OrdinalIgnoreCase);
+        }
+        <a class="nav-item @(isAssistantsActive ? "active" : "")" asp-controller="Assistants" asp-action="Index">
+            <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg></span>
+            <span class="nav-text">Digital Assistants</span>
         </a>
     </div>
 }

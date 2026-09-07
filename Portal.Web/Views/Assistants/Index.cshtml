@@ -1,0 +1,353 @@
+@model Portal.Web.Models.Assistants.AssistantsIndexViewModel
+@{
+    ViewData["Title"] = "Digital Assistants";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Automation</div>
+        <h1 class="topbar-heading">Digital Assistants</h1>
+        <p class="topbar-subtitle">Your always-on helpers. Switch each one on to let it work quietly in the background — and check its log anytime to see exactly what it did.</p>
+    </div>
+</div>
+
+@if (!Model.Assistants.Any())
+{
+    <section class="glass card-pad">
+        <p class="muted" style="font-size:14px;">No assistants are available yet.</p>
+    </section>
+}
+
+@foreach (var a in Model.Assistants)
+{
+    <section class="glass card-pad" style="margin-bottom:22px;" data-assistant="@a.Key">
+        <div style="display:flex;gap:18px;align-items:flex-start;">
+            <div style="width:56px;height:56px;border-radius:16px;flex-shrink:0;background:linear-gradient(135deg,rgba(13,94,166,.10),rgba(87,184,232,.14));display:flex;align-items:center;justify-content:center;">
+                <svg width="26" height="26" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v12H5.17L4 17.17V4z"/><path d="M8 9h8M8 12h5"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+                    <div>
+                        <div style="font-family:'Manrope',sans-serif;font-size:19px;font-weight:700;">@a.Name</div>
+                        <div style="font-size:14px;color:#5E7385;margin-top:3px;">@a.Description</div>
+                        <div class="assistant-status" data-status style="font-size:12px;font-weight:700;margin-top:8px;display:inline-flex;align-items:center;gap:6px;color:@(a.IsEnabled ? "#129867" : "#5E7385");">
+                            <span style="width:8px;height:8px;border-radius:50%;background:@(a.IsEnabled ? "#129867" : "#b6c2ce");"></span>
+                            <span data-status-text>@(a.IsEnabled ? "Active — working for you" : "Off")</span>
+                        </div>
+                    </div>
+                    <label class="da-switch">
+                        <input type="checkbox" data-toggle @(a.IsEnabled ? "checked" : "") onchange="toggleAssistant('@a.Key', this)" />
+                        <span class="da-slider"></span>
+                    </label>
+                </div>
+
+                <div class="da-settings">
+                    <div class="da-controls">
+                        @if (a.IsScheduledDigest)
+                        {
+                            <div class="da-field" style="min-width:150px;">
+                                <label>Send day</label>
+                                <select class="da-input" data-send-day>
+                                    @{
+                                        var dayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+                                    }
+                                    @for (byte d = 0; d < 7; d++)
+                                    {
+                                        <option value="@d" selected="@(a.SendDayOfWeek == d)">@dayNames[d]</option>
+                                    }
+                                </select>
+                                <span class="da-hint">&nbsp;</span>
+                            </div>
+                            <div class="da-field" style="min-width:130px;">
+                                <label>Send time</label>
+                                <input class="da-input" type="time" data-send-time value="@a.SendTimeLocal" />
+                                <span class="da-hint">Your business time zone.</span>
+                            </div>
+                            <div class="da-field" style="min-width:240px;flex:1;">
+                                <label>Send to</label>
+                                <input class="da-input" type="text" data-recipient value="@a.RecipientOverride" placeholder="Business owner (default)" />
+                                <span class="da-hint">Leave blank to send to the owner. Separate multiple with ; or ,</span>
+                            </div>
+                            <div class="da-field da-toggle-field">
+                                <label>&nbsp;</label>
+                                <div class="da-toggle-row">
+                                    <label class="da-switch">
+                                        <input type="checkbox" data-owner-cc @(a.IsRecipientOwnerIncluded ? "checked" : "") />
+                                        <span class="da-slider"></span>
+                                    </label>
+                                    <span>Also send to owner</span>
+                                </div>
+                                <span class="da-hint">&nbsp;</span>
+                            </div>
+                            @if (a.HasFigureSelection)
+                            {
+                                <div class="da-field da-figures">
+                                    <label>Included figures</label>
+                                    <div class="da-figures-grid">
+                                        @{
+                                            var figures = new (string Key, string Label)[]
+                                            {
+                                                ("collected", "Collected this week"),
+                                                ("expenses", "Expenses this week"),
+                                                ("net", "Net this week"),
+                                                ("outstanding", "Total outstanding"),
+                                                ("overdue", "Overdue")
+                                            };
+                                            // No saved selection => default set is on.
+                                            var defaults = new[] { "collected", "expenses", "net", "outstanding" };
+                                            var selected = a.IncludedFigures.Count > 0 ? a.IncludedFigures : defaults.ToList();
+                                        }
+                                        @foreach (var f in figures)
+                                        {
+                                            <label>
+                                                <input type="checkbox" data-figure value="@f.Key" @(selected.Contains(f.Key) ? "checked" : "") />
+                                                @f.Label
+                                            </label>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="da-field">
+                                <label>Send only between</label>
+                                <div class="da-hours">
+                                    <input class="da-input" type="time" data-hours-start value="@a.WorkingHoursStart" />
+                                    <span>and</span>
+                                    <input class="da-input" type="time" data-hours-end value="@a.WorkingHoursEnd" />
+                                </div>
+                                <span class="da-hint">Leave blank to send immediately.</span>
+                            </div>
+                            <div class="da-field da-toggle-field">
+                                <label>&nbsp;</label>
+                                <div class="da-toggle-row">
+                                    <label class="da-switch">
+                                        <input type="checkbox" data-footer @(a.IsBrandingFooterEnabled ? "checked" : "") />
+                                        <span class="da-slider"></span>
+                                    </label>
+                                    <span>Include "Powered by 3 Inventors" footer</span>
+                                </div>
+                                <span class="da-hint">&nbsp;</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="da-actions">
+                        <button type="button" class="btn btn-primary" onclick="saveAssistant('@a.Key', this)">Save settings</button>
+                        <button type="button" class="da-log-btn" onclick="toggleLog('@a.Key', this)">View activity log ↓</button>
+                    </div>
+                </div>
+
+                <div data-log style="display:none;margin-top:16px;border-top:1px solid #eef2f6;padding-top:14px;">
+                    <div data-log-content><p class="muted" style="font-size:13px;">Loading…</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+<style>
+    .da-switch { position:relative; display:inline-block; width:48px; height:28px; flex-shrink:0; }
+    .da-switch input { display:none; }
+    .da-slider { position:absolute; inset:0; background:#cbd5e1; border-radius:999px; transition:.2s; cursor:pointer; }
+    .da-slider::before { content:''; position:absolute; width:22px; height:22px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .da-switch input:checked + .da-slider { background:#129867; }
+    .da-switch input:checked + .da-slider::before { transform:translateX(20px); }
+    .da-log-btn {
+        display:inline-flex; align-items:center; justify-content:center; gap:6px;
+        height:40px; box-sizing:border-box;
+        font-family:inherit; font-size:13px; font-weight:700; line-height:1;
+        color:#0D5EA6; background:#EEF4F8; border:1px solid #D5E3EE;
+        padding:0 16px; border-radius:10px; cursor:pointer;
+        transition:background .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .da-log-btn:hover { background:#E1ECF5; border-color:#57B8E8; color:#0B4E8A; }
+    .da-log-btn:active { background:#D5E3EE; }
+    .da-log-btn:focus-visible { outline:2px solid #57B8E8; outline-offset:2px; }
+
+    /* --- Common card settings structure (shared by all assistant cards) --- */
+    .da-settings { margin-top:16px; padding-top:16px; border-top:1px solid #eef2f6; }
+
+    /* Controls area: a wrapping row of equal-baseline fields. Fixed row gap keeps hint text
+       from shifting neighbouring controls out of alignment. */
+    .da-controls { display:flex; flex-wrap:wrap; gap:16px 20px; align-items:flex-start; }
+
+    /* A labelled control block. Fixed label height + control height so every field —
+       with or without a hint — starts and aligns at the same baseline. */
+    .da-field { display:flex; flex-direction:column; }
+    .da-field > label {
+        display:block; font-size:12px; font-weight:700; color:#5E7385;
+        text-transform:uppercase; letter-spacing:.04em; margin:0 0 6px; line-height:1.2;
+    }
+    .da-field .da-input {
+        height:40px; box-sizing:border-box; padding:0 12px;
+        border:1px solid #e2e8f0; border-radius:10px; font-size:14px; font-family:inherit;
+        color:#0B1B28; background:#fff;
+    }
+    .da-field .da-input:focus-visible { outline:2px solid #57B8E8; outline-offset:1px; border-color:#57B8E8; }
+    select.da-input { padding-right:8px; }
+    .da-hint { font-size:12px; color:#98a8b6; margin-top:5px; line-height:1.4; min-height:16px; }
+
+    /* Inline toggle presented as its own field so it lines up with the input row.
+       An empty spacer label keeps its control at the same top baseline as labelled fields. */
+    .da-toggle-field { display:flex; flex-direction:column; justify-content:flex-start; }
+    .da-toggle-field .da-toggle-row { display:flex; align-items:center; gap:10px; height:40px; }
+    .da-toggle-field .da-toggle-row span { font-size:13px; color:#0B1B28; }
+
+    /* Working-hours "between … and …" pair as a single field. */
+    .da-hours { display:flex; align-items:center; gap:10px; }
+    .da-hours .da-input { width:120px; }
+    .da-hours span { font-size:13px; color:#98a8b6; }
+
+    /* Figures checklist spans the full width on its own row. */
+    .da-figures { width:100%; }
+    .da-figures .da-figures-grid { display:flex; flex-wrap:wrap; gap:10px 18px; }
+    .da-figures label { display:inline-flex; align-items:center; gap:7px; font-size:13px; color:#0B1B28; cursor:pointer; }
+
+    /* Actions bar: Save + View log, consistent placement across every card. */
+    .da-actions { display:flex; align-items:center; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid #f2f5f8; }
+    .da-actions .btn-primary { font-size:13px; height:40px; padding:0 18px; display:inline-flex; align-items:center; }
+
+    .da-log-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .da-log-table th { text-align:left; font-family:'Manrope',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#98a8b6; padding:8px 10px; border-bottom:2px solid #e2e8f0; }
+    .da-log-table td { padding:10px; border-bottom:1px solid #eef2f6; }
+    .da-pill { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+    .da-pill.sent { background:rgba(18,152,103,.10); color:#129867; }
+    .da-pill.pending { background:rgba(200,145,46,.12); color:#C8912E; }
+    .da-pill.failed { background:rgba(194,74,74,.10); color:#C24A4A; }
+</style>
+
+@section Scripts {
+    <script>
+        function antiForgery() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        function assistantSection(key) {
+            return document.querySelector('section[data-assistant="' + key + '"]');
+        }
+
+        async function toggleAssistant(key, checkbox) {
+            var enabled = checkbox.checked;
+            BlockUI.show('Updating...');
+            try {
+                var resp = await fetch('/Assistants/AxPostToggleAssistant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': antiForgery() },
+                    body: JSON.stringify({ assistantKey: key, enabled: enabled })
+                });
+                var data = await resp.json();
+                BlockUI.hide();
+                if (data.success) {
+                    var section = assistantSection(key);
+                    var statusWrap = section.querySelector('[data-status]');
+                    var statusText = section.querySelector('[data-status-text]');
+                    statusWrap.style.color = enabled ? '#129867' : '#5E7385';
+                    statusWrap.querySelector('span').style.background = enabled ? '#129867' : '#b6c2ce';
+                    statusText.textContent = enabled ? 'Active — working for you' : 'Off';
+                } else {
+                    checkbox.checked = !enabled; // revert
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                checkbox.checked = !enabled;
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function saveAssistant(key, btn) {
+            var section = assistantSection(key);
+            var payload = { assistantKey: key };
+
+            var sendDayEl = section.querySelector('[data-send-day]');
+            if (sendDayEl) {
+                // Scheduled digest card.
+                var ownerCcEl = section.querySelector('[data-owner-cc]');
+                var figureEls = section.querySelectorAll('[data-figure]:checked');
+                var figures = Array.prototype.map.call(figureEls, function (el) { return el.value; });
+                payload.sendDayOfWeek = parseInt(sendDayEl.value, 10);
+                payload.sendTimeLocal = section.querySelector('[data-send-time]').value;
+                payload.recipientOverride = section.querySelector('[data-recipient]').value;
+                payload.isRecipientOwnerIncluded = ownerCcEl ? ownerCcEl.checked : true;
+                payload.includedFiguresCsv = figures.join(',');
+            } else {
+                // Customer-facing card (working hours + footer).
+                var footerEl = section.querySelector('[data-footer]');
+                payload.isBrandingFooterEnabled = footerEl ? footerEl.checked : false;
+                payload.workingHoursStart = section.querySelector('[data-hours-start]').value;
+                payload.workingHoursEnd = section.querySelector('[data-hours-end]').value;
+            }
+
+            BlockUI.show('Saving...');
+            try {
+                var resp = await fetch('/Assistants/AxPostSaveAssistantSettings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': antiForgery() },
+                    body: JSON.stringify(payload)
+                });
+                var data = await resp.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ title: 'Saved', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function toggleLog(key, link) {
+            var section = assistantSection(key);
+            var logWrap = section.querySelector('[data-log]');
+            if (logWrap.style.display === 'block') {
+                logWrap.style.display = 'none';
+                link.textContent = 'View activity log ↓';
+                return;
+            }
+            logWrap.style.display = 'block';
+            link.textContent = 'Hide activity log ↑';
+            var content = section.querySelector('[data-log-content]');
+            content.innerHTML = '<p class="muted" style="font-size:13px;">Loading…</p>';
+            try {
+                var resp = await fetch('/Assistants/AxGetAssistantLog?assistantKey=' + encodeURIComponent(key) + '&page=1');
+                var data = await resp.json();
+                if (!data.success) {
+                    content.innerHTML = '<p class="muted" style="font-size:13px;">Unable to load the log.</p>';
+                    return;
+                }
+                renderLog(data.items, content);
+            } catch (e) {
+                content.innerHTML = '<p class="muted" style="font-size:13px;">Unable to load the log.</p>';
+            }
+        }
+
+        function renderLog(items, container) {
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="muted" style="font-size:13px;">No activity yet.</p>';
+                return;
+            }
+            var rows = items.map(function (i) {
+                var statusClass = i.status === 'Sent' ? 'sent' : (i.status === 'Failed' ? 'failed' : 'pending');
+                var when = i.sentAtUtc ? new Date(i.sentAtUtc).toLocaleString() : new Date(i.createdAtUtc).toLocaleString();
+                return '<tr>'
+                    + '<td>' + when + '</td>'
+                    + '<td>' + escapeHtml(i.recipient) + '</td>'
+                    + '<td>' + escapeHtml(i.subject) + '</td>'
+                    + '<td><span class="da-pill ' + statusClass + '">' + i.status + '</span></td>'
+                    + '</tr>';
+            }).join('');
+            container.innerHTML = '<table class="da-log-table"><thead><tr><th>When</th><th>Recipient</th><th>Subject</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table>';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+    </script>
+}

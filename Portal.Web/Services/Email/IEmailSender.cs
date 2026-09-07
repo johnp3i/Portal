@@ -7,7 +7,7 @@ namespace Portal.Web.Services.Email
 {
     public interface IEmailSender
     {
-        Task SendEmailAsync(string email, string subject, string message, EmailDepartmentEnum department);
+        Task SendEmailAsync(string email, string subject, string message, EmailDepartmentEnum department, string? replyTo = null);
         Task SendEmailWithAttachmentAsync(string email, string subject, string message, EmailDepartmentEnum department, byte[] attachmentBytes, string attachmentFilename, string attachmentContentType);
     }
 }

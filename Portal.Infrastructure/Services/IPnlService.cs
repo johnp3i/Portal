@@ -22,4 +22,12 @@ public interface IPnlService
     /// Validates a custom date range (start must be &lt;= end).
     /// </summary>
     PnlValidationResult ValidateCustomRange(DateOnly startDate, DateOnly endDate);
+
+    /// <summary>
+    /// Computes the core P&amp;L figures (revenue collected, COGS, operating expenses, net) for an
+    /// explicit business and date range. Unlike <see cref="GetSummaryAsync"/>, this takes the
+    /// business id explicitly and does NOT read the current tenant — safe to call from a
+    /// background service (e.g. the scheduled Financial Snapshot digest) that has no HTTP context.
+    /// </summary>
+    Task<PnlSnapshotDto> ComputeSnapshotAsync(int businessId, DateOnly startDate, DateOnly endDate);
 }

@@ -47,6 +47,7 @@ public static class ModuleControllerMap
         [PortalModules.StripeConnect] = new[] { "CardPayments" },
         [PortalModules.Compliance] = new[] { "Compliance", "AdminCompliance" },
         [PortalModules.Payroll] = new[] { "Payroll", "AdminPayroll", "PayrollReport", "PayrollCompliance" },
+        [PortalModules.DigitalAssistants] = new[] { "Assistants" },
     };
 
     /// <summary>

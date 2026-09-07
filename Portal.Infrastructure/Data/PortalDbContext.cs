@@ -123,6 +123,14 @@ public class PortalDbContext : DbContext
     public DbSet<PaymentReminderSchedule> PaymentReminderSchedules { get; set; } = null!;
     public DbSet<PaymentReminderLog> PaymentReminderLogs { get; set; } = null!;
 
+    // Notification schema (Digital Assistants)
+    public DbSet<Entities.Notification.OutboxMessage> OutboxMessages { get; set; } = null!;
+    public DbSet<Entities.Notification.OutboxMessageStatusType> OutboxMessageStatusTypes { get; set; } = null!;
+    public DbSet<Entities.Notification.AssistantType> AssistantTypes { get; set; } = null!;
+    public DbSet<Entities.Notification.BusinessAssistantSetting> BusinessAssistantSettings { get; set; } = null!;
+    public DbSet<Entities.Notification.AssistantOptOut> AssistantOptOuts { get; set; } = null!;
+    public DbSet<Entities.Notification.NotificationTimeZone> NotificationTimeZones { get; set; } = null!;
+
     // Cashflow schema
     public DbSet<CashFlowSettings> CashFlowSettings { get; set; } = null!;
 
@@ -265,6 +273,7 @@ public class PortalDbContext : DbContext
         ConfigureDemoInvitationPermission(modelBuilder);
         ConfigurePaymentReminderSchedule(modelBuilder);
         ConfigurePaymentReminderLog(modelBuilder);
+        ConfigureNotificationEntities(modelBuilder);
         ConfigureCashFlowSettings(modelBuilder);
         ConfigurePaymentSchedule(modelBuilder);
         ConfigurePaymentScheduleInstalment(modelBuilder);
@@ -2719,6 +2728,140 @@ public class PortalDbContext : DbContext
             entity.HasIndex(e => new { e.BusinessId, e.InvoiceId, e.EscalationTier })
                 .HasFilter("[IsTestSend] = 0")
                 .HasDatabaseName("IX_PaymentReminderLog_BusinessId_IsTestSend");
+        });
+    }
+
+    private static void ConfigureNotificationEntities(ModelBuilder modelBuilder)
+    {
+        // Reference: TimeZone (global, no tenant filter)
+        modelBuilder.Entity<Entities.Notification.NotificationTimeZone>(entity =>
+        {
+            entity.ToTable("TimeZone", "notification");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.WindowsId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.IanaId).IsRequired().HasMaxLength(100);
+        });
+
+        // Reference: AssistantType (global, no tenant filter)
+        modelBuilder.Entity<Entities.Notification.AssistantType>(entity =>
+        {
+            entity.ToTable("AssistantType", "notification");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Key).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.RecipientKind).IsRequired().HasMaxLength(20);
+            entity.HasIndex(e => e.Key).IsUnique().HasDatabaseName("UQ_AssistantType_Key");
+        });
+
+        // Reference: OutboxMessageStatusType (global, no tenant filter)
+        modelBuilder.Entity<Entities.Notification.OutboxMessageStatusType>(entity =>
+        {
+            entity.ToTable("OutboxMessageStatusType", "notification");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(20);
+            entity.HasIndex(e => e.Name).IsUnique().HasDatabaseName("UQ_OutboxMessageStatusType_Name");
+        });
+
+        // OutboxMessage — NO tenant query filter: the background dispatcher reads across all
+        // businesses and has no tenant context. Access is via raw-SQL repository scoped by BusinessId.
+        modelBuilder.Entity<Entities.Notification.OutboxMessage>(entity =>
+        {
+            entity.ToTable("OutboxMessage", "notification");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.AssistantType)
+                .WithMany()
+                .HasForeignKey(e => e.AssistantTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.OutboxMessageStatusType)
+                .WithMany()
+                .HasForeignKey(e => e.OutboxMessageStatusTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.RecipientEmail).IsRequired().HasMaxLength(320);
+            entity.Property(e => e.RecipientName).HasMaxLength(200);
+            entity.Property(e => e.ReplyToEmail).HasMaxLength(320);
+            entity.Property(e => e.Subject).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.BodyHtml).IsRequired();
+            entity.Property(e => e.OutboxMessageStatusTypeId).IsRequired();
+            entity.Property(e => e.RetryCount).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.MaxRetries).IsRequired().HasDefaultValue(5);
+            entity.Property(e => e.RelatedEntityType).HasMaxLength(50);
+            entity.Property(e => e.CycleKey).HasMaxLength(80);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.OutboxMessageStatusTypeId, e.ScheduledForUtc })
+                .HasDatabaseName("IX_OutboxMessage_StatusTypeId_ScheduledForUtc");
+            entity.HasIndex(e => new { e.BusinessId, e.AssistantTypeId, e.CreatedAtUtc })
+                .HasDatabaseName("IX_OutboxMessage_BusinessId_AssistantTypeId_CreatedAtUtc");
+            entity.HasIndex(e => new { e.OutboxMessageStatusTypeId, e.FailedAtUtc })
+                .HasDatabaseName("IX_OutboxMessage_StatusTypeId_FailedAtUtc");
+            entity.HasIndex(e => new { e.BusinessId, e.AssistantTypeId, e.CycleKey })
+                .HasDatabaseName("IX_OutboxMessage_Cycle");
+        });
+
+        // BusinessAssistantSetting
+        modelBuilder.Entity<Entities.Notification.BusinessAssistantSetting>(entity =>
+        {
+            entity.ToTable("BusinessAssistantSetting", "notification");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.AssistantType)
+                .WithMany()
+                .HasForeignKey(e => e.AssistantTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.IsEnabled).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.IsBrandingFooterEnabled).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.IsRecipientOwnerIncluded).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.RecipientOverride).HasMaxLength(1000);
+            entity.Property(e => e.IncludedFiguresCsv).HasMaxLength(400);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.AssistantTypeId })
+                .IsUnique()
+                .HasDatabaseName("UQ_BusinessAssistantSetting_Business_Assistant");
+        });
+
+        // AssistantOptOut
+        modelBuilder.Entity<Entities.Notification.AssistantOptOut>(entity =>
+        {
+            entity.ToTable("AssistantOptOut", "notification");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.AssistantType)
+                .WithMany()
+                .HasForeignKey(e => e.AssistantTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.RecipientEmail).IsRequired().HasMaxLength(320);
+            entity.Property(e => e.OptedOutAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.BusinessId, e.AssistantTypeId, e.RecipientEmail })
+                .IsUnique()
+                .HasDatabaseName("UQ_AssistantOptOut_Business_Assistant_Email");
         });
     }
 

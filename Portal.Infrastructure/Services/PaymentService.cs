@@ -19,6 +19,7 @@ public class PaymentService : IPaymentService
     private readonly IPaymentScheduleService _paymentScheduleService;
     private readonly IPaymentAllocationEngine _allocationEngine;
     private readonly IPaymentReceiptService? _receiptService;
+    private readonly Notifications.INotificationProducer? _notificationProducer;
     private readonly PortalDbContext _portalDbContext;
 
     private const int InvoiceStatusIssued = 2;
@@ -31,7 +32,8 @@ public class PaymentService : IPaymentService
         IPaymentScheduleService paymentScheduleService,
         IPaymentAllocationEngine allocationEngine,
         PortalDbContext portalDbContext,
-        IPaymentReceiptService? receiptService = null)
+        IPaymentReceiptService? receiptService = null,
+        Notifications.INotificationProducer? notificationProducer = null)
     {
         _paymentRepository = paymentRepository;
         _invoiceRepository = invoiceRepository;
@@ -41,6 +43,7 @@ public class PaymentService : IPaymentService
         _allocationEngine = allocationEngine;
         _portalDbContext = portalDbContext;
         _receiptService = receiptService;
+        _notificationProducer = notificationProducer;
     }
 
     /// <inheritdoc />
@@ -84,7 +87,21 @@ public class PaymentService : IPaymentService
             CreatedByUserId = userId
         };
 
-        var paymentId = await _paymentRepository.InsertAsync(payment);
+        // Resolve + gate the Thank-You notification BEFORE opening the transaction, so the
+        // hot-path transaction stays as short as possible (only the two inserts). Returns null
+        // when no notification should be sent.
+        var thankYou = await PrepareThankYouAsync(businessId, dto.InvoiceId, invoice.InvoiceNumber, dto.Amount);
+
+        // Record the payment and enqueue the Thank-You atomically: a satisfied thank-you can
+        // never exist without its payment, and vice versa (transactional outbox).
+        int paymentId;
+        await using (var transaction = await _portalDbContext.Database.BeginTransactionAsync())
+        {
+            paymentId = await _paymentRepository.InsertAsync(payment);
+            if (thankYou != null && _notificationProducer != null)
+                await _notificationProducer.InsertAsync(thankYou);
+            await transaction.CommitAsync();
+        }
 
         await _paymentScheduleService.MatchPaymentToScheduleAsync(paymentId, dto.Amount, dto.InvoiceId, businessId, userId);
         await _financialStatusEngine.RecalculateStatusAsync(dto.InvoiceId, businessId);
@@ -550,6 +567,42 @@ public class PaymentService : IPaymentService
             .FirstOrDefaultAsync();
 
         return currencySymbol ?? "€";
+    }
+
+    /// <summary>
+    /// Resolves + gates the Thank-You notification for a payment and returns a ready-to-insert
+    /// outbox message (or null when none should be sent). All reads happen here, OUTSIDE the
+    /// payment transaction, so the transaction only needs to wrap the two inserts. Reply-to is
+    /// the business's own contact email, so a customer reply reaches the business rather than
+    /// the platform send-address.
+    /// </summary>
+    private async Task<Entities.Notification.OutboxMessage?> PrepareThankYouAsync(
+        int businessId, int invoiceId, string invoiceNumber, decimal amount)
+    {
+        if (_notificationProducer == null) return null;
+
+        var invoice = await _portalDbContext.Invoices
+            .IgnoreQueryFilters()
+            .Where(i => i.Id == invoiceId && i.BusinessId == businessId)
+            .Select(i => new { i.CustomerId })
+            .FirstOrDefaultAsync();
+        if (invoice == null) return null;
+
+        var customer = await _portalDbContext.Customers
+            .IgnoreQueryFilters()
+            .Where(c => c.Id == invoice.CustomerId && c.BusinessId == businessId)
+            .Select(c => new { c.Name, c.Email })
+            .FirstOrDefaultAsync();
+        if (customer == null || string.IsNullOrWhiteSpace(customer.Email)) return null;
+
+        var replyTo = await _portalDbContext.BusinessProfiles
+            .IgnoreQueryFilters()
+            .Where(bp => bp.BusinessId == businessId)
+            .Select(bp => bp.Email)
+            .FirstOrDefaultAsync();
+
+        return await _notificationProducer.PrepareThankYouAsync(
+            businessId, invoiceId, customer.Name, customer.Email!, amount, invoiceNumber, replyTo);
     }
 
     /// <summary>

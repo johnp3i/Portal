@@ -1,0 +1,60 @@
+@model Portal.Web.Models.Assistants.AdminNotificationRecipientsViewModel
+@{
+    ViewData["Title"] = "Notification Failure Alerts";
+    // Present the stored (semicolon-delimited) list one-per-line for editing.
+    var onePerLine = string.Join("\n",
+        (Model.Recipients ?? string.Empty)
+            .Split(new[] { ';', ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(r => r.Trim())
+            .Where(r => r.Length > 0));
+}
+
+@Html.AntiForgeryToken()
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Admin</div>
+        <h1 class="topbar-heading">Notification Failure Alerts</h1>
+        <p class="topbar-subtitle">When notifications fail to send beyond the alert threshold, these addresses are emailed (and an alert is raised in the system log). One address per line.</p>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div class="field">
+        <label style="display:block;font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Recipient email addresses</label>
+        <textarea id="recipients" style="width:100%;min-height:120px;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;font-size:14px;font-family:inherit;resize:vertical;">@onePerLine</textarea>
+    </div>
+    <div style="margin-top:16px;">
+        <button type="button" class="btn btn-primary" onclick="saveRecipients()">Save Recipients</button>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function antiForgery() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        async function saveRecipients() {
+            var value = document.getElementById('recipients').value;
+            BlockUI.show('Saving...');
+            try {
+                var resp = await fetch('/Admin/Notifications/Save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': antiForgery() },
+                    body: JSON.stringify({ recipients: value })
+                });
+                var data = await resp.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ title: 'Saved', text: data.message, icon: 'success', confirmButtonColor: '#0D5EA6' });
+                } else {
+                    Swal.fire({ title: 'Error', text: data.message, icon: 'error', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

@@ -42,6 +42,26 @@ public class PlanCheckService : IPlanCheckService
     }
 
     /// <inheritdoc />
+    public async Task<bool> IsModuleInPlanAsync(int businessId, string module)
+    {
+        var modules = await GetPlanModulesAsync(businessId);
+        return modules.Contains(module);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<string>> GetPlanModulesAsync(int businessId)
+    {
+        // Tenant-less: explicit businessId, no HttpContext cache. Same query as the
+        // request-scoped overload so plan-module resolution has a single source of truth.
+        return await _portalDbContext.BusinessPlans
+            .Where(bp => bp.BusinessId == businessId && bp.IsActive)
+            .SelectMany(bp => bp.Plan.PlanFeatures)
+            .Where(pf => pf.IsIncluded)
+            .Select(pf => pf.ModuleName)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
     public async Task<string> GetEffectiveAccessLevelAsync(string userId, string module)
     {
         // Get the plan-level access for this module
@@ -75,12 +95,7 @@ public class PlanCheckService : IPlanCheckService
 
         var businessId = _currentTenantService.CurrentBusinessId;
 
-        var modules = await _portalDbContext.BusinessPlans
-            .Where(bp => bp.BusinessId == businessId && bp.IsActive)
-            .SelectMany(bp => bp.Plan.PlanFeatures)
-            .Where(pf => pf.IsIncluded)
-            .Select(pf => pf.ModuleName)
-            .ToListAsync();
+        var modules = await GetPlanModulesAsync(businessId);
 
         if (httpContext != null)
         {

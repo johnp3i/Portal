@@ -38,6 +38,7 @@ public class DashboardBriefingService : IDashboardBriefingService
 
             if (scope.ShowPurchase)
             {
+                await EvaluateUpcomingSupplierPayments(businessId, currencySymbol, insights);
                 await EvaluateUnassignedPurchases(businessId, insights);
             }
 
@@ -141,6 +142,64 @@ public class DashboardBriefingService : IDashboardBriefingService
                 Priority = 3,
                 Severity = BriefingSeverity.Action,
                 Html = $"<strong>{pending.Count} proposal{s}</strong> worth <strong>{currency}{total:N2}</strong> are awaiting client acceptance. <a href=\"/Quotation?status=2\" style=\"color:#0D5EA6;font-weight:600;text-decoration:none;\">Follow up →</a>"
+            });
+        }
+        catch { }
+    }
+
+    private async Task EvaluateUpcomingSupplierPayments(int businessId, string currency, List<BriefingInsight> insights)
+    {
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var cutoff = today.AddDays(14);
+
+            // Non-cancelled purchases whose effective due date (TargetPaymentDate ?? SupplierDueDate)
+            // falls on or before the 14-day cutoff. Mirrors the dashboard widget's window.
+            var upcoming = await _dbContext.Purchases
+                .Where(p => p.BusinessId == businessId
+                    && !p.IsCancelled
+                    && (p.TargetPaymentDate ?? p.SupplierDueDate) != null
+                    && (p.TargetPaymentDate ?? p.SupplierDueDate) <= cutoff)
+                .Select(p => new
+                {
+                    p.TotalAmount,
+                    EffectiveDueDate = p.TargetPaymentDate ?? p.SupplierDueDate!.Value
+                })
+                .ToListAsync();
+
+            if (upcoming.Count == 0) return;
+
+            var total = upcoming.Sum(p => p.TotalAmount);
+            var soonest = upcoming.Min(p => p.EffectiveDueDate);
+            var overdueCount = upcoming.Count(p => p.EffectiveDueDate < today);
+            var dueTodayCount = upcoming.Count(p => p.EffectiveDueDate == today);
+
+            var s = upcoming.Count == 1 ? "" : "s";
+            var verb = upcoming.Count == 1 ? "is" : "are";
+
+            // Build the timing phrase from the soonest effective due date.
+            string timing;
+            var daysUntilSoonest = soonest.DayNumber - today.DayNumber;
+            if (overdueCount > 0)
+                timing = overdueCount == 1 ? "1 is overdue" : $"{overdueCount} are overdue";
+            else if (daysUntilSoonest == 0)
+                timing = "the soonest is due today";
+            else if (daysUntilSoonest == 1)
+                timing = "the soonest is due tomorrow";
+            else
+                timing = $"the soonest is due in {daysUntilSoonest} days";
+
+            // Overdue or due-today payments are urgent; otherwise it's an action item.
+            var severity = (overdueCount > 0 || dueTodayCount > 0)
+                ? BriefingSeverity.Urgent
+                : BriefingSeverity.Action;
+
+            insights.Add(new BriefingInsight
+            {
+                Priority = 2,
+                Severity = severity,
+                Html = $"<strong>{upcoming.Count} upcoming supplier payment{s}</strong> totalling <strong>{currency}{total:N2}</strong> {verb} due in the next 14 days — {timing}. <a href=\"/Purchase\" style=\"color:#0D5EA6;font-weight:600;text-decoration:none;\">Review payments →</a>"
             });
         }
         catch { }

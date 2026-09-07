@@ -390,6 +390,7 @@ public class DemoInvitationRepository : GenericStoredProcedureRepository<DemoInv
                        [portal].[Business].[IsAutoInvoiceSignatureEnabled],
                        [portal].[Business].[IsOnboardingDismissed],
                        [portal].[Business].[IsReminderSystemEnabled],
+                       [portal].[Business].[TimeZoneId],
                        [portal].[Business].[CreatedAtUtc],
                        [portal].[Business].[UpdatedAtUtc]
                 FROM [portal].[Business]

@@ -80,6 +80,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 -   Opportunities (sales pipeline: lead board, contacts, team, meetings, templates, activity feed)
 -   Document Attachments (attach PDFs/images to purchases, invoices, quotations)
 -   Business Applications Tracker (compliance filings: tax, employee, regulatory — with country-specific templates)
+-   Digital Assistants (opt-in background automations — Thank-You emails on payment received now; Recurring Invoices (scheduled auto-issue/draft with optional payment link), Quotation Follow-Up, and Lead-Task reminders on the roadmap — each with per-business toggle, working hours, and an activity log)
 -   Activity Log (readonly — view history of operations)
 -   Up to 5 users with granular permissions
 -   Priority email support
@@ -148,6 +149,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Customer Behaviour Analytics              | ❌                   | ❌                   | ✅                   |
 | **Operational Tools**                     |                      |                      |                      |
 | Document Attachments                      | ❌                   | ✅                   | ✅                   |
+| Digital Assistants (background automations)| ❌                  | ✅                   | ✅                   |
 | Opportunities (sales pipeline)            | ❌                   | ✅                   | ✅                   |
 | Activity Log                              | ❌                   | ✅ (readonly)        | ✅ (full)            |
 | Client Portal (customer self-service)     | ❌                   | ❌                   | ✅                   |
@@ -265,6 +267,7 @@ Request arrives
 | `external_platform_import`     | External Platform Sales Import (import sales from other billing platforms for VAT consolidation) | Professional   |
 | `sales`                        | Opportunities (sales pipeline & lead tracking)              | Professional   |
 | `attachments`                  | Document Attachments                                        | Professional   |
+| `digital_assistants`           | Digital Assistants (background notification automations)    | Professional   |
 | `audit_log`                    | Activity Log (readonly on Professional, full on Enterprise) | Professional   |
 | `client_portal`                | Client Portal                                               | Enterprise     |
 | `activity_timeline`            | Activity & Notifications                                    | Enterprise     |

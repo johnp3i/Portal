@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Assistants — Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #F7FAFC; color: #0B1B28; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        :root {
+            --primary-blue: #0D5EA6; --accent-cyan: #57B8E8; --success: #129867;
+            --warning: #C8912E; --danger: #C24A4A; --bg-secondary: #EEF4F8;
+            --text-secondary: #5E7385; --border: #e2e8f0; --card-shadow: 0 8px 32px rgba(11,27,40,.06);
+        }
+        .page { max-width: 1000px; margin: 0 auto; padding: 40px 28px 80px; }
+        .mock-note { background:#fff8e6; border:1px solid rgba(200,145,46,.3); border-radius:12px; padding:14px 18px; font-size:13px; color:#7a5a12; margin-bottom:28px; }
+
+        .topbar { margin-bottom: 30px; }
+        .eyebrow { font-family:'Manrope',sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--primary-blue); display:flex; align-items:center; gap:8px; }
+        .eyebrow .dot { width:8px; height:8px; border-radius:50%; background:var(--primary-blue); }
+        .topbar h1 { font-family:'Manrope',sans-serif; font-size:36px; font-weight:800; letter-spacing:-.5px; margin-top:8px; }
+        .topbar p { color:var(--text-secondary); font-size:15px; margin-top:6px; max-width:640px; }
+
+        .glass { background:#fff; border-radius:24px; box-shadow:var(--card-shadow); }
+        .card-pad { padding:26px 28px; }
+
+        /* Assistant card */
+        .assistant { display:flex; gap:18px; align-items:flex-start; }
+        .assistant + .assistant { margin-top:0; }
+        .assistant-wrap { margin-bottom:22px; }
+        .avatar {
+            width:56px; height:56px; border-radius:16px; flex-shrink:0;
+            background:linear-gradient(135deg, rgba(13,94,166,.10), rgba(87,184,232,.14));
+            display:flex; align-items:center; justify-content:center;
+        }
+        .assistant-body { flex:1; }
+        .assistant-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+        .assistant-name { font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; }
+        .assistant-persona { font-size:14px; color:var(--text-secondary); margin-top:3px; }
+        .assistant-status { font-size:12px; font-weight:700; margin-top:8px; display:inline-flex; align-items:center; gap:6px; }
+        .assistant-status .d { width:8px;height:8px;border-radius:50%; }
+        .on  { color:var(--success); } .on .d{ background:var(--success);}
+        .off { color:var(--text-secondary);} .off .d{ background:#b6c2ce;}
+
+        /* toggle */
+        .switch { position:relative; width:48px; height:28px; flex-shrink:0; }
+        .switch input { display:none; }
+        .slider { position:absolute; inset:0; background:#cbd5e1; border-radius:999px; transition:.2s; cursor:pointer; }
+        .slider::before { content:''; position:absolute; width:22px; height:22px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+        .switch input:checked + .slider { background:var(--success); }
+        .switch input:checked + .slider::before { transform:translateX(20px); }
+
+        .settings-row { display:flex; flex-wrap:wrap; gap:22px; margin-top:16px; padding-top:16px; border-top:1px solid #eef2f6; align-items:flex-end; }
+        .field label { display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+        .field input[type=time] { padding:9px 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; }
+        .mini-toggle { display:flex; align-items:center; gap:10px; }
+        .mini-toggle span { font-size:13px; color:#0B1B28; }
+        .link-btn { color:var(--primary-blue); font-weight:700; font-size:13px; background:none; border:none; cursor:pointer; text-decoration:none; }
+        .link-btn:hover { text-decoration:underline; }
+
+        /* log */
+        .log { margin-top:16px; border-top:1px solid #eef2f6; padding-top:14px; }
+        .log table { width:100%; border-collapse:collapse; font-size:13px; }
+        .log th { text-align:left; font-family:'Manrope',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#98a8b6; padding:8px 10px; border-bottom:2px solid var(--border); }
+        .log td { padding:10px; border-bottom:1px solid #eef2f6; }
+        .pill { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+        .pill.sent { background:rgba(18,152,103,.10); color:var(--success); }
+        .pill.pending { background:rgba(200,145,46,.12); color:var(--warning); }
+        .pill.failed { background:rgba(194,74,74,.10); color:var(--danger); }
+
+        .section-title { font-family:'Manrope',sans-serif; font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-secondary); margin:38px 0 14px; }
+        .footer-preview { margin-top:14px; padding:14px 16px; background:var(--bg-secondary); border-radius:12px; font-size:13px; color:var(--text-secondary); display:flex; align-items:center; gap:10px; }
+        .footer-preview a { color:var(--primary-blue); font-weight:700; text-decoration:none; }
+
+        /* admin */
+        .admin-emails { width:100%; min-height:90px; border:1px solid var(--border); border-radius:12px; padding:12px 14px; font-size:14px; font-family:inherit; resize:vertical; }
+        .btn { display:inline-flex; align-items:center; gap:8px; padding:11px 22px; border-radius:12px; font-size:14px; font-weight:700; border:none; cursor:pointer; }
+        .btn-primary { background:var(--primary-blue); color:#fff; }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <div class="mock-note">
+        <strong>Mockup only.</strong> Business-facing <em>Digital Assistants</em> page (top) and the SuperAdmin
+        failure-alert recipients panel (bottom). Self-contained; not wired to the server.
+    </div>
+
+    <div class="topbar">
+        <div class="eyebrow"><span class="dot"></span> Automation</div>
+        <h1>Digital Assistants</h1>
+        <p>Your always-on helpers. Switch each one on to let it work quietly in the background — and check its log anytime to see exactly what it did.</p>
+    </div>
+
+    <!-- Thank-You Assistant (ON) -->
+    <div class="assistant-wrap glass card-pad">
+        <div class="assistant">
+            <div class="avatar">
+                <svg width="26" height="26" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v12H5.17L4 17.17V4z"/><path d="M8 9h8M8 12h5"/></svg>
+            </div>
+            <div class="assistant-body">
+                <div class="assistant-head">
+                    <div>
+                        <div class="assistant-name">Thank-You Assistant</div>
+                        <div class="assistant-persona">Sends a courteous payment confirmation the moment a customer pays an invoice.</div>
+                        <div class="assistant-status on"><span class="d"></span> Active — working for you</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+
+                <div class="settings-row">
+                    <div class="field">
+                        <label>Send only between</label>
+                        <input type="time" value="08:00"> <span style="color:#98a8b6;">and</span> <input type="time" value="20:00">
+                    </div>
+                    <div class="field">
+                        <label>Time zone</label>
+                        <div style="font-size:14px;padding:9px 0;">Cyprus (EET/EEST)</div>
+                    </div>
+                    <div class="mini-toggle">
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                        <span>Include "Powered by 3 Inventors" footer</span>
+                    </div>
+                    <button class="link-btn" onclick="var l=document.getElementById('ty-log');l.style.display=l.style.display==='none'?'block':'none';">View activity log ↓</button>
+                </div>
+
+                <div class="footer-preview">
+                    <svg width="15" height="15" fill="none" stroke="#5E7385" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    Emails to customers end with: <em>"Sent via 3 Inventors Business Portal —</em> <a href="#">like this? Discover it →</a><em>"</em>
+                </div>
+
+                <div class="log" id="ty-log" style="display:none;">
+                    <table>
+                        <thead><tr><th>Sent</th><th>Recipient</th><th>Subject</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td>Today 14:22</td><td>maria@eac.com.cy</td><td>Thank you for your payment — INV-00312</td><td><span class="pill sent">✓ Sent</span></td></tr>
+                            <tr><td>Today 11:05</td><td>accounts@ebay-supplier.com</td><td>Thank you for your payment — INV-00311</td><td><span class="pill sent">✓ Sent</span></td></tr>
+                            <tr><td>Today 09:40</td><td>info@ovisart.com</td><td>Thank you for your payment — INV-00309</td><td><span class="pill pending">◷ Scheduled 08:00</span></td></tr>
+                            <tr><td>Yesterday 17:12</td><td>bad-address@nowhere</td><td>Thank you for your payment — INV-00307</td><td><span class="pill failed">✕ Failed</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring Invoices Assistant (ON) -->
+    <div class="assistant-wrap glass card-pad">
+        <div class="assistant">
+            <div class="avatar">
+                <svg width="26" height="26" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+            </div>
+            <div class="assistant-body">
+                <div class="assistant-head">
+                    <div>
+                        <div class="assistant-name">Recurring Invoices Assistant</div>
+                        <div class="assistant-persona">Generates your repeat invoices on schedule — like a subscription — and can issue them and attach a payment link automatically.</div>
+                        <div class="assistant-status on"><span class="d"></span> Active — 4 schedules running</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+
+                <div class="settings-row">
+                    <div class="mini-toggle">
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                        <span>Auto-issue (send the real invoice, no review step)</span>
+                    </div>
+                    <div class="mini-toggle">
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                        <span>Attach a payment link on issue</span>
+                    </div>
+                    <button class="link-btn" onclick="var l=document.getElementById('ri-log');l.style.display=l.style.display==='none'?'block':'none';">View schedules &amp; activity ↓</button>
+                </div>
+
+                <div class="footer-preview">
+                    <svg width="15" height="15" fill="none" stroke="#5E7385" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg>
+                    The full chain: <strong>recurring → issue → payment link → reminders → paid → recorded</strong> — like having an accounting department.
+                </div>
+
+                <div class="log" id="ri-log" style="display:none;">
+                    <table>
+                        <thead><tr><th>Schedule</th><th>Customer</th><th>Next run</th><th>Mode</th><th>Last result</th></tr></thead>
+                        <tbody>
+                            <tr><td>Monthly subscription</td><td>Little Stars Kindergarten</td><td>01 Oct</td><td>Auto-issue + link</td><td><span class="pill sent">✓ INV-00318 issued</span></td></tr>
+                            <tr><td>Monthly retainer</td><td>OVIS Art Ltd</td><td>01 Oct</td><td>Auto-issue</td><td><span class="pill sent">✓ INV-00316 issued</span></td></tr>
+                            <tr><td>Quarterly hosting</td><td>Cyprus Tech</td><td>01 Nov</td><td>Draft for review</td><td><span class="pill pending">◷ Draft created</span></td></tr>
+                            <tr><td>Monthly cleaning</td><td>Harbour Offices</td><td>01 Oct</td><td>Auto-issue + link</td><td><span class="pill sent">✓ INV-00317 issued</span></td></tr>
+                        </tbody>
+                    </table>
+                    <p style="font-size:12px;color:#98a8b6;margin-top:10px;">Design preview — Recurring Invoices is a planned (Phase 2) assistant.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quotation Follow-Up Assistant (OFF, coming soon style) -->
+    <div class="assistant-wrap glass card-pad" style="opacity:.9;">
+        <div class="assistant">
+            <div class="avatar">
+                <svg width="26" height="26" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <div class="assistant-body">
+                <div class="assistant-head">
+                    <div>
+                        <div class="assistant-name">Quotation Follow-Up Assistant <span style="font-size:11px;font-weight:700;color:#98a8b6;">· COMING SOON</span></div>
+                        <div class="assistant-persona">Reminds you to follow up on quotations that have been sitting unanswered.</div>
+                        <div class="assistant-status off"><span class="d"></span> Off</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" disabled><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lead Task Reminder Assistant (OFF, coming soon) -->
+    <div class="assistant-wrap glass card-pad" style="opacity:.9;">
+        <div class="assistant">
+            <div class="avatar">
+                <svg width="26" height="26" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+            <div class="assistant-body">
+                <div class="assistant-head">
+                    <div>
+                        <div class="assistant-name">Lead Task Reminder <span style="font-size:11px;font-weight:700;color:#98a8b6;">· COMING SOON</span></div>
+                        <div class="assistant-persona">Emails you when a lead task is due, so nothing slips if you're not logged in.</div>
+                        <div class="assistant-status off"><span class="d"></span> Off</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" disabled><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SuperAdmin panel ===== -->
+    <div class="section-title">SuperAdmin · Failure Alert Recipients</div>
+    <div class="glass card-pad">
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">
+            When notifications fail to send beyond the alert threshold, these addresses are emailed (and an in-app alert is raised). One address per line.
+        </p>
+        <textarea class="admin-emails">ops@3inventors.com
+johnp@3inventors.com</textarea>
+        <div style="margin-top:16px;">
+            <button class="btn btn-primary">Save Recipients</button>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

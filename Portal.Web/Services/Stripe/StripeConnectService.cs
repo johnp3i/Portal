@@ -26,6 +26,7 @@ public class StripeConnectService : IStripeConnectService
     private readonly IPaymentReceiptService _receiptService;
     private readonly StripeSettings _stripeSettings;
     private readonly IStripeKeyResolutionService _keyResolutionService;
+    private readonly Portal.Infrastructure.Services.Notifications.INotificationProducer? _notificationProducer;
 
     public StripeConnectService(
         StripeConnectRepository repository,
@@ -34,7 +35,8 @@ public class StripeConnectService : IStripeConnectService
         IFinancialStatusEngine financialStatusEngine,
         IPaymentReceiptService receiptService,
         IOptions<StripeSettings> stripeSettings,
-        IStripeKeyResolutionService keyResolutionService)
+        IStripeKeyResolutionService keyResolutionService,
+        Portal.Infrastructure.Services.Notifications.INotificationProducer? notificationProducer = null)
     {
         _repository = repository;
         _portalDbContext = portalDbContext;
@@ -43,6 +45,7 @@ public class StripeConnectService : IStripeConnectService
         _receiptService = receiptService;
         _stripeSettings = stripeSettings.Value;
         _keyResolutionService = keyResolutionService;
+        _notificationProducer = notificationProducer;
     }
 
     // ─── Onboarding ──────────────────────────────────────────────────────
@@ -342,7 +345,19 @@ public class StripeConnectService : IStripeConnectService
                 CreatedByUserId = null
             };
 
-            var paymentId = await _paymentRepository.InsertAsync(payment);
+            // Resolve + gate the Thank-You BEFORE the transaction, so the transaction only wraps
+            // the two inserts. Returns null when no notification should be sent.
+            var thankYou = await PrepareThankYouAsync(checkoutSession.BusinessId, checkoutSession.InvoiceId, checkoutSession.Amount);
+
+            // Record the payment and enqueue the Thank-You atomically (transactional outbox).
+            int paymentId;
+            await using (var transaction = await _portalDbContext.Database.BeginTransactionAsync())
+            {
+                paymentId = await _paymentRepository.InsertAsync(payment);
+                if (thankYou != null && _notificationProducer != null)
+                    await _notificationProducer.InsertAsync(thankYou);
+                await transaction.CommitAsync();
+            }
 
             // 5. Recalculate invoice financial status
             await _financialStatusEngine.RecalculateStatusAsync(checkoutSession.InvoiceId, checkoutSession.BusinessId, stripeSessionId);
@@ -400,6 +415,41 @@ public class StripeConnectService : IStripeConnectService
     }
 
     // ─── Private Helpers ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// <summary>
+    /// Resolves + gates a Thank-You notification for a Stripe card payment and returns a
+    /// ready-to-insert outbox message (or null). All reads happen OUTSIDE the payment
+    /// transaction; the caller inserts the returned message inside it for atomicity.
+    /// </summary>
+    private async Task<Portal.Infrastructure.Entities.Notification.OutboxMessage?> PrepareThankYouAsync(
+        int businessId, int invoiceId, decimal amount)
+    {
+        if (_notificationProducer == null) return null;
+
+        var invoice = await _portalDbContext.Invoices
+            .IgnoreQueryFilters()
+            .Where(i => i.Id == invoiceId && i.BusinessId == businessId)
+            .Select(i => new { i.CustomerId, i.InvoiceNumber })
+            .FirstOrDefaultAsync();
+        if (invoice == null) return null;
+
+        var customer = await _portalDbContext.Customers
+            .IgnoreQueryFilters()
+            .Where(c => c.Id == invoice.CustomerId && c.BusinessId == businessId)
+            .Select(c => new { c.Name, c.Email })
+            .FirstOrDefaultAsync();
+        if (customer == null || string.IsNullOrWhiteSpace(customer.Email)) return null;
+
+        var replyTo = await _portalDbContext.BusinessProfiles
+            .IgnoreQueryFilters()
+            .Where(bp => bp.BusinessId == businessId)
+            .Select(bp => bp.Email)
+            .FirstOrDefaultAsync();
+
+        return await _notificationProducer.PrepareThankYouAsync(
+            businessId, invoiceId, customer.Name, customer.Email!, amount, invoice.InvoiceNumber, replyTo);
+    }
 
     /// <summary>
     /// Checks if auto-receipt is enabled for the business and generates a receipt if so.

@@ -80,6 +80,38 @@ public class PnlService : IPnlService
     }
 
     /// <inheritdoc />
+    public async Task<PnlSnapshotDto> ComputeSnapshotAsync(int businessId, DateOnly startDate, DateOnly endDate)
+    {
+        try
+        {
+            // Tenant-less: businessId is explicit; no ICurrentTenantService use here.
+            // Reuses the same private compute methods as GetSummaryAsync.
+            var revenue = await ComputeRevenueAsync(startDate, endDate, businessId);
+            var cogs = await ComputePurchaseAmountAsync(startDate, endDate, businessId, PurchaseTypeStock);
+            var operatingExpenses = await ComputePurchaseAmountAsync(startDate, endDate, businessId, PurchaseTypeExpense);
+
+            var grossProfit = revenue - cogs;
+            var netProfit = grossProfit - operatingExpenses;
+
+            return new PnlSnapshotDto
+            {
+                PeriodStart = startDate,
+                PeriodEnd = endDate,
+                Revenue = revenue,
+                Cogs = cogs,
+                OperatingExpenses = operatingExpenses,
+                GrossProfit = grossProfit,
+                NetProfit = netProfit,
+                HasData = revenue != 0 || cogs != 0 || operatingExpenses != 0
+            };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public PnlDateRange ResolvePeriod(PnlPeriodType periodType, DateTime referenceDate)
     {
         return periodType switch

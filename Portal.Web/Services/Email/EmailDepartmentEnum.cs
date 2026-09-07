@@ -23,6 +23,7 @@ namespace Portal.Web.Services.Email
         PromoCode,
         Demo,
         PaymentReminder,
-        Payroll
+        Payroll,
+        Notifications
     }
 }

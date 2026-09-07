@@ -340,6 +340,34 @@ builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
 builder.Services.AddHostedService<PaymentReminderBackgroundService>();
 builder.Services.AddScoped<IPaymentInstructionsService, PaymentInstructionsService>();
 
+// --- Digital Assistants (Notification Spine) ---
+builder.Services.Configure<Portal.Infrastructure.Services.Notifications.NotificationOptions>(
+    builder.Configuration.GetSection(Portal.Infrastructure.Services.Notifications.NotificationOptions.SectionName));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Portal.Infrastructure.Services.Notifications.NotificationOptions>>().Value);
+
+builder.Services.AddScoped<Portal.Infrastructure.Repositories.Notification.NotificationOutboxRepository>(sp =>
+    new Portal.Infrastructure.Repositories.Notification.NotificationOutboxRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<Portal.Infrastructure.Repositories.Notification.BusinessAssistantSettingRepository>(sp =>
+    new Portal.Infrastructure.Repositories.Notification.BusinessAssistantSettingRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<Portal.Infrastructure.Repositories.Notification.AssistantOptOutRepository>(sp =>
+    new Portal.Infrastructure.Repositories.Notification.AssistantOptOutRepository(sp.GetRequiredService<PortalDbContext>()));
+
+builder.Services.AddSingleton<Portal.Infrastructure.Services.Notifications.IScheduleResolver>(sp =>
+    new Portal.Infrastructure.Services.Notifications.ScheduleResolver(
+        sp.GetRequiredService<Portal.Infrastructure.Services.Notifications.NotificationOptions>().DefaultTimeZoneWindowsId));
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.INotificationProducer, Portal.Infrastructure.Services.Notifications.NotificationProducer>();
+builder.Services.AddScoped<Portal.Web.Services.Notifications.INotificationAdminAlertService, Portal.Web.Services.Notifications.NotificationAdminAlertService>();
+builder.Services.AddHostedService<Portal.Web.BackgroundServices.NotificationDispatcherBackgroundService>();
+
+// --- Digital Assistants (Scheduled Digests — Group 3) ---
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestRecipientResolver, Portal.Infrastructure.Services.Notifications.DigestRecipientResolver>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestEnqueuer, Portal.Infrastructure.Services.Notifications.DigestEnqueuer>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.OutstandingBalanceDigestComposer>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.FinancialSnapshotComposer>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IScheduledDigestRunner, Portal.Infrastructure.Services.Notifications.ScheduledDigestRunner>();
+builder.Services.AddHostedService<Portal.Web.BackgroundServices.DigitalAssistantSchedulerBackgroundService>();
+
 // Cash Flow Forecasting
 builder.Services.AddScoped<ICashFlowService, CashFlowService>();
 

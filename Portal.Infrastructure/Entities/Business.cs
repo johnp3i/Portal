@@ -28,6 +28,9 @@ public class Business
 
     public bool IsReminderSystemEnabled { get; set; }
 
+    /// <summary>Optional FK to [notification].TimeZone for working-hours scheduling. NULL = platform default.</summary>
+    public int? TimeZoneId { get; set; }
+
     // Navigation properties
     public BusinessProfile? BusinessProfile { get; set; }
 

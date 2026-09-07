@@ -19,7 +19,7 @@ namespace Portal.Web.Services.Email
             _websiteSettings = websiteSettings;
             _logger = logger;
         }
-        public async Task SendEmailAsync(string email, string subject, string message, EmailDepartmentEnum department)
+        public async Task SendEmailAsync(string email, string subject, string message, EmailDepartmentEnum department, string? replyTo = null)
         {
             try
             {
@@ -35,6 +35,10 @@ namespace Portal.Web.Services.Email
                 var emailMessage = new MimeMessage();
                 emailMessage.From.Add(new MailboxAddress(account.SenderEmail ?? account.Username, account.SenderEmail ?? account.Username));
                 emailMessage.To.Add(new MailboxAddress(email, email));
+                if (!string.IsNullOrWhiteSpace(replyTo))
+                {
+                    emailMessage.ReplyTo.Add(new MailboxAddress(replyTo, replyTo));
+                }
                 emailMessage.Subject = subject;
 
                 var bodyBuilder = new BodyBuilder

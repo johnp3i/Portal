@@ -702,13 +702,19 @@ public class DashboardService : IDashboardService
     }
 
     /// <inheritdoc />
-    public async Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(int businessId)
+    public Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(int businessId)
+        // Existing dashboard behaviour preserved: top 5, 14-day window.
+        => GetUpcomingSupplierPaymentsAsync(businessId, take: 5, windowDays: 14);
+
+    /// <inheritdoc />
+    public async Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(
+        int businessId, int? take, int windowDays)
     {
         try
         {
             var results = new List<UpcomingSupplierPaymentDto>();
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var cutoff = today.AddDays(14);
+            var cutoff = today.AddDays(Math.Max(0, windowDays));
 
             var connection = _dbContext.Database.GetDbConnection();
 
@@ -719,8 +725,10 @@ public class DashboardService : IDashboardService
 
                 var transaction = _dbContext.Database.CurrentTransaction;
 
-                const string query = @"
-                    SELECT TOP 5
+                // TOP is optional: when 'take' is null the digest wants all due payables.
+                var topClause = take.HasValue ? "TOP (@Take) " : string.Empty;
+                var query = $@"
+                    SELECT {topClause}
                            [purchase].[Purchase].[Id] AS [PurchaseId],
                            [purchase].[Supplier].[Name] AS [SupplierName],
                            [purchase].[Purchase].[Description] AS [Description],
@@ -742,6 +750,8 @@ public class DashboardService : IDashboardService
 
                     command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
                     command.Parameters.Add(new SqlParameter("@Cutoff", cutoff.ToDateTime(TimeOnly.MinValue)));
+                    if (take.HasValue)
+                        command.Parameters.Add(new SqlParameter("@Take", take.Value));
 
                     using var reader = await command.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
