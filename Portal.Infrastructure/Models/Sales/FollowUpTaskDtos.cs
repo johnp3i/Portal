@@ -7,6 +7,7 @@ public class FollowUpTaskDto
 {
     public int Id { get; set; }
     public int? LeadRequestId { get; set; }
+    public int? ContactId { get; set; }
     public string? ContactName { get; set; }
     public string? LeadProductName { get; set; }
     public string? AssignedToName { get; set; }

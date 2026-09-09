@@ -17,6 +17,32 @@ public static class DigestEmailBuilder
     public static string FinancialSnapshotSubject(string businessName)
         => $"Your weekly financial snapshot — {businessName}";
 
+    public static string DailyBriefSubject(string businessName)
+        => $"Your daily brief — {businessName}";
+
+    // ---- Daily Brief ----------------------------------------------------------------------
+
+    /// <summary>
+    /// Owner-facing daily "needs your attention" brief. Only rendered when there is at least one
+    /// item (the composer returns null on quiet days). No figures/glance block — just the items.
+    /// </summary>
+    public static string BuildDailyBriefHtml(string businessName, List<AttentionItem> items)
+    {
+        var biz = WebUtility.HtmlEncode(businessName);
+
+        var body = new StringBuilder();
+        body.Append(Paragraph("Here's what needs your attention today."));
+        body.Append(@"<ul style=""margin:16px 0 0 0;padding:0 0 0 18px;"">");
+        foreach (var item in items)
+        {
+            var color = item.IsUrgent ? "#C24A4A" : "#3D4F5F";
+            body.Append($@"<li style=""margin:8px 0;font-size:15px;line-height:1.6;color:{color};"">{WebUtility.HtmlEncode(item.Text)}</li>");
+        }
+        body.Append("</ul>");
+
+        return Shell("Your daily brief", "#0D5EA6", "Today at a glance", biz, body.ToString());
+    }
+
     // ---- Outstanding Balance Digest -------------------------------------------------------
 
     public static string BuildOutstandingBalanceHtml(OutstandingBalanceDigestModel m)
@@ -41,15 +67,32 @@ public static class DigestEmailBuilder
             if (m.OverdueTotal > 0m)
                 body.Append(StatRow("Overdue", $"{cur}{m.OverdueTotal:N2}", $"{m.OverdueInvoiceCount} invoice(s)", accent: "#C24A4A"));
 
+            // Net expected position — ties receivables and payables together (the cash-flow punchline).
+            var net = m.OutstandingTotal - m.UpcomingPayablesTotal;
+            body.Append(StatRow(
+                "Net expected in",
+                $"{cur}{net:N2}",
+                $"owed {cur}{m.OutstandingTotal:N2} · due out {cur}{m.UpcomingPayablesTotal:N2}",
+                accent: net < 0 ? "#C24A4A" : "#129867"));
+
+            // Largest single debtor — cash-flow concentration risk worth flagging.
+            if (m.LargestDebtorName != null && m.OutstandingTotal > 0m)
+            {
+                var pct = (int)Math.Round(m.LargestDebtorAmount / m.OutstandingTotal * 100m);
+                body.Append(Paragraph(
+                    $"{m.LargestDebtorName} owes {m.CurrencySymbol}{m.LargestDebtorAmount:N2} — {pct}% of your outstanding total."));
+            }
+
             if (m.TopOutstanding.Count > 0)
             {
                 var rows = new StringBuilder();
                 foreach (var r in m.TopOutstanding)
                 {
+                    var badge = AgingBadge(r.DaysOverdue);
                     rows.Append($@"<tr>
                         <td style=""padding:8px 10px;border-bottom:1px solid #eef2f6;font-size:13px;color:#0B1B28;"">{WebUtility.HtmlEncode(r.CustomerName)}</td>
                         <td style=""padding:8px 10px;border-bottom:1px solid #eef2f6;font-size:13px;color:#5a6a7a;"">{WebUtility.HtmlEncode(r.InvoiceNumber)}</td>
-                        <td style=""padding:8px 10px;border-bottom:1px solid #eef2f6;font-size:13px;color:#5a6a7a;"">{r.DueDate:dd MMM yyyy}</td>
+                        <td style=""padding:8px 10px;border-bottom:1px solid #eef2f6;font-size:13px;color:#5a6a7a;"">{r.DueDate:dd MMM yyyy} {badge}</td>
                         <td style=""padding:8px 10px;border-bottom:1px solid #eef2f6;font-size:13px;color:#0B1B28;text-align:right;font-weight:700;"">{cur}{r.OutstandingBalance:N2}</td>
                     </tr>");
                 }
@@ -103,7 +146,24 @@ public static class DigestEmailBuilder
 
         body.Append(SectionHeading("This week"));
         foreach (var fig in m.Figures)
-            body.Append(StatRow(fig.Label, $"{cur}{fig.Amount:N2}", fig.Detail, accent: fig.Accent));
+        {
+            var trend = fig.TrendNote is null ? null : fig.TrendNote;
+            body.Append(StatRow(fig.Label, $"{cur}{fig.Amount:N2}", trend ?? fig.Detail, accent: fig.Accent));
+        }
+
+        // "Needs your attention" — the employee-report section. Only rendered when there is at
+        // least one item; each line is omitted individually when it has nothing to report.
+        if (m.AttentionItems.Count > 0)
+        {
+            body.Append(SectionHeading("Needs your attention"));
+            body.Append(@"<ul style=""margin:8px 0 0 0;padding:0 0 0 18px;"">");
+            foreach (var item in m.AttentionItems)
+            {
+                var color = item.IsUrgent ? "#C24A4A" : "#3D4F5F";
+                body.Append($@"<li style=""margin:6px 0;font-size:14px;line-height:1.6;color:{color};"">{WebUtility.HtmlEncode(item.Text)}</li>");
+            }
+            body.Append("</ul>");
+        }
 
         body.Append(GlanceLine(cur, m.InvoicesIssuedThisWeek, m.IssuedAmountThisWeek, m.PaymentsReceivedThisWeek, m.CollectedThisWeek));
 
@@ -150,6 +210,17 @@ public static class DigestEmailBuilder
             "due_soon" => ("rgba(200,145,46,.12)", "#C8912E", "Due soon"),
             _ => ("rgba(13,94,166,.10)", "#0D5EA6", "Upcoming"),
         };
+        return $@"<span style=""display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:{bg};color:{fg};"">{label}</span>";
+    }
+
+    /// <summary>Aging badge for an outstanding invoice, by days past due (&lt;=0 = not yet due).</summary>
+    private static string AgingBadge(int daysOverdue)
+    {
+        var (bg, fg, label) =
+              daysOverdue <= 0  ? ("rgba(13,94,166,.10)", "#0D5EA6", "Current")
+            : daysOverdue <= 30 ? ("rgba(200,145,46,.12)", "#C8912E", "1–30 days")
+            : daysOverdue <= 60 ? ("rgba(200,145,46,.16)", "#B07A1E", "31–60 days")
+            :                     ("rgba(194,74,74,.12)", "#C24A4A", "60+ days");
         return $@"<span style=""display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:{bg};color:{fg};"">{label}</span>";
     }
 
@@ -211,6 +282,13 @@ public class OutstandingBalanceDigestModel
     public List<OutstandingInvoiceLine> TopOutstanding { get; set; } = new();
     public List<UpcomingPayableLine> UpcomingPayables { get; set; } = new();
 
+    /// <summary>Total of the upcoming payables (for the net-expected-position line).</summary>
+    public decimal UpcomingPayablesTotal { get; set; }
+
+    /// <summary>Largest single debtor (customer) by outstanding total; null when none.</summary>
+    public string? LargestDebtorName { get; set; }
+    public decimal LargestDebtorAmount { get; set; }
+
     // This week at a glance
     public int InvoicesIssuedThisWeek { get; set; }
     public decimal IssuedAmountThisWeek { get; set; }
@@ -224,6 +302,8 @@ public class OutstandingInvoiceLine
     public string InvoiceNumber { get; set; } = null!;
     public DateOnly DueDate { get; set; }
     public decimal OutstandingBalance { get; set; }
+    /// <summary>Days past due (&lt;=0 means not yet due) — drives the aging badge.</summary>
+    public int DaysOverdue { get; set; }
 }
 
 public class UpcomingPayableLine
@@ -242,6 +322,9 @@ public class FinancialSnapshotDigestModel
     public bool HasActivity { get; set; }
     public List<SnapshotFigure> Figures { get; set; } = new();
 
+    /// <summary>Plain "employee report" lines — overdue, oldest invoice, payables, quotes, VAT.</summary>
+    public List<AttentionItem> AttentionItems { get; set; } = new();
+
     public int InvoicesIssuedThisWeek { get; set; }
     public decimal IssuedAmountThisWeek { get; set; }
     public int PaymentsReceivedThisWeek { get; set; }
@@ -254,5 +337,14 @@ public class SnapshotFigure
     public string Label { get; set; } = null!;
     public decimal Amount { get; set; }
     public string? Detail { get; set; }
+    /// <summary>Optional week-over-week note (e.g. "vs €800 last week") shown instead of Detail.</summary>
+    public string? TrendNote { get; set; }
     public string Accent { get; set; } = "#0B1B28";
+}
+
+/// <summary>A single "needs your attention" line in the Financial Snapshot.</summary>
+public class AttentionItem
+{
+    public string Text { get; set; } = null!;
+    public bool IsUrgent { get; set; }
 }

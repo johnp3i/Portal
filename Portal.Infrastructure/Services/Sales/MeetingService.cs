@@ -545,6 +545,7 @@ public class MeetingService : IMeetingService
                 Id = m.Id,
                 Subject = m.Subject,
                 MeetingTypeName = meetingType?.Name ?? "Unknown",
+                ContactId = m.ContactId,
                 ContactName = contact != null
                     ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
                     : "Unknown",

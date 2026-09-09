@@ -741,6 +741,24 @@ public class SalesController : Controller
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> AxGetContactDetail(int id)
+    {
+        try
+        {
+            var detail = await _contactService.GetContactDetailAsync(id);
+            if (detail == null)
+                return Json(new { success = false, message = "Contact not found." });
+
+            return Json(new { success = true, data = detail });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading contact detail");
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AxPostCancelMeeting(int id, string? description)

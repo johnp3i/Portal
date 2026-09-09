@@ -361,10 +361,13 @@ builder.Services.AddScoped<Portal.Web.Services.Notifications.INotificationAdminA
 builder.Services.AddHostedService<Portal.Web.BackgroundServices.NotificationDispatcherBackgroundService>();
 
 // --- Digital Assistants (Scheduled Digests — Group 3) ---
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IOwnerEmailResolver, Portal.Infrastructure.Services.Notifications.OwnerEmailResolver>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IAttentionItemBuilder, Portal.Infrastructure.Services.Notifications.AttentionItemBuilder>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestRecipientResolver, Portal.Infrastructure.Services.Notifications.DigestRecipientResolver>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestEnqueuer, Portal.Infrastructure.Services.Notifications.DigestEnqueuer>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.OutstandingBalanceDigestComposer>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.FinancialSnapshotComposer>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.DailyBriefComposer>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IScheduledDigestRunner, Portal.Infrastructure.Services.Notifications.ScheduledDigestRunner>();
 builder.Services.AddHostedService<Portal.Web.BackgroundServices.DigitalAssistantSchedulerBackgroundService>();
 

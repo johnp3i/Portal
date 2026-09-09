@@ -35,8 +35,9 @@ public class DemoEmailContentCompletenessPropertyTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
-                It.IsAny<EmailDepartmentEnum>()))
-            .Callback<string, string, string, EmailDepartmentEnum>((_, _, html, _) =>
+                It.IsAny<EmailDepartmentEnum>(),
+                It.IsAny<string?>()))
+            .Callback<string, string, string, EmailDepartmentEnum, string?>((_, _, html, _, _) =>
             {
                 capturedHtml = html;
             })

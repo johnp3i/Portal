@@ -166,7 +166,7 @@ public class InvoiceEmailServiceTests : IDisposable
         SeedBusinessOwnerWithEmail();
 
         _emailSenderMock
-            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>()))
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>(), It.IsAny<string?>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -178,7 +178,8 @@ public class InvoiceEmailServiceTests : IDisposable
                 TestOwnerEmail,
                 It.Is<string>(s => s.Contains(TestInvoiceNumber)),
                 It.IsAny<string>(),
-                EmailDepartmentEnum.Invoices),
+                EmailDepartmentEnum.Invoices,
+                It.IsAny<string?>()),
             Times.Once);
     }
 
@@ -190,7 +191,7 @@ public class InvoiceEmailServiceTests : IDisposable
         SeedBusinessOwnerWithEmail();
 
         _emailSenderMock
-            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>()))
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>(), It.IsAny<string?>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -217,7 +218,7 @@ public class InvoiceEmailServiceTests : IDisposable
 
         // Assert — email sender is never called
         _emailSenderMock.Verify(
-            e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>()),
+            e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>(), It.IsAny<string?>()),
             Times.Never);
     }
 
@@ -237,7 +238,7 @@ public class InvoiceEmailServiceTests : IDisposable
 
         // Assert — email sender is never called
         _emailSenderMock.Verify(
-            e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>()),
+            e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>(), It.IsAny<string?>()),
             Times.Never);
 
         // Assert — warning logged
@@ -263,7 +264,7 @@ public class InvoiceEmailServiceTests : IDisposable
         SeedBusinessOwnerWithEmail();
 
         _emailSenderMock
-            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>()))
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>(), It.IsAny<string?>()))
             .ThrowsAsync(new InvalidOperationException("SMTP connection failed"));
 
         // Act — should NOT throw
@@ -291,7 +292,7 @@ public class InvoiceEmailServiceTests : IDisposable
         SeedBusinessOwnerWithEmail();
 
         _emailSenderMock
-            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>()))
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EmailDepartmentEnum>(), It.IsAny<string?>()))
             .ThrowsAsync(new InvalidOperationException("SMTP timeout"));
 
         // Act

@@ -14,6 +14,9 @@ public class OutstandingBalanceDigestComposer : DigestComposerBase, IDigestCompo
 {
     private const int TopInvoices = 10;
     private const int PayablesWindowDays = 14;
+    // Upper bound for pulling all outstanding invoices in one page for a weekly digest.
+    // Comfortably covers any realistic SME's open-invoice count.
+    private const int AllOutstandingPageSize = 500;
 
     private readonly IDashboardService _dashboardService;
     private readonly IReceivablesQueryService _receivablesQueryService;
@@ -48,12 +51,38 @@ public class OutstandingBalanceDigestComposer : DigestComposerBase, IDigestCompo
             var (businessName, currencySymbol) = await LoadBusinessBrandingAsync(businessId);
 
             var kpi = await _dashboardService.GetKpiDataAsync(businessId);
-            var receivables = await _receivablesQueryService.GetReceivablesAsync(businessId, page: 1, pageSize: TopInvoices);
+            // Pull the full outstanding set (bounded, weekly job) so aging ordering + largest-debtor
+            // are computed across ALL outstanding invoices, not just one due-date-ordered page.
+            var receivables = await _receivablesQueryService.GetReceivablesAsync(businessId, page: 1, pageSize: AllOutstandingPageSize);
             var payables = await _dashboardService.GetUpcomingSupplierPaymentsAsync(businessId, take: null, windowDays: PayablesWindowDays);
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var weekFrom = today.AddDays(-6);
             var glance = await LoadWeekGlanceAsync(businessId, weekFrom, today);
+
+            // Outstanding invoices with computed aging, ordered most-overdue-first (urgency order).
+            var outstanding = receivables.Items
+                .Where(r => r.OutstandingBalance > 0m)
+                .Select(r => new OutstandingInvoiceLine
+                {
+                    CustomerName = r.CustomerName,
+                    InvoiceNumber = r.InvoiceNumber,
+                    DueDate = r.DueDate,
+                    OutstandingBalance = r.OutstandingBalance,
+                    DaysOverdue = today.DayNumber - r.DueDate.DayNumber
+                })
+                .OrderByDescending(r => r.DaysOverdue)
+                .ThenByDescending(r => r.OutstandingBalance)
+                .ToList();
+
+            // Largest single debtor across ALL outstanding (concentration risk).
+            var largestDebtor = outstanding
+                .GroupBy(r => r.CustomerName)
+                .Select(g => new { Name = g.Key, Amount = g.Sum(x => x.OutstandingBalance) })
+                .OrderByDescending(g => g.Amount)
+                .FirstOrDefault();
+
+            var payablesTotal = payables.Sum(p => p.TotalAmount);
 
             var model = new OutstandingBalanceDigestModel
             {
@@ -63,15 +92,7 @@ public class OutstandingBalanceDigestComposer : DigestComposerBase, IDigestCompo
                 OutstandingInvoiceCount = kpi.OutstandingInvoiceCount,
                 OverdueTotal = kpi.OverdueAmount,
                 OverdueInvoiceCount = kpi.OverdueInvoiceCount,
-                TopOutstanding = receivables.Items
-                    .Where(r => r.OutstandingBalance > 0m)
-                    .Select(r => new OutstandingInvoiceLine
-                    {
-                        CustomerName = r.CustomerName,
-                        InvoiceNumber = r.InvoiceNumber,
-                        DueDate = r.DueDate,
-                        OutstandingBalance = r.OutstandingBalance
-                    }).ToList(),
+                TopOutstanding = outstanding.Take(TopInvoices).ToList(),
                 UpcomingPayables = payables.Select(p => new UpcomingPayableLine
                 {
                     SupplierName = p.SupplierName,
@@ -79,6 +100,9 @@ public class OutstandingBalanceDigestComposer : DigestComposerBase, IDigestCompo
                     TotalAmount = p.TotalAmount,
                     Status = p.Status
                 }).ToList(),
+                UpcomingPayablesTotal = payablesTotal,
+                LargestDebtorName = largestDebtor?.Name,
+                LargestDebtorAmount = largestDebtor?.Amount ?? 0m,
                 InvoicesIssuedThisWeek = glance.InvoicesIssued,
                 IssuedAmountThisWeek = glance.IssuedAmount,
                 PaymentsReceivedThisWeek = glance.PaymentsReceived,

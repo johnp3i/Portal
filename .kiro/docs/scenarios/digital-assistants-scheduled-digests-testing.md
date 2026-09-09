@@ -23,6 +23,9 @@ delivery, and are gated behind the `digital_assistants` module (Professional+).
 - The business must be on **Professional or Enterprise** (`digital_assistants` gated) and have
   a business owner with an email (`UserBusiness.IsOwner && IsActive`).
 - The business should have a `TimeZoneId` set to test timezone-correct scheduling.
+- VAT deadline line uses `Notifications:VatFilingOffsetDays` (default 40 — deadline =
+  period end + offset, since no filing due date is stored) and `VatDeadlineNoticeDays`
+  (default 21 — only show the line when the deadline is within this many days).
 
 > The business page is at `/Assistants`. The digests appear as cards alongside Thank-You, each
 > with a **send day + time**, a **recipient** field, an **also-send-to-owner** toggle, and (for
@@ -56,6 +59,15 @@ delivery, and are gated behind the `digital_assistants` module (Professional+).
 5. Within one dispatcher poll, **Expected:** the email sends, the row flips to `Sent`, and the
    owner receives a digest showing total outstanding, overdue, the top outstanding invoices, and
    a "supplier payments coming due" section — plus a "this week at a glance" line.
+6. **Expected (content upgrades):**
+   - **Aging badge per invoice** — each outstanding row shows a colour-coded badge next to its
+     due date: Current / 1–30 days / 31–60 days / 60+ days.
+   - **Urgency ordering** — the top invoices are ordered **most-overdue first** (oldest debt at
+     the top), then by amount — not newest-due-first.
+   - **Net expected position** — a line "Net expected in {cur}X · owed {cur}Y · due out {cur}Z"
+     (green when positive, red when negative), where Z is the upcoming-payables total.
+   - **Largest debtor** — a line "{Customer} owes {cur}X — N% of your outstanding total,"
+     computed across ALL outstanding invoices (not just the top 10).
 
 ---
 
@@ -65,8 +77,37 @@ delivery, and are gated behind the `digital_assistants` module (Professional+).
 2. Record a payment and issue an invoice this week so there is activity.
 3. **Expected:** one outbox row with the Snapshot `CycleKey`; the email lists the selected
    figures (collected / expenses / net / outstanding) for the last 7 days plus the glance line.
+   The **Collected** figure shows a week-over-week note ("▲ vs {cur}X last week").
 4. Uncheck some figures, Save, and (next cycle / after clearing the row) confirm only the
    selected figures appear.
+5. **Expected ("Needs your attention" section)** — each line appears only when it has something
+   to report; a healthy business shows a short or empty section:
+   - **Overdue** — "N invoice(s) overdue totalling {cur}X" (urgent, red).
+   - **Oldest unpaid** — "{InvoiceNumber} — {cur}X, N day(s) overdue" (urgent). Must agree with
+     the overdue count/amount in the same email (same overdue definition as the KPI).
+   - **Supplier payments due this week** — "N supplier payment(s) coming due this week,
+     totalling {cur}X (M already overdue)" (urgent if any overdue). 7-day window.
+   - **Quotations awaiting response** — "N quotation(s) sent and still awaiting a response"
+     (counts Sent, not deleted, not lapsed by ValidUntil).
+   - **VAT deadline** — "VAT return for {period} is due in N day(s) ({date})" — only shown when
+     the derived deadline (PeriodEndDate + `VatFilingOffsetDays`) is within `VatDeadlineNoticeDays`
+     and the period is unsubmitted; urgent when ≤ 7 days.
+
+---
+
+## Scenario 3b: Employee-report content — edge cases
+
+1. **Healthy business** (nothing overdue, no payables due, no quotes awaiting, VAT not near
+   due): **Expected** — the Snapshot's "Needs your attention" section is omitted entirely (no
+   empty header), and the Outstanding email shows Net expected = full outstanding (nothing due
+   out) with no urgent badges.
+2. **Concentration case** — one customer holds most of the outstanding balance: **Expected** —
+   the Outstanding email's "largest debtor" line shows that customer with a high percentage.
+3. **VAT offset config** — change `Notifications:VatFilingOffsetDays` /
+   `VatDeadlineNoticeDays`; **Expected** — the VAT deadline line's date and its
+   show/hide threshold shift accordingly.
+4. **Week-over-week** — collected more this week than last: **Expected** — the ▲ arrow and the
+   prior-week amount are correct; equal weeks show ▬, less shows ▼.
 
 ---
 

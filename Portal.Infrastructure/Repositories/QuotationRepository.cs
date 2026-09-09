@@ -39,6 +39,37 @@ public class QuotationRepository : GenericStoredProcedureRepository<Quotation>
         }
     }
 
+    /// <summary>
+    /// Counts quotations awaiting a customer response for a business: Sent (status 2), not
+    /// deleted, and not lapsed (no ValidUntil, or ValidUntil on/after today). Tenant-less
+    /// (explicit businessId) — used by the weekly Financial Snapshot digest. This is a plain
+    /// count; chasing logic belongs to the Quotation Follow-Up assistant.
+    /// </summary>
+    public async Task<int> CountAwaitingResponseAsync(int businessId, DateOnly today)
+    {
+        try
+        {
+            const string query = @"
+                SELECT COUNT(*)
+                FROM [quotation].[Quotation]
+                WHERE [quotation].[Quotation].[BusinessId] = @BusinessId
+                  AND [quotation].[Quotation].[IsDeleted] = 0
+                  AND [quotation].[Quotation].[QuotationStatusTypeId] = 2
+                  AND ([quotation].[Quotation].[ValidUntil] IS NULL OR [quotation].[Quotation].[ValidUntil] >= @Today)";
+
+            var result = await _context.Database.SqlQueryRaw<int>(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@Today", today)
+            ).ToListAsync();
+
+            return result.FirstOrDefault();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
     public virtual async Task<Quotation?> GetByIdAndBusinessIdAsync(int id, int businessId)
     {
         try

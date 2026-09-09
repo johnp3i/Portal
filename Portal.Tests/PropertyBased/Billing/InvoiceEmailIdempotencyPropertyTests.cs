@@ -124,7 +124,8 @@ public class InvoiceEmailIdempotencyPropertyTests
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<string>(),
-                        It.IsAny<EmailDepartmentEnum>()))
+                        It.IsAny<EmailDepartmentEnum>(),
+                        It.IsAny<string?>()))
                     .Callback(() => Interlocked.Increment(ref sendEmailCallCount))
                     .Returns(Task.CompletedTask);
 
@@ -220,7 +221,8 @@ public class InvoiceEmailIdempotencyPropertyTests
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<string>(),
-                        It.IsAny<EmailDepartmentEnum>()))
+                        It.IsAny<EmailDepartmentEnum>(),
+                        It.IsAny<string?>()))
                     .Callback(() => Interlocked.Increment(ref sendEmailCallCount))
                     .Returns(Task.CompletedTask);
 

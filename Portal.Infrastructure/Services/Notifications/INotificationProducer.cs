@@ -30,6 +30,21 @@ public interface INotificationProducer
         string? replyToEmail);
 
     /// <summary>
+    /// Resolves + gates an owner-facing "New Payment Received" alert for a recorded payment.
+    /// Resolves the business owner's email (returns null if none), applies per-business gating,
+    /// and renders the body. Returns a ready-to-insert <see cref="OutboxMessage"/> or null.
+    /// No entity-dedup: the payment paths are either deliberate user actions or already
+    /// idempotent upstream (the Stripe webhook short-circuits before inserting a duplicate
+    /// payment), so a stamped dedup key would be redundant. Does NOT write to the database.
+    /// <paramref name="invoiceNumber"/> is null for global/unallocated payments.
+    /// </summary>
+    Task<OutboxMessage?> PrepareNewPaymentAsync(
+        int businessId,
+        string? invoiceNumber,
+        string? customerName,
+        decimal amount);
+
+    /// <summary>
     /// Inserts a prepared outbox message. Intended to be called INSIDE the transaction that
     /// records the triggering business event, so the two commit atomically. Honours any ambient
     /// transaction on the shared DbContext.

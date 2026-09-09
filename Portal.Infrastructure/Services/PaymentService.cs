@@ -91,15 +91,18 @@ public class PaymentService : IPaymentService
         // hot-path transaction stays as short as possible (only the two inserts). Returns null
         // when no notification should be sent.
         var thankYou = await PrepareThankYouAsync(businessId, dto.InvoiceId, invoice.InvoiceNumber, dto.Amount);
+        // Owner-facing "payment received" alert (resolved/gated before the txn, best-effort).
+        var ownerAlert = await PrepareNewPaymentOwnerAlertAsync(businessId, dto.InvoiceId, invoice.InvoiceNumber, dto.Amount);
 
-        // Record the payment and enqueue the Thank-You atomically: a satisfied thank-you can
-        // never exist without its payment, and vice versa (transactional outbox).
+        // Record the payment and enqueue the notifications atomically (transactional outbox).
         int paymentId;
         await using (var transaction = await _portalDbContext.Database.BeginTransactionAsync())
         {
             paymentId = await _paymentRepository.InsertAsync(payment);
             if (thankYou != null && _notificationProducer != null)
                 await _notificationProducer.InsertAsync(thankYou);
+            if (ownerAlert != null && _notificationProducer != null)
+                await _notificationProducer.InsertAsync(ownerAlert);
             await transaction.CommitAsync();
         }
 
@@ -243,6 +246,16 @@ public class PaymentService : IPaymentService
                 else
                 {
                     allocationResult = await _allocationEngine.AllocateFifoAsync(parentId, dto.CustomerId, dto.Amount, businessId, userId);
+                }
+
+                // Owner-facing "payment received" alert — ONE alert for the parent payment
+                // (no invoice; customer is known), never one per allocation child. Best-effort.
+                if (_notificationProducer != null)
+                {
+                    var ownerAlert = await _notificationProducer.PrepareNewPaymentAsync(
+                        businessId, invoiceNumber: null, customerName: customer.Name, amount: dto.Amount);
+                    if (ownerAlert != null)
+                        await _notificationProducer.InsertAsync(ownerAlert);
                 }
 
                 await transaction.CommitAsync();
@@ -603,6 +616,35 @@ public class PaymentService : IPaymentService
 
         return await _notificationProducer.PrepareThankYouAsync(
             businessId, invoiceId, customer.Name, customer.Email!, amount, invoiceNumber, replyTo);
+    }
+
+    /// <summary>
+    /// Resolves + gates the owner-facing "New Payment Received" alert for a recorded payment.
+    /// Reads happen OUTSIDE the payment transaction; the caller inserts the returned message
+    /// inside it. Best-effort: returns null (no alert) rather than throwing on missing context.
+    /// </summary>
+    private async Task<Entities.Notification.OutboxMessage?> PrepareNewPaymentOwnerAlertAsync(
+        int businessId, int invoiceId, string invoiceNumber, decimal amount)
+    {
+        if (_notificationProducer == null) return null;
+
+        var invoice = await _portalDbContext.Invoices
+            .IgnoreQueryFilters()
+            .Where(i => i.Id == invoiceId && i.BusinessId == businessId)
+            .Select(i => new { i.CustomerId })
+            .FirstOrDefaultAsync();
+
+        string? customerName = null;
+        if (invoice != null)
+        {
+            customerName = await _portalDbContext.Customers
+                .IgnoreQueryFilters()
+                .Where(c => c.Id == invoice.CustomerId && c.BusinessId == businessId)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync();
+        }
+
+        return await _notificationProducer.PrepareNewPaymentAsync(businessId, invoiceNumber, customerName, amount);
     }
 
     /// <summary>

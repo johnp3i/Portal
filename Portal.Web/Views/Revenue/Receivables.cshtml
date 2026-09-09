@@ -99,17 +99,24 @@
                         <td data-mobile="amount" style="text-align:right;font-weight:700;">@currencySymbol@item.OutstandingBalance.ToString("N2")</td>
                         <td data-mobile="status">
                             @{
-                                var pillClass = item.InvoiceFinancialStatusTypeId switch
-                                {
-                                    1 => "pill-blue",
-                                    2 => "pill-gold",
-                                    3 => "pill-green",
-                                    4 => "pill-red",
-                                    5 => "pill-grey",
-                                    _ => "pill-blue"
-                                };
+                                // Overdue is DERIVED (balance + due date), not read from the persisted
+                                // status which can be stale (see the derive-always convention, TD-2). A
+                                // row derived-overdue but still persisted Unpaid/PartiallyPaid is shown
+                                // as Overdue here so the list never under-reports overdue.
+                                var pillClass = item.IsOverdue
+                                    ? "pill-red"
+                                    : item.InvoiceFinancialStatusTypeId switch
+                                    {
+                                        1 => "pill-blue",
+                                        2 => "pill-gold",
+                                        3 => "pill-green",
+                                        4 => "pill-red",
+                                        5 => "pill-grey",
+                                        _ => "pill-blue"
+                                    };
+                                var statusLabel = item.IsOverdue ? "Overdue" : item.FinancialStatusName;
                             }
-                            <span class="pill @pillClass">@item.FinancialStatusName</span>
+                            <span class="pill @pillClass">@statusLabel</span>
                         </td>
                         <td data-mobile="hide" style="white-space:nowrap;">
                             @await Component.InvokeAsync("AttachmentCount", new { entityType = "Payment", entityId = item.Id })

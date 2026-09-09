@@ -6,6 +6,7 @@ using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Notification;
 using Portal.Infrastructure.Repositories.Notification;
 using Portal.Infrastructure.Services;
+using Portal.Infrastructure.Services.Notifications;
 using Portal.Web.Models.Assistants;
 using Portal.Web.Security;
 
@@ -52,8 +53,15 @@ public class AssistantsController : Controller
                 Assistants = assistants.Select(a =>
                 {
                     settingsByType.TryGetValue(a.Id, out var s);
-                    // A scheduled owner-facing digest is any non-customer-facing assistant.
-                    var isDigest = !a.IsCustomerFacing;
+                    // Classify the card shape:
+                    //  - customer-facing  → working hours + footer (e.g. Thank-You)
+                    //  - daily brief      → send-time only + recipient (no day-of-week, no figures)
+                    //  - event alert      → recipient only, no schedule (e.g. New Payment Received)
+                    //  - weekly digest    → day + time + recipient (+ figures for the snapshot)
+                    var isDailyBrief = a.Key == DigestAssistantKeys.DailyBrief;
+                    var isEventAlert = !a.IsCustomerFacing && a.Key == NotificationProducer.NewPaymentKey;
+                    // Scheduled = owner-facing on a clock (weekly digests OR the daily brief), but NOT the event alert.
+                    var isScheduled = !a.IsCustomerFacing && !isEventAlert;
                     return new AssistantCardViewModel
                     {
                         AssistantTypeId = a.Id,
@@ -67,7 +75,9 @@ public class AssistantsController : Controller
                         WorkingHoursStart = s?.WorkingHoursStart?.ToString("HH:mm"),
                         WorkingHoursEnd = s?.WorkingHoursEnd?.ToString("HH:mm"),
                         // Digest fields (defaults: Monday 08:00, owner recipient).
-                        IsScheduledDigest = isDigest,
+                        IsScheduledDigest = isScheduled,
+                        IsDailyBrief = isDailyBrief,
+                        IsEventAlert = isEventAlert,
                         SendDayOfWeek = s?.SendDayOfWeek ?? 1,
                         SendTimeLocal = s?.SendTimeLocal?.ToString("HH:mm") ?? "08:00",
                         RecipientOverride = s?.RecipientOverride,
@@ -165,6 +175,9 @@ public class AssistantsController : Controller
                 IncludedFiguresCsv = existing?.IncludedFiguresCsv
             };
 
+            var isDailyBrief = assistant.Key == DigestAssistantKeys.DailyBrief;
+            var isEventAlert = !assistant.IsCustomerFacing && assistant.Key == NotificationProducer.NewPaymentKey;
+
             if (assistant.IsCustomerFacing)
             {
                 // Customer-facing assistant: working hours + branding footer.
@@ -184,19 +197,7 @@ public class AssistantsController : Controller
             }
             else
             {
-                // Scheduled owner-facing digest: send day/time + recipient + figures.
-                if (request.SendDayOfWeek is < 0 or > 6)
-                    return Json(new { success = false, message = "Invalid send day." });
-
-                TimeOnly? sendTime = null;
-                if (!string.IsNullOrWhiteSpace(request.SendTimeLocal))
-                {
-                    if (!TimeOnly.TryParse(request.SendTimeLocal, out var t))
-                        return Json(new { success = false, message = "Invalid send time format." });
-                    sendTime = t;
-                }
-
-                // Validate any recipient override addresses (delimited list).
+                // Owner-facing assistants. Validate the recipient override (shared by all owner types).
                 if (!string.IsNullOrWhiteSpace(request.RecipientOverride))
                 {
                     var addresses = request.RecipientOverride
@@ -209,12 +210,40 @@ public class AssistantsController : Controller
                         catch { return Json(new { success = false, message = $"Invalid email address: {addr}" }); }
                     }
                 }
-
-                setting.SendDayOfWeek = request.SendDayOfWeek;
-                setting.SendTimeLocal = sendTime;
                 setting.RecipientOverride = string.IsNullOrWhiteSpace(request.RecipientOverride) ? null : request.RecipientOverride.Trim();
                 setting.IsRecipientOwnerIncluded = request.IsRecipientOwnerIncluded;
-                setting.IncludedFiguresCsv = string.IsNullOrWhiteSpace(request.IncludedFiguresCsv) ? null : request.IncludedFiguresCsv.Trim();
+
+                if (isEventAlert)
+                {
+                    // Event alert (e.g. New Payment): recipient only — no schedule, no figures.
+                    // (setting.SendDayOfWeek / SendTimeLocal / IncludedFiguresCsv carried forward unchanged.)
+                }
+                else
+                {
+                    // Scheduled owner assistant: parse the send time (shared by weekly + daily).
+                    TimeOnly? sendTime = null;
+                    if (!string.IsNullOrWhiteSpace(request.SendTimeLocal))
+                    {
+                        if (!TimeOnly.TryParse(request.SendTimeLocal, out var t))
+                            return Json(new { success = false, message = "Invalid send time format." });
+                        sendTime = t;
+                    }
+                    setting.SendTimeLocal = sendTime;
+
+                    if (isDailyBrief)
+                    {
+                        // Daily: no day-of-week (ignored); no figures.
+                        setting.SendDayOfWeek = null;
+                    }
+                    else
+                    {
+                        // Weekly digest: day-of-week required + optional figures.
+                        if (request.SendDayOfWeek is < 0 or > 6)
+                            return Json(new { success = false, message = "Invalid send day." });
+                        setting.SendDayOfWeek = request.SendDayOfWeek;
+                        setting.IncludedFiguresCsv = string.IsNullOrWhiteSpace(request.IncludedFiguresCsv) ? null : request.IncludedFiguresCsv.Trim();
+                    }
+                }
             }
 
             await _settingRepository.UpsertAsync(setting);

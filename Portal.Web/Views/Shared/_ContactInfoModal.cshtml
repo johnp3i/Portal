@@ -1,0 +1,60 @@
+@*
+    Shared read-only contact info modal.
+    Rendered on Sales/Tasks and Sales/Meetings. Populated and toggled by
+    ~/js/sales/contact-modal.js via openContactModal(contactId).
+*@
+<div id="contactInfoModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:680px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;">
+            <div>
+                <div class="eyebrow"><span class="dot"></span> Sales Pipeline / Contact</div>
+                <h3 id="contactModalTitle" style="margin:6px 0 2px;">—</h3>
+                <p id="contactModalSubtitle" style="margin:0;color:#5a6a7a;font-size:13px;">—</p>
+            </div>
+            <button class="btn btn-secondary" onclick="closeContactModal()" style="padding:4px 12px;">Close</button>
+        </div>
+
+        <!-- Contact Information -->
+        <div style="margin-bottom:18px;">
+            <h4 style="margin-bottom:12px;">Contact Information</h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">
+                <div style="grid-column:1/-1;"><span style="font-size:12px;color:#5a6a7a;display:block;">Email</span><span id="contactModalEmail" style="word-break:break-word;">—</span></div>
+                <div><span style="font-size:12px;color:#5a6a7a;display:block;">Phone</span><span id="contactModalPhone">—</span></div>
+                <div><span style="font-size:12px;color:#5a6a7a;display:block;">Job Title</span><span id="contactModalJobTitle">—</span></div>
+                <div><span style="font-size:12px;color:#5a6a7a;display:block;">Country</span><span id="contactModalCountry">—</span></div>
+                <div><span style="font-size:12px;color:#5a6a7a;display:block;">Company</span><span id="contactModalCompany">—</span></div>
+                <div><span style="font-size:12px;color:#5a6a7a;display:block;">Created</span><span id="contactModalCreated">—</span></div>
+            </div>
+            <div id="contactModalNotesBlock" style="margin-top:12px;display:none;">
+                <span style="font-size:12px;color:#5a6a7a;display:block;">Notes</span>
+                <p id="contactModalNotes" style="margin:4px 0 0;"></p>
+            </div>
+        </div>
+
+        <!-- Interest History -->
+        <div>
+            <h4 style="margin-bottom:12px;">Interest History (<span id="contactModalInterestCount">0</span> leads)</h4>
+            <div id="contactModalInterestEmpty" class="empty-state" style="display:none;">
+                <p>No leads associated with this contact yet.</p>
+            </div>
+            <div id="contactModalInterestTableWrap" style="display:none;overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Stage</th>
+                            <th>Request</th>
+                            <th>Created</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactModalInterestBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:18px;">
+            <button class="btn btn-secondary" onclick="closeContactModal()">Close</button>
+        </div>
+    </div>
+</div>

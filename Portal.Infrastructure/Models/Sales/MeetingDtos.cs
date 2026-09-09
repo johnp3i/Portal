@@ -8,6 +8,7 @@ public class MeetingListDto
     public int Id { get; set; }
     public string Subject { get; set; } = null!;
     public string MeetingTypeName { get; set; } = null!;
+    public int ContactId { get; set; }
     public string ContactName { get; set; } = null!;
     public DateTime ScheduledAtUtc { get; set; }
     public int DurationMinutes { get; set; }

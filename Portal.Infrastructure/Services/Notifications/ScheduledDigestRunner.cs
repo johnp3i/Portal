@@ -25,6 +25,15 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
     private const byte DefaultSendDayOfWeek = 1; // Monday (0=Sunday..6=Saturday)
     private static readonly TimeOnly DefaultSendTime = new(8, 0); // 08:00 business-local
 
+    // Assistant keys that run on a DAILY cadence (all others are weekly). Cadence is intrinsic
+    // to the assistant, not a per-business setting.
+    private static readonly HashSet<string> DailyCadenceKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        DigestAssistantKeys.DailyBrief
+    };
+
+    private static bool IsDailyCadence(string assistantKey) => DailyCadenceKeys.Contains(assistantKey);
+
     private readonly PortalDbContext _dbContext;
     private readonly BusinessAssistantSettingRepository _settingRepository;
     private readonly NotificationOutboxRepository _outboxRepository;
@@ -57,7 +66,12 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
     public async Task RunAsync(CancellationToken ct)
     {
         // Load the digest assistant types (id + key) once.
-        var digestKeys = new[] { DigestAssistantKeys.WeeklyOutstandingDigest, DigestAssistantKeys.WeeklyFinancialSnapshot };
+        var digestKeys = new[]
+        {
+            DigestAssistantKeys.WeeklyOutstandingDigest,
+            DigestAssistantKeys.WeeklyFinancialSnapshot,
+            DigestAssistantKeys.DailyBrief
+        };
         var assistants = await _dbContext.AssistantTypes
             .AsNoTracking()
             .Where(a => digestKeys.Contains(a.Key))
@@ -123,11 +137,15 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
         if (!isEnabled)
             return;
 
-        // Is the current cycle due for this business's configured day/time?
-        if (!IsDue(setting, businessLocalNow))
+        var isDaily = IsDailyCadence(assistantKey);
+
+        // Is this assistant due now for this business's configured send moment?
+        if (!IsDue(setting, businessLocalNow, isDaily))
             return;
 
-        var cycleKey = DigestCycleKey.Weekly(assistantKey, businessLocalNow);
+        var cycleKey = isDaily
+            ? DigestCycleKey.Daily(assistantKey, businessLocalNow)
+            : DigestCycleKey.Weekly(assistantKey, businessLocalNow);
 
         // Fast pre-check (the enqueuer re-checks inside the insert to close the concurrent race).
         if (await _outboxRepository.ExistsForCycleAsync(businessId, assistantTypeId, cycleKey))
@@ -136,8 +154,11 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
         var message = await composer.ComposeAsync(businessId, assistantTypeId, setting, cycleKey, ct);
         if (message == null)
         {
-            _logger.LogWarning(
-                "Digest not enqueued (no resolvable recipient) for BusinessId={BusinessId}, Assistant={AssistantKey}.",
+            // A null result is an expected skip — either "nothing to report" (e.g. the Daily
+            // Brief on a quiet day) or "no resolvable recipient". The composer logs its own
+            // reason-specific message; keep this at Debug so quiet days don't produce warnings.
+            _logger.LogDebug(
+                "Assistant produced no message (skipped) for BusinessId={BusinessId}, Assistant={AssistantKey}.",
                 businessId, assistantKey);
             return;
         }
@@ -146,14 +167,23 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
     }
 
     /// <summary>
-    /// Due when the business-local moment is at or past this cycle's configured send moment
-    /// (day-of-week + time). No back-fill: only the current week's send moment is considered.
+    /// Due when the business-local moment is at or past this assistant's configured send moment.
+    /// Weekly: the current week's occurrence of SendDayOfWeek + SendTimeLocal. Daily: today's
+    /// SendTimeLocal (day-of-week ignored). No back-fill either way — the cycle dedup ensures
+    /// at-most-once per cycle.
     /// </summary>
-    private static bool IsDue(BusinessAssistantSetting? setting, DateTime businessLocalNow)
+    private static bool IsDue(BusinessAssistantSetting? setting, DateTime businessLocalNow, bool isDaily)
     {
-        var sendDay = setting?.SendDayOfWeek ?? DefaultSendDayOfWeek;   // 0=Sunday..6=Saturday
         var sendTime = setting?.SendTimeLocal ?? DefaultSendTime;
 
+        if (isDaily)
+        {
+            // Daily: due once today's send time has passed (day-of-week irrelevant).
+            var sendMomentToday = businessLocalNow.Date.Add(sendTime.ToTimeSpan());
+            return businessLocalNow >= sendMomentToday;
+        }
+
+        var sendDay = setting?.SendDayOfWeek ?? DefaultSendDayOfWeek;   // 0=Sunday..6=Saturday
         // .NET DayOfWeek: Sunday=0..Saturday=6 — matches our stored convention.
         var currentDow = (int)businessLocalNow.DayOfWeek;
 
@@ -162,7 +192,6 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
             .AddDays(sendDay - currentDow)
             .Add(sendTime.ToTimeSpan());
 
-        // Due if we've reached this week's send moment. (Dedup ensures at-most-once per cycle.)
         return businessLocalNow >= sendMomentThisWeek;
     }
 

@@ -1,6 +1,4 @@
 using System.Net.Mail;
-using Microsoft.EntityFrameworkCore;
-using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Notification;
 
 namespace Portal.Infrastructure.Services.Notifications;
@@ -27,18 +25,18 @@ public class DigestRecipientResolver : IDigestRecipientResolver
 {
     private static readonly char[] Delimiters = { ';', ',', '\n', '\r' };
 
-    private readonly MembershipDbContext _membershipDbContext;
+    private readonly IOwnerEmailResolver _ownerEmailResolver;
 
-    public DigestRecipientResolver(MembershipDbContext membershipDbContext)
+    public DigestRecipientResolver(IOwnerEmailResolver ownerEmailResolver)
     {
-        _membershipDbContext = membershipDbContext;
+        _ownerEmailResolver = ownerEmailResolver;
     }
 
     public async Task<DigestRecipients?> ResolveAsync(int businessId, BusinessAssistantSetting? setting)
     {
         try
         {
-            var ownerEmail = await ResolveOwnerEmailAsync(businessId);
+            var ownerEmail = await _ownerEmailResolver.ResolveAsync(businessId);
             var overrides = ParseValidEmails(setting?.RecipientOverride);
 
             // No override configured -> send to the owner only.
@@ -73,15 +71,6 @@ public class DigestRecipientResolver : IDigestRecipientResolver
         {
             throw;
         }
-    }
-
-    private async Task<string?> ResolveOwnerEmailAsync(int businessId)
-    {
-        return await _membershipDbContext.UserBusinesses
-            .Include(ub => ub.User)
-            .Where(ub => ub.BusinessId == businessId && ub.IsOwner && ub.IsActive)
-            .Select(ub => ub.User.Email)
-            .FirstOrDefaultAsync();
     }
 
     /// <summary>

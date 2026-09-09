@@ -345,17 +345,20 @@ public class StripeConnectService : IStripeConnectService
                 CreatedByUserId = null
             };
 
-            // Resolve + gate the Thank-You BEFORE the transaction, so the transaction only wraps
-            // the two inserts. Returns null when no notification should be sent.
+            // Resolve + gate the notifications BEFORE the transaction, so the transaction only
+            // wraps the inserts. Each returns null when no notification should be sent.
             var thankYou = await PrepareThankYouAsync(checkoutSession.BusinessId, checkoutSession.InvoiceId, checkoutSession.Amount);
+            var ownerAlert = await PrepareNewPaymentOwnerAlertAsync(checkoutSession.BusinessId, checkoutSession.InvoiceId, checkoutSession.Amount);
 
-            // Record the payment and enqueue the Thank-You atomically (transactional outbox).
+            // Record the payment and enqueue the notifications atomically (transactional outbox).
             int paymentId;
             await using (var transaction = await _portalDbContext.Database.BeginTransactionAsync())
             {
                 paymentId = await _paymentRepository.InsertAsync(payment);
                 if (thankYou != null && _notificationProducer != null)
                     await _notificationProducer.InsertAsync(thankYou);
+                if (ownerAlert != null && _notificationProducer != null)
+                    await _notificationProducer.InsertAsync(ownerAlert);
                 await transaction.CommitAsync();
             }
 
@@ -449,6 +452,33 @@ public class StripeConnectService : IStripeConnectService
 
         return await _notificationProducer.PrepareThankYouAsync(
             businessId, invoiceId, customer.Name, customer.Email!, amount, invoice.InvoiceNumber, replyTo);
+    }
+
+    /// <summary>
+    /// Resolves + gates the owner-facing "New Payment Received" alert for a Stripe card payment.
+    /// All reads happen OUTSIDE the payment transaction; the caller inserts the returned message
+    /// inside it. Best-effort — returns null rather than throwing on missing context.
+    /// </summary>
+    private async Task<Portal.Infrastructure.Entities.Notification.OutboxMessage?> PrepareNewPaymentOwnerAlertAsync(
+        int businessId, int invoiceId, decimal amount)
+    {
+        if (_notificationProducer == null) return null;
+
+        var invoice = await _portalDbContext.Invoices
+            .IgnoreQueryFilters()
+            .Where(i => i.Id == invoiceId && i.BusinessId == businessId)
+            .Select(i => new { i.CustomerId, i.InvoiceNumber })
+            .FirstOrDefaultAsync();
+        if (invoice == null) return null;
+
+        var customerName = await _portalDbContext.Customers
+            .IgnoreQueryFilters()
+            .Where(c => c.Id == invoice.CustomerId && c.BusinessId == businessId)
+            .Select(c => c.Name)
+            .FirstOrDefaultAsync();
+
+        return await _notificationProducer.PrepareNewPaymentAsync(
+            businessId, invoice.InvoiceNumber, customerName, amount);
     }
 
     /// <summary>

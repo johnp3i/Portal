@@ -7,8 +7,10 @@ namespace Portal.Infrastructure.Services.Notifications;
 
 /// <summary>
 /// Composes the Weekly Financial Snapshot: this-week period figures (collected, expenses, net)
-/// plus to-date outstanding. Owner-facing. The included figures are configurable per business
-/// via <c>IncludedFiguresCsv</c>; a sensible default set is used when unset.
+/// plus to-date outstanding, and an employee-report "needs your attention" section (overdue,
+/// oldest overdue invoice, supplier payments due, week-over-week collected, quotations awaiting
+/// response, VAT deadline). Owner-facing. Included figures are configurable per business via
+/// <c>IncludedFiguresCsv</c>; a sensible default set is used when unset. Fully tenant-less.
 /// </summary>
 public class FinancialSnapshotComposer : DigestComposerBase, IDigestComposer
 {
@@ -24,6 +26,7 @@ public class FinancialSnapshotComposer : DigestComposerBase, IDigestComposer
     private readonly IPnlService _pnlService;
     private readonly IDashboardService _dashboardService;
     private readonly IDigestRecipientResolver _recipientResolver;
+    private readonly IAttentionItemBuilder _attentionItemBuilder;
     private readonly NotificationOptions _options;
 
     public FinancialSnapshotComposer(
@@ -31,11 +34,13 @@ public class FinancialSnapshotComposer : DigestComposerBase, IDigestComposer
         IPnlService pnlService,
         IDashboardService dashboardService,
         IDigestRecipientResolver recipientResolver,
+        IAttentionItemBuilder attentionItemBuilder,
         NotificationOptions options) : base(dbContext)
     {
         _pnlService = pnlService;
         _dashboardService = dashboardService;
         _recipientResolver = recipientResolver;
+        _attentionItemBuilder = attentionItemBuilder;
         _options = options;
     }
 
@@ -59,6 +64,11 @@ public class FinancialSnapshotComposer : DigestComposerBase, IDigestComposer
             var kpi = await _dashboardService.GetKpiDataAsync(businessId);
             var glance = await LoadWeekGlanceAsync(businessId, weekFrom, today);
 
+            // Prior week (for week-over-week collected trend).
+            var priorTo = weekFrom.AddDays(-1);
+            var priorFrom = priorTo.AddDays(-6);
+            var priorSnapshot = await _pnlService.ComputeSnapshotAsync(businessId, priorFrom, priorTo);
+
             var selected = ParseFigures(setting?.IncludedFiguresCsv);
 
             var figures = new List<SnapshotFigure>();
@@ -67,7 +77,14 @@ public class FinancialSnapshotComposer : DigestComposerBase, IDigestComposer
                 switch (key)
                 {
                     case FigCollected:
-                        figures.Add(new SnapshotFigure { Key = key, Label = "Collected this week", Amount = snapshot.Revenue, Accent = "#129867" });
+                        figures.Add(new SnapshotFigure
+                        {
+                            Key = key,
+                            Label = "Collected this week",
+                            Amount = snapshot.Revenue,
+                            Accent = "#129867",
+                            TrendNote = BuildCollectedTrendNote(currencySymbol, snapshot.Revenue, priorSnapshot.Revenue)
+                        });
                         break;
                     case FigExpenses:
                         figures.Add(new SnapshotFigure { Key = key, Label = "Expenses this week", Amount = snapshot.Cogs + snapshot.OperatingExpenses });
@@ -84,12 +101,16 @@ public class FinancialSnapshotComposer : DigestComposerBase, IDigestComposer
                 }
             }
 
+            // Pass the already-loaded KPI so the shared builder doesn't re-query it.
+            var attention = await _attentionItemBuilder.BuildAsync(businessId, currencySymbol, today, kpi);
+
             var model = new FinancialSnapshotDigestModel
             {
                 BusinessName = businessName,
                 CurrencySymbol = currencySymbol,
                 HasActivity = snapshot.HasData || glance.PaymentsReceived > 0 || glance.InvoicesIssued > 0,
                 Figures = figures,
+                AttentionItems = attention,
                 InvoicesIssuedThisWeek = glance.InvoicesIssued,
                 IssuedAmountThisWeek = glance.IssuedAmount,
                 PaymentsReceivedThisWeek = glance.PaymentsReceived,
@@ -120,6 +141,12 @@ public class FinancialSnapshotComposer : DigestComposerBase, IDigestComposer
         {
             throw;
         }
+    }
+
+    private static string BuildCollectedTrendNote(string cur, decimal thisWeek, decimal lastWeek)
+    {
+        var arrow = thisWeek > lastWeek ? "▲" : thisWeek < lastWeek ? "▼" : "▬";
+        return $"{arrow} vs {cur}{lastWeek:N2} last week";
     }
 
     private static List<string> ParseFigures(string? csv)

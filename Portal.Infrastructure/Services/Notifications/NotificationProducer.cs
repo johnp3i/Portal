@@ -14,6 +14,7 @@ namespace Portal.Infrastructure.Services.Notifications;
 public class NotificationProducer : INotificationProducer
 {
     public const string ThankYouKey = "thank_you";
+    public const string NewPaymentKey = "new_payment_received";
     private const string RelatedEntityInvoice = "Invoice";
 
     private readonly PortalDbContext _dbContext;
@@ -21,6 +22,7 @@ public class NotificationProducer : INotificationProducer
     private readonly BusinessAssistantSettingRepository _settingRepository;
     private readonly AssistantOptOutRepository _optOutRepository;
     private readonly IScheduleResolver _scheduleResolver;
+    private readonly IOwnerEmailResolver _ownerEmailResolver;
     private readonly NotificationOptions _options;
     private readonly ILogger<NotificationProducer> _logger;
 
@@ -30,6 +32,7 @@ public class NotificationProducer : INotificationProducer
         BusinessAssistantSettingRepository settingRepository,
         AssistantOptOutRepository optOutRepository,
         IScheduleResolver scheduleResolver,
+        IOwnerEmailResolver ownerEmailResolver,
         NotificationOptions options,
         ILogger<NotificationProducer> logger)
     {
@@ -38,6 +41,7 @@ public class NotificationProducer : INotificationProducer
         _settingRepository = settingRepository;
         _optOutRepository = optOutRepository;
         _scheduleResolver = scheduleResolver;
+        _ownerEmailResolver = ownerEmailResolver;
         _options = options;
         _logger = logger;
     }
@@ -130,6 +134,73 @@ public class NotificationProducer : INotificationProducer
                 ScheduledForUtc = scheduledForUtc,
                 RelatedEntityType = RelatedEntityInvoice,
                 RelatedEntityId = invoiceId,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<OutboxMessage?> PrepareNewPaymentAsync(
+        int businessId,
+        string? invoiceNumber,
+        string? customerName,
+        decimal amount)
+    {
+        try
+        {
+            // Resolve the assistant type (seeded).
+            var assistant = await _dbContext.AssistantTypes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Key == NewPaymentKey);
+            if (assistant == null)
+                return null; // assistant not seeded — fail safe, no send
+
+            // Gating: per-business enabled? (absence of a row = default enabled)
+            var setting = await _settingRepository.GetAsync(businessId, assistant.Id);
+            var isEnabled = setting?.IsEnabled ?? true;
+            if (!isEnabled)
+                return null;
+
+            // Owner-facing: resolve the owner email (this is the key difference from Thank-You).
+            var ownerEmail = await _ownerEmailResolver.ResolveAsync(businessId);
+            if (string.IsNullOrWhiteSpace(ownerEmail))
+                return null; // no owner recipient — nothing to send
+
+            // Resolve currency symbol + business name for the body.
+            var profile = await _dbContext.BusinessProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
+            var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+            var business = await _dbContext.Businesses
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == businessId);
+            var businessName = business?.Name ?? "Your business";
+
+            var subject = AssistantEmailBuilder.NewPaymentSubject(amount, currencySymbol, invoiceNumber);
+            var body = AssistantEmailBuilder.BuildNewPaymentHtml(
+                businessName, amount, currencySymbol, invoiceNumber, customerName);
+
+            // No entity-dedup (RelatedEntityType/Id left null): the manual/global paths are
+            // deliberate actions and the Stripe path is idempotent upstream (a retried webhook
+            // short-circuits before inserting a duplicate payment). Sends immediately — this is
+            // an internal owner alert, so we intentionally do NOT defer to working hours.
+            return new OutboxMessage
+            {
+                BusinessId = businessId,
+                AssistantTypeId = assistant.Id,
+                RecipientEmail = ownerEmail,
+                RecipientName = null,
+                ReplyToEmail = null,
+                Subject = subject,
+                BodyHtml = body,
+                OutboxMessageStatusTypeId = Portal.Infrastructure.Constants.OutboxMessageStatusTypes.Pending,
+                RetryCount = 0,
+                MaxRetries = _options.DefaultMaxRetries,
+                ScheduledForUtc = DateTime.UtcNow,
                 CreatedAtUtc = DateTime.UtcNow
             };
         }

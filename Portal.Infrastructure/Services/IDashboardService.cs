@@ -61,6 +61,13 @@ public interface IDashboardService
     Task<List<UpcomingSupplierPaymentDto>> GetUpcomingSupplierPaymentsAsync(int businessId, int? take, int windowDays);
 
     /// <summary>
+    /// The single oldest overdue invoice for a business (by due date ascending), or null when
+    /// nothing is overdue. Uses the same overdue definition as <see cref="GetKpiDataAsync"/> so
+    /// it stays consistent with the overdue count. Tenant-less (explicit businessId).
+    /// </summary>
+    Task<OldestOverdueInvoiceDto?> GetOldestOverdueInvoiceAsync(int businessId);
+
+    /// <summary>
     /// Returns monthly revenue and expense totals for the last 6 months (including current).
     /// </summary>
     Task<List<RevenueVsExpensesDto>> GetRevenueVsExpensesAsync(int businessId);

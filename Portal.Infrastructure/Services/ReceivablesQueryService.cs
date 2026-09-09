@@ -90,6 +90,12 @@ public class ReceivablesQueryService : IReceivablesQueryService
                     ON [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = [invoice].[InvoiceFinancialStatusType].[Id]
                 WHERE {whereClause}";
 
+            // OutstandingBalance = TotalAmount - valid Payments - applied CREDIT NOTES, matching the
+            // authoritative formula in FinancialStatusEngine.ComputeOutstandingBalance. Omitting credit
+            // notes over-states per-invoice balances (and would wrongly show a positive balance for an
+            // invoice fully settled by credit). IsOverdue is DERIVED from balance + due date, never read
+            // from the persisted InvoiceFinancialStatusTypeId, which can be stale (see TD-2 / the
+            // derive-always overdue convention).
             var dataQuery = $@"
                 SELECT [invoice].[Invoice].[Id],
                        [invoice].[Invoice].[InvoiceNumber],
@@ -101,11 +107,23 @@ public class ReceivablesQueryService : IReceivablesQueryService
                         FROM [revenue].[Payment]
                         WHERE [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
                           AND [revenue].[Payment].[IsVoided] = 0) AS [TotalPaid],
-                       [invoice].[Invoice].[TotalAmount] -
-                       (SELECT ISNULL(SUM([revenue].[Payment].[Amount]), 0)
-                        FROM [revenue].[Payment]
-                        WHERE [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
-                          AND [revenue].[Payment].[IsVoided] = 0) AS [OutstandingBalance],
+                       (SELECT ISNULL(SUM([credit].[CreditNoteApplication].[AmountApplied]), 0)
+                        FROM [credit].[CreditNoteApplication]
+                        INNER JOIN [credit].[CreditNote] ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                        WHERE [credit].[CreditNoteApplication].[InvoiceId] = [invoice].[Invoice].[Id]
+                          AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                          AND [credit].[CreditNoteApplication].[IsVoided] = 0) AS [TotalCredited],
+                       [invoice].[Invoice].[TotalAmount]
+                       - (SELECT ISNULL(SUM([revenue].[Payment].[Amount]), 0)
+                          FROM [revenue].[Payment]
+                          WHERE [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
+                            AND [revenue].[Payment].[IsVoided] = 0)
+                       - (SELECT ISNULL(SUM([credit].[CreditNoteApplication].[AmountApplied]), 0)
+                          FROM [credit].[CreditNoteApplication]
+                          INNER JOIN [credit].[CreditNote] ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                          WHERE [credit].[CreditNoteApplication].[InvoiceId] = [invoice].[Invoice].[Id]
+                            AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                            AND [credit].[CreditNoteApplication].[IsVoided] = 0) AS [OutstandingBalance],
                        [invoice].[Invoice].[InvoiceFinancialStatusTypeId],
                        [invoice].[InvoiceFinancialStatusType].[Name] AS [FinancialStatusName]
                 FROM [invoice].[Invoice]
@@ -156,10 +174,13 @@ public class ReceivablesQueryService : IReceivablesQueryService
                     dataCommand.Parameters.Add(new SqlParameter("@Offset", offset));
                     dataCommand.Parameters.Add(new SqlParameter("@PageSize", pageSize));
 
+                    var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
                     using var reader = await dataCommand.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {
                         var outstandingBalance = reader.GetDecimal(reader.GetOrdinal("OutstandingBalance"));
+                        var dueDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("DueDate")));
 
                         items.Add(new ReceivableDto
                         {
@@ -167,13 +188,16 @@ public class ReceivablesQueryService : IReceivablesQueryService
                             InvoiceNumber = reader.GetString(reader.GetOrdinal("InvoiceNumber")),
                             CustomerName = reader.GetString(reader.GetOrdinal("CustomerName")),
                             InvoiceDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("InvoiceDate"))),
-                            DueDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("DueDate"))),
+                            DueDate = dueDate,
                             TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
                             TotalPaid = reader.GetDecimal(reader.GetOrdinal("TotalPaid")),
+                            TotalCredited = reader.GetDecimal(reader.GetOrdinal("TotalCredited")),
                             OutstandingBalance = outstandingBalance,
                             InvoiceFinancialStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceFinancialStatusTypeId")),
                             FinancialStatusName = reader.GetString(reader.GetOrdinal("FinancialStatusName")),
-                            HasOutstandingBalance = outstandingBalance > 0
+                            HasOutstandingBalance = outstandingBalance > 0,
+                            // DERIVED overdue — never trust the persisted status (can be stale). See TD-2.
+                            IsOverdue = outstandingBalance > 0 && dueDate < today
                         });
                     }
                 }

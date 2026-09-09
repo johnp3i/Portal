@@ -47,23 +47,27 @@
                     <div class="da-controls">
                         @if (a.IsScheduledDigest)
                         {
-                            <div class="da-field" style="min-width:150px;">
-                                <label>Send day</label>
-                                <select class="da-input" data-send-day>
-                                    @{
-                                        var dayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
-                                    }
-                                    @for (byte d = 0; d < 7; d++)
-                                    {
-                                        <option value="@d" selected="@(a.SendDayOfWeek == d)">@dayNames[d]</option>
-                                    }
-                                </select>
-                                <span class="da-hint">&nbsp;</span>
-                            </div>
+                            @* Weekly digests show a day-of-week; the daily brief does not. *@
+                            @if (!a.IsDailyBrief)
+                            {
+                                <div class="da-field" style="min-width:150px;">
+                                    <label>Send day</label>
+                                    <select class="da-input" data-send-day>
+                                        @{
+                                            var dayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+                                        }
+                                        @for (byte d = 0; d < 7; d++)
+                                        {
+                                            <option value="@d" selected="@(a.SendDayOfWeek == d)">@dayNames[d]</option>
+                                        }
+                                    </select>
+                                    <span class="da-hint">&nbsp;</span>
+                                </div>
+                            }
                             <div class="da-field" style="min-width:130px;">
                                 <label>Send time</label>
                                 <input class="da-input" type="time" data-send-time value="@a.SendTimeLocal" />
-                                <span class="da-hint">Your business time zone.</span>
+                                <span class="da-hint">@(a.IsDailyBrief ? "Sent daily, your business time zone." : "Your business time zone.")</span>
                             </div>
                             <div class="da-field" style="min-width:240px;flex:1;">
                                 <label>Send to</label>
@@ -109,6 +113,26 @@
                                     </div>
                                 </div>
                             }
+                        }
+                        else if (a.IsEventAlert)
+                        {
+                            @* Event alert (e.g. New Payment Received): recipient only, no schedule. *@
+                            <div class="da-field" style="min-width:240px;flex:1;">
+                                <label>Send to</label>
+                                <input class="da-input" type="text" data-recipient value="@a.RecipientOverride" placeholder="Business owner (default)" />
+                                <span class="da-hint">Leave blank to send to the owner. Separate multiple with ; or ,</span>
+                            </div>
+                            <div class="da-field da-toggle-field">
+                                <label>&nbsp;</label>
+                                <div class="da-toggle-row">
+                                    <label class="da-switch">
+                                        <input type="checkbox" data-owner-cc @(a.IsRecipientOwnerIncluded ? "checked" : "") />
+                                        <span class="da-slider"></span>
+                                    </label>
+                                    <span>Also send to owner</span>
+                                </div>
+                                <span class="da-hint">&nbsp;</span>
+                            </div>
                         }
                         else
                         {
@@ -263,23 +287,35 @@
             var section = assistantSection(key);
             var payload = { assistantKey: key };
 
-            var sendDayEl = section.querySelector('[data-send-day]');
-            if (sendDayEl) {
-                // Scheduled digest card.
-                var ownerCcEl = section.querySelector('[data-owner-cc]');
-                var figureEls = section.querySelectorAll('[data-figure]:checked');
-                var figures = Array.prototype.map.call(figureEls, function (el) { return el.value; });
-                payload.sendDayOfWeek = parseInt(sendDayEl.value, 10);
-                payload.sendTimeLocal = section.querySelector('[data-send-time]').value;
-                payload.recipientOverride = section.querySelector('[data-recipient]').value;
-                payload.isRecipientOwnerIncluded = ownerCcEl ? ownerCcEl.checked : true;
-                payload.includedFiguresCsv = figures.join(',');
-            } else {
+            // Build the payload from whichever controls the card actually renders. Card shapes:
+            //  - customer-facing → working hours (data-hours-start) + footer
+            //  - weekly digest   → data-send-day + data-send-time + recipient + figures
+            //  - daily brief     → data-send-time + recipient (no data-send-day, no figures)
+            //  - event alert     → recipient only (no data-send-time)
+            var hoursStartEl = section.querySelector('[data-hours-start]');
+            if (hoursStartEl) {
                 // Customer-facing card (working hours + footer).
                 var footerEl = section.querySelector('[data-footer]');
                 payload.isBrandingFooterEnabled = footerEl ? footerEl.checked : false;
-                payload.workingHoursStart = section.querySelector('[data-hours-start]').value;
+                payload.workingHoursStart = hoursStartEl.value;
                 payload.workingHoursEnd = section.querySelector('[data-hours-end]').value;
+            } else {
+                // Owner-facing card (weekly / daily / event) — send whatever controls exist.
+                var recipientEl = section.querySelector('[data-recipient]');
+                var ownerCcEl = section.querySelector('[data-owner-cc]');
+                if (recipientEl) payload.recipientOverride = recipientEl.value;
+                payload.isRecipientOwnerIncluded = ownerCcEl ? ownerCcEl.checked : true;
+
+                var sendDayEl = section.querySelector('[data-send-day]');
+                if (sendDayEl) payload.sendDayOfWeek = parseInt(sendDayEl.value, 10);
+
+                var sendTimeEl = section.querySelector('[data-send-time]');
+                if (sendTimeEl) payload.sendTimeLocal = sendTimeEl.value;
+
+                var figureEls = section.querySelectorAll('[data-figure]:checked');
+                if (figureEls.length > 0 || section.querySelector('[data-figure]')) {
+                    payload.includedFiguresCsv = Array.prototype.map.call(figureEls, function (el) { return el.value; }).join(',');
+                }
             }
 
             BlockUI.show('Saving...');

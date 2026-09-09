@@ -1,6 +1,6 @@
 # Subscription Tier Model
 
-**Last revised: 17 July 2026**
+**Last revised: 06 September 2026**
 
 ## Philosophy
 
@@ -107,6 +107,7 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 -   Unlimited users with role-based access
 -   Custom branding on client-facing pages
 -   Dedicated account support
+-   Eligible for the **Inventory Intelligence add-on** (see Add-Ons below)
 
 **Upgrade trigger:** Business has multiple team members who need visibility, or customers asking for self-service access, or integration requirements with accounting/banking systems.
 
@@ -115,11 +116,51 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 ## Feature Distribution Matrix
 
 | Feature                                   | Foundation           | Professional         | Enterprise           |
-|-------------------------------------------|----------------------|----------------------|----------------------|
-| **Core Operations**                       |                      |                      |                      |
-| Quotations (create, send, share)          | ✅                   | ✅                   | ✅                   |
-| Invoicing (create, issue, share)          | ✅                   | ✅                   | ✅                   |
-| Revenue (manual payment recording)        | ✅                   | ✅                   | ✅                   |
+**Upgrade trigger:** Business has multiple team members who need visibility, or customers asking for self-service access, or integration requirements with accounting/banking systems.
+
+***
+
+## Add-Ons (Enterprise)
+
+Add-ons are opt-in capabilities purchased **on top of** an active Enterprise subscription. They
+exist because some high-value capabilities serve a specific kind of business rather than every
+Enterprise customer — so it is fairer to price them separately than to raise the base tier price
+for everyone. An add-on requires an active Enterprise plan; it is never sold standalone.
+
+**Principle:** the businesses that get the value pay for it; those that don't, don't. A
+professional-services firm on Enterprise wanting Payroll but not stock control shouldn't
+subsidise a cafe's inventory features, and vice versa.
+
+### Inventory Intelligence (add-on)
+
+**For:** hospitality operators, kiosks, and small production lines — businesses that receive
+many supplier invoices and whose profitability lives or dies on margin control.
+
+**Value proposition:** turn hours of manual supplier-invoice transcription into a
+photograph-and-confirm workflow, and — more importantly — catch silent margin erosion with a
+daily "these products cost more now, consider repricing" report. It protects **margin**, not
+just **time**.
+
+**Included capabilities:**
+
+-   Supply ↔ Product mapping — self-learning from invoice lines; a product can hold multiple supplier barcodes
+-   BOM / Recipe Designer — define what a sellable product consumes (1-to-1 resale, or recipes like a cappuccino: cup + milk + coffee + cinnamon)
+-   Stock / Inventory tracking (supply ledger) with recipe-based product costing
+-   Supply Price History — a cost point per confirmed purchase line
+-   Margin-Drift Report — a daily reprice-recommendation report that catches silent margin erosion
+-   Invoice Photo Capture & OCR — photograph a supplier invoice; the system extracts the lines and pre-fills a purchase for **mandatory human confirmation** before stock and price history update
+-   POS Sales Ingestion — consume stock via the BOM as products sell, for realised-margin analysis
+
+**Requires:** active Enterprise subscription.
+
+**Pricing:** to be finalised when the module ships (see Add-On Pricing under Pricing Summary).
+Likely a flat monthly add-on, possibly with a metered component for OCR pages. The number will
+be set from evidence — what real operators say the margin report is worth — rather than guessed
+in advance.
+
+***
+
+## Feature Distribution Matrixrding)        | ✅                   | ✅                   | ✅                   |
 | Global Payment Allocation & Credit        | ✅                   | ✅                   | ✅                   |
 | Payment Receipts & Signatures             | ✅                   | ✅                   | ✅                   |
 | Customer Registry                         | ✅                   | ✅                   | ✅                   |
@@ -156,6 +197,14 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Activity Timeline & Notifications         | ❌                   | ❌                   | ✅                   |
 | Business Applications Tracker           | ❌                   | ✅                   | ✅                   |
 | Payroll / Payslips                      | ❌                   | ❌                   | ✅                   |
+| **Inventory Intelligence** *(Enterprise add-on)* |               |                      |                      |
+| Supply ↔ Product Mapping (self-learning)  | ❌                   | ❌                   | ➕ Add-on            |
+| BOM / Recipe Designer                     | ❌                   | ❌                   | ➕ Add-on            |
+| Stock / Inventory Tracking                | ❌                   | ❌                   | ➕ Add-on            |
+| Supply Price History                      | ❌                   | ❌                   | ➕ Add-on            |
+| Margin-Drift Report (reprice alerts)      | ❌                   | ❌                   | ➕ Add-on            |
+| Invoice Photo Capture & OCR (confirmed)   | ❌                   | ❌                   | ➕ Add-on            |
+| POS Sales Ingestion (consumption/margin)  | ❌                   | ❌                   | ➕ Add-on            |
 | **Integrations**                          |                      |                      |                      |
 | API Access                                | ❌                   | ❌                   | ✅                   |
 | Webhooks                                  | ❌                   | ❌                   | ✅                   |
@@ -164,6 +213,9 @@ Quotation → Invoice → Auto-Payment Link → Overdue? → Auto-Remind → Cus
 | Users included                            | 2                    | 5                    | Unlimited            |
 | Granular user permissions                 | Basic (admin/viewer) | ✅ Full module-level | ✅ Full module-level |
 | Custom branding (client-facing)           | ❌                   | ❌                   | ✅                   |
+
+> **➕ Add-on** = not included in the flat Enterprise price; an opt-in capability purchased on
+> top of an active Enterprise subscription (see Add-Ons above).
 
 ***
 
@@ -276,6 +328,12 @@ Request arrives
 | `multi_currency`               | Multi-Currency                                              | Enterprise     |
 | `compliance`                   | Business Applications Tracker (compliance filings)          | Professional   |
 | `payroll`                      | Payroll / Payslips                                          | Enterprise     |
+| `inventory`                    | Stock / on-hand tracking (supply ledger)                    | Enterprise add-on |
+| `supply_mapping`               | Supply ↔ Product self-learning mapping (multi-barcode)      | Enterprise add-on |
+| `bom`                          | BOM / Recipe designer + recipe-based product costing        | Enterprise add-on |
+| `margin_drift`                 | Margin-Drift Report (cost vs price-tier erosion alerts)     | Enterprise add-on |
+| `invoice_capture`              | Guided photo capture + OCR invoice extraction (human-confirmed) | Enterprise add-on |
+| `pos_ingestion`                | POS Sales Ingestion → stock consumption + realised margin   | Enterprise add-on |
 
 ***
 
@@ -383,6 +441,7 @@ The Enterprise tier launches before all exclusive features are complete. Rather 
 - 🔜 Payroll / Payslips (Phase 3 — employee management, P&L integration)
 - 🔜 Multi-Currency (Phase 3 — international invoicing)
 - 🔜 API Access & Webhooks (Phase 3 — integrations)
+- 🔜 Inventory Intelligence — **paid Enterprise add-on** (supply mapping, BOM/recipe costing, margin-drift report, invoice photo capture, POS ingestion — the operational cost-control flagship for hospitality; opt-in on top of Enterprise, not included in the base price)
 
 ### Price Transition Rules
 
@@ -438,6 +497,21 @@ All three share the same module key vocabulary and access level concept ('full',
 | Enterprise (Early Access) | €129/mo | €1,290/year | Scale — teams, integrations, self-service (early-bird pricing) |
 | Enterprise (Full)         | €169/mo | €1,690/year | Full pricing when all Phase 3 modules ship                     |
 
+### Add-On Pricing (Enterprise)
+
+Add-ons are billed on top of an active Enterprise subscription. They are opt-in and require
+Enterprise (never sold standalone).
+
+| Add-On | Price | Requires | Status |
+|--------|-------|----------|--------|
+| Inventory Intelligence | *TBD — set when the module ships* | Enterprise | 🔜 In development |
+
+**Why the price is not fixed yet:** Inventory Intelligence protects margin (not just time), so
+willingness-to-pay is high — but the fair, evidence-based number comes from what real operators
+say the margin-drift report is worth once they use it. Expected shape: a flat monthly add-on,
+possibly with a metered component for OCR pages (invoice photo processing has a per-page provider
+cost). The number will be finalised at launch and this table updated then.
+
 ### Annual Discount Model
 
 All tiers use a "pay for 10, get 12" annual billing model:
@@ -457,7 +531,9 @@ This model prioritises operational continuity over monthly billing — a busines
 
 **Professional (€89/mo)** — The highest-value tier. A business paying €89/mo for fully automated payment chasing, auto-generated payment links, cash flow forecasting, and P&L summaries is getting capabilities that would cost them €200+/month with a part-time bookkeeper. The automation pipeline alone (remind → pay link → auto-record) eliminates hours of manual work every week.
 
-**Enterprise (€129/mo early access, €169/mo full)** — For businesses that need unlimited users, full audit capabilities, and want first access to upcoming features (Payroll, Client Portal, Multi-Currency, API). At €129/mo during early access, the premium over Professional (€40/month) is justified by unlimited seats alone for businesses with 6+ team members. When Payroll ships, the full €169/mo price delivers capabilities that would cost €500+/month with a payroll service + separate tools.
+**Enterprise (€129/mo early access, €169/mo full)** — For businesses that need unlimited users, full audit capabilities, and want first access to upcoming features (Payroll, Client Portal, Multi-Currency, API). At €129/mo during early access, the premium over Professional (€40/month) is justified by unlimited seats alone for businesses with 6+ team members. When Payroll ships, the full €169/mo price delivers capabilities that would cost €500+/month with a payroll service + separate tools — Payroll is the flagship that anchors the base Enterprise price.
+
+**Inventory Intelligence** is deliberately a **paid add-on on top of Enterprise**, not part of the flat price. It serves a specific kind of business (hospitality, kiosks, production lines) rather than every Enterprise customer, so charging every Enterprise subscriber for it — including services firms and agencies that have no supplier invoices or recipes — would be unfair and would blur the tier. Pricing it separately means the operators who get the margin-protection value pay for it, while others aren't taxed for a feature they'll never use. It also becomes an **incremental revenue line** on top of the base subscription rather than a reason to raise the base price. This keeps Enterprise's story clean (scale + integrations + Payroll) and lets Inventory Intelligence be priced from evidence once it ships.
 
 ### Strategic Positioning
 
@@ -477,5 +553,16 @@ This model prioritises operational continuity over monthly billing — a busines
 | P&L reporting              | Automatic                       | €100–200/mo (bookkeeper)     |
 | VAT preparation            | Built-in                        | €50–150/mo (accountant)      |
 | **Total alternative cost** | **€89/mo**                      | **€200–500+/mo**             |
+
+**Enterprise adds a margin-protection dimension** (Inventory Intelligence) that goes beyond saving time:
+
+| What the business gets (Enterprise) | Cost with Portal (Enterprise)   | Cost without Portal                        |
+|-------------------------------------|---------------------------------|--------------------------------------------|
+| Supplier invoice recording          | Photo → confirm (minutes)       | Hours/week of manual transcription         |
+| Supply cost tracking & price history| Automatic per line              | Spreadsheet guesswork (rarely done)        |
+| Margin-drift detection (reprice)    | Daily report                    | Invisible erosion — caught months late in P&L |
+| Recipe-based product costing (BOM)  | Built-in                        | Manual recipe cost sheets                  |
+
+Unlike time-savings, margin drift is a **profit leak**: a few cents added to a supply feeding hundreds of sales, unnoticed, can quietly erase a product's margin. Catching it is typically worth far more than the subscription itself.
 
 The Professional tier pays for itself within the first month for any business with 15+ invoices and regular purchase activity.

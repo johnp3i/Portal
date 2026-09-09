@@ -187,7 +187,7 @@
             html += '<tr>';
             html += '<td>' + escapeHtml(m.subject) + leadLink + getTaskBadgeHtml(m.taskCount, m.pendingTaskCount) + '</td>';
             html += '<td>' + escapeHtml(m.meetingTypeName || '') + '</td>';
-            html += '<td>' + escapeHtml(m.contactName || '') + '</td>';
+            html += '<td>' + (m.contactName ? (m.contactId ? '<span style="color:#0D5EA6;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;" onclick="openContactModal(' + m.contactId + ')" title="View contact info">' + escapeHtml(m.contactName) + '</span>' : escapeHtml(m.contactName)) : '') + '</td>';
             html += '<td>' + scheduledDisplay + relativeHtml + '</td>';
             html += '<td>' + (m.durationMinutes || 60) + ' min</td>';
             html += '<td>' + getClassificationPillHtml(m.outcomeClassificationName) + '</td>';

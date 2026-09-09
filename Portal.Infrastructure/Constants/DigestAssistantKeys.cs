@@ -13,6 +13,9 @@ public static class DigestAssistantKeys
     /// <summary>Weekly Financial Snapshot (period figures + to-date outstanding). Seed Id 3.</summary>
     public const string WeeklyFinancialSnapshot = "weekly_financial_snapshot";
 
+    /// <summary>Daily Brief — a daily-cadence owner attention summary (Phase 4a). Seed Id 5.</summary>
+    public const string DailyBrief = "daily_brief";
+
     /// <summary>The related-entity type / cycle-key namespace marker for digest outbox rows.</summary>
     public const string RelatedEntityDigest = "Digest";
 }

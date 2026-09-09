@@ -390,6 +390,7 @@ public class FollowUpTaskService : IFollowUpTaskService
         {
             Id = entity.Id,
             LeadRequestId = entity.LeadRequestId,
+            ContactId = entity.ContactId,
             ContactName = contactName,
             AssignedToName = null, // TeamMember names resolved separately if needed
             Title = entity.Title,

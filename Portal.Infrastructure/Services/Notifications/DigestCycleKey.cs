@@ -18,4 +18,12 @@ public static class DigestCycleKey
         var isoYear = ISOWeek.GetYear(date);
         return $"{assistantKey}:{isoYear:D4}-W{isoWeek:D2}";
     }
+
+    /// <summary>
+    /// Builds the daily cycle key for the given assistant and business-local date.
+    /// Format: "{assistantKey}:{yyyy-MM-dd}". The outbox cycle-dedup then guarantees at most one
+    /// send per business per day.
+    /// </summary>
+    public static string Daily(string assistantKey, DateTime businessLocalNow)
+        => $"{assistantKey}:{businessLocalNow:yyyy-MM-dd}";
 }

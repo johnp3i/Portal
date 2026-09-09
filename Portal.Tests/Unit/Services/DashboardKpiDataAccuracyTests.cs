@@ -134,17 +134,70 @@ public class DashboardKpiDataAccuracyTests : IDisposable
         return payment;
     }
 
+    /// <summary>
+    /// Seeds a credit note (business-scoped) and a single application of it against an invoice.
+    /// Mirrors the [credit].[CreditNote] + [credit].[CreditNoteApplication] join used by the
+    /// DashboardService and ReceivablesQueryService outstanding queries.
+    /// </summary>
+    private void CreateCreditNoteApplication(int id, int invoiceId, int customerId,
+        decimal amountApplied, bool isVoided = false)
+    {
+        _dbContext.CreditNotes.Add(new CreditNote
+        {
+            Id = id,
+            BusinessId = TestBusinessId,
+            InvoiceId = invoiceId,
+            CustomerId = customerId,
+            CreditNoteStatusTypeId = 2,
+            VatSubmissionPeriodId = 1,
+            CreditNoteNumber = $"CN-{id:D4}",
+            IssueDate = new DateOnly(2024, 2, 1),
+            Reason = "Test credit",
+            Subtotal = amountApplied * 0.85m,
+            TaxAmount = amountApplied * 0.15m,
+            TotalAmount = amountApplied,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+
+        _dbContext.CreditNoteApplications.Add(new CreditNoteApplication
+        {
+            Id = id,
+            CreditNoteId = id,
+            InvoiceId = invoiceId,
+            AmountApplied = amountApplied,
+            AppliedAtUtc = DateTime.UtcNow,
+            IsVoided = isVoided,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+    }
+
     #endregion
 
     #region KPI Computation Logic (mirrors DashboardService SQL logic)
 
     /// <summary>
+    /// Total applied (non-voided) credit for an invoice, scoped to the test business — mirrors the
+    /// [credit].[CreditNoteApplication] INNER JOIN [credit].[CreditNote] (BusinessId, IsVoided = 0)
+    /// used by the outstanding queries. Absent applications resolve to 0.
+    /// </summary>
+    private static decimal AppliedCredit(int invoiceId,
+        List<CreditNote> creditNotes, List<CreditNoteApplication> applications)
+    {
+        return applications
+            .Where(a => a.InvoiceId == invoiceId
+                     && !a.IsVoided
+                     && creditNotes.Any(cn => cn.Id == a.CreditNoteId && cn.BusinessId == TestBusinessId))
+            .Sum(a => a.AmountApplied);
+    }
+
+    /// <summary>
     /// Computes Outstanding Receivables using the same rules as DashboardService:
-    /// Sum of (TotalAmount - sum of valid payments) for all non-deleted invoices
+    /// Sum of (TotalAmount - valid payments - applied credit notes) for all non-deleted invoices
     /// with InvoiceStatusTypeId = 2 AND InvoiceFinancialStatusTypeId in (1, 2, 4).
     /// </summary>
     private decimal ComputeOutstandingReceivables(
-        List<Invoice> invoices, List<Payment> payments)
+        List<Invoice> invoices, List<Payment> payments,
+        List<CreditNote> creditNotes, List<CreditNoteApplication> applications)
     {
         var qualifyingStatuses = new[] { FinancialStatusUnpaid, FinancialStatusPartiallyPaid, FinancialStatusOverdue };
 
@@ -158,7 +211,7 @@ public class DashboardKpiDataAccuracyTests : IDisposable
                 var totalPaid = payments
                     .Where(p => p.InvoiceId == inv.Id && !p.IsVoided && p.BusinessId == TestBusinessId)
                     .Sum(p => p.Amount);
-                return inv.TotalAmount - totalPaid;
+                return inv.TotalAmount - totalPaid - AppliedCredit(inv.Id, creditNotes, applications);
             });
     }
 
@@ -168,7 +221,8 @@ public class DashboardKpiDataAccuracyTests : IDisposable
     /// where DueDate < today AND outstanding balance > 0.
     /// </summary>
     private decimal ComputeOverdueAmount(
-        List<Invoice> invoices, List<Payment> payments, DateOnly today)
+        List<Invoice> invoices, List<Payment> payments,
+        List<CreditNote> creditNotes, List<CreditNoteApplication> applications, DateOnly today)
     {
         return invoices
             .Where(inv => inv.BusinessId == TestBusinessId
@@ -180,7 +234,7 @@ public class DashboardKpiDataAccuracyTests : IDisposable
                 var totalPaid = payments
                     .Where(p => p.InvoiceId == inv.Id && !p.IsVoided && p.BusinessId == TestBusinessId)
                     .Sum(p => p.Amount);
-                return inv.TotalAmount - totalPaid;
+                return inv.TotalAmount - totalPaid - AppliedCredit(inv.Id, creditNotes, applications);
             })
             .Where(outstanding => outstanding > 0)
             .Sum();
@@ -206,11 +260,12 @@ public class DashboardKpiDataAccuracyTests : IDisposable
 
     /// <summary>
     /// Computes Partially Paid Amount using the same rules as DashboardService:
-    /// Sum of (TotalAmount - sum of valid payments) for all non-deleted Issued invoices
-    /// with InvoiceFinancialStatusTypeId = 2 (PartiallyPaid).
+    /// Sum of (TotalAmount - valid payments - applied credit notes) for all non-deleted Issued
+    /// invoices with InvoiceFinancialStatusTypeId = 2 (PartiallyPaid).
     /// </summary>
     private decimal ComputePartiallyPaidAmount(
-        List<Invoice> invoices, List<Payment> payments)
+        List<Invoice> invoices, List<Payment> payments,
+        List<CreditNote> creditNotes, List<CreditNoteApplication> applications)
     {
         return invoices
             .Where(inv => inv.BusinessId == TestBusinessId
@@ -222,7 +277,7 @@ public class DashboardKpiDataAccuracyTests : IDisposable
                 var totalPaid = payments
                     .Where(p => p.InvoiceId == inv.Id && !p.IsVoided && p.BusinessId == TestBusinessId)
                     .Sum(p => p.Amount);
-                return inv.TotalAmount - totalPaid;
+                return inv.TotalAmount - totalPaid - AppliedCredit(inv.Id, creditNotes, applications);
             });
     }
 
@@ -293,11 +348,13 @@ public class DashboardKpiDataAccuracyTests : IDisposable
         // Act: Compute KPIs using the same logic as DashboardService
         var invoices = await _dbContext.Invoices.ToListAsync();
         var payments = await _dbContext.Payments.ToListAsync();
+        var creditNotes = await _dbContext.CreditNotes.ToListAsync();
+        var applications = await _dbContext.CreditNoteApplications.ToListAsync();
 
-        var outstandingReceivables = ComputeOutstandingReceivables(invoices, payments);
-        var overdueAmount = ComputeOverdueAmount(invoices, payments, today);
+        var outstandingReceivables = ComputeOutstandingReceivables(invoices, payments, creditNotes, applications);
+        var overdueAmount = ComputeOverdueAmount(invoices, payments, creditNotes, applications, today);
         var paidThisMonth = ComputePaidThisMonth(payments);
-        var partiallyPaidAmount = ComputePartiallyPaidAmount(invoices, payments);
+        var partiallyPaidAmount = ComputePartiallyPaidAmount(invoices, payments, creditNotes, applications);
 
         // Assert: Verify each KPI matches expected manual computation
 
@@ -340,10 +397,13 @@ public class DashboardKpiDataAccuracyTests : IDisposable
         var invoices = await _dbContext.Invoices.ToListAsync();
         var payments = await _dbContext.Payments.ToListAsync();
 
-        var outstandingReceivables = ComputeOutstandingReceivables(invoices, payments);
-        var overdueAmount = ComputeOverdueAmount(invoices, payments, DateOnly.FromDateTime(DateTime.UtcNow));
+        var creditNotes = await _dbContext.CreditNotes.ToListAsync();
+        var applications = await _dbContext.CreditNoteApplications.ToListAsync();
+
+        var outstandingReceivables = ComputeOutstandingReceivables(invoices, payments, creditNotes, applications);
+        var overdueAmount = ComputeOverdueAmount(invoices, payments, creditNotes, applications, DateOnly.FromDateTime(DateTime.UtcNow));
         var paidThisMonth = ComputePaidThisMonth(payments);
-        var partiallyPaidAmount = ComputePartiallyPaidAmount(invoices, payments);
+        var partiallyPaidAmount = ComputePartiallyPaidAmount(invoices, payments, creditNotes, applications);
 
         // Assert
         Assert.Equal(0m, outstandingReceivables);
@@ -407,7 +467,9 @@ public class DashboardKpiDataAccuracyTests : IDisposable
         // Act
         var invoices = await _dbContext.Invoices.ToListAsync();
         var payments = await _dbContext.Payments.ToListAsync();
-        var overdueAmount = ComputeOverdueAmount(invoices, payments, today);
+        var creditNotes = await _dbContext.CreditNotes.ToListAsync();
+        var applications = await _dbContext.CreditNoteApplications.ToListAsync();
+        var overdueAmount = ComputeOverdueAmount(invoices, payments, creditNotes, applications, today);
 
         // Assert: Only invoice 1 contributes (2000 - 800 = 1200)
         Assert.Equal(1200.00m, overdueAmount);
@@ -475,7 +537,9 @@ public class DashboardKpiDataAccuracyTests : IDisposable
         // Act
         var invoices = await _dbContext.Invoices.ToListAsync();
         var payments = await _dbContext.Payments.ToListAsync();
-        var partiallyPaidAmount = ComputePartiallyPaidAmount(invoices, payments);
+        var creditNotes = await _dbContext.CreditNotes.ToListAsync();
+        var applications = await _dbContext.CreditNoteApplications.ToListAsync();
+        var partiallyPaidAmount = ComputePartiallyPaidAmount(invoices, payments, creditNotes, applications);
 
         // Assert:
         // Invoice 1: 3000 - 1200 = 1800
@@ -505,11 +569,74 @@ public class DashboardKpiDataAccuracyTests : IDisposable
         // Act
         var invoices = await _dbContext.Invoices.ToListAsync();
         var payments = await _dbContext.Payments.ToListAsync();
-        var outstandingReceivables = ComputeOutstandingReceivables(invoices, payments);
+        var creditNotes = await _dbContext.CreditNotes.ToListAsync();
+        var applications = await _dbContext.CreditNoteApplications.ToListAsync();
+        var outstandingReceivables = ComputeOutstandingReceivables(invoices, payments, creditNotes, applications);
 
         // Assert: Only valid payment of 1000 reduces the balance
         // Outstanding = 5000 - 1000 = 4000
         Assert.Equal(4000.00m, outstandingReceivables);
+    }
+
+    [Fact]
+    public async Task GetKpiData_AppliedCreditNotes_ReduceOutstandingOverdueAndPartiallyPaid()
+    {
+        // Arrange: credit notes must reduce outstanding balances everywhere, matching
+        // FinancialStatusEngine.ComputeOutstandingBalance (TotalAmount - Payments - AppliedCredit).
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var futureDate = today.AddDays(30);
+        var pastDate = today.AddDays(-15);
+        var currentMonthDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 10, 12, 0, 0, DateTimeKind.Utc);
+
+        // Invoice 1: Unpaid, future, 1000. Credit note of 400 applied.
+        // Outstanding = 1000 - 0 - 400 = 600.
+        CreateInvoice(1, 1, 1000.00m, InvoiceStatusIssued, FinancialStatusUnpaid, futureDate);
+        CreateCreditNoteApplication(1, 1, 1, 400.00m);
+
+        // Invoice 2: PartiallyPaid, future, 2000. Payment 500 + credit note 300.
+        // Outstanding = 2000 - 500 - 300 = 1200.
+        CreateInvoice(2, 1, 2000.00m, InvoiceStatusIssued, FinancialStatusPartiallyPaid, futureDate);
+        CreatePayment(1, 2, 500.00m, currentMonthDate);
+        CreateCreditNoteApplication(2, 2, 1, 300.00m);
+
+        // Invoice 3: Overdue, past, 3000. Payment 1000 + credit note 500.
+        // Outstanding = 3000 - 1000 - 500 = 1500 (still overdue, balance > 0).
+        CreateInvoice(3, 2, 3000.00m, InvoiceStatusIssued, FinancialStatusOverdue, pastDate);
+        CreatePayment(2, 3, 1000.00m, currentMonthDate);
+        CreateCreditNoteApplication(3, 3, 2, 500.00m);
+
+        // Invoice 4: Overdue, past, 1000. Fully settled by a credit note (no payment).
+        // Outstanding = 1000 - 0 - 1000 = 0 → must NOT count toward overdue (balance must be > 0).
+        // Status is still persisted Overdue (stale), so this also guards the credit-aware overdue path.
+        CreateInvoice(4, 1, 1000.00m, InvoiceStatusIssued, FinancialStatusOverdue, pastDate);
+        CreateCreditNoteApplication(4, 4, 1, 1000.00m);
+
+        // Invoice 5: Unpaid, future, 800. Credit note of 300 applied but VOIDED — must be ignored.
+        // Outstanding = 800 - 0 - 0 = 800.
+        CreateInvoice(5, 2, 800.00m, InvoiceStatusIssued, FinancialStatusUnpaid, futureDate);
+        CreateCreditNoteApplication(5, 5, 2, 300.00m, isVoided: true);
+
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var invoices = await _dbContext.Invoices.ToListAsync();
+        var payments = await _dbContext.Payments.ToListAsync();
+        var creditNotes = await _dbContext.CreditNotes.ToListAsync();
+        var applications = await _dbContext.CreditNoteApplications.ToListAsync();
+
+        var outstandingReceivables = ComputeOutstandingReceivables(invoices, payments, creditNotes, applications);
+        var overdueAmount = ComputeOverdueAmount(invoices, payments, creditNotes, applications, today);
+        var partiallyPaidAmount = ComputePartiallyPaidAmount(invoices, payments, creditNotes, applications);
+
+        // Outstanding Receivables (statuses 1,2,4):
+        // Inv1 600 + Inv2 1200 + Inv3 1500 + Inv4 0 + Inv5 800 = 4100
+        Assert.Equal(4100.00m, outstandingReceivables);
+
+        // Overdue (DueDate < today AND balance > 0): Inv3 1500 + Inv4 0(excluded) = 1500
+        Assert.Equal(1500.00m, overdueAmount);
+
+        // Partially Paid (status 2): Inv2 only = 1200
+        Assert.Equal(1200.00m, partiallyPaidAmount);
     }
 
     #endregion

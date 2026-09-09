@@ -18,8 +18,12 @@ public class AssistantCardViewModel
     public string? WorkingHoursEnd { get; set; }
 
     // --- Scheduled digest (owner-facing) fields ---
-    /// <summary>True for scheduled owner-facing digests (day/time + recipient card variant).</summary>
+    /// <summary>True for any scheduled owner-facing assistant (weekly digest OR daily brief).</summary>
     public bool IsScheduledDigest { get; set; }
+    /// <summary>True for the daily brief: send-time only card (no day-of-week, no figures).</summary>
+    public bool IsDailyBrief { get; set; }
+    /// <summary>True for an event alert (e.g. New Payment): recipient-only card, no schedule.</summary>
+    public bool IsEventAlert { get; set; }
     /// <summary>0=Sunday .. 6=Saturday. Defaults to Monday (1) when unset.</summary>
     public byte SendDayOfWeek { get; set; } = 1;
     /// <summary>Send time (business-local) as "HH:mm". Defaults to 08:00 when unset.</summary>

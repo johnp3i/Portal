@@ -96,7 +96,10 @@
     </div>
 </section>
 
+@await Html.PartialAsync("_ContactInfoModal")
+
 @section Scripts {
+    <script src="~/js/sales/contact-modal.js?v=1"></script>
     <script src="~/js/sales/follow-up-tasks.js?v=4"></script>
     <script>
         var _tasksCurrentPage = 1;
@@ -149,7 +152,7 @@
 
                 html += '<tr>';
                 html += '<td style="font-weight:600;">' + escapeHtml(t.title) + (t.meetingSubject ? '<div style="font-size:11px;color:#8a9bab;margin-top:2px;">from: ' + escapeHtml(t.meetingSubject) + '</div>' : '') + '</td>';
-                html += '<td>' + (t.contactName ? '<span style="color:#0D5EA6;">' + escapeHtml(t.contactName) + '</span>' : '<span style="color:#8a9bab;">\u2014</span>') + '</td>';
+                html += '<td>' + (t.contactName ? (t.contactId ? '<span style="color:#0D5EA6;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;" onclick="openContactModal(' + t.contactId + ')" title="View contact info">' + escapeHtml(t.contactName) + '</span>' : '<span style="color:#0D5EA6;">' + escapeHtml(t.contactName) + '</span>') : '<span style="color:#8a9bab;">\u2014</span>') + '</td>';
                 html += '<td>' + getTypeBadgeHtml(t.taskType) + '</td>';
                 html += '<td style="' + dueColor + '">' + dueStr + timeStr + '</td>';
                 html += '<td>' + statusBadge + '</td>';

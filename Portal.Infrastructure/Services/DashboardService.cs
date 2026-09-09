@@ -53,9 +53,12 @@ public class DashboardService : IDashboardService
                 var transaction = _dbContext.Database.CurrentTransaction;
 
                 // Outstanding Receivables: sum of OutstandingBalance across non-deleted invoices
-                // with InvoiceStatusTypeId = 2 (Issued) AND InvoiceFinancialStatusTypeId in (1, 2, 4)
+                // with InvoiceStatusTypeId = 2 (Issued) AND InvoiceFinancialStatusTypeId in (1, 2, 4).
+                // Outstanding = TotalAmount - valid Payments - applied CREDIT NOTES, matching the
+                // authoritative formula in FinancialStatusEngine.ComputeOutstandingBalance. Omitting
+                // credit notes over-states the amount for any invoice reduced by a credit note.
                 const string outstandingQuery = @"
-                    SELECT ISNULL(SUM([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0)), 0) AS [OutstandingReceivables],
+                    SELECT ISNULL(SUM([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0) - ISNULL(AppliedCredit.TotalCredited, 0)), 0) AS [OutstandingReceivables],
                            COUNT(*) AS [OutstandingInvoiceCount]
                     FROM [invoice].[Invoice]
                     LEFT JOIN (
@@ -67,6 +70,15 @@ public class DashboardService : IDashboardService
                           AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()
                         GROUP BY [revenue].[Payment].[InvoiceId]
                     ) AS ValidPayments ON [invoice].[Invoice].[Id] = ValidPayments.[InvoiceId]
+                    LEFT JOIN (
+                        SELECT [credit].[CreditNoteApplication].[InvoiceId],
+                               SUM([credit].[CreditNoteApplication].[AmountApplied]) AS [TotalCredited]
+                        FROM [credit].[CreditNoteApplication]
+                        INNER JOIN [credit].[CreditNote] ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                        WHERE [credit].[CreditNote].[BusinessId] = @BusinessId
+                          AND [credit].[CreditNoteApplication].[IsVoided] = 0
+                        GROUP BY [credit].[CreditNoteApplication].[InvoiceId]
+                    ) AS AppliedCredit ON [invoice].[Invoice].[Id] = AppliedCredit.[InvoiceId]
                     WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
                       AND [invoice].[Invoice].[IsDeleted] = 0
                       AND [invoice].[Invoice].[InvoiceStatusTypeId] = @InvoiceStatusIssued
@@ -91,9 +103,12 @@ public class DashboardService : IDashboardService
                     }
                 }
 
-                // Overdue Amount: sum of OutstandingBalance where DueDate < today AND OutstandingBalance > 0
+                // Overdue Amount. Uses the authoritative persisted status (InvoiceFinancialStatusTypeId
+                // = 4 Overdue) maintained by FinancialStatusEngine — which already subtracts applied
+                // CREDIT NOTES (not just payments) and keeps Paid/WrittenOff out. Deriving overdue from
+                // (TotalAmount - Payments) alone wrongly counts invoices settled by credit notes.
                 const string overdueQuery = @"
-                    SELECT ISNULL(SUM([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0)), 0) AS [OverdueAmount],
+                    SELECT ISNULL(SUM([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0) - ISNULL(AppliedCredit.TotalCredited, 0)), 0) AS [OverdueAmount],
                            COUNT(*) AS [OverdueInvoiceCount]
                     FROM [invoice].[Invoice]
                     LEFT JOIN (
@@ -105,11 +120,20 @@ public class DashboardService : IDashboardService
                           AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()
                         GROUP BY [revenue].[Payment].[InvoiceId]
                     ) AS ValidPayments ON [invoice].[Invoice].[Id] = ValidPayments.[InvoiceId]
+                    LEFT JOIN (
+                        SELECT [credit].[CreditNoteApplication].[InvoiceId],
+                               SUM([credit].[CreditNoteApplication].[AmountApplied]) AS [TotalCredited]
+                        FROM [credit].[CreditNoteApplication]
+                        INNER JOIN [credit].[CreditNote] ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                        WHERE [credit].[CreditNote].[BusinessId] = @BusinessId
+                          AND [credit].[CreditNoteApplication].[IsVoided] = 0
+                        GROUP BY [credit].[CreditNoteApplication].[InvoiceId]
+                    ) AS AppliedCredit ON [invoice].[Invoice].[Id] = AppliedCredit.[InvoiceId]
                     WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
                       AND [invoice].[Invoice].[IsDeleted] = 0
                       AND [invoice].[Invoice].[InvoiceStatusTypeId] = @InvoiceStatusIssued
                       AND [invoice].[Invoice].[DueDate] < @Today
-                      AND ([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0)) > 0";
+                      AND ([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0) - ISNULL(AppliedCredit.TotalCredited, 0)) > 0";
 
                 using (var command = connection.CreateCommand())
                 {
@@ -161,9 +185,12 @@ public class DashboardService : IDashboardService
                     }
                 }
 
-                // Partially Paid: sum of OutstandingBalance where InvoiceFinancialStatusTypeId = 2
+                // Partially Paid: sum of OutstandingBalance where InvoiceFinancialStatusTypeId = 2.
+                // Outstanding = TotalAmount - valid Payments - applied CREDIT NOTES, matching the
+                // authoritative formula in FinancialStatusEngine.ComputeOutstandingBalance. An invoice
+                // with both a payment and a credit note would otherwise over-state its balance here.
                 const string partiallyPaidQuery = @"
-                    SELECT ISNULL(SUM([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0)), 0) AS [PartiallyPaidAmount],
+                    SELECT ISNULL(SUM([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0) - ISNULL(AppliedCredit.TotalCredited, 0)), 0) AS [PartiallyPaidAmount],
                            COUNT(*) AS [PartiallyPaidCount]
                     FROM [invoice].[Invoice]
                     LEFT JOIN (
@@ -175,6 +202,15 @@ public class DashboardService : IDashboardService
                           AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()
                         GROUP BY [revenue].[Payment].[InvoiceId]
                     ) AS ValidPayments ON [invoice].[Invoice].[Id] = ValidPayments.[InvoiceId]
+                    LEFT JOIN (
+                        SELECT [credit].[CreditNoteApplication].[InvoiceId],
+                               SUM([credit].[CreditNoteApplication].[AmountApplied]) AS [TotalCredited]
+                        FROM [credit].[CreditNoteApplication]
+                        INNER JOIN [credit].[CreditNote] ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                        WHERE [credit].[CreditNote].[BusinessId] = @BusinessId
+                          AND [credit].[CreditNoteApplication].[IsVoided] = 0
+                        GROUP BY [credit].[CreditNoteApplication].[InvoiceId]
+                    ) AS AppliedCredit ON [invoice].[Invoice].[Id] = AppliedCredit.[InvoiceId]
                     WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
                       AND [invoice].[Invoice].[IsDeleted] = 0
                       AND [invoice].[Invoice].[InvoiceStatusTypeId] = @InvoiceStatusIssued
@@ -787,6 +823,90 @@ public class DashboardService : IDashboardService
             }
 
             return results;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<OldestOverdueInvoiceDto?> GetOldestOverdueInvoiceAsync(int businessId)
+    {
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // Mirrors the overdue predicate in GetKpiDataAsync so this stays consistent with the
+            // overdue count in the same digest: issued, not deleted, DueDate < today, and
+            // outstanding (TotalAmount - payments - applied CREDIT NOTES) > 0. Subtracting applied
+            // credit notes matches FinancialStatusEngine.ComputeOutstandingBalance, so an invoice
+            // settled by a credit note (balance 0) is never surfaced. Oldest = earliest DueDate.
+            const string query = @"
+                SELECT TOP 1
+                       [invoice].[Invoice].[InvoiceNumber],
+                       [invoice].[Invoice].[DueDate],
+                       ([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0) - ISNULL(AppliedCredit.TotalCredited, 0)) AS [Outstanding]
+                FROM [invoice].[Invoice]
+                LEFT JOIN (
+                    SELECT [revenue].[Payment].[InvoiceId],
+                           SUM([revenue].[Payment].[Amount]) AS [TotalPaid]
+                    FROM [revenue].[Payment]
+                    WHERE [revenue].[Payment].[IsVoided] = 0
+                      AND [revenue].[Payment].[BusinessId] = @BusinessId
+                      AND [revenue].[Payment].[PaymentDateUtc] <= GETUTCDATE()
+                    GROUP BY [revenue].[Payment].[InvoiceId]
+                ) AS ValidPayments ON [invoice].[Invoice].[Id] = ValidPayments.[InvoiceId]
+                LEFT JOIN (
+                    SELECT [credit].[CreditNoteApplication].[InvoiceId],
+                           SUM([credit].[CreditNoteApplication].[AmountApplied]) AS [TotalCredited]
+                    FROM [credit].[CreditNoteApplication]
+                    INNER JOIN [credit].[CreditNote] ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                    WHERE [credit].[CreditNote].[BusinessId] = @BusinessId
+                      AND [credit].[CreditNoteApplication].[IsVoided] = 0
+                    GROUP BY [credit].[CreditNoteApplication].[InvoiceId]
+                ) AS AppliedCredit ON [invoice].[Invoice].[Id] = AppliedCredit.[InvoiceId]
+                WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
+                  AND [invoice].[Invoice].[IsDeleted] = 0
+                  AND [invoice].[Invoice].[InvoiceStatusTypeId] = @InvoiceStatusIssued
+                  AND [invoice].[Invoice].[DueDate] < @Today
+                  AND ([invoice].[Invoice].[TotalAmount] - ISNULL(ValidPayments.TotalPaid, 0) - ISNULL(AppliedCredit.TotalCredited, 0)) > 0
+                ORDER BY [invoice].[Invoice].[DueDate] ASC";
+
+            var connection = _dbContext.Database.GetDbConnection();
+            var shouldClose = connection.State != ConnectionState.Open;
+            if (shouldClose) await connection.OpenAsync();
+
+            try
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _dbContext.Database.CurrentTransaction;
+                if (transaction != null) command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@InvoiceStatusIssued", InvoiceStatusIssued));
+                command.Parameters.Add(new SqlParameter("@Today", today));
+
+                using var reader = await command.ExecuteReaderAsync();
+                if (!await reader.ReadAsync())
+                    return null;
+
+                var dueDate = DateOnly.FromDateTime(reader.GetDateTime(1));
+                return new OldestOverdueInvoiceDto
+                {
+                    InvoiceNumber = reader.GetString(0),
+                    DueDate = dueDate,
+                    Outstanding = reader.GetDecimal(2),
+                    DaysOverdue = today.DayNumber - dueDate.DayNumber
+                };
+            }
+            finally
+            {
+                if (shouldClose && _dbContext.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception)
         {
