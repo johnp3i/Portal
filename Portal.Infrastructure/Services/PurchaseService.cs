@@ -166,6 +166,39 @@ public class PurchaseService : IPurchaseService
         return ServiceResult.Ok();
     }
 
+    public async Task<ServiceResult> SetPurchasePaidStateAsync(int id, bool isPaid)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var existing = await _purchaseRepository.GetByIdAndBusinessIdAsync(id, businessId);
+        if (existing == null)
+        {
+            return ServiceResult.Fail("Purchase not found.");
+        }
+
+        if (existing.IsCancelled)
+        {
+            return ServiceResult.Fail("A cancelled purchase cannot be marked paid.");
+        }
+
+        if (existing.IsPaid == isPaid)
+        {
+            return ServiceResult.Fail(isPaid ? "This purchase is already marked paid." : "This purchase is already marked unpaid.");
+        }
+
+        await _purchaseRepository.SetPaidStateAsync(id, businessId, isPaid);
+
+        await _auditLogRepository.InsertAsync(new AuditLog
+        {
+            BusinessId = businessId,
+            Action = isPaid ? "MarkPaid" : "MarkUnpaid",
+            TableName = "purchase.Purchase",
+            RecordId = id.ToString(),
+            Timestamp = DateTime.UtcNow
+        });
+
+        return ServiceResult.Ok();
+    }
+
     public async Task<ServiceResult> BulkCreatePurchasesAsync(List<Purchase> purchases)
     {
         var errors = new List<string>();

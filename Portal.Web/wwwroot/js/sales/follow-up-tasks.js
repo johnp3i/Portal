@@ -323,6 +323,7 @@ function openCreateTaskModal(leadRequestId, contactId, contactName) {
             '<div class="field" style="margin-bottom:18px;"><label>Title</label><input type="text" id="taskTitle" value="' + escapeAttr(titleDefault) + '" maxlength="200" /></div>' +
             contactBlock +
             '<div class="field" style="margin-bottom:18px;"><label>Type</label><select id="taskType"><option value="">Loading...</option></select></div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Assign to</label><select id="taskTeamMemberId"><option value="">Loading...</option></select></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Due Date</label>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
                     '<button class="preset-btn" onclick="setTaskPreset(event, 1)">Tomorrow</button>' +
@@ -346,6 +347,9 @@ function openCreateTaskModal(leadRequestId, contactId, contactName) {
 
     // Populate the Type dropdown from the lookup (default: Follow-up).
     populateTaskTypeSelect('taskType');
+
+    // Populate the assignee dropdown (auto-selects the sole member when there is only one).
+    populateTeamMemberSelect('taskTeamMemberId', null, true);
 
     // Populate the contact selector when no contact context was supplied
     if (!hasContactContext) {
@@ -389,6 +393,39 @@ async function populateTaskTypeSelect(selectId, selectedId) {
             ? String(t.id) === String(selectedId)
             : (t.name === TASK_TYPE_DEFAULT_NAME);
         html += '<option value="' + t.id + '"' + (isSelected ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>';
+    });
+    select.innerHTML = html;
+}
+
+// ─── Team members (assignee) lookup, shares AxGetLookups ─────
+
+var _teamMembersCache = null;
+
+async function getTeamMembers() {
+    if (_teamMembersCache) return _teamMembersCache;
+    try {
+        var response = await fetch('/Sales/AxGetLookups');
+        var result = await response.json();
+        _teamMembersCache = (result.success && result.data && Array.isArray(result.data.teamMembers))
+            ? result.data.teamMembers : [];
+    } catch (e) {
+        _teamMembersCache = [];
+    }
+    return _teamMembersCache;
+}
+
+// Populates an assignee <select> (by id). On CREATE (selectedId omitted) the sole team member is
+// auto-selected; otherwise "Unassigned" is the default. On EDIT, selectedId preselects the current
+// assignee (may be null = unassigned).
+async function populateTeamMemberSelect(selectId, selectedId, autoAssignSole) {
+    var select = document.getElementById(selectId);
+    if (!select) return;
+    var members = await getTeamMembers();
+    var soleId = (autoAssignSole && selectedId == null && members.length === 1) ? members[0].id : null;
+    var html = '<option value="">\u2014 Unassigned \u2014</option>';
+    members.forEach(function (m) {
+        var isSelected = (selectedId != null && String(m.id) === String(selectedId)) || (m.id === soleId);
+        html += '<option value="' + m.id + '"' + (isSelected ? ' selected' : '') + '>' + escapeHtml(m.displayName) + '</option>';
     });
     select.innerHTML = html;
 }
@@ -467,7 +504,8 @@ async function submitCreateTask() {
         notes: document.getElementById('taskNotes').value.trim() || null,
         leadRequestId: document.getElementById('taskLeadRequestId').value ? parseInt(document.getElementById('taskLeadRequestId').value) : null,
         contactId: document.getElementById('taskContactId').value ? parseInt(document.getElementById('taskContactId').value) : null,
-        teamMemberId: null
+        teamMemberId: document.getElementById('taskTeamMemberId') && document.getElementById('taskTeamMemberId').value
+            ? parseInt(document.getElementById('taskTeamMemberId').value) : null
     };
 
     BlockUI.show('Creating task...');
@@ -558,6 +596,7 @@ function openEditTaskModal(taskId) {
             '</div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Title</label><input type="text" id="editTaskTitle" value="' + escapeAttr(t.title) + '" maxlength="200" /></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Type</label><select id="editTaskType"><option value="">Loading...</option></select></div>' +
+            '<div class="field" style="margin-bottom:18px;"><label>Assign to</label><select id="editTaskTeamMemberId"><option value="">Loading...</option></select></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Due Date</label><input type="date" id="editTaskDueDate" value="' + dueDate + '" /></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Scheduled Time</label><input type="time" id="editTaskScheduledTime" value="' + scheduledTime + '" /><div style="font-size:11px;color:#8a9bab;margin-top:4px;">Leave blank for all-day task</div></div>' +
             '<div class="field" style="margin-bottom:18px;"><label>Notes</label><textarea id="editTaskNotes" rows="4" placeholder="Add notes, comments, or context...">' + escapeHtml(t.notes || '') + '</textarea></div>' +
@@ -573,6 +612,9 @@ function openEditTaskModal(taskId) {
 
     // Populate the Type dropdown from the lookup, preselecting the task's current type.
     populateTaskTypeSelect('editTaskType', t.followUpTaskTypeId);
+
+    // Populate the assignee dropdown, preselecting the task's current assignee (no auto-assign on edit).
+    populateTeamMemberSelect('editTaskTeamMemberId', t.teamMemberId, false);
 }
 
 function closeEditTaskModal() {
@@ -605,7 +647,9 @@ async function submitEditTask() {
         followUpTaskTypeId: parseInt(document.getElementById('editTaskType').value),
         dueAtUtc: dueValue + 'T09:00:00Z',
         scheduledTimeUtc: scheduledTime,
-        notes: document.getElementById('editTaskNotes').value.trim() || null
+        notes: document.getElementById('editTaskNotes').value.trim() || null,
+        teamMemberId: document.getElementById('editTaskTeamMemberId') && document.getElementById('editTaskTeamMemberId').value
+            ? parseInt(document.getElementById('editTaskTeamMemberId').value) : null
     };
 
     BlockUI.show('Saving...');

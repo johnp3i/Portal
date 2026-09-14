@@ -99,7 +99,7 @@ public class AttentionItemBuilder : IAttentionItemBuilder
         var period = await _vatPeriodRepository.GetCoveringUnsubmittedPeriodAsync(businessId, today);
         if (period != null)
         {
-            var deadline = period.PeriodEndDate.AddDays(_options.VatFilingOffsetDays);
+            var deadline = VatDeadline.For(period, _options);
             var daysUntil = deadline.DayNumber - today.DayNumber;
             if (daysUntil >= 0 && daysUntil <= _options.VatDeadlineNoticeDays)
             {

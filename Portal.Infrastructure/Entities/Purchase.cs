@@ -42,6 +42,12 @@ public class Purchase
 
     public DateTime? CancelledAtUtc { get; set; }
 
+    /// <summary>Whether this purchase has been paid (v1 paid/unpaid flag). Default false.</summary>
+    public bool IsPaid { get; set; }
+
+    /// <summary>When the purchase was marked paid (UTC). NULL while unpaid.</summary>
+    public DateTime? PaidAtUtc { get; set; }
+
     public int? VatSubmissionPeriodId { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }

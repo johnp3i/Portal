@@ -38,6 +38,11 @@
             title: 'Get early access to Inventory Intelligence',
             subtitle: 'Photo-capture supplier invoices, track true cost with recipes, and catch margin drift. Leave your details and we\'ll notify you the moment it launches.'
         },
+        'Payroll': {
+            badge: 'Coming Soon',
+            title: 'Get early access to Payroll',
+            subtitle: 'Payslips with PAYE, employee and employer contributions, statutory and bank payment files. Standalone or with your Portal. Leave your details and we\'ll notify you the moment it launches.'
+        },
         'General Inquiry': {
             badge: 'Contact Us',
             title: 'Talk to Us',

@@ -1388,7 +1388,7 @@ public class SalesController : Controller
             if (request == null)
                 return Json(new { success = false, message = "Invalid request data." });
 
-            var result = await _followUpTaskService.UpdateTaskAsync(request.Id, request.Title, request.FollowUpTaskTypeId, request.DueAtUtc, request.Notes, request.ScheduledTimeUtc);
+            var result = await _followUpTaskService.UpdateTaskAsync(request.Id, request.Title, request.FollowUpTaskTypeId, request.DueAtUtc, request.Notes, request.ScheduledTimeUtc, request.TeamMemberId);
             return Json(new { success = result.Success, message = result.Message });
         }
         catch (Exception ex)

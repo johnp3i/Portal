@@ -331,12 +331,18 @@ public class MeetingRepository : GenericStoredProcedureRepository<Meeting>
                 switch (status.ToLower())
                 {
                     case "upcoming":
-                        baseWhere += " AND [ScheduledAtUtc] > @Now AND [IsCancelled] = 0";
-                        parameters.Add(new SqlParameter("@Now", DateTime.UtcNow));
+                        // "Upcoming" includes everything from the start of today onward, so a
+                        // meeting scheduled earlier today still counts as upcoming (matches the
+                        // Pipeline "Upcoming Meetings" panel). Comparing against the current
+                        // instant would wrongly hide today's meetings once their time passed.
+                        baseWhere += " AND [ScheduledAtUtc] >= @TodayStart AND [IsCancelled] = 0";
+                        parameters.Add(new SqlParameter("@TodayStart", DateTime.UtcNow.Date));
                         break;
                     case "completed":
-                        baseWhere += " AND [ScheduledAtUtc] < @Now AND [IsCancelled] = 0";
-                        parameters.Add(new SqlParameter("@Now", DateTime.UtcNow));
+                        // Completed = scheduled before today (whole past days), mirroring the
+                        // "upcoming from today" boundary above.
+                        baseWhere += " AND [ScheduledAtUtc] < @TodayStart AND [IsCancelled] = 0";
+                        parameters.Add(new SqlParameter("@TodayStart", DateTime.UtcNow.Date));
                         break;
                     case "cancelled":
                         baseWhere += " AND [IsCancelled] = 1";

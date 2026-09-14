@@ -26,4 +26,22 @@ public static class DigestCycleKey
     /// </summary>
     public static string Daily(string assistantKey, DateTime businessLocalNow)
         => $"{assistantKey}:{businessLocalNow:yyyy-MM-dd}";
+
+    /// <summary>
+    /// Period-scoped idempotency key for once-per-period reminders (e.g. the VAT Period Due
+    /// Reminder). Unlike <see cref="Daily"/>/<see cref="Weekly"/>, this does NOT vary by date, so the
+    /// reminder de-dupes across the whole notice window — at most one non-Failed send per
+    /// (business, assistant, period). Format: "{assistantKey}:period-{periodId}".
+    /// </summary>
+    public static string Period(string assistantKey, int periodId)
+        => $"{assistantKey}:period-{periodId}";
+
+    /// <summary>
+    /// Recipient-scoped daily key for fan-out assistants (e.g. Task &amp; Meeting Reminder): at most
+    /// one send per recipient per business-day. <paramref name="recipientToken"/> derives from the
+    /// NORMALISED recipient email (not a team-member id), so two identities resolving to the same
+    /// address share one key and are never double-emailed. Format: "{assistantKey}:{yyyy-MM-dd}:{token}".
+    /// </summary>
+    public static string RecipientDaily(string assistantKey, DateTime businessLocalNow, string recipientToken)
+        => $"{assistantKey}:{businessLocalNow:yyyy-MM-dd}:{recipientToken}";
 }

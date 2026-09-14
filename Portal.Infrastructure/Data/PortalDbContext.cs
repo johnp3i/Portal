@@ -164,6 +164,7 @@ public class PortalDbContext : DbContext
     public DbSet<Meeting> Meetings { get; set; } = null!;
     public DbSet<MeetingProductRequest> MeetingProductRequests { get; set; } = null!;
     public DbSet<MeetingOpportunity> MeetingOpportunities { get; set; } = null!;
+    public DbSet<MeetingTeamMember> MeetingTeamMembers { get; set; } = null!;
     public DbSet<TeamMember> TeamMembers { get; set; } = null!;
     public DbSet<ActivityFeedEntry> ActivityFeedEntries { get; set; } = null!;
     public DbSet<Entities.Sales.LeadSourceType> LeadSourceTypes { get; set; } = null!;
@@ -311,6 +312,7 @@ public class PortalDbContext : DbContext
         ConfigureMeeting(modelBuilder);
         ConfigureMeetingProductRequest(modelBuilder);
         ConfigureMeetingOpportunity(modelBuilder);
+        ConfigureMeetingTeamMember(modelBuilder);
         ConfigureTeamMember(modelBuilder);
         ConfigureFollowUpTask(modelBuilder);
         ConfigureActivityFeed(modelBuilder);
@@ -1245,6 +1247,8 @@ public class PortalDbContext : DbContext
 
             entity.Property(e => e.TotalAmount)
                 .HasPrecision(18, 2);
+
+            entity.Property(e => e.IsPaid).IsRequired().HasDefaultValue(false);
 
             entity.Property(e => e.PurchaseOriginTypeId)
                 .IsRequired()
@@ -3886,6 +3890,31 @@ public class PortalDbContext : DbContext
                 .WithMany(p => p.MeetingProductRequests)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureMeetingTeamMember(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<MeetingTeamMember>(entity =>
+        {
+            entity.ToTable("MeetingTeamMember", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.TeamMembers)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.TeamMember)
+                .WithMany()
+                .HasForeignKey(e => e.TeamMemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.MeetingId, e.TeamMemberId })
+                .IsUnique()
+                .HasDatabaseName("UX_MeetingTeamMember_Meeting_TeamMember");
         });
     }
 

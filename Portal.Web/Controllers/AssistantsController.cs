@@ -20,17 +20,20 @@ public class AssistantsController : Controller
     private readonly ICurrentTenantService _tenantService;
     private readonly BusinessAssistantSettingRepository _settingRepository;
     private readonly NotificationOutboxRepository _outboxRepository;
+    private readonly NotificationOptions _notificationOptions;
 
     public AssistantsController(
         PortalDbContext dbContext,
         ICurrentTenantService tenantService,
         BusinessAssistantSettingRepository settingRepository,
-        NotificationOutboxRepository outboxRepository)
+        NotificationOutboxRepository outboxRepository,
+        NotificationOptions notificationOptions)
     {
         _dbContext = dbContext;
         _tenantService = tenantService;
         _settingRepository = settingRepository;
         _outboxRepository = outboxRepository;
+        _notificationOptions = notificationOptions;
     }
 
     [HttpGet]
@@ -59,8 +62,10 @@ public class AssistantsController : Controller
                     //  - event alert      → recipient only, no schedule (e.g. New Payment Received)
                     //  - weekly digest    → day + time + recipient (+ figures for the snapshot)
                     var isDailyBrief = a.Key == DigestAssistantKeys.DailyBrief;
+                    var isVatReminder = a.Key == DigestAssistantKeys.VatPeriodDueReminder;
+                    var isTaskMeetingReminder = a.Key == DigestAssistantKeys.TaskMeetingReminder;
                     var isEventAlert = !a.IsCustomerFacing && a.Key == NotificationProducer.NewPaymentKey;
-                    // Scheduled = owner-facing on a clock (weekly digests OR the daily brief), but NOT the event alert.
+                    // Scheduled = owner-facing on a clock (weekly digests, daily brief, VAT reminder), but NOT the event alert.
                     var isScheduled = !a.IsCustomerFacing && !isEventAlert;
                     return new AssistantCardViewModel
                     {
@@ -78,6 +83,10 @@ public class AssistantsController : Controller
                         IsScheduledDigest = isScheduled,
                         IsDailyBrief = isDailyBrief,
                         IsEventAlert = isEventAlert,
+                        IsVatReminder = isVatReminder,
+                        VatNoticeLeadDays = s?.VatNoticeLeadDays ?? _notificationOptions.VatDeadlineNoticeDays,
+                        IsTaskMeetingReminder = isTaskMeetingReminder,
+                        TaskMeetingLookAheadDays = s?.TaskMeetingLookAheadDays ?? _notificationOptions.TaskMeetingDefaultLookAheadDays,
                         SendDayOfWeek = s?.SendDayOfWeek ?? 1,
                         SendTimeLocal = s?.SendTimeLocal?.ToString("HH:mm") ?? "08:00",
                         RecipientOverride = s?.RecipientOverride,
@@ -129,7 +138,9 @@ public class AssistantsController : Controller
                 SendTimeLocal = existing?.SendTimeLocal,
                 RecipientOverride = existing?.RecipientOverride,
                 IsRecipientOwnerIncluded = existing?.IsRecipientOwnerIncluded ?? true,
-                IncludedFiguresCsv = existing?.IncludedFiguresCsv
+                IncludedFiguresCsv = existing?.IncludedFiguresCsv,
+                VatNoticeLeadDays = existing?.VatNoticeLeadDays,
+                TaskMeetingLookAheadDays = existing?.TaskMeetingLookAheadDays
             };
 
             await _settingRepository.UpsertAsync(setting);
@@ -172,10 +183,14 @@ public class AssistantsController : Controller
                 SendTimeLocal = existing?.SendTimeLocal,
                 RecipientOverride = existing?.RecipientOverride,
                 IsRecipientOwnerIncluded = existing?.IsRecipientOwnerIncluded ?? true,
-                IncludedFiguresCsv = existing?.IncludedFiguresCsv
+                IncludedFiguresCsv = existing?.IncludedFiguresCsv,
+                VatNoticeLeadDays = existing?.VatNoticeLeadDays,
+                TaskMeetingLookAheadDays = existing?.TaskMeetingLookAheadDays
             };
 
             var isDailyBrief = assistant.Key == DigestAssistantKeys.DailyBrief;
+            var isVatReminder = assistant.Key == DigestAssistantKeys.VatPeriodDueReminder;
+            var isTaskMeetingReminder = assistant.Key == DigestAssistantKeys.TaskMeetingReminder;
             var isEventAlert = !assistant.IsCustomerFacing && assistant.Key == NotificationProducer.NewPaymentKey;
 
             if (assistant.IsCustomerFacing)
@@ -234,6 +249,38 @@ public class AssistantsController : Controller
                     {
                         // Daily: no day-of-week (ignored); no figures.
                         setting.SendDayOfWeek = null;
+                    }
+                    else if (isVatReminder)
+                    {
+                        // VAT reminder: daily-style (no day-of-week), plus a per-business notice lead time.
+                        setting.SendDayOfWeek = null;
+                        if (request.VatNoticeLeadDays.HasValue)
+                        {
+                            if (request.VatNoticeLeadDays.Value is < 1 or > 90)
+                                return Json(new { success = false, message = "Notice lead time must be between 1 and 90 days." });
+                            setting.VatNoticeLeadDays = request.VatNoticeLeadDays.Value;
+                        }
+                        else
+                        {
+                            // Empty ⇒ fall back to the global default.
+                            setting.VatNoticeLeadDays = null;
+                        }
+                    }
+                    else if (isTaskMeetingReminder)
+                    {
+                        // Task & Meeting reminder: daily-style (no day-of-week), plus a per-business look-ahead window.
+                        setting.SendDayOfWeek = null;
+                        if (request.TaskMeetingLookAheadDays.HasValue)
+                        {
+                            if (request.TaskMeetingLookAheadDays.Value is < 1 or > 30)
+                                return Json(new { success = false, message = "Look-ahead window must be between 1 and 30 days." });
+                            setting.TaskMeetingLookAheadDays = request.TaskMeetingLookAheadDays.Value;
+                        }
+                        else
+                        {
+                            // Empty ⇒ fall back to the global default.
+                            setting.TaskMeetingLookAheadDays = null;
+                        }
                     }
                     else
                     {

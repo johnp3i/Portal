@@ -30,6 +30,9 @@ public class CreateMeetingRequest
     public int DurationMinutes { get; set; } = 60;
     public string? Location { get; set; }
     public string? Notes { get; set; }
+
+    /// <summary>Team members assigned to attend (many-to-many). Empty = unassigned.</summary>
+    public List<int> AttendeeTeamMemberIds { get; set; } = new();
 }
 
 /// <summary>
@@ -47,6 +50,9 @@ public class UpdateMeetingRequest
     public string? Notes { get; set; }
     public string? Outcome { get; set; }
     public int? MeetingOutcomeClassificationId { get; set; }
+
+    /// <summary>Team members assigned to attend (replace-on-save). Empty = unassigned.</summary>
+    public List<int> AttendeeTeamMemberIds { get; set; } = new();
 }
 
 /// <summary>
@@ -72,6 +78,9 @@ public class MeetingDetailDto
     public List<MeetingProductRequestDto> ProductRequests { get; set; } = new();
     public List<MeetingOpportunityDto> Opportunities { get; set; } = new();
     public List<MeetingTaskBriefDto> Tasks { get; set; } = new();
+
+    /// <summary>Ids of team members assigned to attend this meeting.</summary>
+    public List<int> AttendeeTeamMemberIds { get; set; } = new();
 }
 
 /// <summary>

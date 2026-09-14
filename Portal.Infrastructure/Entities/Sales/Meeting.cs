@@ -56,4 +56,6 @@ public class Meeting
     public ICollection<MeetingOpportunity> Opportunities { get; set; } = new List<MeetingOpportunity>();
 
     public ICollection<FollowUpTask> Tasks { get; set; } = new List<FollowUpTask>();
+
+    public ICollection<MeetingTeamMember> TeamMembers { get; set; } = new List<MeetingTeamMember>();
 }

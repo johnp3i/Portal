@@ -296,6 +296,26 @@ public class PurchaseController : Controller
     }
 
     /// <summary>
+    /// Marks a purchase as paid or unpaid. Paid purchases drop out of the "upcoming supplier
+    /// payments" surfaces (dashboard widget, weekly digest, Daily Brief).
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSetPaidState(int id, bool isPaid)
+    {
+        try
+        {
+            var result = await _purchaseService.SetPurchasePaidStateAsync(id, isPaid);
+            var okMessage = isPaid ? "Purchase marked as paid." : "Purchase marked as unpaid.";
+            return Json(new { success = result.Success, message = result.Success ? okMessage : result.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Something went wrong. Please try again." });
+        }
+    }
+
+    /// <summary>
     /// Returns the expense category used on the supplier's most recent purchase,
     /// to suggest a default category when recording a new purchase for that supplier.
     /// </summary>

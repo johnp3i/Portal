@@ -34,4 +34,13 @@ public interface IVatSubmissionService
     /// trend, input VAT discrepancy) plus the computed Output/Input/Net VAT figures.
     /// </summary>
     Task<ServiceResult<VatPreSubmissionChecklistDto>> GetPreSubmissionChecklistAsync(int vatSubmissionPeriodId);
+
+    /// <summary>
+    /// Read-only approximate net VAT payable for a period the caller already holds — WITHOUT tenant
+    /// context or persistence. Prefers a persisted (unsubmitted) VatSubmission.NetVatPayable; else
+    /// computes it in-memory. Safe for tenant-less background scans (e.g. the VAT Period Due Reminder
+    /// assistant), which pass an explicit businessId + the period they scanned. Positive = tax owed,
+    /// negative = refund due, zero = no payment expected.
+    /// </summary>
+    Task<decimal> GetApproxNetVatPayableAsync(int businessId, VatSubmissionPeriod period);
 }

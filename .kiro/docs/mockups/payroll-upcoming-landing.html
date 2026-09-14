@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<!--
+  MOCKUP: Payroll - Upcoming Feature announcement for the landing/index page.
+  Self-contained preview. Mirrors the CSS variables, fonts and card styling of
+  Portal.Web/Views/Landing/Index.cshtml so the announcement block can be lifted
+  straight into the pricing section (next to the Inventory Intelligence block).
+
+  The block to transplant is fenced by the BEGIN payroll-announce and
+  END payroll-announce comments below. Everything else is preview scaffolding.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payroll — Upcoming Feature (Landing Mockup)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;
+            --warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;
+            --bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+            --shadow:0 24px 70px rgba(13,94,166,.11);--radius:28px;
+        }
+        body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:80px}
+        h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}
+        a{color:inherit;text-decoration:none}
+        .container{max-width:1180px;margin:0 auto;padding:0 28px}
+        .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:15px;padding:13px 21px;font-weight:800;text-decoration:none;transition:.18s ease;border:1px solid transparent;cursor:pointer}
+        .btn-primary{background:linear-gradient(180deg,#1B6FBA,var(--blue));color:#fff;box-shadow:0 16px 34px rgba(13,94,166,.24)}
+        .btn-primary:hover{transform:translateY(-1px);background:linear-gradient(180deg,#227AC8,#0B4E89)}
+        .btn-secondary{background:rgba(255,255,255,.78);border-color:rgba(13,94,166,.15);color:var(--blue-dark)}
+        .features{list-style:none;font-size:14px;color:#365468}
+        .features li{position:relative;padding:7px 0 7px 26px;break-inside:avoid}
+        .features li::before{content:"";position:absolute;left:0;top:13px;width:14px;height:14px;border-radius:50%;background:rgba(13,94,166,.12)}
+        .features li::after{content:"";position:absolute;left:5px;top:16px;width:4px;height:7px;border:solid var(--blue);border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+        /* Preview scaffolding only (not transplanted) */
+        .mock-note{max-width:1180px;margin:32px auto 0;padding:14px 28px;font-size:12px;color:var(--muted)}
+        .mock-note code{background:rgba(13,94,166,.06);padding:2px 6px;border-radius:6px;font-size:11px}
+        .section-head{max-width:760px;margin:48px auto 0;text-align:center;padding:0 28px}
+        .section-head h2{font-size:clamp(30px,4vw,40px);font-weight:800}
+        .section-head p{margin-top:12px;color:var(--muted);font-size:17px}
+
+        /* Band pricing table inside the announcement */
+        .band-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+        .band{border:1px solid rgba(13,94,166,.12);border-radius:16px;padding:14px 14px 16px;background:rgba(255,255,255,.7);text-align:center}
+        .band .cap{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+        .band .price{font-family:Manrope,sans-serif;font-size:22px;font-weight:800;color:var(--blue-dark);margin-top:6px;white-space:nowrap;line-height:1.1}
+        .band .price span{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+        .band .yr{font-size:12px;color:var(--green);margin-top:2px}
+        .band.custom .price{font-size:18px;padding-top:6px}
+
+        @media (max-width:900px){
+            .payroll-announce{grid-template-columns:1fr !important;}
+            .payroll-side{border-left:none !important;border-top:1.5px dashed rgba(13,94,166,.3);padding-left:0 !important;padding-top:26px;margin-top:8px;}
+            .band-grid{grid-template-columns:repeat(2,1fr);}
+            .payroll-announce .features{columns:1 !important;}
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mock-note">
+        Mockup preview · The block below (<code>&lt;!-- BEGIN payroll-announce --&gt;</code>) is the piece intended for
+        <code>Views/Landing/Index.cshtml</code>, placed in the pricing section beside the Inventory Intelligence announcement.
+    </div>
+
+    <div class="section-head">
+        <h2>Payroll is coming to 3 Inventors</h2>
+        <p>A complete payroll product — buy it on its own, or included with Enterprise. Priced by team size, not per head.</p>
+    </div>
+
+    <div class="container">
+
+        <!-- BEGIN payroll-announce -->
+        <div class="payroll-announce" style="margin-top:32px;background:linear-gradient(135deg,#ffffff 0%,#f4f9fe 100%);border:1.5px solid rgba(13,94,166,.22);border-radius:28px;padding:32px 36px;box-shadow:0 10px 34px rgba(13,94,166,.09);display:grid;grid-template-columns:1.5fr 1fr;gap:32px;align-items:center;">
+            <div>
+                <span style="display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#0B4E89;background:rgba(13,94,166,.10);padding:6px 12px;border-radius:8px;">Standalone Product · Coming Soon</span>
+                <h3 style="font-size:26px;margin-top:14px;">Payroll</h3>
+                <p style="margin-top:8px;color:var(--muted);font-size:16px;">Run payroll end to end — payslips with PAYE, employee &amp; employer contributions, deterministic calculations you can reproduce, and export-ready statutory &amp; bank payment files. Use it standalone, or connected to the rest of your Portal.</p>
+                <ul class="features" style="columns:2;margin-top:18px;gap:0 28px;">
+                    <li>Payslips with PAYE &amp; contributions</li>
+                    <li>Employer contribution reports</li>
+                    <li>Auditable, reproducible calculations</li>
+                    <li>Finalise, unlock &amp; re-finalise safely</li>
+                    <li>Social Insurance export file</li>
+                    <li>Bank payment file (ISO 20022)</li>
+                    <li>Country templates (Cyprus first)</li>
+                    <li>Native WorkforcePi integration</li>
+                </ul>
+            </div>
+            <div class="payroll-side" style="text-align:center;border-left:1.5px dashed rgba(13,94,166,.3);padding-left:32px;">
+                <div style="font-family:Manrope,sans-serif;font-size:22px;font-weight:800;color:var(--blue-dark);">Priced by team size</div>
+                <p style="font-size:12px;color:var(--muted);margin:8px 0 4px;">One simple monthly price per capacity band — no per-employee counting.</p>
+                <div class="band-grid">
+                    <div class="band">
+                        <div class="cap">1–25</div>
+                        <div class="price">€49<span>/mo</span></div>
+                        <div class="yr">€490/yr</div>
+                    </div>
+                    <div class="band">
+                        <div class="cap">26–100</div>
+                        <div class="price">€89<span>/mo</span></div>
+                        <div class="yr">€890/yr</div>
+                    </div>
+                    <div class="band">
+                        <div class="cap">101–250</div>
+                        <div class="price">€149<span>/mo</span></div>
+                        <div class="yr">€1,490/yr</div>
+                    </div>
+                    <div class="band custom">
+                        <div class="cap">251+</div>
+                        <div class="price">Custom</div>
+                        <div class="yr">Let's talk</div>
+                    </div>
+                </div>
+                <a class="btn btn-primary" href="javascript:void(0)" data-inquiry-type="Payroll" style="width:100%;justify-content:center;margin-top:18px;">Notify me at launch</a>
+                <p style="font-size:11px;color:var(--muted);margin-top:10px;">Annual billing follows our pay-for-10-get-12 model. Included with Enterprise, or bought on its own — no full Portal required.</p>
+            </div>
+        </div>
+        <!-- END payroll-announce -->
+
+    </div>
+
+    <div class="mock-note" style="margin-top:40px;">
+        Sample prices mirror the standalone Payroll capacity bands in the handoff. They are placeholders in this mockup —
+        final prices are configurable and set from data, never hard-coded.
+    </div>
+
+</body>
+</html>

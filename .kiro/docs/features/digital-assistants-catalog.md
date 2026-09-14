@@ -209,14 +209,52 @@ instead a per-business "send me this digest" toggle plus a send day/time prefere
 
 | Assistant | Cat | Recipient | Trigger | Status |
 |-----------|-----|-----------|---------|--------|
-| **Daily "what needs attention" brief** | B | Owner | Daily (overdue + quotes awaiting + tasks due) | ⚪ |
-| **New Payment Received alert** | A | Owner | Payment recorded (esp. Stripe) | ⚪ |
-| **VAT period due reminder** | B | Owner | Filing deadline approaching | ⚪ |
+| **Daily "what needs attention" brief** | B | Owner | Daily (overdue + quotes awaiting + tasks due) | ✅ |
+| **New Payment Received alert** | A | Owner | Payment recorded (esp. Stripe) | ✅ |
+| **VAT period due reminder** | B | Owner | Filing deadline approaching | ✅ |
 | **Compliance filing due reminder** | B | Owner | Business Applications tracker due date | ⚪ |
-| **Lead-Task Reminder** | A/B | Owner | Lead task due/overdue | 🟡 |
+| **Task & Meeting Reminder** *(was "Lead-Task Reminder")* | B | Team member (assignee) | Daily agenda of upcoming/overdue tasks + meetings | ✅ |
 
 A daily brief is effectively a super-set of several signals in one email — a strong owner-value
 item once the engine exists.
+
+> **📋 Task & Meeting Reminder — spec written (`.kiro/specs/digital-assistants-task-meeting-reminder/`).**
+> Scope widened from the original "Lead-Task Reminder": it now covers **both tasks and meetings**, is
+> a **daily morning agenda** (not per-item countdown), and is **fan-out to the assigned team member**
+> (N emails per business), NOT owner-only — so a person who never opens the portal still learns what's
+> assigned to them. Key design decisions: tasks are 1-to-1 (existing `FollowUpTask.TeamMemberId`, needs
+> wiring); meetings are 1-to-many via a **new `[sales].[MeetingTeamMember]` mapping table** + attendee
+> UI; recipient = `TeamMember.Email` → linked portal-user email → **owner** (unassigned/no-email
+> fallback); include overdue + per-business look-ahead (default 2 days); NO backfill (legacy/unassigned
+> → owner); separate from the always-on Daily Brief. Needs a new **`IFanOutDigestComposer`** contract
+> (the existing `IDigestComposer` returns a single message). Spans a Sales-module change (Part 1:
+> assignment model) + the assistant (Part 2). AssistantType Id 7.
+
+> **✅ Phase 4a shipped:** the **Daily Brief** (daily-cadence scheduled) and **New Payment
+> Received** (event) assistants are implemented, building, and documented
+> (`.kiro/specs/digital-assistants-owner-alerts/`, scenarios in
+> `.kiro/docs/scenarios/digital-assistants-owner-alerts-testing.md`). The three remaining Group 4
+> items (VAT, Compliance, Lead-Task) are the outstanding work.
+
+> **📌 VAT period due reminder — content note (code-verified, for the future spec):** the email
+> must include the **approximate net VAT payable** for the due period, not just the deadline.
+>
+> **The calc exists but is NOT cleanly exposed** (an earlier note in this doc wrongly cited
+> `IVatIntegrationService.GetCurrentPeriodSummaryAsync` / `VatSummaryDto` — **those types do not
+> exist**). The authoritative figure is `VatSubmissionService.ComputeSubmissionFiguresAsync(businessId,
+> period)` → `VatFigures(TotalOutputVat, TotalInputVat, NetVatPayable)`, which computes in-memory and
+> is **credit-note-aware** — but it is **private** and the service is **tenant-scoped** (uses
+> `CurrentBusinessId`), so a tenant-less background scan cannot call it as-is. The public read-only
+> surface is `GetPreSubmissionChecklistAsync`, which uses the right pattern: prefer the persisted
+> `VatSubmission.NetVatPayable` when a (still-unsubmitted) row exists, else compute in-memory.
+>
+> **Spec must add a small accessor:** either make `ComputeSubmissionFiguresAsync` public / add
+> `IVatSubmissionService.ComputeFiguresForPeriodAsync(int businessId, int periodId)` (tenant-less,
+> explicit businessId), or replicate the persisted-then-compute fallback inside the composer.
+>
+> Label it an **estimate** ("approx., as it stands today") — late invoices/purchases/credit notes
+> still move it pre-filing. Sign convention (matches `VatSubmissionService`): `> 0` → "tax owed",
+> `< 0` → "refund due" (abs value), `= 0` → "no payment expected".
 
 ---
 

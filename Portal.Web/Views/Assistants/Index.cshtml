@@ -47,8 +47,8 @@
                     <div class="da-controls">
                         @if (a.IsScheduledDigest)
                         {
-                            @* Weekly digests show a day-of-week; the daily brief does not. *@
-                            @if (!a.IsDailyBrief)
+                            @* Weekly digests show a day-of-week; the daily brief, VAT reminder, and task/meeting reminder do not. *@
+                            @if (!a.IsDailyBrief && !a.IsVatReminder && !a.IsTaskMeetingReminder)
                             {
                                 <div class="da-field" style="min-width:150px;">
                                     <label>Send day</label>
@@ -64,27 +64,57 @@
                                     <span class="da-hint">&nbsp;</span>
                                 </div>
                             }
+                            @* VAT reminder: per-business notice lead time (days before the deadline). *@
+                            @if (a.IsVatReminder)
+                            {
+                                <div class="da-field" style="min-width:170px;">
+                                    <label>Remind me before</label>
+                                    <input class="da-input" type="number" min="1" max="90" data-vat-lead-days value="@a.VatNoticeLeadDays" />
+                                    <span class="da-hint">Days before the VAT deadline.</span>
+                                </div>
+                            }
+                            @* Task & Meeting reminder: per-business look-ahead window. *@
+                            @if (a.IsTaskMeetingReminder)
+                            {
+                                <div class="da-field" style="min-width:170px;">
+                                    <label>Look ahead</label>
+                                    <input class="da-input" type="number" min="1" max="30" data-tm-lookahead-days value="@a.TaskMeetingLookAheadDays" />
+                                    <span class="da-hint">Days of upcoming items to include.</span>
+                                </div>
+                            }
                             <div class="da-field" style="min-width:130px;">
                                 <label>Send time</label>
                                 <input class="da-input" type="time" data-send-time value="@a.SendTimeLocal" />
-                                <span class="da-hint">@(a.IsDailyBrief ? "Sent daily, your business time zone." : "Your business time zone.")</span>
+                                <span class="da-hint">@(a.IsDailyBrief ? "Sent daily, your business time zone." : a.IsVatReminder ? "Time of day to send, your business time zone." : "Your business time zone.")</span>
                             </div>
-                            <div class="da-field" style="min-width:240px;flex:1;">
-                                <label>Send to</label>
-                                <input class="da-input" type="text" data-recipient value="@a.RecipientOverride" placeholder="Business owner (default)" />
-                                <span class="da-hint">Leave blank to send to the owner. Separate multiple with ; or ,</span>
-                            </div>
-                            <div class="da-field da-toggle-field">
-                                <label>&nbsp;</label>
-                                <div class="da-toggle-row">
-                                    <label class="da-switch">
-                                        <input type="checkbox" data-owner-cc @(a.IsRecipientOwnerIncluded ? "checked" : "") />
-                                        <span class="da-slider"></span>
-                                    </label>
-                                    <span>Also send to owner</span>
+                            @* The Task & Meeting reminder fans out to each assigned team member, so it
+                               has no single recipient override — show a note instead. *@
+                            @if (a.IsTaskMeetingReminder)
+                            {
+                                <div class="da-field" style="min-width:240px;flex:1;">
+                                    <label>Sent to</label>
+                                    <div class="da-hint" style="padding-top:8px;">Each team member gets their own agenda of the tasks and meetings assigned to them. Unassigned items go to the owner.</div>
                                 </div>
-                                <span class="da-hint">&nbsp;</span>
-                            </div>
+                            }
+                            else
+                            {
+                                <div class="da-field" style="min-width:240px;flex:1;">
+                                    <label>Send to</label>
+                                    <input class="da-input" type="text" data-recipient value="@a.RecipientOverride" placeholder="Business owner (default)" />
+                                    <span class="da-hint">Leave blank to send to the owner. Separate multiple with ; or ,</span>
+                                </div>
+                                <div class="da-field da-toggle-field">
+                                    <label>&nbsp;</label>
+                                    <div class="da-toggle-row">
+                                        <label class="da-switch">
+                                            <input type="checkbox" data-owner-cc @(a.IsRecipientOwnerIncluded ? "checked" : "") />
+                                            <span class="da-slider"></span>
+                                        </label>
+                                        <span>Also send to owner</span>
+                                    </div>
+                                    <span class="da-hint">&nbsp;</span>
+                                </div>
+                            }
                             @if (a.HasFigureSelection)
                             {
                                 <div class="da-field da-figures">
@@ -291,6 +321,7 @@
             //  - customer-facing → working hours (data-hours-start) + footer
             //  - weekly digest   → data-send-day + data-send-time + recipient + figures
             //  - daily brief     → data-send-time + recipient (no data-send-day, no figures)
+            //  - VAT reminder    → data-send-time + data-vat-lead-days + recipient (no data-send-day)
             //  - event alert     → recipient only (no data-send-time)
             var hoursStartEl = section.querySelector('[data-hours-start]');
             if (hoursStartEl) {
@@ -311,6 +342,18 @@
 
                 var sendTimeEl = section.querySelector('[data-send-time]');
                 if (sendTimeEl) payload.sendTimeLocal = sendTimeEl.value;
+
+                var vatLeadEl = section.querySelector('[data-vat-lead-days]');
+                if (vatLeadEl) {
+                    var parsed = parseInt(vatLeadEl.value, 10);
+                    payload.vatNoticeLeadDays = isNaN(parsed) ? null : parsed;
+                }
+
+                var tmLookaheadEl = section.querySelector('[data-tm-lookahead-days]');
+                if (tmLookaheadEl) {
+                    var la = parseInt(tmLookaheadEl.value, 10);
+                    payload.taskMeetingLookAheadDays = isNaN(la) ? null : la;
+                }
 
                 var figureEls = section.querySelectorAll('[data-figure]:checked');
                 if (figureEls.length > 0 || section.querySelector('[data-figure]')) {

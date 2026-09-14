@@ -32,6 +32,20 @@ public class NotificationOptions
     /// (avoids nagging about a deadline that is months away). Default 21.
     /// </summary>
     public int VatDeadlineNoticeDays { get; set; } = 21;
+
+    // --- Task & Meeting Reminder (Group 4) ---
+    /// <summary>
+    /// Default look-ahead window (days) for the Task &amp; Meeting Reminder daily agenda when a
+    /// business has not set its own <c>VatNoticeLeadDays</c>-style override. Default 2.
+    /// </summary>
+    public int TaskMeetingDefaultLookAheadDays { get; set; } = 2;
+
+    /// <summary>
+    /// How far back overdue tasks/meetings are included in the agenda (days), so a long tail of
+    /// un-actioned items doesn't produce a wall of "overdue" on day one. Default 14.
+    /// </summary>
+    public int TaskMeetingOverdueLookBackDays { get; set; } = 14;
+
     public int FailureAlertThreshold { get; set; } = 20;
     public int FailureAlertWindowHours { get; set; } = 24;
     public string DefaultTimeZoneWindowsId { get; set; } = "UTC";

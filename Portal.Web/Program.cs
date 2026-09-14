@@ -287,6 +287,8 @@ builder.Services.AddScoped<MeetingRepository>(sp =>
     new MeetingRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<MeetingProductRequestRepository>(sp =>
     new MeetingProductRequestRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<MeetingTeamMemberRepository>(sp =>
+    new MeetingTeamMemberRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<MeetingOpportunityRepository>(sp =>
     new MeetingOpportunityRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<LeadSourceTypeRepository>(sp =>
@@ -362,12 +364,15 @@ builder.Services.AddHostedService<Portal.Web.BackgroundServices.NotificationDisp
 
 // --- Digital Assistants (Scheduled Digests — Group 3) ---
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IOwnerEmailResolver, Portal.Infrastructure.Services.Notifications.OwnerEmailResolver>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IPortalUserEmailResolver, Portal.Infrastructure.Services.Notifications.PortalUserEmailResolver>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IAttentionItemBuilder, Portal.Infrastructure.Services.Notifications.AttentionItemBuilder>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestRecipientResolver, Portal.Infrastructure.Services.Notifications.DigestRecipientResolver>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestEnqueuer, Portal.Infrastructure.Services.Notifications.DigestEnqueuer>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.OutstandingBalanceDigestComposer>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.FinancialSnapshotComposer>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.DailyBriefComposer>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IDigestComposer, Portal.Infrastructure.Services.Notifications.VatReminderComposer>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IFanOutDigestComposer, Portal.Infrastructure.Services.Notifications.TaskMeetingReminderComposer>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.Notifications.IScheduledDigestRunner, Portal.Infrastructure.Services.Notifications.ScheduledDigestRunner>();
 builder.Services.AddHostedService<Portal.Web.BackgroundServices.DigitalAssistantSchedulerBackgroundService>();
 

@@ -20,6 +20,7 @@ public class BusinessAssistantSettingRepository : GenericStoredProcedureReposito
                 SELECT [Id], [BusinessId], [AssistantTypeId], [IsEnabled], [IsBrandingFooterEnabled],
                        [WorkingHoursStart], [WorkingHoursEnd],
                        [SendDayOfWeek], [SendTimeLocal], [RecipientOverride], [IsRecipientOwnerIncluded], [IncludedFiguresCsv],
+                       [VatNoticeLeadDays], [TaskMeetingLookAheadDays],
                        [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [notification].[BusinessAssistantSetting]
                 WHERE [notification].[BusinessAssistantSetting].[BusinessId] = @BusinessId
@@ -43,6 +44,7 @@ public class BusinessAssistantSettingRepository : GenericStoredProcedureReposito
                 SELECT [Id], [BusinessId], [AssistantTypeId], [IsEnabled], [IsBrandingFooterEnabled],
                        [WorkingHoursStart], [WorkingHoursEnd],
                        [SendDayOfWeek], [SendTimeLocal], [RecipientOverride], [IsRecipientOwnerIncluded], [IncludedFiguresCsv],
+                       [VatNoticeLeadDays], [TaskMeetingLookAheadDays],
                        [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [notification].[BusinessAssistantSetting]
                 WHERE [notification].[BusinessAssistantSetting].[BusinessId] = @BusinessId";
@@ -74,15 +76,19 @@ public class BusinessAssistantSettingRepository : GenericStoredProcedureReposito
                                [RecipientOverride] = @RecipientOverride,
                                [IsRecipientOwnerIncluded] = @IsRecipientOwnerIncluded,
                                [IncludedFiguresCsv] = @IncludedFiguresCsv,
+                               [VatNoticeLeadDays] = @VatNoticeLeadDays,
+                               [TaskMeetingLookAheadDays] = @TaskMeetingLookAheadDays,
                                [UpdatedAtUtc] = GETUTCDATE()
                 WHEN NOT MATCHED THEN
                     INSERT ([BusinessId], [AssistantTypeId], [IsEnabled], [IsBrandingFooterEnabled],
                             [WorkingHoursStart], [WorkingHoursEnd],
                             [SendDayOfWeek], [SendTimeLocal], [RecipientOverride], [IsRecipientOwnerIncluded], [IncludedFiguresCsv],
+                            [VatNoticeLeadDays], [TaskMeetingLookAheadDays],
                             [CreatedAtUtc])
                     VALUES (@BusinessId, @AssistantTypeId, @IsEnabled, @IsBrandingFooterEnabled,
                             @WorkingHoursStart, @WorkingHoursEnd,
                             @SendDayOfWeek, @SendTimeLocal, @RecipientOverride, @IsRecipientOwnerIncluded, @IncludedFiguresCsv,
+                            @VatNoticeLeadDays, @TaskMeetingLookAheadDays,
                             GETUTCDATE());";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -96,7 +102,9 @@ public class BusinessAssistantSettingRepository : GenericStoredProcedureReposito
                 new SqlParameter("@SendTimeLocal", (object?)entity.SendTimeLocal ?? DBNull.Value),
                 new SqlParameter("@RecipientOverride", (object?)entity.RecipientOverride ?? DBNull.Value),
                 new SqlParameter("@IsRecipientOwnerIncluded", entity.IsRecipientOwnerIncluded),
-                new SqlParameter("@IncludedFiguresCsv", (object?)entity.IncludedFiguresCsv ?? DBNull.Value));
+                new SqlParameter("@IncludedFiguresCsv", (object?)entity.IncludedFiguresCsv ?? DBNull.Value),
+                new SqlParameter("@VatNoticeLeadDays", (object?)entity.VatNoticeLeadDays ?? DBNull.Value),
+                new SqlParameter("@TaskMeetingLookAheadDays", (object?)entity.TaskMeetingLookAheadDays ?? DBNull.Value));
         }
         catch (Exception ex)
         {

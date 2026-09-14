@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3 Inventors — Hero: Don't let your business run you</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;
+            --warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;
+            --bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11);
+        }
+        body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);
+            background:radial-gradient(circle at 12% 0%,rgba(13,94,166,.09),transparent 27%),radial-gradient(circle at 88% 8%,rgba(87,184,232,.09),transparent 24%),linear-gradient(180deg,#FBFDFF 0%,var(--bg2) 48%,var(--bg) 100%);
+            line-height:1.6;-webkit-font-smoothing:antialiased;padding:44px 28px 90px}
+        h1,h2,h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.035em;line-height:1.05}
+        .page{max-width:1180px;margin:0 auto}
+        .page-head{max-width:820px;margin:0 auto 20px;text-align:center}
+        .page-head .kicker{font-size:12px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-dark)}
+        .page-head h1{font-size:34px;margin-top:12px}
+        .page-head p{margin-top:12px;color:var(--muted);font-size:15px}
+        .variant-label{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-dark);margin:46px 0 4px}
+        .variant-desc{color:var(--muted);font-size:14px;margin-bottom:18px}
+
+        .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:20px 0}
+        .eyebrow{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(13,94,166,.12);background:rgba(255,255,255,.86);border-radius:999px;padding:10px 15px;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-dark);box-shadow:0 10px 25px rgba(13,94,166,.06)}
+        .dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 8px rgba(87,184,232,.12)}
+        .hero-content h1{margin:22px 0 0;font-size:clamp(36px,4.4vw,54px);line-height:.99;font-weight:800}
+        .hero-content h1 .line2{color:var(--muted);display:block;font-size:.62em;margin-top:14px;font-weight:800;letter-spacing:-.02em}
+        .hero-content h1 .line2 b{color:var(--blue-dark)}
+        .hl{background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+        .sub{max-width:520px;margin:22px 0 0;color:var(--muted);font-size:17px;line-height:1.7}
+        .sub b{color:var(--text);font-weight:700}
+        .micro{margin-top:22px;display:inline-flex;gap:16px;flex-wrap:wrap;font-size:13px;font-weight:800;color:var(--blue-dark)}
+        .micro span{display:inline-flex;align-items:center;gap:7px}
+        .micro span::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green)}
+
+        /* card shell */
+        .product-card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.99),rgba(244,249,253,.97));border:1px solid rgba(13,94,166,.09);border-radius:28px;padding:20px;box-shadow:0 32px 80px rgba(13,94,166,.13),0 8px 20px rgba(13,94,166,.06);overflow:hidden}
+        .product-card::after{content:"";position:absolute;right:-70px;top:-70px;width:200px;height:200px;border-radius:999px;background:rgba(87,184,232,.10)}
+        .screen{position:relative;z-index:1;border-radius:20px;background:#fff;border:1px solid rgba(13,94,166,.08);overflow:hidden;box-shadow:0 12px 32px rgba(13,94,166,.08)}
+        .screen-top{height:42px;background:#F2F8FC;border-bottom:1px solid rgba(13,94,166,.08);display:flex;align-items:center;gap:7px;padding:0 16px}
+        .mini-dot{width:9px;height:9px;border-radius:50%;background:#d7e4ee}
+        .screen-top .live{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+        .screen-top .live .pip{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(18,152,103,.5);animation:pulse 2s infinite}
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(18,152,103,.5)}70%{box-shadow:0 0 0 8px rgba(18,152,103,0)}100%{box-shadow:0 0 0 0 rgba(18,152,103,0)}}
+        .screen-body{padding:16px}
+        .feed-head{margin:2px 2px 10px;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#314b62}
+        .feed{display:flex;flex-direction:column;gap:8px}
+        .task{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid rgba(13,94,166,.09);border-radius:13px;padding:10px 12px;opacity:0;transform:translateY(8px);animation:rise .5s ease forwards}
+        .task:nth-child(1){animation-delay:.2s}.task:nth-child(2){animation-delay:.9s}.task:nth-child(3){animation-delay:1.6s}.task:nth-child(4){animation-delay:2.3s}
+        @keyframes rise{to{opacity:1;transform:translateY(0)}}
+        .task .ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+        .ic.blue{background:rgba(13,94,166,.1)}.ic.green{background:rgba(18,152,103,.12)}.ic.cyan{background:rgba(87,184,232,.16)}.ic.warn{background:rgba(200,145,46,.14)}
+        .task .txt{flex:1;min-width:0}
+        .task .txt .who{font-size:12px;font-weight:800;color:var(--blue-dark)}
+        .task .txt .what{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .task .auto{font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--green);background:rgba(18,152,103,.1);border-radius:999px;padding:4px 8px;flex:0 0 auto}
+
+        /* hours payoff — amplified */
+        .saved{margin-top:14px;border-radius:16px;padding:18px 18px 16px;background:linear-gradient(135deg,#071B2A,#0B3350);color:#fff;position:relative;overflow:hidden}
+        .saved::after{content:"";position:absolute;right:-50px;bottom:-70px;width:180px;height:180px;border-radius:50%;background:rgba(87,184,232,.16)}
+        .saved .l{position:relative;z-index:1;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#9fc7e6}
+        .saved .big{position:relative;z-index:1;display:flex;align-items:baseline;gap:8px;margin-top:6px}
+        .saved .big .num{font-family:Manrope;font-weight:800;font-size:52px;line-height:.9;color:#fff}
+        .saved .big .u{font-size:16px;font-weight:800;color:var(--cyan)}
+        .saved .money{position:relative;z-index:1;margin-top:10px;font-size:13px;color:#cfe0ec}
+        .saved .money b{color:#fff}
+
+        .note{margin-top:44px;font-size:13px;color:var(--muted);background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-radius:12px;padding:14px 16px}
+        .note b{color:var(--blue-dark)}
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="page-head">
+        <div class="kicker">3 Inventors · Landing Hero</div>
+        <h1>"Run your business. Don't let your business run you."</h1>
+        <p>Keeps the credibility of control, adds the reversal, and makes hours the payoff. Two cards below: with the money translation, and hours-only. Hours tick up live.</p>
+    </div>
+
+    <!-- VARIANT 1: hours + money -->
+    <div class="variant-label">Option 1 · Hours + money translation</div>
+    <div class="variant-desc">The counter ticks up, then a second line converts hours into money saved. Concrete ROI — but shows a €figure.</div>
+    <div class="hero-grid">
+        <div class="hero-content">
+            <div class="eyebrow"><span class="dot"></span> Operational Intelligence</div>
+            <h1>Run your business.<span class="line2">Don't let your <b>business run you.</b></span></h1>
+            <p class="sub">Reclaim <b>hundreds of hours</b>. The platform quotes, invoices, chases payments, and watches your margins — so your time goes to growth, not admin.</p>
+            <div class="micro"><span>Save hours</span><span>Save money</span><span>Stay in control</span></div>
+        </div>
+        <div class="product-card">
+            <div class="screen">
+                <div class="screen-top"><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-dot"></span><span class="live"><span class="pip"></span> Operations running</span></div>
+                <div class="screen-body">
+                    <div class="feed-head">Automations · last 24h</div>
+                    <div class="feed">
+                        <div class="task"><div class="ic green">💬</div><div class="txt"><div class="who">Thank-You Assistant</div><div class="what">Sent 9 payment confirmations</div></div><span class="auto">Auto</span></div>
+                        <div class="task"><div class="ic warn">🔔</div><div class="txt"><div class="who">Payment Reminder</div><div class="what">Chased 4 overdue invoices</div></div><span class="auto">Auto</span></div>
+                        <div class="task"><div class="ic cyan">📦</div><div class="txt"><div class="who">Inventory Intelligence</div><div class="what">Flagged margin drift on 3 products</div></div><span class="auto">Auto</span></div>
+                        <div class="task"><div class="ic blue">🧾</div><div class="txt"><div class="who">VAT Reminder</div><div class="what">Filing due in 5 days · est. €840 payable</div></div><span class="auto">Auto</span></div>
+                    </div>
+                    <div class="saved">
+                        <div class="l">Admin hours saved this month</div>
+                        <div class="big"><span class="num" data-count="148" data-money="1">0</span><span class="u">hrs</span></div>
+                        <div class="money">≈ <b>€4,400</b> back in your pocket — that's growth, not overhead.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VARIANT 2: hours only -->
+    <div class="variant-label">Option 2 · Hours only (conservative)</div>
+    <div class="variant-desc">Same amplified counter, no €figure — lets the buyer do the math, keeps you from committing to a number.</div>
+    <div class="hero-grid">
+        <div class="hero-content">
+            <div class="eyebrow"><span class="dot"></span> Operational Intelligence</div>
+            <h1>Run your business.<span class="line2">Don't let your <b>business run you.</b></span></h1>
+            <p class="sub">Reclaim <b>hundreds of hours</b>. Every hour the platform handles admin is an hour — and a cost — back in your business.</p>
+            <div class="micro"><span>Save hours</span><span>Save money</span><span>Stay in control</span></div>
+        </div>
+        <div class="product-card">
+            <div class="screen">
+                <div class="screen-top"><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-dot"></span><span class="live"><span class="pip"></span> Operations running</span></div>
+                <div class="screen-body">
+                    <div class="feed-head">Automations · last 24h</div>
+                    <div class="feed">
+                        <div class="task"><div class="ic green">💬</div><div class="txt"><div class="who">Thank-You Assistant</div><div class="what">Sent 9 payment confirmations</div></div><span class="auto">Auto</span></div>
+                        <div class="task"><div class="ic warn">🔔</div><div class="txt"><div class="who">Payment Reminder</div><div class="what">Chased 4 overdue invoices</div></div><span class="auto">Auto</span></div>
+                        <div class="task"><div class="ic cyan">📦</div><div class="txt"><div class="who">Inventory Intelligence</div><div class="what">Flagged margin drift on 3 products</div></div><span class="auto">Auto</span></div>
+                        <div class="task"><div class="ic blue">💶</div><div class="txt"><div class="who">Payroll Assistant</div><div class="what">Generated 4 payslips · awaiting review</div></div><span class="auto">Auto</span></div>
+                    </div>
+                    <div class="saved">
+                        <div class="l">Admin hours saved this month</div>
+                        <div class="big"><span class="num" data-count="148">0</span><span class="u">hrs</span></div>
+                        <div class="money">Time you spend on growth — not paperwork.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="note">
+        <b>On the money line (your open question):</b> Option 1's €figure is the strongest ROI argument, but it invites "how did you get that number?" and can feel salesy if unqualified. Safer framings if you like the idea but not the exactness: "≈ €4,400 in saved time" with a footnote on assumptions, or a range ("€3k–5k"). Option 2 stays credible and lets the owner reach the money conclusion themselves. My lean: <b>Option 2 on the hero</b> (credibility first), and use the explicit €math deeper down the page where you have room to justify it.
+        <br><br>
+        Open in a browser — the hours count up on load. Tell me which option, and I'll wire the headline + card into <b>Views/Landing/Index.cshtml</b>.
+    </div>
+</div>
+
+<script>
+    // animate the hours counters up on load
+    function runCounters(){
+        document.querySelectorAll('.num[data-count]').forEach(function(el){
+            var target = parseInt(el.getAttribute('data-count'),10);
+            var dur = 1400, start = null;
+            function step(ts){
+                if(!start) start = ts;
+                var p = Math.min((ts-start)/dur, 1);
+                var eased = 1 - Math.pow(1-p, 3);
+                el.textContent = Math.round(eased*target);
+                if(p<1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        });
+    }
+    window.addEventListener('load', function(){ setTimeout(runCounters, 400); });
+</script>
+</body>
+</html>

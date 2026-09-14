@@ -18,6 +18,43 @@ _(none currently)_
 
 ## Resolved
 
+### TD-3 — Upcoming supplier payments counted purchases that were already paid
+
+- **Severity:** High (wrong "money going out" figure + nagging reminders on settled purchases).
+- **Discovered / Resolved:** 2026-08-24, from a user scenario: a purchase with a targeted due
+  date of 7/9 and a supplier due date of 11/9 was paid, yet the Daily Brief kept reporting it as a
+  supplier payment coming due ("1 supplier payment(s) coming due this week, totalling €264.16 (1
+  already overdue)"). The purchase had no notion of being paid, so nothing dropped it off.
+- **Files:** `Portal.Database/Migrations/208_AddPaidStateToPurchase.sql`,
+  `Portal.Infrastructure/Entities/Purchase.cs`, `Portal.Infrastructure/Data/PortalDbContext.cs`
+  (`ConfigurePurchase`), `Portal.Infrastructure/Services/DashboardService.cs`
+  (`GetUpcomingSupplierPaymentsAsync`), `Portal.Infrastructure/Services/Notifications/DigestEmailBuilder.cs`,
+  `Portal.Infrastructure/Repositories/PurchaseRepository.cs`,
+  `Portal.Infrastructure/Services/PurchaseService.cs` + `IPurchaseService.cs`,
+  `Portal.Web/Controllers/PurchaseController.cs`, `Portal.Web/Views/Purchase/Index.cshtml`.
+- **Issue:** the same shape as TD-0/TD-1 on the payables side — a "due/outstanding" figure derived
+  without subtracting what settles it. `GetUpcomingSupplierPaymentsAsync` (shared by the Daily Brief
+  attention line, the Weekly Outstanding Balance digest, and the dashboard upcoming-payments widget)
+  surfaced every non-cancelled purchase with a due date in range, with no concept of "paid".
+- **Fix applied (Option A — `IsPaid` flag, chosen as "v1 but solid"):** added
+  `IsPaid BIT NOT NULL DEFAULT 0` + `PaidAtUtc DATETIME NULL` to `[purchase].[Purchase]`; entity +
+  EF config; `GetUpcomingSupplierPaymentsAsync` now filters `AND [purchase].[Purchase].[IsPaid] = 0`
+  (one query fix covers all three surfaces); a business-scoped mark-paid / mark-unpaid path
+  (`PurchaseService.SetPurchasePaidStateAsync` → `PurchaseRepository.SetPaidStateAsync` setting
+  `PaidAtUtc = CASE WHEN @IsPaid=1 THEN GETUTCDATE() ELSE NULL END`, audit-logged) with an
+  `AxPostSetPaidState` endpoint and a Paid pill + Mark paid/unpaid action on the purchases list.
+  Note: `PaidAtUtc` was added alongside the flag (not a bare toggle) to avoid blind reporting later.
+- **Not done (intentional / future Option B):** no `PurchasePayment` table, no partial supplier
+  payments, no payment history. Option A is designed to extend to B later if per-payment tracking
+  is needed. Paid purchases are excluded from the query, not cancelled/soft-deleted — cancelling a
+  paid purchase would distort expense reporting.
+- **Recurring pattern (3rd occurrence):** "a due/outstanding total computed without subtracting
+  what settles it" has now bitten three surfaces — overdue invoices vs credit notes (TD-0),
+  outstanding/partially-paid KPIs vs credit notes (TD-1), and upcoming supplier payments vs
+  payment (TD-3). Consider a steering note generalising the invariant beyond receivables: *any
+  "still owed / still due" figure must subtract every settlement mechanism that exists for that
+  entity (payments, credit notes, paid-state), not just the most obvious one.*
+
 ### TD-1 — Outstanding & Partially-Paid KPI amounts omit applied credit notes
 
 - **Severity:** Medium (amount over-statement on user-facing surfaces).

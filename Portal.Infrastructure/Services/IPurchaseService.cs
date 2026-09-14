@@ -15,6 +15,7 @@ public interface IPurchaseService
     Task<ServiceResult> CreatePurchaseAsync(Purchase purchase);
     Task<ServiceResult> UpdatePurchaseAsync(Purchase purchase);
     Task<ServiceResult> CancelPurchaseAsync(int id);
+    Task<ServiceResult> SetPurchasePaidStateAsync(int id, bool isPaid);
     Task<ServiceResult> BulkCreatePurchasesAsync(List<Purchase> purchases);
     Task<ServiceResult> AssignPurchasesToPeriodAsync(int businessId, int periodId, List<int> purchaseIds);
     Task<ServiceResult> UnassignPurchasesFromPeriodAsync(int businessId, List<int> purchaseIds);

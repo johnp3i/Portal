@@ -24,6 +24,14 @@ public class AssistantCardViewModel
     public bool IsDailyBrief { get; set; }
     /// <summary>True for an event alert (e.g. New Payment): recipient-only card, no schedule.</summary>
     public bool IsEventAlert { get; set; }
+    /// <summary>True for the VAT Period Due Reminder: send-time + notice-lead-days card (no day-of-week, no figures).</summary>
+    public bool IsVatReminder { get; set; }
+    /// <summary>VAT reminder notice lead days (days before the deadline). Shows the global default when unset.</summary>
+    public int VatNoticeLeadDays { get; set; }
+    /// <summary>True for the Task &amp; Meeting Reminder: send-time + look-ahead-days card, fans out to assignees (no single recipient).</summary>
+    public bool IsTaskMeetingReminder { get; set; }
+    /// <summary>Task &amp; Meeting look-ahead days. Shows the global default when unset.</summary>
+    public int TaskMeetingLookAheadDays { get; set; }
     /// <summary>0=Sunday .. 6=Saturday. Defaults to Monday (1) when unset.</summary>
     public byte SendDayOfWeek { get; set; } = 1;
     /// <summary>Send time (business-local) as "HH:mm". Defaults to 08:00 when unset.</summary>
@@ -58,6 +66,10 @@ public class SaveAssistantSettingsRequest
     public bool IsRecipientOwnerIncluded { get; set; } = true;
     /// <summary>CSV of selected snapshot figure keys (Financial Snapshot only).</summary>
     public string? IncludedFiguresCsv { get; set; }
+    /// <summary>VAT reminder: days before the deadline to notify (VAT Period Due Reminder only).</summary>
+    public int? VatNoticeLeadDays { get; set; }
+    /// <summary>Task &amp; Meeting reminder: look-ahead window in days (Task &amp; Meeting Reminder only).</summary>
+    public int? TaskMeetingLookAheadDays { get; set; }
 }
 
 public class AdminNotificationRecipientsViewModel

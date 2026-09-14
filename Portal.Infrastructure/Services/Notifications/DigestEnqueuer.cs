@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Entities.Notification;
 using Portal.Infrastructure.Repositories.Notification;
@@ -49,6 +50,17 @@ public class DigestEnqueuer : IDigestEnqueuer
 
             await _outboxRepository.InsertAsync(message);
             return true;
+        }
+        catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
+        {
+            // UNIQUE index violation on (BusinessId, AssistantTypeId, CycleKey) — a concurrent pass
+            // won the race between the exists-check above and this insert. Treat as already-enqueued
+            // (same outcome as the exists-check), now race-safe thanks to UX_OutboxMessage_Cycle.
+            _logger.LogInformation(
+                "Digest enqueue lost the insert race (unique cycle violation) for " +
+                "BusinessId={BusinessId}, AssistantTypeId={AssistantTypeId}, CycleKey={CycleKey}.",
+                message.BusinessId, message.AssistantTypeId, message.CycleKey);
+            return false;
         }
         catch (Exception ex)
         {

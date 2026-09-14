@@ -14,6 +14,7 @@ public class FollowUpTaskService : IFollowUpTaskService
     private readonly FollowUpTaskTypeRepository _taskTypeRepository;
     private readonly SalesContactRepository _contactRepository;
     private readonly MeetingRepository _meetingRepository;
+    private readonly TeamMemberRepository _teamMemberRepository;
     private readonly ICurrentTenantService _tenantService;
 
     public FollowUpTaskService(
@@ -21,13 +22,38 @@ public class FollowUpTaskService : IFollowUpTaskService
         FollowUpTaskTypeRepository taskTypeRepository,
         SalesContactRepository contactRepository,
         MeetingRepository meetingRepository,
+        TeamMemberRepository teamMemberRepository,
         ICurrentTenantService tenantService)
     {
         _taskRepository = taskRepository;
         _taskTypeRepository = taskTypeRepository;
         _contactRepository = contactRepository;
         _meetingRepository = meetingRepository;
+        _teamMemberRepository = teamMemberRepository;
         _tenantService = tenantService;
+    }
+
+    /// <summary>
+    /// Resolves the assignee for a task: validates an explicit member is active and in-business, or
+    /// auto-assigns the sole active member when none was chosen. Returns (ok, resolvedTeamMemberId,
+    /// error). A null resolved id means "unassigned" (allowed).
+    /// </summary>
+    private async Task<(bool Ok, int? TeamMemberId, string? Error)> ResolveAssigneeAsync(int businessId, int? requestedTeamMemberId)
+    {
+        var activeMembers = await _teamMemberRepository.GetActiveByBusinessIdAsync(businessId);
+
+        if (requestedTeamMemberId.HasValue)
+        {
+            if (!activeMembers.Any(m => m.Id == requestedTeamMemberId.Value))
+                return (false, null, "The selected team member is not active or does not belong to your business.");
+            return (true, requestedTeamMemberId.Value, null);
+        }
+
+        // No explicit assignee — auto-assign when there is exactly one active member.
+        if (activeMembers.Count == 1)
+            return (true, activeMembers[0].Id, null);
+
+        return (true, null, null); // unassigned
     }
 
     public async Task<ServiceResult> CreateTaskAsync(CreateFollowUpTaskRequest request, string userId)
@@ -44,12 +70,17 @@ public class FollowUpTaskService : IFollowUpTaskService
             if (taskType == null)
                 return ServiceResult.Fail("Invalid task type.");
 
+            var businessId = _tenantService.CurrentBusinessId;
+            var (assigneeOk, resolvedTeamMemberId, assigneeError) = await ResolveAssigneeAsync(businessId, request.TeamMemberId);
+            if (!assigneeOk)
+                return ServiceResult.Fail(assigneeError!);
+
             var entity = new FollowUpTask
             {
-                BusinessId = _tenantService.CurrentBusinessId,
+                BusinessId = businessId,
                 LeadRequestId = request.LeadRequestId,
                 ContactId = request.ContactId,
-                TeamMemberId = request.TeamMemberId,
+                TeamMemberId = resolvedTeamMemberId,
                 MeetingId = request.MeetingId,
                 Title = request.Title.Trim(),
                 FollowUpTaskTypeId = taskType.Id,
@@ -158,7 +189,7 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
-    public async Task<ServiceResult> UpdateTaskAsync(int taskId, string title, byte followUpTaskTypeId, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
+    public async Task<ServiceResult> UpdateTaskAsync(int taskId, string title, byte followUpTaskTypeId, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc, int? teamMemberId)
     {
         try
         {
@@ -178,7 +209,16 @@ public class FollowUpTaskService : IFollowUpTaskService
             if (task == null)
                 return ServiceResult.Fail("Task not found.");
 
-            await _taskRepository.UpdateAsync(taskId, businessId, title.Trim(), taskType.Id, dueAtUtc, notes?.Trim(), scheduledTimeUtc);
+            // Validate an explicit assignee (active + in-business). On edit we do NOT auto-assign
+            // the sole member — an explicit null means the user cleared the assignee.
+            if (teamMemberId.HasValue)
+            {
+                var activeMembers = await _teamMemberRepository.GetActiveByBusinessIdAsync(businessId);
+                if (!activeMembers.Any(m => m.Id == teamMemberId.Value))
+                    return ServiceResult.Fail("The selected team member is not active or does not belong to your business.");
+            }
+
+            await _taskRepository.UpdateAsync(taskId, businessId, title.Trim(), taskType.Id, dueAtUtc, notes?.Trim(), scheduledTimeUtc, teamMemberId);
             return ServiceResult.Ok();
         }
         catch (Exception ex)

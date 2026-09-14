@@ -156,6 +156,26 @@ public class VatSubmissionService : IVatSubmissionService
         return await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(vatSubmissionPeriodId, businessId);
     }
 
+    /// <inheritdoc />
+    public async Task<decimal> GetApproxNetVatPayableAsync(int businessId, VatSubmissionPeriod period)
+    {
+        try
+        {
+            // Persisted-then-compute (mirrors GetPreSubmissionChecklistAsync): prefer a persisted,
+            // still-unsubmitted figure; otherwise compute in-memory from the current data.
+            var persisted = await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(period.Id, businessId);
+            if (persisted != null && !persisted.IsSubmitted)
+                return persisted.NetVatPayable;
+
+            var figures = await ComputeSubmissionFiguresAsync(businessId, period);
+            return figures.NetVatPayable;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     private const string StatusPass = "pass";
     private const string StatusWarning = "warning";
     private const string StatusInfo = "info";

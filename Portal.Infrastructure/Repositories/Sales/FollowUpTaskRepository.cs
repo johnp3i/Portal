@@ -164,7 +164,7 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
         }
     }
 
-    public async Task UpdateAsync(int id, int businessId, string title, byte followUpTaskTypeId, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc)
+    public async Task UpdateAsync(int id, int businessId, string title, byte followUpTaskTypeId, DateTime dueAtUtc, string? notes, TimeOnly? scheduledTimeUtc, int? teamMemberId)
     {
         try
         {
@@ -174,7 +174,8 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                     [FollowUpTaskTypeId] = @FollowUpTaskTypeId,
                     [DueAtUtc] = @DueAtUtc,
                     [Notes] = @Notes,
-                    [ScheduledTimeUtc] = @ScheduledTimeUtc
+                    [ScheduledTimeUtc] = @ScheduledTimeUtc,
+                    [TeamMemberId] = @TeamMemberId
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -184,7 +185,8 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 new SqlParameter("@FollowUpTaskTypeId", followUpTaskTypeId),
                 new SqlParameter("@DueAtUtc", dueAtUtc),
                 new SqlParameter("@Notes", notes ?? (object)DBNull.Value),
-                new SqlParameter("@ScheduledTimeUtc", SqlDbType.Time) { Value = scheduledTimeUtc.HasValue ? scheduledTimeUtc.Value.ToTimeSpan() : DBNull.Value }
+                new SqlParameter("@ScheduledTimeUtc", SqlDbType.Time) { Value = scheduledTimeUtc.HasValue ? scheduledTimeUtc.Value.ToTimeSpan() : DBNull.Value },
+                new SqlParameter("@TeamMemberId", (object?)teamMemberId ?? DBNull.Value)
             );
         }
         catch (Exception ex)

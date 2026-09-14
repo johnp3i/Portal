@@ -4,6 +4,72 @@
     var meetingTypes = (List<MeetingType>)ViewBag.MeetingTypes;
 }
 
+<style>
+    /* Attendee picker — toggleable member chips (replaces the raw multi-select) */
+    .attendee-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid rgba(13, 94, 166, .15);
+        border-radius: 12px;
+        background: #fff;
+        min-height: 52px;
+        align-content: flex-start;
+    }
+    .attendee-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 13px 7px 9px;
+        border-radius: 999px;
+        border: 1.5px solid rgba(13, 94, 166, .18);
+        background: rgba(13, 94, 166, .04);
+        color: #5E7385;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        transition: background .15s, border-color .15s, color .15s;
+        font-family: inherit;
+    }
+    .attendee-chip:hover {
+        border-color: rgba(13, 94, 166, .4);
+        background: rgba(13, 94, 166, .07);
+    }
+    .attendee-chip .attendee-avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(13, 94, 166, .12);
+        color: #0D5EA6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 800;
+        flex-shrink: 0;
+        transition: background .15s, color .15s;
+    }
+    .attendee-chip .attendee-check { display: none; }
+    .attendee-chip.selected {
+        background: linear-gradient(180deg, #1A6BB8 0%, #0D5EA6 100%);
+        border-color: #0D5EA6;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(13, 94, 166, .2);
+    }
+    .attendee-chip.selected .attendee-avatar {
+        background: rgba(255, 255, 255, .22);
+        color: #fff;
+    }
+    .attendee-chip.selected .attendee-check { display: inline-flex; }
+    .attendee-picker .attendee-empty {
+        font-size: 13px;
+        color: #8a9bab;
+        padding: 4px 2px;
+    }
+</style>
+
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
@@ -106,9 +172,8 @@
                 <th>Contact</th>
                 <th>Scheduled</th>
                 <th>Duration</th>
-                <th>Classification</th>
-                <th>Outcome</th>
                 <th>Status</th>
+                <th>Outcome</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -138,6 +203,11 @@
                     <option value="@mt.Id">@mt.Name</option>
                 }
             </select>
+        </div>
+        <div class="field">
+            <label>Attendees</label>
+            <div id="meetingAttendees" class="attendee-picker"></div>
+            <div style="font-size:11px;color:#8a9bab;margin-top:4px;">Team members assigned to attend. Each receives their own task &amp; meeting reminder.</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="field"><label>Date & Time</label><input type="datetime-local" id="meetingScheduledAt" required /></div>
@@ -170,6 +240,11 @@
                     <option value="@mt.Id">@mt.Name</option>
                 }
             </select>
+        </div>
+        <div class="field">
+            <label>Attendees</label>
+            <div id="editMeetingAttendees" class="attendee-picker"></div>
+            <div style="font-size:11px;color:#8a9bab;margin-top:4px;">Team members assigned to attend. Each receives their own task &amp; meeting reminder.</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="field"><label>Date & Time</label><input type="datetime-local" id="editMeetingScheduledAt" required /></div>
@@ -227,6 +302,6 @@
 @await Html.PartialAsync("_ContactInfoModal")
 
 @section Scripts {
-    <script src="~/js/sales/contact-modal.js?v=1"></script>
-    <script src="~/js/sales/meetings.js?v=14"></script>
+    <script src="~/js/sales/contact-modal.js?v=2"></script>
+    <script src="~/js/sales/meetings.js?v=16"></script>
 }

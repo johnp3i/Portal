@@ -249,8 +249,7 @@
                     <th style="text-align:right;">Excl. VAT</th>
                     <th style="text-align:right;">VAT</th>
                     <th style="text-align:right;">Total</th>
-                    <th>Origin</th>
-                    <th>Type</th>
+                    <th>Classification</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -292,7 +291,12 @@
                             {
                                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                                 var days = effectiveDue.Value.DayNumber - today.DayNumber;
-                                if (!purchase.IsCancelled && days < 0)
+                                if (!purchase.IsCancelled && purchase.IsPaid)
+                                {
+                                    <span style="color:#5a6a7a;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
+                                    <span class="pill pill-green" style="margin-left:4px;">Paid</span>
+                                }
+                                else if (!purchase.IsCancelled && days < 0)
                                 {
                                     <span style="color:#C24A4A;font-weight:600;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
                                     <span class="pill pill-red" style="margin-left:4px;">Overdue</span>
@@ -322,62 +326,83 @@
                         <td data-mobile="hide" style="text-align:right;font-weight:600;">@Model.CurrencySymbol@purchase.AmountExcludingVat.ToString("N2")</td>
                         <td data-mobile="hide" style="text-align:right;">@Model.CurrencySymbol@purchase.VatAmount.ToString("N2")</td>
                         <td data-mobile="amount" style="text-align:right;font-weight:700;">@Model.CurrencySymbol@purchase.TotalAmount.ToString("N2")</td>
-                        <td data-mobile="status">
-                            @if (purchase.IsCancelled)
+                        @{
+                            // Origin pill (top line of the merged Classification cell).
+                            var originLabel = purchase.PurchaseOriginTypeId switch
                             {
-                                <span class="pill pill-red">Cancelled</span>
-                            }
-                            else if (purchase.PurchaseOriginTypeId == 2)
+                                2 => "EU RC",
+                                3 => "Non-EU",
+                                4 => "EU Paid",
+                                _ => "Domestic"
+                            };
+                            var originPillClass = purchase.PurchaseOriginTypeId switch
                             {
-                                <span class="pill pill-blue">EU RC</span>
-                            }
-                            else if (purchase.PurchaseOriginTypeId == 3)
+                                2 => "pill-blue",
+                                3 => "pill-gold",
+                                4 => "pill-cyan",
+                                _ => "pill-slate"
+                            };
+                            // Accounting type (sub-line of the merged Classification cell).
+                            var typeLabel = purchase.PurchaseTypeId switch
                             {
-                                <span class="pill pill-gold">Non-EU</span>
-                            }
-                            else if (purchase.PurchaseOriginTypeId == 4)
-                            {
-                                <span class="pill pill-cyan">EU Paid</span>
-                            }
-                            else if (purchase.PurchaseTypeId == 1)
-                            {
-                                <span class="pill pill-blue">Asset</span>
-                            }
-                            else if (purchase.PurchaseTypeId == 2)
-                            {
-                                <span class="pill pill-green">Stock</span>
-                            }
-                            else if (purchase.PurchaseTypeId == 3)
-                            {
-                                <span class="pill pill-grey">Expense</span>
-                            }
-                        </td>
-                        <td data-mobile="hide">
-                            @if (purchase.PurchaseOriginTypeId == 2)
-                            {
-                                <span class="pill pill-blue">EU RC</span>
-                            }
-                            else if (purchase.PurchaseOriginTypeId == 3)
-                            {
-                                <span class="pill pill-gold">Non-EU</span>
-                            }
-                            else if (purchase.PurchaseOriginTypeId == 4)
-                            {
-                                <span class="pill pill-cyan">EU Paid</span>
-                            }
-                        </td>
-                        <td data-mobile="hide">
-                            @if (purchase.VatSubmissionPeriod != null
+                                1 => "Asset",
+                                2 => "Stock",
+                                3 => "Expense",
+                                _ => (string?)null
+                            };
+                            // Outdated = reported in a VAT period other than the one the invoice date falls in.
+                            var isOutdated = purchase.VatSubmissionPeriod != null
                                 && (purchase.InvoiceDate < purchase.VatSubmissionPeriod.PeriodStartDate
-                                    || purchase.InvoiceDate > purchase.VatSubmissionPeriod.PeriodEndDate))
+                                    || purchase.InvoiceDate > purchase.VatSubmissionPeriod.PeriodEndDate);
+                            // Overdue for the status pill (mirrors the Due column logic).
+                            var statusDue = purchase.TargetPaymentDate ?? purchase.SupplierDueDate;
+                            var statusToday = DateOnly.FromDateTime(DateTime.UtcNow);
+                            var isStatusOverdue = !purchase.IsCancelled && !purchase.IsPaid
+                                && statusDue != null && statusDue.Value.DayNumber < statusToday.DayNumber;
+                        }
+                        <td data-mobile="hide">
+                            <span class="pill @originPillClass">@originLabel</span>
+                            @if (typeLabel != null)
                             {
-                                <span class="pill pill-red" title="This purchase was reported in a different VAT period than its invoice date">Outdated — @purchase.VatSubmissionPeriod.PeriodLabel</span>
+                                <div style="font-size:11px;color:#5a6a7a;margin-top:3px;">@typeLabel</div>
                             }
+                        </td>
+                        <td data-mobile="status">
+                            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
+                                @if (purchase.IsCancelled)
+                                {
+                                    <span class="pill pill-red">Cancelled</span>
+                                }
+                                else if (purchase.IsPaid)
+                                {
+                                    <span class="pill pill-green">Paid</span>
+                                }
+                                else if (isStatusOverdue)
+                                {
+                                    <span class="pill pill-red">Overdue</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-slate">Open</span>
+                                }
+                                @if (isOutdated)
+                                {
+                                    <span class="pill pill-amber" title="This purchase was reported in a different VAT period than its invoice date">Outdated — @purchase.VatSubmissionPeriod!.PeriodLabel</span>
+                                }
+                            </div>
                         </td>
                         <td data-mobile="hide" style="white-space:nowrap;">
                             <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
                             @if (!purchase.IsCancelled)
                             {
+                                if (purchase.IsPaid)
+                                {
+                                    <button type="button" class="tbl-action btn-set-paid" data-id="@purchase.Id" data-paid="false">Mark unpaid</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="tbl-action tbl-action--primary btn-set-paid" data-id="@purchase.Id" data-paid="true">Mark paid</button>
+                                }
                                 <button type="button" class="tbl-action tbl-action--danger btn-cancel-purchase" data-id="@purchase.Id">Cancel</button>
                             }
                         </td>
@@ -725,6 +750,71 @@ function formatDateISO(d) {
                         icon: 'error',
                         confirmButtonColor: '#0D5EA6'
                     });
+                });
+            });
+        });
+    });
+
+    // Mark a purchase paid / unpaid.
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-set-paid');
+        if (!btn) return;
+
+        var purchaseId = btn.getAttribute('data-id');
+        var setPaid = btn.getAttribute('data-paid') === 'true';
+
+        Swal.fire({
+            title: setPaid ? 'Mark this purchase as paid?' : 'Mark this purchase as unpaid?',
+            text: setPaid
+                ? 'It will stop appearing in your upcoming supplier payments.'
+                : 'It will reappear in your upcoming supplier payments if still due.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0D5EA6',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: setPaid ? 'Yes, mark paid' : 'Yes, mark unpaid',
+            cancelButtonText: 'Cancel'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+
+            BlockUI.show(setPaid ? 'Marking as paid...' : 'Marking as unpaid...');
+
+            fetch('/Purchase/AxPostSetPaidState', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: 'id=' + encodeURIComponent(purchaseId) + '&isPaid=' + (setPaid ? 'true' : 'false')
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Done',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#0D5EA6'
+                    }).then(function() {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonColor: '#0D5EA6'
+                    });
+                }
+            })
+            .catch(function() {
+                BlockUI.hide();
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D5EA6'
                 });
             });
         });

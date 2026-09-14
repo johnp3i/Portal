@@ -19,7 +19,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
-                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [IsPaid], [PaidAtUtc], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
                 WHERE Purchase.BusinessId = @BusinessId";
 
@@ -39,7 +39,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
-                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [IsPaid], [PaidAtUtc], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
                 WHERE Purchase.Id = @Id AND Purchase.BusinessId = @BusinessId";
 
@@ -65,7 +65,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 SELECT TOP 1 [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
-                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [IsPaid], [PaidAtUtc], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
                 WHERE Purchase.BusinessId = @BusinessId
                   AND Purchase.SupplierId = @SupplierId
@@ -219,6 +219,30 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         }
     }
 
+    /// <summary>
+    /// Sets the paid state. When marking paid, stamps PaidAtUtc = now; when marking unpaid, clears it.
+    /// </summary>
+    public async Task SetPaidStateAsync(int id, int businessId, bool isPaid)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [purchase].[Purchase]
+                SET [IsPaid] = @IsPaid,
+                    [PaidAtUtc] = CASE WHEN @IsPaid = 1 THEN GETUTCDATE() ELSE NULL END
+                WHERE Purchase.Id = @Id AND Purchase.BusinessId = @BusinessId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@IsPaid", isPaid));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<List<Purchase>> GetFilteredAsync(
         int businessId,
         int? supplierId,
@@ -232,7 +256,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
-                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [IsPaid], [PaidAtUtc], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
                 WHERE Purchase.BusinessId = @BusinessId";
 
@@ -433,7 +457,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
-                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [IsPaid], [PaidAtUtc], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
                 WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
                   AND [purchase].[Purchase].[VatSubmissionPeriodId] IS NULL
@@ -467,7 +491,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 SELECT [Id], [BusinessId], [SupplierId], [ExpenseCategoryId], [PurchaseOriginTypeId], [PurchaseTypeId],
                        [InvoiceNumber], [InvoiceDate], [SupplierDueDate], [TargetPaymentDate], [Description],
                        [AmountExcludingVat], [VatAmount], [TotalAmount],
-                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [CreatedAtUtc], [UpdatedAtUtc]
+                       [Country], [Notes], [IsCancelled], [CancelledAtUtc], [CancelledByUserId], [PayslipPeriodId], [VatSubmissionPeriodId], [IsPaid], [PaidAtUtc], [CreatedAtUtc], [UpdatedAtUtc]
                 FROM [purchase].[Purchase]
                 WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
                   AND [purchase].[Purchase].[IsCancelled] = 0

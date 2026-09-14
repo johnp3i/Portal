@@ -20,6 +20,111 @@ public static class DigestEmailBuilder
     public static string DailyBriefSubject(string businessName)
         => $"Your daily brief — {businessName}";
 
+    public static string VatReminderSubject(string businessName, string periodLabel)
+        => $"VAT for {periodLabel} is due soon — {businessName}";
+
+    public static string TaskMeetingReminderSubject(int overdueCount, int todayCount)
+    {
+        if (overdueCount > 0)
+            return $"Your agenda — {todayCount} today, {overdueCount} overdue";
+        return $"Your agenda for today — {todayCount} item(s)";
+    }
+
+    // ---- Task & Meeting Reminder ----------------------------------------------------------
+
+    /// <summary>
+    /// Internal per-recipient agenda: overdue / today / upcoming tasks and meetings. Owner/internal
+    /// style, NO customer footer. Sections are omitted when empty; the composer only sends when
+    /// there is at least one item across all three.
+    /// </summary>
+    public static string BuildTaskMeetingReminderHtml(
+        string recipientName,
+        List<AgendaItem> overdue,
+        List<AgendaItem> today,
+        List<AgendaItem> upcoming)
+    {
+        var who = WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(recipientName) ? "there" : recipientName);
+
+        var body = new StringBuilder();
+        body.Append(Paragraph($"Hi {who}, here's what's on your plate."));
+
+        if (overdue.Count > 0)
+        {
+            body.Append(SectionHeading("Overdue"));
+            body.Append(AgendaList(overdue, urgent: true));
+        }
+        if (today.Count > 0)
+        {
+            body.Append(SectionHeading("Today"));
+            body.Append(AgendaList(today, urgent: false));
+        }
+        if (upcoming.Count > 0)
+        {
+            body.Append(SectionHeading("Coming up"));
+            body.Append(AgendaList(upcoming, urgent: false));
+        }
+
+        return Shell("Your agenda", "#0D5EA6", "Tasks & meetings", who, body.ToString());
+    }
+
+    private static string AgendaList(List<AgendaItem> items, bool urgent)
+    {
+        var sb = new StringBuilder();
+        sb.Append(@"<ul style=""margin:8px 0 0 0;padding:0 0 0 18px;"">");
+        foreach (var item in items)
+        {
+            var color = urgent ? "#C24A4A" : "#3D4F5F";
+            var kind = item.IsMeeting ? "Meeting" : "Task";
+            var when = string.IsNullOrEmpty(item.WhenText) ? "" : $@" <span style=""color:#98a8b6;"">· {WebUtility.HtmlEncode(item.WhenText)}</span>";
+            var ctx = string.IsNullOrEmpty(item.ContextText) ? "" : $@" <span style=""color:#98a8b6;"">· {WebUtility.HtmlEncode(item.ContextText)}</span>";
+            sb.Append($@"<li style=""margin:8px 0;font-size:15px;line-height:1.6;color:{color};""><strong>{kind}:</strong> {WebUtility.HtmlEncode(item.Title)}{when}{ctx}</li>");
+        }
+        sb.Append("</ul>");
+        return sb.ToString();
+    }
+
+    // ---- VAT Period Due Reminder ----------------------------------------------------------
+
+    /// <summary>
+    /// Owner-facing reminder that a VAT return is coming due, with the APPROXIMATE net VAT payable
+    /// as it stands today (late invoices/purchases/credit notes can still move it before filing).
+    /// Sign convention matches VatSubmissionService: &gt;0 tax owed, &lt;0 refund due, 0 none.
+    /// </summary>
+    public static string BuildVatReminderHtml(
+        string businessName, string currencySymbol, string periodLabel,
+        DateOnly deadline, int daysUntil, decimal netVat)
+    {
+        var cur = WebUtility.HtmlEncode(currencySymbol);
+        var biz = WebUtility.HtmlEncode(businessName);
+
+        var whenText = daysUntil <= 0 ? "today" : daysUntil == 1 ? "tomorrow" : $"in {daysUntil} days";
+
+        var body = new StringBuilder();
+        body.Append(Paragraph(
+            $"Your VAT return for {periodLabel} is due {whenText} ({deadline:dd MMM yyyy})."));
+
+        body.Append(SectionHeading("Estimated position"));
+        if (netVat > 0m)
+        {
+            body.Append(StatRow("Estimated VAT to pay", $"{cur}{netVat:N2}", "approximate, as it stands today", accent: "#C24A4A"));
+        }
+        else if (netVat < 0m)
+        {
+            body.Append(StatRow("Estimated VAT refund", $"{cur}{Math.Abs(netVat):N2}", "approximate, as it stands today", accent: "#129867"));
+        }
+        else
+        {
+            body.Append(StatRow("Estimated VAT", "No payment expected", "approximate, as it stands today"));
+        }
+
+        body.Append(SmallNote(
+            "This is an estimate based on the invoices, purchases and credit notes recorded so far. " +
+            "The final figure may change as you add or edit records before filing."));
+
+        var urgent = daysUntil <= 7;
+        return Shell("VAT return due soon", urgent ? "#C24A4A" : "#0D5EA6", "VAT deadline", biz, body.ToString());
+    }
+
     // ---- Daily Brief ----------------------------------------------------------------------
 
     /// <summary>
@@ -119,8 +224,8 @@ public static class DigestEmailBuilder
                 }
                 body.Append(Table(new[] { "Supplier", "Due", "Amount" }, rows.ToString()));
                 body.Append(SmallNote(
-                    "\"Coming due\" is based on each purchase's target payment date. Payment status " +
-                    "is not tracked on purchases, so paid items may still appear if not cancelled."));
+                    "\"Coming due\" is based on each purchase's target payment date. Purchases you've " +
+                    "marked paid (or cancelled) are excluded."));
             }
         }
 
@@ -347,4 +452,19 @@ public class AttentionItem
 {
     public string Text { get; set; } = null!;
     public bool IsUrgent { get; set; }
+}
+
+/// <summary>A single task or meeting line in the Task &amp; Meeting Reminder agenda.</summary>
+public class AgendaItem
+{
+    /// <summary>De-dupe key within a recipient, e.g. "task-12" / "meeting-7".</summary>
+    public string Key { get; set; } = null!;
+    /// <summary>Sort key — the item's due date / scheduled time (UTC).</summary>
+    public DateTime WhenUtc { get; set; }
+    public bool IsMeeting { get; set; }
+    public string Title { get; set; } = null!;
+    /// <summary>Human "when" text, e.g. "14:30", "all day", "tomorrow 10:00".</summary>
+    public string? WhenText { get; set; }
+    /// <summary>Optional context, e.g. contact name / location / task type.</summary>
+    public string? ContextText { get; set; }
 }

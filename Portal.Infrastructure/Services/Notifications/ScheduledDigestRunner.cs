@@ -29,7 +29,9 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
     // to the assistant, not a per-business setting.
     private static readonly HashSet<string> DailyCadenceKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        DigestAssistantKeys.DailyBrief
+        DigestAssistantKeys.DailyBrief,
+        DigestAssistantKeys.VatPeriodDueReminder,
+        DigestAssistantKeys.TaskMeetingReminder
     };
 
     private static bool IsDailyCadence(string assistantKey) => DailyCadenceKeys.Contains(assistantKey);
@@ -42,6 +44,7 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
     private readonly NotificationOptions _options;
     private readonly ILogger<ScheduledDigestRunner> _logger;
     private readonly Dictionary<string, IDigestComposer> _composersByKey;
+    private readonly Dictionary<string, IFanOutDigestComposer> _fanOutComposersByKey;
 
     public ScheduledDigestRunner(
         PortalDbContext dbContext,
@@ -50,6 +53,7 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
         IPlanCheckService planCheckService,
         IDigestEnqueuer enqueuer,
         IEnumerable<IDigestComposer> composers,
+        IEnumerable<IFanOutDigestComposer> fanOutComposers,
         NotificationOptions options,
         ILogger<ScheduledDigestRunner> logger)
     {
@@ -61,6 +65,7 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
         _options = options;
         _logger = logger;
         _composersByKey = composers.ToDictionary(c => c.AssistantKey, StringComparer.OrdinalIgnoreCase);
+        _fanOutComposersByKey = fanOutComposers.ToDictionary(c => c.AssistantKey, StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task RunAsync(CancellationToken ct)
@@ -70,7 +75,9 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
         {
             DigestAssistantKeys.WeeklyOutstandingDigest,
             DigestAssistantKeys.WeeklyFinancialSnapshot,
-            DigestAssistantKeys.DailyBrief
+            DigestAssistantKeys.DailyBrief,
+            DigestAssistantKeys.VatPeriodDueReminder,
+            DigestAssistantKeys.TaskMeetingReminder
         };
         var assistants = await _dbContext.AssistantTypes
             .AsNoTracking()
@@ -127,7 +134,9 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
     private async Task ProcessBusinessAssistantAsync(
         int businessId, int assistantTypeId, string assistantKey, DateTime businessLocalNow, CancellationToken ct)
     {
-        if (!_composersByKey.TryGetValue(assistantKey, out var composer))
+        var hasSingle = _composersByKey.TryGetValue(assistantKey, out var composer);
+        var hasFanOut = _fanOutComposersByKey.TryGetValue(assistantKey, out var fanOutComposer);
+        if (!hasSingle && !hasFanOut)
             return; // no composer registered for this key.
 
         var setting = await _settingRepository.GetAsync(businessId, assistantTypeId);
@@ -143,6 +152,29 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
         if (!IsDue(setting, businessLocalNow, isDaily))
             return;
 
+        // Fan-out assistants (e.g. Task & Meeting Reminder): produce N messages, each with its own
+        // recipient-scoped cycle key. There is no single key to pre-check here — the composer
+        // short-circuits per recipient and the enqueuer's in-insert check (backed by the UNIQUE
+        // cycle index) closes the race.
+        if (hasFanOut)
+        {
+            var messages = await fanOutComposer!.ComposeManyAsync(businessId, assistantTypeId, setting, businessLocalNow, ct);
+            if (messages.Count == 0)
+            {
+                _logger.LogDebug(
+                    "Fan-out assistant produced no messages (skipped) for BusinessId={BusinessId}, Assistant={AssistantKey}.",
+                    businessId, assistantKey);
+                return;
+            }
+
+            foreach (var msg in messages)
+            {
+                if (ct.IsCancellationRequested) break;
+                await _enqueuer.EnqueueAsync(msg);
+            }
+            return;
+        }
+
         var cycleKey = isDaily
             ? DigestCycleKey.Daily(assistantKey, businessLocalNow)
             : DigestCycleKey.Weekly(assistantKey, businessLocalNow);
@@ -151,7 +183,7 @@ public class ScheduledDigestRunner : IScheduledDigestRunner
         if (await _outboxRepository.ExistsForCycleAsync(businessId, assistantTypeId, cycleKey))
             return;
 
-        var message = await composer.ComposeAsync(businessId, assistantTypeId, setting, cycleKey, ct);
+        var message = await composer!.ComposeAsync(businessId, assistantTypeId, setting, cycleKey, ct);
         if (message == null)
         {
             // A null result is an expected skip — either "nothing to report" (e.g. the Daily

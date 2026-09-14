@@ -1,4 +1,6 @@
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities.Sales;
 using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Models.Sales;
@@ -19,8 +21,11 @@ public class MeetingService : IMeetingService
     private readonly MeetingTypeRepository _meetingTypeRepository;
     private readonly FollowUpTaskRepository _followUpTaskRepository;
     private readonly FollowUpTaskTypeRepository _followUpTaskTypeRepository;
+    private readonly MeetingTeamMemberRepository _meetingTeamMemberRepository;
+    private readonly TeamMemberRepository _teamMemberRepository;
     private readonly ILeadRequestService _leadRequestService;
     private readonly ICurrentTenantService _tenantService;
+    private readonly PortalDbContext _dbContext;
 
     public MeetingService(
         MeetingRepository meetingRepository,
@@ -31,8 +36,11 @@ public class MeetingService : IMeetingService
         MeetingTypeRepository meetingTypeRepository,
         FollowUpTaskRepository followUpTaskRepository,
         FollowUpTaskTypeRepository followUpTaskTypeRepository,
+        MeetingTeamMemberRepository meetingTeamMemberRepository,
+        TeamMemberRepository teamMemberRepository,
         ILeadRequestService leadRequestService,
-        ICurrentTenantService tenantService)
+        ICurrentTenantService tenantService,
+        PortalDbContext dbContext)
     {
         _meetingRepository = meetingRepository;
         _productRequestRepository = productRequestRepository;
@@ -42,17 +50,52 @@ public class MeetingService : IMeetingService
         _meetingTypeRepository = meetingTypeRepository;
         _followUpTaskRepository = followUpTaskRepository;
         _followUpTaskTypeRepository = followUpTaskTypeRepository;
+        _meetingTeamMemberRepository = meetingTeamMemberRepository;
+        _teamMemberRepository = teamMemberRepository;
         _leadRequestService = leadRequestService;
         _tenantService = tenantService;
+        _dbContext = dbContext;
+    }
+
+    /// <summary>
+    /// Resolves the attendee set: validates each requested member is active and in-business; when
+    /// none requested and the business has exactly one active member, auto-adds that member.
+    /// Returns (ok, resolvedIds, error).
+    /// </summary>
+    private async Task<(bool Ok, List<int> Ids, string? Error)> ResolveAttendeesAsync(int businessId, List<int> requestedIds)
+    {
+        var activeMembers = await _teamMemberRepository.GetActiveByBusinessIdAsync(businessId);
+        var activeIds = activeMembers.Select(m => m.Id).ToHashSet();
+
+        var distinct = (requestedIds ?? new List<int>()).Distinct().ToList();
+        if (distinct.Count > 0)
+        {
+            var invalid = distinct.Where(id => !activeIds.Contains(id)).ToList();
+            if (invalid.Count > 0)
+                return (false, new List<int>(), "One or more selected attendees are not active or do not belong to your business.");
+            return (true, distinct, null);
+        }
+
+        // None chosen — auto-add the sole active member if there is exactly one.
+        if (activeMembers.Count == 1)
+            return (true, new List<int> { activeMembers[0].Id }, null);
+
+        return (true, new List<int>(), null); // unassigned
     }
 
     public async Task<ServiceResult> CreateMeetingAsync(CreateMeetingRequest request, string userId)
     {
         try
         {
+            var businessId = _tenantService.CurrentBusinessId;
+
+            var (attendeesOk, attendeeIds, attendeeError) = await ResolveAttendeesAsync(businessId, request.AttendeeTeamMemberIds);
+            if (!attendeesOk)
+                return ServiceResult.Fail(attendeeError!);
+
             var entity = new Meeting
             {
-                BusinessId = _tenantService.CurrentBusinessId,
+                BusinessId = businessId,
                 LeadRequestId = request.LeadRequestId,
                 ContactId = request.ContactId,
                 MeetingTypeId = request.MeetingTypeId,
@@ -66,9 +109,16 @@ public class MeetingService : IMeetingService
                 CreatedByUserId = userId
             };
 
-            var id = await _meetingRepository.InsertAsync(entity);
+            // Meeting insert + attendee inserts must be atomic (the repos enlist in the ambient txn).
+            int id;
+            await using (var tx = await _dbContext.Database.BeginTransactionAsync())
+            {
+                id = await _meetingRepository.InsertAsync(entity);
+                await _meetingTeamMemberRepository.ReplaceAttendeesAsync(id, attendeeIds);
+                await tx.CommitAsync();
+            }
 
-            // Suggest stage transition when linked to a lead
+            // Suggest stage transition when linked to a lead (outside the txn; best-effort as before).
             if (request.LeadRequestId.HasValue)
             {
                 await _leadRequestService.SuggestStageTransitionAsync(request.LeadRequestId.Value, "meeting_scheduled", id);
@@ -91,6 +141,10 @@ public class MeetingService : IMeetingService
             if (existing == null)
                 return ServiceResult.Fail("Meeting not found.");
 
+            var (attendeesOk, attendeeIds, attendeeError) = await ResolveAttendeesAsync(businessId, request.AttendeeTeamMemberIds);
+            if (!attendeesOk)
+                return ServiceResult.Fail(attendeeError!);
+
             existing.LeadRequestId = request.LeadRequestId;
             existing.MeetingTypeId = request.MeetingTypeId;
             existing.Subject = request.Subject;
@@ -101,7 +155,14 @@ public class MeetingService : IMeetingService
             existing.Outcome = request.Outcome;
             existing.MeetingOutcomeClassificationId = request.MeetingOutcomeClassificationId;
 
-            await _meetingRepository.UpdateAsync(existing);
+            // Meeting update + attendee replace must be atomic.
+            await using (var tx = await _dbContext.Database.BeginTransactionAsync())
+            {
+                await _meetingRepository.UpdateAsync(existing);
+                await _meetingTeamMemberRepository.ReplaceAttendeesAsync(request.Id, attendeeIds);
+                await tx.CommitAsync();
+            }
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -175,6 +236,7 @@ public class MeetingService : IMeetingService
             var linkedTasks = await _followUpTaskRepository.GetByMeetingIdAsync(id, businessId);
             var taskTypeNames = (await _followUpTaskTypeRepository.GetAllAsync())
                 .ToDictionary(t => t.Id, t => t.Name);
+            var attendeeIds = await _meetingTeamMemberRepository.GetAttendeeIdsByMeetingIdAsync(id);
 
             var productRequestDtos = new List<MeetingProductRequestDto>();
             foreach (var pr in productRequests)
@@ -228,7 +290,8 @@ public class MeetingService : IMeetingService
                     IsCompleted = t.IsCompleted,
                     CompletedAtUtc = t.CompletedAtUtc,
                     TaskOutcome = t.TaskOutcome
-                }).ToList()
+                }).ToList(),
+                AttendeeTeamMemberIds = attendeeIds
             };
         }
         catch (Exception ex)

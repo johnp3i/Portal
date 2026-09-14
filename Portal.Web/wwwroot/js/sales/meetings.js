@@ -130,7 +130,7 @@
 
         // Show loading indicator in table body (no BlockUI for table loading)
         var tbody = document.getElementById('meetingsTableBody');
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8a9bab;padding:32px;">Loading meetings...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8a9bab;padding:32px;">Loading meetings...</td></tr>';
 
         fetch('/Sales/AxGetMeetingsPaged?' + params.toString())
             .then(function (response) { return response.json(); })
@@ -157,7 +157,7 @@
         var paginationControls = document.getElementById('meetingsPaginationControls');
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8a9bab;padding:32px;">No meetings found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8a9bab;padding:32px;">No meetings found.</td></tr>';
             pagination.style.display = 'none';
             return;
         }
@@ -190,10 +190,19 @@
             html += '<td>' + (m.contactName ? (m.contactId ? '<span style="color:#0D5EA6;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;" onclick="openContactModal(' + m.contactId + ')" title="View contact info">' + escapeHtml(m.contactName) + '</span>' : escapeHtml(m.contactName)) : '') + '</td>';
             html += '<td>' + scheduledDisplay + relativeHtml + '</td>';
             html += '<td>' + (m.durationMinutes || 60) + ' min</td>';
-            html += '<td>' + getClassificationPillHtml(m.outcomeClassificationName) + '</td>';
-            var outcomeDisplay = m.outcome ? (m.outcome.length > 80 ? escapeHtml(m.outcome.substring(0, 80)) + '…' : escapeHtml(m.outcome)) : '—';
-            html += '<td>' + outcomeDisplay + '</td>';
+            // Status = lifecycle badge only (Upcoming / Today / Needs Outcome / Completed / Cancelled).
             html += '<td>' + getUrgencyBadgeHtml(m.urgency) + '</td>';
+            // Outcome = classification pill (when set) above the free-text note.
+            var outcomeCell = '';
+            if (m.outcomeClassificationName) {
+                outcomeCell += '<div style="margin-bottom:4px;">' + getClassificationPillHtml(m.outcomeClassificationName) + '</div>';
+            }
+            if (m.outcome) {
+                outcomeCell += escapeHtml(m.outcome.length > 80 ? m.outcome.substring(0, 80) + '…' : m.outcome);
+            } else if (!m.outcomeClassificationName) {
+                outcomeCell = '<span style="color:#8a9bab;">—</span>';
+            }
+            html += '<td>' + outcomeCell + '</td>';
             html += '<td style="white-space:nowrap;">' + actionsHtml + '</td>';
             html += '</tr>';
         });
@@ -351,6 +360,11 @@
                     leadSelect.value = m.leadRequestId ? String(m.leadRequestId) : '';
                 });
 
+                // Populate attendees, preselecting the meeting's current attendees.
+                fetchTeamMembersOnce().then(function (members) {
+                    populateAttendeeSelect('editMeetingAttendees', members, m.attendeeTeamMemberIds || []);
+                });
+
                 // Convert ISO datetime to datetime-local format (YYYY-MM-DDTHH:mm)
                 if (m.scheduledAtUtc) {
                     var dt = new Date(m.scheduledAtUtc);
@@ -398,7 +412,8 @@
             location: document.getElementById('editMeetingLocation').value || null,
             notes: document.getElementById('editMeetingNotes').value || null,
             outcome: document.getElementById('editMeetingOutcome').value || null,
-            meetingOutcomeClassificationId: parseInt(document.getElementById('editMeetingClassification').value) || null
+            meetingOutcomeClassificationId: parseInt(document.getElementById('editMeetingClassification').value) || null,
+            attendeeTeamMemberIds: getSelectedAttendeeIds('editMeetingAttendees')
         };
 
         BlockUI.show('Updating...');
@@ -451,6 +466,11 @@
             leadSelect.value = '';
         }
 
+        // Populate attendees (auto-selects the sole member when there is only one).
+        fetchTeamMembersOnce().then(function (members) {
+            populateAttendeeSelect('meetingAttendees', members, members.length === 1 ? [members[0].id] : []);
+        });
+
         document.getElementById('meetingModal').style.display = 'flex';
     };
 
@@ -482,7 +502,8 @@
             durationMinutes: parseInt(document.getElementById('meetingDuration').value) || 60,
             location: document.getElementById('meetingLocation').value || null,
             notes: document.getElementById('meetingNotes').value || null,
-            leadRequestId: leadRequestId
+            leadRequestId: leadRequestId,
+            attendeeTeamMemberIds: getSelectedAttendeeIds('meetingAttendees')
         };
 
         BlockUI.show('Scheduling...');
@@ -746,6 +767,80 @@
             })
             .catch(function () { /* silently fail — tasks already created */ });
     }
+
+    // ─── Attendees (team members) ───────────────────────────────
+
+    var _teamMembersCache = null;
+
+    async function fetchTeamMembersOnce() {
+        if (_teamMembersCache) return _teamMembersCache;
+        try {
+            var response = await fetch('/Sales/AxGetTeamMembers');
+            var result = await response.json();
+            _teamMembersCache = (result.success && Array.isArray(result.data)) ? result.data : [];
+        } catch (e) {
+            console.error('Failed to load team members', e);
+            _teamMembersCache = [];
+        }
+        return _teamMembersCache;
+    }
+
+    // Builds the initials avatar text from a display name (e.g. "John Papamichael" -> "JP").
+    function attendeeInitials(name) {
+        if (!name) return '?';
+        var parts = String(name).trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+
+    // Populate the attendee picker with toggleable member chips, preselecting the
+    // given team-member ids. Replaces the old raw <select multiple>. Each chip toggles
+    // its own .selected state on click; selection is read back by getSelectedAttendeeIds.
+    function populateAttendeeSelect(containerId, members, selectedIds) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        var selected = (selectedIds || []).map(Number);
+
+        if (!members || members.length === 0) {
+            container.innerHTML = '<span class="attendee-empty">No team members available.</span>';
+            return;
+        }
+
+        var check = '<span class="attendee-check">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
+            '</span>';
+
+        var html = '';
+        members.forEach(function (m) {
+            var isSel = selected.indexOf(Number(m.id)) !== -1;
+            html += '<button type="button" class="attendee-chip' + (isSel ? ' selected' : '') + '"' +
+                ' data-id="' + m.id + '"' +
+                ' aria-pressed="' + (isSel ? 'true' : 'false') + '"' +
+                ' onclick="toggleAttendeeChip(this)">' +
+                '<span class="attendee-avatar">' + escapeHtml(attendeeInitials(m.displayName)) + '</span>' +
+                '<span class="attendee-name">' + escapeHtml(m.displayName) + '</span>' +
+                check +
+                '</button>';
+        });
+        container.innerHTML = html;
+    }
+
+    // Toggle a single attendee chip's selected state.
+    window.toggleAttendeeChip = function (chip) {
+        var nowSelected = !chip.classList.contains('selected');
+        chip.classList.toggle('selected', nowSelected);
+        chip.setAttribute('aria-pressed', nowSelected ? 'true' : 'false');
+    };
+
+    // Read the selected team-member ids from an attendee picker.
+    window.getSelectedAttendeeIds = function (containerId) {
+        var container = document.getElementById(containerId);
+        if (!container) return [];
+        return Array.prototype.map.call(
+            container.querySelectorAll('.attendee-chip.selected'),
+            function (chip) { return parseInt(chip.getAttribute('data-id'), 10); }
+        );
+    };
 
     // ─── Leads for Create Modal ─────────────────────────────────
 

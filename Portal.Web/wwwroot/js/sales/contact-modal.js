@@ -20,6 +20,23 @@
         if (el) el.textContent = value && String(value).trim() !== '' ? value : '—';
     }
 
+    // Renders a value as a clickable link (mailto:/tel:). Falls back to an em-dash
+    // when empty. The visible text is HTML-escaped; the href uses encodeURIComponent
+    // for the scheme-specific part.
+    function setLink(id, value, scheme) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var v = value && String(value).trim() !== '' ? String(value).trim() : '';
+        if (v === '') {
+            el.textContent = '—';
+            return;
+        }
+        var href = scheme + ':' + (scheme === 'tel'
+            ? v.replace(/[^\d+]/g, '')   // keep digits and leading +
+            : encodeURIComponent(v));
+        el.innerHTML = '<a href="' + href + '" style="color:#0D5EA6;text-decoration:none;">' + escapeHtml(v) + '</a>';
+    }
+
     function formatDate(iso) {
         if (!iso) return '—';
         var d = new Date(iso);
@@ -45,8 +62,8 @@
 
                 setText('contactModalTitle', c.fullName);
                 setText('contactModalSubtitle', (c.companyName || 'No company') + ' · ' + (c.isActive ? 'Active' : 'Inactive'));
-                setText('contactModalEmail', c.email);
-                setText('contactModalPhone', c.phoneNumber);
+                setLink('contactModalEmail', c.email, 'mailto');
+                setLink('contactModalPhone', c.phoneNumber, 'tel');
                 setText('contactModalJobTitle', c.jobTitle);
                 setText('contactModalCountry', c.country);
                 setText('contactModalCompany', c.companyName);

@@ -775,6 +775,7 @@ public class DashboardService : IDashboardService
                     INNER JOIN [purchase].[Supplier] ON [purchase].[Purchase].[SupplierId] = [purchase].[Supplier].[Id]
                     WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
                       AND [purchase].[Purchase].[IsCancelled] = 0
+                      AND [purchase].[Purchase].[IsPaid] = 0
                       AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) IS NOT NULL
                       AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) <= @Cutoff
                     ORDER BY COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) ASC";

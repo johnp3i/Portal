@@ -41,6 +41,18 @@ public class BusinessAssistantSetting
     /// <summary>CSV of snapshot figure keys to include. NULL => the default figure set.</summary>
     public string? IncludedFiguresCsv { get; set; }
 
+    /// <summary>
+    /// VAT Period Due Reminder: days before the derived filing deadline to notify. NULL => fall back
+    /// to the global NotificationOptions.VatDeadlineNoticeDays (21).
+    /// </summary>
+    public int? VatNoticeLeadDays { get; set; }
+
+    /// <summary>
+    /// Task &amp; Meeting Reminder: look-ahead window (days) for upcoming tasks/meetings in the daily
+    /// agenda. NULL => fall back to the global NotificationOptions.TaskMeetingDefaultLookAheadDays (2).
+    /// </summary>
+    public int? TaskMeetingLookAheadDays { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime? UpdatedAtUtc { get; set; }

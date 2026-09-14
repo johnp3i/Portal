@@ -123,6 +123,9 @@ public class UpdateFollowUpTaskRequest
     /// Optional time-of-day for the task. NULL means all-day task.
     /// </summary>
     public TimeOnly? ScheduledTimeUtc { get; set; }
+
+    /// <summary>Assigned team member ([sales].[TeamMember]). NULL = unassigned.</summary>
+    public int? TeamMemberId { get; set; }
 }
 
 /// <summary>
