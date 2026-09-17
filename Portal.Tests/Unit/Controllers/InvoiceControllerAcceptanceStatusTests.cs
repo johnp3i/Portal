@@ -132,6 +132,10 @@ public class InvoiceControllerAcceptanceStatusTests
             .ReturnsAsync(invoice);
 
         _invoiceServiceMock
+            .Setup(s => s.GetEditEligibilityAsync(invoiceId))
+            .ReturnsAsync(new Portal.Infrastructure.Models.InvoiceEditEligibility(true, null, true));
+
+        _invoiceServiceMock
             .Setup(s => s.GetInvoiceLinesAsync(invoiceId))
             .ReturnsAsync(new List<InvoiceLine>());
 

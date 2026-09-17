@@ -90,6 +90,21 @@
             </div>
         </div>
 
+        <!-- Bulk Discount (info) — applied after the invoice is created -->
+        <div style="margin-top:32px;border-top:1px solid rgba(13,94,166,.08);padding-top:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+                <div class="label">Invoice-level discount</div>
+                <p style="margin:6px 0 0;font-size:13px;color:#5a6a7a;max-width:520px;">
+                    Need to round the total or apply a single discount across all lines? Use a bulk discount.
+                    It's applied once the invoice is created.
+                </p>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="showBulkDiscountInfo()" style="display:inline-flex;align-items:center;gap:8px;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12H4M12 4v16"/></svg>
+                Bulk Discount
+            </button>
+        </div>
+
         <!-- Submit -->
         <div style="margin-top:32px;display:flex;align-items:center;justify-content:space-between;">
             <button type="submit" class="btn btn-primary">Create Invoice</button>
@@ -150,6 +165,37 @@
     <script>
         var lineIndex = 0;
         var sectionIndex = 0;
+
+        // Bulk Discount info + guided action. Bulk discount is a post-creation operation
+        // (it needs a saved invoice with persisted lines), so here we explain it and offer to
+        // create the invoice now and continue to it to apply the discount.
+        function showBulkDiscountInfo() {
+            var customerId = document.getElementById('customerId').value;
+            var lineCount = document.querySelectorAll('#lineItemsContainer [id^="line-"]').length;
+            var formReady = customerId && lineCount > 0
+                && document.getElementById('invoiceDate').value
+                && document.getElementById('dueDate').value;
+
+            Swal.fire({
+                icon: 'info',
+                title: 'Bulk Discount',
+                html: '<p style="margin:0 0 10px;text-align:left;">A <strong>bulk discount</strong> applies a single discount across the whole invoice — a percentage or a fixed amount. It\'s handy for rounding the total or giving an overall discount.</p>'
+                    + '<p style="margin:0;text-align:left;">Because it applies to the finished invoice, you add it <strong>after creating</strong> the invoice: create it now, then click <strong>Bulk Discount</strong> on the invoice page to set a percentage or fixed amount.</p>',
+                showCancelButton: formReady,
+                confirmButtonColor: '#0D5EA6',
+                cancelButtonColor: '#5E7385',
+                confirmButtonText: formReady ? 'Create invoice & add discount' : 'Got it',
+                cancelButtonText: 'Cancel',
+                footer: formReady ? null : 'Add a customer and at least one line item to continue.'
+            }).then(function (result) {
+                if (!result.isConfirmed || !formReady) return;
+                // Submit the form to create the draft; the user lands on the invoice page
+                // where the (existing) Bulk Discount action is available.
+                document.getElementById('invoiceForm').requestSubmit
+                    ? document.getElementById('invoiceForm').requestSubmit()
+                    : document.getElementById('invoiceForm').submit();
+            });
+        }
 
         function addLineItem() {
             var container = document.getElementById('lineItemsContainer');

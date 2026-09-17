@@ -61,6 +61,8 @@ public class LeadStageReevaluationExplorationTests
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -71,8 +73,11 @@ public class LeadStageReevaluationExplorationTests
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
             mockFollowUpTaskTypeRepo.Object,
+            mockMeetingTeamMemberRepo.Object,
+            mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
-            mockTenantService.Object);
+            mockTenantService.Object,
+            null!);
 
         // Act: The fixed code calls GetByIdAsync first, which will throw because
         // the null DbContext can't execute raw SQL. We verify the exception origin.
@@ -135,6 +140,8 @@ public class LeadStageReevaluationExplorationTests
         var mockMeetingTypeRepo = new Mock<MeetingTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskRepo = new Mock<FollowUpTaskRepository>(MockBehavior.Loose, new object[] { null! });
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -145,8 +152,11 @@ public class LeadStageReevaluationExplorationTests
             mockMeetingTypeRepo.Object,
             mockFollowUpTaskRepo.Object,
             mockFollowUpTaskTypeRepo.Object,
+            mockMeetingTeamMemberRepo.Object,
+            mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
-            mockTenantService.Object);
+            mockTenantService.Object,
+            null!);
 
         // Act: The fixed code calls GetByIdAsync first, which will throw because
         // the null DbContext can't execute raw SQL. We verify the exception origin.
