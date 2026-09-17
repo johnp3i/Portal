@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mobile List — Action Bar Pattern (Mockup)</title>
+<style>
+    /* ── Real design tokens (from Portal.Web/wwwroot/css/site.css) ───────────── */
+    :root {
+        --bg:#F7FAFC; --bg2:#EEF4F8; --text:#0B1B28; --muted:#5E7385; --muted2:#73889A;
+        --blue:#0D5EA6; --blue3:#0B4E89; --cyan:#57B8E8; --green:#129867; --red:#C24A4A; --gold:#C8912E;
+        --greenSoft:rgba(18,152,103,.12); --redSoft:rgba(194,74,74,.10); --goldSoft:rgba(200,145,46,.12);
+        --line:rgba(13,94,166,.10);
+    }
+    * { box-sizing:border-box; }
+    body {
+        margin:0; padding:24px;
+        font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--text);
+        background:linear-gradient(180deg,#FBFDFF 0%, var(--bg2) 48%, var(--bg) 100%);
+        display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start;
+    }
+    h1,h2,h3,h4 { font-family:Manrope,Inter,sans-serif; letter-spacing:-.03em; margin:0; }
+
+    /* ── Phone frame so you can preview at real mobile width ─────────────────── */
+    .phone {
+        width:390px; max-width:100%;
+        background:linear-gradient(180deg,#FBFDFF 0%, var(--bg2) 60%, var(--bg) 100%);
+        border:1px solid var(--line); border-radius:28px;
+        box-shadow:0 24px 60px rgba(13,94,166,.14);
+        padding:16px; overflow:hidden;
+    }
+    .variant-label {
+        font-size:12px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+        color:var(--blue); margin:0 0 10px 4px;
+    }
+
+    /* ── Page heading ────────────────────────────────────────────────────────── */
+    .eyebrow { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--blue); }
+    .eyebrow .dot { width:8px; height:8px; border-radius:50%; background:var(--cyan); }
+    .page-title { font-size:26px; font-weight:800; margin:6px 0 2px; }
+    .page-sub { font-size:13px; color:var(--muted); margin:0; }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       THE PATTERN: a single compact action bar
+       [ Primary action (flex) ] [ Filters ] [ More ⋯ ]
+       ────────────────────────────────────────────────────────────────────────── */
+    .action-bar {
+        display:flex; align-items:stretch; gap:8px;
+        margin:14px 0 16px;
+    }
+    .action-bar .btn {
+        font-family:inherit; font-weight:700; font-size:14px;
+        border-radius:12px; border:1.5px solid transparent;
+        display:inline-flex; align-items:center; justify-content:center; gap:7px;
+        cursor:pointer; padding:12px 14px; white-space:nowrap;
+    }
+    /* Primary grows to fill the row */
+    .btn-primary {
+        flex:1 1 auto;
+        background:linear-gradient(180deg,#1A6BB8 0%, var(--blue) 100%);
+        color:#fff; box-shadow:0 8px 18px rgba(13,94,166,.22);
+    }
+    /* Filters + More: compact, equal, icon-forward */
+    .btn-ghost {
+        flex:0 0 auto;
+        background:rgba(13,94,166,.06);
+        border-color:rgba(13,94,166,.14);
+        color:var(--blue);
+    }
+    .btn-ghost.icon-only { width:46px; padding:12px 0; }
+    .btn-ghost svg { width:17px; height:17px; }
+    .filter-count {
+        background:var(--blue); color:#fff; font-size:10px; font-weight:800;
+        border-radius:10px; padding:1px 6px; margin-left:2px;
+    }
+
+    /* ── Dropdown panel (More) ───────────────────────────────────────────────── */
+    .more-wrap { position:relative; }
+    .more-panel {
+        position:absolute; top:calc(100% + 6px); right:0; min-width:190px;
+        background:#fff; border:1px solid var(--line); border-radius:14px;
+        box-shadow:0 12px 30px rgba(11,27,40,.14); padding:6px; z-index:20;
+    }
+    .more-item { display:block; padding:12px 14px; border-radius:10px; font-size:14px; font-weight:700; color:var(--text); }
+    .more-item:hover { background:rgba(13,94,166,.06); color:var(--blue); }
+
+    /* ── Collapsible filter sheet (hidden by default) ────────────────────────── */
+    .filter-sheet {
+        background:#fff; border:1px solid var(--line); border-radius:16px;
+        padding:14px; margin-bottom:16px;
+    }
+    .filter-sheet .field { margin-bottom:10px; }
+    .filter-sheet label { display:block; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--muted2); margin-bottom:5px; }
+    .filter-sheet select, .filter-sheet input {
+        width:100%; padding:11px 12px; border-radius:12px; border:1px solid rgba(13,94,166,.12);
+        font:inherit; font-size:14px; color:var(--text); background:#fff;
+    }
+    .filter-actions { display:flex; gap:8px; margin-top:6px; }
+    .filter-actions .btn { flex:1; }
+
+    /* ── KPI strip (2×2) ─────────────────────────────────────────────────────── */
+    .kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+    .kpi { padding:12px 14px; border-radius:14px; border:1px solid rgba(13,94,166,.08); background:rgba(13,94,166,.04); }
+    .kpi .k-label { font-size:9px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+    .kpi .k-value { font-family:Manrope,sans-serif; font-size:22px; font-weight:800; margin-top:4px; }
+    .kpi.green { background:var(--greenSoft); } .kpi.green .k-value { color:var(--green); }
+    .kpi.red   { background:var(--redSoft); }   .kpi.red .k-value { color:var(--red); }
+
+    /* ── List cards ──────────────────────────────────────────────────────────── */
+    .list-card {
+        background:#fff; border:1px solid rgba(13,94,166,.10); border-radius:16px;
+        box-shadow:0 1px 3px rgba(11,27,40,.05); padding:14px 16px; margin-bottom:12px;
+        display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center;
+    }
+    .lc-title { font-weight:700; font-size:14px; }
+    .lc-sub { font-size:12px; color:var(--muted); }
+    .lc-total { text-align:right; font-weight:800; font-size:15px; }
+    .pill { display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.04em; }
+    .pill-green { background:var(--greenSoft); color:var(--green); }
+    .pill-slate { background:rgba(94,115,133,.10); color:#4A5568; }
+    .pill-red { background:var(--redSoft); color:var(--red); }
+    .lc-status { text-align:right; }
+    .lc-actions { grid-column:1 / -1; display:flex; gap:8px; margin-top:8px; padding-top:12px; border-top:1px solid rgba(13,94,166,.08); }
+    .lc-actions .tbl-action { flex:1; text-align:center; padding:9px; border-radius:8px; font-size:13px; font-weight:700; }
+    .ta-primary { background:rgba(13,94,166,.08); color:var(--blue); }
+    .ta-danger { background:rgba(194,74,74,.08); color:var(--red); }
+
+    .note { max-width:390px; font-size:13px; color:var(--muted); line-height:1.5; }
+    .note strong { color:var(--text); }
+</style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         VARIANT A — Primary + Filters + More (labels)
+         The recommended default: one row, primary flexes, two compact ghost buttons.
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="phone">
+        <p class="variant-label">Variant A — labelled</p>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 class="page-title">Purchases</h1>
+        <p class="page-sub">Track and manage your business expenses.</p>
+
+        <div class="action-bar">
+            <button class="btn btn-primary">+ Create</button>
+            <button class="btn btn-ghost">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+                Filters <span class="filter-count">2</span>
+            </button>
+            <div class="more-wrap">
+                <button class="btn btn-ghost icon-only" title="More">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi"><div class="k-label">Total Purchases</div><div class="k-value">882</div></div>
+            <div class="kpi green"><div class="k-label">Total Spend</div><div class="k-value">€49,984</div></div>
+            <div class="kpi"><div class="k-label">Total VAT</div><div class="k-value">€5,031</div></div>
+            <div class="kpi red"><div class="k-label">Outdated</div><div class="k-value">37</div></div>
+        </div>
+
+        <div class="list-card">
+            <div class="lc-title">Telephone / Internet Bills</div>
+            <div class="lc-total">€45.10</div>
+            <div class="lc-sub">Cyta</div>
+            <div class="lc-status"><span class="pill pill-slate">Open</span></div>
+            <div class="lc-actions">
+                <span class="tbl-action ta-primary">Edit</span>
+                <span class="tbl-action ta-primary">Mark paid</span>
+                <span class="tbl-action ta-danger">Cancel</span>
+            </div>
+        </div>
+        <div class="list-card">
+            <div class="lc-title">AI Software</div>
+            <div class="lc-total">€20.00</div>
+            <div class="lc-sub">Figma, Inc.</div>
+            <div class="lc-status"><span class="pill pill-green">Paid</span></div>
+            <div class="lc-actions">
+                <span class="tbl-action ta-primary">Edit</span>
+                <span class="tbl-action ta-primary">Mark unpaid</span>
+                <span class="tbl-action ta-danger">Cancel</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         VARIANT B — Icon-forward (most compact)
+         Primary keeps its label; Filters + More become icon-only buttons.
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="phone">
+        <p class="variant-label">Variant B — icon-forward</p>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 class="page-title">Purchases</h1>
+        <p class="page-sub">Track and manage your business expenses.</p>
+
+        <div class="action-bar">
+            <button class="btn btn-primary">+ Create Purchase</button>
+            <button class="btn btn-ghost icon-only" title="Filters">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+            </button>
+            <button class="btn btn-ghost icon-only" title="More">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+            </button>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi"><div class="k-label">Total Purchases</div><div class="k-value">882</div></div>
+            <div class="kpi green"><div class="k-label">Total Spend</div><div class="k-value">€49,984</div></div>
+            <div class="kpi"><div class="k-label">Total VAT</div><div class="k-value">€5,031</div></div>
+            <div class="kpi red"><div class="k-label">Outdated</div><div class="k-value">37</div></div>
+        </div>
+
+        <div class="list-card">
+            <div class="lc-title">Payroll — August 2026</div>
+            <div class="lc-total">€1,200.00</div>
+            <div class="lc-sub">Payroll (Internal)</div>
+            <div class="lc-status"><span class="pill pill-red">Overdue</span></div>
+            <div class="lc-actions">
+                <span class="tbl-action ta-primary">Edit</span>
+                <span class="tbl-action ta-primary">Mark paid</span>
+                <span class="tbl-action ta-danger">Cancel</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         VARIANT C — Filters expanded (what the Filters sheet looks like open)
+         Shows the collapsible filter sheet that Filters toggles.
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="phone">
+        <p class="variant-label">Variant C — Filters open</p>
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 class="page-title">Purchases</h1>
+        <p class="page-sub">Track and manage your business expenses.</p>
+
+        <div class="action-bar">
+            <button class="btn btn-primary">+ Create</button>
+            <button class="btn btn-ghost" style="background:rgba(13,94,166,.12);">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+                Filters <span class="filter-count">2</span>
+            </button>
+            <button class="btn btn-ghost icon-only" title="More">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+            </button>
+        </div>
+
+        <div class="filter-sheet">
+            <div class="field"><label>Search</label><input placeholder="Description, invoice #, supplier…" /></div>
+            <div class="field"><label>Supplier</label><select><option>All Suppliers</option></select></div>
+            <div class="field"><label>Category</label><select><option>All Categories</option></select></div>
+            <div class="filter-actions">
+                <button class="btn btn-primary">Apply</button>
+                <button class="btn btn-ghost">Clear</button>
+            </div>
+        </div>
+
+        <div class="list-card">
+            <div class="lc-title">Web Domain Renewal</div>
+            <div class="lc-total">€284.20</div>
+            <div class="lc-sub">Namecheap</div>
+            <div class="lc-status"><span class="pill pill-slate">Open</span></div>
+        </div>
+    </div>
+
+    <p class="note">
+        <strong>The pattern:</strong> one compact action bar per list page —
+        <strong>Primary</strong> (flexes to fill), <strong>Filters</strong> (toggles a collapsible sheet, shows an active-filter count),
+        and <strong>More</strong> (⋯ dropdown for secondary actions like Bulk Entry / CSV Import / Export).
+        Replaces the three stacked full-width rows. Reusable across Purchases, Meetings, Invoices, Quotations, etc.
+        Open this file directly in a browser and narrow the window to preview.
+    </p>
+
+    <script>
+        // Minimal interactivity so the mockup feels real: toggle More dropdown.
+        document.querySelectorAll('.more-wrap .btn-ghost').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var wrap = btn.closest('.more-wrap');
+                var existing = wrap.querySelector('.more-panel');
+                if (existing) { existing.remove(); return; }
+                var panel = document.createElement('div');
+                panel.className = 'more-panel';
+                panel.innerHTML =
+                    '<a class="more-item">Bulk Entry</a>' +
+                    '<a class="more-item">CSV Import</a>' +
+                    '<a class="more-item">Export CSV</a>' +
+                    '<a class="more-item">Export PDF</a>';
+                wrap.appendChild(panel);
+            });
+        });
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.more-panel').forEach(function (p) { p.remove(); });
+        });
+    </script>
+
+</body>
+</html>

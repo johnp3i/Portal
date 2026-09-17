@@ -41,6 +41,9 @@ public interface IInvoiceService
     // Lifecycle
     Task TransitionStatusAsync(int invoiceId, int newStatusId, string userId);
 
+    // Edit eligibility (Draft, or Issued with no settlement and an unfiled VAT period)
+    Task<InvoiceEditEligibility> GetEditEligibilityAsync(int invoiceId);
+
     // Invoice editing
     Task UpdateInvoiceAsync(int invoiceId, int customerId, DateOnly invoiceDate, DateOnly dueDate,
         string? notes, bool isGrandTotalShown, bool isQuotationReferenceShown, string? invoiceNumber = null);

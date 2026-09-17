@@ -75,6 +75,8 @@ public class InvoiceVatPeriodReassignmentPropertyTests
         var productServiceMock = new Mock<IProductService>();
         var productRepositoryMock = new Mock<ProductRepository>(dbContextMock.Object);
         var productPriceTierRepoMock = new Mock<ProductPriceTierRepository>(dbContextMock.Object) { CallBase = false };
+        var creditNoteRepoMock = new Mock<CreditNoteRepository>(dbContextMock.Object) { CallBase = false };
+        var vatSubmissionServiceMock = new Mock<IVatSubmissionService>();
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         var loggerMock = new Mock<ILogger<InvoiceService>>();
 
@@ -90,6 +92,8 @@ public class InvoiceVatPeriodReassignmentPropertyTests
             auditLogRepoMock.Object,
             vatPeriodRepoMock.Object,
             vatSubmissionRepoMock.Object,
+            creditNoteRepoMock.Object,
+            vatSubmissionServiceMock.Object,
             dbContextMock.Object,
             productServiceMock.Object,
             productRepositoryMock.Object,
@@ -526,6 +530,8 @@ public class InvoiceVatPeriodReassignmentPropertyTests
                 var productServiceMock2 = new Mock<IProductService>();
                 var productRepositoryMock2 = new Mock<ProductRepository>(realDbContext);
                 var productPriceTierRepoMock2 = new Mock<ProductPriceTierRepository>(realDbContext) { CallBase = false };
+                var creditNoteRepoMock2 = new Mock<CreditNoteRepository>(realDbContext) { CallBase = false };
+                var vatSubmissionServiceMock2 = new Mock<IVatSubmissionService>();
                 var httpContextAccessorMock2 = new Mock<IHttpContextAccessor>();
                 var loggerMock2 = new Mock<ILogger<InvoiceService>>();
 
@@ -541,6 +547,8 @@ public class InvoiceVatPeriodReassignmentPropertyTests
                     auditLogRepoMock.Object,
                     vatPeriodRepoMock.Object,
                     vatSubmissionRepoMock.Object,
+                    creditNoteRepoMock2.Object,
+                    vatSubmissionServiceMock2.Object,
                     realDbContext,
                     productServiceMock2.Object,
                     productRepositoryMock2.Object,

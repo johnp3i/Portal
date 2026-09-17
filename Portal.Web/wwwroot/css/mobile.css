@@ -1559,9 +1559,9 @@
         line-height: 1.5;
     }
 
-    .eyebrow {
-        font-size: 10px;
-        padding: 5px 10px;
+    /* Eyebrow badge duplicates the page heading — hide it on mobile/tablet to save space. */
+    .topbar .eyebrow {
+        display: none;
     }
 }
 

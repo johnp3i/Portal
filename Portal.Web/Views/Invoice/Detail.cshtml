@@ -24,7 +24,7 @@
 <section class="glass card-pad" style="margin-bottom:22px;padding:14px 20px;">
     <!-- Primary actions (always visible) -->
     <div class="detail-actions-primary" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        @if (invoice.InvoiceStatusTypeId == 1)
+        @if ((bool?)ViewBag.CanEdit == true)
         {
             <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
         }
@@ -634,7 +634,7 @@
         async function issueInvoice(invoiceId) {
             var result = await Swal.fire({
                 title: 'Issue Invoice',
-                text: 'Are you sure you want to issue this invoice? Once issued, it cannot be edited.',
+                text: 'Are you sure you want to issue this invoice? Once issued, it can still be corrected until a payment or credit note is recorded or its VAT period is filed.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#0D5EA6',

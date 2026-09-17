@@ -199,9 +199,38 @@ public class PurchaseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(int? duplicateFrom)
     {
         var model = await BuildFormViewModelAsync();
+
+        // Duplicate flow (recurring bills): prefill the form from an existing purchase so the
+        // user only has to review and adjust (e.g. the new invoice number / date). Nothing is
+        // persisted until they submit through the normal Create POST, so validation and the
+        // computed total still apply. Identity, paid/cancelled state, audit fields, and the VAT
+        // period are intentionally NOT copied — they belong to the original record or are
+        // re-derived for the new one.
+        if (duplicateFrom.HasValue)
+        {
+            var source = await _purchaseService.GetPurchaseByIdAsync(duplicateFrom.Value);
+            if (source != null)
+            {
+                model.SupplierId = source.SupplierId;
+                model.ExpenseCategoryId = source.ExpenseCategoryId;
+                model.PurchaseOriginTypeId = source.PurchaseOriginTypeId;
+                model.PurchaseTypeId = source.PurchaseTypeId;
+                model.Description = source.Description;
+                model.AmountExcludingVat = source.AmountExcludingVat;
+                model.VatAmount = source.VatAmount;
+                model.Country = source.Country;
+                model.Notes = source.Notes;
+                // A new recurring bill gets its own invoice number and current date; leave the
+                // invoice number blank for the user to fill and default the date to today
+                // (already set by BuildFormViewModelAsync). Due dates and VAT period are left
+                // unset so they are chosen fresh for this new bill.
+                ViewBag.IsDuplicate = true;
+            }
+        }
+
         return View(model);
     }
 

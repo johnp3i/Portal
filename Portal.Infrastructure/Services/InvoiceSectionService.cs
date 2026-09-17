@@ -11,13 +11,28 @@ public class InvoiceSectionService : IInvoiceSectionService
 {
     private readonly InvoiceSectionRepository _sectionRepository;
     private readonly InvoiceLineRepository _lineRepository;
+    private readonly IInvoiceService _invoiceService;
 
     public InvoiceSectionService(
         InvoiceSectionRepository sectionRepository,
-        InvoiceLineRepository lineRepository)
+        InvoiceLineRepository lineRepository,
+        IInvoiceService invoiceService)
     {
         _sectionRepository = sectionRepository;
         _lineRepository = lineRepository;
+        _invoiceService = invoiceService;
+    }
+
+    /// <summary>
+    /// Throws when the invoice is not editable (see invoice edit-eligibility rule). Applied to
+    /// section mutations so an ineligible issued invoice (paid / credit-noted / VAT-filed) cannot
+    /// have its sections changed.
+    /// </summary>
+    private async Task EnsureInvoiceEditableAsync(int invoiceId)
+    {
+        var eligibility = await _invoiceService.GetEditEligibilityAsync(invoiceId);
+        if (!eligibility.CanEdit)
+            throw new InvalidOperationException(eligibility.Reason ?? "This invoice cannot be edited.");
     }
 
     /// <summary>
@@ -56,6 +71,8 @@ public class InvoiceSectionService : IInvoiceSectionService
                 throw new ArgumentException("SectionType must be either 'LineItems' or 'Narrative'.", nameof(sectionType));
             }
 
+            await EnsureInvoiceEditableAsync(invoiceId);
+
             var existingSections = await _sectionRepository.GetByInvoiceIdAsync(invoiceId);
             var nextSortOrder = existingSections.Count > 0
                 ? existingSections.Max(s => s.SortOrder) + 1
@@ -92,6 +109,8 @@ public class InvoiceSectionService : IInvoiceSectionService
     {
         try
         {
+            await EnsureInvoiceEditableAsync(invoiceId);
+
             var lines = await _lineRepository.GetByInvoiceIdAsync(invoiceId);
 
             foreach (var line in lines.Where(l => l.InvoiceSectionId == sectionId))
@@ -189,6 +208,8 @@ public class InvoiceSectionService : IInvoiceSectionService
             {
                 throw new InvalidOperationException("Invoice section not found.");
             }
+
+            await EnsureInvoiceEditableAsync(section.InvoiceId);
 
             section.Name = name.Trim();
             section.Description = description;

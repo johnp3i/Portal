@@ -83,8 +83,15 @@
     var filterToggles = document.querySelectorAll('.filter-toggle');
     filterToggles.forEach(function (btn) {
         btn.addEventListener('click', function () {
-            var panel = btn.closest('.glass, section, .card-pad')
-                            .querySelector('.filter-panel');
+            // Prefer an explicit target via aria-controls (lets the button live
+            // anywhere, e.g. in a topbar action bar outside the filter card).
+            // Fall back to the nearest containing card's filter panel.
+            var targetId = btn.getAttribute('aria-controls');
+            var panel = targetId ? document.getElementById(targetId) : null;
+            if (!panel) {
+                var container = btn.closest('.glass, section, .card-pad');
+                panel = container ? container.querySelector('.filter-panel') : null;
+            }
             if (panel) {
                 var isExpanded = panel.classList.contains('expanded');
                 panel.classList.toggle('expanded');

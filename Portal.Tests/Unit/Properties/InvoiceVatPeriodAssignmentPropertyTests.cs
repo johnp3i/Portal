@@ -107,6 +107,8 @@ public class InvoiceVatPeriodAssignmentPropertyTests
         var productServiceMock = new Mock<IProductService>();
         var productRepositoryMock = new Mock<ProductRepository>(dbContextMock.Object);
         var productPriceTierRepoMock = new Mock<ProductPriceTierRepository>(dbContextMock.Object) { CallBase = false };
+        var creditNoteRepoMock = new Mock<CreditNoteRepository>(dbContextMock.Object) { CallBase = false };
+        var vatSubmissionServiceMock = new Mock<IVatSubmissionService>();
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         var loggerMock = new Mock<ILogger<InvoiceService>>();
 
@@ -122,6 +124,8 @@ public class InvoiceVatPeriodAssignmentPropertyTests
             auditLogRepoMock.Object,
             vatPeriodRepoMock.Object,
             vatSubmissionRepoMock.Object,
+            creditNoteRepoMock.Object,
+            vatSubmissionServiceMock.Object,
             dbContextMock.Object,
             productServiceMock.Object,
             productRepositoryMock.Object,

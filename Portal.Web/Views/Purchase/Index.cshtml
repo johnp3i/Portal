@@ -1,6 +1,17 @@
 @model PurchaseListViewModel
 @{
     ViewData["Title"] = "Purchases";
+
+    // Active-filter count for the mobile Filters button badge.
+    var activeFilterCount =
+        (Model.SupplierId.HasValue ? 1 : 0)
+        + (Model.ExpenseCategoryId.HasValue ? 1 : 0)
+        + (Model.PurchaseOriginTypeId.HasValue ? 1 : 0)
+        + (Model.PurchaseTypeId.HasValue ? 1 : 0)
+        + (Model.VatPeriodId.HasValue ? 1 : 0)
+        + (Model.DateFrom.HasValue ? 1 : 0)
+        + (Model.DateTo.HasValue ? 1 : 0)
+        + (!string.IsNullOrWhiteSpace(Model.SearchTerm) ? 1 : 0);
 }
 
 <div class="topbar">
@@ -9,7 +20,7 @@
         <h1 class="topbar-heading">Purchases</h1>
         <p class="topbar-subtitle">Track and manage your business expenses.</p>
     </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <div class="topbar-actions-desktop" style="display:flex;gap:12px;flex-wrap:wrap;">
         <a asp-action="Create" class="btn btn-primary">Create Purchase</a>
         <a asp-action="BulkEntry" class="btn btn-secondary" style="background:rgba(13,94,166,.08);border:1.5px solid var(--blue);color:var(--blue);">Bulk Entry</a>
         <a asp-action="CsvImport" class="btn btn-secondary">CSV Import</a>
@@ -18,13 +29,34 @@
     </div>
 </div>
 
-<!-- Filter Panel -->
-<section class="glass card-pad" style="margin-bottom:22px;">
-    <form id="filterForm" method="get" asp-action="Index">
-        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="purchaseFilterPanel">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
-            Filters
+<!-- ── Mobile-only action bar (Variant A): own row below the topbar. Hidden on desktop. ──
+     [ + Create (flex) | Filters (count) | More ⋯ ]  — does not touch the desktop topbar above. -->
+<div class="mobile-action-bar">
+    <a asp-action="Create" class="mab-btn mab-primary">+ Create</a>
+    <button type="button" class="mab-btn mab-ghost filter-toggle" aria-expanded="false" aria-controls="purchaseFilterPanel">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+        <span>Filters</span>
+        @if (activeFilterCount > 0)
+        {
+            <span class="mab-count">@activeFilterCount</span>
+        }
+    </button>
+    <div class="mab-more">
+        <button type="button" class="mab-btn mab-ghost mab-more-toggle" aria-haspopup="true" aria-expanded="false" onclick="togglePurchaseMoreMenu(event)" title="More">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
         </button>
+        <div class="mab-more-panel" id="purchaseMorePanel" role="menu">
+            <a asp-action="BulkEntry" class="mab-more-item" role="menuitem">Bulk Entry</a>
+            <a asp-action="CsvImport" class="mab-more-item" role="menuitem">CSV Import</a>
+            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export CSV</a>
+            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export PDF</a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<section class="glass card-pad purchase-filter-card" style="margin-bottom:22px;">
+    <form id="filterForm" method="get" asp-action="Index">
         <div class="filter-panel" id="purchaseFilterPanel">
             <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
                 <div class="field" style="flex:1;min-width:200px;">
@@ -207,24 +239,24 @@
         </div>
     </div>
     <!-- Origin Type Breakdown -->
-    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid rgba(13,94,166,0.06);">
-        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+    <div class="origin-breakdown" style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid rgba(13,94,166,0.06);">
+        <div class="origin-chip" style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
             <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Domestic</span>
             <div style="font-size:1.1rem;font-weight:800;margin-top:4px;font-family:'Manrope',sans-serif;">@domesticCount</div>
         </div>
-        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+        <div class="origin-chip" style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
             <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU RC</span>
             <div style="font-size:1.1rem;font-weight:800;color:#0D5EA6;margin-top:4px;font-family:'Manrope',sans-serif;">@euRcCount</div>
         </div>
-        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+        <div class="origin-chip" style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
             <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">EU Paid</span>
             <div style="font-size:1.1rem;font-weight:800;color:#1A8AB5;margin-top:4px;font-family:'Manrope',sans-serif;">@euPaidCount</div>
         </div>
-        <div style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
+        <div class="origin-chip" style="padding:10px 18px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);">
             <span style="font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;">Non-EU</span>
             <div style="font-size:1.1rem;font-weight:800;color:#8D5D07;margin-top:4px;font-family:'Manrope',sans-serif;">@nonEuCount</div>
         </div>
-        <div style="margin-left:auto;padding:14px 22px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);font-size:13px;font-weight:700;color:#0B1B28;display:flex;align-items:center;gap:10px;font-family:'Manrope',sans-serif;">
+        <div class="origin-filter-label" style="margin-left:auto;padding:14px 22px;border-radius:10px;background:rgba(13,94,166,.03);border:1px solid rgba(13,94,166,.06);font-size:13px;font-weight:700;color:#0B1B28;display:flex;align-items:center;gap:10px;font-family:'Manrope',sans-serif;">
             <svg width="16" height="16" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
             @filterLabel
         </div>
@@ -249,7 +281,7 @@
                     <th style="text-align:right;">Excl. VAT</th>
                     <th style="text-align:right;">VAT</th>
                     <th style="text-align:right;">Total</th>
-                    <th>Classification</th>
+                    <th style="text-align:center;">Classification</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -320,8 +352,12 @@
                             }
                         </td>
                         <td data-mobile="hide">@purchase.ExpenseCategory?.Name</td>
-                        <td data-mobile="hide" style="cursor:pointer;text-decoration:none;" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
+                        <td id="attachCell-@purchase.Id" data-mobile="hide" style="cursor:pointer;text-decoration:none;" title="View or attach files" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
                             @await Component.InvokeAsync("AttachmentCount", new { entityType = "Purchase", entityId = purchase.Id })
+                            <span class="attach-add-hint" title="Attach a file">
+                                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="vertical-align:-3px;"><path d="M10.5 3.5L4.5 9.5a2.12 2.12 0 003 3l6-6a3.54 3.54 0 00-5-5l-6 6a4.95 4.95 0 007 7l5.5-5.5" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span>Add</span>
+                            </span>
                         </td>
                         <td data-mobile="hide" style="text-align:right;font-weight:600;">@Model.CurrencySymbol@purchase.AmountExcludingVat.ToString("N2")</td>
                         <td data-mobile="hide" style="text-align:right;">@Model.CurrencySymbol@purchase.VatAmount.ToString("N2")</td>
@@ -360,12 +396,14 @@
                             var isStatusOverdue = !purchase.IsCancelled && !purchase.IsPaid
                                 && statusDue != null && statusDue.Value.DayNumber < statusToday.DayNumber;
                         }
-                        <td data-mobile="hide">
-                            <span class="pill @originPillClass">@originLabel</span>
-                            @if (typeLabel != null)
-                            {
-                                <div style="font-size:11px;color:#5a6a7a;margin-top:3px;">@typeLabel</div>
-                            }
+                        <td data-mobile="hide" style="text-align:center;">
+                            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
+                                <span class="pill pill-sm @originPillClass">@originLabel</span>
+                                @if (typeLabel != null)
+                                {
+                                    <span class="pill pill-sm pill-grey">@typeLabel</span>
+                                }
+                            </div>
                         </td>
                         <td data-mobile="status">
                             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
@@ -393,6 +431,7 @@
                         </td>
                         <td data-mobile="hide" style="white-space:nowrap;">
                             <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
+                            <a asp-action="Create" asp-route-duplicateFrom="@purchase.Id" class="tbl-action tbl-action--secondary" title="Create a new purchase pre-filled from this one (for recurring bills)">Duplicate</a>
                             @if (!purchase.IsCancelled)
                             {
                                 if (purchase.IsPaid)
@@ -481,7 +520,310 @@
         color: #fff;
         border-color: #0D5EA6;
     }
+
+    /* ─── Mobile action bar (Variant A) ───────────────────────────────────────
+       A standalone row rendered BELOW the topbar, shown only on mobile.
+       Desktop is completely unaffected (the topbar keeps its own buttons). */
+    .mobile-action-bar {
+        display: none; /* hidden on desktop; shown in the mobile media query */
+    }
+    .mab-more-panel {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 190px;
+        background: #fff;
+        border: 1px solid rgba(13, 94, 166, 0.12);
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(11, 27, 40, 0.14);
+        padding: 6px;
+        z-index: 200;
+    }
+    .mab-more-panel.open {
+        display: block;
+    }
+    .mab-more-item {
+        display: block;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #0B1B28;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .mab-more-item:hover,
+    .mab-more-item:active {
+        background: rgba(13, 94, 166, 0.06);
+        color: #0D5EA6;
+        text-decoration: none;
+    }
+
+    /* File column: a faint "attach" hint is always rendered so every row has a
+       visible, clickable affordance. When the cell actually has files (the
+       AttachmentCount component rendered a count badge), hide the hint. */
+    #purchaseTable td .attach-add-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        opacity: .8;
+        color: #0D5EA6;
+        font-size: 11px;
+        font-weight: 700;
+        transition: opacity .15s;
+    }
+    #purchaseTable td:hover .attach-add-hint {
+        opacity: 1;
+    }
+    #purchaseTable td:has(.attachment-count-indicator) .attach-add-hint {
+        display: none;
+    }
+
+    /* ─── Native-app card layout for the Purchases list on phones ─────────────
+       Scoped to #purchaseTable so it overrides the generic .index-table grid
+       without affecting other index tables. Each row becomes a self-contained
+       card: title + total on top, supplier + status next, due + classification,
+       then a full-width actions row (Edit / Mark paid / Cancel). */
+    @@media (max-width: 768px) {
+        #purchaseTable tbody tr {
+            display: grid !important;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto auto auto auto;
+            gap: 6px 12px;
+            align-items: center;
+            padding: 14px 16px !important;
+            margin-bottom: 12px;
+            border: 1px solid rgba(13, 94, 166, 0.10) !important;
+            border-radius: 16px;
+            background: #fff !important;
+            box-shadow: 0 1px 3px rgba(11, 27, 40, 0.05);
+            cursor: default;
+        }
+
+        #purchaseTable tbody tr:active {
+            background: #fff !important;
+        }
+
+        /* Description — title, top-left */
+        #purchaseTable tbody td:nth-child(1) {
+            grid-row: 1;
+            grid-column: 1;
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1.3;
+        }
+        /* Trim the sub-lines (invoice #, "Added ...") so the card stays tight */
+        #purchaseTable tbody td:nth-child(1) div {
+            font-size: 10.5px !important;
+        }
+
+        /* Total — top-right, bold */
+        #purchaseTable tbody td:nth-child(9) {
+            grid-row: 1;
+            grid-column: 2;
+            text-align: right;
+            font-weight: 800;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+
+        /* Supplier — second row, left, muted */
+        #purchaseTable tbody td:nth-child(2) {
+            grid-row: 2;
+            grid-column: 1;
+            font-size: 12px;
+            color: #5a6a7a;
+        }
+
+        /* Status pill — second row, right */
+        #purchaseTable tbody td:nth-child(11) {
+            grid-row: 2;
+            grid-column: 2;
+            text-align: right;
+            display: block !important;
+        }
+
+        /* Due date — third row, left (un-hidden on mobile) */
+        #purchaseTable tbody td:nth-child(4) {
+            display: block !important;
+            grid-row: 3;
+            grid-column: 1;
+            font-size: 12px;
+        }
+
+        /* Classification — third row, right (un-hidden on mobile) */
+        #purchaseTable tbody td:nth-child(10) {
+            display: block !important;
+            grid-row: 3;
+            grid-column: 2;
+            text-align: right;
+        }
+        #purchaseTable tbody td:nth-child(10) div {
+            display: none; /* hide the accounting-type sub-label to save space */
+        }
+
+        /* Hidden on mobile: Date(3), Category(5), File(6), Excl.VAT(7), VAT(8) */
+        #purchaseTable tbody td:nth-child(3),
+        #purchaseTable tbody td:nth-child(5),
+        #purchaseTable tbody td:nth-child(6),
+        #purchaseTable tbody td:nth-child(7),
+        #purchaseTable tbody td:nth-child(8) {
+            display: none !important;
+        }
+
+        /* Actions — full-width row at the bottom, un-hidden and laid out as a button row */
+        #purchaseTable tbody td:nth-child(12) {
+            display: flex !important;
+            grid-row: 4;
+            grid-column: 1 / -1;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding-top: 12px !important;
+            border-top: 1px solid rgba(13, 94, 166, 0.08);
+            white-space: normal !important;
+        }
+        #purchaseTable tbody td:nth-child(12) > .tbl-action {
+            flex: 1 1 auto;
+            text-align: center;
+            padding: 9px 12px;
+            font-size: 13px;
+        }
+
+        /* ── Mobile action bar (Variant A): its own row, one line ─────────────
+              [ + Create (flex) | Filters (count) | More ⋯ ]. Desktop untouched. */
+        .mobile-action-bar {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+            margin: 0 0 16px;
+        }
+        .mab-btn {
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 12px;
+            border: 1.5px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 12px 14px;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+        /* Create — primary, grows to fill the row */
+        .mab-primary {
+            flex: 1 1 auto;
+            background: linear-gradient(180deg,#1A6BB8 0%, var(--blue) 100%);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(13,94,166,.22);
+        }
+        /* Filters + More — compact ghost buttons */
+        .mab-ghost {
+            flex: 0 0 auto;
+            background: rgba(13,94,166,.06);
+            border-color: rgba(13,94,166,.14);
+            color: var(--blue);
+        }
+        .mab-ghost.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+        .mab-more-toggle {
+            padding: 12px 13px;
+        }
+        /* Active-filter count badge */
+        .mab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 10px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .mab-ghost.active .mab-count {
+            background: #fff;
+            color: var(--blue);
+        }
+        .mab-more { position: relative; flex: 0 0 auto; }
+
+        /* Hide the desktop topbar action buttons on mobile (the mobile bar replaces them). */
+        .topbar-actions-desktop {
+            display: none !important;
+        }
+
+        /* Filter card: toggle lives in the mobile bar, so strip the card chrome;
+           only the expanded panel shows as its own card. */
+        .purchase-filter-card {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        .purchase-filter-card .filter-panel.expanded {
+            background: #fff;
+            border: 1px solid rgba(13, 94, 166, 0.10);
+            border-radius: 16px;
+            padding: 14px !important;
+            margin: 0 0 22px !important;
+        }
+
+        /* ── Origin breakdown: compact 2×2 grid with clearer tints, matching the
+              crisp look of the top KPI cards. */
+        .origin-breakdown {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px !important;
+            margin-top: 14px !important;
+            padding-top: 14px !important;
+        }
+        .origin-breakdown .origin-chip {
+            margin: 0 !important;
+            padding: 10px 12px !important;
+            background: rgba(13, 94, 166, 0.06) !important;
+            border: 1px solid rgba(13, 94, 166, 0.12) !important;
+            text-align: center;
+        }
+        /* Filter label drops to its own full-width row below the 2×2 grid */
+        .origin-breakdown .origin-filter-label {
+            grid-column: 1 / -1;
+            margin-left: 0 !important;
+            justify-content: center;
+            background: rgba(13, 94, 166, 0.04) !important;
+        }
+    }
 </style>
+
+<script>
+    // ─── Mobile action-bar "More" menu ──────────────────────────────────────
+    function togglePurchaseMoreMenu(event) {
+        event.stopPropagation();
+        var panel = document.getElementById('purchaseMorePanel');
+        var toggle = event.currentTarget;
+        var isOpen = panel.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+    // Close the menu when tapping/clicking outside it.
+    document.addEventListener('click', function (e) {
+        var panel = document.getElementById('purchaseMorePanel');
+        if (!panel || !panel.classList.contains('open')) return;
+        if (e.target.closest('.mab-more')) return;
+        panel.classList.remove('open');
+        var toggle = document.querySelector('.mab-more-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+</script>
 
 <script>
     // ─── Filter State Persistence ──────────────────────────────────────────
@@ -498,46 +840,190 @@
 </script>
 <script>
 async function showAttachmentModal(entityId, label) {
-    BlockUI.show('Loading...');
+    // Open the modal, then load its contents. This modal both LISTS existing files and lets
+    // the user UPLOAD a new one directly from the purchase list — no need to open the full
+    // edit page just to attach an invoice.
+    Swal.fire({
+        title: 'Attachments \u2014 ' + label,
+        html: '<div id="attachModalBody" style="text-align:left;">Loading\u2026</div>',
+        width: 560,
+        showConfirmButton: true,
+        confirmButtonText: 'Close',
+        confirmButtonColor: '#0D5EA6',
+        didOpen: function () { renderAttachmentModal(entityId); }
+    });
+}
+
+function attachTokenValue() {
+    var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+    return tokenInput ? tokenInput.value : '';
+}
+
+// Rewrites a row's File-cell to reflect the current attachment count, mirroring the
+// AttachmentCount view component (which renders NOTHING at 0). Keeps the "attach" hint for
+// empty cells so there's always a clickable affordance — never a bare "0" badge.
+function updateAttachmentCountCell(entityId, count) {
+    var cell = document.getElementById('attachCell-' + entityId);
+    if (!cell) return;
+
+    var hint =
+        '<span class="attach-add-hint" title="Attach a file">' +
+        '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="vertical-align:-3px;">' +
+        '<path d="M10.5 3.5L4.5 9.5a2.12 2.12 0 003 3l6-6a3.54 3.54 0 00-5-5l-6 6a4.95 4.95 0 007 7l5.5-5.5" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg><span>Add</span></span>';
+
+    if (count > 0) {
+        var badge =
+            '<span class="attachment-count-indicator" title="' + count + ' attachment' + (count === 1 ? '' : 's') + '">' +
+            '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px;">' +
+            '<path d="M10.5 3.5L4.5 9.5a2.12 2.12 0 003 3l6-6a3.54 3.54 0 00-5-5l-6 6a4.95 4.95 0 007 7l5.5-5.5" stroke="#5a6a7a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>' +
+            '</svg>' +
+            '<span class="attachment-count-number">' + count + '</span>' +
+            '</span>';
+        cell.innerHTML = badge;
+    } else {
+        // No files: show only the faint attach hint (matches the server-side empty state).
+        cell.innerHTML = hint;
+    }
+}
+
+// (Re)renders the attachment modal body: the existing file list (with delete) plus the
+// upload control. Called on open and after each upload/delete so the view stays fresh.
+async function renderAttachmentModal(entityId) {
+    var body = document.getElementById('attachModalBody');
+    if (!body) return;
+    body.innerHTML = 'Loading\u2026';
+
+    var files = [];
     try {
         var response = await fetch('/Attachment/AxGetList?entityType=Purchase&entityId=' + entityId);
         var result = await response.json();
-        BlockUI.hide();
+        if (result.success && Array.isArray(result.data)) files = result.data;
+    } catch (e) { /* fall through to empty list */ }
 
-        if (!result.success || !result.data || result.data.length === 0) {
-            Swal.fire({ title: 'No Attachments', text: 'No files attached to this purchase.', icon: 'info', confirmButtonColor: '#0D5EA6' });
-            return;
-        }
+    // Keep the table's paperclip badge in sync with the current count (live, no reload).
+    updateAttachmentCountCell(entityId, files.length);
 
-        var files = result.data;
-        var html = '<div style="text-align:left;">';
-        files.forEach(function(file) {
+    var html = '';
+
+    // Existing files
+    if (files.length === 0) {
+        html += '<div style="font-size:13px;color:#5E7385;padding:8px 0 4px;">No files attached yet.</div>';
+    } else {
+        files.forEach(function (file) {
             var sizeKb = (file.fileSizeBytes / 1024).toFixed(1);
-            var uploadDate = new Date(file.createdAtUtc);
-            if (!file.createdAtUtc.endsWith('Z')) uploadDate = new Date(file.createdAtUtc + 'Z');
+            var uploadDate = new Date(file.createdAtUtc.endsWith('Z') ? file.createdAtUtc : file.createdAtUtc + 'Z');
             var dateStr = uploadDate.toLocaleDateString() + ' ' + uploadDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
             html += '<div style="padding:12px 0;border-bottom:1px solid #f0f4f7;display:flex;justify-content:space-between;align-items:center;gap:12px;">';
             html += '<div style="min-width:0;">';
             html += '<div style="font-weight:600;font-size:14px;color:#0B1B28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + file.originalFileName + '</div>';
             html += '<div style="font-size:12px;color:#5E7385;margin-top:3px;">' + sizeKb + ' KB &middot; ' + dateStr + '</div>';
             html += '</div>';
-            html += '<a href="/Attachment/AxGetDownload?id=' + file.id + '" class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;flex-shrink:0;">Download</a>';
+            html += '<div style="display:flex;gap:6px;flex-shrink:0;">';
+            html += '<a href="/Attachment/AxGetDownload?id=' + file.id + '" class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;">Download</a>';
+            html += '<button type="button" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;white-space:nowrap;color:#C24A4A;" onclick="deleteAttachmentFromModal(' + file.id + ',' + entityId + ')">Delete</button>';
+            html += '</div>';
             html += '</div>';
         });
-        html += '</div>';
+    }
 
-        Swal.fire({
-            title: 'Attachments \u2014 ' + label,
-            html: html,
-            width: 540,
-            showConfirmButton: true,
-            confirmButtonText: 'Close',
-            confirmButtonColor: '#0D5EA6'
+    // Upload control (max 5 files per purchase; the server enforces the limit and file types)
+    if (files.length >= 5) {
+        html += '<div style="margin-top:14px;font-size:12px;color:#C8912E;">Maximum of 5 files reached. Delete one to add another.</div>';
+    } else {
+        html += '<div style="margin-top:16px;padding-top:14px;border-top:1px solid #f0f4f7;">';
+        html += '<label style="font-size:12px;font-weight:700;color:#5E7385;display:block;margin-bottom:8px;">Attach a file (PDF, PNG, JPG, WEBP \u2014 max 5 MB)</label>';
+        // Native file input is hidden and triggered by a themed button, so the control matches
+        // the app theme (the browser default "Browse..." button cannot be styled directly).
+        html += '<input type="file" id="attachFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp" capture="environment" style="display:none;" onchange="onAttachFileChosen()" />';
+        html += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
+        html += '<button type="button" class="btn btn-secondary" style="font-size:13px;padding:8px 16px;" onclick="document.getElementById(\'attachFileInput\').click()">Choose file</button>';
+        html += '<span id="attachFileName" style="font-size:13px;color:#8a9bab;flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">No file selected</span>';
+        html += '<button type="button" class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="uploadAttachmentFromModal(' + entityId + ')">Upload</button>';
+        html += '</div></div>';
+    }
+
+    body.innerHTML = html;
+}
+
+// Reflects the chosen filename next to the themed "Choose file" button.
+function onAttachFileChosen() {
+    var input = document.getElementById('attachFileInput');
+    var nameEl = document.getElementById('attachFileName');
+    if (!input || !nameEl) return;
+    if (input.files && input.files.length > 0) {
+        nameEl.textContent = input.files[0].name;
+        nameEl.style.color = '#0B1B28';
+    } else {
+        nameEl.textContent = 'No file selected';
+        nameEl.style.color = '#8a9bab';
+    }
+}
+
+async function uploadAttachmentFromModal(entityId) {
+    var input = document.getElementById('attachFileInput');
+    if (!input || !input.files || input.files.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'No file', text: 'Please choose a file to upload.', confirmButtonColor: '#0D5EA6' });
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append('file', input.files[0]);
+    formData.append('entityType', 'Purchase');
+    formData.append('entityId', entityId);
+
+    BlockUI.show('Uploading\u2026');
+    try {
+        var response = await fetch('/Attachment/AxPostUpload', {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': attachTokenValue() },
+            body: formData
         });
+        var result = await response.json();
+        BlockUI.hide();
+        if (result.success) {
+            // Refresh the modal body so the new file appears; the paperclip count in the table
+            // updates on the next page load.
+            renderAttachmentModal(entityId);
+        } else {
+            Swal.fire({ icon: 'error', title: 'Upload failed', text: result.message || 'Could not upload the file.', confirmButtonColor: '#0D5EA6' });
+        }
     } catch (e) {
         BlockUI.hide();
-        Swal.fire({ title: 'Error', text: 'Failed to load attachments.', icon: 'error', confirmButtonColor: '#0D5EA6' });
+        Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred while uploading.', confirmButtonColor: '#0D5EA6' });
     }
+}
+
+function deleteAttachmentFromModal(attachmentId, entityId) {
+    Swal.fire({
+        title: 'Delete file?',
+        text: 'This will remove the attachment from this purchase.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#C24A4A'
+    }).then(async function (r) {
+        if (!r.isConfirmed) return;
+        BlockUI.show('Deleting\u2026');
+        try {
+            var response = await fetch('/Attachment/AxPostDelete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': attachTokenValue() },
+                body: 'id=' + encodeURIComponent(attachmentId)
+            });
+            var result = await response.json();
+            BlockUI.hide();
+            if (result.success) {
+                renderAttachmentModal(entityId);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Could not delete the file.', confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+        }
+    });
 }
 
 function setQuickPeriod(preset) {

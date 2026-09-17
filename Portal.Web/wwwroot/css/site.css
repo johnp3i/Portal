@@ -181,6 +181,7 @@ a{text-decoration:none;color:inherit}
 .pill-amber{background:rgba(200,145,46,.08);color:#C8912E;border:1px solid rgba(200,145,46,.18)}
 .pill-cyan{background:#E8F8FD;color:#1A8AB5;border:1px solid rgba(87,184,232,.18)}
 .pill-grey{background:#F0F2F5;color:#5A6A7A;border:1px solid rgba(90,106,122,.12)}
+.pill-sm{padding:2px 7px;font-size:9px;gap:4px;letter-spacing:.04em}
 
 /* ===== FORMS ===== */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}

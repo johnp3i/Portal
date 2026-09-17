@@ -95,6 +95,8 @@ public class InvoiceLineReverseChargeInvariantPropertyTests
         Mock<ILogger<InvoiceService>> loggerMock)
     {
         var productPriceTierRepoMock = new Mock<ProductPriceTierRepository>(dbContextMock.Object) { CallBase = false };
+        var creditNoteRepoMock = new Mock<CreditNoteRepository>(dbContextMock.Object) { CallBase = false };
+        var vatSubmissionServiceMock = new Mock<IVatSubmissionService>();
 
         return new InvoiceService(
             tenantMock.Object,
@@ -108,6 +110,8 @@ public class InvoiceLineReverseChargeInvariantPropertyTests
             auditLogRepoMock.Object,
             vatPeriodRepoMock.Object,
             vatSubmissionRepoMock.Object,
+            creditNoteRepoMock.Object,
+            vatSubmissionServiceMock.Object,
             dbContextMock.Object,
             productServiceMock.Object,
             productRepoMock.Object,

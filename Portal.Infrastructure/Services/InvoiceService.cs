@@ -27,6 +27,8 @@ public class InvoiceService : IInvoiceService
     private readonly AuditLogRepository _auditLogRepository;
     private readonly VatSubmissionPeriodRepository _vatSubmissionPeriodRepository;
     private readonly VatSubmissionRepository _vatSubmissionRepository;
+    private readonly CreditNoteRepository _creditNoteRepository;
+    private readonly IVatSubmissionService _vatSubmissionService;
     private readonly PortalDbContext _portalDbContext;
     private readonly IProductService _productService;
     private readonly ProductRepository _productRepository;
@@ -59,6 +61,8 @@ public class InvoiceService : IInvoiceService
         AuditLogRepository auditLogRepository,
         VatSubmissionPeriodRepository vatSubmissionPeriodRepository,
         VatSubmissionRepository vatSubmissionRepository,
+        CreditNoteRepository creditNoteRepository,
+        IVatSubmissionService vatSubmissionService,
         PortalDbContext portalDbContext,
         IProductService productService,
         ProductRepository productRepository,
@@ -77,6 +81,8 @@ public class InvoiceService : IInvoiceService
         _auditLogRepository = auditLogRepository;
         _vatSubmissionPeriodRepository = vatSubmissionPeriodRepository;
         _vatSubmissionRepository = vatSubmissionRepository;
+        _creditNoteRepository = creditNoteRepository;
+        _vatSubmissionService = vatSubmissionService;
         _portalDbContext = portalDbContext;
         _productService = productService;
         _productRepository = productRepository;
@@ -609,6 +615,120 @@ public class InvoiceService : IInvoiceService
         await _auditLogRepository.InsertAsync(auditLog);
     }
 
+    // ── Edit eligibility ─────────────────────────────────────────────────────────────────────
+    // Status ids: Draft=1, Issued=2, Cancelled=3.
+    private const int InvoiceStatusDraft = 1;
+    private const int InvoiceStatusIssued = 2;
+    private const int InvoiceStatusCancelled = 3;
+
+    /// <summary>
+    /// Returns whether an invoice has any recorded settlement: a non-voided payment OR an applied
+    /// (non-voided) credit note. Single source of truth for the "settled" invariant
+    /// (see financial-conventions steering — subtract every settlement mechanism).
+    /// </summary>
+    private async Task<bool> HasSettlementAsync(Invoice invoice)
+    {
+        var businessId = invoice.BusinessId;
+
+        var paidTotal = await _portalDbContext.Payments
+            .Where(p => p.InvoiceId == invoice.Id && p.BusinessId == businessId && !p.IsVoided)
+            .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+        if (paidTotal > 0m)
+            return true;
+
+        var appliedCredit = await _creditNoteRepository.GetTotalAppliedCreditAsync(invoice.Id, businessId);
+        return appliedCredit > 0m;
+    }
+
+    /// <summary>
+    /// Returns true when the invoice's assigned VAT submission period has been filed (submitted).
+    /// False when there is no assigned period or no submission row.
+    /// </summary>
+    private async Task<bool> IsVatPeriodSubmittedAsync(Invoice invoice)
+    {
+        if (!invoice.VatSubmissionPeriodId.HasValue)
+            return false;
+
+        var submission = await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(
+            invoice.VatSubmissionPeriodId.Value, invoice.BusinessId);
+        return submission != null && submission.IsSubmitted;
+    }
+
+    /// <summary>
+    /// Evaluates whether the given (already-loaded) invoice may be edited.
+    /// Draft → editable; Issued → editable only when unsettled and its VAT period is not filed;
+    /// Cancelled → never.
+    /// </summary>
+    private async Task<InvoiceEditEligibility> EvaluateEligibilityAsync(Invoice invoice)
+    {
+        if (invoice.InvoiceStatusTypeId == InvoiceStatusCancelled)
+            return new InvoiceEditEligibility(false, "Cancelled invoices cannot be edited.", false);
+
+        if (invoice.InvoiceStatusTypeId == InvoiceStatusDraft)
+            return new InvoiceEditEligibility(true, null, false);
+
+        if (invoice.InvoiceStatusTypeId == InvoiceStatusIssued)
+        {
+            if (await HasSettlementAsync(invoice))
+                return new InvoiceEditEligibility(false,
+                    "This invoice has a payment or credit note recorded. Use a credit note to correct it.", true);
+
+            if (await IsVatPeriodSubmittedAsync(invoice))
+                return new InvoiceEditEligibility(false,
+                    "The VAT period for this invoice has been filed and can no longer be changed.", true);
+
+            return new InvoiceEditEligibility(true, null, true);
+        }
+
+        // Unknown status — fail closed.
+        return new InvoiceEditEligibility(false, "This invoice cannot be edited.", false);
+    }
+
+    /// <inheritdoc />
+    public async Task<InvoiceEditEligibility> GetEditEligibilityAsync(int invoiceId)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
+        if (invoice == null)
+            return new InvoiceEditEligibility(false, "Invoice not found.", false);
+
+        return await EvaluateEligibilityAsync(invoice);
+    }
+
+    /// <summary>
+    /// Throws <see cref="InvalidOperationException"/> with the eligibility reason when the given
+    /// (already-loaded) invoice may not be edited. The authoritative per-write guard.
+    /// </summary>
+    private async Task EnsureEditableAsync(Invoice invoice)
+    {
+        var eligibility = await EvaluateEligibilityAsync(invoice);
+        if (!eligibility.CanEdit)
+            throw new InvalidOperationException(eligibility.Reason ?? "This invoice cannot be edited.");
+    }
+
+    /// <summary>
+    /// After an edit that recomputes an issued invoice's totals, refresh the persisted VAT figures
+    /// for its assigned period so they are not left stale. Only refreshes an EXISTING, unsubmitted
+    /// submission row; never creates a row solely because of an edit, and no-ops for Draft.
+    /// </summary>
+    private async Task RefreshVatPeriodFiguresIfNeededAsync(Invoice invoice)
+    {
+        if (invoice.InvoiceStatusTypeId != InvoiceStatusIssued)
+            return;
+        if (!invoice.VatSubmissionPeriodId.HasValue)
+            return;
+
+        var submission = await _vatSubmissionRepository.GetByPeriodIdAndBusinessIdAsync(
+            invoice.VatSubmissionPeriodId.Value, invoice.BusinessId);
+
+        // Only refresh a row that already exists and has not been filed.
+        if (submission == null || submission.IsSubmitted)
+            return;
+
+        await _vatSubmissionService.CreateOrRecalculateAsync(invoice.VatSubmissionPeriodId.Value);
+    }
+
     public async Task UpdateInvoiceAsync(int invoiceId, int customerId, DateOnly invoiceDate, DateOnly dueDate,
         string? notes, bool isGrandTotalShown, bool isQuotationReferenceShown, string? invoiceNumber = null)
     {
@@ -620,16 +740,30 @@ public class InvoiceService : IInvoiceService
             throw new InvalidOperationException("Invoice not found");
         }
 
-        if (invoice.InvoiceStatusTypeId != 1)
-        {
-            throw new InvalidOperationException("Invoice can only be edited in Draft status");
-        }
+        await EnsureEditableAsync(invoice);
+        var isIssued = invoice.InvoiceStatusTypeId == InvoiceStatusIssued;
 
         // Verify customer belongs to business
         var customer = await _customerRepository.GetByIdAndBusinessIdAsync(customerId, businessId);
         if (customer == null)
         {
             throw new ArgumentException("Customer not found or does not belong to this business");
+        }
+
+        // Issued invoices: the invoice date may only change if it stays within the same currently
+        // assigned (unsubmitted) VAT period. Moving it elsewhere must go through the explicit VAT
+        // period reassignment flow (which guards submitted periods).
+        if (isIssued && invoiceDate != invoice.InvoiceDate && invoice.VatSubmissionPeriodId.HasValue)
+        {
+            var currentPeriod = await _vatSubmissionPeriodRepository.GetByIdAndBusinessIdAsync(
+                invoice.VatSubmissionPeriodId.Value, businessId);
+            if (currentPeriod == null
+                || invoiceDate < currentPeriod.PeriodStartDate
+                || invoiceDate > currentPeriod.PeriodEndDate)
+            {
+                throw new InvalidOperationException(
+                    "The new invoice date falls outside this invoice's VAT period. Reassign the VAT period explicitly instead of changing the date.");
+            }
         }
 
         // Capture old values for audit
@@ -641,7 +775,8 @@ public class InvoiceService : IInvoiceService
         invoice.Notes = notes;
         invoice.IsGrandTotalShown = isGrandTotalShown;
         invoice.IsQuotationReferenceShown = isQuotationReferenceShown;
-        if (!string.IsNullOrWhiteSpace(invoiceNumber))
+        // Invoice number is immutable once issued (sequence integrity) — ignore any incoming value.
+        if (!isIssued && !string.IsNullOrWhiteSpace(invoiceNumber))
         {
             invoice.InvoiceNumber = invoiceNumber;
         }
@@ -649,13 +784,20 @@ public class InvoiceService : IInvoiceService
 
         await _invoiceRepository.UpdateAsync(invoice);
 
+        // A customer or date change on an issued invoice can move its VAT figures — refresh the
+        // (unsubmitted) period so persisted totals are not left stale.
+        if (isIssued)
+        {
+            await RefreshVatPeriodFiguresIfNeededAsync(invoice);
+        }
+
         // Write audit log
         var newValues = $"CustomerId={customerId}, InvoiceDate={invoiceDate}, DueDate={dueDate}, Notes={notes ?? "(null)"}, IsGrandTotalShown={isGrandTotalShown}";
         var auditLog = new AuditLog
         {
             BusinessId = businessId,
             UserId = null,
-            Action = "Updated",
+            Action = isIssued ? "IssuedInvoiceRevised" : "Updated",
             TableName = "Invoice",
             RecordId = invoiceId.ToString(),
             OldValues = oldValues,
@@ -682,10 +824,7 @@ public class InvoiceService : IInvoiceService
             throw new InvalidOperationException("Invoice not found");
         }
 
-        if (invoice.InvoiceStatusTypeId != 1)
-        {
-            throw new InvalidOperationException("Invoice can only be edited in Draft status");
-        }
+        await EnsureEditableAsync(invoice);
 
         // Compute LineTotal
         var baseAmount = quantity * unitPrice;
@@ -760,12 +899,15 @@ public class InvoiceService : IInvoiceService
         // Recompute invoice totals
         await RecomputeAndUpdateTotalsAsync(invoiceId);
 
+        // Keep the (unsubmitted) VAT period's persisted figures in sync when editing an issued invoice.
+        await RefreshVatPeriodFiguresIfNeededAsync(invoice);
+
         // Write audit log
         var auditLog = new AuditLog
         {
             BusinessId = businessId,
             UserId = null,
-            Action = "LineAdded",
+            Action = invoice.InvoiceStatusTypeId == InvoiceStatusIssued ? "IssuedInvoiceLineAdded" : "LineAdded",
             TableName = "Invoice",
             RecordId = invoiceId.ToString(),
             OldValues = null,
@@ -803,10 +945,7 @@ public class InvoiceService : IInvoiceService
             throw new InvalidOperationException("Invoice not found");
         }
 
-        if (invoice.InvoiceStatusTypeId != 1)
-        {
-            throw new InvalidOperationException("Invoice can only be edited in Draft status");
-        }
+        await EnsureEditableAsync(invoice);
 
         // Capture old values for audit
         var oldValues = $"Description={line.Description}, Qty={line.Quantity}, UnitPrice={line.UnitPrice}, VatRate={line.VatRate}, Discount={line.Discount}, DiscountType={line.DiscountType}, LineTotal={line.LineTotal}";
@@ -843,13 +982,16 @@ public class InvoiceService : IInvoiceService
         // Recompute invoice totals
         await RecomputeAndUpdateTotalsAsync(line.InvoiceId);
 
+        // Keep the (unsubmitted) VAT period's persisted figures in sync when editing an issued invoice.
+        await RefreshVatPeriodFiguresIfNeededAsync(invoice);
+
         // Write audit log
         var newValues = $"Description={description}, Qty={quantity}, UnitPrice={unitPrice}, VatRate={vatRate}, Discount={discount}, DiscountType={discountType}, LineTotal={lineTotal}";
         var auditLog = new AuditLog
         {
             BusinessId = businessId,
             UserId = null,
-            Action = "LineUpdated",
+            Action = invoice.InvoiceStatusTypeId == InvoiceStatusIssued ? "IssuedInvoiceLineUpdated" : "LineUpdated",
             TableName = "Invoice",
             RecordId = invoice.Id.ToString(),
             OldValues = oldValues,
@@ -878,10 +1020,7 @@ public class InvoiceService : IInvoiceService
             throw new InvalidOperationException("Invoice not found");
         }
 
-        if (invoice.InvoiceStatusTypeId != 1)
-        {
-            throw new InvalidOperationException("Invoice can only be edited in Draft status");
-        }
+        await EnsureEditableAsync(invoice);
 
         // Delete line
         await _invoiceLineRepository.DeleteAsync(lineId);
@@ -889,12 +1028,15 @@ public class InvoiceService : IInvoiceService
         // Recompute invoice totals from remaining lines
         await RecomputeAndUpdateTotalsAsync(line.InvoiceId);
 
+        // Keep the (unsubmitted) VAT period's persisted figures in sync when editing an issued invoice.
+        await RefreshVatPeriodFiguresIfNeededAsync(invoice);
+
         // Write audit log
         var auditLog = new AuditLog
         {
             BusinessId = businessId,
             UserId = null,
-            Action = "LineRemoved",
+            Action = invoice.InvoiceStatusTypeId == InvoiceStatusIssued ? "IssuedInvoiceLineRemoved" : "LineRemoved",
             TableName = "Invoice",
             RecordId = invoice.Id.ToString(),
             OldValues = $"LineId={lineId}, Description={line.Description}, Qty={line.Quantity}, UnitPrice={line.UnitPrice}, LineTotal={line.LineTotal}",
@@ -1119,8 +1261,7 @@ public class InvoiceService : IInvoiceService
         var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
         if (invoice == null)
             throw new InvalidOperationException("Invoice not found");
-        if (invoice.InvoiceStatusTypeId != 1)
-            throw new InvalidOperationException("Invoice can only be edited in Draft status");
+        await EnsureEditableAsync(invoice);
 
         // Validate discount type
         if (discountType != "Percentage" && discountType != "Fixed")
@@ -1237,6 +1378,10 @@ public class InvoiceService : IInvoiceService
 
             if (ownsTransaction) await transaction!.CommitAsync();
 
+            // After commit, keep the (unsubmitted) VAT period's persisted figures in sync for issued invoices.
+            if (ownsTransaction)
+                await RefreshVatPeriodFiguresIfNeededAsync(invoice);
+
             // Return totals breakdown
             return BulkDiscountResult.Ok(totals);
         }
@@ -1253,8 +1398,7 @@ public class InvoiceService : IInvoiceService
         var invoice = await _invoiceRepository.GetByIdAndBusinessIdAsync(invoiceId, businessId);
         if (invoice == null)
             throw new InvalidOperationException("Invoice not found");
-        if (invoice.InvoiceStatusTypeId != 1)
-            throw new InvalidOperationException("Invoice can only be edited in Draft status");
+        await EnsureEditableAsync(invoice);
 
         var adjustmentLine = await _invoiceLineRepository.GetAdjustmentLineByInvoiceIdAsync(invoiceId);
         if (adjustmentLine == null)
@@ -1294,6 +1438,10 @@ public class InvoiceService : IInvoiceService
             var totals = await GetTotalsBreakdownAsync(invoiceId);
 
             if (ownsTransaction) await transaction!.CommitAsync();
+
+            // After commit, keep the (unsubmitted) VAT period's persisted figures in sync for issued invoices.
+            if (ownsTransaction)
+                await RefreshVatPeriodFiguresIfNeededAsync(invoice);
 
             return BulkDiscountResult.Ok(totals);
         }

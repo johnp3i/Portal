@@ -20,7 +20,8 @@
             <div class="field">
                 <label asp-for="SupplierId">Supplier *</label>
                 <div class="autocomplete-wrapper">
-                    <input type="text" id="supplierText" placeholder="Type supplier..." autocomplete="off" />
+                    <input type="text" id="supplierText" placeholder="Type supplier..." autocomplete="off"
+                           value="@(Model.Suppliers?.FirstOrDefault(s => s.Id == Model.SupplierId)?.Name)" />
                     <input type="hidden" asp-for="SupplierId" id="supplierHidden" />
                     <span class="ac-status" id="supplierStatus"></span>
                 </div>
@@ -31,7 +32,8 @@
             <div class="field">
                 <label asp-for="ExpenseCategoryId">Expense Category *</label>
                 <div class="autocomplete-wrapper">
-                    <input type="text" id="categoryText" placeholder="Type category..." autocomplete="off" />
+                    <input type="text" id="categoryText" placeholder="Type category..." autocomplete="off"
+                           value="@(Model.ExpenseCategories?.FirstOrDefault(c => c.Id == Model.ExpenseCategoryId)?.Name)" />
                     <input type="hidden" asp-for="ExpenseCategoryId" id="categoryHidden" />
                     <span class="ac-status" id="categoryStatus"></span>
                 </div>

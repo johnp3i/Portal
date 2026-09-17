@@ -154,11 +154,14 @@ public class DashboardBriefingService : IDashboardBriefingService
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var cutoff = today.AddDays(14);
 
-            // Non-cancelled purchases whose effective due date (TargetPaymentDate ?? SupplierDueDate)
+            // Non-cancelled, unpaid purchases whose effective due date (TargetPaymentDate ?? SupplierDueDate)
             // falls on or before the 14-day cutoff. Mirrors the dashboard widget's window.
+            // A paid purchase is settled and must never appear as an upcoming supplier payment
+            // (see financial-conventions steering: subtract every settlement mechanism).
             var upcoming = await _dbContext.Purchases
                 .Where(p => p.BusinessId == businessId
                     && !p.IsCancelled
+                    && !p.IsPaid
                     && (p.TargetPaymentDate ?? p.SupplierDueDate) != null
                     && (p.TargetPaymentDate ?? p.SupplierDueDate) <= cutoff)
                 .Select(p => new

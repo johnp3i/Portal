@@ -241,6 +241,10 @@ public class InvoiceController : Controller
         ViewBag.StatusName = statusNames.GetValueOrDefault(invoice.InvoiceStatusTypeId, "Unknown");
         ViewBag.FinancialStatusName = financialStatusNames.GetValueOrDefault(invoice.InvoiceFinancialStatusTypeId, "Unknown");
 
+        // Edit eligibility: Draft, or Issued with no settlement and an unfiled VAT period.
+        var editEligibility = await _invoiceService.GetEditEligibilityAsync(id);
+        ViewBag.CanEdit = editEligibility.CanEdit;
+
         var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
         ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
 
@@ -389,8 +393,11 @@ public class InvoiceController : Controller
         var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
         if (invoice == null) return NotFound();
 
-        if (invoice.InvoiceStatusTypeId != 1)
+        // Editable when Draft, or Issued with no settlement and an unfiled VAT period.
+        var eligibility = await _invoiceService.GetEditEligibilityAsync(id);
+        if (!eligibility.CanEdit)
         {
+            if (eligibility.Reason != null) TempData["Error"] = eligibility.Reason;
             return RedirectToAction(nameof(Detail), new { id });
         }
 
@@ -399,10 +406,16 @@ public class InvoiceController : Controller
         var customers = await _customerService.GetCustomersAsync(null, true);
         var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
 
+        // Surface an informational note in the Edit view when the invoice has already been shared/accepted.
+        var activeShare = await _sharingService.GetActiveShareByInvoiceIdAsync(id);
+        var hasBeenShared = activeShare != null;
+
         ViewBag.Lines = lines;
         ViewBag.Sections = sections;
         ViewBag.Customers = customers;
         ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
+        ViewBag.IsIssued = eligibility.IsIssued;
+        ViewBag.HasBeenShared = hasBeenShared;
 
         return View(invoice);
     }

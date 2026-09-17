@@ -495,6 +495,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
                 FROM [purchase].[Purchase]
                 WHERE [purchase].[Purchase].[BusinessId] = @BusinessId
                   AND [purchase].[Purchase].[IsCancelled] = 0
+                  AND [purchase].[Purchase].[IsPaid] = 0
                   AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) IS NOT NULL
                   AND COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) <= @CutoffDate
                 ORDER BY COALESCE([purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[SupplierDueDate]) ASC";
