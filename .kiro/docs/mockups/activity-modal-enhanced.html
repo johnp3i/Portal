@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Enhanced Add Activity modal — mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;--warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;--muted2:#73889A;--line:rgba(13,94,166,.11)}
+  body{font-family:Inter,system-ui,sans-serif;color:var(--text);background:#22303c;padding:30px;display:flex;justify-content:center}
+  h3{font-family:Manrope,Inter,sans-serif;letter-spacing:-.02em;font-size:22px}
+  .modal{background:#fff;border-radius:22px;width:100%;max-width:560px;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px}
+  .field input,.field textarea,.field select{width:100%;padding:11px 13px;border:1.5px solid rgba(13,94,166,.15);border-radius:10px;font-size:14px;font-family:inherit;color:var(--text);background:#fff}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{border:1.5px solid rgba(13,94,166,.15);background:rgba(13,94,166,.04);color:var(--blue-dark);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .chip:hover{background:rgba(13,94,166,.1)}
+  .chip.mini{padding:5px 10px;font-size:11px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 16px;font-weight:800;font-size:13px;border:1.5px solid transparent;cursor:pointer;font-family:inherit}
+  .btn-primary{background:linear-gradient(180deg,#1A6BB8,#0D5EA6);color:#fff}
+  .btn-secondary{background:rgba(13,94,166,.06);color:var(--blue-dark);border-color:rgba(13,94,166,.14)}
+  .seg{display:inline-flex;border:1.5px solid rgba(13,94,166,.15);border-radius:10px;overflow:hidden}
+  .seg button{border:none;background:#fff;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--muted)}
+  .seg button+button{border-left:1.5px solid rgba(13,94,166,.12)}
+  .seg button.on-pos{background:rgba(18,152,103,.12);color:#0C734B}
+  .seg button.on-neu{background:rgba(90,106,122,.12);color:#4A5568}
+  .seg button.on-neg{background:rgba(194,74,74,.1);color:#A23A3A}
+  .check{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#334155;cursor:pointer}
+  .lbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;display:block}
+  .followup-box{background:rgba(200,145,46,.05);border:1px solid rgba(200,145,46,.16);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="modal">
+  <h3 style="margin-bottom:16px;">Add Activity</h3>
+
+  <!-- Type + status advance -->
+  <div class="grid2">
+    <div class="field">
+      <label>Type</label>
+      <select id="type" onchange="presetsFor(this.value)">
+        <option value="1">Research</option>
+        <option value="2" selected>Call</option>
+        <option value="3">Email</option>
+        <option value="4">Meeting</option>
+        <option value="5">Demo</option>
+        <option value="6">Note</option>
+        <option value="7">Social</option>
+        <option value="8">Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Advance status to</label>
+      <select><option value="">— Leave unchanged —</option><option>Ready</option><option>Contacting</option><option>Engaged</option><option>Disqualified</option></select>
+    </div>
+  </div>
+
+  <!-- When + quick shortcuts -->
+  <div class="field">
+    <label>When</label>
+    <div class="row" style="margin-bottom:8px;">
+      <button class="chip mini" onclick="setWhen('now')">Now</button>
+      <button class="chip mini" onclick="setWhen('today')">Today</button>
+      <button class="chip mini" onclick="setWhen('yesterday')">Yesterday</button>
+    </div>
+    <input type="datetime-local" id="when" />
+  </div>
+
+  <!-- Outcome + type-aware presets -->
+  <div class="field">
+    <label>Outcome</label>
+    <div class="row" id="presets" style="margin-bottom:8px;"></div>
+    <input type="text" id="outcome" placeholder="e.g. Spoke with principal — interested" />
+  </div>
+
+  <!-- Sentiment -->
+  <div class="field">
+    <label>Interaction signal</label>
+    <div class="seg" id="sentiment">
+      <button type="button" data-v="1" onclick="pickSentiment(this)">🙂 Positive</button>
+      <button type="button" data-v="2" onclick="pickSentiment(this)">😐 Neutral</button>
+      <button type="button" data-v="3" onclick="pickSentiment(this)">🙁 Negative</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted2);margin-top:6px;">Optional. Helps later evaluate whether the prospect score predicted well.</div>
+  </div>
+
+  <div class="field"><label>Notes</label><textarea rows="2" placeholder="Anything worth remembering…"></textarea></div>
+
+  <!-- Follow-up flag -->
+  <label class="check" style="margin-bottom:10px;">
+    <input type="checkbox" id="isFollowUp" onchange="toggleFollowup(this)" /> This needs a follow-up
+  </label>
+  <div class="followup-box" id="followupBox" style="display:none;">
+    <div class="grid2">
+      <div class="field" style="margin-bottom:0;"><label>Next action</label><input type="text" placeholder="e.g. Call back after 14:00" /></div>
+      <div class="field" style="margin-bottom:0;"><label>Due date</label><input type="date" /></div>
+    </div>
+    <div style="font-size:11px;color:#8D5D07;margin-top:8px;">Counts toward the campaign's “follow-ups due”.</div>
+  </div>
+
+  <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:10px;">
+    <button class="btn btn-secondary">Cancel</button>
+    <button class="btn btn-primary">Save activity</button>
+  </div>
+</div>
+
+<script>
+  var PRESETS = {
+    '1': ['Strong ICP','Weak fit','Needs more research'],
+    '2': ['No answer','Left voicemail','Gatekeeper','Spoke — interested','Spoke — not now'],
+    '3': ['Intro sent','Replied','Bounced','No reply yet'],
+    '4': ['Meeting booked','Met — positive','Met — no fit'],
+    '5': ['Demo booked','Demo done — interested','Demo done — not now'],
+    '6': [], '7': ['DM sent','Connected','Followed'], '8': []
+  };
+  function presetsFor(t){
+    var box=document.getElementById('presets'); box.innerHTML='';
+    (PRESETS[t]||[]).forEach(function(p){
+      var b=document.createElement('button'); b.className='chip mini'; b.textContent=p;
+      b.onclick=function(){document.getElementById('outcome').value=p;};
+      box.appendChild(b);
+    });
+  }
+  function setWhen(which){
+    var d=new Date();
+    if(which==='yesterday') d.setDate(d.getDate()-1);
+    if(which==='today') d.setHours(9,0,0,0);
+    var pad=function(n){return String(n).padStart(2,'0');};
+    document.getElementById('when').value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function pickSentiment(b){
+    document.querySelectorAll('#sentiment button').forEach(function(x){x.className='';});
+    b.className = b.dataset.v==='1'?'on-pos':(b.dataset.v==='2'?'on-neu':'on-neg');
+  }
+  function toggleFollowup(c){ document.getElementById('followupBox').style.display=c.checked?'block':'none'; }
+  presetsFor('2'); setWhen('now');
+</script>
+</body>
+</html>

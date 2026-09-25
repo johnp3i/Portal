@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Campaign Dashboard + Activity Feed — mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;--warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;--muted2:#73889A;--bg2:#EEF4F8;--line:rgba(13,94,166,.11)}
+  body{font-family:Inter,system-ui,sans-serif;color:var(--text);background:var(--bg2);padding:26px 24px 80px}
+  h1,h2,h3,h4{font-family:Manrope,Inter,sans-serif;letter-spacing:-.03em}
+  a{color:var(--blue);text-decoration:none}
+  .stage{max-width:1120px;margin:0 auto}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(13,94,166,.10);background:#fff;color:var(--blue-dark);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .dot{width:8px;height:8px;border-radius:999px;background:var(--cyan);box-shadow:0 0 0 5px rgba(87,184,232,.12)}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:12px 0 22px}
+  .topbar h1{font-size:26px;margin:8px 0 4px}
+  .sub{color:var(--muted);font-size:13px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 24px rgba(13,94,166,.05);padding:22px 24px;margin-bottom:22px}
+  .section-label{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);margin-bottom:12px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:10px 16px;font-weight:800;font-size:13px;border:1.5px solid transparent;cursor:pointer;font-family:inherit}
+  .btn-primary{background:linear-gradient(180deg,#1A6BB8,#0D5EA6);color:#fff}
+  .btn-secondary{background:rgba(13,94,166,.06);color:var(--blue-dark);border-color:rgba(13,94,166,.14)}
+  .btn-sm{padding:7px 12px;font-size:12px}
+  .pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800}
+  .pill-blue{background:rgba(13,94,166,.08);color:var(--blue-dark)}
+  .pill-sm{padding:2px 8px;font-size:10px}
+  .muted{color:var(--muted)}
+  /* funnel */
+  .funnel{display:flex;gap:10px;flex-wrap:wrap;text-align:center}
+  .funnel .cell{flex:1;min-width:120px;border-radius:14px;padding:16px 10px}
+  .funnel b{font-family:Manrope;font-weight:800;font-size:28px;display:block}
+  /* feed */
+  .feed{display:flex;flex-direction:column}
+  .fitem{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(13,94,166,.05)}
+  .fitem:last-child{border-bottom:none}
+  .fdot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex-shrink:0}
+  .fbody{flex:1;min-width:0}
+  .fline{font-size:14px}
+  .fline a{font-weight:700}
+  .fsub{font-size:12px;color:var(--muted2);margin-top:2px}
+  .sig{font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;margin-left:6px}
+  .sig-pos{background:rgba(18,152,103,.12);color:#0C734B}
+  .sig-neg{background:rgba(194,74,74,.1);color:#A23A3A}
+  .flag{font-size:11px;color:#8D5D07;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sub" style="margin-bottom:2px;">Opportunities / Prospecting / <b style="color:var(--blue-dark)">Chaplin Pro — Cyprus ICP Validation</b></div>
+  <div class="topbar">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Campaign</div>
+      <h1>Chaplin Pro — Cyprus ICP Validation</h1>
+      <p class="sub">Chaplin Pro · 01 Sep – 31 Oct 2026 · <span class="pill pill-blue pill-sm">Active</span></p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a class="btn btn-secondary">Import Excel</a>
+      <a class="btn btn-primary">Work the list →</a>
+    </div>
+  </div>
+
+  <!-- Weekly objective (unchanged) -->
+  <div class="card">
+    <div class="section-label">This week's objective <span class="pill pill-blue pill-sm" style="margin-left:6px;">Assistant · coming soon</span></div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:14px;">
+      <div><b style="font-family:Manrope;font-size:24px;color:#0D5EA6;">15</b> <span class="muted">cold calls target</span></div>
+      <div><b style="font-family:Manrope;font-size:24px;color:#0C734B;">18</b> <span class="muted">active prospects</span></div>
+      <div><b style="font-family:Manrope;font-size:24px;color:#C8912E;">3</b> <span class="muted">follow-ups due</span></div>
+      <div><b style="font-family:Manrope;font-size:24px;color:#0C734B;">2</b> <span class="muted">converted → leads</span></div>
+    </div>
+  </div>
+
+  <!-- Funnel (unchanged) -->
+  <div class="card">
+    <div class="section-label">Funnel</div>
+    <div class="funnel">
+      <div class="cell" style="background:rgba(13,94,166,.05)"><b>30</b><span class="muted">Prospects</span></div>
+      <div class="cell" style="background:rgba(13,94,166,.05)"><b>18</b><span class="muted">Ready</span></div>
+      <div class="cell" style="background:rgba(200,145,46,.06)"><b style="color:#8D5D07">9</b><span class="muted">Contacting</span></div>
+      <div class="cell" style="background:rgba(87,184,232,.08)"><b style="color:#1A8AB5">4</b><span class="muted">Engaged</span></div>
+      <div class="cell" style="background:rgba(18,152,103,.08)"><b style="color:#0C734B">2</b><span class="muted">Converted</span></div>
+    </div>
+  </div>
+
+  <!-- NEW: Recent activity feed across all prospects in the campaign -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="section-label" style="margin-bottom:0;">Recent activity</div>
+      <span class="muted" style="font-size:12px;">Latest 20 across all prospects</span>
+    </div>
+    <div class="feed">
+      <div class="fitem"><span class="fdot" style="background:#C8912E"></span>
+        <div class="fbody">
+          <div class="fline"><a href="#">EasyConferences</a> · <strong>Call</strong> — Spoke, interested <span class="sig sig-pos">Positive</span> <span class="flag">⚑ follow-up</span></div>
+          <div class="fsub">Today 11:20 · You</div>
+        </div>
+      </div>
+      <div class="fitem"><span class="fdot" style="background:#0D5EA6"></span>
+        <div class="fbody">
+          <div class="fline"><a href="#">Purpose Communications</a> · <strong>Email</strong> — Replied, wants a demo <span class="sig sig-pos">Positive</span></div>
+          <div class="fsub">Today 09:05 · You</div>
+        </div>
+      </div>
+      <div class="fitem"><span class="fdot" style="background:#C8912E"></span>
+        <div class="fbody">
+          <div class="fline"><a href="#">Hilton Nicosia</a> · <strong>Call</strong> — Corporate system lock-in <span class="sig sig-neg">Negative</span></div>
+          <div class="fsub">Yesterday 16:40 · You</div>
+        </div>
+      </div>
+      <div class="fitem"><span class="fdot" style="background:#129867"></span>
+        <div class="fbody">
+          <div class="fline"><a href="#">Euripides + Associates</a> · <strong>Research</strong> — Strong ICP; PM firm</div>
+          <div class="fsub">22 Sep 2026 · You</div>
+        </div>
+      </div>
+      <div class="fitem"><span class="fdot" style="background:#8a9bab"></span>
+        <div class="fbody">
+          <div class="fline"><a href="#">gather. Creative Gatherings</a> · <strong>Note</strong> — Added to shortlist</div>
+          <div class="fsub">21 Sep 2026 · You</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

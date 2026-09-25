@@ -1,0 +1,159 @@
+@using Portal.Infrastructure.Models.Sales
+@model ProspectCampaignDashboardDto
+@{
+    ViewData["Title"] = $"Import Prospects — {Model.Name}";
+}
+
+<div class="topbar">
+    <div>
+        <div style="font-size:12px;color:#73889a;margin-bottom:4px;">
+            Opportunities / <a href="/Prospecting/Campaigns" style="color:var(--blue);">Prospecting</a> /
+            <a href="/Prospecting/CampaignDashboard/@Model.Id" style="color:var(--blue);">@Model.Name</a> / <strong>Import</strong>
+        </div>
+        <div class="eyebrow"><span class="dot"></span> Prospects · import</div>
+        <h1 class="topbar-heading">Import prospects from Excel</h1>
+        <p class="topbar-subtitle">Upload the prospecting workbook. We read the <strong>30 Prospects</strong> sheet — other sheets are ignored.</p>
+    </div>
+    <div>
+        <a class="btn btn-secondary" href="/Prospecting/Prospects?campaignId=@Model.Id">← Back to list</a>
+    </div>
+</div>
+
+<input type="hidden" id="importCampaignId" value="@Model.Id" />
+
+<!-- Upload -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:320px;flex:1;">
+            <label>Workbook (.xlsx)</label>
+            @* Native file input is hidden and driven by a themed button, so the control matches
+               the app theme (the browser default "Browse..." button cannot be styled directly). *@
+            <input type="file" id="importFile" accept=".xlsx" style="display:none;" onchange="onImportFileChosen()" />
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Choose file</button>
+                <span id="importFileName" style="font-size:13px;color:#5a6a7a;">No file selected.</span>
+            </div>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button class="btn btn-primary" onclick="previewImport()">Preview</button>
+        </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <a class="btn btn-secondary" style="font-size:12px;padding:7px 13px;" href="/Prospecting/AxGetTemplate">⬇ Download template (.xlsx)</a>
+        <button type="button" class="btn btn-primary" style="font-size:12px;padding:7px 13px;background:linear-gradient(135deg,#0D5EA6,#57B8E8);box-shadow:none;" onclick="openAiModal()">✨ Ask AI for prospects</button>
+        <span style="font-size:12px;color:#73889a;">New here? Grab the template or let an AI assistant draft your list.</span>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:#5a6a7a;">
+        Total /20 and Priority are recomputed from the four score columns — the workbook's own totals are ignored.
+        Re-importing the same file is safe: existing prospects are updated, not duplicated.
+    </p>
+</section>
+
+<!-- Format help panel (open by default for first-timers) -->
+<style>
+    #formatHelp summary { list-style: none; }
+    #formatHelp summary::-webkit-details-marker { display: none; }
+    #formatHelp .fmt-chevron { margin-left: auto; transition: transform .2s ease; color: #73889a; }
+    #formatHelp[open] .fmt-chevron { transform: rotate(180deg); }
+</style>
+<section class="glass" style="margin-bottom:22px;padding:0;overflow:hidden;">
+    <details id="formatHelp" open>
+        <summary style="cursor:pointer;padding:16px 24px;font-weight:700;font-size:14px;background:rgba(13,94,166,.03);display:flex;align-items:center;gap:10px;">
+            <span>📋 Expected format — first time importing?</span>
+            <svg class="fmt-chevron" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div style="padding:18px 24px;">
+            <p style="font-size:13px;color:#5a6a7a;margin-bottom:14px;">
+                The file must be an <strong>.xlsx</strong> with a sheet named exactly <strong>"30 Prospects"</strong>.
+                Row 1 holds the headers; data starts on row 2. Columns are matched by header name, so their order doesn't matter.
+            </p>
+            <table class="data-table">
+                <thead><tr><th>Column header</th><th>Meaning</th><th>Rule</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Prospect</strong></td><td>Business / person name</td><td><span class="pill pill-sm pill-red">Required</span></td></tr>
+                    <tr><td>Segment</td><td>e.g. Event / Venue / Agency</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>Location</td><td>City / area</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>Business Type</td><td>What they do</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>Public Contact / Role</td><td>Public contact person / role</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>Phone / Email / Official Website</td><td>Public research details (not a Sales contact)</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>Public Evidence</td><td>Why you believe they fit (facts)</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>Why It May Fit</td><td>Your hypothesis</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>ICP Fit /5</td><td>How well they match your ideal customer</td><td><strong>0–5</strong></td></tr>
+                    <tr><td>Pain Probability /5</td><td>Likelihood they feel the problem you solve</td><td><strong>0–5</strong></td></tr>
+                    <tr><td>Accessibility /5</td><td>How reachable the decision-maker is</td><td><strong>0–5</strong></td></tr>
+                    <tr><td>Learning Value /5</td><td>What you'd learn by talking to them</td><td><strong>0–5</strong></td></tr>
+                    <tr><td>Total /20 · Priority</td><td>Overall score &amp; band</td><td><span class="pill pill-sm pill-amber">Auto — recomputed</span></td></tr>
+                    <tr><td>Recommended First Contact</td><td>Suggested opening approach</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>Research Source</td><td>Where the info came from (URL)</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                    <tr><td>ID</td><td>Row id e.g. A01 — used for safe re-import</td><td><span class="pill pill-sm pill-grey">Optional</span></td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top:14px;font-size:12px;color:#5a6a7a;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-radius:12px;padding:12px 14px;">
+                <strong>Scoring &amp; priority:</strong> Total = ICP + Pain + Accessibility + Learning (0–20).
+                Priority band: <strong>A = 16–20</strong>, <strong>B = 12–15</strong>, <strong>Hold = below 12</strong>.
+                You don't fill these — the app calculates them so priority stays consistent.
+            </p>
+        </div>
+    </details>
+</section>
+
+<!-- Preview result (populated via AJAX) -->
+<section class="glass card-pad" id="previewSection" style="display:none;">
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+        <div style="flex:1;min-width:120px;text-align:center;background:rgba(13,94,166,.05);border-radius:12px;padding:14px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:24px;" id="sumTotal">0</div><div style="font-size:12px;color:#5e7385;">Rows</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center;background:rgba(18,152,103,.08);border-radius:12px;padding:14px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:24px;color:#0C734B;" id="sumNew">0</div><div style="font-size:12px;color:#5e7385;">New</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center;background:rgba(13,94,166,.05);border-radius:12px;padding:14px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:24px;color:#0D5EA6;" id="sumDup">0</div><div style="font-size:12px;color:#5e7385;">Matched (update)</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center;background:rgba(194,74,74,.06);border-radius:12px;padding:14px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:24px;color:#C24A4A;" id="sumInvalid">0</div><div style="font-size:12px;color:#5e7385;">Invalid (skipped)</div>
+        </div>
+    </div>
+
+    <div id="fileErrors" style="display:none;margin-bottom:16px;font-size:13px;color:#C24A4A;background:rgba(194,74,74,.06);border:1px solid rgba(194,74,74,.18);border-radius:10px;padding:12px 14px;"></div>
+
+    <table class="data-table">
+        <thead>
+            <tr><th>Row</th><th>Prospect</th><th>Segment</th><th>Score</th><th>Priority</th><th>State</th></tr>
+        </thead>
+        <tbody id="previewBody"></tbody>
+    </table>
+
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:18px;">
+        <button class="btn btn-secondary" onclick="resetImport()">Cancel</button>
+        <button class="btn btn-primary" id="confirmImportBtn" onclick="confirmImport()">Confirm import</button>
+    </div>
+</section>
+
+<!-- Ask AI for prospects modal -->
+<div id="aiModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:640px;">
+        <h3 style="margin-bottom:6px;">✨ Ask AI for prospects</h3>
+        <p style="font-size:13px;color:#5a6a7a;margin-bottom:18px;">
+            Tell us about your target. We'll generate a ready-to-copy prompt that teaches an AI assistant
+            (ChatGPT, Claude, etc.) the exact format. Paste its table into the downloaded template, then import.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field"><label>Your industry / product</label><input type="text" id="aiIndustry" oninput="generateAiPrompt()" placeholder="e.g. Event & conference management software" /></div>
+            <div class="field"><label>Target market / region</label><input type="text" id="aiRegion" oninput="generateAiPrompt()" placeholder="e.g. Cyprus" /></div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+            <div class="field"><label>Short description of who you want</label><input type="text" id="aiDesc" oninput="generateAiPrompt()" placeholder="e.g. venues and agencies that coordinate speakers and sponsors" /></div>
+            <div class="field"><label>How many</label><input type="number" id="aiCount" min="1" max="200" value="30" oninput="generateAiPrompt()" /></div>
+        </div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#73889a;margin:6px 0 8px;">Generated prompt</div>
+        <pre id="aiPromptOut" style="background:#0B1B28;color:#D7E3EE;border-radius:12px;padding:16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;max-height:280px;overflow:auto;margin:0;"></pre>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+            <button class="btn btn-secondary" onclick="closeAiModal()">Close</button>
+            <button class="btn btn-primary" id="aiCopyBtn" onclick="copyAiPrompt()">Copy prompt</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/prospecting.js?v=6"></script>
+}

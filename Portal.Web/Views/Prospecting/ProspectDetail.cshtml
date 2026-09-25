@@ -1,0 +1,366 @@
+@using Portal.Infrastructure.Models.Sales
+@model ProspectDetailDto
+@{
+    ViewData["Title"] = $"Prospect — {Model.Name}";
+
+    string PriorityPill(string p) => p switch { "A" => "pill-green", "B" => "pill-gold", _ => "pill-grey" };
+    string StatusPill(byte s) => s switch
+    {
+        3 => "pill-blue",
+        4 => "pill-cyan",
+        5 => "pill-green",
+        6 => "pill-grey",
+        2 => "pill-slate",
+        _ => "pill-slate"
+    };
+
+    string Val(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
+}
+
+<style>
+    .prospect-timeline { display: flex; flex-direction: column; }
+    .prospect-timeline .tl { display: flex; gap: 12px; padding: 11px 0; font-size: 13px; border-bottom: 1px solid rgba(13,94,166,.05); }
+    .prospect-timeline .tl:last-child { border-bottom: none; }
+    .prospect-timeline .tl-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .prospect-timeline .tl-body { flex: 1; min-width: 0; }
+    .prospect-timeline .tl-line { font-size: 14px; color: #0B1B28; display: flex; align-items: baseline; gap: 4px; }
+    .prospect-timeline .tl-line strong { font-weight: 700; }
+    .prospect-timeline .tl-sub { font-size: 12px; color: #73889a; margin-top: 2px; }
+    .prospect-timeline .tl-notes { font-size: 13px; color: #334155; margin-top: 4px; }
+    .prospect-timeline .tl-next { font-size: 12px; color: #C8912E; margin-top: 4px; }
+    .prospect-timeline .tl-edit { margin-left: auto; background: none; border: none; color: #73889a; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 0 0 8px; font-family: inherit; }
+    .prospect-timeline .tl-edit:hover { color: #0D5EA6; text-decoration: underline; }
+
+    /* Activity modal enhancements */
+    .act-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .act-chip { border: 1.5px solid rgba(13,94,166,.15); background: rgba(13,94,166,.04); color: #0B4E89; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .act-chip:hover { background: rgba(13,94,166,.1); }
+    .act-seg { display: inline-flex; border: 1.5px solid rgba(13,94,166,.15); border-radius: 10px; overflow: hidden; }
+    .act-seg button { border: none; background: #fff; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; color: #5E7385; }
+    .act-seg button + button { border-left: 1.5px solid rgba(13,94,166,.12); }
+    .act-seg button.on-pos { background: rgba(18,152,103,.12); color: #0C734B; }
+    .act-seg button.on-neu { background: rgba(90,106,122,.12); color: #4A5568; }
+    .act-seg button.on-neg { background: rgba(194,74,74,.1); color: #A23A3A; }
+</style>
+
+<div class="topbar">
+    <div>
+        <div style="font-size:12px;color:#73889a;margin-bottom:4px;">
+            Opportunities / <a href="/Prospecting/Campaigns" style="color:var(--blue);">Prospecting</a> /
+            <a href="/Prospecting/CampaignDashboard/@Model.ProspectCampaignId" style="color:var(--blue);">@Model.CampaignName</a> /
+            <a href="/Prospecting/Prospects?campaignId=@Model.ProspectCampaignId" style="color:var(--blue);">Prospects</a> / <strong>@Model.Name</strong>
+        </div>
+        <div class="eyebrow"><span class="dot"></span> Prospect</div>
+        <h1 class="topbar-heading" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            @Model.Name
+            <span class="pill @PriorityPill(Model.Priority)">Priority @Model.Priority · @Model.Total/20</span>
+        </h1>
+        <p class="topbar-subtitle">
+            @Val(Model.Segment) · @Val(Model.Location) · <span class="pill pill-sm @StatusPill(Model.Status)">@Model.StatusName</span>
+        </p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        @if (!Model.IsConverted)
+        {
+            <button class="btn btn-primary" onclick="openConvertModal()">Convert to Lead</button>
+        }
+        else
+        {
+            <span class="pill pill-green" style="align-self:center;">Converted → Lead #@Model.ConvertedLeadRequestId</span>
+        }
+    </div>
+</div>
+
+@{
+    // Dot colour per activity type (matches the mockup palette).
+    string DotColour(byte t) => t switch
+    {
+        1 => "#129867", // Research — green
+        2 => "#C8912E", // Call — gold
+        3 => "#0D5EA6", // Email — blue
+        4 => "#1A8AB5", // Meeting — cyan
+        5 => "#1A8AB5", // Demo — cyan
+        6 => "#8a9bab", // Note — grey
+        7 => "#8a9bab", // Social — grey
+        _ => "#8a9bab"  // Other — grey
+    };
+
+    void ScoreRow(string label, byte value)
+    {
+        <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>@label</span><strong>@value / 5</strong></div>
+            <div style="height:8px;background:rgba(13,94,166,.08);border-radius:999px;overflow:hidden;">
+                <div style="height:100%;width:@(value * 20)%;background:linear-gradient(90deg,#1A6BB8,#0D5EA6);"></div>
+            </div>
+        </div>
+    }
+}
+
+<div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start;">
+    <!-- LEFT: Identity & contact, then Activity timeline -->
+    <div style="display:flex;flex-direction:column;gap:22px;">
+        <section class="glass card-pad">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">Identity &amp; contact</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;">
+                <div><div style="color:#73889a;font-size:11px;">Phone (research)</div>@Val(Model.Phone)</div>
+                <div><div style="color:#73889a;font-size:11px;">Email (research)</div>@Val(Model.Email)</div>
+                <div>
+                    <div style="color:#73889a;font-size:11px;">Website</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Website))
+                    {
+                        <a href="@Model.Website" target="_blank" rel="noopener" style="color:var(--blue);">@Model.Website</a>
+                    }
+                    else { <text>—</text> }
+                </div>
+                <div><div style="color:#73889a;font-size:11px;">Public Contact / Role</div>@Val(Model.PublicContactRole)</div>
+                <div><div style="color:#73889a;font-size:11px;">Business Type</div>@Val(Model.BusinessType)</div>
+                <div><div style="color:#73889a;font-size:11px;">Recommended First Contact</div>@Val(Model.RecommendedFirstContact)</div>
+            </div>
+            <p style="margin-top:16px;font-size:12px;color:#8D5D07;background:rgba(200,145,46,.06);border:1px solid rgba(200,145,46,.18);border-radius:10px;padding:10px 14px;">
+                These are <strong>public prospecting details</strong>, not a Sales contact. A Sales Contact is created only on conversion.
+            </p>
+        </section>
+
+        <section class="glass card-pad">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;">Activity timeline</div>
+                <button class="btn btn-secondary" style="font-size:12px;padding:7px 13px;" onclick="openActivityModal()">+ Add Activity</button>
+            </div>
+            @if (Model.Activities.Count == 0)
+            {
+                <div class="empty-state"><p>No activity yet. Record research, a call, an email, or a note.</p></div>
+            }
+            else
+            {
+                <div class="prospect-timeline">
+                    @foreach (var a in Model.Activities)
+                    {
+                        <div class="activity-row tl"
+                             data-id="@a.Id"
+                             data-type="@a.ActivityType"
+                             data-occurred="@a.OccurredAtUtc.ToString("yyyy-MM-ddTHH:mm")"
+                             data-sentiment="@(a.Sentiment?.ToString() ?? "")"
+                             data-isfollowup="@(a.IsFollowUp ? "1" : "0")"
+                             data-outcome="@a.Outcome"
+                             data-notes="@a.Notes"
+                             data-nextaction="@a.NextAction"
+                             data-nextactiondate="@(a.NextActionDate?.ToString("yyyy-MM-dd") ?? "")">
+                            <span class="tl-dot" style="background:@DotColour(a.ActivityType);"></span>
+                            <div class="tl-body">
+                                <div class="tl-line">
+                                    <strong>@a.ActivityTypeName</strong>@if (!string.IsNullOrWhiteSpace(a.Outcome)) { <span> — @a.Outcome</span> }
+                                    @if (a.Sentiment == 1)
+                                    {
+                                        <span class="pill pill-sm pill-green" style="margin-left:6px;">Positive</span>
+                                    }
+                                    else if (a.Sentiment == 3)
+                                    {
+                                        <span class="pill pill-sm pill-red" style="margin-left:6px;">Negative</span>
+                                    }
+                                    else if (a.Sentiment == 2)
+                                    {
+                                        <span class="pill pill-sm pill-grey" style="margin-left:6px;">Neutral</span>
+                                    }
+                                    @if (a.IsFollowUp)
+                                    {
+                                        <span style="margin-left:6px;font-size:11px;color:#8D5D07;">⚑ follow-up</span>
+                                    }
+                                    <button class="tl-edit" onclick="editActivityFromRow(this)" title="Edit activity">Edit</button>
+                                </div>
+                                <div class="tl-sub">@a.OccurredAtUtc.ToString("dd MMM yyyy") · You</div>
+                                @if (!string.IsNullOrWhiteSpace(a.Notes))
+                                {
+                                    <div class="tl-notes">@a.Notes</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(a.NextAction))
+                                {
+                                    <div class="tl-next">Next: @a.NextAction @(a.NextActionDate.HasValue ? "· " + a.NextActionDate.Value.ToString("dd MMM yyyy") : "")</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            <div style="margin-top:16px;padding-top:14px;font-size:12px;color:#73889a;border-top:1px dashed rgba(13,94,166,.12);">
+                Recording activity never creates a Lead or Contact — entries stay with the prospect and survive conversion.
+            </div>
+        </section>
+    </div>
+
+    <!-- RIGHT: Research, then Qualification score + Status -->
+    <div style="display:flex;flex-direction:column;gap:22px;">
+        <section class="glass card-pad">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">Research</div>
+            <div style="margin-bottom:14px;">
+                <div style="color:#73889a;font-size:11px;">Public evidence</div>
+                <div style="font-size:13px;">@Val(Model.PublicEvidence)</div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <div style="color:#73889a;font-size:11px;">Why it may fit</div>
+                <div style="font-size:13px;">@Val(Model.WhyFit)</div>
+            </div>
+            <div>
+                <div style="color:#73889a;font-size:11px;">Research source</div>
+                @if (!string.IsNullOrWhiteSpace(Model.ResearchSourceUrl))
+                {
+                    <a href="@Model.ResearchSourceUrl" target="_blank" rel="noopener" style="color:var(--blue);">@Model.ResearchSourceUrl</a>
+                }
+                else { <text>—</text> }
+            </div>
+        </section>
+
+        <section class="glass card-pad">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">Qualification score</div>
+            @{ ScoreRow("ICP Fit", Model.IcpFitScore); }
+            @{ ScoreRow("Pain Probability", Model.PainProbabilityScore); }
+            @{ ScoreRow("Accessibility", Model.AccessibilityScore); }
+            @{ ScoreRow("Learning Value", Model.LearningValueScore); }
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(13,94,166,.1);display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:28px;">@Model.Total<span style="font-size:16px;color:#73889a;">/20</span></div>
+                    <div style="font-size:11px;color:#73889a;">Total (computed)</div>
+                </div>
+                <span class="pill @PriorityPill(Model.Priority)">Priority @Model.Priority</span>
+            </div>
+            <div style="margin-top:16px;">
+                <div class="field"><label>Status</label>
+                    <select id="statusSelect" onchange="changeProspectStatus(@Model.Id, this.value)" @(Model.IsConverted ? "disabled" : "")>
+                        <option value="1" selected="@(Model.Status == 1)">Research</option>
+                        <option value="2" selected="@(Model.Status == 2)">Ready</option>
+                        <option value="3" selected="@(Model.Status == 3)">Contacting</option>
+                        <option value="4" selected="@(Model.Status == 4)">Engaged</option>
+                        <option value="6" selected="@(Model.Status == 6)">Disqualified</option>
+                        @if (Model.Status == 5)
+                        {
+                            <option value="5" selected="selected">Converted</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Add / Edit Activity Modal -->
+<div id="activityModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:520px;">
+        <h3 id="activityModalTitle" style="margin-bottom:16px;">Add Activity</h3>
+        <input type="hidden" id="activityProspectId" value="@Model.Id" />
+        <input type="hidden" id="activityId" value="" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field">
+                <label>Type</label>
+                <select id="activityType">
+                    <option value="1">Research</option>
+                    <option value="2">Call</option>
+                    <option value="3">Email</option>
+                    <option value="4">Meeting</option>
+                    <option value="5">Demo</option>
+                    <option value="6">Note</option>
+                    <option value="7">Social</option>
+                    <option value="8">Other</option>
+                </select>
+            </div>
+            <div class="field" id="activityNewStatusField">
+                <label>Advance status to</label>
+                <select id="activityNewStatus">
+                    <option value="">— Leave unchanged —</option>
+                    <option value="2">Ready</option>
+                    <option value="3">Contacting</option>
+                    <option value="4">Engaged</option>
+                    <option value="6">Disqualified</option>
+                </select>
+            </div>
+        </div>
+        <div class="field">
+            <label>When</label>
+            <div class="act-chips" style="margin-bottom:8px;">
+                <button type="button" class="act-chip" onclick="setActivityWhen('now')">Now</button>
+                <button type="button" class="act-chip" onclick="setActivityWhen('today')">Today</button>
+                <button type="button" class="act-chip" onclick="setActivityWhen('yesterday')">Yesterday</button>
+            </div>
+            <input type="datetime-local" id="activityOccurredAt" />
+        </div>
+        <div class="field">
+            <label>Outcome</label>
+            <div class="act-chips" id="activityPresets" style="margin-bottom:8px;"></div>
+            <input type="text" id="activityOutcome" placeholder="e.g. Spoke with principal — interested" />
+        </div>
+        <div class="field">
+            <label>Interaction signal</label>
+            <div class="act-seg" id="activitySentiment">
+                <button type="button" data-v="1" onclick="pickActivitySentiment(this)">🙂 Positive</button>
+                <button type="button" data-v="2" onclick="pickActivitySentiment(this)">😐 Neutral</button>
+                <button type="button" data-v="3" onclick="pickActivitySentiment(this)">🙁 Negative</button>
+            </div>
+            <div style="font-size:11px;color:#73889a;margin-top:6px;">Optional. Helps later evaluate whether the prospect score predicted well.</div>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="activityNotes" rows="2"></textarea></div>
+        <label class="act-check" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#334155;cursor:pointer;margin-bottom:12px;">
+            <input type="checkbox" id="activityIsFollowUp" onchange="toggleActivityFollowUp(this)" /> This needs a follow-up
+        </label>
+        <div id="activityFollowUpBox" style="display:none;background:rgba(200,145,46,.05);border:1px solid rgba(200,145,46,.16);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+            <div class="field" style="margin-bottom:12px;">
+                <label>Next action</label>
+                <div class="act-chips" style="margin-bottom:8px;">
+                    <button type="button" class="act-chip" onclick="setNextAction('Call again')">Call again</button>
+                    <button type="button" class="act-chip" onclick="setNextAction('Send email')">Send email</button>
+                    <button type="button" class="act-chip" onclick="setNextAction('Send proposal')">Send proposal</button>
+                    <button type="button" class="act-chip" onclick="setNextAction('Book meeting')">Book meeting</button>
+                    <button type="button" class="act-chip" onclick="setNextAction('Book demo')">Book demo</button>
+                    <button type="button" class="act-chip" onclick="setNextAction('Check back')">Check back</button>
+                </div>
+                <input type="text" id="activityNextAction" />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+                <label>Due date</label>
+                <div class="act-chips" style="margin-bottom:8px;">
+                    <button type="button" class="act-chip" onclick="setNextActionDate('tomorrow')">Tomorrow</button>
+                    <button type="button" class="act-chip" onclick="setNextActionDate('3d')">+3 days</button>
+                    <button type="button" class="act-chip" onclick="setNextActionDate('nextweek')">Next week</button>
+                    <button type="button" class="act-chip" onclick="setNextActionDate('2w')">+2 weeks</button>
+                    <button type="button" class="act-chip" onclick="setNextActionDate('1m')">+1 month</button>
+                </div>
+                <input type="date" id="activityNextActionDate" />
+            </div>
+            <div style="font-size:11px;color:#8D5D07;margin-top:8px;">Counts toward the campaign's "follow-ups due".</div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="closeActivityModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitActivity()">Save activity</button>
+        </div>
+    </div>
+</div>
+
+<!-- Convert to Lead Modal -->
+<div id="convertModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:560px;">
+        <h3 style="margin-bottom:8px;">Convert to Lead</h3>
+        <p style="font-size:12px;color:#5a6a7a;margin-bottom:16px;">
+            This creates a <strong>Sales Contact</strong> and a <strong>Lead</strong> (Source: Cold Call), links them back to this prospect for scoring measurement, and marks the prospect <strong>Converted</strong>.
+        </p>
+        <input type="hidden" id="convertProspectId" value="@Model.Id" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field"><label>First Name *</label><input type="text" id="convertFirstName" /></div>
+            <div class="field"><label>Last Name</label><input type="text" id="convertLastName" /></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field"><label>Email</label><input type="text" id="convertEmail" value="@Model.Email" /></div>
+            <div class="field"><label>Phone</label><input type="text" id="convertPhone" value="@Model.Phone" /></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field"><label>Company</label><input type="text" id="convertCompany" value="@Model.Name" /></div>
+            <div class="field"><label>Job Title</label><input type="text" id="convertJobTitle" value="@Model.PublicContactRole" /></div>
+        </div>
+        <div class="field"><label>Country</label><input type="text" id="convertCountry" value="@Model.Location" /></div>
+        <div class="field"><label>Request / note for the lead</label><textarea id="convertRequestText" rows="2">@Model.WhyFit</textarea></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="closeConvertModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitConvert()">Create Contact &amp; Lead</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/prospecting.js?v=6"></script>
+}

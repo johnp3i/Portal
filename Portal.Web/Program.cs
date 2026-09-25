@@ -307,9 +307,19 @@ builder.Services.AddScoped<FollowUpTaskTypeRepository>(sp =>
     new FollowUpTaskTypeRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<LeadTrackingHistoryRepository>(sp =>
     new LeadTrackingHistoryRepository(sp.GetRequiredService<PortalDbContext>()));
+// --- Prospects & Campaigns (complementary sub-area under Opportunities) ---
+builder.Services.AddScoped<ProspectCampaignRepository>(sp =>
+    new ProspectCampaignRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ProspectRepository>(sp =>
+    new ProspectRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ProspectActivityRepository>(sp =>
+    new ProspectActivityRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<Portal.Infrastructure.Services.Sales.IContactService, Portal.Infrastructure.Services.Sales.ContactService>();
 builder.Services.AddScoped<ISalesProductService, SalesProductService>();
 builder.Services.AddScoped<ILeadRequestService, LeadRequestService>();
+builder.Services.AddScoped<IProspectCampaignService, ProspectCampaignService>();
+builder.Services.AddScoped<IProspectService, ProspectService>();
+builder.Services.AddScoped<IProspectImportService, ProspectImportService>();
 builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<ITeamMemberService, TeamMemberService>();
@@ -554,6 +564,9 @@ var mvcBuilder = builder.Services.AddControllersWithViews(options =>
     // Accept HTML time-input values ("HH:mm") as well as "HH:mm:ss" for TimeOnly binding.
     options.JsonSerializerOptions.Converters.Add(new Portal.Web.Json.FlexibleTimeOnlyJsonConverter());
     options.JsonSerializerOptions.Converters.Add(new Portal.Web.Json.FlexibleNullableTimeOnlyJsonConverter());
+    // Accept HTML date-input values ("yyyy-MM-dd") and empty strings for DateOnly binding.
+    options.JsonSerializerOptions.Converters.Add(new Portal.Web.Json.FlexibleDateOnlyJsonConverter());
+    options.JsonSerializerOptions.Converters.Add(new Portal.Web.Json.FlexibleNullableDateOnlyJsonConverter());
 });
 
 if (builder.Environment.IsDevelopment())

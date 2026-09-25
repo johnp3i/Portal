@@ -1,0 +1,126 @@
+@using Portal.Infrastructure.Entities.Sales
+@using Portal.Infrastructure.Models.Sales
+@model List<ProspectCampaignListDto>
+@{
+    ViewData["Title"] = "Prospecting Campaigns";
+    var products = ViewBag.Products as List<SalesProduct> ?? new List<SalesProduct>();
+
+    string StatusPill(byte status) => status switch
+    {
+        2 => "pill-green",
+        3 => "pill-red",
+        _ => "pill-amber"
+    };
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Opportunities · Prospecting</div>
+        <h1 class="topbar-heading">Prospecting Campaigns</h1>
+        <p class="topbar-subtitle">Organise who you intend to approach — before anything touches your Sales contacts or leads.</p>
+    </div>
+    <div>
+        <button class="btn btn-primary" onclick="openCreateCampaignModal()">+ New Campaign</button>
+    </div>
+</div>
+
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <p style="margin:0;font-size:13px;color:#5a6a7a;">
+        <strong>What is a campaign?</strong> A named prospecting push for one product — with a weekly cold-call target and a list of researched prospects.
+        A prospect only becomes a Sales Contact &amp; Lead after it shows interest and you convert it.
+    </p>
+</section>
+
+<section class="glass card-pad">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state"><p>No campaigns yet. Create one to start organising your prospects.</p></div>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Campaign</th>
+                    <th>Product</th>
+                    <th>Prospects</th>
+                    <th>Converted</th>
+                    <th>Weekly Target</th>
+                    <th>Period</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    var period = (c.StartDate.HasValue || c.EndDate.HasValue)
+                        ? $"{(c.StartDate?.ToString("dd MMM yyyy") ?? "—")} – {(c.EndDate?.ToString("dd MMM yyyy") ?? "—")}"
+                        : "—";
+                    <tr>
+                        <td>
+                            <a href="/Prospecting/Prospects?campaignId=@c.Id" style="color:var(--blue);font-weight:600;">@c.Name</a>
+                            <div style="font-size:11px;color:#73889a;margin-top:2px;">Created @c.CreatedAtUtc.ToString("dd MMM yyyy")</div>
+                        </td>
+                        <td>@(c.ProductName ?? "—")</td>
+                        <td style="font-weight:700;">@c.ProspectCount</td>
+                        <td style="font-weight:700;color:#0C734B;">@c.ConvertedCount</td>
+                        <td>@c.WeeklyCallTarget calls / wk</td>
+                        <td>@period</td>
+                        <td><span class="pill @StatusPill(c.Status)">@c.StatusName</span></td>
+                        <td style="white-space:nowrap;text-align:right;">
+                            <a href="/Prospecting/Prospects?campaignId=@c.Id" class="tbl-action tbl-action--primary">Work list →</a>
+                            <a href="/Prospecting/CampaignDashboard/@c.Id" class="tbl-action tbl-action--secondary">Overview</a>
+                            <button class="tbl-action tbl-action--secondary"
+                                    onclick="editCampaign(@c.Id,'@c.Name.Replace("'", "\\'")',@(c.SalesProductId?.ToString() ?? "null"),'@(c.Market?.Replace("'", "\\'") ?? "")','@(c.StartDate?.ToString("yyyy-MM-dd") ?? "")','@(c.EndDate?.ToString("yyyy-MM-dd") ?? "")',@c.WeeklyCallTarget,@c.Status)">Edit</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<!-- Create / Edit Campaign Modal -->
+<div id="campaignModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:560px;">
+        <h3 id="campaignModalTitle" style="margin-bottom:16px;">New Campaign</h3>
+        <input type="hidden" id="campaignId" />
+        <div class="field"><label>Campaign Name *</label><input type="text" id="campaignName" required /></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field">
+                <label>Product</label>
+                <select id="campaignProduct">
+                    <option value="">— None —</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.Id">@p.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field"><label>Market</label><input type="text" id="campaignMarket" placeholder="e.g. Cyprus" /></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
+            <div class="field"><label>Start Date</label><input type="date" id="campaignStart" /></div>
+            <div class="field"><label>End Date</label><input type="date" id="campaignEnd" /></div>
+            <div class="field"><label style="white-space:nowrap;">Weekly Calls</label><input type="number" id="campaignTarget" min="0" value="0" /></div>
+        </div>
+        <div class="field" id="campaignStatusField" style="display:none;">
+            <label>Status</label>
+            <select id="campaignStatus">
+                <option value="1">Draft</option>
+                <option value="2">Active</option>
+                <option value="3">Closed</option>
+            </select>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="campaignNotes" rows="2"></textarea></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+            <button class="btn btn-secondary" onclick="closeCampaignModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitCampaign()">Save</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/prospecting.js?v=6"></script>
+}

@@ -319,14 +319,23 @@ public class AssistantsController : Controller
             const int pageSize = 15;
             var rows = await _outboxRepository.GetByBusinessAndAssistantPagedAsync(businessId, assistant.Id, page, pageSize);
 
+            // Emit timestamps as explicit ISO-8601 UTC (trailing 'Z') so the browser's
+            // new Date(...).toLocaleString() converts them to the user's local timezone.
+            // DateTimes read from the DB have Kind=Unspecified, which would otherwise serialize
+            // without a 'Z' and be parsed as local time on the client (no conversion).
+            static string? ToUtcIso(DateTime? value) =>
+                value.HasValue
+                    ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc).ToString("o")
+                    : null;
+
             var items = rows.Select(r => new
             {
                 recipient = r.RecipientEmail,
                 subject = r.Subject,
                 status = StatusName(r.OutboxMessageStatusTypeId),
-                scheduledForUtc = r.ScheduledForUtc,
-                sentAtUtc = r.SentAtUtc,
-                createdAtUtc = r.CreatedAtUtc
+                scheduledForUtc = ToUtcIso(r.ScheduledForUtc),
+                sentAtUtc = ToUtcIso(r.SentAtUtc),
+                createdAtUtc = ToUtcIso(r.CreatedAtUtc)
             });
 
             return Json(new { success = true, items, page });

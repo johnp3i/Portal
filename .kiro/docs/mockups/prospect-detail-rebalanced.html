@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prospect Detail — rebalanced layout (mockup)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;--warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;--muted2:#73889A;--bg2:#EEF4F8;--line:rgba(13,94,166,.11)}
+  body{font-family:Inter,system-ui,sans-serif;color:var(--text);line-height:1.55;background:var(--bg2);padding:26px 24px 80px}
+  h1,h2,h3,h4{font-family:Manrope,Inter,sans-serif;letter-spacing:-.03em}
+  a{color:var(--blue);text-decoration:none}
+  .stage{max-width:1120px;margin:0 auto}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(13,94,166,.10);background:rgba(255,255,255,.9);color:var(--blue-dark);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .dot{width:8px;height:8px;border-radius:999px;background:var(--cyan);box-shadow:0 0 0 5px rgba(87,184,232,.12)}
+  .breadcrumb{font-size:12px;color:var(--muted2);margin-bottom:4px}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:12px 0 22px}
+  .topbar h1{font-size:26px;margin:8px 0 4px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .topbar .sub{color:var(--muted);font-size:13px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 24px rgba(13,94,166,.05);padding:22px 24px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 16px;font-weight:800;font-size:13px;border:1.5px solid transparent;cursor:pointer;font-family:inherit}
+  .btn-primary{background:linear-gradient(180deg,#1A6BB8,#0D5EA6);color:#fff}
+  .btn-secondary{background:rgba(13,94,166,.06);color:var(--blue-dark);border-color:rgba(13,94,166,.14)}
+  .btn-sm{padding:7px 12px;font-size:12px}
+  .section-label{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);margin-bottom:12px}
+  .pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em}
+  .pill-green{background:rgba(18,152,103,.1);color:#0C734B;border:1px solid rgba(18,152,103,.2)}
+  .pill-blue{background:rgba(13,94,166,.08);color:var(--blue-dark);border:1px solid rgba(13,94,166,.14)}
+  .pill-sm{padding:2px 8px;font-size:10px}
+
+  /* two-column shell */
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start;}
+  .stack{display:flex;flex-direction:column;gap:22px;}
+
+  .f-lbl{color:var(--muted2);font-size:11px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px}
+  .note-amber{margin-top:16px;font-size:12px;color:#8D5D07;background:rgba(200,145,46,.06);border:1px solid rgba(200,145,46,.18);border-radius:10px;padding:10px 14px}
+
+  /* score bars */
+  .scoreline{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:13px}
+  .scoreline span.lbl{width:120px;color:#334155}
+  .bar{flex:1;height:8px;background:rgba(13,94,166,.08);border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#1A6BB8,#0D5EA6)}
+  .scoreline b{width:34px;text-align:right}
+  .field label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px}
+  .field select{width:100%;padding:10px 13px;border:1.5px solid rgba(13,94,166,.15);border-radius:10px;font-size:14px;font-family:inherit;background:#fff}
+
+  /* activity timeline */
+  .tl-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .timeline{display:flex;flex-direction:column;margin-top:6px}
+  .tl{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(13,94,166,.05)}
+  .tl:last-child{border-bottom:none}
+  .tl-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0}
+  .tl-body{flex:1;min-width:0}
+  .tl-line{font-size:14px;display:flex;align-items:baseline;gap:4px}
+  .tl-line strong{font-weight:700}
+  .tl-sub{font-size:12px;color:var(--muted2);margin-top:2px}
+  .tl-edit{margin-left:auto;background:none;border:none;color:var(--muted2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .tl-edit:hover{color:var(--blue);text-decoration:underline}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="breadcrumb">Opportunities / Prospecting / Chaplin-Pro-30-Cyprus-Prospects / Prospects / <b style="color:var(--blue-dark)">Andreas Marcou Architects</b></div>
+  <div class="topbar">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Prospect</div>
+      <h1>Andreas Marcou Architects <span class="pill pill-green">Priority A · 20/20</span></h1>
+      <p class="sub">Professional / Project Services · Nicosia · <span class="pill pill-blue pill-sm">Research</span></p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary">Convert to Lead</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: Identity & contact, then Activity timeline beneath it -->
+    <div class="stack">
+      <div class="card">
+        <div class="section-label">Identity &amp; contact</div>
+        <div class="kv">
+          <div><div class="f-lbl">Phone (research)</div>+357 22 780010</div>
+          <div><div class="f-lbl">Email (research)</div>info@andreasmarcou.com</div>
+          <div><div class="f-lbl">Website</div><a href="#">https://andreasmarcou.com/</a></div>
+          <div><div class="f-lbl">Public Contact / Role</div>Andreas Marcou / studio</div>
+          <div><div class="f-lbl">Business Type</div>Architecture / project management</div>
+          <div><div class="f-lbl">Recommended First Contact</div>Call founder / studio principal</div>
+        </div>
+        <div class="note-amber">These are <b>public prospecting details</b>, not a Sales contact. A Sales Contact is created only on conversion.</div>
+      </div>
+
+      <div class="card">
+        <div class="tl-head">
+          <div class="section-label" style="margin-bottom:0;">Activity timeline</div>
+          <button class="btn btn-secondary btn-sm">+ Add Activity</button>
+        </div>
+        <div class="timeline">
+          <div class="tl"><span class="tl-dot" style="background:#C8912E;"></span>
+            <div class="tl-body"><div class="tl-line"><strong>Call</strong><span>— NA</span><button class="tl-edit">Edit</button></div><div class="tl-sub">24 Sept 2026 · You</div></div>
+          </div>
+          <div class="tl"><span class="tl-dot" style="background:#0D5EA6;"></span>
+            <div class="tl-body"><div class="tl-line"><strong>Email</strong><span>— Introduction sent</span><button class="tl-edit">Edit</button></div><div class="tl-sub">23 Sept 2026 · You</div></div>
+          </div>
+          <div class="tl"><span class="tl-dot" style="background:#129867;"></span>
+            <div class="tl-body"><div class="tl-line"><strong>Research</strong><span>— Strong ICP; studio principal reachable</span><button class="tl-edit">Edit</button></div><div class="tl-sub">22 Sept 2026 · You</div></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;font-size:12px;color:var(--muted2);border-top:1px dashed rgba(13,94,166,.12);">
+          Recording activity never creates a Lead or Contact — entries stay with the prospect and survive conversion.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Research + Qualification score/status -->
+    <div class="stack">
+      <div class="card">
+        <div class="section-label">Research</div>
+        <div style="margin-bottom:14px;"><div class="f-lbl">Public evidence</div><div style="font-size:13px;">Architecture, interior, landscape and full project management from brief to completion.</div></div>
+        <div style="margin-bottom:14px;"><div class="f-lbl">Why it may fit</div><div style="font-size:13px;">Direct client brief + iterative decisions + drawings/files + project coordination strongly match Chaplin abstractions.</div></div>
+        <div><div class="f-lbl">Research source</div><a href="#">https://andreasmarcou.com/</a></div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Qualification score</div>
+        <div class="scoreline"><span class="lbl">ICP Fit</span><span class="bar"><i style="width:100%"></i></span><b>5 / 5</b></div>
+        <div class="scoreline"><span class="lbl">Pain Probability</span><span class="bar"><i style="width:100%"></i></span><b>5 / 5</b></div>
+        <div class="scoreline"><span class="lbl">Accessibility</span><span class="bar"><i style="width:100%"></i></span><b>5 / 5</b></div>
+        <div class="scoreline"><span class="lbl">Learning Value</span><span class="bar"><i style="width:100%"></i></span><b>5 / 5</b></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+          <div><span style="font-family:Manrope;font-weight:800;font-size:26px;">20</span><span style="color:var(--muted2)">/20</span> <span class="f-lbl">Total (computed)</span></div>
+          <span class="pill pill-green">Priority A</span>
+        </div>
+        <div class="field" style="margin-top:16px;">
+          <label>Status</label>
+          <select><option>Research</option><option>Ready</option><option>Contacting</option><option>Engaged</option><option>Disqualified</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

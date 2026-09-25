@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prospects &amp; Campaigns — Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #0D5EA6; --blue-dark: #0B4E89; --cyan: #57B8E8; --green: #129867;
+            --warning: #C8912E; --danger: #C24A4A; --text: #0B1B28; --muted: #5E7385; --muted2: #73889A;
+            --bg: #F7FAFC; --bg2: #EEF4F8; --line: rgba(13,94,166,.11);
+        }
+        body { font-family: Inter, system-ui, sans-serif; color: var(--text); line-height: 1.55; background: var(--bg2); }
+        h1, h2, h3, h4 { font-family: Manrope, Inter, sans-serif; letter-spacing: -.03em; }
+        a { color: inherit; text-decoration: none; }
+
+        /* ── Mockup switcher bar ── */
+        .switcher { position: sticky; top: 0; z-index: 50; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+            background: #0B1B28; padding: 10px 16px; }
+        .switcher .brand { font-family: Manrope; font-weight: 800; color: #fff; font-size: 13px; margin-right: 10px; letter-spacing: .02em; }
+        .switcher button { font-family: Inter; font-size: 12px; font-weight: 700; color: #b8c4d0; background: transparent;
+            border: 1px solid transparent; padding: 7px 12px; border-radius: 8px; cursor: pointer; transition: all .15s; }
+        .switcher button:hover { color: #fff; background: rgba(255,255,255,.08); }
+        .switcher button.active { color: #fff; background: var(--blue); }
+        .switcher .tag { margin-left: auto; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #6b7d8f; }
+
+        .stage { max-width: 1120px; margin: 0 auto; padding: 28px 24px 80px; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* ── Topbar ── */
+        .eyebrow { display: inline-flex; align-items: center; gap: 9px; border: 1px solid rgba(13,94,166,.10); background: rgba(255,255,255,.9);
+            color: var(--blue-dark); border-radius: 999px; padding: 7px 13px; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+        .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--cyan); box-shadow: 0 0 0 5px rgba(87,184,232,.12); }
+        .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin: 16px 0 22px; }
+        .topbar h1 { font-size: 30px; margin: 10px 0 4px; }
+        .topbar .sub { color: var(--muted); font-size: 14px; }
+        .breadcrumb { font-size: 12px; color: var(--muted2); margin-bottom: 2px; }
+        .breadcrumb b { color: var(--blue-dark); }
+
+        /* ── Cards ── */
+        .card { background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 6px 24px rgba(13,94,166,.05); padding: 24px; margin-bottom: 20px; }
+        .card-pad { padding: 22px 24px; }
+
+        /* ── Buttons ── */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; padding: 10px 16px;
+            font-weight: 800; font-size: 13px; border: 1.5px solid transparent; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+        .btn:hover { opacity: .9; }
+        .btn-primary { background: linear-gradient(180deg,#1A6BB8 0%, #0D5EA6 100%); color: #fff; box-shadow: 0 12px 24px rgba(13,94,166,.2); }
+        .btn-secondary { background: rgba(13,94,166,.06); color: var(--blue-dark); border-color: rgba(13,94,166,.14); }
+        .btn-green { background: linear-gradient(180deg,#17A06D 0%, #129867 100%); color: #fff; box-shadow: 0 12px 24px rgba(18,152,103,.18); }
+        .btn-ghost { background: transparent; color: var(--muted); border-color: rgba(90,106,122,.2); }
+        .btn-sm { padding: 6px 11px; font-size: 12px; border-radius: 9px; }
+
+        /* ── Pills ── */
+        .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+        .pill-a { background: rgba(18,152,103,.1); color: #0C734B; border: 1px solid rgba(18,152,103,.2); }
+        .pill-b { background: rgba(200,145,46,.1); color: #8D5D07; border: 1px solid rgba(200,145,46,.22); }
+        .pill-blue { background: rgba(13,94,166,.08); color: var(--blue-dark); border: 1px solid rgba(13,94,166,.14); }
+        .pill-grey { background: #F0F2F5; color: #5A6A7A; border: 1px solid rgba(90,106,122,.14); }
+        .pill-green { background: rgba(18,152,103,.1); color: #0C734B; border: 1px solid rgba(18,152,103,.2); }
+        .pill-sm { padding: 2px 8px; font-size: 10px; }
+
+        /* status dots */
+        .sdot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:1px; }
+
+        /* ── Tables ── */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted2);
+            padding: 10px 12px; border-bottom: 1.5px solid var(--line); white-space: nowrap; }
+        td { padding: 13px 12px; font-size: 13px; border-bottom: 1px solid rgba(13,94,166,.05); vertical-align: middle; }
+        tbody tr:hover { background: rgba(13,94,166,.02); }
+        .t-strong { font-weight: 700; color: #0B1B28; }
+        .t-sub { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+
+        /* ── Field ── */
+        .field { margin-bottom: 14px; }
+        .field label { display:block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted2); margin-bottom: 6px; }
+        .field input, .field select { width: 100%; padding: 10px 13px; border: 1.5px solid rgba(13,94,166,.15); border-radius: 10px; font-size: 14px; font-family: inherit; color: var(--text); background: #fff; }
+        .filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-row .field { margin-bottom: 0; min-width: 150px; }
+
+        .muted { color: var(--muted); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .section-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-bottom: 12px; }
+
+        .note { font-size: 12px; color: var(--muted); background: rgba(13,94,166,.04); border: 1px solid rgba(13,94,166,.08); border-radius: 12px; padding: 12px 14px; }
+        .note-amber { background: rgba(200,145,46,.06); border-color: rgba(200,145,46,.18); color: #8D5D07; }
+        .note-green { background: rgba(18,152,103,.06); border-color: rgba(18,152,103,.18); color: #0C734B; }
+
+        @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <!-- Screen switcher -->
+    <div class="switcher">
+        <span class="brand">◐ Prospects &amp; Campaigns — Mockups</span>
+        <button class="active" onclick="show('campaigns', this)">1 · Campaigns</button>
+        <button onclick="show('dashboard', this)">2 · Campaign Dashboard</button>
+        <button onclick="show('prospects', this)">3 · Prospects List</button>
+        <button onclick="show('detail', this)">4 · Prospect Detail</button>
+        <button onclick="show('import', this)">5 · Excel Import</button>
+        <button onclick="show('convert', this)">6 · Convert to Lead</button>
+        <span class="tag">Not wired · visual only</span>
+    </div>
+
+    <div class="stage">
+
+        <!-- ══════════════════ 1 · CAMPAIGNS LIST ══════════════════ -->
+        <section class="screen active" id="campaigns">
+            <div class="breadcrumb">Opportunities / <b>Prospecting</b></div>
+            <div class="topbar">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> Opportunities · Prospecting</div>
+                    <h1>Prospecting Campaigns</h1>
+                    <p class="sub">Organise who you intend to approach — before anything touches your Sales contacts or leads.</p>
+                </div>
+                <button class="btn btn-primary">+ New Campaign</button>
+            </div>
+
+            <div class="note" style="margin-bottom:20px;">
+                <strong>What is a campaign?</strong> A named prospecting push for one product — with a weekly cold-call target and a list of researched prospects. Replaces the tracking spreadsheet. A prospect only becomes a Sales Contact &amp; Lead after it shows interest and you convert it.
+            </div>
+
+            <div class="card" style="padding:6px 0;">
+                <table>
+                    <thead>
+                        <tr><th>Campaign</th><th>Product</th><th>Prospects</th><th>Weekly Target</th><th>Period</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="t-strong">Chaplin Pro — Cyprus ICP Validation</div><div class="t-sub">Founder-led · Sep 2026</div></td>
+                            <td>Chaplin Pro</td>
+                            <td><span class="t-strong">30</span></td>
+                            <td>15 calls / wk</td>
+                            <td>01 Sep – 31 Oct 2026</td>
+                            <td><span class="pill pill-green"><span class="sdot" style="background:#129867;"></span>Active</span></td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-secondary btn-sm" onclick="show('dashboard')">Open</button></td>
+                        </tr>
+                        <tr>
+                            <td><div class="t-strong">Portal — HORECA Q4 Outreach</div><div class="t-sub">Draft</div></td>
+                            <td>Portal (Enterprise)</td>
+                            <td><span class="t-strong">0</span></td>
+                            <td>10 calls / wk</td>
+                            <td>—</td>
+                            <td><span class="pill pill-grey"><span class="sdot" style="background:#8a9bab;"></span>Draft</span></td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-secondary btn-sm">Open</button></td>
+                        </tr>
+                        <tr style="opacity:.6;">
+                            <td><div class="t-strong">Chaplin Pro — Athens Pilot</div><div class="t-sub">Closed · Jun 2026</div></td>
+                            <td>Chaplin Pro</td>
+                            <td><span class="t-strong">22</span></td>
+                            <td>12 calls / wk</td>
+                            <td>01 Apr – 30 Jun 2026</td>
+                            <td><span class="pill pill-grey">Closed</span></td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-secondary btn-sm">Open</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ══════════════════ 2 · CAMPAIGN DASHBOARD ══════════════════ -->
+        <section class="screen" id="dashboard">
+            <div class="breadcrumb">Opportunities / Prospecting / <b>Chaplin Pro — Cyprus ICP Validation</b></div>
+            <div class="topbar">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> Campaign</div>
+                    <h1>Chaplin Pro — Cyprus ICP Validation</h1>
+                    <p class="sub">Product: Chaplin Pro · Owner: You · 01 Sep – 31 Oct 2026 · <span class="pill pill-green pill-sm">Active</span></p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="show('import')">Import Excel</button>
+                    <button class="btn btn-primary" onclick="show('prospects')">Work the list →</button>
+                </div>
+            </div>
+
+            <!-- Weekly objective (assistant placeholder) -->
+            <div class="card" style="background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%);border-color:rgba(13,94,166,.14);">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                    <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,rgba(13,94,166,.12),rgba(87,184,232,.12));display:flex;align-items:center;justify-content:center;">
+                        <svg width="18" height="18" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-family:Manrope;font-weight:800;font-size:15px;">This week's objective</div>
+                        <div style="font-size:11px;color:var(--muted2);">Week of 07 Sep 2026</div>
+                    </div>
+                    <span class="pill pill-blue pill-sm" style="margin-left:auto;">Prospecting Assistant · coming soon</span>
+                </div>
+                <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:14px;">
+                    <div style="flex:1;min-width:150px;"><span style="font-family:Manrope;font-weight:800;font-size:26px;color:#0D5EA6;">15</span> <span class="muted">cold calls target</span></div>
+                    <div style="flex:1;min-width:150px;"><span style="font-family:Manrope;font-weight:800;font-size:26px;color:#0C734B;">8</span> <span class="muted">Priority-A ready</span></div>
+                    <div style="flex:1;min-width:150px;"><span style="font-family:Manrope;font-weight:800;font-size:26px;color:#C8912E;">3</span> <span class="muted">follow-ups due</span></div>
+                    <div style="flex:1;min-width:150px;"><span style="font-family:Manrope;font-weight:800;font-size:26px;color:#5E7385;">6</span> <span class="muted">calls made this wk</span></div>
+                </div>
+                <div class="note" style="margin-top:14px;">Static preview. Once the module is used and tested, the <strong>Prospecting Assistant</strong> (backlogged) will generate this weekly objective automatically from the campaign target and prospect statuses.</div>
+            </div>
+
+            <!-- Funnel -->
+            <div class="card">
+                <div class="section-label">Funnel</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;text-align:center;">
+                    <div style="flex:1;min-width:120px;background:rgba(13,94,166,.05);border-radius:14px;padding:16px 10px;">
+                        <div style="font-family:Manrope;font-weight:800;font-size:28px;">30</div><div class="muted" style="font-size:12px;">Prospects</div>
+                    </div>
+                    <div style="flex:1;min-width:120px;background:rgba(13,94,166,.05);border-radius:14px;padding:16px 10px;">
+                        <div style="font-family:Manrope;font-weight:800;font-size:28px;">18</div><div class="muted" style="font-size:12px;">Ready</div>
+                    </div>
+                    <div style="flex:1;min-width:120px;background:rgba(200,145,46,.06);border-radius:14px;padding:16px 10px;">
+                        <div style="font-family:Manrope;font-weight:800;font-size:28px;color:#8D5D07;">9</div><div class="muted" style="font-size:12px;">Contacting</div>
+                    </div>
+                    <div style="flex:1;min-width:120px;background:rgba(87,184,232,.08);border-radius:14px;padding:16px 10px;">
+                        <div style="font-family:Manrope;font-weight:800;font-size:28px;color:#1A8AB5;">4</div><div class="muted" style="font-size:12px;">Engaged</div>
+                    </div>
+                    <div style="flex:1;min-width:120px;background:rgba(18,152,103,.08);border-radius:14px;padding:16px 10px;">
+                        <div style="font-family:Manrope;font-weight:800;font-size:28px;color:#0C734B;">2</div><div class="muted" style="font-size:12px;">Converted → Leads</div>
+                    </div>
+                </div>
+                <div class="note note-green" style="margin-top:16px;">
+                    <strong>Scoring performance:</strong> of 2 conversions so far, both were Priority-A prospects. This link between prospect score and real conversion is what tells you whether the scoring predicts well — kept via the prospect → lead reference.
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════ 3 · PROSPECTS LIST ══════════════════ -->
+        <section class="screen" id="prospects">
+            <div class="breadcrumb">Opportunities / Prospecting / Chaplin Pro — Cyprus ICP Validation / <b>Prospects</b></div>
+            <div class="topbar">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> Prospects · working list</div>
+                    <h1>Prospects — Chaplin Pro Cyprus</h1>
+                    <p class="sub">Research targets for this campaign. These are <strong>not</strong> Sales contacts or leads yet.</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="show('import')">Import Excel</button>
+                    <button class="btn btn-primary">+ Add Prospect</button>
+                </div>
+            </div>
+
+            <div class="note note-amber" style="margin-bottom:18px;">
+                ⓘ A phone number here is a <strong>prospecting target</strong>, not a Sales contact. Nothing on this list touches your pipeline until you press <strong>Convert to Lead</strong>.
+            </div>
+
+            <!-- Filters -->
+            <div class="card card-pad" style="margin-bottom:16px;">
+                <div class="filter-row">
+                    <div class="field"><label>Priority</label><select><option>All</option><option>A (16–20)</option><option>B (12–15)</option><option>Hold</option></select></div>
+                    <div class="field"><label>Status</label><select><option>All</option><option>Research</option><option>Ready</option><option>Contacting</option><option>Engaged</option><option>Converted</option><option>Disqualified</option></select></div>
+                    <div class="field"><label>Segment</label><select><option>All</option><option>Event / Conference</option><option>Venue</option><option>Marketing / Creative</option><option>Professional Services</option><option>Education / Training</option></select></div>
+                    <div class="field"><label>Next action</label><select><option>Any</option><option>Due today</option><option>Overdue</option><option>This week</option></select></div>
+                    <button class="btn btn-primary btn-sm" style="margin-bottom:0;">Filter</button>
+                    <button class="btn btn-ghost btn-sm" style="margin-bottom:0;">Clear</button>
+                </div>
+            </div>
+
+            <div class="card" style="padding:6px 0;">
+                <table>
+                    <thead>
+                        <tr><th>Prospect</th><th>Segment</th><th>Priority</th><th>Score</th><th>Status</th><th>Last activity</th><th>Next action</th><th>Assigned</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="t-strong">EasyConferences</div><div class="t-sub">Nicosia · easyconferences.eu</div></td>
+                            <td>Event / Conference</td>
+                            <td><span class="pill pill-a">A</span></td>
+                            <td class="t-strong">18</td>
+                            <td><span class="pill pill-blue pill-sm"><span class="sdot" style="background:#0D5EA6;"></span>Contacting</span></td>
+                            <td>25 Sep · Email sent</td>
+                            <td style="color:#C8912E;font-weight:700;">28 Sep — Call</td>
+                            <td>You</td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-secondary btn-sm" onclick="show('detail')">Open</button></td>
+                        </tr>
+                        <tr>
+                            <td><div class="t-strong">Purpose Communications</div><div class="t-sub">Nicosia · purpose-pr.com</div></td>
+                            <td>Marketing / Creative</td>
+                            <td><span class="pill pill-a">A</span></td>
+                            <td class="t-strong">19</td>
+                            <td><span class="pill pill-green pill-sm"><span class="sdot" style="background:#129867;"></span>Engaged</span></td>
+                            <td>26 Sep · Demo interest</td>
+                            <td style="color:#C8912E;font-weight:700;">27 Sep — Demo</td>
+                            <td>You</td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-green btn-sm" onclick="show('convert')">Convert</button></td>
+                        </tr>
+                        <tr>
+                            <td><div class="t-strong">Euripides + Associates</div><div class="t-sub">Nicosia · architecture / PM</div></td>
+                            <td>Professional Services</td>
+                            <td><span class="pill pill-a">A</span></td>
+                            <td class="t-strong">17</td>
+                            <td><span class="pill pill-grey pill-sm"><span class="sdot" style="background:#8a9bab;"></span>Ready</span></td>
+                            <td>—</td>
+                            <td class="muted">— set next action</td>
+                            <td>You</td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-secondary btn-sm" onclick="show('detail')">Open</button></td>
+                        </tr>
+                        <tr>
+                            <td><div class="t-strong">gather. Creative Gatherings</div><div class="t-sub">Cyprus · corporate events</div></td>
+                            <td>Event / Conference</td>
+                            <td><span class="pill pill-b">B</span></td>
+                            <td class="t-strong">14</td>
+                            <td><span class="pill pill-grey pill-sm"><span class="sdot" style="background:#8a9bab;"></span>Research</span></td>
+                            <td>—</td>
+                            <td class="muted">—</td>
+                            <td>You</td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-secondary btn-sm" onclick="show('detail')">Open</button></td>
+                        </tr>
+                        <tr style="opacity:.6;">
+                            <td><div class="t-strong">Hilton Nicosia</div><div class="t-sub">Venue / Hotel</div></td>
+                            <td>Venue</td>
+                            <td><span class="pill pill-b">B</span></td>
+                            <td class="t-strong">13</td>
+                            <td><span class="pill pill-grey pill-sm">Disqualified</span></td>
+                            <td>24 Sep · Corp. system lock-in</td>
+                            <td class="muted">—</td>
+                            <td>You</td>
+                            <td style="text-align:right;white-space:nowrap;"><button class="btn btn-secondary btn-sm" onclick="show('detail')">Open</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;color:var(--muted);font-size:12px;">
+                    <span>Showing 5 of 30</span>
+                    <span>Row actions: Open · Add Activity · Convert to Lead · Disqualify</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════ 4 · PROSPECT DETAIL ══════════════════ -->
+        <section class="screen" id="detail">
+            <div class="breadcrumb">Opportunities / Prospecting / Chaplin Pro — Cyprus / <b>EasyConferences</b></div>
+            <div class="topbar">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> Prospect</div>
+                    <h1 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">EasyConferences <span class="pill pill-a" style="font-size:12px;">Priority A · 18/20</span></h1>
+                    <p class="sub">Event / Conference · Nicosia · <span class="pill pill-blue pill-sm">Contacting</span></p>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-secondary">+ Add Activity</button>
+                    <button class="btn btn-ghost">Disqualify</button>
+                    <button class="btn btn-green" onclick="show('convert')">Convert to Lead →</button>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <!-- Left: identity + research -->
+                <div>
+                    <div class="card">
+                        <div class="section-label">Identity &amp; contact</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:14px;">
+                            <div><div class="t-sub">Phone</div><a href="tel:+35722591900" style="color:#0D5EA6;">+357 22 591900</a></div>
+                            <div><div class="t-sub">Email</div><a href="mailto:info@easyconferences.eu" style="color:#0D5EA6;">info@easyconferences.eu</a></div>
+                            <div><div class="t-sub">Website</div><a href="#" style="color:#0D5EA6;">easyconferences.eu</a></div>
+                            <div><div class="t-sub">Public contact / role</div>Conference operations</div>
+                            <div><div class="t-sub">Business type</div>PCO / conference management</div>
+                            <div><div class="t-sub">Recommended first contact</div>Call management</div>
+                        </div>
+                        <div class="note note-amber" style="margin-top:14px;">These are <strong>public prospecting details</strong>, not a Sales contact. A Sales Contact is created only on conversion.</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="section-label">Research</div>
+                        <div style="font-size:13px;margin-bottom:12px;"><div class="t-sub">Public evidence</div>Runs conference/meeting management for academic, corporate, public-sector and association clients; complex recurring external coordination.</div>
+                        <div style="font-size:13px;margin-bottom:12px;"><div class="t-sub">Why Chaplin Pro may fit</div>Registrations/submissions already systemised; test the remaining client/speaker/sponsor/files/approval collaboration layer.</div>
+                        <div style="font-size:13px;"><div class="t-sub">Research source</div><a href="#" style="color:#0D5EA6;">cyprusconferences.org/contact-us</a></div>
+                    </div>
+                </div>
+
+                <!-- Right: score + timeline -->
+                <div>
+                    <div class="card">
+                        <div class="section-label">Qualification score</div>
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            <div class="scoreline"><span>ICP Fit</span><span class="bar"><i style="width:100%"></i></span><b>5</b></div>
+                            <div class="scoreline"><span>Pain Probability</span><span class="bar"><i style="width:80%"></i></span><b>4</b></div>
+                            <div class="scoreline"><span>Accessibility</span><span class="bar"><i style="width:100%"></i></span><b>5</b></div>
+                            <div class="scoreline"><span>Learning Value</span><span class="bar"><i style="width:80%"></i></span><b>4</b></div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+                            <span class="muted" style="font-size:13px;">Total (computed)</span>
+                            <span><span style="font-family:Manrope;font-weight:800;font-size:22px;">18</span><span class="muted">/20</span> &nbsp;<span class="pill pill-a">Priority A</span></span>
+                        </div>
+                        <div class="note" style="margin-top:12px;">Total is calculated from the four dimensions — not entered manually — so priority stays consistent.</div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                            <div class="section-label" style="margin-bottom:0;">Activity timeline</div>
+                            <button class="btn btn-secondary btn-sm">+ Add Activity</button>
+                        </div>
+                        <div class="timeline">
+                            <div class="tl"><span class="tl-dot" style="background:#0D5EA6;"></span><div><b>Email</b> — Introduction sent <div class="t-sub">25 Sep 2026 · You</div></div></div>
+                            <div class="tl"><span class="tl-dot" style="background:#C8912E;"></span><div><b>Call</b> — Receptionist requested email <div class="t-sub">25 Sep 2026 · You</div></div></div>
+                            <div class="tl"><span class="tl-dot" style="background:#8a9bab;"></span><div><b>Call</b> — No answer <div class="t-sub">24 Sep 2026 · You</div></div></div>
+                            <div class="tl"><span class="tl-dot" style="background:#129867;"></span><div><b>Research</b> — Strong ICP; conference organiser <div class="t-sub">22 Sep 2026 · You</div></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════ 5 · EXCEL IMPORT ══════════════════ -->
+        <section class="screen" id="import">
+            <div class="breadcrumb">Opportunities / Prospecting / Chaplin Pro — Cyprus / <b>Import</b></div>
+            <div class="topbar">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> Import</div>
+                    <h1>Import Prospects from Excel</h1>
+                    <p class="sub">Load the research workbook into this campaign. Safe to re-run — re-importing won't duplicate.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-label">1 · Upload workbook</div>
+                <div style="border:1.5px dashed rgba(13,94,166,.25);border-radius:14px;padding:26px;text-align:center;background:rgba(13,94,166,.02);">
+                    <div style="font-weight:700;margin-bottom:6px;">Chaplin-Pro-30-Cyprus-Prospects.xlsx</div>
+                    <div class="muted" style="font-size:12px;margin-bottom:14px;">Sheet “30 Prospects” detected · 30 rows · Summary &amp; Tracker sheets ignored</div>
+                    <button class="btn btn-secondary btn-sm">Choose a different file</button>
+                    <a class="btn btn-ghost btn-sm" href="#">Download template</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-label">2 · Column mapping (auto-detected)</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:13px;">
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(13,94,166,.05);padding:5px 0;"><span class="muted">Prospect</span><b>→ Name</b></div>
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(13,94,166,.05);padding:5px 0;"><span class="muted">Segment</span><b>→ Segment</b></div>
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(13,94,166,.05);padding:5px 0;"><span class="muted">Phone / Email</span><b>→ Contact fields</b></div>
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(13,94,166,.05);padding:5px 0;"><span class="muted">Public Evidence</span><b>→ Research notes</b></div>
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(13,94,166,.05);padding:5px 0;"><span class="muted">ICP / Pain / Access / Learning</span><b>→ Score /5 ×4</b></div>
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(13,94,166,.05);padding:5px 0;"><span class="muted">Total /20 · Priority</span><b>→ Recomputed &amp; validated</b></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-label">3 · Validation result</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;text-align:center;margin-bottom:14px;">
+                    <div style="flex:1;min-width:110px;background:rgba(18,152,103,.08);border-radius:12px;padding:14px;"><div style="font-family:Manrope;font-weight:800;font-size:24px;color:#0C734B;">27</div><div class="muted" style="font-size:12px;">Created</div></div>
+                    <div style="flex:1;min-width:110px;background:rgba(13,94,166,.06);border-radius:12px;padding:14px;"><div style="font-family:Manrope;font-weight:800;font-size:24px;color:#0D5EA6;">2</div><div class="muted" style="font-size:12px;">Matched (skipped)</div></div>
+                    <div style="flex:1;min-width:110px;background:rgba(200,145,46,.08);border-radius:12px;padding:14px;"><div style="font-family:Manrope;font-weight:800;font-size:24px;color:#8D5D07;">1</div><div class="muted" style="font-size:12px;">Needs review</div></div>
+                    <div style="flex:1;min-width:110px;background:rgba(194,74,74,.06);border-radius:12px;padding:14px;"><div style="font-family:Manrope;font-weight:800;font-size:24px;color:#C24A4A;">0</div><div class="muted" style="font-size:12px;">Invalid</div></div>
+                </div>
+                <div class="note note-amber">Row 14 “Expo Cyprus”: <strong>Total /20 in the file (17) didn't match the sum of the four scores (16)</strong>. The recomputed value (16) will be used — review before confirming.</div>
+                <div class="note" style="margin-top:10px;">2 prospects already exist in this campaign (matched by name + website) and were skipped, so re-running the import is safe.</div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-primary" onclick="show('prospects')">Import 27 prospects</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════ 6 · CONVERT TO LEAD ══════════════════ -->
+        <section class="screen" id="convert">
+            <div class="breadcrumb">Opportunities / Prospecting / Chaplin Pro — Cyprus / Purpose Communications / <b>Convert</b></div>
+            <div class="topbar">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> Convert to Lead</div>
+                    <h1>Convert “Purpose Communications” to a Lead</h1>
+                    <p class="sub">The prospect showed interest — bring it into the Sales pipeline.</p>
+                </div>
+            </div>
+
+            <div class="card" style="max-width:640px;">
+                <div class="section-label">This will create</div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;gap:12px;align-items:flex-start;padding:14px;background:rgba(18,152,103,.05);border:1px solid rgba(18,152,103,.16);border-radius:12px;">
+                        <span style="font-size:18px;">👤</span>
+                        <div><b>A Sales Contact</b> — Purpose Communications, Dimitris Ioannides, +357 99 643029, info@purpose-pr.com <div class="t-sub">Using the existing contact rules (deduped if it already exists).</div></div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;padding:14px;background:rgba(13,94,166,.05);border:1px solid rgba(13,94,166,.16);border-radius:12px;">
+                        <span style="font-size:18px;">🎯</span>
+                        <div><b>A Lead</b> — Product: <b>Chaplin Pro</b> (from campaign) · Source: <b>Cold Call / Prospecting</b> <div class="t-sub">Enters your normal Lead → Opportunity workflow.</div></div>
+                    </div>
+                </div>
+
+                <div class="field" style="margin-top:18px;">
+                    <label>Request details (carried into the lead)</label>
+                    <input value="Interested in a demo of the client/stakeholder collaboration layer." />
+                </div>
+
+                <div class="note note-green" style="margin-top:6px;">
+                    <strong>The prospect will be marked “Converted” and keep a reference to this lead.</strong> That link is how you'll later measure whether the qualification score actually predicted conversion — so you know if the scoring is a good indicator or a false one.
+                </div>
+
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+                    <button class="btn btn-ghost" onclick="show('detail')">Cancel</button>
+                    <button class="btn btn-green" onclick="show('prospects')">Create Contact + Lead</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <style>
+        /* score bars */
+        .scoreline { display:flex; align-items:center; gap:12px; font-size:13px; }
+        .scoreline > span:first-child { width:120px; color:var(--muted); }
+        .scoreline .bar { flex:1; height:7px; background:#EEF4F8; border-radius:4px; overflow:hidden; }
+        .scoreline .bar i { display:block; height:100%; background:linear-gradient(90deg,#57B8E8,#0D5EA6); border-radius:4px; }
+        .scoreline b { width:18px; text-align:right; }
+        /* timeline */
+        .timeline { display:flex; flex-direction:column; gap:2px; }
+        .tl { display:flex; gap:12px; padding:9px 0; font-size:13px; }
+        .tl-dot { width:9px; height:9px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+        .tl b { font-weight:700; }
+    </style>
+
+    <script>
+        function show(id, btn) {
+            document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+            document.getElementById(id).classList.add('active');
+            var map = { campaigns:0, dashboard:1, prospects:2, detail:3, import:4, convert:5 };
+            var buttons = document.querySelectorAll('.switcher button');
+            buttons.forEach(function (b) { b.classList.remove('active'); });
+            if (btn) { btn.classList.add('active'); }
+            else if (map[id] != null) { buttons[map[id]].classList.add('active'); }
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>

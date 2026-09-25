@@ -827,14 +827,28 @@
 
 <script>
     // ─── Filter State Persistence ──────────────────────────────────────────
-    // Saves the current filter query string to sessionStorage so Edit/Create pages
-    // can link back with filters preserved. No redirect — just save.
+    // Remembers the active purchase filters across navigation. Common flow:
+    // filter by supplier → open/create a purchase → come back to the list → filters restored.
+    //
+    //  • When the page has a query string, save it as the current filter state.
+    //  • When the page has NO query string but a filter state was saved, restore it by
+    //    redirecting to /Purchase{savedQuery}. Landing there then has a query string, so it
+    //    saves (not re-restores) — no redirect loop.
+    //  • The "Clear" button removes the saved state, so clearing is sticky too.
     (function() {
         var STORAGE_KEY = 'purchase_filter_state';
         var search = window.location.search;
 
         if (search && search !== '?') {
+            // Explicit filters in the URL → treat as the current state.
             sessionStorage.setItem(STORAGE_KEY, search);
+            return;
+        }
+
+        // Bare /Purchase → restore the last-used filters if we have any.
+        var saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved && saved !== '?' && saved.length > 1) {
+            window.location.replace('/Purchase' + saved);
         }
     })();
 </script>

@@ -175,6 +175,9 @@ public class PortalDbContext : DbContext
     public DbSet<Entities.Sales.MeetingType> MeetingTypes { get; set; } = null!;
     public DbSet<Entities.Sales.FollowUpTaskType> FollowUpTaskTypes { get; set; } = null!;
     public DbSet<FollowUpTask> FollowUpTasks { get; set; } = null!;
+    public DbSet<ProspectCampaign> ProspectCampaigns { get; set; } = null!;
+    public DbSet<Prospect> Prospects { get; set; } = null!;
+    public DbSet<ProspectActivity> ProspectActivities { get; set; } = null!;
 
     // Compliance schema
     public DbSet<ApplicationCategory> ApplicationCategories { get; set; } = null!;
@@ -316,6 +319,9 @@ public class PortalDbContext : DbContext
         ConfigureTeamMember(modelBuilder);
         ConfigureFollowUpTask(modelBuilder);
         ConfigureActivityFeed(modelBuilder);
+        ConfigureProspectCampaign(modelBuilder);
+        ConfigureProspect(modelBuilder);
+        ConfigureProspectActivity(modelBuilder);
 
         // Compliance
         ConfigureApplicationCategory(modelBuilder);
@@ -3767,6 +3773,108 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureProspectCampaign(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProspectCampaign>(entity =>
+        {
+            entity.ToTable("ProspectCampaign", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.Market).HasMaxLength(200);
+            entity.Property(e => e.OwnerUserId).HasMaxLength(450);
+            entity.Property(e => e.WeeklyCallTarget).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.Status).IsRequired().HasDefaultValue((byte)1);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.SalesProduct)
+                .WithMany()
+                .HasForeignKey(e => e.SalesProductId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => e.BusinessId).HasDatabaseName("IX_ProspectCampaign_Business");
+        });
+    }
+
+    private static void ConfigureProspect(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Prospect>(entity =>
+        {
+            entity.ToTable("Prospect", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Segment).HasMaxLength(100);
+            entity.Property(e => e.Location).HasMaxLength(150);
+            entity.Property(e => e.BusinessType).HasMaxLength(150);
+            entity.Property(e => e.PublicContactRole).HasMaxLength(200);
+            entity.Property(e => e.Phone).HasMaxLength(60);
+            entity.Property(e => e.Email).HasMaxLength(320);
+            entity.Property(e => e.Website).HasMaxLength(300);
+            entity.Property(e => e.ResearchSourceUrl).HasMaxLength(500);
+            entity.Property(e => e.RecommendedFirstContact).HasMaxLength(300);
+            entity.Property(e => e.AssignedToUserId).HasMaxLength(450);
+            entity.Property(e => e.NextAction).HasMaxLength(300);
+            entity.Property(e => e.ImportRowId).HasMaxLength(40);
+            entity.Property(e => e.Status).IsRequired().HasDefaultValue((byte)1);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ProspectCampaign)
+                .WithMany(c => c.Prospects)
+                .HasForeignKey(e => e.ProspectCampaignId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ConvertedLeadRequest)
+                .WithMany()
+                .HasForeignKey(e => e.ConvertedLeadRequestId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(e => e.ProspectCampaignId).HasDatabaseName("IX_Prospect_Campaign");
+            entity.HasIndex(e => new { e.BusinessId, e.Status }).HasDatabaseName("IX_Prospect_Business_Status");
+        });
+    }
+
+    private static void ConfigureProspectActivity(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProspectActivity>(entity =>
+        {
+            entity.ToTable("ProspectActivity", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.PerformedByUserId).HasMaxLength(450);
+            entity.Property(e => e.Outcome).HasMaxLength(200);
+            entity.Property(e => e.NextAction).HasMaxLength(300);
+            entity.Property(e => e.IsFollowUp).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.OccurredAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.Prospect)
+                .WithMany(p => p.Activities)
+                .HasForeignKey(e => e.ProspectId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasIndex(e => new { e.ProspectId, e.OccurredAtUtc }).HasDatabaseName("IX_ProspectActivity_Prospect");
+        });
+    }
+
     private static void ConfigureLeadResponseTemplate(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<LeadResponseTemplate>(entity =>
@@ -4700,6 +4808,15 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<FollowUpTask>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<ProspectCampaign>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<Prospect>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<ProspectActivity>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         // Compliance entities

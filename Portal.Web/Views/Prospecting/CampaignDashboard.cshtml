@@ -1,0 +1,125 @@
+@using Portal.Infrastructure.Models.Sales
+@model ProspectCampaignDashboardDto
+@{
+    ViewData["Title"] = $"Campaign — {Model.Name}";
+    var funnel = Model.Funnel;
+    var obj = Model.WeeklyObjective;
+
+    string StatusPill(byte status) => status switch { 2 => "pill-green", 3 => "pill-red", _ => "pill-amber" };
+
+    string DotColour(byte t) => t switch
+    {
+        1 => "#129867", 2 => "#C8912E", 3 => "#0D5EA6", 4 => "#1A8AB5",
+        5 => "#1A8AB5", 6 => "#8a9bab", 7 => "#8a9bab", _ => "#8a9bab"
+    };
+    string SentimentPill(byte? s) => s switch { 1 => "pill-green", 3 => "pill-red", 2 => "pill-grey", _ => "" };
+}
+
+<div class="topbar">
+    <div>
+        <div style="font-size:12px;color:#73889a;margin-bottom:4px;">
+            Opportunities / <a href="/Prospecting/Campaigns" style="color:var(--blue);">Prospecting</a> / <strong>@Model.Name</strong>
+        </div>
+        <div class="eyebrow"><span class="dot"></span> Campaign</div>
+        <h1 class="topbar-heading">@Model.Name</h1>
+        <p class="topbar-subtitle">
+            @(Model.ProductName ?? "No product") ·
+            @(Model.StartDate?.ToString("dd MMM yyyy") ?? "—") – @(Model.EndDate?.ToString("dd MMM yyyy") ?? "—")
+            · <span class="pill pill-sm @StatusPill(Model.Status)">@Model.StatusName</span>
+        </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <a class="btn btn-secondary" href="/Prospecting/Import?campaignId=@Model.Id">Import Excel</a>
+        <a class="btn btn-primary" href="/Prospecting/Prospects?campaignId=@Model.Id">Work the list →</a>
+    </div>
+</div>
+
+<!-- Weekly objective (assistant placeholder in V1) -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,rgba(13,94,166,.12),rgba(87,184,232,.12));display:flex;align-items:center;justify-content:center;">
+            <svg width="18" height="18" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div>
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:15px;">This week's objective</div>
+            <div style="font-size:11px;color:#73889a;">Week of @DateTime.UtcNow.ToString("dd MMM yyyy")</div>
+        </div>
+        <span class="pill pill-blue pill-sm" style="margin-left:auto;">Prospecting Assistant · coming soon</span>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:14px;">
+        <div style="flex:1;min-width:150px;"><span style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:26px;color:#0D5EA6;">@obj.WeeklyCallTarget</span> <span style="color:#5e7385;">cold calls target</span></div>
+        <div style="flex:1;min-width:150px;"><span style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:26px;color:#0C734B;">@funnel.Active</span> <span style="color:#5e7385;">active prospects</span></div>
+        <div style="flex:1;min-width:150px;"><span style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:26px;color:#C8912E;">@obj.FollowUpsDue</span> <span style="color:#5e7385;">follow-ups due</span></div>
+        <div style="flex:1;min-width:150px;"><span style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:26px;color:#0C734B;">@funnel.Converted</span> <span style="color:#5e7385;">converted → leads</span></div>
+    </div>
+    <p style="margin-top:14px;font-size:12px;color:#5a6a7a;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-radius:12px;padding:12px 14px;">
+        Static preview. Once the module is used and tested, the <strong>Prospecting Assistant</strong> (backlogged) will generate this weekly objective automatically.
+    </p>
+</section>
+
+<!-- Funnel -->
+<section class="glass card-pad">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:12px;">Funnel</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;text-align:center;">
+        <div style="flex:1;min-width:120px;background:rgba(13,94,166,.05);border-radius:14px;padding:16px 10px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:28px;">@funnel.Total</div><div style="color:#5e7385;font-size:12px;">Prospects</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:rgba(13,94,166,.05);border-radius:14px;padding:16px 10px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:28px;">@funnel.Ready</div><div style="color:#5e7385;font-size:12px;">Ready</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:rgba(200,145,46,.06);border-radius:14px;padding:16px 10px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:28px;color:#8D5D07;">@funnel.Contacting</div><div style="color:#5e7385;font-size:12px;">Contacting</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:rgba(87,184,232,.08);border-radius:14px;padding:16px 10px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:28px;color:#1A8AB5;">@funnel.Engaged</div><div style="color:#5e7385;font-size:12px;">Engaged</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:rgba(18,152,103,.08);border-radius:14px;padding:16px 10px;">
+            <div style="font-family:Manrope,Inter,sans-serif;font-weight:800;font-size:28px;color:#0C734B;">@funnel.Converted</div><div style="color:#5e7385;font-size:12px;">Converted → Leads</div>
+        </div>
+    </div>
+    @if (funnel.Disqualified > 0)
+    {
+        <p style="margin-top:14px;font-size:12px;color:#5a6a7a;">@funnel.Disqualified prospect(s) disqualified.</p>
+    }
+    <p style="margin-top:16px;font-size:12px;color:#0C734B;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.18);border-radius:12px;padding:12px 14px;">
+        <strong>Scoring performance:</strong> each converted prospect keeps a reference to the lead it created, so you can later compare its predicted priority against the real outcome — that's how you tell whether the scoring predicts well.
+    </p>
+</section>
+
+<!-- Recent activity across all prospects in the campaign -->
+<section class="glass card-pad" style="margin-top:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;">Recent activity</div>
+        <span style="font-size:12px;color:#73889a;">Latest @Model.RecentActivity.Count across all prospects</span>
+    </div>
+    @if (Model.RecentActivity.Count == 0)
+    {
+        <div class="empty-state"><p>No activity recorded in this campaign yet.</p></div>
+    }
+    else
+    {
+        <div class="prospect-timeline" style="display:flex;flex-direction:column;">
+            @foreach (var f in Model.RecentActivity)
+            {
+                <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(13,94,166,.05);">
+                    <span style="width:9px;height:9px;border-radius:50%;margin-top:6px;flex-shrink:0;background:@DotColour(f.ActivityType);"></span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:14px;">
+                            <a href="/Prospecting/ProspectDetail/@f.ProspectId" style="color:var(--blue);font-weight:700;">@f.ProspectName</a>
+                            · <strong>@f.ActivityTypeName</strong>@if (!string.IsNullOrWhiteSpace(f.Outcome)) { <span> — @f.Outcome</span> }
+                            @if (f.Sentiment.HasValue && !string.IsNullOrEmpty(SentimentPill(f.Sentiment)))
+                            {
+                                <span class="pill pill-sm @SentimentPill(f.Sentiment)" style="margin-left:6px;">@f.SentimentName</span>
+                            }
+                            @if (f.IsFollowUp)
+                            {
+                                <span style="margin-left:6px;font-size:11px;color:#8D5D07;">⚑ follow-up</span>
+                            }
+                        </div>
+                        <div style="font-size:12px;color:#73889a;margin-top:2px;">@f.OccurredAtUtc.ToString("dd MMM yyyy HH:mm") · You</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
