@@ -7,12 +7,15 @@ namespace Portal.Web.Services;
 
 /// <summary>
 /// Manages business logo uploads, validation, and deletion.
-/// Logos are stored in wwwroot/uploads/logos/ and served as static files.
+/// Logos are stored under the private file-storage root at
+/// {FileStorage:BasePath}/{businessId}/logos/{guid}{ext} (tenant-isolated, redeploy-safe) and
+/// served through the public-but-unguessable streaming route /logo/{businessId}/{filename}
+/// (LogoController.Image). The stored PublicUrl points at that route.
 /// </summary>
 public class LogoService : ILogoService
 {
     private readonly BusinessLogoRepository _logoRepository;
-    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<LogoService> _logger;
 
     private const int MaxLogosPerBusiness = 20;
@@ -26,12 +29,20 @@ public class LogoService : ILogoService
         "image/webp"
     };
 
-    public LogoService(BusinessLogoRepository logoRepository, IWebHostEnvironment environment, ILogger<LogoService> logger)
+    public LogoService(BusinessLogoRepository logoRepository, IConfiguration configuration, ILogger<LogoService> logger)
     {
         _logoRepository = logoRepository;
-        _environment = environment;
+        _configuration = configuration;
         _logger = logger;
     }
+
+    private string BasePath =>
+        _configuration["FileStorage:BasePath"]
+        ?? throw new InvalidOperationException("FileStorage:BasePath is not configured in appsettings.");
+
+    /// <summary>Physical folder holding a business's logo files.</summary>
+    private string LogoDirectory(int businessId) =>
+        Path.Combine(BasePath, businessId.ToString(), "logos");
 
     public async Task<BusinessLogo> UploadAsync(int businessId, IFormFile file, string displayName)
     {
@@ -48,7 +59,7 @@ public class LogoService : ILogoService
         if (currentCount >= MaxLogosPerBusiness)
             throw new InvalidOperationException($"Maximum of {MaxLogosPerBusiness} logos per business reached.");
 
-        var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "logos");
+        var uploadsPath = LogoDirectory(businessId);
         Directory.CreateDirectory(uploadsPath);
 
         var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
@@ -68,7 +79,7 @@ public class LogoService : ILogoService
                 FileName = uniqueFileName,
                 ContentType = file.ContentType,
                 FileSizeBytes = file.Length,
-                PublicUrl = $"/uploads/logos/{uniqueFileName}",
+                PublicUrl = $"/logo/{businessId}/{uniqueFileName}",
                 CreatedAtUtc = DateTime.UtcNow
             };
 
@@ -98,7 +109,7 @@ public class LogoService : ILogoService
         if (logo == null || logo.BusinessId != businessId)
             throw new InvalidOperationException("Logo not found.");
 
-        var filePath = Path.Combine(_environment.WebRootPath, "uploads", "logos", logo.FileName);
+        var filePath = Path.Combine(LogoDirectory(businessId), logo.FileName);
 
         await _logoRepository.DeleteAsync(logoId);
 

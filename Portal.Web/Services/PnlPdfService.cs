@@ -12,18 +12,18 @@ namespace Portal.Web.Services;
 public class PnlPdfService : IPnlPdfService
 {
     private readonly IViewRenderService _viewRenderService;
-    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
     private readonly ILogoService _logoService;
     private readonly ICurrentTenantService _tenantService;
 
     public PnlPdfService(
         IViewRenderService viewRenderService,
-        IWebHostEnvironment environment,
+        IConfiguration configuration,
         ILogoService logoService,
         ICurrentTenantService tenantService)
     {
         _viewRenderService = viewRenderService;
-        _environment = environment;
+        _configuration = configuration;
         _logoService = logoService;
         _tenantService = tenantService;
     }
@@ -56,8 +56,8 @@ public class PnlPdfService : IPnlPdfService
         if (string.IsNullOrEmpty(dataUri))
             return html;
 
-        // Replace <img> tags with src="/uploads/..." with the base64 data URI
-        var pattern = @"(<img\s[^>]*src\s*=\s*"")(/uploads/[^""]+)("")";
+        // Replace <img src="/logo/..."> with the base64 data URI so the PDF is self-contained.
+        var pattern = @"(<img\s[^>]*src\s*=\s*"")(/logo/[^""]+)("")";
         html = Regex.Replace(html, pattern, $"$1{dataUri}$3", RegexOptions.IgnoreCase);
 
         return html;
@@ -65,14 +65,17 @@ public class PnlPdfService : IPnlPdfService
 
     private string? GetLogoAsDataUri(Infrastructure.Entities.BusinessLogo? logo)
     {
-        if (logo == null || string.IsNullOrWhiteSpace(logo.PublicUrl))
+        if (logo == null || string.IsNullOrWhiteSpace(logo.FileName))
             return null;
 
         try
         {
-            // PublicUrl is like "/uploads/logos/{filename}" — resolve to physical path
-            var relativePath = logo.PublicUrl.TrimStart('/');
-            var filePath = Path.Combine(_environment.WebRootPath, relativePath);
+            // Logos now live under the private storage root: {BasePath}/{businessId}/logos/{fileName}
+            var basePath = _configuration["FileStorage:BasePath"];
+            if (string.IsNullOrWhiteSpace(basePath))
+                return null;
+
+            var filePath = Path.Combine(basePath, logo.BusinessId.ToString(), "logos", logo.FileName);
 
             if (!System.IO.File.Exists(filePath))
                 return null;

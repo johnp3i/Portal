@@ -7,16 +7,16 @@ namespace Portal.Web.Services;
 
 public class PayslipPdfService : IPayslipPdfService
 {
-    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
     private readonly ILogoService _logoService;
     private readonly ICurrentTenantService _tenantService;
 
     public PayslipPdfService(
-        IWebHostEnvironment environment,
+        IConfiguration configuration,
         ILogoService logoService,
         ICurrentTenantService tenantService)
     {
-        _environment = environment;
+        _configuration = configuration;
         _logoService = logoService;
         _tenantService = tenantService;
     }
@@ -90,7 +90,7 @@ public class PayslipPdfService : IPayslipPdfService
         if (string.IsNullOrEmpty(dataUri))
             return html;
 
-        var pattern = @"(<img\s[^>]*src\s*=\s*"")(/uploads/[^""]+)("")";
+        var pattern = @"(<img\s[^>]*src\s*=\s*"")(/logo/[^""]+)("")";
         html = Regex.Replace(html, pattern, $"$1{dataUri}$3", RegexOptions.IgnoreCase);
 
         return html;
@@ -98,13 +98,16 @@ public class PayslipPdfService : IPayslipPdfService
 
     private string? GetLogoAsDataUri(Portal.Infrastructure.Entities.BusinessLogo? logo)
     {
-        if (logo == null || string.IsNullOrWhiteSpace(logo.PublicUrl))
+        if (logo == null || string.IsNullOrWhiteSpace(logo.FileName))
             return null;
 
         try
         {
-            var relativePath = logo.PublicUrl.TrimStart('/');
-            var filePath = Path.Combine(_environment.WebRootPath, relativePath);
+            var basePath = _configuration["FileStorage:BasePath"];
+            if (string.IsNullOrWhiteSpace(basePath))
+                return null;
+
+            var filePath = Path.Combine(basePath, logo.BusinessId.ToString(), "logos", logo.FileName);
 
             if (!System.IO.File.Exists(filePath))
                 return null;

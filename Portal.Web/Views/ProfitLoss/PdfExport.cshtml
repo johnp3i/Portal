@@ -301,9 +301,12 @@
     <!-- Header -->
     <div class="header">
         <div class="header-left">
-            <div class="header-logo">
-                <img src="/uploads/logos/logo.png" style="max-height:50px;" />
-            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.LogoUrl))
+            {
+                <div class="header-logo">
+                    <img src="@Model.LogoUrl" style="max-height:50px;" />
+                </div>
+            }
             <div class="header-title">
                 <h1>Profit &amp; Loss Statement</h1>
                 <div class="business-name">@Model.BusinessName</div>

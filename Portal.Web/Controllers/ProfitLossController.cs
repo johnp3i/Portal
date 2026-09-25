@@ -166,10 +166,16 @@ public class ProfitLossController : Controller
             var currencySymbol = await GetCurrencySymbolAsync(businessId);
             var businessName = await GetBusinessNameAsync(businessId);
 
+            var logoUrl = await _dbContext.BusinessLogos.IgnoreQueryFilters()
+                .Where(l => l.BusinessId == businessId && l.IsPrimary)
+                .Select(l => l.PublicUrl)
+                .FirstOrDefaultAsync();
+
             var pdfModel = new PnlPdfModel
             {
                 BusinessName = businessName,
                 CurrencySymbol = currencySymbol,
+                LogoUrl = logoUrl,
                 Summary = summary
             };
 
