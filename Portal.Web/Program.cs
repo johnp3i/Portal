@@ -507,6 +507,10 @@ builder.Services.AddScoped<IDemoInvitationService, DemoInvitationService>();
 builder.Services.AddScoped<BusinessInsightsRepository>();
 builder.Services.AddScoped<IBusinessInsightsService, BusinessInsightsService>();
 
+// --- Storage Usage (per-business + SuperAdmin) ---
+builder.Services.AddScoped<StorageUsageRepository>();
+builder.Services.AddScoped<IStorageUsageService, StorageUsageService>();
+
 // --- User Impersonation (SuperAdmin) ---
 builder.Services.AddScoped<Portal.Web.Services.ImpersonationService>();
 

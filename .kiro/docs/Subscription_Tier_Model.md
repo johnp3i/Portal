@@ -253,8 +253,30 @@ Request arrives
 | MaxUsers     | INT                            | 2, 5, 9999                                 |
 | MonthlyPrice | DECIMAL(10,2)                  |                                            |
 | AnnualPrice  | DECIMAL(10,2)                  | Annual discount                            |
+| StorageLimitMb | INT NULL                     | Per-tier storage cap in MB; NULL = unlimited. See Storage Limits below. |
 | IsActive     | BIT DEFAULT 1                  |                                            |
 | CreatedAtUtc | DATETIME2 DEFAULT GETUTCDATE() |                                            |
+
+> **Note:** The live table is `[dbo].[Plan]`; `StorageLimitMb` (`INT NULL`) was added by
+> migration `213_AddStorageLimitToPlan.sql` and mapped on the `Plan` EF entity.
+
+##### Storage Limits (per tier)
+
+Each plan carries a storage cap used by the file-storage pages (`StorageLimitMb`, in megabytes;
+`NULL` = unlimited). These are seeded by plan slug and are editable afterwards by a SuperAdmin on
+**Admin → Subscriptions → Plan storage limits**.
+
+| Tier (slug)              | StorageLimitMb | Human   |
+|--------------------------|----------------|---------|
+| Foundation (`starter`)   | 250            | 250 MB  |
+| Professional (`professional`) | 5120      | 5 GB    |
+| Enterprise (`enterprise`)| 25600          | 25 GB   |
+
+**Display-only (Phase 2).** The limit is shown on the business **My Business → Storage** tab
+(as "X of Y" with an amber bar at ≥80% and red at ≥100%) and on the SuperAdmin **Admin → Storage**
+page (Limit + Usage% columns). Uploads are **not** blocked at the limit yet — enforcement is a
+later phase. Logical usage = `SUM(FileSizeBytes)` over live (non-deleted) attachment, compliance,
+and logo rows; signatures are not measured yet.
 
 #### `[portal].[PlanModulePermission]`
 

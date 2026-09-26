@@ -1845,6 +1845,7 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.MonthlyPriceEur).HasPrecision(10, 2);
             entity.Property(e => e.AnnualPriceEur).HasPrecision(10, 2);
             entity.Property(e => e.MaxUsers).IsRequired();
+            entity.Property(e => e.StorageLimitMb); // nullable — NULL = unlimited
             entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
             entity.Property(e => e.DisplayOrder).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(500);

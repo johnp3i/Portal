@@ -1,0 +1,139 @@
+@model Portal.Infrastructure.Models.Storage.AdminStoragePageDto
+@{
+    ViewData["Title"] = "Storage by business";
+    var s = Model.Summary;
+
+    // Build a sort link that toggles direction when the same column is clicked.
+    Func<string, string, string> sortDirFor = (col, currentDir) =>
+        Model.SortBy == col && currentDir == "desc" ? "asc" : "desc";
+    Func<string, string> caret = (col) =>
+        Model.SortBy == col ? (Model.SortDir == "desc" ? " ▾" : " ▴") : "";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration</div>
+        <h1 class="topbar-heading">Storage by business</h1>
+        <p class="topbar-subtitle">Storage used per subscribed business across the platform. Live files only (soft-deleted attachments excluded). Demo accounts are excluded.</p>
+    </div>
+</div>
+
+<!-- Summary KPIs -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:22px;">
+    <div class="glass" style="padding:20px 22px;border-radius:16px;">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">Total platform storage</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:30px;font-weight:800;color:#1a2b3c;letter-spacing:-1px;margin-top:4px;">@s.TotalDisplay</div>
+        <div style="font-size:13px;color:#5a6b7c;">Across all businesses</div>
+    </div>
+    <div class="glass" style="padding:20px 22px;border-radius:16px;">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">Businesses with files</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:30px;font-weight:800;color:#0D5EA6;letter-spacing:-1px;margin-top:4px;">@s.BusinessesWithFiles</div>
+        <div style="font-size:13px;color:#5a6b7c;">At least one stored file</div>
+    </div>
+    <div class="glass" style="padding:20px 22px;border-radius:16px;">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">Largest single business</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:30px;font-weight:800;color:#C8912E;letter-spacing:-1px;margin-top:4px;">@s.LargestDisplay</div>
+        <div style="font-size:13px;color:#5a6b7c;">Heaviest consumer</div>
+    </div>
+    <div class="glass" style="padding:20px 22px;border-radius:16px;">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#8a9bac;">Average per business</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:30px;font-weight:800;color:#129867;letter-spacing:-1px;margin-top:4px;">@s.AverageDisplay</div>
+        <div style="font-size:13px;color:#5a6b7c;">Among those with files</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <form method="get" action="/Admin/Storage" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:220px;flex:1;">
+            <label>Search</label>
+            <input type="text" name="search" value="@Model.SearchTerm" placeholder="Business name…" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Sort by</label>
+            <select name="sortBy">
+                <option value="size" selected="@(Model.SortBy == "size")">Storage</option>
+                <option value="name" selected="@(Model.SortBy == "name")">Business name</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:150px;">
+            <label>Direction</label>
+            <select name="sortDir">
+                <option value="desc" selected="@(Model.SortDir == "desc")">High → Low / Z → A</option>
+                <option value="asc" selected="@(Model.SortDir == "asc")">Low → High / A → Z</option>
+            </select>
+        </div>
+        <div style="padding-bottom:2px;">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="/Admin/Storage" class="btn btn-secondary">Clear</a>
+        </div>
+    </form>
+</section>
+
+<!-- Business table -->
+<section class="glass card-pad">
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty-state"><p>No businesses match these filters.</p></div>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="/Admin/Storage?search=@(Model.SearchTerm)&sortBy=name&sortDir=@(sortDirFor("name", Model.SortDir))" style="color:inherit;text-decoration:none;">Business@(Html.Raw(caret("name")))</a>
+                    </th>
+                    <th>Plan</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Attachments</th>
+                    <th style="text-align:right;">Compliance</th>
+                    <th style="text-align:right;">Logos</th>
+                    <th style="text-align:right;">
+                        <a href="/Admin/Storage?search=@(Model.SearchTerm)&sortBy=size&sortDir=@(sortDirFor("size", Model.SortDir))" style="color:inherit;text-decoration:none;">Total@(Html.Raw(caret("size")))</a>
+                    </th>
+                    <th style="text-align:right;">Limit</th>
+                    <th style="text-align:right;">Usage</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td><strong>@r.BusinessName</strong></td>
+                        <td><span class="pill pill-blue">@r.PlanName</span></td>
+                        <td>
+                            @{
+                                var statusPill = r.Status?.ToLowerInvariant() switch
+                                {
+                                    "active" => "pill-green",
+                                    "trial" or "trialing" => "pill-amber",
+                                    _ => "pill-grey"
+                                };
+                            }
+                            <span class="pill @statusPill">@r.Status</span>
+                        </td>
+                        <td style="text-align:right;">@r.AttachmentDisplay</td>
+                        <td style="text-align:right;">@r.ComplianceDisplay</td>
+                        <td style="text-align:right;">@r.LogoDisplay</td>
+                        <td style="text-align:right;"><strong>@r.TotalDisplay</strong></td>
+                        <td style="text-align:right;color:#5a6b7c;">@r.LimitDisplay</td>
+                        <td style="text-align:right;">
+                            @if (r.HasLimit)
+                            {
+                                var usageColour = r.IsOverLimit ? "#C24A4A" : r.IsNearLimit ? "#C8912E" : "#5a6b7c";
+                                var usageWeight = (r.IsOverLimit || r.IsNearLimit) ? "700" : "400";
+                                <span style="color:@usageColour;font-weight:@usageWeight;">@r.UsedPercent%</span>
+                            }
+                            else
+                            {
+                                <span style="color:#8a9bac;">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p style="margin-top:14px;font-size:12px;color:#5a6a7a;">Signatures are not included yet (no size recorded). Figures are live files only — soft-deleted attachments are excluded.</p>
+    }
+</section>

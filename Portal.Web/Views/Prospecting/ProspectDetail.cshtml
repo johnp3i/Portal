@@ -41,25 +41,132 @@
     .act-seg button.on-pos { background: rgba(18,152,103,.12); color: #0C734B; }
     .act-seg button.on-neu { background: rgba(90,106,122,.12); color: #4A5568; }
     .act-seg button.on-neg { background: rgba(194,74,74,.1); color: #A23A3A; }
+
+    /* ── Breadcrumb / back-nav row (its own row above the topbar) ─────────────
+       Desktop shows the full trail; the right padding keeps a long trail from
+       running under the floating top-right chrome (search / What's New at
+       right:200px). The compact back link is hidden until phone. */
+    .prospect-breadcrumb { margin-bottom: 10px; }
+    .prospect-breadcrumb-trail {
+        font-size: 12px;
+        color: #73889a;
+        display: block;
+        padding-right: 600px; /* clear the absolute top-right search/What's New/account strip */
+        line-height: 1.6;
+    }
+    /* Slim native back row — hidden on desktop (the trail above handles nav),
+       shown on phone as a quiet top-left back button. */
+    .prospect-back-row {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--blue);
+        text-decoration: none;
+        margin-bottom: 10px;
+        padding: 2px 0;
+    }
+    .prospect-back-row svg { flex-shrink: 0; }
+
+    /* Priority pill in the action column — desktop keeps it inline in the title,
+       so hide the action-column copy here; it's shown on phone only. */
+    .prospect-priority-mobile { display: none; }
+
+    /* Status badge that rides the back row — phone only. */
+    .prospect-status-mobile { display: none; }
+
+    /* Narrower desktops / tablets: the float still sits top-right, but reserve
+       less room and let the trail wrap instead of pushing width. */
+    @@media (max-width: 1100px) {
+        .prospect-breadcrumb-trail { padding-right: 0; }
+    }
+
+    /* ── Mobile (≤768px): collapse the two-column layout so nothing bleeds off
+          the screen, and let the timeline scroll horizontally if a row is wide. */
+    @@media (max-width: 768px) {
+        .prospect-detail-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+        }
+        .identity-grid {
+            grid-template-columns: 1fr !important;
+        }
+        /* Activity timeline: keep each entry on its own line but allow a wide
+           entry (long outcome + pills + follow-up + Edit) to scroll sideways
+           inside the card instead of forcing the page wider than the viewport. */
+        .prospect-timeline { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .prospect-timeline .tl { min-width: 0; }
+        .prospect-timeline .tl-line { flex-wrap: wrap; }
+
+        /* Native header flow: [ ← Prospects ........ STATUS ] on its own line,
+           then the title + meta, then a full-width primary action. Hide the
+           desktop trail and the in-subtitle status (it rides the back row now). */
+        .prospect-breadcrumb { display: none; }
+        .prospect-back-row { display: inline-flex; }
+        .prospect-back-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .prospect-back-row { margin-bottom: 0; }
+        .prospect-status-mobile { display: inline-flex; margin-left: auto; }
+        .prospect-status-subtitle { display: none; }
+
+        /* Priority pill moves out of the title and sits above the button in the
+           action column, saving a line of vertical space. */
+        .prospect-priority-inline { display: none; }
+        .prospect-priority-mobile { display: inline-flex; align-self: flex-start; }
+
+        /* Action column: priority pill on top, full-width Convert button below. */
+        .prospect-topbar-actions {
+            width: 100%;
+            margin-top: 4px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .prospect-topbar-actions .btn {
+            width: 100%;
+        }
+    }
 </style>
+
+<!-- Slim native-style back row: shown on phone only, at the very top-left.
+     Quiet, on its own line. The status badge shares this row (pushed right) to
+     keep the title/meta lines uncluttered. -->
+<div class="prospect-back-nav">
+    <a class="prospect-back-row" href="/Prospecting/Prospects?campaignId=@Model.ProspectCampaignId">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        Prospects
+    </a>
+    <span class="pill pill-sm @StatusPill(Model.Status) prospect-status-mobile">@Model.StatusName</span>
+</div>
+
+<!-- Desktop breadcrumb trail: its own row above the topbar so it never runs
+     under the floating top-right chrome. Hidden on phone (the back row above
+     replaces it). -->
+<nav class="prospect-breadcrumb" aria-label="Breadcrumb">
+    <span class="prospect-breadcrumb-trail">
+        Opportunities / <a href="/Prospecting/Campaigns" style="color:var(--blue);">Prospecting</a> /
+        <a href="/Prospecting/CampaignDashboard/@Model.ProspectCampaignId" style="color:var(--blue);">@Model.CampaignName</a> /
+        <a href="/Prospecting/Prospects?campaignId=@Model.ProspectCampaignId" style="color:var(--blue);">Prospects</a> / <strong>@Model.Name</strong>
+    </span>
+</nav>
 
 <div class="topbar">
     <div>
-        <div style="font-size:12px;color:#73889a;margin-bottom:4px;">
-            Opportunities / <a href="/Prospecting/Campaigns" style="color:var(--blue);">Prospecting</a> /
-            <a href="/Prospecting/CampaignDashboard/@Model.ProspectCampaignId" style="color:var(--blue);">@Model.CampaignName</a> /
-            <a href="/Prospecting/Prospects?campaignId=@Model.ProspectCampaignId" style="color:var(--blue);">Prospects</a> / <strong>@Model.Name</strong>
-        </div>
         <div class="eyebrow"><span class="dot"></span> Prospect</div>
         <h1 class="topbar-heading" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             @Model.Name
-            <span class="pill @PriorityPill(Model.Priority)">Priority @Model.Priority · @Model.Total/20</span>
+            <span class="pill @PriorityPill(Model.Priority) prospect-priority-inline">Priority @Model.Priority · @Model.Total/20</span>
         </h1>
         <p class="topbar-subtitle">
-            @Val(Model.Segment) · @Val(Model.Location) · <span class="pill pill-sm @StatusPill(Model.Status)">@Model.StatusName</span>
+            @Val(Model.Segment) · @Val(Model.Location)<span class="prospect-status-subtitle"> · <span class="pill pill-sm @StatusPill(Model.Status)">@Model.StatusName</span></span>
         </p>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div class="prospect-topbar-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="pill @PriorityPill(Model.Priority) prospect-priority-mobile">Priority @Model.Priority · @Model.Total/20</span>
         @if (!Model.IsConverted)
         {
             <button class="btn btn-primary" onclick="openConvertModal()">Convert to Lead</button>
@@ -96,12 +203,12 @@
     }
 }
 
-<div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start;">
+<div class="prospect-detail-grid" style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start;">
     <!-- LEFT: Identity & contact, then Activity timeline -->
     <div style="display:flex;flex-direction:column;gap:22px;">
         <section class="glass card-pad">
             <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">Identity &amp; contact</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;">
+            <div class="identity-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;">
                 <div><div style="color:#73889a;font-size:11px;">Phone (research)</div>@Val(Model.Phone)</div>
                 <div><div style="color:#73889a;font-size:11px;">Email (research)</div>@Val(Model.Email)</div>
                 <div>

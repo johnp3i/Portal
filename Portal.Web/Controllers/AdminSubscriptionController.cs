@@ -82,7 +82,8 @@ public class AdminSubscriptionController : Controller
                 .Select(p => new AvailablePlanItem
                 {
                     PlanId = p.Id,
-                    PlanName = p.Name
+                    PlanName = p.Name,
+                    StorageLimitMb = p.StorageLimitMb
                 })
                 .ToListAsync();
 
@@ -187,6 +188,45 @@ public class AdminSubscriptionController : Controller
             Log.Error(ex, "Error changing subscription status for BusinessPlanId={BusinessPlanId}, Status={Status}",
                 request.BusinessPlanId, request.Status);
             return Json(new { success = false, message = "The status could not be changed. Please try again." });
+        }
+    }
+
+    // POST: /Admin/Subscriptions/UpdatePlanStorageLimit
+    // Updates the per-plan storage cap (MB). Null/empty = unlimited. Display-only (Phase 2 —
+    // shown on the Storage pages; uploads are not blocked at the limit yet).
+    [HttpPost("UpdatePlanStorageLimit")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUpdatePlanStorageLimit([FromBody] UpdatePlanStorageLimitRequest request)
+    {
+        try
+        {
+            if (request.StorageLimitMb.HasValue && request.StorageLimitMb.Value < 0)
+                return Json(new { success = false, message = "Storage limit cannot be negative. Leave blank for unlimited." });
+
+            var plan = await _portalDbContext.Plans
+                .FirstOrDefaultAsync(p => p.Id == request.PlanId);
+
+            if (plan == null)
+                return Json(new { success = false, message = "The selected plan does not exist." });
+
+            var oldLimit = plan.StorageLimitMb;
+            // 0 is treated as unlimited (same as null) for consistency with the DTO's HasLimit rule.
+            plan.StorageLimitMb = (request.StorageLimitMb.HasValue && request.StorageLimitMb.Value > 0)
+                ? request.StorageLimitMb
+                : null;
+
+            await _portalDbContext.SaveChangesAsync();
+
+            Log.Information("SuperAdmin changed PlanId={PlanId} StorageLimitMb from {OldLimit} to {NewLimit}",
+                request.PlanId, oldLimit, plan.StorageLimitMb);
+
+            var display = plan.StorageLimitMb.HasValue ? $"{plan.StorageLimitMb} MB" : "unlimited";
+            return Json(new { success = true, message = $"Storage limit for '{plan.Name}' set to {display}." });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating storage limit for PlanId={PlanId}", request.PlanId);
+            return Json(new { success = false, message = "The storage limit could not be updated. Please try again." });
         }
     }
 
@@ -531,6 +571,17 @@ public class AvailablePlanItem
     public int PlanId { get; set; }
 
     public string PlanName { get; set; } = null!;
+
+    /// <summary>Storage cap in MB for this plan; null = unlimited (no cap set). Display-only.</summary>
+    public int? StorageLimitMb { get; set; }
+}
+
+/// <summary>Request to update a plan's storage cap (MB). Null = unlimited.</summary>
+public class UpdatePlanStorageLimitRequest
+{
+    public int PlanId { get; set; }
+
+    public int? StorageLimitMb { get; set; }
 }
 
 /// <summary>

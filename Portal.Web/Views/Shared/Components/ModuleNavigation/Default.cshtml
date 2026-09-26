@@ -568,6 +568,10 @@
                 <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></span>
                 <span class="nav-text">Business Insights</span>
             </a>
+            <a class="nav-item @(ViewContext.HttpContext.Request.Path.StartsWithSegments("/Admin/Storage") ? "active" : "")" href="/Admin/Storage">
+                <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg></span>
+                <span class="nav-text">Storage</span>
+            </a>
             <a class="nav-item @(currentController.Equals("AdminCompliance", StringComparison.OrdinalIgnoreCase) ? "active" : "")" asp-controller="AdminCompliance" asp-action="Index">
                 <span class="nav-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></span>
                 <span class="nav-text">Compliance Templates</span>

@@ -18,6 +18,9 @@ public class Plan
 
     public int MaxUsers { get; set; }
 
+    /// <summary>Per-tier storage cap in MB. NULL = unlimited (no cap). Display-only in Phase 2.</summary>
+    public int? StorageLimitMb { get; set; }
+
     public bool IsActive { get; set; }
 
     public int DisplayOrder { get; set; }

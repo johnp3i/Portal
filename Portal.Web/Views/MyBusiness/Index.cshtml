@@ -24,28 +24,38 @@
     <div class="alert-error">@TempData["Error"]</div>
 }
 
-<!-- Tabs -->
-<div style="display:flex;gap:0;border-bottom:2px solid rgba(13,94,166,.08);margin-bottom:24px;">
+<!-- Tabs — horizontally scrollable on mobile (native scrollable-tab pattern). -->
+<div class="mybiz-tabs" style="display:flex;gap:0;border-bottom:2px solid rgba(13,94,166,.08);margin-bottom:24px;">
     <a href="@Url.Action("Index", "MyBusiness", new { tab = "profile" })"
+       class="mybiz-tab @(activeTab == "profile" ? "is-active" : "")"
        style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "profile" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "profile" ? "#0D5EA6" : "#5E7385");">
         Profile
     </a>
     <a href="@Url.Action("Index", "MyBusiness", new { tab = "logos" })"
+       class="mybiz-tab @(activeTab == "logos" ? "is-active" : "")"
        style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "logos" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "logos" ? "#0D5EA6" : "#5E7385");">
         Logos (@logos.Count/20)
     </a>
     <a href="@Url.Action("Index", "MyBusiness", new { tab = "payment" })"
+       class="mybiz-tab @(activeTab == "payment" ? "is-active" : "")"
        style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "payment" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "payment" ? "#0D5EA6" : "#5E7385");">
         Payment Details
     </a>
     <a href="@Url.Action("Index", "MyBusiness", new { tab = "automation" })"
+       class="mybiz-tab @(activeTab == "automation" ? "is-active" : "")"
        style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "automation" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "automation" ? "#0D5EA6" : "#5E7385");">
         Automation
+    </a>
+    <a href="@Url.Action("Index", "MyBusiness", new { tab = "storage" })"
+       class="mybiz-tab @(activeTab == "storage" ? "is-active" : "")"
+       style="padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;border-bottom:2px solid @(activeTab == "storage" ? "#0D5EA6" : "transparent");margin-bottom:-2px;color:@(activeTab == "storage" ? "#0D5EA6" : "#5E7385");">
+        Storage
     </a>
 </div>
 
 @{
     var paymentDetails = ViewBag.PaymentDetails as List<Portal.Infrastructure.Entities.BusinessPaymentDetail> ?? new List<Portal.Infrastructure.Entities.BusinessPaymentDetail>();
+    var storage = ViewBag.Storage as Portal.Infrastructure.Models.Storage.BusinessStorageDto;
 }
 
 @if (activeTab == "profile")
@@ -527,6 +537,146 @@ else if (activeTab == "payment")
     </div>
 }
 
+<!-- ═══ STORAGE TAB ═══ -->
+@if (activeTab == "storage" && storage != null)
+{
+    var measured = storage.Categories.Where(c => !c.NotCountedYet).ToList();
+    var catColours = new Dictionary<string, string>
+    {
+        ["Document attachments"] = "#0D5EA6",
+        ["Compliance attachments"] = "#57B8E8",
+        ["Logos"] = "#129867"
+    };
+    string ColourFor(string name) => catColours.TryGetValue(name, out var c) ? c : "#8a9bab";
+    var barColour = storage.IsOverLimit ? "#C24A4A" : storage.IsNearLimit ? "#C8912E" : "#0D5EA6";
+
+    <!-- Total usage -->
+    <section class="glass card-pad">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:6px;">Total storage used</div>
+        <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;">
+            <span style="font-family:'Manrope',sans-serif;font-weight:800;font-size:34px;line-height:1;">@storage.TotalDisplay</span>
+            @if (storage.HasLimit)
+            {
+                <span style="font-size:15px;font-weight:700;color:#73889a;">of @storage.LimitDisplay</span>
+                @if (storage.IsOverLimit)
+                {
+                    <span class="pill" style="margin-left:auto;background:rgba(194,74,74,.12);color:#C24A4A;">@storage.UsedPercent% — over limit</span>
+                }
+                else if (storage.IsNearLimit)
+                {
+                    <span class="pill" style="margin-left:auto;background:rgba(200,145,46,.14);color:#C8912E;">@storage.UsedPercent% used</span>
+                }
+                else
+                {
+                    <span class="pill pill-grey" style="margin-left:auto;">@storage.UsedPercent% used</span>
+                }
+            }
+            else
+            {
+                <span class="pill pill-grey" style="margin-left:auto;">No limit set</span>
+            }
+        </div>
+        @if (storage.HasLimit)
+        {
+            <!-- usage-against-limit bar -->
+            <div style="height:14px;border-radius:999px;background:#EEF3F8;overflow:hidden;margin:14px 0 6px;">
+                <span style="display:block;height:100%;width:@(storage.UsedPercentCapped)%;background:@barColour;"></span>
+            </div>
+            <div style="font-size:12px;color:#5e7385;margin-top:4px;">
+                @storage.TotalDisplay of @storage.LimitDisplay used
+            </div>
+        }
+        else
+        {
+            <!-- stacked proportional bar (no limit set) -->
+            <div style="height:14px;border-radius:999px;background:#EEF3F8;overflow:hidden;display:flex;margin:14px 0 6px;">
+                @foreach (var c in measured.Where(c => c.Bytes > 0))
+                {
+                    <span style="height:100%;width:@(storage.PercentOf(c.Bytes))%;background:@ColourFor(c.Name);"></span>
+                }
+            </div>
+            <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#5e7385;margin-top:8px;">
+                @foreach (var c in measured)
+                {
+                    <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px;background:@ColourFor(c.Name);"></span>@c.Name @c.SizeDisplay</span>
+                }
+            </div>
+        }
+        <p style="margin-top:14px;font-size:12px;color:#5a6a7a;background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-radius:12px;padding:11px 14px;">
+            Usage counts your current files (deleted files aren't counted).
+            @if (storage.HasLimit)
+            {
+                @:Your plan includes @storage.LimitDisplay of storage. This is shown for visibility — uploads aren't blocked at the limit yet.
+            }
+            else
+            {
+                @:Your plan doesn't have a storage limit set.
+            }
+        </p>
+    </section>
+
+    <!-- By category -->
+    <section class="glass card-pad" style="margin-top:22px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">By category</div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Category</th><th style="text-align:right;">Files</th><th style="text-align:right;">Size</th><th style="text-align:right;">% of total</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var c in storage.Categories)
+                {
+                    <tr style="@(c.NotCountedYet ? "opacity:.6;" : "")">
+                        <td>
+                            <span style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px;background:@ColourFor(c.Name);"></span>
+                            @c.Name
+                            @if (c.NotCountedYet)
+                            {
+                                <span class="pill pill-grey" style="margin-left:6px;">not counted yet</span>
+                            }
+                        </td>
+                        <td style="text-align:right;">@c.Files</td>
+                        <td style="text-align:right;">@c.SizeDisplay</td>
+                        <td style="text-align:right;">@(c.NotCountedYet ? "—" : storage.PercentOf(c.Bytes) + "%")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p style="margin-top:12px;font-size:12px;color:#5a6a7a;">
+            Signatures aren't measured yet — they'll be included once per-plan limits are introduced. They're small (max 2 MB each), so they have little impact on your total.
+        </p>
+    </section>
+
+    <!-- Document attachments by record type -->
+    @if (storage.AttachmentsByType.Any())
+    {
+        <section class="glass card-pad" style="margin-top:22px;">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">Document attachments — by record type</div>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Record type</th><th style="text-align:right;">Files</th><th style="text-align:right;">Size</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in storage.AttachmentsByType)
+                    {
+                        <tr>
+                            <td>@t.RecordType</td>
+                            <td style="text-align:right;">@t.Files</td>
+                            <td style="text-align:right;">@t.SizeDisplay</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p style="margin-top:12px;font-size:12px;color:#5a6a7a;">Purchase invoices are usually the largest use of storage — as expected.</p>
+        </section>
+    }
+    else
+    {
+        <section class="glass card-pad" style="margin-top:22px;">
+            <div class="empty-state"><p>No document attachments uploaded yet.</p></div>
+        </section>
+    }
+}
+
 @section Scripts {
     <script>
         function toggleVatFields(notRegistered) {
@@ -982,6 +1132,15 @@ else if (activeTab == "payment")
                     connectBtn.style.pointerEvents = '';
                     connectBtn.title = '';
                 }
+            }
+        })();
+
+        // On phone the tab strip scrolls horizontally — bring the active tab
+        // into view so a right-side tab (e.g. Storage) isn't hidden off-screen.
+        (function () {
+            var active = document.querySelector('.mybiz-tab.is-active');
+            if (active && active.scrollIntoView) {
+                active.scrollIntoView({ inline: 'center', block: 'nearest' });
             }
         })();
     </script>

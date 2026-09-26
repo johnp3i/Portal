@@ -34,6 +34,52 @@
 }
 
 /* --------------------------------------------------------------------------
+   MOBILE ACTION BAR (shared) — a standalone row rendered BELOW the topbar,
+   shown only on phone. Desktop is unaffected (the topbar keeps its own
+   buttons). Markup + per-page More-menu JS live in each list view; the CSS
+   is shared here. See .kiro/docs/mobile-action-bar-pattern.md.
+   -------------------------------------------------------------------------- */
+.mobile-action-bar {
+    display: none; /* shown in the phone media query below */
+}
+
+.mab-more-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 190px;
+    background: #fff;
+    border: 1px solid rgba(13, 94, 166, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(11, 27, 40, 0.14);
+    padding: 6px;
+    z-index: 200;
+}
+
+.mab-more-panel.open {
+    display: block;
+}
+
+.mab-more-item {
+    display: block;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0B1B28;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.mab-more-item:hover,
+.mab-more-item:active {
+    background: rgba(13, 94, 166, 0.06);
+    color: #0D5EA6;
+    text-decoration: none;
+}
+
+/* --------------------------------------------------------------------------
    SHARED — Rules that apply to BOTH Phone and Tablet (≤1100px)
    -------------------------------------------------------------------------- */
 @media (max-width: 1100px) {
@@ -1201,6 +1247,13 @@
     [style*="display:flex"][style*="gap"] .field {
         flex: 1 1 100% !important;
     }
+
+    /* Modal field grids — collapse any inline multi-column grid to a single
+       column on phone so inputs aren't cramped or pushed off-screen. Covers
+       1fr 1fr and 1fr 1fr 1fr 1fr layouts used across the app's modals. */
+    .modal-content [style*="display:grid"] {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 @media (min-width: 769px) and (max-width: 1100px) {
@@ -1852,6 +1905,112 @@
 }
 
 /* --------------------------------------------------------------------------
+   MOBILE ACTION BAR (phone layout) — the compact row that replaces the
+   stacked topbar buttons: [ + Create (flex) | Filters (count) | More ⋯ ].
+   Base rules (hide on desktop, dropdown chrome) live near the top of this file.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .mobile-action-bar {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        margin: 0 0 16px;
+    }
+
+    .mab-btn {
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 14px;
+        border-radius: 12px;
+        border: 1.5px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: pointer;
+        padding: 12px 14px;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    /* Create — primary, grows to fill the row */
+    .mab-primary {
+        flex: 1 1 auto;
+        background: linear-gradient(180deg, #1A6BB8 0%, var(--blue) 100%);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(13, 94, 166, .22);
+    }
+
+    /* Filters + More — compact ghost buttons */
+    .mab-ghost {
+        flex: 0 0 auto;
+        background: rgba(13, 94, 166, .06);
+        border-color: rgba(13, 94, 166, .14);
+        color: var(--blue);
+    }
+
+    .mab-ghost.active {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+    }
+
+    .mab-more-toggle {
+        padding: 12px 13px;
+    }
+
+    /* Active-filter count badge */
+    .mab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 10px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .mab-ghost.active .mab-count {
+        background: #fff;
+        color: var(--blue);
+    }
+
+    .mab-more {
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    /* Hide the desktop topbar action buttons on mobile (the mobile bar replaces them). */
+    .topbar-actions-desktop {
+        display: none !important;
+    }
+
+    /* Filter card: the toggle lives in the mobile bar, so strip the card chrome;
+       only the expanded panel shows as its own card. Shared class — tag any
+       list page's filter <section> with .mobile-filter-card. */
+    .mobile-filter-card {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    .mobile-filter-card .filter-panel.expanded {
+        background: #fff;
+        border: 1px solid rgba(13, 94, 166, 0.10);
+        border-radius: 16px;
+        padding: 14px !important;
+        margin: 0 0 22px !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
    LAYER 10: COMPACT ACTION BUTTON ROW — Primary full-width, secondary inline
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
@@ -2403,5 +2562,36 @@
         padding: 14px 16px !important;
         font-size: 15px !important;
         border-radius: 10px !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   SCROLLABLE TAB STRIP — horizontal tabs that overflow on phone
+   A row of underline tabs (e.g. My Business: Profile / Logos / Payment /
+   Automation / Storage) is too wide for a phone. Instead of wrapping or
+   clipping, let the strip scroll sideways (native scrollable-tabs pattern):
+   tabs keep their labels, the active tab is scrolled into view via JS.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .mybiz-tabs {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap !important;
+        scrollbar-width: none;            /* Firefox */
+        margin-bottom: 18px !important;
+    }
+
+    /* Hide the scrollbar (WebKit/Blink) — the strip still scrolls by swipe. */
+    .mybiz-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Tabs keep their width (don't shrink) and stay on one line. */
+    .mybiz-tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 12px 16px !important;   /* a touch tighter than desktop 12px 24px */
+        scroll-margin-inline: 16px;      /* leave breathing room when scrolled into view */
     }
 }

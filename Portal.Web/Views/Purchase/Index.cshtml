@@ -55,7 +55,7 @@
 </div>
 
 <!-- Filter Panel -->
-<section class="glass card-pad purchase-filter-card" style="margin-bottom:22px;">
+<section class="glass card-pad mobile-filter-card" style="margin-bottom:22px;">
     <form id="filterForm" method="get" asp-action="Index">
         <div class="filter-panel" id="purchaseFilterPanel">
             <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
@@ -521,44 +521,8 @@
         border-color: #0D5EA6;
     }
 
-    /* ─── Mobile action bar (Variant A) ───────────────────────────────────────
-       A standalone row rendered BELOW the topbar, shown only on mobile.
-       Desktop is completely unaffected (the topbar keeps its own buttons). */
-    .mobile-action-bar {
-        display: none; /* hidden on desktop; shown in the mobile media query */
-    }
-    .mab-more-panel {
-        display: none;
-        position: absolute;
-        top: calc(100% + 6px);
-        right: 0;
-        min-width: 190px;
-        background: #fff;
-        border: 1px solid rgba(13, 94, 166, 0.12);
-        border-radius: 14px;
-        box-shadow: 0 12px 30px rgba(11, 27, 40, 0.14);
-        padding: 6px;
-        z-index: 200;
-    }
-    .mab-more-panel.open {
-        display: block;
-    }
-    .mab-more-item {
-        display: block;
-        padding: 12px 14px;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #0B1B28;
-        text-decoration: none;
-        cursor: pointer;
-    }
-    .mab-more-item:hover,
-    .mab-more-item:active {
-        background: rgba(13, 94, 166, 0.06);
-        color: #0D5EA6;
-        text-decoration: none;
-    }
+    /* Mobile action-bar CSS is now shared in mobile.css (base rules + phone
+       media block). This view only provides the markup + More-menu JS. */
 
     /* File column: a faint "attach" hint is always rendered so every row has a
        visible, clickable affordance. When the cell actually has files (the
@@ -691,93 +655,8 @@
             font-size: 13px;
         }
 
-        /* ── Mobile action bar (Variant A): its own row, one line ─────────────
-              [ + Create (flex) | Filters (count) | More ⋯ ]. Desktop untouched. */
-        .mobile-action-bar {
-            display: flex;
-            align-items: stretch;
-            gap: 8px;
-            margin: 0 0 16px;
-        }
-        .mab-btn {
-            font-family: inherit;
-            font-weight: 700;
-            font-size: 14px;
-            border-radius: 12px;
-            border: 1.5px solid transparent;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            cursor: pointer;
-            padding: 12px 14px;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-        /* Create — primary, grows to fill the row */
-        .mab-primary {
-            flex: 1 1 auto;
-            background: linear-gradient(180deg,#1A6BB8 0%, var(--blue) 100%);
-            color: #fff;
-            box-shadow: 0 8px 18px rgba(13,94,166,.22);
-        }
-        /* Filters + More — compact ghost buttons */
-        .mab-ghost {
-            flex: 0 0 auto;
-            background: rgba(13,94,166,.06);
-            border-color: rgba(13,94,166,.14);
-            color: var(--blue);
-        }
-        .mab-ghost.active {
-            background: var(--blue);
-            color: #fff;
-            border-color: var(--blue);
-        }
-        .mab-more-toggle {
-            padding: 12px 13px;
-        }
-        /* Active-filter count badge */
-        .mab-count {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 18px;
-            height: 18px;
-            padding: 0 5px;
-            border-radius: 10px;
-            background: var(--blue);
-            color: #fff;
-            font-size: 10px;
-            font-weight: 800;
-            line-height: 1;
-        }
-        .mab-ghost.active .mab-count {
-            background: #fff;
-            color: var(--blue);
-        }
-        .mab-more { position: relative; flex: 0 0 auto; }
-
-        /* Hide the desktop topbar action buttons on mobile (the mobile bar replaces them). */
-        .topbar-actions-desktop {
-            display: none !important;
-        }
-
-        /* Filter card: toggle lives in the mobile bar, so strip the card chrome;
-           only the expanded panel shows as its own card. */
-        .purchase-filter-card {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin-bottom: 0 !important;
-        }
-        .purchase-filter-card .filter-panel.expanded {
-            background: #fff;
-            border: 1px solid rgba(13, 94, 166, 0.10);
-            border-radius: 16px;
-            padding: 14px !important;
-            margin: 0 0 22px !important;
-        }
+        /* Mobile action-bar layout is now shared in mobile.css (phone media
+           block) — including .topbar-actions-desktop and .mobile-filter-card. */
 
         /* ── Origin breakdown: compact 2×2 grid with clearer tints, matching the
               crisp look of the top KPI cards. */

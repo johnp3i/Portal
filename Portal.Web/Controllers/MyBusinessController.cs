@@ -34,13 +34,14 @@ public class MyBusinessController : Controller
     private readonly IStripeConnectService _stripeConnectService;
     private readonly BusinessApiKeysRepository _businessApiKeysRepository;
     private readonly IStripeKeyEncryptionService _stripeKeyEncryptionService;
+    private readonly IStorageUsageService _storageUsageService;
 
     public MyBusinessController(IBusinessService businessService, ILogoService logoService,
         ICurrentTenantService tenantService, BusinessPaymentDetailRepository paymentDetailRepository,
         IPlanCheckService planCheckService, MembershipDbContext membershipDbContext,
         IPaymentInstructionsService paymentInstructionsService, PortalDbContext dbContext,
         IStripeConnectService stripeConnectService, BusinessApiKeysRepository businessApiKeysRepository,
-        IStripeKeyEncryptionService stripeKeyEncryptionService)
+        IStripeKeyEncryptionService stripeKeyEncryptionService, IStorageUsageService storageUsageService)
     {
         _businessService = businessService;
         _logoService = logoService;
@@ -53,6 +54,7 @@ public class MyBusinessController : Controller
         _stripeConnectService = stripeConnectService;
         _businessApiKeysRepository = businessApiKeysRepository;
         _stripeKeyEncryptionService = stripeKeyEncryptionService;
+        _storageUsageService = storageUsageService;
     }
 
     private bool CanEdit()
@@ -83,6 +85,12 @@ public class MyBusinessController : Controller
 
         // Stripe Connect status
         ViewBag.IsStripeConnected = await _stripeConnectService.IsConnectedAsync(businessId);
+
+        // Storage usage (loaded only when the Storage tab is shown)
+        if (tab == "storage")
+        {
+            ViewBag.Storage = await _storageUsageService.GetBusinessStorageAsync(businessId);
+        }
 
         if (profile == null)
         {
