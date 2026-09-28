@@ -134,7 +134,10 @@ public class LeadMeetingDto
     public int Id { get; set; }
     public string Subject { get; set; } = null!;
     public string MeetingTypeName { get; set; } = null!;
+    /// <summary>Scheduled time in the business's local zone (for display). See timezone normalization.</summary>
     public DateTime ScheduledAtUtc { get; set; }
+    /// <summary>Precomputed (business-local) upcoming flag so the view need not compare to UtcNow.</summary>
+    public bool IsUpcoming { get; set; }
     public int DurationMinutes { get; set; }
     public bool IsCancelled { get; set; }
 }

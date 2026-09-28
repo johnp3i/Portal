@@ -184,7 +184,7 @@ public class ComplianceController : Controller
             var result = await _complianceService.UploadAttachmentAsync(id, businessId, userId, file);
 
             if (result.Success)
-                return Json(new { success = true, message = "Attachment uploaded successfully.", data = result.Data });
+                return Json(new { success = true, message = "Attachment uploaded successfully.", data = result.Data, warning = result.Data?.StorageWarning });
 
             return Json(new { success = false, message = result.Message });
         }

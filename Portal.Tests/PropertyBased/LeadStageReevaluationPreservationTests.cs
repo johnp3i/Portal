@@ -59,6 +59,7 @@ public class LeadStageReevaluationPreservationTests
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
         var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTimeZoneService = new Mock<Portal.Infrastructure.Services.IBusinessTimeZoneService>();
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -73,6 +74,7 @@ public class LeadStageReevaluationPreservationTests
             mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object,
+            mockTimeZoneService.Object,
             null!);
 
         // Act
@@ -127,6 +129,7 @@ public class LeadStageReevaluationPreservationTests
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
         var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTimeZoneService = new Mock<Portal.Infrastructure.Services.IBusinessTimeZoneService>();
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -141,6 +144,7 @@ public class LeadStageReevaluationPreservationTests
             mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object,
+            mockTimeZoneService.Object,
             null!);
 
         // Act
@@ -199,6 +203,7 @@ public class LeadStageReevaluationPreservationTests
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
         var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTimeZoneService = new Mock<Portal.Infrastructure.Services.IBusinessTimeZoneService>();
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -213,6 +218,7 @@ public class LeadStageReevaluationPreservationTests
             mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object,
+            mockTimeZoneService.Object,
             null!);
 
         // Act
@@ -271,6 +277,7 @@ public class LeadStageReevaluationPreservationTests
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
         var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTimeZoneService = new Mock<Portal.Infrastructure.Services.IBusinessTimeZoneService>();
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -285,6 +292,7 @@ public class LeadStageReevaluationPreservationTests
             mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object,
+            mockTimeZoneService.Object,
             null!);
 
         // Act
@@ -340,6 +348,7 @@ public class LeadStageReevaluationPreservationTests
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
         var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTimeZoneService = new Mock<Portal.Infrastructure.Services.IBusinessTimeZoneService>();
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -354,6 +363,7 @@ public class LeadStageReevaluationPreservationTests
             mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object,
+            mockTimeZoneService.Object,
             null!);
 
         // Act
@@ -412,6 +422,7 @@ public class LeadStageReevaluationPreservationTests
         var mockFollowUpTaskTypeRepo = new Mock<FollowUpTaskTypeRepository>(MockBehavior.Loose, new object[] { null! });
         var mockMeetingTeamMemberRepo = new Mock<MeetingTeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
         var mockTeamMemberRepo = new Mock<TeamMemberRepository>(MockBehavior.Loose, new object[] { null! });
+        var mockTimeZoneService = new Mock<Portal.Infrastructure.Services.IBusinessTimeZoneService>();
 
         var service = new MeetingService(
             mockMeetingRepo.Object,
@@ -426,6 +437,7 @@ public class LeadStageReevaluationPreservationTests
             mockTeamMemberRepo.Object,
             mockLeadRequestService.Object,
             mockTenantService.Object,
+            mockTimeZoneService.Object,
             null!);
 
         // Act

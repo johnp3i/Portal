@@ -106,7 +106,8 @@ public class AttachmentController : Controller
                 return Json(new { success = false, message = result.Message });
             }
 
-            return Json(new { success = true, data = result.Data });
+            // data carries an optional StorageWarning (≥80% of cap) the UI may show as an info toast.
+            return Json(new { success = true, data = result.Data, warning = result.Data?.StorageWarning });
         }
         catch (Exception ex)
         {

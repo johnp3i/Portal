@@ -17,6 +17,7 @@ public class LogoService : ILogoService
     private readonly BusinessLogoRepository _logoRepository;
     private readonly IConfiguration _configuration;
     private readonly ILogger<LogoService> _logger;
+    private readonly IStorageLimitEnforcer _storageLimitEnforcer;
 
     private const int MaxLogosPerBusiness = 20;
     private const long MaxFileSizeBytes = 2 * 1024 * 1024; // 2MB
@@ -29,11 +30,16 @@ public class LogoService : ILogoService
         "image/webp"
     };
 
-    public LogoService(BusinessLogoRepository logoRepository, IConfiguration configuration, ILogger<LogoService> logger)
+    public LogoService(
+        BusinessLogoRepository logoRepository,
+        IConfiguration configuration,
+        ILogger<LogoService> logger,
+        IStorageLimitEnforcer storageLimitEnforcer)
     {
         _logoRepository = logoRepository;
         _configuration = configuration;
         _logger = logger;
+        _storageLimitEnforcer = storageLimitEnforcer;
     }
 
     private string BasePath =>
@@ -54,6 +60,12 @@ public class LogoService : ILogoService
 
         if (file.Length > MaxFileSizeBytes)
             throw new ArgumentException("File size exceeds the maximum allowed size of 2MB.");
+
+        // Enforce the business's plan storage cap (Phase 3 — hard block over the limit).
+        // Throw to fit the caller's exception→TempData contract.
+        var storageCheck = await _storageLimitEnforcer.CheckCanUploadAsync(businessId, file.Length);
+        if (!storageCheck.Allowed)
+            throw new InvalidOperationException(storageCheck.Message!);
 
         var currentCount = await _logoRepository.GetCountByBusinessIdAsync(businessId);
         if (currentCount >= MaxLogosPerBusiness)

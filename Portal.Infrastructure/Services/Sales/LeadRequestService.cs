@@ -27,6 +27,7 @@ public class LeadRequestService : ILeadRequestService
     private readonly LeadTrackingHistoryRepository _leadTrackingHistoryRepository;
     private readonly IContactService _contactService;
     private readonly ICurrentTenantService _tenantService;
+    private readonly IBusinessTimeZoneService _timeZoneService;
     private readonly PortalDbContext _context;
 
     public LeadRequestService(
@@ -44,6 +45,7 @@ public class LeadRequestService : ILeadRequestService
         LeadTrackingHistoryRepository leadTrackingHistoryRepository,
         IContactService contactService,
         ICurrentTenantService tenantService,
+        IBusinessTimeZoneService timeZoneService,
         PortalDbContext context)
     {
         _leadRequestRepository = leadRequestRepository;
@@ -60,6 +62,7 @@ public class LeadRequestService : ILeadRequestService
         _leadTrackingHistoryRepository = leadTrackingHistoryRepository;
         _contactService = contactService;
         _tenantService = tenantService;
+        _timeZoneService = timeZoneService;
         _context = context;
     }
 
@@ -446,6 +449,10 @@ public class LeadRequestService : ILeadRequestService
             // Get meetings
             var meetings = await _meetingRepository.GetByLeadRequestIdAsync(lead.Id, businessId);
 
+            // Meetings store true UTC; convert to business-local for display and upcoming status.
+            var meetingTz = await _timeZoneService.GetTimeZoneAsync(businessId);
+            var nowLocalForMeetings = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), meetingTz);
+
             // Get linked quotations
             var linkedQuotations = await _context.Quotations
                 .Where(q => q.LeadRequestId == lead.Id && !q.IsDeleted)
@@ -511,14 +518,19 @@ public class LeadRequestService : ILeadRequestService
                     IsAutomated = r.IsAutomated,
                     SentAtUtc = r.SentAtUtc
                 }).ToList(),
-                Meetings = meetings.Select(m => new LeadMeetingDto
+                Meetings = meetings.Select(m =>
                 {
-                    Id = m.Id,
-                    Subject = m.Subject,
-                    MeetingTypeName = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId)?.Name ?? "Unknown",
-                    ScheduledAtUtc = m.ScheduledAtUtc,
-                    DurationMinutes = m.DurationMinutes,
-                    IsCancelled = m.IsCancelled
+                    var scheduledLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc), meetingTz);
+                    return new LeadMeetingDto
+                    {
+                        Id = m.Id,
+                        Subject = m.Subject,
+                        MeetingTypeName = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId)?.Name ?? "Unknown",
+                        ScheduledAtUtc = scheduledLocal,
+                        IsUpcoming = scheduledLocal > nowLocalForMeetings,
+                        DurationMinutes = m.DurationMinutes,
+                        IsCancelled = m.IsCancelled
+                    };
                 }).ToList(),
                 LinkedQuotations = linkedQuotations,
                 LinkedInvoices = linkedInvoices

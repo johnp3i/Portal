@@ -13,6 +13,7 @@ public class ComplianceService : IComplianceService
 {
     private readonly ComplianceRepository _repository;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IStorageLimitEnforcer _storageLimitEnforcer;
 
     private static readonly Dictionary<string, string[]> ValidTransitions = new()
     {
@@ -23,10 +24,14 @@ public class ComplianceService : IComplianceService
         ["Approved"] = Array.Empty<string>()
     };
 
-    public ComplianceService(ComplianceRepository repository, IFileStorageService fileStorageService)
+    public ComplianceService(
+        ComplianceRepository repository,
+        IFileStorageService fileStorageService,
+        IStorageLimitEnforcer storageLimitEnforcer)
     {
         _repository = repository;
         _fileStorageService = fileStorageService;
+        _storageLimitEnforcer = storageLimitEnforcer;
     }
 
     #region Category Management
@@ -559,6 +564,12 @@ public class ComplianceService : IComplianceService
             if (attachmentCount >= 3)
                 return ServiceResult<AttachmentResultDto>.Fail("Maximum of 3 attachments per application.");
 
+            // Enforce the business's plan storage cap (Phase 3 — hard block over the limit).
+            // Runs after the cheap validations above so rejects don't incur the usage query.
+            var storageCheck = await _storageLimitEnforcer.CheckCanUploadAsync(businessId, file.Length);
+            if (!storageCheck.Allowed)
+                return ServiceResult<AttachmentResultDto>.Fail(storageCheck.Message!);
+
             var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
 
             var storagePath = await _fileStorageService.UploadAsync(
@@ -580,7 +591,8 @@ public class ComplianceService : IComplianceService
             var result = new AttachmentResultDto
             {
                 Id = id,
-                OriginalFileName = file.FileName
+                OriginalFileName = file.FileName,
+                StorageWarning = storageCheck.Warning
             };
 
             return ServiceResult<AttachmentResultDto>.Ok(result);

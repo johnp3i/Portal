@@ -25,6 +25,7 @@ public class ResponseService : IResponseService
     private readonly TeamMemberRepository _teamMemberRepository;
     private readonly LeadStatusTypeRepository _leadStatusTypeRepository;
     private readonly IBusinessService _businessService;
+    private readonly IBusinessTimeZoneService _timeZoneService;
 
     public ResponseService(
         LeadResponseRepository responseRepository,
@@ -39,7 +40,8 @@ public class ResponseService : IResponseService
         QuotationRepository quotationRepository,
         TeamMemberRepository teamMemberRepository,
         LeadStatusTypeRepository leadStatusTypeRepository,
-        IBusinessService businessService)
+        IBusinessService businessService,
+        IBusinessTimeZoneService timeZoneService)
     {
         _responseRepository = responseRepository;
         _templateRepository = templateRepository;
@@ -54,6 +56,7 @@ public class ResponseService : IResponseService
         _teamMemberRepository = teamMemberRepository;
         _leadStatusTypeRepository = leadStatusTypeRepository;
         _businessService = businessService;
+        _timeZoneService = timeZoneService;
     }
 
     public async Task<PreparedResponseDto?> PrepareResponseAsync(int leadRequestId)
@@ -323,7 +326,8 @@ public class ResponseService : IResponseService
             var upcomingMeeting = await _meetingRepository.GetUpcomingByLeadRequestIdAsync(lead.Id, businessId);
             if (upcomingMeeting != null)
             {
-                placeholders.MeetingDate = upcomingMeeting.ScheduledAtUtc.ToString("dd MMM yyyy HH:mm");
+                var meetingLocal = await _timeZoneService.ConvertUtcToBusinessLocalAsync(businessId, upcomingMeeting.ScheduledAtUtc);
+                placeholders.MeetingDate = meetingLocal.ToString("dd MMM yyyy HH:mm");
 
                 if (!string.IsNullOrWhiteSpace(upcomingMeeting.Location) &&
                     upcomingMeeting.Location.Contains("http", StringComparison.OrdinalIgnoreCase))

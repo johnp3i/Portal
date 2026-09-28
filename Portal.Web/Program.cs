@@ -321,6 +321,7 @@ builder.Services.AddScoped<IProspectCampaignService, ProspectCampaignService>();
 builder.Services.AddScoped<IProspectService, ProspectService>();
 builder.Services.AddScoped<IProspectImportService, ProspectImportService>();
 builder.Services.AddScoped<IResponseService, ResponseService>();
+builder.Services.AddScoped<Portal.Infrastructure.Services.IBusinessTimeZoneService, Portal.Infrastructure.Services.BusinessTimeZoneService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<ITeamMemberService, TeamMemberService>();
 builder.Services.AddScoped<IActivityFeedService, ActivityFeedService>();
@@ -510,6 +511,8 @@ builder.Services.AddScoped<IBusinessInsightsService, BusinessInsightsService>();
 // --- Storage Usage (per-business + SuperAdmin) ---
 builder.Services.AddScoped<StorageUsageRepository>();
 builder.Services.AddScoped<IStorageUsageService, StorageUsageService>();
+// Phase 3: shared upload gate that hard-blocks over-cap uploads across all entry points.
+builder.Services.AddScoped<IStorageLimitEnforcer, StorageLimitEnforcer>();
 
 // --- User Impersonation (SuperAdmin) ---
 builder.Services.AddScoped<Portal.Web.Services.ImpersonationService>();

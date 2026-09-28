@@ -25,6 +25,7 @@ public class MeetingService : IMeetingService
     private readonly TeamMemberRepository _teamMemberRepository;
     private readonly ILeadRequestService _leadRequestService;
     private readonly ICurrentTenantService _tenantService;
+    private readonly IBusinessTimeZoneService _timeZoneService;
     private readonly PortalDbContext _dbContext;
 
     public MeetingService(
@@ -40,6 +41,7 @@ public class MeetingService : IMeetingService
         TeamMemberRepository teamMemberRepository,
         ILeadRequestService leadRequestService,
         ICurrentTenantService tenantService,
+        IBusinessTimeZoneService timeZoneService,
         PortalDbContext dbContext)
     {
         _meetingRepository = meetingRepository;
@@ -54,6 +56,7 @@ public class MeetingService : IMeetingService
         _teamMemberRepository = teamMemberRepository;
         _leadRequestService = leadRequestService;
         _tenantService = tenantService;
+        _timeZoneService = timeZoneService;
         _dbContext = dbContext;
     }
 
@@ -93,6 +96,10 @@ public class MeetingService : IMeetingService
             if (!attendeesOk)
                 return ServiceResult.Fail(attendeeError!);
 
+            // The client posts the user's business-local wall-clock time (from the datetime-local
+            // input). Convert it to a true UTC instant before persisting.
+            var scheduledUtc = await _timeZoneService.ConvertBusinessLocalToUtcAsync(businessId, request.ScheduledAtUtc);
+
             var entity = new Meeting
             {
                 BusinessId = businessId,
@@ -100,7 +107,7 @@ public class MeetingService : IMeetingService
                 ContactId = request.ContactId,
                 MeetingTypeId = request.MeetingTypeId,
                 Subject = request.Subject,
-                ScheduledAtUtc = request.ScheduledAtUtc,
+                ScheduledAtUtc = scheduledUtc,
                 DurationMinutes = request.DurationMinutes,
                 Location = request.Location,
                 Notes = request.Notes,
@@ -148,7 +155,8 @@ public class MeetingService : IMeetingService
             existing.LeadRequestId = request.LeadRequestId;
             existing.MeetingTypeId = request.MeetingTypeId;
             existing.Subject = request.Subject;
-            existing.ScheduledAtUtc = request.ScheduledAtUtc;
+            // Convert the posted business-local wall-clock time to a true UTC instant.
+            existing.ScheduledAtUtc = await _timeZoneService.ConvertBusinessLocalToUtcAsync(businessId, request.ScheduledAtUtc);
             existing.DurationMinutes = request.DurationMinutes;
             existing.Location = request.Location;
             existing.Notes = request.Notes;
@@ -227,6 +235,8 @@ public class MeetingService : IMeetingService
             var meeting = await _meetingRepository.GetByIdAsync(id, businessId);
             if (meeting == null) return null;
 
+            var scheduledLocal = await _timeZoneService.ConvertUtcToBusinessLocalAsync(businessId, meeting.ScheduledAtUtc);
+
             var contact = await _contactRepository.GetByIdAsync(meeting.ContactId, businessId);
             var meetingTypes = await _meetingTypeRepository.GetAllAsync();
             var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == meeting.MeetingTypeId);
@@ -262,7 +272,8 @@ public class MeetingService : IMeetingService
                 MeetingTypeId = meeting.MeetingTypeId,
                 MeetingTypeName = meetingType?.Name ?? "Unknown",
                 Subject = meeting.Subject,
-                ScheduledAtUtc = meeting.ScheduledAtUtc,
+                ScheduledAtUtc = DateTime.SpecifyKind(meeting.ScheduledAtUtc, DateTimeKind.Utc),
+                ScheduledLocalInput = scheduledLocal.ToString("yyyy-MM-dd'T'HH:mm"),
                 DurationMinutes = meeting.DurationMinutes,
                 Location = meeting.Location,
                 Notes = meeting.Notes,
@@ -356,7 +367,12 @@ public class MeetingService : IMeetingService
                 ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
                 : "Unknown";
 
-            var endTime = meeting.ScheduledAtUtc.AddMinutes(meeting.DurationMinutes);
+            // ScheduledAtUtc is now a true UTC instant. Convert to the business's local time and
+            // emit as a "floating" local time (no trailing 'Z') so calendar apps show the exact
+            // wall-clock time the user scheduled (e.g. 10:30), regardless of the importer's own
+            // time zone. DTSTAMP below stays 'Z' because it is a genuine UTC timestamp.
+            var startLocal = await _timeZoneService.ConvertUtcToBusinessLocalAsync(businessId, meeting.ScheduledAtUtc);
+            var endLocal = startLocal.AddMinutes(meeting.DurationMinutes);
 
             var sb = new StringBuilder();
             sb.AppendLine("BEGIN:VCALENDAR");
@@ -365,8 +381,8 @@ public class MeetingService : IMeetingService
             sb.AppendLine("CALSCALE:GREGORIAN");
             sb.AppendLine("METHOD:REQUEST");
             sb.AppendLine("BEGIN:VEVENT");
-            sb.AppendLine($"DTSTART:{meeting.ScheduledAtUtc:yyyyMMdd'T'HHmmss'Z'}");
-            sb.AppendLine($"DTEND:{endTime:yyyyMMdd'T'HHmmss'Z'}");
+            sb.AppendLine($"DTSTART:{startLocal:yyyyMMdd'T'HHmmss}");
+            sb.AppendLine($"DTEND:{endLocal:yyyyMMdd'T'HHmmss}");
             sb.AppendLine($"SUMMARY:{EscapeIcs(meeting.Subject)}");
             sb.AppendLine($"DESCRIPTION:{EscapeIcs(meeting.Notes ?? string.Empty)}");
             sb.AppendLine($"LOCATION:{EscapeIcs(meeting.Location ?? string.Empty)}");
@@ -433,11 +449,12 @@ public class MeetingService : IMeetingService
     {
         try
         {
-            var todayStart = DateTime.UtcNow.Date;
-            var endDate = todayStart.AddDays(4);
+            var todayStart = DateTime.UtcNow.Date.AddDays(-1);
+            var endDate = DateTime.UtcNow.Date.AddDays(5);
 
             var meetings = await _meetingRepository.GetUpcomingBriefAsync(businessId, todayStart, endDate);
 
+            var tz = await _timeZoneService.GetTimeZoneAsync(businessId);
             var meetingTypes = await _meetingTypeRepository.GetAllAsync();
             var contactIds = meetings.Select(m => m.ContactId).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
@@ -459,7 +476,8 @@ public class MeetingService : IMeetingService
                         ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
                         : "Unknown",
                     MeetingTypeName = meetingType?.Name ?? "Unknown",
-                    ScheduledAtUtc = m.ScheduledAtUtc,
+                    // Business-local so display surfaces (Razor / JS toLocaleString) show local time.
+                    ScheduledAtUtc = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc), tz),
                     DurationMinutes = m.DurationMinutes,
                     Location = m.Location
                 });
@@ -477,10 +495,14 @@ public class MeetingService : IMeetingService
     {
         try
         {
-            var today = DateTime.UtcNow.Date;
-            var dayAfterTomorrow = today.AddDays(2);
+            // Window the query generously in UTC (a business-local day can span two UTC days),
+            // then classify today/tomorrow in business-local below.
+            var tz = await _timeZoneService.GetTimeZoneAsync(businessId);
+            var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), tz).Date;
+            var utcWindowStart = DateTime.UtcNow.Date.AddDays(-1);
+            var utcWindowEnd = DateTime.UtcNow.Date.AddDays(3);
 
-            var meetings = await _meetingRepository.GetDashboardMeetingsBriefAsync(businessId, today, dayAfterTomorrow);
+            var meetings = await _meetingRepository.GetDashboardMeetingsBriefAsync(businessId, utcWindowStart, utcWindowEnd);
 
             var meetingTypes = await _meetingTypeRepository.GetAllAsync();
             var contactIds = meetings.Select(m => m.ContactId).Distinct();
@@ -493,6 +515,12 @@ public class MeetingService : IMeetingService
                 contactsLookup.TryGetValue(m.ContactId, out var contact);
                 var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId);
 
+                var scheduledLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc), tz);
+
+                // Only surface meetings that fall on today or tomorrow in business-local time.
+                if (scheduledLocal.Date != todayLocal && scheduledLocal.Date != todayLocal.AddDays(1))
+                    continue;
+
                 briefs.Add(new DashboardMeetingBriefDto
                 {
                     Id = m.Id,
@@ -501,9 +529,10 @@ public class MeetingService : IMeetingService
                         ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
                         : "Unknown",
                     MeetingTypeName = meetingType?.Name ?? "Unknown",
-                    ScheduledAtUtc = m.ScheduledAtUtc,
+                    // Business-local so the Razor .ToString("HH:mm") shows the correct local time.
+                    ScheduledAtUtc = scheduledLocal,
                     DurationMinutes = m.DurationMinutes,
-                    Urgency = m.ScheduledAtUtc.Date == today ? "today" : "tomorrow"
+                    Urgency = scheduledLocal.Date == todayLocal ? "today" : "tomorrow"
                 });
             }
 
@@ -532,22 +561,26 @@ public class MeetingService : IMeetingService
             var meetingIds = items.Select(m => m.Id);
             var taskCounts = await _followUpTaskRepository.GetTaskCountsByMeetingIdsAsync(meetingIds, businessId);
 
-            var now = DateTime.UtcNow;
-            var today = now.Date;
+            // Resolve the business time zone once; all comparisons and display are business-local.
+            var tz = await _timeZoneService.GetTimeZoneAsync(businessId);
+            var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), tz);
+            var todayLocal = nowLocal.Date;
 
             var dtos = items.Select(m =>
             {
                 contactsLookup.TryGetValue(m.ContactId, out var contact);
                 var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId);
 
+                var scheduledLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc), tz);
+
                 string urgency;
                 if (m.IsCancelled)
                     urgency = "cancelled";
-                else if (m.ScheduledAtUtc.Date == today && !m.IsCancelled)
+                else if (scheduledLocal.Date == todayLocal && !m.IsCancelled)
                     urgency = "today";
-                else if (m.ScheduledAtUtc > now && !m.IsCancelled)
+                else if (scheduledLocal > nowLocal && !m.IsCancelled)
                     urgency = "upcoming";
-                else if (m.ScheduledAtUtc < now && !m.IsCancelled && m.Outcome == null)
+                else if (scheduledLocal < nowLocal && !m.IsCancelled && m.Outcome == null)
                     urgency = "needs_outcome";
                 else
                     urgency = "completed";
@@ -565,7 +598,9 @@ public class MeetingService : IMeetingService
                         : "Unknown",
                     ContactId = m.ContactId,
                     LeadRequestId = m.LeadRequestId,
-                    ScheduledAtUtc = m.ScheduledAtUtc,
+                    ScheduledAtUtc = DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc),
+                    ScheduledDisplay = scheduledLocal.ToString("dd MMM yyyy, HH:mm"),
+                    ScheduledLocalInput = scheduledLocal.ToString("yyyy-MM-dd'T'HH:mm"),
                     DurationMinutes = m.DurationMinutes,
                     Location = m.Location,
                     Notes = m.Notes,
@@ -596,12 +631,15 @@ public class MeetingService : IMeetingService
     private async Task<List<MeetingListDto>> MapToListDtos(List<Meeting> meetings, int businessId)
     {
         var meetingTypes = await _meetingTypeRepository.GetAllAsync();
+        var tz = await _timeZoneService.GetTimeZoneAsync(businessId);
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), tz);
         var dtos = new List<MeetingListDto>();
 
         foreach (var m in meetings)
         {
             var contact = await _contactRepository.GetByIdAsync(m.ContactId, businessId);
             var meetingType = meetingTypes.FirstOrDefault(mt => mt.Id == m.MeetingTypeId);
+            var scheduledLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc), tz);
 
             dtos.Add(new MeetingListDto
             {
@@ -612,7 +650,9 @@ public class MeetingService : IMeetingService
                 ContactName = contact != null
                     ? (string.IsNullOrWhiteSpace(contact.LastName) ? contact.FirstName : $"{contact.FirstName} {contact.LastName}")
                     : "Unknown",
-                ScheduledAtUtc = m.ScheduledAtUtc,
+                // Business-local for display; IsUpcoming precomputed so the view needn't compare to UtcNow.
+                ScheduledAtUtc = scheduledLocal,
+                IsUpcoming = scheduledLocal > nowLocal,
                 DurationMinutes = m.DurationMinutes,
                 Outcome = m.Outcome,
                 IsCancelled = m.IsCancelled,

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Models.Storage;
 using Portal.Infrastructure.Repositories;
@@ -13,11 +14,16 @@ public class StorageUsageService : IStorageUsageService
 {
     private readonly StorageUsageRepository _repository;
     private readonly PortalDbContext _context;
+    private readonly IMemoryCache _cache;
 
-    public StorageUsageService(StorageUsageRepository repository, PortalDbContext context)
+    /// <summary>How long a business's storage status is cached for the ambient signals.</summary>
+    private static readonly TimeSpan StatusCacheDuration = TimeSpan.FromMinutes(2);
+
+    public StorageUsageService(StorageUsageRepository repository, PortalDbContext context, IMemoryCache cache)
     {
         _repository = repository;
         _context = context;
+        _cache = cache;
     }
 
     public async Task<BusinessStorageDto> GetBusinessStorageAsync(int businessId)
@@ -153,6 +159,62 @@ public class StorageUsageService : IStorageUsageService
                 SortBy = sortField,
                 SortDir = descending ? "desc" : "asc"
             };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<(long UsedBytes, long? LimitBytes)> GetUsageAndLimitAsync(int businessId)
+    {
+        try
+        {
+            // Current logical usage = SUM of live rows across the measured categories.
+            var attachments = await _repository.GetAttachmentUsageAsync(businessId);
+            var compliance = await _repository.GetComplianceUsageAsync(businessId);
+            var logos = await _repository.GetLogoUsageAsync(businessId);
+            var usedBytes = attachments.Bytes + compliance.Bytes + logos.Bytes;
+
+            // Resolve the plan cap (Subscriptions → Plans), identical to GetBusinessStorageAsync.
+            // StorageLimitMb NULL/0 = unlimited (no cap).
+            var limitMb = await _context.Subscriptions
+                .Where(s => s.BusinessId == businessId
+                    && (s.Status == "active" || s.Status == "trialing" || s.Status == "past_due"))
+                .Join(_context.Plans,
+                    s => s.PlanId,
+                    p => p.Id,
+                    (s, p) => p.StorageLimitMb)
+                .FirstOrDefaultAsync();
+
+            long? limitBytes = (limitMb.HasValue && limitMb.Value > 0)
+                ? limitMb.Value * 1024L * 1024L
+                : null;
+
+            return (usedBytes, limitBytes);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<StorageStatusDto> GetStatusAsync(int businessId)
+    {
+        try
+        {
+            // Cached briefly per business — this is called on every page render (sidebar badge),
+            // so we avoid re-running the usage sums each request. A recently-freed business may
+            // see the badge/banner linger until the cache expires (acceptable for an advisory).
+            var cacheKey = $"storage-status-{businessId}";
+            if (_cache.TryGetValue(cacheKey, out StorageStatusDto? cached) && cached != null)
+                return cached;
+
+            var (usedBytes, limitBytes) = await GetUsageAndLimitAsync(businessId);
+            var status = new StorageStatusDto { UsedBytes = usedBytes, LimitBytes = limitBytes };
+
+            _cache.Set(cacheKey, status, StatusCacheDuration);
+            return status;
         }
         catch (Exception ex)
         {

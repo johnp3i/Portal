@@ -13,6 +13,31 @@ public static class StorageFormat
     }
 }
 
+/// <summary>
+/// Lightweight storage status for ambient signals (sidebar badge + dashboard banner). Computed
+/// from usage + plan cap and cached briefly per business. Unlimited plans → HasLimit false.
+/// </summary>
+public class StorageStatusDto
+{
+    public long UsedBytes { get; set; }
+    public long? LimitBytes { get; set; }
+
+    public bool HasLimit => LimitBytes.HasValue && LimitBytes.Value > 0;
+    public int UsedPercent => HasLimit ? (int)Math.Round(UsedBytes * 100d / LimitBytes!.Value) : 0;
+
+    /// <summary>At or over the cap — uploads are blocked.</summary>
+    public bool IsOverLimit => HasLimit && UsedBytes >= LimitBytes!.Value;
+
+    /// <summary>Between 80% and the cap — nearing the limit (not yet blocked).</summary>
+    public bool IsNearLimit => HasLimit && UsedPercent >= 80 && !IsOverLimit;
+
+    /// <summary>True when either signal should be shown (badge/banner).</summary>
+    public bool ShouldSignal => IsNearLimit || IsOverLimit;
+
+    public string UsedDisplay => StorageFormat.Bytes(UsedBytes);
+    public string LimitDisplay => HasLimit ? StorageFormat.Bytes(LimitBytes!.Value) : "No limit";
+}
+
 /// <summary>One category row in the per-business "by category" breakdown.</summary>
 public class StorageCategoryDto
 {

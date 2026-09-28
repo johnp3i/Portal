@@ -5,6 +5,7 @@
     var logos = ViewBag.Logos as List<Portal.Infrastructure.Entities.BusinessLogo> ?? new List<Portal.Infrastructure.Entities.BusinessLogo>();
     var businessName = ViewBag.BusinessName as string ?? "Business";
     var isReadOnly = (bool)(ViewBag.IsReadOnly ?? false);
+    var storageStatus = ViewBag.StorageStatus as Portal.Infrastructure.Models.Storage.StorageStatusDto;
 }
 
 <div class="topbar">
@@ -22,6 +23,39 @@
 @if (TempData["Error"] != null)
 {
     <div class="alert-error">@TempData["Error"]</div>
+}
+
+@* Storage near/over-limit banner — shown on ALL tabs so the sidebar "!" is explained
+   wherever the user lands. Points them to the Storage tab and to upgrading. *@
+@if (storageStatus != null && storageStatus.ShouldSignal)
+{
+    var isOver = storageStatus.IsOverLimit;
+    var accent = isOver ? "#C24A4A" : "#C8912E";
+    var tint = isOver ? "rgba(194,74,74,.06)" : "rgba(200,145,46,.06)";
+    var brdr = isOver ? "rgba(194,74,74,.20)" : "rgba(200,145,46,.22)";
+    var heading = isOver ? "Storage is full" : "Storage is nearly full";
+    var body = isOver
+        ? $"You've used {storageStatus.UsedDisplay} of your {storageStatus.LimitDisplay} plan storage. New file uploads are blocked until you free up space or upgrade your plan."
+        : $"You've used {storageStatus.UsedDisplay} of your {storageStatus.LimitDisplay} plan storage ({storageStatus.UsedPercent}%). Consider freeing up space or upgrading before you run out.";
+
+    <section class="glass card-pad" style="margin-bottom:22px;border-left:4px solid @accent;background:@tint;border-color:@brdr;">
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+            <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:@accent;display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            </div>
+            <div style="flex:1;min-width:220px;">
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:16px;color:#0B1B28;">@heading</div>
+                <div style="font-size:13px;color:#5a6a7a;margin-top:3px;line-height:1.6;">@body</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                @if (activeTab != "storage")
+                {
+                    <a href="@Url.Action("Index", "MyBusiness", new { tab = "storage" })" class="btn btn-secondary" style="font-size:13px;">View storage</a>
+                }
+                <a href="/Account/Billing" class="btn btn-primary" style="font-size:13px;">Upgrade plan</a>
+            </div>
+        </div>
+    </section>
 }
 
 <!-- Tabs — horizontally scrollable on mobile (native scrollable-tab pattern). -->
@@ -606,7 +640,7 @@ else if (activeTab == "payment")
             Usage counts your current files (deleted files aren't counted).
             @if (storage.HasLimit)
             {
-                @:Your plan includes @storage.LimitDisplay of storage. This is shown for visibility — uploads aren't blocked at the limit yet.
+                @:Your plan includes @storage.LimitDisplay of storage. New uploads are blocked once you reach this limit — free up space or upgrade your plan to add more.
             }
             else
             {

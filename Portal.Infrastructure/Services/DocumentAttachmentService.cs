@@ -22,15 +22,18 @@ public class DocumentAttachmentService : IDocumentAttachmentService
     private readonly DocumentAttachmentRepository _repository;
     private readonly IFileStorageService _fileStorageService;
     private readonly UserNameResolver _userNameResolver;
+    private readonly IStorageLimitEnforcer _storageLimitEnforcer;
 
     public DocumentAttachmentService(
         DocumentAttachmentRepository repository,
         IFileStorageService fileStorageService,
-        UserNameResolver userNameResolver)
+        UserNameResolver userNameResolver,
+        IStorageLimitEnforcer storageLimitEnforcer)
     {
         _repository = repository;
         _fileStorageService = fileStorageService;
         _userNameResolver = userNameResolver;
+        _storageLimitEnforcer = storageLimitEnforcer;
     }
 
     public async Task<ServiceResult<AttachmentDto>> UploadAsync(UploadAttachmentRequest request)
@@ -68,6 +71,15 @@ public class DocumentAttachmentService : IDocumentAttachmentService
                     ? "A Z-Report can only have one attached file. Delete the existing file to upload a new one."
                     : $"Maximum of {MaxAttachmentsPerEntity} attachments per record reached.";
                 return ServiceResult<AttachmentDto>.Fail(message);
+            }
+
+            // Enforce the business's plan storage cap (Phase 3 — hard block over the limit).
+            // Runs after the cheap validations above so an at-cap user with an invalid file still
+            // gets the correct validation error, and we don't spend the usage query on rejects.
+            var storageCheck = await _storageLimitEnforcer.CheckCanUploadAsync(request.BusinessId, file.Length);
+            if (!storageCheck.Allowed)
+            {
+                return ServiceResult<AttachmentDto>.Fail(storageCheck.Message!);
             }
 
             // Upload file to storage
@@ -108,7 +120,8 @@ public class DocumentAttachmentService : IDocumentAttachmentService
                 FileSizeBytes = file.Length,
                 CreatedAtUtc = attachment.CreatedAtUtc,
                 UploadedByDisplayName = displayName,
-                IsOwnedByCurrentUser = true
+                IsOwnedByCurrentUser = true,
+                StorageWarning = storageCheck.Warning
             };
 
             return ServiceResult<AttachmentDto>.Ok(dto);

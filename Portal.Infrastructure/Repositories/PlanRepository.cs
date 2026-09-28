@@ -17,7 +17,7 @@ public class PlanRepository : GenericStoredProcedureRepository<Plan>, IPlanRepos
         {
             const string query = @"
                 SELECT [Plan].[Id], [Plan].[Name], [Plan].[Slug], [Plan].[MonthlyPriceEur],
-                       [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[IsActive],
+                       [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[StorageLimitMb], [Plan].[IsActive],
                        [Plan].[DisplayOrder], [Plan].[Description],
                        [Plan].[StripeProductId], [Plan].[StripePriceId],
                        [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
@@ -39,7 +39,7 @@ public class PlanRepository : GenericStoredProcedureRepository<Plan>, IPlanRepos
         {
             const string query = @"
                 SELECT [Plan].[Id], [Plan].[Name], [Plan].[Slug], [Plan].[MonthlyPriceEur],
-                       [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[IsActive],
+                       [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[StorageLimitMb], [Plan].[IsActive],
                        [Plan].[DisplayOrder], [Plan].[Description],
                        [Plan].[StripeProductId], [Plan].[StripePriceId],
                        [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]
@@ -61,7 +61,7 @@ public class PlanRepository : GenericStoredProcedureRepository<Plan>, IPlanRepos
         {
             const string query = @"
                 SELECT [Plan].[Id], [Plan].[Name], [Plan].[Slug], [Plan].[MonthlyPriceEur],
-                       [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[IsActive],
+                       [Plan].[AnnualPriceEur], [Plan].[MaxUsers], [Plan].[StorageLimitMb], [Plan].[IsActive],
                        [Plan].[DisplayOrder], [Plan].[Description],
                        [Plan].[StripeProductId], [Plan].[StripePriceId],
                        [Plan].[CreatedAtUtc], [Plan].[UpdatedAtUtc]

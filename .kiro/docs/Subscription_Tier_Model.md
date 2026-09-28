@@ -272,11 +272,37 @@ Each plan carries a storage cap used by the file-storage pages (`StorageLimitMb`
 | Professional (`professional`) | 5120      | 5 GB    |
 | Enterprise (`enterprise`)| 25600          | 25 GB   |
 
-**Display-only (Phase 2).** The limit is shown on the business **My Business → Storage** tab
+**Visibility (Phase 2).** The limit is shown on the business **My Business → Storage** tab
 (as "X of Y" with an amber bar at ≥80% and red at ≥100%) and on the SuperAdmin **Admin → Storage**
-page (Limit + Usage% columns). Uploads are **not** blocked at the limit yet — enforcement is a
-later phase. Logical usage = `SUM(FileSizeBytes)` over live (non-deleted) attachment, compliance,
-and logo rows; signatures are not measured yet.
+page (Limit + Usage% columns). Logical usage = `SUM(FileSizeBytes)` over live (non-deleted)
+attachment, compliance, and logo rows; signatures are not measured yet (no size column).
+
+**Enforcement (Phase 3 — live).** Uploads are **hard-blocked** when they would push a business over
+its cap. A shared `IStorageLimitEnforcer.CheckCanUploadAsync(businessId, incomingBytes)` gate is
+called by every persisting upload path — document attachments (`DocumentAttachmentService`),
+compliance attachments (`ComplianceService`), and business logos (`LogoService`). Behaviour:
+
+- **Block (≥100%):** if `used + incoming > limit`, the upload is rejected with a message that leads
+  with what's free ("Storage limit reached — only *X* free of your *Y* plan storage, and this file
+  is *N*…"). Attachment/compliance endpoints surface it as a SweetAlert2 error; the logo path via
+  TempData. The message deliberately shows *remaining* space (not "used X of Y", which can look like
+  "250 of 250" from rounding).
+- **Soft warning (≥80%, non-blocking):** an upload that succeeds but lands the business at ≥80% of
+  the cap returns an advisory `StorageWarning` on the attachment/compliance JSON response (a
+  `warning` field), which the UI may show as an info toast. This is upload-time, in addition to the
+  amber bar on the Storage tab. The logo path is block-only (logos are capped at 20 × 2 MB ≈ 40 MB,
+  so they can't realistically approach a plan cap on their own).
+- **Unlimited plans** (`StorageLimitMb` NULL/0) are never blocked or warned.
+- **Ordering:** the cap check runs *after* the cheap per-file validations (type, size, count) so an
+  at-cap user with an invalid file still gets the correct validation error, and rejected files don't
+  incur the usage query.
+- **Concurrency:** the check is check-then-write with no locking, so two uploads racing near the cap
+  can jointly exceed it by up to one file each — an accepted, bounded tradeoff for Phase 3.
+- **Performance:** each upload runs three `SUM(FileSizeBytes)` queries; migration
+  `214_AddStorageUsageIndexes.sql` adds covering indexes so these stay cheap as tables grow.
+
+Parse-only imports (CSV/Excel) don't persist the uploaded file, so they're not gated. Signatures
+aren't enforced (no size column yet — deferred to Phase 4 with orphaned-file cleanup).
 
 #### `[portal].[PlanModulePermission]`
 

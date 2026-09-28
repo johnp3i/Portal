@@ -18,4 +18,10 @@ public class AttachmentDto
     public string UploadedByDisplayName { get; set; } = null!;
 
     public bool IsOwnedByCurrentUser { get; set; }
+
+    /// <summary>
+    /// Optional advisory (non-blocking) message when this upload pushes the business to ≥80% of its
+    /// storage cap. Null when there's nothing to warn about. The UI may surface it as an info toast.
+    /// </summary>
+    public string? StorageWarning { get; set; }
 }

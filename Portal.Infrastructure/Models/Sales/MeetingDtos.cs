@@ -11,6 +11,8 @@ public class MeetingListDto
     public int ContactId { get; set; }
     public string ContactName { get; set; } = null!;
     public DateTime ScheduledAtUtc { get; set; }
+    /// <summary>Precomputed (business-local) upcoming flag so views need not compare to UtcNow.</summary>
+    public bool IsUpcoming { get; set; }
     public int DurationMinutes { get; set; }
     public string? Outcome { get; set; }
     public bool IsCancelled { get; set; }
@@ -68,6 +70,13 @@ public class MeetingDetailDto
     public string MeetingTypeName { get; set; } = null!;
     public string Subject { get; set; } = null!;
     public DateTime ScheduledAtUtc { get; set; }
+
+    /// <summary>
+    /// Scheduled time in the business's local zone as yyyy-MM-ddTHH:mm, for prefilling the edit
+    /// form's &lt;input type="datetime-local"&gt; without depending on the browser's time zone.
+    /// </summary>
+    public string ScheduledLocalInput { get; set; } = null!;
+
     public int DurationMinutes { get; set; }
     public string? Location { get; set; }
     public string? Notes { get; set; }
@@ -200,6 +209,20 @@ public class MeetingPagedListDto
     public int ContactId { get; set; }
     public int? LeadRequestId { get; set; }
     public DateTime ScheduledAtUtc { get; set; }
+
+    /// <summary>
+    /// The scheduled time in the business's local zone, preformatted for display
+    /// (e.g. "30 Sep 2026, 10:30"). The client renders this verbatim so display does not depend
+    /// on the browser's time zone.
+    /// </summary>
+    public string ScheduledDisplay { get; set; } = null!;
+
+    /// <summary>
+    /// The scheduled time in the business's local zone as an ISO datetime-local string
+    /// (yyyy-MM-ddTHH:mm) for prefilling the edit form's &lt;input type="datetime-local"&gt;.
+    /// </summary>
+    public string ScheduledLocalInput { get; set; } = null!;
+
     public int DurationMinutes { get; set; }
     public string? Location { get; set; }
     public string? Notes { get; set; }

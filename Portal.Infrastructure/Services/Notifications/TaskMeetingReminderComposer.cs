@@ -28,6 +28,7 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
     private readonly MeetingTeamMemberRepository _meetingTeamMemberRepository;
     private readonly NotificationOutboxRepository _outboxRepository;
     private readonly NotificationOptions _options;
+    private readonly IBusinessTimeZoneService _timeZoneService;
     private readonly ILogger<TaskMeetingReminderComposer> _logger;
 
     public TaskMeetingReminderComposer(
@@ -37,6 +38,7 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
         MeetingTeamMemberRepository meetingTeamMemberRepository,
         NotificationOutboxRepository outboxRepository,
         NotificationOptions options,
+        IBusinessTimeZoneService timeZoneService,
         ILogger<TaskMeetingReminderComposer> logger) : base(dbContext)
     {
         _ownerEmailResolver = ownerEmailResolver;
@@ -44,6 +46,7 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
         _meetingTeamMemberRepository = meetingTeamMemberRepository;
         _outboxRepository = outboxRepository;
         _options = options;
+        _timeZoneService = timeZoneService;
         _logger = logger;
     }
 
@@ -58,6 +61,15 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
             var lookAhead = setting?.TaskMeetingLookAheadDays ?? _options.TaskMeetingDefaultLookAheadDays;
             var windowEnd = today.AddDays(lookAhead);
             var overdueFloor = today.AddDays(-_options.TaskMeetingOverdueLookBackDays);
+
+            // Meetings store true UTC, but the window boundaries above are business-local day starts.
+            // Convert each boundary to UTC so the meeting query compares UTC-to-UTC.
+            var tz = await _timeZoneService.GetTimeZoneAsync(businessId);
+            DateTime LocalDayStartToUtc(DateOnly d)
+                => TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(d.ToDateTime(TimeOnly.MinValue), DateTimeKind.Unspecified), tz);
+            var overdueFloorUtc = LocalDayStartToUtc(overdueFloor);
+            var todayStartUtc = LocalDayStartToUtc(today);
+            var windowEndUtc = LocalDayStartToUtc(windowEnd.AddDays(1));
 
             // Owner identity — resolve up front so an owner-who-is-a-member collapses to one bucket.
             var ownerEmail = await _ownerEmailResolver.ResolveAsync(businessId);
@@ -85,13 +97,14 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
                 .ToListAsync(ct);
 
             // Candidate meetings: not cancelled, active, overdue-no-outcome (bounded) OR within window.
+            // ScheduledAtUtc is true UTC, so compare against the UTC-converted window boundaries.
             var meetings = await DbContext.Meetings
                 .AsNoTracking()
                 .Where(m => m.BusinessId == businessId
                             && !m.IsCancelled
                             && m.IsActive
-                            && (((m.ScheduledAtUtc >= overdueFloor.ToDateTime(TimeOnly.MinValue) && m.ScheduledAtUtc < today.ToDateTime(TimeOnly.MinValue)) && m.Outcome == null)
-                                || (m.ScheduledAtUtc >= today.ToDateTime(TimeOnly.MinValue) && m.ScheduledAtUtc < windowEnd.AddDays(1).ToDateTime(TimeOnly.MinValue))))
+                            && (((m.ScheduledAtUtc >= overdueFloorUtc && m.ScheduledAtUtc < todayStartUtc) && m.Outcome == null)
+                                || (m.ScheduledAtUtc >= todayStartUtc && m.ScheduledAtUtc < windowEndUtc)))
                 .Select(m => new { m.Id, m.Subject, m.ScheduledAtUtc, m.Location })
                 .ToListAsync(ct);
 
@@ -179,10 +192,13 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
             {
                 var context = string.IsNullOrWhiteSpace(m.Location) ? null : m.Location;
                 var attendeeIds = attendeesByMeeting.TryGetValue(m.Id, out var ids) ? ids : new List<int>();
+                // Meetings store true UTC; the agenda bucketing/labeling below works in business-local
+                // (todayUtcStart is a business-local midnight), so classify/display in business-local.
+                var scheduledLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc), tz);
 
                 if (attendeeIds.Count == 0)
                 {
-                    var item = MakeMeetingItem(m.Id, m.Subject, m.ScheduledAtUtc, context, today, todayUtcStart);
+                    var item = MakeMeetingItem(m.Id, m.Subject, scheduledLocal, context, today, todayUtcStart);
                     AddToOwner(item);
                     continue;
                 }
@@ -190,7 +206,7 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
                 foreach (var attendeeId in attendeeIds)
                 {
                     if (!membersById.ContainsKey(attendeeId)) continue; // inactive/removed member
-                    var item = MakeMeetingItem(m.Id, m.Subject, m.ScheduledAtUtc, context, today, todayUtcStart);
+                    var item = MakeMeetingItem(m.Id, m.Subject, scheduledLocal, context, today, todayUtcStart);
                     var (email, name) = await ResolveMemberAsync(attendeeId);
                     if (string.IsNullOrWhiteSpace(email))
                     {

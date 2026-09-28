@@ -26,6 +26,7 @@ public class HomeController : Controller
     private readonly IFollowUpTaskService _followUpTaskService;
     private readonly IMeetingService _meetingService;
     private readonly IPlanCheckService _planCheckService;
+    private readonly IStorageUsageService _storageUsageService;
     private readonly ILogger<HomeController> _logger;
 
     public HomeController(
@@ -42,6 +43,7 @@ public class HomeController : Controller
         IFollowUpTaskService followUpTaskService,
         IMeetingService meetingService,
         IPlanCheckService planCheckService,
+        IStorageUsageService storageUsageService,
         ILogger<HomeController> logger)
 
     {
@@ -58,6 +60,7 @@ public class HomeController : Controller
         _followUpTaskService = followUpTaskService;
         _meetingService = meetingService;
         _planCheckService = planCheckService;
+        _storageUsageService = storageUsageService;
         _logger = logger;
     }
 
@@ -280,6 +283,9 @@ public class HomeController : Controller
         // Onboarding state
         var onboardingState = await _onboardingService.GetOnboardingStateAsync(businessId);
         ViewBag.Onboarding = onboardingState;
+
+        // Storage status — drives the near/over-limit banner (cached per business).
+        ViewBag.StorageStatus = await _storageUsageService.GetStatusAsync(businessId);
 
         return View(model);
     }

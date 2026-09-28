@@ -62,6 +62,32 @@ public class MyBusinessController : Controller
         return User.IsInRole("SuperAdmin") || User.HasClaim("IsOwner", "true");
     }
 
+    /// <summary>
+    /// Storage status for the sidebar badge (called on every page by the layout). Returns the
+    /// near/over-limit flags so the badge can show amber (≥80%) or red (≥100%). Cached per business.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetStorageStatus()
+    {
+        try
+        {
+            var status = await _storageUsageService.GetStatusAsync(_tenantService.CurrentBusinessId);
+            return Json(new
+            {
+                success = true,
+                shouldSignal = status.ShouldSignal,
+                isOver = status.IsOverLimit,
+                isNear = status.IsNearLimit,
+                percent = status.UsedPercent
+            });
+        }
+        catch (Exception ex)
+        {
+            // Advisory only — never surface an error to the badge.
+            return Json(new { success = false });
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> Index(string tab = "profile")
     {
@@ -86,7 +112,11 @@ public class MyBusinessController : Controller
         // Stripe Connect status
         ViewBag.IsStripeConnected = await _stripeConnectService.IsConnectedAsync(businessId);
 
-        // Storage usage (loaded only when the Storage tab is shown)
+        // Lightweight storage status — drives the near/over-limit banner shown on ALL tabs
+        // (cached per business, so cheap even though it's loaded every time).
+        ViewBag.StorageStatus = await _storageUsageService.GetStatusAsync(businessId);
+
+        // Storage usage (full breakdown loaded only when the Storage tab is shown)
         if (tab == "storage")
         {
             ViewBag.Storage = await _storageUsageService.GetBusinessStorageAsync(businessId);

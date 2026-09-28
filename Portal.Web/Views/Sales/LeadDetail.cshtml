@@ -238,7 +238,7 @@
                         <td>@m.MeetingTypeName</td>
                         <td>@m.ScheduledAtUtc.ToString("dd MMM yyyy HH:mm")</td>
                         <td>@m.DurationMinutes min</td>
-                        <td>@(m.IsCancelled ? "Cancelled" : (m.ScheduledAtUtc > DateTime.UtcNow ? "Upcoming" : "Completed"))</td>
+                        <td>@(m.IsCancelled ? "Cancelled" : (m.IsUpcoming ? "Upcoming" : "Completed"))</td>
                     </tr>
                 }
             </tbody>

@@ -166,8 +166,10 @@
 
         var html = '';
         data.forEach(function (m) {
+            // Display uses the server-provided business-local string (do NOT re-convert with
+            // new Date().toLocaleString(), which would apply the *browser's* time zone).
             var relativeLabel = getRelativeTimeLabel(m.scheduledAtUtc);
-            var scheduledDisplay = m.scheduledAtUtc ? new Date(m.scheduledAtUtc).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            var scheduledDisplay = m.scheduledDisplay || '';
             var relativeHtml = relativeLabel ? '<div style="font-size:11px;color:#8a9bab;margin-top:2px;">' + escapeHtml(relativeLabel) + '</div>' : '';
 
             var actionsHtml = '';
@@ -365,18 +367,9 @@
                     populateAttendeeSelect('editMeetingAttendees', members, m.attendeeTeamMemberIds || []);
                 });
 
-                // Convert ISO datetime to datetime-local format (YYYY-MM-DDTHH:mm)
-                if (m.scheduledAtUtc) {
-                    var dt = new Date(m.scheduledAtUtc);
-                    var year = dt.getFullYear();
-                    var month = String(dt.getMonth() + 1).padStart(2, '0');
-                    var day = String(dt.getDate()).padStart(2, '0');
-                    var hours = String(dt.getHours()).padStart(2, '0');
-                    var minutes = String(dt.getMinutes()).padStart(2, '0');
-                    document.getElementById('editMeetingScheduledAt').value = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
-                } else {
-                    document.getElementById('editMeetingScheduledAt').value = '';
-                }
+                // Prefill the datetime-local input with the server-provided business-local value
+                // (yyyy-MM-ddTHH:mm). Not derived from new Date() so it doesn't shift by browser tz.
+                document.getElementById('editMeetingScheduledAt').value = m.scheduledLocalInput || '';
 
                 // Render meeting tasks
                 renderMeetingTasks(m.tasks || []);

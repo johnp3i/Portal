@@ -13,4 +13,18 @@ public interface IStorageUsageService
 
     /// <summary>Platform-wide storage per business for the SuperAdmin Storage page.</summary>
     Task<AdminStoragePageDto> GetPlatformStorageAsync(string? search, string? planFilter, string sortBy, string sortDir);
+
+    /// <summary>
+    /// Lightweight accessor for storage enforcement (Phase 3): a business's current logical
+    /// usage in bytes and its plan storage cap in bytes (null = unlimited / no cap). Cheaper
+    /// than <see cref="GetBusinessStorageAsync"/> — it skips the category and by-type breakdowns.
+    /// </summary>
+    Task<(long UsedBytes, long? LimitBytes)> GetUsageAndLimitAsync(int businessId);
+
+    /// <summary>
+    /// Cached storage status for ambient signals (sidebar badge + dashboard banner). Wraps
+    /// <see cref="GetUsageAndLimitAsync"/> in a short per-business memory cache so it can be called
+    /// on every page render (the sidebar) without re-running the usage sums each request.
+    /// </summary>
+    Task<StorageStatusDto> GetStatusAsync(int businessId);
 }
