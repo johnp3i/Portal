@@ -301,8 +301,13 @@ compliance attachments (`ComplianceService`), and business logos (`LogoService`)
 - **Performance:** each upload runs three `SUM(FileSizeBytes)` queries; migration
   `214_AddStorageUsageIndexes.sql` adds covering indexes so these stay cheap as tables grow.
 
-Parse-only imports (CSV/Excel) don't persist the uploaded file, so they're not gated. Signatures
-aren't enforced (no size column yet — deferred to Phase 4 with orphaned-file cleanup).
+Parse-only imports (CSV/Excel) don't persist the uploaded file, so they're not gated.
+
+**Signatures counted + enforced (Phase 4a).** `[portal].[Signature]` gained `FileSizeBytes`
+(migration `216`); active signatures now count toward the usage total and are subject to the cap
+like every other file type (blocked at 100% via the same enforcer). Legacy signature rows are
+backfilled from disk by `SignatureService.BackfillFileSizesAsync` (a one-time pass; a DB migration
+can't stat the filesystem). Deactivated signatures are excluded from usage.
 
 #### `[portal].[PlanModulePermission]`
 

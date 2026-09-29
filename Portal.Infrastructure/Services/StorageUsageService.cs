@@ -26,6 +26,50 @@ public class StorageUsageService : IStorageUsageService
         _cache = cache;
     }
 
+    // ── Active-plan statuses that count as "in force" for cap resolution. Kept in one place so
+    //    the per-business tab, the enforcement path, and the SuperAdmin page all agree. ──────────
+    private static readonly string[] ActivePlanStatuses = { "active", "trialing", "past_due" };
+
+    /// <summary>MB → bytes; null/0 MB = unlimited (no cap).</summary>
+    private static long? MbToBytes(int? limitMb) =>
+        (limitMb.HasValue && limitMb.Value > 0) ? limitMb.Value * 1024L * 1024L : (long?)null;
+
+    /// <summary>Cache key for a business's ambient storage status.</summary>
+    private static string StatusCacheKey(int businessId) => $"storage-status-{businessId}";
+
+    /// <summary>
+    /// Single source of truth for a business's storage cap in bytes (Subscriptions → Plans, active
+    /// statuses only). Returns null when unlimited or when the business has no active subscription.
+    /// </summary>
+    private async Task<long?> ResolveLimitBytesAsync(int businessId)
+    {
+        var limitMb = await _context.Subscriptions
+            .Where(s => s.BusinessId == businessId && ActivePlanStatuses.Contains(s.Status))
+            .Join(_context.Plans, s => s.PlanId, p => p.Id, (s, p) => p.StorageLimitMb)
+            .FirstOrDefaultAsync();
+
+        return MbToBytes(limitMb);
+    }
+
+    /// <summary>
+    /// Per-business storage caps (bytes) for ALL businesses with an active subscription, resolved
+    /// from the SAME source as the per-business/enforcement path. One grouped query (no N+1) so the
+    /// SuperAdmin page can never show a cap that differs from what's actually enforced.
+    /// </summary>
+    private async Task<Dictionary<int, long?>> ResolveAllLimitBytesAsync()
+    {
+        var rows = await _context.Subscriptions
+            .Where(s => ActivePlanStatuses.Contains(s.Status))
+            .Join(_context.Plans, s => s.PlanId, p => p.Id,
+                (s, p) => new { s.BusinessId, p.StorageLimitMb })
+            .ToListAsync();
+
+        // If a business somehow has multiple active subscriptions, take the first deterministically.
+        return rows
+            .GroupBy(r => r.BusinessId)
+            .ToDictionary(g => g.Key, g => MbToBytes(g.First().StorageLimitMb));
+    }
+
     public async Task<BusinessStorageDto> GetBusinessStorageAsync(int businessId)
     {
         try
@@ -33,18 +77,18 @@ public class StorageUsageService : IStorageUsageService
             var attachments = await _repository.GetAttachmentUsageAsync(businessId);
             var compliance = await _repository.GetComplianceUsageAsync(businessId);
             var logos = await _repository.GetLogoUsageAsync(businessId);
-            var signatureCount = await _repository.GetSignatureCountAsync(businessId);
+            var signatures = await _repository.GetSignatureUsageAsync(businessId);
             var byType = await _repository.GetAttachmentsByTypeAsync(businessId);
 
             var dto = new BusinessStorageDto
             {
-                TotalBytes = attachments.Bytes + compliance.Bytes + logos.Bytes,
+                TotalBytes = attachments.Bytes + compliance.Bytes + logos.Bytes + signatures.Bytes,
                 Categories = new List<StorageCategoryDto>
                 {
                     new() { Name = "Document attachments", Files = attachments.Files, Bytes = attachments.Bytes },
                     new() { Name = "Compliance attachments", Files = compliance.Files, Bytes = compliance.Bytes },
                     new() { Name = "Logos", Files = logos.Files, Bytes = logos.Bytes },
-                    new() { Name = "Signatures", Files = signatureCount, Bytes = 0, NotCountedYet = true }
+                    new() { Name = "Signatures", Files = signatures.Files, Bytes = signatures.Bytes }
                 },
                 AttachmentsByType = byType
                     .Select(t => new StorageTypeDto
@@ -56,19 +100,7 @@ public class StorageUsageService : IStorageUsageService
                     .ToList()
             };
 
-            // Resolve the business's storage cap from its active plan (Subscriptions → Plans,
-            // mirroring PlanCheckService.GetCurrentPlanNameAsync). StorageLimitMb NULL = unlimited.
-            var limitMb = await _context.Subscriptions
-                .Where(s => s.BusinessId == businessId
-                    && (s.Status == "active" || s.Status == "trialing" || s.Status == "past_due"))
-                .Join(_context.Plans,
-                    s => s.PlanId,
-                    p => p.Id,
-                    (s, p) => p.StorageLimitMb)
-                .FirstOrDefaultAsync();
-
-            if (limitMb.HasValue && limitMb.Value > 0)
-                dto.LimitBytes = limitMb.Value * 1024L * 1024L;
+            dto.LimitBytes = await ResolveLimitBytesAsync(businessId);
 
             return dto;
         }
@@ -82,7 +114,9 @@ public class StorageUsageService : IStorageUsageService
     {
         try
         {
-            // 1. All non-demo businesses + plan/status (mirrors BusinessInsightsRepository join).
+            // 1. All non-demo businesses + plan/status for DISPLAY (BusinessPlans join). The plan
+            //    name/status shown here is advisory; the enforced cap comes from step 1b so it can
+            //    never disagree with the per-business tab or the upload enforcement.
             var businesses = await (
                 from business in _context.Businesses
                 where !business.IsDemoAccount
@@ -95,15 +129,19 @@ public class StorageUsageService : IStorageUsageService
                     business.Id,
                     business.Name,
                     PlanName = p != null ? p.Name : "No Plan",
-                    Status = bp != null ? bp.Status : "unknown",
-                    StorageLimitMb = p != null ? p.StorageLimitMb : null
+                    Status = bp != null ? bp.Status : "unknown"
                 }
             ).ToListAsync();
+
+            // 1b. Enforced storage caps from the SAME active-Subscriptions → Plans source used by the
+            //     per-business tab and the upload enforcer (single grouped query, no N+1).
+            var limitBytesByBusiness = await ResolveAllLimitBytesAsync();
 
             // 2. Per-business bytes per category, across all tenants (raw SQL → not query-filtered).
             var attachmentBytes = await _repository.GetAllAttachmentBytesAsync();
             var complianceBytes = await _repository.GetAllComplianceBytesAsync();
             var logoBytes = await _repository.GetAllLogoBytesAsync();
+            var signatureBytes = await _repository.GetAllSignatureBytesAsync();
 
             // 3. Assemble rows.
             var rows = businesses.Select(b => new AdminStorageRowDto
@@ -115,9 +153,8 @@ public class StorageUsageService : IStorageUsageService
                 AttachmentBytes = attachmentBytes.TryGetValue(b.Id, out var a) ? a : 0L,
                 ComplianceBytes = complianceBytes.TryGetValue(b.Id, out var c) ? c : 0L,
                 LogoBytes = logoBytes.TryGetValue(b.Id, out var l) ? l : 0L,
-                LimitBytes = b.StorageLimitMb.HasValue && b.StorageLimitMb.Value > 0
-                    ? b.StorageLimitMb.Value * 1024L * 1024L
-                    : (long?)null
+                SignatureBytes = signatureBytes.TryGetValue(b.Id, out var sg) ? sg : 0L,
+                LimitBytes = limitBytesByBusiness.TryGetValue(b.Id, out var lim) ? lim : (long?)null
             }).ToList();
 
             // 4. Filters.
@@ -174,22 +211,10 @@ public class StorageUsageService : IStorageUsageService
             var attachments = await _repository.GetAttachmentUsageAsync(businessId);
             var compliance = await _repository.GetComplianceUsageAsync(businessId);
             var logos = await _repository.GetLogoUsageAsync(businessId);
-            var usedBytes = attachments.Bytes + compliance.Bytes + logos.Bytes;
+            var signatures = await _repository.GetSignatureUsageAsync(businessId);
+            var usedBytes = attachments.Bytes + compliance.Bytes + logos.Bytes + signatures.Bytes;
 
-            // Resolve the plan cap (Subscriptions → Plans), identical to GetBusinessStorageAsync.
-            // StorageLimitMb NULL/0 = unlimited (no cap).
-            var limitMb = await _context.Subscriptions
-                .Where(s => s.BusinessId == businessId
-                    && (s.Status == "active" || s.Status == "trialing" || s.Status == "past_due"))
-                .Join(_context.Plans,
-                    s => s.PlanId,
-                    p => p.Id,
-                    (s, p) => p.StorageLimitMb)
-                .FirstOrDefaultAsync();
-
-            long? limitBytes = (limitMb.HasValue && limitMb.Value > 0)
-                ? limitMb.Value * 1024L * 1024L
-                : null;
+            var limitBytes = await ResolveLimitBytesAsync(businessId);
 
             return (usedBytes, limitBytes);
         }
@@ -206,7 +231,7 @@ public class StorageUsageService : IStorageUsageService
             // Cached briefly per business — this is called on every page render (sidebar badge),
             // so we avoid re-running the usage sums each request. A recently-freed business may
             // see the badge/banner linger until the cache expires (acceptable for an advisory).
-            var cacheKey = $"storage-status-{businessId}";
+            var cacheKey = StatusCacheKey(businessId);
             if (_cache.TryGetValue(cacheKey, out StorageStatusDto? cached) && cached != null)
                 return cached;
 
@@ -220,6 +245,11 @@ public class StorageUsageService : IStorageUsageService
         {
             throw;
         }
+    }
+
+    public void InvalidateStatus(int businessId)
+    {
+        _cache.Remove(StatusCacheKey(businessId));
     }
 
     /// <summary>Maps a stored EntityType to a friendly label for the "by record type" table.</summary>

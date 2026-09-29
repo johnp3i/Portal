@@ -27,4 +27,10 @@ public interface IStorageUsageService
     /// on every page render (the sidebar) without re-running the usage sums each request.
     /// </summary>
     Task<StorageStatusDto> GetStatusAsync(int businessId);
+
+    /// <summary>
+    /// Evicts the cached storage status for a business. Call after a file upload or delete so the
+    /// badge/banner reflect the new usage immediately instead of lingering for up to the cache TTL.
+    /// </summary>
+    void InvalidateStatus(int businessId);
 }

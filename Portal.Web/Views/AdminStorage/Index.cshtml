@@ -16,7 +16,12 @@
         <h1 class="topbar-heading">Storage by business</h1>
         <p class="topbar-subtitle">Storage used per subscribed business across the platform. Live files only (soft-deleted attachments excluded). Demo accounts are excluded.</p>
     </div>
+    <div style="display:flex;gap:8px;">
+        <button type="button" class="btn btn-secondary" onclick="backfillSignatureSizes()">Backfill signature sizes</button>
+    </div>
 </div>
+
+@Html.AntiForgeryToken()
 
 <!-- Summary KPIs -->
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:22px;">
@@ -89,6 +94,7 @@
                     <th style="text-align:right;">Attachments</th>
                     <th style="text-align:right;">Compliance</th>
                     <th style="text-align:right;">Logos</th>
+                    <th style="text-align:right;">Signatures</th>
                     <th style="text-align:right;">
                         <a href="/Admin/Storage?search=@(Model.SearchTerm)&sortBy=size&sortDir=@(sortDirFor("size", Model.SortDir))" style="color:inherit;text-decoration:none;">Total@(Html.Raw(caret("size")))</a>
                     </th>
@@ -116,6 +122,7 @@
                         <td style="text-align:right;">@r.AttachmentDisplay</td>
                         <td style="text-align:right;">@r.ComplianceDisplay</td>
                         <td style="text-align:right;">@r.LogoDisplay</td>
+                        <td style="text-align:right;">@r.SignatureDisplay</td>
                         <td style="text-align:right;"><strong>@r.TotalDisplay</strong></td>
                         <td style="text-align:right;color:#5a6b7c;">@r.LimitDisplay</td>
                         <td style="text-align:right;">
@@ -134,6 +141,46 @@
                 }
             </tbody>
         </table>
-        <p style="margin-top:14px;font-size:12px;color:#5a6a7a;">Signatures are not included yet (no size recorded). Figures are live files only — soft-deleted attachments are excluded.</p>
+        <p style="margin-top:14px;font-size:12px;color:#5a6a7a;">Figures are live files only — soft-deleted attachments are excluded, and only active signatures are counted.</p>
     }
 </section>
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        async function backfillSignatureSizes() {
+            var confirm = await Swal.fire({
+                title: 'Backfill signature sizes?',
+                text: 'Measures on-disk sizes for signatures that have no recorded size. Safe to run repeatedly.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0D5EA6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Run backfill'
+            });
+            if (!confirm.isConfirmed) return;
+
+            BlockUI.show('Backfilling signature sizes...');
+            try {
+                var response = await fetch('/Admin/Storage/BackfillSignatureSizes', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                });
+                var data = await response.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' })
+                        .then(function () { location.reload(); });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+    </script>
+}

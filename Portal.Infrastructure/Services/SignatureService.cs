@@ -14,6 +14,8 @@ public class SignatureService : ISignatureService
 {
     private readonly SignatureRepository _signatureRepository;
     private readonly IConfiguration _configuration;
+    private readonly IStorageLimitEnforcer _storageLimitEnforcer;
+    private readonly IStorageUsageService _storageUsageService;
 
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -30,10 +32,16 @@ public class SignatureService : ISignatureService
     // Magic bytes for PNG files
     private static readonly byte[] PngMagicBytes = { 0x89, 0x50, 0x4E, 0x47 };
 
-    public SignatureService(SignatureRepository signatureRepository, IConfiguration configuration)
+    public SignatureService(
+        SignatureRepository signatureRepository,
+        IConfiguration configuration,
+        IStorageLimitEnforcer storageLimitEnforcer,
+        IStorageUsageService storageUsageService)
     {
         _signatureRepository = signatureRepository;
         _configuration = configuration;
+        _storageLimitEnforcer = storageLimitEnforcer;
+        _storageUsageService = storageUsageService;
     }
 
     /// <inheritdoc />
@@ -68,6 +76,14 @@ public class SignatureService : ISignatureService
                     return ServiceResult<SignatureViewModel>.Fail("File content does not match PNG format.");
             }
 
+            // Measure the incoming size and enforce the plan storage cap (Phase 4a) BEFORE writing
+            // to disk, so an over-cap signature never lands on disk. CanSeek is true here (the
+            // magic-byte check rewinds the stream), so Length is reliable.
+            var incomingBytes = fileStream.CanSeek ? fileStream.Length : 0L;
+            var storageCheck = await _storageLimitEnforcer.CheckCanUploadAsync(businessId, incomingBytes);
+            if (!storageCheck.Allowed)
+                return ServiceResult<SignatureViewModel>.Fail(storageCheck.Message!);
+
             // Sanitize filename — keep only alphanumeric, hyphens, underscores, and extension
             var sanitizedName = SanitizeFileName(fileName);
 
@@ -83,6 +99,9 @@ public class SignatureService : ISignatureService
                 await fileStream.CopyToAsync(fs);
             }
 
+            // Authoritative size = bytes actually written to disk.
+            var fileSizeBytes = new FileInfo(fullPath).Length;
+
             var entity = new Signature
             {
                 BusinessId = businessId,
@@ -94,10 +113,14 @@ public class SignatureService : ISignatureService
                 IsDefault = false,
                 IsActive = true,
                 UploadedByUserId = userId,
-                CreatedAtUtc = DateTime.UtcNow
+                CreatedAtUtc = DateTime.UtcNow,
+                FileSizeBytes = fileSizeBytes
             };
 
             var id = await _signatureRepository.InsertAsync(entity);
+
+            // Usage changed — drop the cached status so the badge/banner refresh immediately.
+            _storageUsageService.InvalidateStatus(businessId);
 
             return ServiceResult<SignatureViewModel>.Ok(new SignatureViewModel
             {
@@ -197,6 +220,10 @@ public class SignatureService : ISignatureService
             if (sig == null) return ServiceResult.Fail("Signature not found.");
 
             await _signatureRepository.DeactivateAsync(id, businessId);
+
+            // Usage dropped (inactive signatures aren't counted) — refresh the cached status.
+            _storageUsageService.InvalidateStatus(businessId);
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -214,6 +241,10 @@ public class SignatureService : ISignatureService
             if (sig == null) return ServiceResult.Fail("Signature not found.");
 
             await _signatureRepository.ReactivateAsync(id, businessId);
+
+            // Reactivating adds the signature back to counted usage — refresh the cached status.
+            _storageUsageService.InvalidateStatus(businessId);
+
             return ServiceResult.Ok();
         }
         catch (Exception ex)
@@ -309,6 +340,49 @@ public class SignatureService : ISignatureService
                 CreatedAtUtc = s.CreatedAtUtc,
                 UploadedByDisplayName = s.UploadedByUserId
             }).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<(int Updated, int Skipped)> BackfillFileSizesAsync()
+    {
+        try
+        {
+            var basePath = _configuration["FileStorage:BasePath"] ?? "C:/BusinessPortal/Uploads";
+            var rows = await _signatureRepository.GetRowsMissingSizeAsync();
+
+            var updated = 0;
+            var skipped = 0;
+            var touchedBusinessIds = new HashSet<int>();
+
+            foreach (var sig in rows)
+            {
+                var fullPath = Path.Combine(basePath, sig.FilePath);
+                if (File.Exists(fullPath))
+                {
+                    var size = new FileInfo(fullPath).Length;
+                    // Only write a positive size; a genuinely empty file stays 0 (nothing to count).
+                    if (size > 0)
+                    {
+                        await _signatureRepository.UpdateFileSizeAsync(sig.Id, size);
+                        touchedBusinessIds.Add(sig.BusinessId);
+                        updated++;
+                        continue;
+                    }
+                }
+                // File missing on disk or empty — leave at 0 (it contributes nothing to usage).
+                skipped++;
+            }
+
+            // Refresh cached status for any business whose total changed.
+            foreach (var businessId in touchedBusinessIds)
+                _storageUsageService.InvalidateStatus(businessId);
+
+            return (updated, skipped);
         }
         catch (Exception ex)
         {

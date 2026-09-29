@@ -14,6 +14,7 @@ public class ComplianceService : IComplianceService
     private readonly ComplianceRepository _repository;
     private readonly IFileStorageService _fileStorageService;
     private readonly IStorageLimitEnforcer _storageLimitEnforcer;
+    private readonly IStorageUsageService _storageUsageService;
 
     private static readonly Dictionary<string, string[]> ValidTransitions = new()
     {
@@ -27,11 +28,13 @@ public class ComplianceService : IComplianceService
     public ComplianceService(
         ComplianceRepository repository,
         IFileStorageService fileStorageService,
-        IStorageLimitEnforcer storageLimitEnforcer)
+        IStorageLimitEnforcer storageLimitEnforcer,
+        IStorageUsageService storageUsageService)
     {
         _repository = repository;
         _fileStorageService = fileStorageService;
         _storageLimitEnforcer = storageLimitEnforcer;
+        _storageUsageService = storageUsageService;
     }
 
     #region Category Management
@@ -588,6 +591,9 @@ public class ComplianceService : IComplianceService
 
             var id = await _repository.InsertAttachmentAsync(entity);
 
+            // Usage changed — drop the cached status so the badge/banner refresh immediately.
+            _storageUsageService.InvalidateStatus(businessId);
+
             var result = new AttachmentResultDto
             {
                 Id = id,
@@ -613,6 +619,9 @@ public class ComplianceService : IComplianceService
 
             await _fileStorageService.DeleteAsync(attachment.FilePath);
             await _repository.DeleteAttachmentAsync(attachmentId);
+
+            // Usage dropped — refresh the cached status.
+            _storageUsageService.InvalidateStatus(businessId);
 
             return ServiceResult.Ok();
         }

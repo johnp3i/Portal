@@ -16,9 +16,6 @@ public class StorageLimitEnforcer : IStorageLimitEnforcer
         _storageUsageService = storageUsageService;
     }
 
-    /// <summary>Percentage of the cap at (or above) which a soft warning is emitted.</summary>
-    private const int WarnAtPercent = 80;
-
     public async Task<StorageCheckResult> CheckCanUploadAsync(int businessId, long incomingBytes)
     {
         try
@@ -39,10 +36,12 @@ public class StorageLimitEnforcer : IStorageLimitEnforcer
             // assume this method is atomic with the subsequent persist.
             var projected = usedBytes + incoming;
 
-            if (projected > limit)
+            // "Over" uses the shared threshold logic so the block point matches the bar/badge
+            // exactly (at-or-past the cap = full).
+            if (StorageThresholds.IsOver(projected, limit))
             {
-                // Over the cap — hard block. Lead with what's FREE (the actionable number) rather
-                // than "used X of Y", which can look like "250 of 250" from rounding and confuse.
+                // Lead with what's FREE (the actionable number) rather than "used X of Y", which
+                // can look like "250 of 250" from rounding and confuse.
                 var remaining = Math.Max(0, limit - usedBytes);
                 var message =
                     $"Storage limit reached — only {StorageFormat.Bytes(remaining)} free of your " +
@@ -52,9 +51,10 @@ public class StorageLimitEnforcer : IStorageLimitEnforcer
             }
 
             // Permitted. If this upload lands the business at ≥80% of the cap, attach an advisory
-            // warning so callers can nudge the user before they hit the wall next time.
-            var projectedPercent = (int)(projected * 100L / limit);
-            if (projectedPercent >= WarnAtPercent)
+            // warning so callers can nudge the user before they hit the wall next time. Uses the
+            // same rounded percent as the bar/badge so the 80% trigger point is identical.
+            var projectedPercent = StorageThresholds.Percent(projected, limit);
+            if (projectedPercent >= StorageThresholds.WarnAtPercent)
             {
                 var remaining = Math.Max(0, limit - projected);
                 var warning =

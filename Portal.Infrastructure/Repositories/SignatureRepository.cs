@@ -23,11 +23,11 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
             const string query = @"
                 INSERT INTO [portal].[Signature]
                     ([BusinessId], [Label], [Position], [FileName], [ContentType], [FilePath],
-                     [IsDefault], [IsActive], [UploadedByUserId], [CreatedAtUtc])
+                     [IsDefault], [IsActive], [UploadedByUserId], [CreatedAtUtc], [FileSizeBytes])
                 OUTPUT INSERTED.Id
                 VALUES
                     (@BusinessId, @Label, @Position, @FileName, @ContentType, @FilePath,
-                     @IsDefault, @IsActive, @UploadedByUserId, @CreatedAtUtc)";
+                     @IsDefault, @IsActive, @UploadedByUserId, @CreatedAtUtc, @FileSizeBytes)";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -53,6 +53,7 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
                 command.Parameters.Add(new SqlParameter("@IsActive", entity.IsActive));
                 command.Parameters.Add(new SqlParameter("@UploadedByUserId", entity.UploadedByUserId));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", entity.CreatedAtUtc));
+                command.Parameters.Add(new SqlParameter("@FileSizeBytes", entity.FileSizeBytes));
 
                 var result = await command.ExecuteScalarAsync();
                 return (int)result!;
@@ -87,7 +88,8 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
                        [portal].[Signature].[IsDefault],
                        [portal].[Signature].[IsActive],
                        [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc]
+                       [portal].[Signature].[CreatedAtUtc],
+                       [portal].[Signature].[FileSizeBytes]
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[BusinessId] = @BusinessId
                   AND [portal].[Signature].[IsActive] = 1
@@ -120,7 +122,8 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
                        [portal].[Signature].[IsDefault],
                        [portal].[Signature].[IsActive],
                        [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc]
+                       [portal].[Signature].[CreatedAtUtc],
+                       [portal].[Signature].[FileSizeBytes]
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[BusinessId] = @BusinessId
                 ORDER BY [portal].[Signature].[IsActive] DESC, [portal].[Signature].[IsDefault] DESC, [portal].[Signature].[Label] ASC";
@@ -152,7 +155,8 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
                        [portal].[Signature].[IsDefault],
                        [portal].[Signature].[IsActive],
                        [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc]
+                       [portal].[Signature].[CreatedAtUtc],
+                       [portal].[Signature].[FileSizeBytes]
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[BusinessId] = @BusinessId
                   AND [portal].[Signature].[IsDefault] = 1
@@ -185,7 +189,8 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
                        [portal].[Signature].[IsDefault],
                        [portal].[Signature].[IsActive],
                        [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc]
+                       [portal].[Signature].[CreatedAtUtc],
+                       [portal].[Signature].[FileSizeBytes]
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[Id] = @Id
                   AND [portal].[Signature].[BusinessId] = @BusinessId";
@@ -267,6 +272,58 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", id),
                 new SqlParameter("@BusinessId", businessId));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Returns all signatures whose size hasn't been measured yet (FileSizeBytes = 0), across all
+    /// businesses. Used by the one-time backfill that stats the files on disk. Not tenant-scoped.
+    /// </summary>
+    public virtual async Task<List<Signature>> GetRowsMissingSizeAsync()
+    {
+        try
+        {
+            const string query = @"
+                SELECT [portal].[Signature].[Id],
+                       [portal].[Signature].[BusinessId],
+                       [portal].[Signature].[Label],
+                       [portal].[Signature].[Position],
+                       [portal].[Signature].[FileName],
+                       [portal].[Signature].[ContentType],
+                       [portal].[Signature].[FilePath],
+                       [portal].[Signature].[IsDefault],
+                       [portal].[Signature].[IsActive],
+                       [portal].[Signature].[UploadedByUserId],
+                       [portal].[Signature].[CreatedAtUtc],
+                       [portal].[Signature].[FileSizeBytes]
+                FROM [portal].[Signature]
+                WHERE [portal].[Signature].[FileSizeBytes] = 0";
+
+            return await ExecuteStoredProcedureUnfiltered(query);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>Sets the measured file size (bytes) for a signature. Used by the backfill.</summary>
+    public virtual async Task UpdateFileSizeAsync(int id, long fileSizeBytes)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [portal].[Signature]
+                SET [FileSizeBytes] = @FileSizeBytes
+                WHERE [portal].[Signature].[Id] = @Id";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@Id", id),
+                new SqlParameter("@FileSizeBytes", fileSizeBytes));
         }
         catch (Exception ex)
         {

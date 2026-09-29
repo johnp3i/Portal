@@ -18,6 +18,7 @@ public class LogoService : ILogoService
     private readonly IConfiguration _configuration;
     private readonly ILogger<LogoService> _logger;
     private readonly IStorageLimitEnforcer _storageLimitEnforcer;
+    private readonly IStorageUsageService _storageUsageService;
 
     private const int MaxLogosPerBusiness = 20;
     private const long MaxFileSizeBytes = 2 * 1024 * 1024; // 2MB
@@ -34,12 +35,14 @@ public class LogoService : ILogoService
         BusinessLogoRepository logoRepository,
         IConfiguration configuration,
         ILogger<LogoService> logger,
-        IStorageLimitEnforcer storageLimitEnforcer)
+        IStorageLimitEnforcer storageLimitEnforcer,
+        IStorageUsageService storageUsageService)
     {
         _logoRepository = logoRepository;
         _configuration = configuration;
         _logger = logger;
         _storageLimitEnforcer = storageLimitEnforcer;
+        _storageUsageService = storageUsageService;
     }
 
     private string BasePath =>
@@ -97,6 +100,9 @@ public class LogoService : ILogoService
 
             await _logoRepository.InsertAsync(logo);
 
+            // Usage changed — drop the cached status so the badge/banner refresh immediately.
+            _storageUsageService.InvalidateStatus(businessId);
+
             _logger.LogInformation("Logo uploaded for business {BusinessId}: {FileName}", businessId, uniqueFileName);
 
             return logo;
@@ -127,6 +133,9 @@ public class LogoService : ILogoService
 
         if (File.Exists(filePath))
             File.Delete(filePath);
+
+        // Usage dropped — refresh the cached status.
+        _storageUsageService.InvalidateStatus(businessId);
 
         _logger.LogInformation("Logo deleted for business {BusinessId}: {FileName}", businessId, logo.FileName);
     }

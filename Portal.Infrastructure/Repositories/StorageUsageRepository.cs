@@ -11,8 +11,8 @@ namespace Portal.Infrastructure.Repositories;
 ///
 /// Categories measured: Document attachments ([document].[DocumentAttachment], excludes soft-deleted),
 /// Compliance attachments ([compliance].[ApplicationAttachment], scoped to a business via a join to
-/// [compliance].[BusinessApplication]), and Business logos ([portal].[BusinessLogo]). Signatures are
-/// intentionally NOT measured yet — the [portal].[Signature] table has no size column.
+/// [compliance].[BusinessApplication]), Business logos ([portal].[BusinessLogo]), and Signatures
+/// ([portal].[Signature], active only — sized since Phase 4a via [FileSizeBytes]).
 ///
 /// Raw SQL throughout: the per-business SUMs mirror DocumentAttachmentRepository.GetSummaryAsync, and
 /// the cross-tenant GROUP BY avoids EF global query filters entirely (raw SQL isn't filtered).
@@ -81,19 +81,16 @@ public class StorageUsageRepository
         }
     }
 
-    /// <summary>Signature file count for one business (size not measured — no size column yet).</summary>
-    public async Task<int> GetSignatureCountAsync(int businessId)
+    /// <summary>Signature total (bytes) + file count for one business (active signatures only).</summary>
+    public async Task<(long Bytes, int Files)> GetSignatureUsageAsync(int businessId)
     {
         try
         {
             const string query = @"
-                SELECT COUNT(*) AS [Value]
+                SELECT ISNULL(SUM(Signature.FileSizeBytes), 0) AS [Bytes], COUNT(*) AS [Files]
                 FROM [portal].[Signature]
                 WHERE Signature.BusinessId = @BusinessId AND Signature.IsActive = 1";
-            var result = await _context.Database
-                .SqlQueryRaw<int>(query, new SqlParameter("@BusinessId", businessId))
-                .ToListAsync();
-            return result.FirstOrDefault();
+            return await ReadBytesFilesAsync(query, new SqlParameter("@BusinessId", businessId));
         }
         catch (Exception ex)
         {
@@ -150,6 +147,14 @@ public class StorageUsageRepository
             SELECT BusinessLogo.BusinessId AS [BusinessId], ISNULL(SUM(BusinessLogo.FileSizeBytes), 0) AS [Bytes]
             FROM [portal].[BusinessLogo]
             GROUP BY BusinessLogo.BusinessId");
+
+    /// <summary>Per-business signature bytes across ALL businesses (active signatures only).</summary>
+    public Task<Dictionary<int, long>> GetAllSignatureBytesAsync() =>
+        ReadBytesByBusinessAsync(@"
+            SELECT Signature.BusinessId AS [BusinessId], ISNULL(SUM(Signature.FileSizeBytes), 0) AS [Bytes]
+            FROM [portal].[Signature]
+            WHERE Signature.IsActive = 1
+            GROUP BY Signature.BusinessId");
 
     // ── Helpers ───────────────────────────────────────────────────────────
 

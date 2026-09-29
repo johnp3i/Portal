@@ -18,4 +18,7 @@ public class Signature
     public bool IsActive { get; set; }
     public string UploadedByUserId { get; set; } = null!;
     public DateTime CreatedAtUtc { get; set; }
+
+    /// <summary>File size in bytes. 0 = legacy row not yet backfilled from disk.</summary>
+    public long FileSizeBytes { get; set; }
 }

@@ -23,17 +23,20 @@ public class DocumentAttachmentService : IDocumentAttachmentService
     private readonly IFileStorageService _fileStorageService;
     private readonly UserNameResolver _userNameResolver;
     private readonly IStorageLimitEnforcer _storageLimitEnforcer;
+    private readonly IStorageUsageService _storageUsageService;
 
     public DocumentAttachmentService(
         DocumentAttachmentRepository repository,
         IFileStorageService fileStorageService,
         UserNameResolver userNameResolver,
-        IStorageLimitEnforcer storageLimitEnforcer)
+        IStorageLimitEnforcer storageLimitEnforcer,
+        IStorageUsageService storageUsageService)
     {
         _repository = repository;
         _fileStorageService = fileStorageService;
         _userNameResolver = userNameResolver;
         _storageLimitEnforcer = storageLimitEnforcer;
+        _storageUsageService = storageUsageService;
     }
 
     public async Task<ServiceResult<AttachmentDto>> UploadAsync(UploadAttachmentRequest request)
@@ -107,6 +110,9 @@ public class DocumentAttachmentService : IDocumentAttachmentService
             };
 
             var newId = await _repository.InsertAsync(attachment);
+
+            // Usage changed — drop the cached status so the badge/banner refresh immediately.
+            _storageUsageService.InvalidateStatus(request.BusinessId);
 
             // Resolve display name for response
             var names = await _userNameResolver.ResolveNamesAsync(new[] { request.UserId });
@@ -183,6 +189,9 @@ public class DocumentAttachmentService : IDocumentAttachmentService
             }
 
             await _repository.SoftDeleteAsync(attachmentId, businessId);
+
+            // Usage dropped — refresh the cached status.
+            _storageUsageService.InvalidateStatus(businessId);
 
             return ServiceResult.Ok();
         }

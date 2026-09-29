@@ -579,7 +579,8 @@ else if (activeTab == "payment")
     {
         ["Document attachments"] = "#0D5EA6",
         ["Compliance attachments"] = "#57B8E8",
-        ["Logos"] = "#129867"
+        ["Logos"] = "#129867",
+        ["Signatures"] = "#C8912E"
     };
     string ColourFor(string name) => catColours.TryGetValue(name, out var c) ? c : "#8a9bab";
     var barColour = storage.IsOverLimit ? "#C24A4A" : storage.IsNearLimit ? "#C8912E" : "#0D5EA6";
@@ -676,7 +677,7 @@ else if (activeTab == "payment")
             </tbody>
         </table>
         <p style="margin-top:12px;font-size:12px;color:#5a6a7a;">
-            Signatures aren't measured yet — they'll be included once per-plan limits are introduced. They're small (max 2 MB each), so they have little impact on your total.
+            All categories — including signatures — count toward your storage total and plan limit.
         </p>
     </section>
 

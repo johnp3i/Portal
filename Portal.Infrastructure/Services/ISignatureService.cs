@@ -18,4 +18,10 @@ public interface ISignatureService
     Task<ServiceResult> ReactivateAsync(int id, int businessId);
     Task<ServiceResult> UpdateLabelAsync(int id, int businessId, string label, string? position = null);
     Task<Stream?> GetImageStreamAsync(int id, int businessId);
+
+    /// <summary>
+    /// One-time backfill: measures on-disk file sizes for legacy signatures that have no recorded
+    /// size (FileSizeBytes = 0) and writes them. Idempotent. Returns (updated, skipped) counts.
+    /// </summary>
+    Task<(int Updated, int Skipped)> BackfillFileSizesAsync();
 }

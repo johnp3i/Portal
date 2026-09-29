@@ -14,6 +14,33 @@ public static class StorageFormat
 }
 
 /// <summary>
+/// Single source of truth for storage-cap threshold maths so every surface (per-business tab,
+/// SuperAdmin page, badge/banner, and the upload enforcer) computes percent / near / over
+/// identically. "Over" is at-or-past the cap (>=); "near" is ≥80% but not yet over.
+/// </summary>
+public static class StorageThresholds
+{
+    /// <summary>Percentage of the cap at (or above) which the near-limit warning shows.</summary>
+    public const int WarnAtPercent = 80;
+
+    /// <summary>Used percentage, rounded. 0 when there's no cap.</summary>
+    public static int Percent(long usedBytes, long? limitBytes) =>
+        (limitBytes.HasValue && limitBytes.Value > 0)
+            ? (int)Math.Round(usedBytes * 100d / limitBytes.Value)
+            : 0;
+
+    /// <summary>At or over the cap (uploads blocked). False when unlimited.</summary>
+    public static bool IsOver(long usedBytes, long? limitBytes) =>
+        limitBytes.HasValue && limitBytes.Value > 0 && usedBytes >= limitBytes.Value;
+
+    /// <summary>≥80% of the cap but not yet over. False when unlimited.</summary>
+    public static bool IsNear(long usedBytes, long? limitBytes) =>
+        limitBytes.HasValue && limitBytes.Value > 0
+        && Percent(usedBytes, limitBytes) >= WarnAtPercent
+        && !IsOver(usedBytes, limitBytes);
+}
+
+/// <summary>
 /// Lightweight storage status for ambient signals (sidebar badge + dashboard banner). Computed
 /// from usage + plan cap and cached briefly per business. Unlimited plans → HasLimit false.
 /// </summary>
@@ -23,13 +50,13 @@ public class StorageStatusDto
     public long? LimitBytes { get; set; }
 
     public bool HasLimit => LimitBytes.HasValue && LimitBytes.Value > 0;
-    public int UsedPercent => HasLimit ? (int)Math.Round(UsedBytes * 100d / LimitBytes!.Value) : 0;
+    public int UsedPercent => StorageThresholds.Percent(UsedBytes, LimitBytes);
 
     /// <summary>At or over the cap — uploads are blocked.</summary>
-    public bool IsOverLimit => HasLimit && UsedBytes >= LimitBytes!.Value;
+    public bool IsOverLimit => StorageThresholds.IsOver(UsedBytes, LimitBytes);
 
     /// <summary>Between 80% and the cap — nearing the limit (not yet blocked).</summary>
-    public bool IsNearLimit => HasLimit && UsedPercent >= 80 && !IsOverLimit;
+    public bool IsNearLimit => StorageThresholds.IsNear(UsedBytes, LimitBytes);
 
     /// <summary>True when either signal should be shown (badge/banner).</summary>
     public bool ShouldSignal => IsNearLimit || IsOverLimit;
@@ -71,10 +98,10 @@ public class BusinessStorageDto
     public string LimitDisplay => HasLimit ? StorageFormat.Bytes(LimitBytes!.Value) : "No limit";
 
     /// <summary>Percentage of the plan limit used (0–100+, capped at 100 for the bar width).</summary>
-    public int UsedPercent => HasLimit ? (int)Math.Round(TotalBytes * 100d / LimitBytes!.Value) : 0;
+    public int UsedPercent => StorageThresholds.Percent(TotalBytes, LimitBytes);
     public int UsedPercentCapped => Math.Min(UsedPercent, 100);
-    public bool IsOverLimit => HasLimit && TotalBytes > LimitBytes!.Value;
-    public bool IsNearLimit => HasLimit && UsedPercent >= 80 && !IsOverLimit;
+    public bool IsOverLimit => StorageThresholds.IsOver(TotalBytes, LimitBytes);
+    public bool IsNearLimit => StorageThresholds.IsNear(TotalBytes, LimitBytes);
 
     /// <summary>Measured categories (attachments, compliance, logos) + signatures (not counted).</summary>
     public List<StorageCategoryDto> Categories { get; set; } = new();
@@ -97,7 +124,8 @@ public class AdminStorageRowDto
     public long AttachmentBytes { get; set; }
     public long ComplianceBytes { get; set; }
     public long LogoBytes { get; set; }
-    public long TotalBytes => AttachmentBytes + ComplianceBytes + LogoBytes;
+    public long SignatureBytes { get; set; }
+    public long TotalBytes => AttachmentBytes + ComplianceBytes + LogoBytes + SignatureBytes;
 
     /// <summary>Plan storage cap in bytes; null = unlimited.</summary>
     public long? LimitBytes { get; set; }
@@ -106,12 +134,13 @@ public class AdminStorageRowDto
     public string AttachmentDisplay => StorageFormat.Bytes(AttachmentBytes);
     public string ComplianceDisplay => StorageFormat.Bytes(ComplianceBytes);
     public string LogoDisplay => StorageFormat.Bytes(LogoBytes);
+    public string SignatureDisplay => StorageFormat.Bytes(SignatureBytes);
     public string TotalDisplay => StorageFormat.Bytes(TotalBytes);
     public string LimitDisplay => HasLimit ? StorageFormat.Bytes(LimitBytes!.Value) : "—";
 
-    public int UsedPercent => HasLimit ? (int)Math.Round(TotalBytes * 100d / LimitBytes!.Value) : 0;
-    public bool IsOverLimit => HasLimit && TotalBytes > LimitBytes!.Value;
-    public bool IsNearLimit => HasLimit && UsedPercent >= 80 && !IsOverLimit;
+    public int UsedPercent => StorageThresholds.Percent(TotalBytes, LimitBytes);
+    public bool IsOverLimit => StorageThresholds.IsOver(TotalBytes, LimitBytes);
+    public bool IsNearLimit => StorageThresholds.IsNear(TotalBytes, LimitBytes);
 }
 
 /// <summary>Platform-wide summary KPIs for the SuperAdmin Storage page header.</summary>

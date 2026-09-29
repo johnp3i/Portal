@@ -13,10 +13,12 @@ namespace Portal.Web.Controllers;
 public class AdminStorageController : Controller
 {
     private readonly IStorageUsageService _storageUsageService;
+    private readonly ISignatureService _signatureService;
 
-    public AdminStorageController(IStorageUsageService storageUsageService)
+    public AdminStorageController(IStorageUsageService storageUsageService, ISignatureService signatureService)
     {
         _storageUsageService = storageUsageService;
+        _signatureService = signatureService;
     }
 
     // GET /Admin/Storage
@@ -25,5 +27,26 @@ public class AdminStorageController : Controller
     {
         var model = await _storageUsageService.GetPlatformStorageAsync(search, plan, sortBy, sortDir);
         return View(model);
+    }
+
+    // POST /Admin/Storage/BackfillSignatureSizes
+    // One-time pass to measure on-disk sizes for legacy signatures (FileSizeBytes = 0).
+    [HttpPost("BackfillSignatureSizes")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostBackfillSignatureSizes()
+    {
+        try
+        {
+            var (updated, skipped) = await _signatureService.BackfillFileSizesAsync();
+            return Json(new
+            {
+                success = true,
+                message = $"Signature sizes backfilled: {updated} updated, {skipped} skipped (missing/empty on disk)."
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "The backfill could not be completed. Please try again." });
+        }
     }
 }
