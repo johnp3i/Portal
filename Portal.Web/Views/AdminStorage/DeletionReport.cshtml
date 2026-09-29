@@ -1,0 +1,53 @@
+@using Portal.Web.Controllers
+@{
+    ViewData["Title"] = "Deletion report";
+    var rows = ViewBag.Rows as List<StorageDeletionReportItem> ?? new List<StorageDeletionReportItem>();
+    var tzLabel = ViewBag.TimeZoneLabel as string ?? "UTC";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration · Storage</div>
+        <h1 class="topbar-heading">Deletion report</h1>
+        <p class="topbar-subtitle">Permanent record of orphaned files removed by the cleanup. This is populated once actual deletion is switched on (Phase 4b-2); it stays empty during the report-only phase. Times shown in <strong>@tzLabel</strong>.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="btn btn-secondary" href="/Admin/Storage/Cleanup">Back to upcoming</a>
+    </div>
+</div>
+
+<section class="glass card-pad">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">Deleted files</div>
+    @if (rows.Count == 0)
+    {
+        <div class="empty-state"><p>No files have been deleted. Deletion is not active yet — this report will fill in once Phase 4b-2 is enabled.</p></div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Business</th>
+                        <th style="text-align:right;">Size</th>
+                        <th>Reason</th>
+                        <th>Deleted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in rows)
+                    {
+                        <tr>
+                            <td style="font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all;">@r.RelativePath</td>
+                            <td>@r.BusinessDisplay</td>
+                            <td style="text-align:right;">@r.SizeDisplay</td>
+                            <td>@r.Reason</td>
+                            <td style="white-space:nowrap;">@r.DeletedAtLocal.ToString("dd MMM yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

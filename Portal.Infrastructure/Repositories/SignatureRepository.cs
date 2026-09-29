@@ -14,6 +14,27 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
     public SignatureRepository(DbContext context) : base(context) { }
 
     /// <summary>
+    /// The full column list every <see cref="Signature"/> read query must select. EF Core
+    /// requires every mapped scalar property to be present in a raw-SQL result set or it throws
+    /// "The required column 'X' was not present in the results" at materialization time. Kept in
+    /// one place so a newly added Signature column (e.g. FileSizeBytes) reaches every read at
+    /// once. Verified by SignatureRepositorySqlColumnTests against the EF model.
+    /// </summary>
+    public const string SelectColumns = @"
+                       [portal].[Signature].[Id],
+                       [portal].[Signature].[BusinessId],
+                       [portal].[Signature].[Label],
+                       [portal].[Signature].[Position],
+                       [portal].[Signature].[FileName],
+                       [portal].[Signature].[ContentType],
+                       [portal].[Signature].[FilePath],
+                       [portal].[Signature].[IsDefault],
+                       [portal].[Signature].[IsActive],
+                       [portal].[Signature].[UploadedByUserId],
+                       [portal].[Signature].[CreatedAtUtc],
+                       [portal].[Signature].[FileSizeBytes]";
+
+    /// <summary>
     /// Inserts a new signature record and returns the new Id.
     /// </summary>
     public virtual async Task<int> InsertAsync(Signature entity)
@@ -78,18 +99,7 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
         try
         {
             const string query = @"
-                SELECT [portal].[Signature].[Id],
-                       [portal].[Signature].[BusinessId],
-                       [portal].[Signature].[Label],
-                       [portal].[Signature].[Position],
-                       [portal].[Signature].[FileName],
-                       [portal].[Signature].[ContentType],
-                       [portal].[Signature].[FilePath],
-                       [portal].[Signature].[IsDefault],
-                       [portal].[Signature].[IsActive],
-                       [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc],
-                       [portal].[Signature].[FileSizeBytes]
+                SELECT " + SelectColumns + @"
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[BusinessId] = @BusinessId
                   AND [portal].[Signature].[IsActive] = 1
@@ -112,18 +122,7 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
         try
         {
             const string query = @"
-                SELECT [portal].[Signature].[Id],
-                       [portal].[Signature].[BusinessId],
-                       [portal].[Signature].[Label],
-                       [portal].[Signature].[Position],
-                       [portal].[Signature].[FileName],
-                       [portal].[Signature].[ContentType],
-                       [portal].[Signature].[FilePath],
-                       [portal].[Signature].[IsDefault],
-                       [portal].[Signature].[IsActive],
-                       [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc],
-                       [portal].[Signature].[FileSizeBytes]
+                SELECT " + SelectColumns + @"
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[BusinessId] = @BusinessId
                 ORDER BY [portal].[Signature].[IsActive] DESC, [portal].[Signature].[IsDefault] DESC, [portal].[Signature].[Label] ASC";
@@ -145,18 +144,7 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
         try
         {
             const string query = @"
-                SELECT [portal].[Signature].[Id],
-                       [portal].[Signature].[BusinessId],
-                       [portal].[Signature].[Label],
-                       [portal].[Signature].[Position],
-                       [portal].[Signature].[FileName],
-                       [portal].[Signature].[ContentType],
-                       [portal].[Signature].[FilePath],
-                       [portal].[Signature].[IsDefault],
-                       [portal].[Signature].[IsActive],
-                       [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc],
-                       [portal].[Signature].[FileSizeBytes]
+                SELECT " + SelectColumns + @"
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[BusinessId] = @BusinessId
                   AND [portal].[Signature].[IsDefault] = 1
@@ -179,18 +167,7 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
         try
         {
             const string query = @"
-                SELECT [portal].[Signature].[Id],
-                       [portal].[Signature].[BusinessId],
-                       [portal].[Signature].[Label],
-                       [portal].[Signature].[Position],
-                       [portal].[Signature].[FileName],
-                       [portal].[Signature].[ContentType],
-                       [portal].[Signature].[FilePath],
-                       [portal].[Signature].[IsDefault],
-                       [portal].[Signature].[IsActive],
-                       [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc],
-                       [portal].[Signature].[FileSizeBytes]
+                SELECT " + SelectColumns + @"
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[Id] = @Id
                   AND [portal].[Signature].[BusinessId] = @BusinessId";
@@ -288,18 +265,7 @@ public class SignatureRepository : GenericStoredProcedureRepository<Signature>
         try
         {
             const string query = @"
-                SELECT [portal].[Signature].[Id],
-                       [portal].[Signature].[BusinessId],
-                       [portal].[Signature].[Label],
-                       [portal].[Signature].[Position],
-                       [portal].[Signature].[FileName],
-                       [portal].[Signature].[ContentType],
-                       [portal].[Signature].[FilePath],
-                       [portal].[Signature].[IsDefault],
-                       [portal].[Signature].[IsActive],
-                       [portal].[Signature].[UploadedByUserId],
-                       [portal].[Signature].[CreatedAtUtc],
-                       [portal].[Signature].[FileSizeBytes]
+                SELECT " + SelectColumns + @"
                 FROM [portal].[Signature]
                 WHERE [portal].[Signature].[FileSizeBytes] = 0";
 

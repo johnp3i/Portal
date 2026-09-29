@@ -351,6 +351,8 @@ builder.Services.AddScoped<IExpenseInsightsService, ExpenseInsightsService>();
 builder.Services.AddScoped<IPaymentReminderScheduleService, PaymentReminderScheduleService>();
 builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
 builder.Services.AddHostedService<PaymentReminderBackgroundService>();
+// Phase 4b: nightly orphaned-file scan (report-only; no-op unless enabled in config).
+builder.Services.AddHostedService<Portal.Web.BackgroundServices.OrphanedFileCleanupBackgroundService>();
 builder.Services.AddScoped<IPaymentInstructionsService, PaymentInstructionsService>();
 
 // --- Digital Assistants (Notification Spine) ---
@@ -513,6 +515,9 @@ builder.Services.AddScoped<StorageUsageRepository>();
 builder.Services.AddScoped<IStorageUsageService, StorageUsageService>();
 // Phase 3: shared upload gate that hard-blocks over-cap uploads across all entry points.
 builder.Services.AddScoped<IStorageLimitEnforcer, StorageLimitEnforcer>();
+// Phase 4b: orphaned-file cleanup (detection/report-only; ships disabled).
+builder.Services.AddScoped<OrphanedFileCleanupRepository>();
+builder.Services.AddScoped<IOrphanedFileCleanupService, OrphanedFileCleanupService>();
 
 // --- User Impersonation (SuperAdmin) ---
 builder.Services.AddScoped<Portal.Web.Services.ImpersonationService>();

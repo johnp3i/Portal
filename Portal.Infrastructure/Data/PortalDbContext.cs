@@ -137,6 +137,11 @@ public class PortalDbContext : DbContext
     // Document schema
     public DbSet<DocumentAttachment> DocumentAttachments { get; set; } = null!;
 
+    // Storage cleanup schema (orphaned-file detection — Phase 4b)
+    public DbSet<Entities.Storage.OrphanedFileStatusType> OrphanedFileStatusTypes { get; set; } = null!;
+    public DbSet<Entities.Storage.OrphanedFileCandidate> OrphanedFileCandidates { get; set; } = null!;
+    public DbSet<Entities.Storage.OrphanedFileDeletionLog> OrphanedFileDeletionLogs { get; set; } = null!;
+
     // Signature & Receipt schema
     public DbSet<Signature> Signatures { get; set; } = null!;
     public DbSet<PaymentReceipt> PaymentReceipts { get; set; } = null!;
@@ -286,6 +291,7 @@ public class PortalDbContext : DbContext
         ConfigureScheduleOverviewRawRow(modelBuilder);
         ConfigureDocumentAttachment(modelBuilder);
         ConfigureSignature(modelBuilder);
+        ConfigureStorageCleanup(modelBuilder);
         ConfigureExpenseCategoryTemplate(modelBuilder);
         ConfigurePaymentReceipt(modelBuilder);
         ConfigurePaymentReceiptLine(modelBuilder);
@@ -3296,6 +3302,47 @@ public class PortalDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BusinessId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+    }
+
+    private static void ConfigureStorageCleanup(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entities.Storage.OrphanedFileStatusType>(entity =>
+        {
+            entity.ToTable("OrphanedFileStatusType", "Storage");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(400);
+        });
+
+        modelBuilder.Entity<Entities.Storage.OrphanedFileCandidate>(entity =>
+        {
+            entity.ToTable("OrphanedFileCandidate", "Storage");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RelativePath).IsRequired().HasMaxLength(1024);
+            entity.Property(e => e.FileSizeBytes).IsRequired();
+            entity.Property(e => e.DetectedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.ScheduledDeletionAtUtc).IsRequired();
+            entity.Property(e => e.OrphanedFileStatusTypeId).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(e => e.RelativePath).IsUnique();
+            entity.HasOne<Entities.Storage.OrphanedFileStatusType>()
+                .WithMany()
+                .HasForeignKey(e => e.OrphanedFileStatusTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Entities.Storage.OrphanedFileDeletionLog>(entity =>
+        {
+            entity.ToTable("OrphanedFileDeletionLog", "Storage");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RelativePath).IsRequired().HasMaxLength(1024);
+            entity.Property(e => e.FileSizeBytes).IsRequired();
+            entity.Property(e => e.Reason).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.DeletedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
         });
     }
 

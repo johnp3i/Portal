@@ -309,6 +309,54 @@ like every other file type (blocked at 100% via the same enforcer). Legacy signa
 backfilled from disk by `SignatureService.BackfillFileSizesAsync` (a one-time pass; a DB migration
 can't stat the filesystem). Deactivated signatures are excluded from usage.
 
+**Orphaned-file cleanup — detection & report (Phase 4b-1, report-only).** A background scan finds
+files on disk that no live database row references, records them as *candidates* with a scheduled
+deletion date, and exposes an admin surface. **Nothing is ever deleted in 4b-1** — the actual
+removal is deferred to Phase 4b-2 so a full detection cycle can be watched first before anything
+destructive runs. Ships **disabled by default**.
+
+- **What "orphaned" means.** A physical file under the storage root (`FileStorage:BasePath`) whose
+  relative path is not in the referenced set built from every file-owning table. The referenced set
+  deliberately includes files that a DB row still *owns* even if hidden from users — soft-deleted
+  document attachments (`IsDeleted = 1`) and inactive signatures both still reference their file, so
+  they are **never** treated as orphans. Path sources: `DocumentAttachment.StoragePath`,
+  `ApplicationAttachment.FilePath`, `Signature.FilePath` (all rows), and `BusinessLogo` — the DB
+  stores only the bare logo filename, so the on-disk path is reconstructed as
+  `{BusinessId}/logos/{FileName}`. The app-log folder (`logs/`) is ignored. Path comparison is
+  case-insensitive and separator-normalised; an empty/unknown path is treated as *referenced*
+  (fail-safe — a file is never flagged for deletion on ambiguous input). This matcher is pure and
+  unit-tested (`OrphanedFileMatcherTests`) because a wrong match would eventually delete a live file.
+- **Schema (new `[Storage]` schema).** Migrations `217`–`220`:
+  - `[Storage].[OrphanedFileStatusType]` — reference table seeded `Pending (1)`, `Paused (2)`,
+    `Cancelled (3)`, `Deleted (4)`, each with a `Description`. The admin page's status legend is
+    rendered **from this column**, not a hard-coded banner, so DB admins and the UI share one source.
+  - `[Storage].[OrphanedFileCandidate]` — one row per detected orphan (`RelativePath` UNIQUE,
+    nullable `BusinessId`, `FileSizeBytes`, `DetectedAtUtc`, `ScheduledDeletionAtUtc`, status FK,
+    `CreatedAtUtc`/`UpdatedAtUtc`).
+  - `[Storage].[OrphanedFileDeletionLog]` — permanent audit of removed files; empty until 4b-2.
+  - Two `PlatformConfig` keys: `OrphanedFileCleanupEnabled` (**`'false'`** at seed) and
+    `OrphanedFileGraceDays` (**`'30'`**).
+- **Scan (idempotent, report-only).** `OrphanedFileCleanupService.ScanAsync` walks the root, and for
+  each orphan `MERGE`s a candidate with `ScheduledDeletionAtUtc = now + grace`. Re-scanning only
+  refreshes rows still `Pending`; `Paused` / `Cancelled` / `Deleted` rows are left untouched so an
+  admin's decision — and cancelled *exclusions* — survive future scans. The nightly
+  `OrphanedFileCleanupBackgroundService` (default `03:00` UTC, `OrphanedFileCleanup:ScheduledTimeUtc`)
+  runs the scan only when enabled; it reads config via `PlatformConfigRepository` directly since the
+  job has no `HttpContext`.
+- **Admin surface (SuperAdmin → Storage Cleanup).** `/Admin/Storage/Cleanup` lists candidates and
+  lets an admin **Cancel** (permanent exclusion — kept and never re-listed by future scans, but
+  un-cancellable later), **Pause** (temporary hold, resumable), **Resume** (back to Pending), toggle
+  the enable switch, edit the grace days, and trigger **Scan now**. All dates are converted to the
+  current admin's business time zone (one `IBusinessTimeZoneService.GetTimeZoneAsync` lookup, applied
+  to every row). A separate `/Admin/Storage/DeletionReport` reads the deletion log (empty until 4b-2).
+- **Deployment note.** Migrations `217`–`220` must be run. The feature ships **disabled**; enabling
+  the switch only turns on the nightly *detection* scan — it still deletes nothing until Phase 4b-2.
+- **Regression guard.** The raw-SQL `SELECT` column lists for `Plan`, `Signature`, and the two
+  storage-cleanup entity reads are now single public constants, verified by
+  `RepositorySqlColumnCoverageTests` against the EF model — this catches the "required column not
+  present in the results" class of bug (a mapped column added to an entity but forgotten in a read
+  query) that previously broke Billing, without needing a live SQL Server.
+
 #### `[portal].[PlanModulePermission]`
 
 | Column             | Type                           | Notes                                             |

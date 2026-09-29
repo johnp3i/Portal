@@ -1,0 +1,179 @@
+@using Portal.Web.Models
+@model StorageCleanupViewModel
+@{
+    ViewData["Title"] = "Upcoming for deletion";
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Administration · Storage</div>
+        <h1 class="topbar-heading">Upcoming for deletion</h1>
+        <p class="topbar-subtitle">Orphaned files (no database record references them) detected by the cleanup scan. Report-only — nothing is deleted automatically yet. Times shown in <strong>@Model.TimeZoneLabel</strong>.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="btn btn-secondary" href="/Admin/Storage/DeletionReport">Deletion report</a>
+        <button type="button" class="btn btn-secondary" onclick="scanNow()">Scan now</button>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<!-- Settings -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:220px;">
+            <label>Automatic cleanup</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <label class="da-switch" style="position:relative;display:inline-block;width:48px;height:28px;flex-shrink:0;">
+                    <input type="checkbox" id="cleanupEnabled" @(Model.CleanupEnabled ? "checked" : "") onchange="toggleEnabled(this)" style="display:none;" />
+                    <span class="da-slider" style="position:absolute;inset:0;background:@(Model.CleanupEnabled ? "#129867" : "#cbd5e1");border-radius:999px;transition:.2s;cursor:pointer;"></span>
+                </label>
+                <span id="enabledLabel" style="font-size:13px;color:#5a6a7a;">@(Model.CleanupEnabled ? "Enabled — nightly scan runs" : "Disabled — no scan runs")</span>
+            </div>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Grace period (days)</label>
+            <div style="display:flex;gap:8px;">
+                <input type="number" id="graceDays" min="1" max="365" value="@Model.GraceDays" style="width:90px;padding:8px 10px;border-radius:8px;border:1px solid #d0dce8;" />
+                <button type="button" class="btn btn-secondary" style="font-size:13px;" onclick="saveGraceDays()">Save</button>
+            </div>
+        </div>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:#8D5D07;background:rgba(200,145,46,.06);border:1px solid rgba(200,145,46,.18);border-radius:10px;padding:10px 14px;">
+        Report-only phase: files are detected and listed here, but never deleted yet. Enabling automatic cleanup only turns on the nightly scan that populates this list.
+    </p>
+</section>
+
+<!-- Candidates -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">Candidates</div>
+    @if (!Model.Candidates.Any())
+    {
+        <div class="empty-state"><p>No orphaned files found. Run a scan to check for files with no database record.</p></div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Business</th>
+                        <th style="text-align:right;">Size</th>
+                        <th>Detected</th>
+                        <th>Scheduled deletion</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Candidates)
+                    {
+                        var statusPill = c.StatusName switch
+                        {
+                            "Pending" => "pill-gold",
+                            "Paused" => "pill-slate",
+                            "Cancelled" => "pill-grey",
+                            "Deleted" => "pill-red",
+                            _ => "pill-grey"
+                        };
+                        <tr>
+                            <td style="font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all;">@c.RelativePath</td>
+                            <td>@c.BusinessDisplay</td>
+                            <td style="text-align:right;">@c.SizeDisplay</td>
+                            <td style="white-space:nowrap;">@c.DetectedAtLocal.ToString("dd MMM yyyy HH:mm")</td>
+                            <td style="white-space:nowrap;">@c.ScheduledDeletionAtLocal.ToString("dd MMM yyyy HH:mm")</td>
+                            <td><span class="pill pill-sm @statusPill" title="@c.StatusDescription">@c.StatusName</span></td>
+                            <td style="text-align:right;white-space:nowrap;">
+                                @if (c.CanPauseOrCancel)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--secondary" onclick="pauseCandidate(@c.Id)">Pause</button>
+                                    <button type="button" class="tbl-action tbl-action--secondary" onclick="cancelCandidate(@c.Id)">Cancel</button>
+                                }
+                                @if (c.CanResume)
+                                {
+                                    <button type="button" class="tbl-action tbl-action--primary" onclick="resumeCandidate(@c.Id)">Resume</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<!-- Status legend (descriptions from the database, not hard-coded) -->
+<section class="glass card-pad">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:14px;">What the statuses mean</div>
+    <div style="display:grid;gap:12px;">
+        @foreach (var s in Model.StatusTypes)
+        {
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+                <span class="pill pill-sm" style="flex-shrink:0;min-width:84px;text-align:center;">@s.Name</span>
+                <span style="font-size:13px;color:#5a6a7a;line-height:1.6;">@s.Description</span>
+            </div>
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function tok() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+
+        async function postAx(url, bodyParams, confirmOpts) {
+            if (confirmOpts) {
+                var c = await Swal.fire(confirmOpts);
+                if (!c.isConfirmed) return;
+            }
+            BlockUI.show('Working...');
+            try {
+                var body = new URLSearchParams(bodyParams || {});
+                var resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': tok(), 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                });
+                var data = await resp.json();
+                BlockUI.hide();
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Done', text: data.message, confirmButtonColor: '#0D5EA6' })
+                        .then(function () { location.reload(); });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        function scanNow() {
+            postAx('/Admin/Storage/Cleanup/ScanNow', {}, {
+                title: 'Scan for orphaned files?',
+                text: 'Walks all stored files and lists any with no database record. No files are deleted.',
+                icon: 'question', showCancelButton: true, confirmButtonColor: '#0D5EA6', cancelButtonColor: '#6c757d', confirmButtonText: 'Scan now'
+            });
+        }
+        function cancelCandidate(id) {
+            postAx('/Admin/Storage/Cleanup/Cancel', { id: id }, {
+                title: 'Exclude from deletion?', text: 'This file will be kept and not re-listed by future scans. You can un-cancel it later.',
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#C24A4A', cancelButtonColor: '#6c757d', confirmButtonText: 'Yes, keep it'
+            });
+        }
+        function pauseCandidate(id) { postAx('/Admin/Storage/Cleanup/Pause', { id: id }); }
+        function resumeCandidate(id) { postAx('/Admin/Storage/Cleanup/Resume', { id: id }); }
+
+        function toggleEnabled(el) {
+            postAx('/Admin/Storage/Cleanup/SetEnabled', { enabled: el.checked });
+        }
+        function saveGraceDays() {
+            var v = parseInt(document.getElementById('graceDays').value, 10);
+            if (isNaN(v) || v < 1) {
+                Swal.fire({ icon: 'warning', title: 'Invalid value', text: 'Enter a whole number of days (1 or more).', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            postAx('/Admin/Storage/Cleanup/SetGraceDays', { graceDays: v });
+        }
+    </script>
+}
