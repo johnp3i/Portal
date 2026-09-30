@@ -8,5 +8,6 @@ public enum StatementLineType
     Opening,
     Invoice,
     Payment,
+    CreditNote,
     Closing
 }

@@ -3,9 +3,11 @@ using Portal.Infrastructure.Services;
 namespace Portal.Web.BackgroundServices;
 
 /// <summary>
-/// Nightly orphaned-file scan (Phase 4b-1 — REPORT-ONLY: records candidates, never deletes). Runs
-/// once a day at a configurable UTC time; each run is a no-op unless the SuperAdmin has enabled the
-/// cleanup (PlatformConfig OrphanedFileCleanupEnabled = 'true'). Mirrors PaymentReminderBackgroundService.
+/// Nightly orphaned-file job. Runs once a day at a configurable UTC time. Two independent switches:
+/// detection (PlatformConfig OrphanedFileCleanupEnabled) records/refreshes candidates; deletion
+/// (PlatformConfig OrphanedFileDeletionEnabled) removes files past their scheduled date and logs
+/// them. Both ship disabled, so a full detection cycle can be watched before anything is deleted.
+/// Mirrors PaymentReminderBackgroundService.
 /// </summary>
 public class OrphanedFileCleanupBackgroundService : BackgroundService
 {
@@ -59,8 +61,22 @@ public class OrphanedFileCleanupBackgroundService : BackgroundService
 
             var result = await service.ScanAsync();
             _logger.LogInformation(
-                "Nightly orphan scan: {Scanned} scanned, {Orphans} candidate(s) recorded (grace {Grace}d). Report-only.",
+                "Nightly orphan scan: {Scanned} scanned, {Orphans} candidate(s) recorded (grace {Grace}d).",
                 result.FilesScanned, result.OrphansFound, result.GraceDays);
+
+            // Destructive deletion is a SEPARATE switch (OrphanedFileDeletionEnabled). Detection can
+            // run for weeks populating the report before deletion is ever turned on. Only when the
+            // deletion switch is on do we remove files past their scheduled date.
+            if (!await service.IsDeletionEnabledAsync())
+            {
+                _logger.LogInformation("Orphaned-file deletion is disabled (OrphanedFileDeletionEnabled). Detection-only this run.");
+                return;
+            }
+
+            var deletion = await service.RunCleanupAsync();
+            _logger.LogInformation(
+                "Nightly orphan deletion: {Deleted} deleted, {Skipped} skipped, {Bytes} bytes freed.",
+                deletion.Deleted, deletion.Skipped, deletion.BytesFreed);
         }
         catch (Exception ex)
         {

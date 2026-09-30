@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Services;
 
 namespace Portal.Infrastructure.Repositories;
 
@@ -175,7 +176,11 @@ public class DocumentAttachmentRepository : GenericStoredProcedureRepository<Doc
     }
 
     /// <summary>
-    /// Soft-deletes an attachment by setting IsDeleted = 1 and recording the deletion timestamp.
+    /// Soft-deletes an attachment: sets IsDeleted = 1, stamps DeletedAtUtc, and TOMBSTONES the
+    /// stored path (prefix 'deleted/') so the physical file drops out of the orphaned-file
+    /// referenced set and becomes eligible for grace-period cleanup. The DB row is retained
+    /// (records are never hard-deleted) — the tombstoned path preserves what the path was for audit.
+    /// Idempotent: a path already tombstoned is left as-is (no double prefix).
     /// </summary>
     public async Task SoftDeleteAsync(int id, int businessId)
     {
@@ -184,13 +189,18 @@ public class DocumentAttachmentRepository : GenericStoredProcedureRepository<Doc
             const string query = @"
                 UPDATE [document].[DocumentAttachment]
                 SET [IsDeleted] = 1,
-                    [DeletedAtUtc] = GETUTCDATE()
+                    [DeletedAtUtc] = GETUTCDATE(),
+                    [StoragePath] = CASE
+                        WHEN [StoragePath] LIKE @TombstonePrefix + '%' THEN [StoragePath]
+                        ELSE @TombstonePrefix + [StoragePath]
+                    END
                 WHERE DocumentAttachment.Id = @Id
                   AND DocumentAttachment.BusinessId = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", id),
-                new SqlParameter("@BusinessId", businessId));
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@TombstonePrefix", OrphanedFileMatcher.TombstonePrefix));
         }
         catch (Exception ex)
         {

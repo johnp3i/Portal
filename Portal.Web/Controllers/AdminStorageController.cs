@@ -76,9 +76,13 @@ public class AdminStorageController : Controller
         var tz = await _timeZoneService.GetTimeZoneAsync(_tenantService.CurrentBusinessId);
 
         var candidates = await _cleanupService.GetCandidatesAsync();
+        var preview = await _cleanupService.PreviewDeletionAsync();
         var model = new StorageCleanupViewModel
         {
             CleanupEnabled = await _cleanupService.IsEnabledAsync(),
+            DeletionEnabled = await _cleanupService.IsDeletionEnabledAsync(),
+            DueCount = preview.DueCount,
+            DueBytes = preview.TotalBytes,
             GraceDays = await _cleanupService.GetGraceDaysAsync(),
             StatusTypes = await _cleanupService.GetStatusTypesAsync(),
             TimeZoneLabel = tz.Id,
@@ -213,6 +217,46 @@ public class AdminStorageController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Could not update the grace period." });
+        }
+    }
+
+    [HttpPost("Cleanup/SetDeletionEnabled")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSetDeletionEnabled(bool enabled)
+    {
+        try
+        {
+            await _cleanupService.SetDeletionEnabledAsync(enabled);
+            return Json(new
+            {
+                success = true,
+                message = enabled
+                    ? "Automatic deletion enabled. Orphaned files past their scheduled date will now be permanently removed."
+                    : "Automatic deletion disabled. Files will be detected but not removed."
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Could not update the setting." });
+        }
+    }
+
+    [HttpPost("Cleanup/RunDeletionNow")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostRunDeletionNow()
+    {
+        try
+        {
+            var result = await _cleanupService.RunCleanupAsync();
+            return Json(new
+            {
+                success = true,
+                message = $"Deletion complete: {result.Deleted} file(s) removed, {result.Skipped} skipped, {StorageFormat.Bytes(result.BytesFreed)} freed."
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "The deletion run could not be completed. Please try again." });
         }
     }
 

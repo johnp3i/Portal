@@ -309,17 +309,21 @@ like every other file type (blocked at 100% via the same enforcer). Legacy signa
 backfilled from disk by `SignatureService.BackfillFileSizesAsync` (a one-time pass; a DB migration
 can't stat the filesystem). Deactivated signatures are excluded from usage.
 
-**Orphaned-file cleanup — detection & report (Phase 4b-1, report-only).** A background scan finds
-files on disk that no live database row references, records them as *candidates* with a scheduled
-deletion date, and exposes an admin surface. **Nothing is ever deleted in 4b-1** — the actual
-removal is deferred to Phase 4b-2 so a full detection cycle can be watched first before anything
-destructive runs. Ships **disabled by default**.
+**Orphaned-file cleanup (Phase 4b).** A background scan finds files on disk that no live database
+row references, records them as *candidates* with a scheduled deletion date, and exposes an admin
+surface. **Phase 4b-1** was detection & reporting only (nothing deleted); **Phase 4b-2** adds the
+actual removal, behind a *second, independent* switch so a full detection cycle can be watched
+before anything destructive is turned on. Everything ships **disabled by default**.
 
 - **What "orphaned" means.** A physical file under the storage root (`FileStorage:BasePath`) whose
-  relative path is not in the referenced set built from every file-owning table. The referenced set
-  deliberately includes files that a DB row still *owns* even if hidden from users — soft-deleted
-  document attachments (`IsDeleted = 1`) and inactive signatures both still reference their file, so
-  they are **never** treated as orphans. Path sources: `DocumentAttachment.StoragePath`,
+  relative path is not in the referenced set built from every file-owning table. Inactive signatures
+  still reference their file (never treated as orphans). **Soft-deleted document attachments are
+  tombstoned:** because records are never hard-deleted, when an attachment is soft-deleted its
+  `StoragePath` is rewritten to `deleted/<path>` (see `OrphanedFileMatcher.Tombstone`). The tombstoned
+  row is *excluded* from the referenced set (`StoragePath NOT LIKE 'deleted/%'`), so the real on-disk
+  file drops out of the set and enters the normal grace-period cleanup — while the DB row (and a
+  record of what its path was) is preserved for audit. Path sources: `DocumentAttachment.StoragePath`
+  (non-tombstoned rows only),
   `ApplicationAttachment.FilePath`, `Signature.FilePath` (all rows), and `BusinessLogo` — the DB
   stores only the bare logo filename, so the on-disk path is reconstructed as
   `{BusinessId}/logos/{FileName}`. The app-log folder (`logs/`) is ignored. Path comparison is
@@ -330,27 +334,47 @@ destructive runs. Ships **disabled by default**.
   - `[Storage].[OrphanedFileStatusType]` — reference table seeded `Pending (1)`, `Paused (2)`,
     `Cancelled (3)`, `Deleted (4)`, each with a `Description`. The admin page's status legend is
     rendered **from this column**, not a hard-coded banner, so DB admins and the UI share one source.
-  - `[Storage].[OrphanedFileCandidate]` — one row per detected orphan (`RelativePath` UNIQUE,
-    nullable `BusinessId`, `FileSizeBytes`, `DetectedAtUtc`, `ScheduledDeletionAtUtc`, status FK,
-    `CreatedAtUtc`/`UpdatedAtUtc`).
-  - `[Storage].[OrphanedFileDeletionLog]` — permanent audit of removed files; empty until 4b-2.
-  - Two `PlatformConfig` keys: `OrphanedFileCleanupEnabled` (**`'false'`** at seed) and
-    `OrphanedFileGraceDays` (**`'30'`**).
-- **Scan (idempotent, report-only).** `OrphanedFileCleanupService.ScanAsync` walks the root, and for
-  each orphan `MERGE`s a candidate with `ScheduledDeletionAtUtc = now + grace`. Re-scanning only
+  - `[Storage].[OrphanedFileCandidate]` — one row per detected orphan (`RelativePath` `NVARCHAR(500)`
+    UNIQUE, nullable `BusinessId`, `FileSizeBytes`, `DetectedAtUtc`, `ScheduledDeletionAtUtc`, status
+    FK, `CreatedAtUtc`/`UpdatedAtUtc`). `RelativePath` is capped at 500 (matching the source path
+    columns) so the UNIQUE index key stays under SQL Server's 1700-byte limit — migration `222`
+    corrects databases where `219` first created it as `NVARCHAR(1024)`.
+  - `[Storage].[OrphanedFileDeletionLog]` — permanent audit of removed files (populated by 4b-2).
+  - `PlatformConfig` keys: `OrphanedFileCleanupEnabled` (**`'false'`**, detection) and
+    `OrphanedFileGraceDays` (**`'30'`**) from migration `220`; `OrphanedFileDeletionEnabled`
+    (**`'false'`**, destructive deletion) from migration `221`.
+- **Scan (idempotent, non-destructive).** `OrphanedFileCleanupService.ScanAsync` walks the root, and
+  for each orphan `MERGE`s a candidate with `ScheduledDeletionAtUtc = now + grace`. Re-scanning only
   refreshes rows still `Pending`; `Paused` / `Cancelled` / `Deleted` rows are left untouched so an
   admin's decision — and cancelled *exclusions* — survive future scans. The nightly
   `OrphanedFileCleanupBackgroundService` (default `03:00` UTC, `OrphanedFileCleanup:ScheduledTimeUtc`)
   runs the scan only when enabled; it reads config via `PlatformConfigRepository` directly since the
-  job has no `HttpContext`.
+  job has no `HttpContext`. The scan itself never deletes — removal is the separate 4b-2 step below.
 - **Admin surface (SuperAdmin → Storage Cleanup).** `/Admin/Storage/Cleanup` lists candidates and
   lets an admin **Cancel** (permanent exclusion — kept and never re-listed by future scans, but
   un-cancellable later), **Pause** (temporary hold, resumable), **Resume** (back to Pending), toggle
-  the enable switch, edit the grace days, and trigger **Scan now**. All dates are converted to the
-  current admin's business time zone (one `IBusinessTimeZoneService.GetTimeZoneAsync` lookup, applied
-  to every row). A separate `/Admin/Storage/DeletionReport` reads the deletion log (empty until 4b-2).
-- **Deployment note.** Migrations `217`–`220` must be run. The feature ships **disabled**; enabling
-  the switch only turns on the nightly *detection* scan — it still deletes nothing until Phase 4b-2.
+  the detection switch, edit the grace days, and trigger **Scan now**. It also carries the
+  destructive **Automatic deletion** toggle, a **Run deletion now** action, and a live count of how
+  many candidates are past their scheduled date (both behind strong SweetAlert2 confirmations). All
+  dates are converted to the current admin's business time zone (one
+  `IBusinessTimeZoneService.GetTimeZoneAsync` lookup, applied to every row). A separate
+  `/Admin/Storage/DeletionReport` reads the deletion log.
+- **Deletion (Phase 4b-2 — destructive).** `OrphanedFileCleanupService.RunCleanupAsync` removes the
+  files behind every *due* candidate (`Pending` and past its `ScheduledDeletionAtUtc`). Its core
+  safety guarantee: the referenced set is **rebuilt at deletion time**, and each candidate is
+  re-checked as still-orphaned immediately before removal — a file that became referenced again
+  between the scan and the run is **spared** (returned to `Pending`), never deleted. Files are removed
+  through `IFileStorageService.DeleteAsync` (idempotent); every removal (or "already absent")
+  is written to the deletion log and the candidate is marked `Deleted`. A per-file failure is logged
+  and leaves that row `Pending` to retry — it never aborts the batch. `Paused` / `Cancelled` rows are
+  excluded by the due query, so an admin's hold or exclusion is always honoured. The nightly job runs
+  the scan whenever detection is enabled, then runs deletion **only** when `OrphanedFileDeletionEnabled`
+  is also on. Behaviour is covered by `OrphanedFileCleanupDeletionTests` (re-verification, already-gone,
+  batch-resilience, no-op, preview).
+- **Deployment note.** Migrations `217`–`221` must be run. Both switches ship **disabled**. Enabling
+  detection turns on the nightly scan (non-destructive); files are only ever removed once
+  `OrphanedFileDeletionEnabled` is *also* switched on — so detection can populate the report for as
+  long as needed before any deletion happens.
 - **Regression guard.** The raw-SQL `SELECT` column lists for `Plan`, `Signature`, and the two
   storage-cleanup entity reads are now single public constants, verified by
   `RepositorySqlColumnCoverageTests` against the EF model — this catches the "required column not

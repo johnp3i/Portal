@@ -48,14 +48,26 @@ public class StatementService : IStatementService
             };
         }
 
-        // 1. Compute opening balance: invoiced before period - paid before period
+        // 1. Compute opening balance: invoiced before period - paid before - applied credit before.
+        //    A "still owed" figure must subtract EVERY settlement mechanism, not just payments:
+        //    applied credit notes reduce the balance exactly as payments do (see financial conventions).
         var invoicedBefore = await _statementRepository.GetInvoicedTotalBeforeDateAsync(customerId, businessId, fromDate);
         var paidBefore = await _statementRepository.GetPaidTotalBeforeDateAsync(customerId, businessId, fromDate);
-        var openingBalance = invoicedBefore - paidBefore;
+        var creditedBefore = await _statementRepository.GetAppliedCreditTotalBeforeDateAsync(customerId, businessId, fromDate);
+        var openingBalance = invoicedBefore - paidBefore - creditedBefore;
 
-        // 2. Fetch in-period invoices and payments
+        // 2. Fetch in-period invoices, payments, and applied credit notes
         var invoices = await _statementRepository.GetInvoicesInPeriodAsync(customerId, businessId, fromDate, toDate);
         var payments = await _statementRepository.GetPaymentsInPeriodAsync(customerId, businessId, fromDate, toDate);
+        var appliedCredits = await _statementRepository.GetAppliedCreditsInPeriodAsync(customerId, businessId, fromDate, toDate);
+
+        // Opening line is dated when the customer account was created (reads more naturally than
+        // repeating the filter's from-date). Display-only — does not affect any balance. If the
+        // created date is unknown or falls after the period start, fall back to the from-date.
+        var customerCreatedDate = await _statementRepository.GetCustomerCreatedDateAsync(customerId, businessId);
+        var openingLineDate = customerCreatedDate.HasValue && customerCreatedDate.Value <= fromDate
+            ? customerCreatedDate.Value
+            : fromDate;
 
         // 3. Build statement lines for invoices
         var transactionLines = new List<StatementLineDto>();
@@ -131,8 +143,33 @@ public class StatementService : IStatementService
             });
         }
 
-        // 5. Sort lines chronologically by Date, invoices before payments on same date,
-        //    then payments grouped by target invoice for readability.
+        // 4b. Build statement lines for applied credit notes.
+        //     An applied credit reduces what the customer owes, so it sits on the credit side
+        //     (same as a payment). It is NOT a payment, so PaymentId stays null (no void action).
+        foreach (var credit in appliedCredits)
+        {
+            var reference = credit.CreditNoteNumber;
+            if (!string.IsNullOrEmpty(credit.InvoiceNumber))
+            {
+                reference += $" · {credit.InvoiceNumber}";
+            }
+
+            transactionLines.Add(new StatementLineDto
+            {
+                Date = credit.AppliedDate,
+                Type = StatementLineType.CreditNote,
+                Reference = reference,
+                Description = credit.InvoiceNumber != null
+                    ? $"Credit applied to {credit.InvoiceNumber}"
+                    : "Credit applied",
+                Debit = 0m,
+                Credit = credit.AmountApplied,
+                RunningBalance = 0m
+            });
+        }
+
+        // 5. Sort lines chronologically by Date, invoices before credits/payments on the same date,
+        //    then by description for readability.
         transactionLines = transactionLines
             .OrderBy(l => l.Date)
             .ThenBy(l => l.Type == StatementLineType.Invoice ? 0 : 1)
@@ -145,7 +182,7 @@ public class StatementService : IStatementService
         // Prepend Opening line
         allLines.Add(new StatementLineDto
         {
-            Date = fromDate,
+            Date = openingLineDate,
             Type = StatementLineType.Opening,
             Reference = "Balance brought forward",
             Description = string.Empty,
@@ -178,8 +215,10 @@ public class StatementService : IStatementService
         // 9. Compute summary totals
         var totalInvoiced = transactionLines.Where(l => l.Type == StatementLineType.Invoice).Sum(l => l.Debit);
         var totalPaid = transactionLines.Where(l => l.Type == StatementLineType.Payment).Sum(l => l.Credit);
+        var totalCredited = transactionLines.Where(l => l.Type == StatementLineType.CreditNote).Sum(l => l.Credit);
         var invoiceCount = transactionLines.Count(l => l.Type == StatementLineType.Invoice);
         var paymentCount = transactionLines.Count(l => l.Type == StatementLineType.Payment);
+        var creditNoteCount = transactionLines.Count(l => l.Type == StatementLineType.CreditNote);
 
         // 10. Log audit entry for statement generation
         await _auditLogRepository.InsertAsync(new AuditLog
@@ -200,8 +239,10 @@ public class StatementService : IStatementService
             ClosingBalance = runningBalance,
             TotalInvoiced = totalInvoiced,
             TotalPaid = totalPaid,
+            TotalCredited = totalCredited,
             InvoiceCount = invoiceCount,
             PaymentCount = paymentCount,
+            CreditNoteCount = creditNoteCount,
             Lines = allLines
         };
     }

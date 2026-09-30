@@ -97,6 +97,7 @@
             <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Closing Balance</p>
             <h2 id="closingBalance" style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#C24A4A;margin:0 0 4px 0;">€0.00</h2>
             <p id="closingBalanceLabel" style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">Balance carried forward</p>
+            <p id="closingBalanceHint" style="font-family:'Inter',sans-serif;font-size:12px;color:#129867;margin:6px 0 0 0;display:none;"></p>
         </div>
     </section>
 
@@ -133,6 +134,9 @@
             </tfoot>
         </table>
         </div>
+        <p id="crLegend" style="font-size:12px;color:#5a6a7a;margin:12px 0 0 0;display:none;">
+            <span style="font-weight:700;color:#129867;">CR</span> = credit balance — the customer is in credit (has paid more than invoiced), so this amount is in their favour, not owed to you.
+        </p>
     </section>
 </div>
 
@@ -235,8 +239,11 @@
                     to = new Date(now.getFullYear() - 1, 11, 31);
                     break;
                 case 'all':
-                    from = null;
-                    to = null;
+                    // "All Time" = entire history. The platform's data starts in 2026, so use
+                    // 1 Jan 2026 as the start — early enough to capture every transaction while
+                    // reading as a real date rather than a placeholder like 1900.
+                    from = new Date(2026, 0, 1);
+                    to = now;
                     break;
             }
 
@@ -354,21 +361,48 @@
             document.getElementById('openingBalance').textContent = '€' + formatCurrency(data.openingBalance);
             document.getElementById('totalInvoiced').textContent = '€' + formatCurrency(data.totalInvoiced);
             document.getElementById('totalPaid').textContent = '€' + formatCurrency(data.totalPaid);
-            document.getElementById('closingBalance').textContent = '€' + formatCurrency(data.closingBalance);
+            // Closing balance value + state handled below (supports the "In Credit" case).
             document.getElementById('invoiceCount').textContent = data.invoiceCount + ' invoice' + (data.invoiceCount !== 1 ? 's' : '');
-            document.getElementById('paymentCount').textContent = data.paymentCount + ' payment' + (data.paymentCount !== 1 ? 's' : '');
+            var paymentCountText = data.paymentCount + ' payment' + (data.paymentCount !== 1 ? 's' : '');
+            if (data.creditNoteCount > 0) {
+                paymentCountText += ' · €' + formatCurrency(data.totalCredited) + ' credited (' +
+                    data.creditNoteCount + ' credit note' + (data.creditNoteCount !== 1 ? 's' : '') + ')';
+            }
+            document.getElementById('paymentCount').textContent = paymentCountText;
 
-            // Style closing balance: red if > 0 (outstanding), green if = 0 (settled)
+            // Style closing balance with three states:
+            //   > 0  → red    "Outstanding"  (customer owes money)
+            //   = 0  → green  "Settled"
+            //   < 0  → green  "In Credit"    (customer has paid more than invoiced — a credit in their favour)
+            // Accounting is unchanged; a negative balance is simply framed positively so non-accountants
+            // read it as "money on account" rather than a scary minus. The in-credit amount is shown as a
+            // positive figure with a plain-language explanation.
             var closingBalanceEl = document.getElementById('closingBalance');
             var closingBalanceCard = document.getElementById('closingBalanceCard');
+            var closingBalanceLabel = document.getElementById('closingBalanceLabel');
+            var closingBalanceHint = document.getElementById('closingBalanceHint');
             if (data.closingBalance > 0) {
+                closingBalanceEl.textContent = '€' + formatCurrency(data.closingBalance);
                 closingBalanceEl.style.color = '#C24A4A';
                 closingBalanceCard.style.borderLeftColor = '#C24A4A';
-                document.getElementById('closingBalanceLabel').textContent = 'Outstanding';
-            } else {
+                closingBalanceLabel.textContent = 'Outstanding';
+                closingBalanceHint.style.display = 'none';
+            } else if (data.closingBalance === 0) {
+                closingBalanceEl.textContent = '€' + formatCurrency(0);
                 closingBalanceEl.style.color = '#129867';
                 closingBalanceCard.style.borderLeftColor = '#129867';
-                document.getElementById('closingBalanceLabel').textContent = 'Settled';
+                closingBalanceLabel.textContent = 'Settled';
+                closingBalanceHint.style.display = 'none';
+            } else {
+                // In credit — show the magnitude as a positive amount.
+                var creditAmount = Math.abs(data.closingBalance);
+                closingBalanceEl.textContent = '€' + formatCurrency(creditAmount);
+                closingBalanceEl.style.color = '#129867';
+                closingBalanceCard.style.borderLeftColor = '#129867';
+                closingBalanceLabel.textContent = 'In Credit';
+                closingBalanceHint.textContent = 'This customer has paid €' + formatCurrency(creditAmount) +
+                    ' more than currently invoiced — a credit on their account.';
+                closingBalanceHint.style.display = 'block';
             }
 
             // Render transaction table
@@ -393,17 +427,19 @@
                 // Type pill
                 var tdType = document.createElement('td');
                 var pillClass = 'pill-blue';
+                var typeLabel = line.type;
                 if (line.type === 'Invoice') pillClass = 'pill-gold';
                 else if (line.type === 'Payment') pillClass = 'pill-green';
+                else if (line.type === 'CreditNote') { pillClass = 'pill-cyan'; typeLabel = 'Credit Note'; }
                 else if (line.type === 'Closing') pillClass = 'pill-red';
-                tdType.innerHTML = '<span class="pill ' + pillClass + '">' + line.type + '</span>';
+                tdType.innerHTML = '<span class="pill ' + pillClass + '">' + typeLabel + '</span>';
                 tr.appendChild(tdType);
 
                 // Reference — styled based on line type
                 var tdRef = document.createElement('td');
                 if (line.type === 'Invoice') {
                     tdRef.innerHTML = '<strong style="color:#0D5EA6;">' + escapeHtml(line.reference) + '</strong>';
-                } else if (line.type === 'Payment') {
+                } else if (line.type === 'Payment' || line.type === 'CreditNote') {
                     // Split reference: highlight invoice number, mute the rest
                     var refText = line.reference || '';
                     var invoiceMatch = refText.match(/(INV-\d+-\d+)/);
@@ -439,11 +475,18 @@
                 }
                 tr.appendChild(tdCredit);
 
-                // Running Balance
+                // Running Balance. A negative balance means the customer is in credit; show it as
+                // a positive amount suffixed with "CR" (standard accounting shorthand) in green,
+                // instead of a bare minus, so it reads as money on account rather than a problem.
                 var tdBalance = document.createElement('td');
                 tdBalance.style.textAlign = 'right';
                 tdBalance.style.fontWeight = '700';
-                tdBalance.textContent = '€' + formatCurrency(line.runningBalance);
+                if (line.runningBalance < 0) {
+                    tdBalance.textContent = '€' + formatCurrency(Math.abs(line.runningBalance)) + ' CR';
+                    tdBalance.style.color = '#129867';
+                } else {
+                    tdBalance.textContent = '€' + formatCurrency(line.runningBalance);
+                }
                 tr.appendChild(tdBalance);
 
                 // Actions (Void + Receipt buttons for payments)
@@ -474,12 +517,19 @@
 
             // Render footer totals
             var tfoot = document.getElementById('transactionTableFooter');
+            var closingCell = closingBalance < 0
+                ? '€' + formatCurrency(Math.abs(closingBalance)) + ' CR'
+                : '€' + formatCurrency(closingBalance);
             tfoot.innerHTML = '<tr style="font-weight:700;border-top:2px solid #0D5EA6;">' +
                 '<td colspan="3" style="text-align:right;">Period Totals</td>' +
                 '<td style="text-align:right;">€' + formatCurrency(totalDebit) + '</td>' +
                 '<td style="text-align:right;">€' + formatCurrency(totalCredit) + '</td>' +
-                '<td style="text-align:right;padding-right:4px;color:' + (closingBalance > 0 ? '#C24A4A' : '#129867') + ';">€' + formatCurrency(closingBalance) + '</td>' +
+                '<td style="text-align:right;padding-right:4px;color:' + (closingBalance > 0 ? '#C24A4A' : '#129867') + ';">' + closingCell + '</td>' +
                 '</tr>';
+
+            // Show the "CR" legend only when a credit balance actually appears in the statement.
+            var hasCredit = closingBalance < 0 || lines.some(function (l) { return l.runningBalance < 0; });
+            document.getElementById('crLegend').style.display = hasCredit ? 'block' : 'none';
         }
 
         function formatCurrency(value) {

@@ -8,6 +8,13 @@
                  layout). BusinessId is nullable — the scan infers it from the first path segment
                  where possible, but a stray file at the root may have no resolvable business.
 
+                 RelativePath is NVARCHAR(500) so the UNIQUE index key stays within SQL Server's
+                 1700-byte nonclustered index limit (500 chars x 2 bytes = 1000 bytes). This also
+                 matches the source columns it is derived from — [document].[DocumentAttachment].
+                 [StoragePath], [portal].[Signature].[FilePath] and
+                 [compliance].[ApplicationAttachment].[FilePath] are all NVARCHAR(500) — so it can
+                 never truncate a real path.
+
     This script is idempotent — safe to run multiple times.
 */
 
@@ -21,7 +28,7 @@ IF NOT EXISTS (
 BEGIN
     CREATE TABLE [Storage].[OrphanedFileCandidate] (
         [Id]                      INT            IDENTITY(1,1) NOT NULL PRIMARY KEY,
-        [RelativePath]            NVARCHAR(1024) NOT NULL,
+        [RelativePath]            NVARCHAR(500)  NOT NULL,
         [BusinessId]              INT            NULL,
         [FileSizeBytes]           BIGINT         NOT NULL DEFAULT 0,
         [DetectedAtUtc]           DATETIME       NOT NULL DEFAULT GETUTCDATE(),

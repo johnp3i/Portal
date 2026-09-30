@@ -15,7 +15,7 @@
 </div>
 
 <section class="glass card-pad">
-    <form method="get" asp-action="Index" asp-controller="Quotation">
+    <form id="quotationFilterForm" method="get" asp-action="Index" asp-controller="Quotation">
         <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="quotationFilterPanel">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
             Filters
@@ -184,8 +184,12 @@
             document.getElementById('dateFrom').value = from ? from.toISOString().slice(0, 10) : '';
             document.getElementById('dateTo').value = to ? to.toISOString().slice(0, 10) : '';
             document.querySelectorAll('.period-shortcut').forEach(function(b) { b.classList.remove('active'); });
-            event.target.classList.add('active');
-            document.querySelector('form').submit();
+            if (event && event.target && event.target.classList) {
+                event.target.classList.add('active');
+            }
+            // Submit the filter form specifically. Using document.querySelector('form')
+            // would grab the first form in the DOM (the layout's logout form), signing the user out.
+            document.getElementById('quotationFilterForm').submit();
         }
 
         async function downloadQuotationPdf(quotationId) {

@@ -10,8 +10,10 @@ namespace Portal.Infrastructure.Services;
 /// The referenced-path set is assembled by the caller from every file-owning table, each mapped to
 /// the SAME relative-path form used on disk:
 /// <list type="bullet">
-/// <item>Document attachments — <c>DocumentAttachment.StoragePath</c> verbatim (ALL rows, incl.
-/// soft-deleted <c>IsDeleted = 1</c>, which still reference their file).</item>
+/// <item>Document attachments — <c>DocumentAttachment.StoragePath</c> verbatim, EXCLUDING rows
+/// whose path has been tombstoned (<c>deleted/…</c>). A soft-deleted attachment is tombstoned so
+/// its file drops out of the referenced set and becomes eligible for grace-period cleanup, while
+/// the DB row itself is kept (records are never hard-deleted).</item>
 /// <item>Compliance attachments — <c>ApplicationAttachment.FilePath</c> verbatim.</item>
 /// <item>Logos — reconstructed as <c>{BusinessId}/logos/{FileName}</c> (the DB stores only the bare
 /// filename; the on-disk folder is "logos").</item>
@@ -65,4 +67,27 @@ public static class OrphanedFileMatcher
     /// <summary>Reconstructs a logo's on-disk relative path from its business id + bare filename.</summary>
     public static string LogoRelativePath(int businessId, string fileName) =>
         Normalize($"{businessId}/logos/{fileName}");
+
+    /// <summary>
+    /// Prefix stamped onto a soft-deleted attachment's stored path so its file is released for
+    /// grace-period cleanup while the DB row (and the audit trail of what the path was) survives.
+    /// No such folder exists on disk, so a tombstoned path can never match a real file.
+    /// </summary>
+    public const string TombstonePrefix = "deleted/";
+
+    /// <summary>
+    /// Tombstones a stored path: <c>1/Purchase/5/abc_file.pdf</c> →
+    /// <c>deleted/1/Purchase/5/abc_file.pdf</c>. Idempotent — a path that is already tombstoned is
+    /// returned unchanged, so re-running a soft-delete never double-prefixes.
+    /// </summary>
+    public static string Tombstone(string? path)
+    {
+        var norm = Normalize(path);
+        if (norm.Length == 0) return norm;
+        return IsTombstoned(norm) ? norm : TombstonePrefix + norm;
+    }
+
+    /// <summary>True when a stored path has already been tombstoned (its file is released).</summary>
+    public static bool IsTombstoned(string? path) =>
+        Normalize(path).StartsWith(TombstonePrefix, StringComparison.OrdinalIgnoreCase);
 }

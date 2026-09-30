@@ -3320,7 +3320,7 @@ public class PortalDbContext : DbContext
         {
             entity.ToTable("OrphanedFileCandidate", "Storage");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.RelativePath).IsRequired().HasMaxLength(1024);
+            entity.Property(e => e.RelativePath).IsRequired().HasMaxLength(500);
             entity.Property(e => e.FileSizeBytes).IsRequired();
             entity.Property(e => e.DetectedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.ScheduledDeletionAtUtc).IsRequired();

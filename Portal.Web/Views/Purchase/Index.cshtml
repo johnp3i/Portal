@@ -732,7 +732,12 @@
     })();
 </script>
 <script>
+// Remembers the current attachment modal's target so we can reopen it after a nested confirm
+// dialog (e.g. the delete confirmation) has closed the attachments modal.
+var _attachModalContext = { entityId: null, label: '' };
+
 async function showAttachmentModal(entityId, label) {
+    _attachModalContext = { entityId: entityId, label: label };
     // Open the modal, then load its contents. This modal both LISTS existing files and lets
     // the user UPLOAD a new one directly from the purchase list — no need to open the full
     // edit page just to attach an invoice.
@@ -784,8 +789,7 @@ function updateAttachmentCountCell(entityId, count) {
 // upload control. Called on open and after each upload/delete so the view stays fresh.
 async function renderAttachmentModal(entityId) {
     var body = document.getElementById('attachModalBody');
-    if (!body) return;
-    body.innerHTML = 'Loading\u2026';
+    if (body) body.innerHTML = 'Loading\u2026';
 
     var files = [];
     try {
@@ -794,8 +798,13 @@ async function renderAttachmentModal(entityId) {
         if (result.success && Array.isArray(result.data)) files = result.data;
     } catch (e) { /* fall through to empty list */ }
 
-    // Keep the table's paperclip badge in sync with the current count (live, no reload).
+    // Keep the table's paperclip badge in sync with the current count (live, no reload). This must
+    // run even when the modal body is gone — e.g. after a delete, where the SweetAlert confirm
+    // dialog has replaced the attachments modal, so #attachModalBody no longer exists.
     updateAttachmentCountCell(entityId, files.length);
+
+    // Nothing more to render if the modal body isn't in the DOM (see above).
+    if (!body) return;
 
     var html = '';
 
@@ -908,7 +917,10 @@ function deleteAttachmentFromModal(attachmentId, entityId) {
             var result = await response.json();
             BlockUI.hide();
             if (result.success) {
-                renderAttachmentModal(entityId);
+                // The confirm dialog replaced the attachments modal, so reopen it: this re-renders
+                // the (now updated) file list AND — because renderAttachmentModal runs on open —
+                // refreshes the table's paperclip badge to "Add" when the last file is removed.
+                showAttachmentModal(entityId, _attachModalContext.label);
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Could not delete the file.', confirmButtonColor: '#0D5EA6' });
             }

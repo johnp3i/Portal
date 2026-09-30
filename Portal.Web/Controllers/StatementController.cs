@@ -105,8 +105,10 @@ public class StatementController : Controller
             closingBalance = result.ClosingBalance,
             totalInvoiced = result.TotalInvoiced,
             totalPaid = result.TotalPaid,
+            totalCredited = result.TotalCredited,
             invoiceCount = result.InvoiceCount,
             paymentCount = result.PaymentCount,
+            creditNoteCount = result.CreditNoteCount,
             lines = result.Lines.Select(l => new
             {
                 date = l.Date.ToString("yyyy-MM-dd"),

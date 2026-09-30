@@ -73,15 +73,45 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
     {
         try
         {
+            // Sum every non-voided payment that belongs to this customer BEFORE the period,
+            // counting the exact same set of rows the in-period line query renders
+            // (see GetPaymentsInPeriodAsync + StatementService payment-line logic) so the
+            // opening balance reconciles with the running balance across every period.
+            //
+            // A customer's payment is either:
+            //   - linked to one of the customer's invoices (Payment.InvoiceId -> Invoice.CustomerId), or
+            //   - a direct/standalone credit on the account (Payment.CustomerId), which has InvoiceId = NULL.
+            // The old query used an INNER JOIN on Payment.InvoiceId, which silently dropped
+            // standalone credits (NULL InvoiceId never matches), so the opening balance ignored
+            // unallocated credits while the line query included them — the source of the mismatch.
+            //
+            // Parent/child de-dup: an allocated global payment is stored as one parent row
+            // (InvoiceId NULL, ParentPaymentId NULL, Amount = total) plus child rows
+            // (InvoiceId set, ParentPaymentId set). Summing all rows would double-count the
+            // parent total against its children. The statement renders children always and the
+            // parent only when it has NO non-voided children (a genuine unallocated credit), so
+            // we exclude any parent row that has at least one non-voided child.
             const string query = @"
                 SELECT ISNULL(SUM([revenue].[Payment].[Amount]), 0)
                 FROM [revenue].[Payment]
-                INNER JOIN [invoice].[Invoice]
+                LEFT JOIN [invoice].[Invoice]
                     ON [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
-                WHERE [invoice].[Invoice].[CustomerId] = @CustomerId
-                  AND [revenue].[Payment].[BusinessId] = @BusinessId
+                WHERE [revenue].[Payment].[BusinessId] = @BusinessId
                   AND [revenue].[Payment].[IsVoided] = 0
-                  AND [revenue].[Payment].[PaymentDateUtc] < @BeforeDate";
+                  AND [revenue].[Payment].[PaymentDateUtc] < @BeforeDate
+                  AND (
+                      [invoice].[Invoice].[CustomerId] = @CustomerId
+                      OR [revenue].[Payment].[CustomerId] = @CustomerId
+                  )
+                  AND NOT (
+                      [revenue].[Payment].[InvoiceId] IS NULL
+                      AND [revenue].[Payment].[ParentPaymentId] IS NULL
+                      AND EXISTS (
+                          SELECT 1 FROM [revenue].[Payment] AS [ChildPayment]
+                          WHERE [ChildPayment].[ParentPaymentId] = [revenue].[Payment].[Id]
+                            AND [ChildPayment].[IsVoided] = 0
+                      )
+                  )";
 
             var connection = _context.Database.GetDbConnection();
 
@@ -262,6 +292,190 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
             }
 
             return results;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the total non-voided credit applied against a customer's invoices BEFORE the period start.
+    /// Feeds the opening balance so that credits applied earlier reduce the brought-forward balance,
+    /// exactly as payments do. Returns 0 when no applied credit exists.
+    ///
+    /// Mirrors the authoritative join pattern in CreditNoteRepository.GetTotalAppliedCreditAsync and
+    /// DashboardService: applied credit = SUM(CreditNoteApplication.AmountApplied) for non-voided
+    /// applications whose parent CreditNote belongs to the business, scoped to this customer.
+    /// </summary>
+    public virtual async Task<decimal> GetAppliedCreditTotalBeforeDateAsync(int customerId, int businessId, DateOnly beforeDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT ISNULL(SUM([credit].[CreditNoteApplication].[AmountApplied]), 0)
+                FROM [credit].[CreditNoteApplication]
+                INNER JOIN [credit].[CreditNote]
+                    ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                WHERE [credit].[CreditNote].[CustomerId] = @CustomerId
+                  AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                  AND [credit].[CreditNoteApplication].[IsVoided] = 0
+                  AND [credit].[CreditNoteApplication].[AppliedAtUtc] < @BeforeDate";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CustomerId", customerId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@BeforeDate", beforeDate.ToDateTime(TimeOnly.MinValue)));
+
+                var result = await command.ExecuteScalarAsync();
+                return result != null && result != DBNull.Value ? (decimal)result : 0m;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all non-voided credit-note applications against a customer's invoices WITHIN the date range,
+    /// ordered by the date the credit was applied. Each application becomes a credit line on the statement
+    /// (it reduces what the customer owes, same side as a payment). Uses the same authoritative join as
+    /// CreditNoteRepository.GetTotalAppliedCreditAsync.
+    /// </summary>
+    public virtual async Task<List<StatementCreditNoteDto>> GetAppliedCreditsInPeriodAsync(int customerId, int businessId, DateOnly fromDate, DateOnly toDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [credit].[CreditNoteApplication].[Id],
+                       [credit].[CreditNoteApplication].[AppliedAtUtc],
+                       [credit].[CreditNoteApplication].[AmountApplied],
+                       [credit].[CreditNote].[CreditNoteNumber],
+                       [invoice].[Invoice].[InvoiceNumber]
+                FROM [credit].[CreditNoteApplication]
+                INNER JOIN [credit].[CreditNote]
+                    ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                LEFT JOIN [invoice].[Invoice]
+                    ON [credit].[CreditNoteApplication].[InvoiceId] = [invoice].[Invoice].[Id]
+                WHERE [credit].[CreditNote].[CustomerId] = @CustomerId
+                  AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                  AND [credit].[CreditNoteApplication].[IsVoided] = 0
+                  AND [credit].[CreditNoteApplication].[AppliedAtUtc] >= @FromDate
+                  AND [credit].[CreditNoteApplication].[AppliedAtUtc] < @ToDateExclusive
+                ORDER BY [credit].[CreditNoteApplication].[AppliedAtUtc]";
+
+            var results = new List<StatementCreditNoteDto>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CustomerId", customerId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@FromDate", fromDate.ToDateTime(TimeOnly.MinValue)));
+                // AppliedAtUtc is a full timestamp; use an exclusive upper bound of the day after
+                // toDate so applications timestamped later on the final day are still included.
+                command.Parameters.Add(new SqlParameter("@ToDateExclusive", toDate.AddDays(1).ToDateTime(TimeOnly.MinValue)));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new StatementCreditNoteDto
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        AppliedDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("AppliedAtUtc"))),
+                        AmountApplied = reader.GetDecimal(reader.GetOrdinal("AmountApplied")),
+                        CreditNoteNumber = reader.GetString(reader.GetOrdinal("CreditNoteNumber")),
+                        InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the date the customer account was created ([customer].[Customer].[CreatedAtUtc]),
+    /// used to date the statement's Opening ("Balance brought forward") line. Returns null when
+    /// the customer is not found for this business. This is display-only and does not affect any
+    /// balance computation.
+    /// </summary>
+    public virtual async Task<DateOnly?> GetCustomerCreatedDateAsync(int customerId, int businessId)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [customer].[Customer].[CreatedAtUtc]
+                FROM [customer].[Customer]
+                WHERE [customer].[Customer].[Id] = @CustomerId
+                  AND [customer].[Customer].[BusinessId] = @BusinessId";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CustomerId", customerId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+
+                var result = await command.ExecuteScalarAsync();
+                if (result == null || result == DBNull.Value)
+                    return null;
+
+                return DateOnly.FromDateTime((DateTime)result);
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
         }
         catch (Exception)
         {

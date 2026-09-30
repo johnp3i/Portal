@@ -65,12 +65,11 @@ public class OrphanedFileMatcherTests
     }
 
     [Fact]
-    public void SoftDeletedDocumentAttachment_StillInSet_IsReferenced_NotOrphaned()
+    public void PathPresentInSet_IsReferenced_NotOrphaned()
     {
-        // The service includes soft-deleted (IsDeleted=1) DocumentAttachment paths in the set, so a
-        // restore never loses its file. From the matcher's view it's simply present → referenced.
-        var set = Referenced("1/Invoice/3/guid_softdeleted.pdf");
-        Assert.False(OrphanedFileMatcher.IsOrphaned("1/Invoice/3/guid_softdeleted.pdf", set));
+        // Whatever the caller put in the set is, by definition, referenced from the matcher's view.
+        var set = Referenced("1/Invoice/3/guid_live.pdf");
+        Assert.False(OrphanedFileMatcher.IsOrphaned("1/Invoice/3/guid_live.pdf", set));
     }
 
     [Fact]
@@ -115,5 +114,59 @@ public class OrphanedFileMatcherTests
     {
         var set = Referenced(); // nothing referenced
         Assert.True(OrphanedFileMatcher.IsOrphaned("1/Purchase/5/guid_invoice.pdf", set));
+    }
+
+    // ── Tombstone (soft-delete releases a file for grace-period cleanup) ──────
+
+    [Fact]
+    public void Tombstone_PrefixesThePath()
+    {
+        Assert.Equal("deleted/1/Purchase/5/guid_invoice.pdf",
+            OrphanedFileMatcher.Tombstone("1/Purchase/5/guid_invoice.pdf"));
+    }
+
+    [Fact]
+    public void Tombstone_IsIdempotent_NoDoublePrefix()
+    {
+        var once = OrphanedFileMatcher.Tombstone("1/Purchase/5/x.pdf");
+        var twice = OrphanedFileMatcher.Tombstone(once);
+        Assert.Equal(once, twice);
+        Assert.Equal("deleted/1/Purchase/5/x.pdf", twice);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Tombstone_EmptyInput_StaysEmpty(string? input)
+    {
+        Assert.Equal(string.Empty, OrphanedFileMatcher.Tombstone(input));
+    }
+
+    [Fact]
+    public void Tombstone_NormalizesBackslashesBeforePrefixing()
+    {
+        Assert.Equal("deleted/1/Purchase/5/x.pdf",
+            OrphanedFileMatcher.Tombstone(@"1\Purchase\5\x.pdf"));
+    }
+
+    [Fact]
+    public void IsTombstoned_DetectsPrefix_CaseInsensitive()
+    {
+        Assert.True(OrphanedFileMatcher.IsTombstoned("deleted/1/Purchase/5/x.pdf"));
+        Assert.True(OrphanedFileMatcher.IsTombstoned("DELETED/1/Purchase/5/x.pdf"));
+        Assert.False(OrphanedFileMatcher.IsTombstoned("1/Purchase/5/x.pdf"));
+        Assert.False(OrphanedFileMatcher.IsTombstoned(null));
+    }
+
+    [Fact]
+    public void TombstonedPath_NotMatchingRealDiskPath_MakesFileOrphaned()
+    {
+        // After soft-delete the DB row holds the tombstoned path, so the referenced set (built from
+        // non-tombstoned rows) no longer contains the real on-disk path → the file is now an orphan
+        // and enters the normal grace-period cleanup.
+        var realPath = "1/Purchase/5/guid_invoice.pdf";
+        var set = Referenced(OrphanedFileMatcher.Tombstone(realPath)); // only the tombstoned form is present
+        Assert.True(OrphanedFileMatcher.IsOrphaned(realPath, set));
     }
 }

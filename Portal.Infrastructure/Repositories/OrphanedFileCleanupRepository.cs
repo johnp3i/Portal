@@ -54,15 +54,20 @@ public class OrphanedFileCleanupRepository
     /// Includes soft-deleted document attachments and inactive signatures (they still own a file).
     /// Logos are reconstructed to their on-disk form ({BusinessId}/logos/{FileName}).
     /// </summary>
-    public async Task<List<string>> GetAllReferencedPathsAsync()
+    public virtual async Task<List<string>> GetAllReferencedPathsAsync()
     {
         try
         {
             var paths = new List<string>();
 
-            // Document attachments — StoragePath verbatim, ALL rows (incl. IsDeleted = 1).
+            // Document attachments — StoragePath verbatim, ALL rows EXCEPT tombstoned ones. A
+            // soft-deleted attachment's path is tombstoned ('deleted/…') so it drops out of the
+            // referenced set here and its file becomes eligible for grace-period cleanup, while the
+            // DB row itself is kept (records are never hard-deleted).
             paths.AddRange(await _context.Database
-                .SqlQueryRaw<string>("SELECT DocumentAttachment.StoragePath AS [Value] FROM [document].[DocumentAttachment]")
+                .SqlQueryRaw<string>(
+                    "SELECT DocumentAttachment.StoragePath AS [Value] FROM [document].[DocumentAttachment] WHERE DocumentAttachment.StoragePath NOT LIKE @Tombstone + '%'",
+                    new SqlParameter("@Tombstone", OrphanedFileMatcher.TombstonePrefix))
                 .ToListAsync());
 
             // Compliance attachments — FilePath verbatim.
@@ -159,8 +164,74 @@ public class OrphanedFileCleanupRepository
         }
     }
 
-    /// <summary>Sets a candidate's status (cancel/pause/resume). Resume returns it to Pending.</summary>
-    public async Task SetCandidateStatusAsync(int candidateId, int statusTypeId)
+    /// <summary>
+    /// Candidates that are due for deletion RIGHT NOW: still <c>Pending</c> and whose scheduled
+    /// deletion date has passed. Paused, Cancelled and already-Deleted rows are excluded by the
+    /// status filter, so an admin's hold/exclusion is always honoured. Ordered oldest-scheduled
+    /// first. Used by the deletion pass (Phase 4b-2) and the "what would be deleted" preview.
+    /// </summary>
+    public virtual async Task<List<OrphanedFileCandidateRow>> GetDueCandidatesAsync(DateTime nowUtc)
+    {
+        try
+        {
+            const string query = @"
+                SELECT c.[Id] AS [Id],
+                       c.[RelativePath] AS [RelativePath],
+                       c.[BusinessId] AS [BusinessId],
+                       c.[FileSizeBytes] AS [FileSizeBytes],
+                       c.[DetectedAtUtc] AS [DetectedAtUtc],
+                       c.[ScheduledDeletionAtUtc] AS [ScheduledDeletionAtUtc],
+                       c.[OrphanedFileStatusTypeId] AS [OrphanedFileStatusTypeId],
+                       s.[Name] AS [StatusName],
+                       s.[Description] AS [StatusDescription]
+                FROM [Storage].[OrphanedFileCandidate] c
+                INNER JOIN [Storage].[OrphanedFileStatusType] s
+                    ON s.[Id] = c.[OrphanedFileStatusTypeId]
+                WHERE c.[OrphanedFileStatusTypeId] = @PendingStatus
+                  AND c.[ScheduledDeletionAtUtc] <= @NowUtc
+                ORDER BY c.[ScheduledDeletionAtUtc] ASC";
+
+            return await _context.Database
+                .SqlQueryRaw<OrphanedFileCandidateRow>(query,
+                    new SqlParameter("@PendingStatus", OrphanedFileStatus.Pending),
+                    new SqlParameter("@NowUtc", nowUtc))
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Records a permanent deletion in the audit log ([Storage].[OrphanedFileDeletionLog]). Called
+    /// once per file actually removed (or confirmed already gone) by the deletion pass.
+    /// </summary>
+    public virtual async Task InsertDeletionLogAsync(string relativePath, int? businessId, long fileSizeBytes, string reason, DateTime deletedAtUtc)
+    {
+        try
+        {
+            const string query = @"
+                INSERT INTO [Storage].[OrphanedFileDeletionLog]
+                    ([RelativePath], [BusinessId], [FileSizeBytes], [Reason], [DeletedAtUtc], [CreatedAtUtc])
+                VALUES
+                    (@RelativePath, @BusinessId, @FileSizeBytes, @Reason, @DeletedAtUtc, GETUTCDATE())";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@RelativePath", relativePath),
+                new SqlParameter("@BusinessId", (object?)businessId ?? DBNull.Value),
+                new SqlParameter("@FileSizeBytes", fileSizeBytes),
+                new SqlParameter("@Reason", reason),
+                new SqlParameter("@DeletedAtUtc", deletedAtUtc));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>Sets a candidate's status (cancel/pause/resume/deleted). Resume returns it to Pending.</summary>
+    public virtual async Task SetCandidateStatusAsync(int candidateId, int statusTypeId)
     {
         try
         {

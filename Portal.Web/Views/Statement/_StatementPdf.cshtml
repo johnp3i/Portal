@@ -4,6 +4,17 @@
     var statement = Model.Statement;
     var currencySymbol = Model.CurrencySymbol;
     var lines = statement.Lines;
+
+    // Closing balance framing (accounting unchanged; display only):
+    //   > 0 → Outstanding, = 0 → Settled, < 0 → In Credit (shown as a positive amount + "CR").
+    var isInCredit = statement.ClosingBalance < 0;
+    var closingLabel = statement.ClosingBalance > 0 ? "Outstanding" : isInCredit ? "In Credit" : "Settled";
+    var closingClass = statement.ClosingBalance > 0 ? "balance-outstanding" : "balance-settled";
+    var closingDisplay = isInCredit
+        ? $"{currencySymbol}{Math.Abs(statement.ClosingBalance):N2} CR"
+        : $"{currencySymbol}{statement.ClosingBalance:N2}";
+    // Show the "CR" legend only when a credit balance actually appears anywhere in the statement.
+    var hasCreditBalance = isInCredit || lines.Any(l => l.RunningBalance < 0);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -183,6 +194,7 @@
             letter-spacing: 0.04em;
         }
         .type-pill.opening { background: #E3F0FF; color: var(--blue); }
+        .type-pill.creditnote { background: #E4F5FC; color: #2b8fc4; }
         .type-pill.invoice { background: #FFF5E0; color: var(--warning); }
         .type-pill.payment { background: #E6F7F0; color: var(--success); }
         .type-pill.closing { background: #FDEAEA; color: var(--danger); }
@@ -267,14 +279,16 @@
         <div class="kpi-card">
             <div class="kpi-label">Total Paid</div>
             <div class="kpi-value">@currencySymbol@statement.TotalPaid.ToString("N2")</div>
-            <div class="kpi-sub">@statement.PaymentCount payment@(statement.PaymentCount != 1 ? "s" : "")</div>
+            <div class="kpi-sub">
+                @statement.PaymentCount payment@(statement.PaymentCount != 1 ? "s" : "")@(statement.CreditNoteCount > 0 ? $" · {currencySymbol}{statement.TotalCredited:N2} credited" : "")
+            </div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Closing Balance</div>
-            <div class="kpi-value @(statement.ClosingBalance > 0 ? "balance-outstanding" : "balance-settled")">
-                @currencySymbol@statement.ClosingBalance.ToString("N2")
+            <div class="kpi-value @closingClass">
+                @closingDisplay
             </div>
-            <div class="kpi-sub">@(statement.ClosingBalance > 0 ? "Outstanding" : "Settled")</div>
+            <div class="kpi-sub">@closingLabel</div>
         </div>
     </div>
 
@@ -299,10 +313,11 @@
                     : line.Type == Portal.Infrastructure.Models.StatementLineType.Closing ? "row-closing"
                     : "";
                 var pillClass = line.Type.ToString().ToLower();
+                var typeLabel = line.Type == Portal.Infrastructure.Models.StatementLineType.CreditNote ? "Credit Note" : line.Type.ToString();
 
                 <tr class="@rowClass">
                     <td>@line.Date.ToString("dd MMM yyyy")</td>
-                    <td><span class="type-pill @pillClass">@line.Type</span></td>
+                    <td><span class="type-pill @pillClass">@typeLabel</span></td>
                     <td>@line.Reference</td>
                     <td>@line.Description</td>
                     <td class="right">
@@ -333,8 +348,10 @@
                             <span style="color:var(--muted);">—</span>
                         }
                     </td>
-                    <td class="right @(line.RunningBalance > 0 ? "balance-outstanding" : line.RunningBalance == 0 ? "balance-settled" : "")">
-                        @currencySymbol@line.RunningBalance.ToString("N2")
+                    <td class="right @(line.RunningBalance > 0 ? "balance-outstanding" : "balance-settled")">
+                        @(line.RunningBalance < 0
+                            ? $"{currencySymbol}{Math.Abs(line.RunningBalance):N2} CR"
+                            : $"{currencySymbol}{line.RunningBalance:N2}")
                     </td>
                 </tr>
             }
@@ -343,13 +360,21 @@
             <tr class="totals-footer">
                 <td colspan="4" style="text-align:right;font-weight:700;">Period Totals</td>
                 <td class="right">@currencySymbol@statement.TotalInvoiced.ToString("N2")</td>
-                <td class="right">@currencySymbol@statement.TotalPaid.ToString("N2")</td>
-                <td class="right @(statement.ClosingBalance > 0 ? "balance-outstanding" : "balance-settled")">
-                    @currencySymbol@statement.ClosingBalance.ToString("N2")
+                @* Credit column = payments + applied credit notes, so opening + debit − credit reconciles to closing. *@
+                <td class="right">@currencySymbol@((statement.TotalPaid + statement.TotalCredited).ToString("N2"))</td>
+                <td class="right @closingClass">
+                    @closingDisplay
                 </td>
             </tr>
         </tfoot>
     </table>
+
+    @if (hasCreditBalance)
+    {
+        <p style="font-size:11px;color:var(--muted);margin:10px 0 0 0;">
+            <span style="font-weight:700;color:var(--success);">CR</span> = credit balance — the customer is in credit (has paid more than invoiced), so this amount is in their favour, not owed.
+        </p>
+    }
 
     <!-- Digital Signature (from business default) -->
     <div style="text-align:left;">

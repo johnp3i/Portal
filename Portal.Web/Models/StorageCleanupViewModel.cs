@@ -6,7 +6,19 @@ namespace Portal.Web.Models;
 public class StorageCleanupViewModel
 {
     public bool CleanupEnabled { get; set; }
+
+    /// <summary>Whether DESTRUCTIVE deletion is switched on (separate from detection).</summary>
+    public bool DeletionEnabled { get; set; }
+
+    /// <summary>How many candidates are due for deletion right now (past their scheduled date).</summary>
+    public int DueCount { get; set; }
+
+    /// <summary>Total size of the due candidates.</summary>
+    public long DueBytes { get; set; }
+
     public int GraceDays { get; set; }
+
+    public string DueSizeDisplay => Portal.Infrastructure.Models.Storage.StorageFormat.Bytes(DueBytes);
 
     /// <summary>Status legend rows (Name + Description) pulled from the DB, not hard-coded.</summary>
     public List<OrphanedFileStatusType> StatusTypes { get; set; } = new();

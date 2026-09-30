@@ -209,7 +209,9 @@
 
     .table-responsive table,
     .index-table table {
-        min-width: 600px;
+        /* Natural content width so wide tables scroll (via the wrapper's
+           overflow-x) rather than being squeezed and clipped. */
+        min-width: max-content;
         white-space: nowrap;
     }
 
@@ -1042,8 +1044,13 @@
     }
 
     .table-responsive table {
-        min-width: 600px;
-        width: 100%;
+        /* Size to the table's natural content width so wide tables (e.g. the
+           12-column Purchases list) scroll horizontally instead of being
+           squeezed and clipped. A fixed 600px floor was too small to force the
+           real layout, so cells with white-space:nowrap overflowed the wrapper
+           edge with no scroll. max-content lets the wrapper's overflow-x:auto
+           kick in. */
+        min-width: max-content;
         border-collapse: separate;
         border-spacing: 0;
     }

@@ -4,6 +4,22 @@
     ViewData["Title"] = "Upcoming for deletion";
 }
 
+<style>
+    /* On/off switch (scoped to this page) */
+    .tgl { position: relative; display: inline-block; width: 48px; height: 28px; flex-shrink: 0; cursor: pointer; }
+    .tgl input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .tgl-track { position: absolute; inset: 0; background: #cbd5e1; border-radius: 999px; transition: background .2s ease; }
+    .tgl-knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s ease; }
+    .tgl input:checked + .tgl-track .tgl-knob { transform: translateX(20px); }
+    .tgl-green input:checked + .tgl-track { background: #129867; }
+    .tgl-red input:checked + .tgl-track { background: #C24A4A; }
+    .tgl input:focus-visible + .tgl-track { outline: 2px solid #0D5EA6; outline-offset: 2px; }
+
+    /* Collapsible info banner */
+    .info-banner > summary::-webkit-details-marker { display: none; }
+    .info-banner[open] .info-banner-chevron { transform: rotate(90deg); }
+</style>
+
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Administration · Storage</div>
@@ -13,6 +29,7 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <a class="btn btn-secondary" href="/Admin/Storage/DeletionReport">Deletion report</a>
         <button type="button" class="btn btn-secondary" onclick="scanNow()">Scan now</button>
+        <button type="button" class="btn btn-danger" onclick="runDeletionNow()">Run deletion now</button>
     </div>
 </div>
 
@@ -22,13 +39,23 @@
 <section class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:220px;">
-            <label>Automatic cleanup</label>
+            <label>Detection scan</label>
             <div style="display:flex;align-items:center;gap:10px;">
-                <label class="da-switch" style="position:relative;display:inline-block;width:48px;height:28px;flex-shrink:0;">
-                    <input type="checkbox" id="cleanupEnabled" @(Model.CleanupEnabled ? "checked" : "") onchange="toggleEnabled(this)" style="display:none;" />
-                    <span class="da-slider" style="position:absolute;inset:0;background:@(Model.CleanupEnabled ? "#129867" : "#cbd5e1");border-radius:999px;transition:.2s;cursor:pointer;"></span>
+                <label class="tgl tgl-green">
+                    <input type="checkbox" id="cleanupEnabled" @(Model.CleanupEnabled ? "checked" : "") onchange="toggleEnabled(this)" />
+                    <span class="tgl-track"><span class="tgl-knob"></span></span>
                 </label>
-                <span id="enabledLabel" style="font-size:13px;color:#5a6a7a;">@(Model.CleanupEnabled ? "Enabled — nightly scan runs" : "Disabled — no scan runs")</span>
+                <span id="cleanupEnabledLabel" style="font-size:13px;color:#5a6a7a;">@(Model.CleanupEnabled ? "Enabled — nightly scan runs" : "Disabled — no scan runs")</span>
+            </div>
+        </div>
+        <div class="field" style="min-width:220px;">
+            <label>Automatic deletion</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <label class="tgl tgl-red">
+                    <input type="checkbox" id="deletionEnabled" @(Model.DeletionEnabled ? "checked" : "") onchange="toggleDeletionEnabled(this)" />
+                    <span class="tgl-track"><span class="tgl-knob"></span></span>
+                </label>
+                <span id="deletionEnabledLabel" style="font-size:13px;color:@(Model.DeletionEnabled ? "#C24A4A" : "#5a6a7a");">@(Model.DeletionEnabled ? "Enabled — files ARE permanently deleted" : "Disabled — detection only, nothing deleted")</span>
             </div>
         </div>
         <div class="field" style="min-width:180px;">
@@ -39,9 +66,28 @@
             </div>
         </div>
     </div>
-    <p style="margin-top:12px;font-size:12px;color:#8D5D07;background:rgba(200,145,46,.06);border:1px solid rgba(200,145,46,.18);border-radius:10px;padding:10px 14px;">
-        Report-only phase: files are detected and listed here, but never deleted yet. Enabling automatic cleanup only turns on the nightly scan that populates this list.
-    </p>
+    <details class="info-banner" open style="margin-top:12px;font-size:12px;color:#8D5D07;background:rgba(200,145,46,.06);border:1px solid rgba(200,145,46,.18);border-radius:10px;padding:12px 16px;line-height:1.7;">
+        <summary style="font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;">
+            <span class="info-banner-chevron" style="display:inline-block;transition:transform .2s ease;">▸</span>
+            <span>How this works — two independent switches</span>
+        </summary>
+        <div style="margin-top:8px;">
+            <ul style="margin:0;padding-left:18px;">
+                <li><strong>Detection scan</strong> finds orphaned files and lists them here.</li>
+                <li><strong>Automatic deletion</strong> permanently removes files once they pass their scheduled date.</li>
+                <li>Each file is re-checked as still-orphaned immediately before removal, so a file referenced again after detection is spared.</li>
+                <li>Paused and cancelled files are never deleted.</li>
+            </ul>
+            @if (Model.DueCount > 0)
+            {
+                <div style="margin-top:8px;color:#C24A4A;font-weight:700;">@Model.DueCount file(s) (@Model.DueSizeDisplay) are past their scheduled date and would be deleted by a deletion run now.</div>
+            }
+            else
+            {
+                <div style="margin-top:8px;">No files are currently past their scheduled deletion date.</div>
+            }
+        </div>
+    </details>
 </section>
 
 <!-- Candidates -->
@@ -166,6 +212,32 @@
 
         function toggleEnabled(el) {
             postAx('/Admin/Storage/Cleanup/SetEnabled', { enabled: el.checked });
+        }
+        function toggleDeletionEnabled(el) {
+            if (el.checked) {
+                Swal.fire({
+                    title: 'Enable permanent deletion?',
+                    html: 'Once enabled, orphaned files past their scheduled date <strong>will be permanently deleted</strong> on the nightly run. This cannot be undone. Files are re-checked as still-orphaned right before removal.',
+                    icon: 'warning', showCancelButton: true, confirmButtonColor: '#C24A4A', cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, enable deletion'
+                }).then(function (r) {
+                    if (r.isConfirmed) {
+                        postAx('/Admin/Storage/Cleanup/SetDeletionEnabled', { enabled: true });
+                    } else {
+                        el.checked = false;
+                    }
+                });
+            } else {
+                postAx('/Admin/Storage/Cleanup/SetDeletionEnabled', { enabled: false });
+            }
+        }
+        function runDeletionNow() {
+            postAx('/Admin/Storage/Cleanup/RunDeletionNow', {}, {
+                title: 'Permanently delete orphaned files?',
+                html: 'This removes every file past its scheduled deletion date <strong>right now</strong>. Each file is re-checked as still-orphaned before removal, but deleted files <strong>cannot be recovered</strong>. Paused and cancelled files are not touched.',
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#C24A4A', cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete them now'
+            });
         }
         function saveGraceDays() {
             var v = parseInt(document.getElementById('graceDays').value, 10);
