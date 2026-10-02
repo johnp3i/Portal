@@ -9,7 +9,7 @@ namespace Portal.Infrastructure.Services;
 public interface ICustomerService
 {
     Task<List<Customer>> GetCustomersAsync(string? searchTerm, bool? isActive);
-    Task<PagedResult<Customer>> GetCustomersPagedAsync(string? searchTerm, bool? isActive, int page, int pageSize, int businessId);
+    Task<PagedResult<CustomerListItemDto>> GetCustomersPagedAsync(string? searchTerm, bool? isActive, int page, int pageSize, int businessId, bool? createdFromLead = null, bool? hasNoDocuments = null);
     Task<Customer?> GetCustomerByIdAsync(int id);
     Task<Customer?> GetCustomerByIdAsync(int id, int businessId);
     Task<Customer> CreateCustomerAsync(Customer customer);

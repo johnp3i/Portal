@@ -348,3 +348,54 @@
     background-color: rgba(13, 94, 166, 0.05);
     border-color: rgba(13, 94, 166, 0.55);
 }
+
+/* Section Empty State
+   Centered message + CTA shown inside a section card that has no line items.
+   Mirrors the Invoice Create empty-state alignment.
+   ========================================================================== */
+.section-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 36px 24px;
+    margin-top: 14px;
+    border: 1.5px dashed rgba(13, 94, 166, 0.22);
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(87, 184, 232, 0.05), rgba(13, 94, 166, 0.03));
+}
+
+.section-empty__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0D5EA6;
+    background: rgba(13, 94, 166, 0.08);
+    margin-bottom: 14px;
+}
+
+.section-empty__title {
+    margin: 0;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0B1B28;
+    letter-spacing: -0.01em;
+}
+
+.section-empty__text {
+    margin: 6px 0 18px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #5a6a7a;
+    max-width: 380px;
+}
+
+.section-empty__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}

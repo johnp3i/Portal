@@ -1,13 +1,14 @@
-using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
 
 namespace Portal.Web.Models;
 
 public class CustomerListViewModel
 {
-    public List<Customer> Customers { get; set; } = new();
+    public List<CustomerListItemDto> Customers { get; set; } = new();
     public string? SearchTerm { get; set; }
     public bool? IsActiveFilter { get; set; }
+    public bool? CreatedFromLeadFilter { get; set; }
+    public bool? HasNoDocumentsFilter { get; set; }
     public int CurrentPage { get; set; } = 1;
     public int TotalPages { get; set; }
     public int TotalCount { get; set; }

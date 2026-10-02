@@ -63,6 +63,41 @@
         });
     };
 
+    window.createProposal = function (id) {
+        Swal.fire({
+            title: 'Create a proposal?',
+            html: 'This lead\u2019s contact will be <strong>saved as a customer</strong> so the proposal can be addressed to them. '
+                + 'If a matching customer already exists, it will be reused.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, create proposal',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0D5EA6'
+        }).then(async function (result) {
+            if (!result.isConfirmed) return;
+
+            BlockUI.show('Preparing proposal...');
+            try {
+                var response = await fetch('/Sales/AxPostCreateProposal?id=' + id, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    // Open the quotation builder with the lead linked and the customer pre-selected.
+                    window.location.href = '/Quotation/Create?leadRequestId=' + id + '&customerId=' + data.customerId;
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Could not prepare the proposal.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
+            }
+        });
+    };
+
     window.editRequestDetails = function (id) {
         // Redirect to the full edit function
         editLeadInfo();

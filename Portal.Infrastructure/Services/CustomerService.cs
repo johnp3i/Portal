@@ -44,9 +44,9 @@ public class CustomerService : ICustomerService
         return customers;
     }
 
-    public async Task<PagedResult<Customer>> GetCustomersPagedAsync(string? searchTerm, bool? isActive, int page, int pageSize, int businessId)
+    public async Task<PagedResult<CustomerListItemDto>> GetCustomersPagedAsync(string? searchTerm, bool? isActive, int page, int pageSize, int businessId, bool? createdFromLead = null, bool? hasNoDocuments = null)
     {
-        return await _customerRepository.GetCustomersPagedAsync(searchTerm, isActive, page, pageSize, businessId);
+        return await _customerRepository.GetCustomersPagedAsync(searchTerm, isActive, page, pageSize, businessId, createdFromLead, hasNoDocuments);
     }
 
     public async Task<Customer?> GetCustomerByIdAsync(int id)

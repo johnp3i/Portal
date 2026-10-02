@@ -128,13 +128,15 @@ public class QuotationController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Create(int? leadRequestId)
+    public async Task<IActionResult> Create(int? leadRequestId, int? customerId)
     {
         var customers = await _customerService.GetCustomersAsync(null, true);
         var viewModel = new QuotationCreateViewModel
         {
             Customers = customers,
-            LeadRequestId = leadRequestId
+            LeadRequestId = leadRequestId,
+            // Pre-select the customer when arriving from a lead (asp-for marks the matching option).
+            CustomerId = customerId ?? 0
         };
         return View(viewModel);
     }

@@ -307,6 +307,11 @@
         var editRow = input.closest('[id^="edit-row-"]');
         if (editRow) return true;
 
+        // Invoice Create: the line-item modal is a standalone partial rendered outside
+        // #invoiceForm, so match its form/overlay explicitly.
+        var createLineModal = input.closest('#createLineItemForm') || input.closest('#createLineModal');
+        if (createLineModal) return true;
+
         // Check if inside a line-card or surface card-pad that looks like a line item
         var container = input.closest('.line-card') || input.closest('.surface.card-pad');
         if (container) {

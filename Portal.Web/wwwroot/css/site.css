@@ -134,7 +134,15 @@ a{text-decoration:none;color:inherit}
    columns are not squeezed; the wrapper provides the scroll. Mobile/tablet
    media queries in mobile.css override this (card layout ≤768px). */
 .table-responsive{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.table-responsive>table{min-width:max-content}
+/* Only auto-layout tables get the natural-width treatment. Fixed-layout tables
+   (table-layout:fixed, used with a percentage <colgroup>) size their columns from
+   the resolved table width, so forcing min-width:max-content collapses those
+   percentage columns to near-zero and the row renders blank. Those tables are
+   excluded here and keep their own width. */
+.table-responsive>table:not([style*="table-layout:fixed"]):not([style*="table-layout: fixed"]){min-width:max-content}
+/* Fixed-layout tables fill their container so the percentage colgroup resolves correctly. */
+.table-responsive>table[style*="table-layout:fixed"],
+.table-responsive>table[style*="table-layout: fixed"]{width:100%}
 
 /* ===== MODAL OVERLAY & CONTENT ===== */
 .modal-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0}

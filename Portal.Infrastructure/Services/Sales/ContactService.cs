@@ -250,8 +250,10 @@ public class ContactService : IContactService
                 ? customers.FirstOrDefault(c => c.Email != null && c.Email.Equals(contact.Email, StringComparison.OrdinalIgnoreCase))
                 : null;
 
+            // Return the resolved customer id consistently via ServiceResult.Id (not Data) so every
+            // caller can read result.Id regardless of whether the customer was reused or created.
             if (existingByEmail != null)
-                return ServiceResult<int>.Ok(existingByEmail.Id);
+                return ServiceResult.Ok(existingByEmail.Id);
 
             var fullName = string.IsNullOrWhiteSpace(contact.LastName)
                 ? contact.FirstName
@@ -259,7 +261,7 @@ public class ContactService : IContactService
 
             var existingByName = customers.FirstOrDefault(c => c.Name.Equals(fullName, StringComparison.OrdinalIgnoreCase));
             if (existingByName != null)
-                return ServiceResult<int>.Ok(existingByName.Id);
+                return ServiceResult.Ok(existingByName.Id);
 
             // Create new customer from contact
             var customer = new Customer

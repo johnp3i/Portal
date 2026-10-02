@@ -60,19 +60,61 @@
             </div>
         </div>
 
-        <!-- Line Items Section -->
+        <!-- Line Items Section — modal-driven, matching the Edit page UX -->
         <div style="margin-top:32px;border-top:1px solid rgba(13,94,166,.08);padding-top:24px;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
                     <div class="label">Line Items</div>
-                    <h2 style="margin-top:8px;font-size:24px;">Invoice lines</h2>
+                    <h2 style="margin-top:8px;font-size:24px;">Invoice lines
+                        <span id="createLineItemsCount" style="font-size:14px;font-weight:600;color:#5E7385;margin-left:8px;">· 0 items</span>
+                    </h2>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="addLineItem()">+ Add Line</button>
             </div>
 
-            <div id="lineItemsContainer" style="margin-top:18px;">
-                <!-- Line items will be added here dynamically -->
+            <!-- Line items table (hidden until the first line is added) -->
+            <div id="createLineItemsTableWrap" class="table-responsive" style="display:none;margin-top:18px;">
+                <table class="line-item-table">
+                    <thead>
+                        <tr>
+                            <th class="col-row-num">#</th>
+                            <th class="col-description">Description</th>
+                            <th class="col-qty">Qty</th>
+                            <th class="col-unit-price">Unit Price</th>
+                            <th class="col-subtotal">Subtotal</th>
+                            <th class="col-vat">VAT %</th>
+                            <th class="col-discount">Discount</th>
+                            <th class="col-total">Total</th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="createLineItemsTableBody"></tbody>
+                </table>
             </div>
+
+            <!-- Empty state -->
+            <div id="createLineItemsEmptyState" class="lines-empty" style="margin-top:18px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+                <div class="lines-empty__icon" aria-hidden="true" style="display:flex;align-items:center;justify-content:center;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="16" rx="2.5" />
+                        <path d="M3 9h18" />
+                        <path d="M8 14h5" />
+                        <path d="M8 17h8" />
+                    </svg>
+                </div>
+                <h3 class="lines-empty__title">No line items yet</h3>
+                <p class="lines-empty__text">Add products or services to this invoice. Each line can carry its own quantity, pricing, VAT, and discount.</p>
+                <button type="button" class="btn btn-primary lines-empty__cta" onclick="showAddCreateLineModal()" style="display:inline-flex;align-items:center;gap:8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    Add your first line item
+                </button>
+            </div>
+
+            <!-- + Add Line opens the modal (same UX as the Edit page). Hidden while the
+                 empty state is showing to avoid two competing "add" actions. -->
+            <button type="button" id="createAddLineBtn" class="btn-add-line" style="display:none;" onclick="showAddCreateLineModal()">+ Add Line</button>
+
+            <!-- Hidden lines[idx].* inputs are injected here so the Create POST binds List<CreateInvoiceLineDto> -->
+            <div id="createLineHiddenInputs" style="display:none;"></div>
         </div>
 
         <!-- Sections (Optional) -->
@@ -114,9 +156,54 @@
 </section>
 
 @await Html.PartialAsync("_CustomerModal")
+@await Html.PartialAsync("_CreateInvoiceLineModal")
 
 @section Scripts {
+    <link rel="stylesheet" href="~/css/invoice-line-modal.css" />
     <style>
+        /* Line items empty state — dashed card with icon, copy, and a primary CTA */
+        .lines-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 40px 24px;
+            border: 1.5px dashed rgba(13, 94, 166, .22);
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(87,184,232,.05), rgba(13,94,166,.03));
+        }
+        .lines-empty__icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0D5EA6;
+            background: rgba(13, 94, 166, .08);
+            margin-bottom: 16px;
+        }
+        .lines-empty__title {
+            margin: 0;
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0B1B28;
+            letter-spacing: -0.01em;
+        }
+        .lines-empty__text {
+            margin: 8px 0 20px;
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #5a6a7a;
+            max-width: 420px;
+        }
+        .lines-empty__cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         /* Catalog autocomplete dropdown (per line card) */
         .catalog-autocomplete {
             position: absolute;
@@ -162,8 +249,8 @@
         .tier-price-highlight .tph-value--muted { color: #5a6a7a; font-size: 14px; }
     </style>
     <script src="~/js/customer-modal.js"></script>
+    <script src="~/js/invoice-create-lines.js"></script>
     <script>
-        var lineIndex = 0;
         var sectionIndex = 0;
 
         // Bulk Discount info + guided action. Bulk discount is a post-creation operation
@@ -171,7 +258,7 @@
         // create the invoice now and continue to it to apply the discount.
         function showBulkDiscountInfo() {
             var customerId = document.getElementById('customerId').value;
-            var lineCount = document.querySelectorAll('#lineItemsContainer [id^="line-"]').length;
+            var lineCount = (typeof window.getCreateLineCount === 'function') ? window.getCreateLineCount() : 0;
             var formReady = customerId && lineCount > 0
                 && document.getElementById('invoiceDate').value
                 && document.getElementById('dueDate').value;
@@ -197,197 +284,10 @@
             });
         }
 
-        function addLineItem() {
-            var container = document.getElementById('lineItemsContainer');
-            var idx = lineIndex;
-            var html = '<div class="surface card-pad" style="margin-bottom:16px;position:relative;" id="line-' + idx + '">'
-                + '<button type="button" class="btn btn-danger" style="position:absolute;top:12px;right:12px;padding:4px 10px;font-size:12px;" onclick="removeLineItem(' + idx + ')">Remove</button>'
-                + '<input type="hidden" name="lines[' + idx + '].ProductCode" id="line-productcode-' + idx + '" />'
-                + '<input type="hidden" name="lines[' + idx + '].ProductPriceTierId" id="line-tierid-' + idx + '" />'
-                + '<div class="form-grid">'
-                + '<div class="field" style="grid-column:1 / -1;position:relative;">'
-                + '<label>Description *</label>'
-                + '<input type="text" name="lines[' + idx + '].Description" id="line-desc-' + idx + '" required placeholder="Line item description" autocomplete="off" />'
-                + '</div>'
-                + '<div class="field tier-selector" style="grid-column:1 / -1;display:none;" id="line-tierrow-' + idx + '">'
-                + '<label>Price Tier</label>'
-                + '<select class="tier-select" id="line-tierselect-' + idx + '" onchange="onCreateLineTierChange(' + idx + ')"></select>'
-                + '<div class="helper" style="font-size:11px;color:#5a6a7a;margin-top:4px;">Select the pricing level for this line item. The default tier is pre-selected.</div>'
-                + '<div class="tier-price-highlight" id="line-tierhighlight-' + idx + '" style="display:none;">'
-                + '<div><div class="tph-label">Unit Price (from tier)</div><div class="tph-value" id="line-tierhighlight-unit-' + idx + '">\u2014</div></div>'
-                + '<div style="margin-left:auto;"><div class="tph-label">Cost Price</div><div class="tph-value tph-value--muted" id="line-tierhighlight-cost-' + idx + '">\u2014</div></div>'
-                + '</div>'
-                + '</div>'
-                + '<div class="field">'
-                + '<label>Quantity *</label>'
-                + '<input type="number" name="lines[' + idx + '].Quantity" step="0.01" min="0.01" required value="1" inputmode="decimal" />'
-                + '</div>'
-                + '<div class="field">'
-                + '<label>Unit Price *</label>'
-                + '<input type="number" name="lines[' + idx + '].UnitPrice" id="line-unitprice-' + idx + '" step="0.01" min="0" required value="0" inputmode="decimal" />'
-                + '</div>'
-                + '<div style="grid-column:1 / -1;display:flex;align-items:center;gap:8px;padding:8px 0;">'
-                + '<input type="checkbox" name="lines[' + idx + '].IsReverseCharge" value="true" id="line-rc-' + idx + '" onchange="toggleCreateReverseCharge(this, ' + idx + ')" style="width:16px;height:16px;" />'
-                + '<label for="line-rc-' + idx + '" style="margin:0;font-size:13px;font-weight:600;">Reverse Charge</label>'
-                + '<span style="font-size:12px;color:#5a6a7a;margin-left:4px;">— VAT is accounted for by the buyer (B2B EU cross-border services)</span>'
-                + '</div>'
-                + '<div class="field">'
-                + '<label>VAT Rate (%)</label>'
-                + '<input type="number" name="lines[' + idx + '].VatRate" step="0.01" min="0" max="100" value="0" inputmode="decimal" />'
-                + '</div>'
-                + '<div class="field">'
-                + '<label>Discount</label>'
-                + '<input type="number" name="lines[' + idx + '].Discount" step="0.01" min="0" value="0" inputmode="decimal" />'
-                + '</div>'
-                // (Discount is never auto-filled — the user sets it manually.)
-                + '<div class="field">'
-                + '<label>Discount Type</label>'
-                + '<select name="lines[' + idx + '].DiscountType">'
-                + '<option value="Percentage">Percentage</option>'
-                + '<option value="Fixed">Fixed</option>'
-                + '</select>'
-                + '</div>'
-                + '<div class="field">'
-                + '<label>Cost Price</label>'
-                + '<input type="number" name="lines[' + idx + '].CostPrice" id="line-costprice-' + idx + '" step="0.01" min="0" placeholder="Optional" inputmode="decimal" />'
-                + '</div>'
-                + '<div class="field">'
-                + '<label>Reference URL</label>'
-                + '<input type="url" name="lines[' + idx + '].ReferenceUrl" placeholder="Optional URL" />'
-                + '</div>'
-                + '<div class="field">'
-                + '<label>Subtitle</label>'
-                + '<input type="text" name="lines[' + idx + '].Subtitle" placeholder="Optional subtitle" />'
-                + '</div>'
-                + '</div>'
-                + '</div>';
-
-            container.insertAdjacentHTML('beforeend', html);
-            lineIndex++;
-        }
-
-        function removeLineItem(idx) {
-            var el = document.getElementById('line-' + idx);
-            if (el) el.remove();
-        }
-
-        // ─── Per-card price-tier selector, driven by the shared product-autocomplete.js ──────────────
-        var _createLineTiers = {};            // idx -> tiers array
-        var _createLineCurrency = {};         // idx -> currency symbol
-
-        // Given a line card element, extract its numeric index from an id like "line-5".
-        function cardIndexFromContainer(container) {
-            if (!container || !container.id) return null;
-            var m = container.id.match(/^line-(\d+)$/);
-            return m ? parseInt(m[1], 10) : null;
-        }
-
-        // Called by product-autocomplete.js after a product is selected in a line card.
-        // The shared script already filled Description/UnitPrice/VatRate/CostPrice/ProductCode.
-        window.onProductAutocompleteSelected = function (container, entry) {
-            var idx = cardIndexFromContainer(container);
-            if (idx === null) return;
-
-            if (entry && entry.productCode) {
-                fetchCreateLineTiers(idx, entry.productCode, null);
-            } else if (entry && entry.description) {
-                fetchCreateLineTiers(idx, null, entry.description);
-            } else {
-                hideCreateLineTiers(idx);
-            }
-        };
-
-        async function fetchCreateLineTiers(idx, productCode, description) {
-            hideCreateLineTiers(idx);
-            var query = '';
-            if (productCode) query = 'productCode=' + encodeURIComponent(productCode);
-            else if (description) query = 'description=' + encodeURIComponent(description);
-            else return;
-
-            try {
-                var response = await fetch('/Invoice/AxGetProductTiersForSelection?' + query);
-                if (!response.ok) return;
-                var result = await response.json();
-                if (!result.success || !result.data || !result.data.hasTiers) return;
-
-                var data = result.data;
-                _createLineTiers[idx] = data.tiers || [];
-                _createLineCurrency[idx] = data.currencySymbol || '\u20ac';
-                if (_createLineTiers[idx].length === 0) return;
-
-                var select = document.getElementById('line-tierselect-' + idx);
-                select.innerHTML = '';
-                data.tiers.forEach(function (tier) {
-                    var opt = document.createElement('option');
-                    opt.value = tier.id.toString();
-                    opt.textContent = tier.tierName + ' \u2014 ' + _createLineCurrency[idx] + parseFloat(tier.sellingPrice).toFixed(2);
-                    if (tier.id === data.defaultTierId) opt.selected = true;
-                    select.appendChild(opt);
-                });
-
-                document.getElementById('line-tierrow-' + idx).style.display = '';
-
-                if (data.defaultTierId) {
-                    select.value = data.defaultTierId.toString();
-                    applyCreateLineTier(idx, data.defaultTierId);
-                }
-            } catch (e) { /* silently fail — tiers are supplementary */ }
-        }
-
-        function onCreateLineTierChange(idx) {
-            var select = document.getElementById('line-tierselect-' + idx);
-            var tierId = parseInt(select.value);
-            if (isNaN(tierId)) {
-                document.getElementById('line-tierid-' + idx).value = '';
-                return;
-            }
-            applyCreateLineTier(idx, tierId);
-        }
-
-        function applyCreateLineTier(idx, tierId) {
-            var tiers = _createLineTiers[idx] || [];
-            var tier = tiers.find(function (t) { return t.id === tierId; });
-            if (!tier) return;
-
-            document.getElementById('line-unitprice-' + idx).value = parseFloat(tier.sellingPrice).toFixed(2);
-            var costEl = document.getElementById('line-costprice-' + idx);
-            if (costEl) costEl.value = tier.costPrice > 0 ? parseFloat(tier.costPrice).toFixed(2) : '';
-            document.getElementById('line-tierid-' + idx).value = tierId.toString();
-
-            // Update the highlight box
-            var cur = _createLineCurrency[idx] || '\u20ac';
-            var box = document.getElementById('line-tierhighlight-' + idx);
-            document.getElementById('line-tierhighlight-unit-' + idx).textContent = cur + parseFloat(tier.sellingPrice).toFixed(2);
-            document.getElementById('line-tierhighlight-cost-' + idx).textContent = tier.costPrice > 0 ? cur + parseFloat(tier.costPrice).toFixed(2) : '\u2014';
-            if (box) box.style.display = 'flex';
-        }
-
-        function hideCreateLineTiers(idx) {
-            var row = document.getElementById('line-tierrow-' + idx);
-            if (row) row.style.display = 'none';
-            var select = document.getElementById('line-tierselect-' + idx);
-            if (select) select.innerHTML = '';
-            var tierIdEl = document.getElementById('line-tierid-' + idx);
-            if (tierIdEl) tierIdEl.value = '';
-            var box = document.getElementById('line-tierhighlight-' + idx);
-            if (box) box.style.display = 'none';
-            _createLineTiers[idx] = [];
-        }
-
-        function toggleCreateReverseCharge(checkbox, idx) {
-            var vatInput = document.querySelector('input[name="lines[' + idx + '].VatRate"]');
-            if (checkbox.checked) {
-                vatInput.dataset.previousVatRate = vatInput.value;
-                vatInput.value = '0';
-                vatInput.readOnly = true;
-                vatInput.style.opacity = '0.6';
-            } else {
-                var previousRate = vatInput.dataset.previousVatRate || '0';
-                vatInput.value = previousRate;
-                vatInput.readOnly = false;
-                vatInput.style.opacity = '1';
-            }
-        }
+        // Line item collection + modal UX lives in /js/invoice-create-lines.js
+        // (showAddCreateLineModal / showEditCreateLineModal / removeCreateLine, the modal
+        // tier selector, and the hidden lines[idx].* input generation). The product-tier +
+        // autocomplete integration is wired there via window.onProductAutocompleteSelected.
 
         function addSection() {
             var container = document.getElementById('sectionsContainer');
@@ -429,10 +329,5 @@
             var el = document.getElementById('section-' + idx);
             if (el) el.remove();
         }
-
-        // Add one line item by default
-        document.addEventListener('DOMContentLoaded', function() {
-            addLineItem();
-        });
     </script>
 }

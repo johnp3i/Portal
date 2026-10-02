@@ -33,6 +33,22 @@
                     <option value="false" selected="@(Model.IsActiveFilter == false ? "selected" : null)">Inactive</option>
                 </select>
             </div>
+            <div class="field" style="min-width:180px;">
+                <label>Source</label>
+                <select name="createdFromLead">
+                    <option value="">All</option>
+                    <option value="true" selected="@(Model.CreatedFromLeadFilter == true ? "selected" : null)">From a lead</option>
+                    <option value="false" selected="@(Model.CreatedFromLeadFilter == false ? "selected" : null)">Added directly</option>
+                </select>
+            </div>
+            <div class="field" style="min-width:180px;">
+                <label>Documents</label>
+                <select name="hasNoDocuments">
+                    <option value="">All</option>
+                    <option value="true" selected="@(Model.HasNoDocumentsFilter == true ? "selected" : null)">No documents yet</option>
+                    <option value="false" selected="@(Model.HasNoDocumentsFilter == false ? "selected" : null)">Has documents</option>
+                </select>
+            </div>
             <div style="padding-bottom:2px;">
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
@@ -51,6 +67,8 @@
                         <th>Email</th>
                         <th>Telephone</th>
                         <th>City</th>
+                        <th>Source</th>
+                        <th>Documents</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -63,6 +81,28 @@
                             <td>@(customer.Email ?? customer.TelephoneNumber)</td>
                             <td data-mobile="hide">@customer.TelephoneNumber</td>
                             <td data-mobile="hide">@customer.City</td>
+                            <td data-mobile="hide">
+                                @if (customer.CreatedFromLead)
+                                {
+                                    <span class="pill pill-blue">From Lead</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-slate">Direct</span>
+                                }
+                            </td>
+                            <td data-mobile="hide">
+                                @if (customer.DocumentCount == 0)
+                                {
+                                    <span class="pill pill-gold">None yet</span>
+                                }
+                                else
+                                {
+                                    <span title="@customer.InvoiceCount invoice(s), @customer.QuotationCount quotation(s)">
+                                        @customer.InvoiceCount inv · @customer.QuotationCount quo
+                                    </span>
+                                }
+                            </td>
                             <td data-mobile="status">
                                 @if (customer.IsActive)
                                 {
@@ -111,6 +151,14 @@
                             if (Model.IsActiveFilter.HasValue)
                             {
                                 queryParams.Add($"isActive={Model.IsActiveFilter.Value.ToString().ToLower()}");
+                            }
+                            if (Model.CreatedFromLeadFilter.HasValue)
+                            {
+                                queryParams.Add($"createdFromLead={Model.CreatedFromLeadFilter.Value.ToString().ToLower()}");
+                            }
+                            if (Model.HasNoDocumentsFilter.HasValue)
+                            {
+                                queryParams.Add($"hasNoDocuments={Model.HasNoDocumentsFilter.Value.ToString().ToLower()}");
                             }
                             var queryString = queryParams.Count > 0 ? string.Join("&", queryParams) + "&" : "";
                         }

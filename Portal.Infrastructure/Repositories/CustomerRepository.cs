@@ -199,37 +199,57 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
     /// Search matches Name, ContactPerson, or Email using case-insensitive LIKE pattern.
     /// Results are ordered by Name. If the requested page exceeds total pages, returns the last available page.
     /// </summary>
-    public virtual async Task<PagedResult<Customer>> GetCustomersPagedAsync(string? searchTerm, bool? isActive, int page, int pageSize, int businessId)
+    public virtual async Task<PagedResult<CustomerListItemDto>> GetCustomersPagedAsync(
+        string? searchTerm, bool? isActive, int page, int pageSize, int businessId,
+        bool? createdFromLead = null, bool? hasNoDocuments = null)
     {
         try
         {
-            const string countQuery = @"
-                SELECT COUNT(*)
-                FROM [customer].[Customer]
-                WHERE [customer].[Customer].[BusinessId] = @BusinessId
-                  AND (@SearchTerm IS NULL
-                       OR [customer].[Customer].[Name] LIKE @SearchPattern
-                       OR [customer].[Customer].[ContactPerson] LIKE @SearchPattern
-                       OR [customer].[Customer].[Email] LIKE @SearchPattern)
-                  AND (@IsActive IS NULL OR [customer].[Customer].[IsActive] = @IsActive)";
+            // Per-customer invoice and quotation counts (non-deleted), used for the Documents column
+            // and the "no documents yet" filter. Correlated subqueries so a customer with zero of
+            // either still returns a row.
+            const string invoiceCountExpr = @"
+                (SELECT COUNT(*) FROM [invoice].[Invoice]
+                 WHERE [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
+                   AND [invoice].[Invoice].[IsDeleted] = 0)";
+            const string quotationCountExpr = @"
+                (SELECT COUNT(*) FROM [quotation].[Quotation]
+                 WHERE [quotation].[Quotation].[CustomerId] = [customer].[Customer].[Id]
+                   AND [quotation].[Quotation].[IsDeleted] = 0)";
 
-            const string dataQuery = @"
-                SELECT [customer].[Customer].[Id],
-                       [customer].[Customer].[BusinessId],
-                       [customer].[Customer].[Name],
-                       [customer].[Customer].[ContactPerson],
-                       [customer].[Customer].[Email],
-                       [customer].[Customer].[TelephoneNumber],
-                       [customer].[Customer].[MobileNumber],
-                       [customer].[Customer].[IsActive],
-                       [customer].[Customer].[CreatedAtUtc]
-                FROM [customer].[Customer]
+            // Shared WHERE: search + active + createdFromLead (ContactId present/absent) + hasNoDocuments
+            // (no non-deleted invoices AND no non-deleted quotations).
+            var whereClause = $@"
                 WHERE [customer].[Customer].[BusinessId] = @BusinessId
                   AND (@SearchTerm IS NULL
                        OR [customer].[Customer].[Name] LIKE @SearchPattern
                        OR [customer].[Customer].[ContactPerson] LIKE @SearchPattern
                        OR [customer].[Customer].[Email] LIKE @SearchPattern)
                   AND (@IsActive IS NULL OR [customer].[Customer].[IsActive] = @IsActive)
+                  AND (@CreatedFromLead IS NULL
+                       OR (@CreatedFromLead = 1 AND [customer].[Customer].[ContactId] IS NOT NULL)
+                       OR (@CreatedFromLead = 0 AND [customer].[Customer].[ContactId] IS NULL))
+                  AND (@HasNoDocuments IS NULL
+                       OR (@HasNoDocuments = 1 AND {invoiceCountExpr} = 0 AND {quotationCountExpr} = 0)
+                       OR (@HasNoDocuments = 0 AND ({invoiceCountExpr} > 0 OR {quotationCountExpr} > 0)))";
+
+            var countQuery = $@"
+                SELECT COUNT(*)
+                FROM [customer].[Customer]
+                {whereClause}";
+
+            var dataQuery = $@"
+                SELECT [customer].[Customer].[Id],
+                       [customer].[Customer].[Name],
+                       [customer].[Customer].[Email],
+                       [customer].[Customer].[TelephoneNumber],
+                       [customer].[Customer].[City],
+                       [customer].[Customer].[IsActive],
+                       [customer].[Customer].[ContactId],
+                       {invoiceCountExpr} AS [InvoiceCount],
+                       {quotationCountExpr} AS [QuotationCount]
+                FROM [customer].[Customer]
+                {whereClause}
                 ORDER BY [customer].[Customer].[Name]
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
@@ -244,6 +264,18 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
                 var searchTermParam = string.IsNullOrWhiteSpace(searchTerm) ? (object)DBNull.Value : searchTerm;
                 var searchPatternParam = string.IsNullOrWhiteSpace(searchTerm) ? (object)DBNull.Value : $"%{searchTerm}%";
                 var isActiveParam = isActive.HasValue ? (object)isActive.Value : DBNull.Value;
+                var createdFromLeadParam = createdFromLead.HasValue ? (object)createdFromLead.Value : DBNull.Value;
+                var hasNoDocumentsParam = hasNoDocuments.HasValue ? (object)hasNoDocuments.Value : DBNull.Value;
+
+                void AddSharedParams(System.Data.Common.DbCommand cmd)
+                {
+                    cmd.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                    cmd.Parameters.Add(new SqlParameter("@SearchTerm", searchTermParam));
+                    cmd.Parameters.Add(new SqlParameter("@SearchPattern", searchPatternParam));
+                    cmd.Parameters.Add(new SqlParameter("@IsActive", isActiveParam));
+                    cmd.Parameters.Add(new SqlParameter("@CreatedFromLead", createdFromLeadParam));
+                    cmd.Parameters.Add(new SqlParameter("@HasNoDocuments", hasNoDocumentsParam));
+                }
 
                 // Execute count query
                 int totalCount;
@@ -255,40 +287,34 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
                     if (transaction != null)
                         countCommand.Transaction = transaction.GetDbTransaction();
 
-                    countCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
-                    countCommand.Parameters.Add(new SqlParameter("@SearchTerm", searchTermParam));
-                    countCommand.Parameters.Add(new SqlParameter("@SearchPattern", searchPatternParam));
-                    countCommand.Parameters.Add(new SqlParameter("@IsActive", isActiveParam));
+                    AddSharedParams(countCommand);
 
                     var countResult = await countCommand.ExecuteScalarAsync();
                     totalCount = countResult != null && countResult != DBNull.Value ? (int)countResult : 0;
                 }
 
-                // Compute total pages
-                int totalPages = totalCount > 0 ? (int)Math.Ceiling((double)totalCount / pageSize) : 0;
-
                 // Handle page exceeding total pages: return last available page (or empty if no results)
                 if (totalCount == 0)
                 {
-                    return new PagedResult<Customer>
+                    return new PagedResult<CustomerListItemDto>
                     {
-                        Items = new List<Customer>(),
+                        Items = new List<CustomerListItemDto>(),
                         CurrentPage = 1,
                         PageSize = pageSize,
                         TotalCount = 0
                     };
                 }
 
+                int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
                 if (page > totalPages)
                     page = totalPages;
-
                 if (page < 1)
                     page = 1;
 
                 int offset = (page - 1) * pageSize;
 
                 // Execute data query
-                var results = new List<Customer>();
+                var results = new List<CustomerListItemDto>();
                 using (var dataCommand = connection.CreateCommand())
                 {
                     dataCommand.CommandText = dataQuery;
@@ -297,32 +323,29 @@ public class CustomerRepository : GenericStoredProcedureRepository<Customer>
                     if (transaction != null)
                         dataCommand.Transaction = transaction.GetDbTransaction();
 
-                    dataCommand.Parameters.Add(new SqlParameter("@BusinessId", businessId));
-                    dataCommand.Parameters.Add(new SqlParameter("@SearchTerm", searchTermParam));
-                    dataCommand.Parameters.Add(new SqlParameter("@SearchPattern", searchPatternParam));
-                    dataCommand.Parameters.Add(new SqlParameter("@IsActive", isActiveParam));
+                    AddSharedParams(dataCommand);
                     dataCommand.Parameters.Add(new SqlParameter("@Offset", offset));
                     dataCommand.Parameters.Add(new SqlParameter("@PageSize", pageSize));
 
                     using var reader = await dataCommand.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {
-                        results.Add(new Customer
+                        results.Add(new CustomerListItemDto
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            BusinessId = reader.GetInt32(reader.GetOrdinal("BusinessId")),
                             Name = reader.GetString(reader.GetOrdinal("Name")),
-                            ContactPerson = reader.IsDBNull(reader.GetOrdinal("ContactPerson")) ? null : reader.GetString(reader.GetOrdinal("ContactPerson")),
                             Email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString(reader.GetOrdinal("Email")),
                             TelephoneNumber = reader.IsDBNull(reader.GetOrdinal("TelephoneNumber")) ? null : reader.GetString(reader.GetOrdinal("TelephoneNumber")),
-                            MobileNumber = reader.IsDBNull(reader.GetOrdinal("MobileNumber")) ? null : reader.GetString(reader.GetOrdinal("MobileNumber")),
+                            City = reader.IsDBNull(reader.GetOrdinal("City")) ? null : reader.GetString(reader.GetOrdinal("City")),
                             IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
-                            CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"))
+                            ContactId = reader.IsDBNull(reader.GetOrdinal("ContactId")) ? null : reader.GetInt32(reader.GetOrdinal("ContactId")),
+                            InvoiceCount = reader.GetInt32(reader.GetOrdinal("InvoiceCount")),
+                            QuotationCount = reader.GetInt32(reader.GetOrdinal("QuotationCount"))
                         });
                     }
                 }
 
-                return new PagedResult<Customer>
+                return new PagedResult<CustomerListItemDto>
                 {
                     Items = results,
                     CurrentPage = page,

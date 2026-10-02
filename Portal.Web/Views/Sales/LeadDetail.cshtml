@@ -53,7 +53,7 @@
             {
                 <button class="btn btn-primary" onclick="openRespondModal(@Model.Id)">Compose Response</button>
                 <button class="btn btn-secondary" onclick="openScheduleMeetingModal(@Model.Id, @Model.ContactId)">Schedule Meeting</button>
-                <a href="/Quotation/Create?leadRequestId=@Model.Id&customerId=" class="btn btn-secondary">Create Proposal</a>
+                <button class="btn btn-secondary" onclick="createProposal(@Model.Id)">Create Proposal</button>
                 <button class="btn btn-secondary" style="background:#12986722;color:#129867;border:1.5px solid #129867;" onclick="markAsWon(@Model.Id)">Mark as Won</button>
                 <button class="btn btn-secondary" style="color:#C24A4A;border-color:#C24A4A;" onclick="cancelLead(@Model.Id)">Cancel</button>
             }

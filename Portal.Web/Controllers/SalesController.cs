@@ -621,6 +621,37 @@ public class SalesController : Controller
         }
     }
 
+    /// <summary>
+    /// Prepares a proposal for a lead. A quotation requires a Customer, but a lead's contact is not
+    /// yet a customer, so this materialises one from the contact (reusing an existing customer if it
+    /// matches by email/name) and returns its id. The caller then opens the quotation Create page
+    /// pre-filled with that customer; the lead↔proposal link is stamped when the quotation is created.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostCreateProposal(int id)
+    {
+        try
+        {
+            var detail = await _leadRequestService.GetLeadDetailAsync(id);
+            if (detail == null)
+                return Json(new { success = false, message = "Lead not found." });
+
+            var conversion = await _contactService.ConvertToCustomerAsync(detail.ContactId);
+            if (!conversion.Success || !conversion.Id.HasValue)
+                return Json(new { success = false, message = conversion.Message ?? "Could not create a customer from this contact." });
+
+            await RecordActivityAsync(id, "proposal_started", "Contact converted to customer to prepare a proposal.");
+
+            return Json(new { success = true, customerId = conversion.Id.Value });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error preparing proposal for lead {LeadId}", id);
+            return Json(new { success = false, message = "An error occurred while preparing the proposal." });
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> AxGetPipelineData(string? assignedToUserId, int? productId, int? teamMemberId)
     {

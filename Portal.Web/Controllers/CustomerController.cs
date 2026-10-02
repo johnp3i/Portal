@@ -24,20 +24,22 @@ public class CustomerController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(string? searchTerm, bool? isActive, int page = 1)
+    public async Task<IActionResult> Index(string? searchTerm, bool? isActive, bool? createdFromLead, bool? hasNoDocuments, int page = 1)
     {
         // Reset to page 1 when filter criteria change (page not explicitly provided means filters changed)
         if (page < 1)
             page = 1;
 
         var businessId = _currentTenantService.CurrentBusinessId;
-        var pagedResult = await _customerService.GetCustomersPagedAsync(searchTerm, isActive, page, PageSize, businessId);
+        var pagedResult = await _customerService.GetCustomersPagedAsync(searchTerm, isActive, page, PageSize, businessId, createdFromLead, hasNoDocuments);
 
         var viewModel = new CustomerListViewModel
         {
             Customers = pagedResult.Items,
             SearchTerm = searchTerm,
             IsActiveFilter = isActive,
+            CreatedFromLeadFilter = createdFromLead,
+            HasNoDocumentsFilter = hasNoDocuments,
             CurrentPage = pagedResult.CurrentPage,
             TotalPages = pagedResult.TotalPages,
             TotalCount = pagedResult.TotalCount,

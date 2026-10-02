@@ -1,0 +1,105 @@
+@*
+    Create-page line item modal.
+    Mirrors the Edit page's _InvoiceLineItemModal look (same .modal-* / .field markup and
+    invoice-line-modal.css), but is fully client-side: there is no persisted invoice yet,
+    so submitting the modal collects the line into the Create form (see invoice-create-lines.js)
+    rather than POSTing to /Invoice/AddLine.
+
+    Field names are plain (description, unitPrice, vatRate, costPrice, productCode, ...) so the
+    shared product-autocomplete.js auto-fill contract works inside the modal form.
+*@
+<div id="createLineModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="createLineModalTitle">Add Line Item</h3>
+            <p id="createLineModalSubtitle" class="muted">Add a new line item to this invoice.</p>
+        </div>
+        <form id="createLineItemForm" onsubmit="return false;">
+            <input type="hidden" id="createLineModalProductCode" name="productCode" />
+            <input type="hidden" id="createLineModalProductPriceTierId" name="productPriceTierId" />
+
+            <!-- Row 1: Description (full width, required) -->
+            <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px;">
+                <div class="field" style="position:relative;">
+                    <label for="createLineModalDescription">Description *</label>
+                    <input type="text" id="createLineModalDescription" name="description" required placeholder="Item description" autocomplete="off" />
+                </div>
+            </div>
+
+            <!-- Price Tier Selector (shown dynamically when the chosen product has tiers) -->
+            <div id="createLineTierSelectorRow" class="field tier-selector" style="display:none;margin-bottom:14px;">
+                <label for="createLineModalPriceTier">Price Tier</label>
+                <select id="createLineModalPriceTier" class="tier-select" style="width:100%;" onchange="onCreateModalTierChange()"></select>
+                <div class="helper" style="font-size:11px;color:#5a6a7a;margin-top:4px;">Select the pricing level for this line item. The default tier is pre-selected.</div>
+                <div class="tier-price-highlight" id="createLineTierHighlight" style="display:none;">
+                    <div><div class="tph-label">Unit Price (from tier)</div><div class="tph-value" id="createLineTierHighlightUnit">—</div></div>
+                    <div style="margin-left:auto;"><div class="tph-label">Cost Price</div><div class="tph-value tph-value--muted" id="createLineTierHighlightCost">—</div></div>
+                </div>
+            </div>
+
+            <!-- Row 2: Subtitle + Reference URL (2-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="createLineModalSubtitle">Subtitle</label>
+                    <input type="text" id="createLineModalSubtitleField" name="subtitle" placeholder="Optional subtitle" />
+                </div>
+                <div class="field">
+                    <label for="createLineModalReferenceUrl">Reference URL</label>
+                    <input type="url" id="createLineModalReferenceUrl" name="referenceUrl" placeholder="https://..." />
+                </div>
+            </div>
+
+            <!-- Row 3: Quantity, Unit Price, VAT%, Cost Price (4-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="createLineModalQuantity">Quantity *</label>
+                    <input type="number" id="createLineModalQuantity" name="quantity" step="0.01" min="0.01" required placeholder="1" inputmode="decimal" />
+                </div>
+                <div class="field">
+                    <label for="createLineModalUnitPrice">Unit Price *</label>
+                    <input type="number" id="createLineModalUnitPrice" name="unitPrice" step="0.01" min="0" required placeholder="0.00" inputmode="decimal" />
+                </div>
+                <div class="field">
+                    <label for="createLineModalVatRate">VAT %</label>
+                    <input type="number" id="createLineModalVatRate" name="vatRate" step="0.01" min="0" max="100" placeholder="0" inputmode="decimal" />
+                </div>
+                <div class="field">
+                    <label for="createLineModalCostPrice">Cost Price</label>
+                    <input type="number" id="createLineModalCostPrice" name="costPrice" step="0.01" min="0" placeholder="Optional" inputmode="decimal" />
+                </div>
+            </div>
+
+            <!-- Row 4: Discount + Discount Type (2-column) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="field">
+                    <label for="createLineModalDiscount">Discount</label>
+                    <input type="number" id="createLineModalDiscount" name="discount" step="0.01" min="0" placeholder="0" inputmode="decimal" />
+                </div>
+                <div class="field">
+                    <label for="createLineModalDiscountType">Discount Type</label>
+                    <select id="createLineModalDiscountType" name="discountType">
+                        <option value="Percentage">%</option>
+                        <option value="Fixed">Fixed</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Advanced: Reverse Charge (collapsed by default) -->
+            <div class="modal-advanced-section">
+                <button type="button" class="advanced-toggle" onclick="toggleCreateLineAdvanced()">
+                    <span class="toggle-icon">▶</span> Advanced
+                </button>
+                <div id="createLineAdvancedContent" style="display:none;">
+                    <label class="checkbox-label" style="display:flex;align-items:center;gap:8px;margin:12px 0 0 0;cursor:pointer;">
+                        <input type="checkbox" id="createLineModalReverseCharge" name="isReverseCharge" value="true" style="width:16px;height:16px;margin:0;flex-shrink:0;" />
+                        Reverse Charge (VAT accounted by buyer)
+                    </label>
+                </div>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button id="createLineModalSubmitBtn" type="button" class="btn btn-success" onclick="submitCreateLineModal()">Add Line</button>
+            <button type="button" class="btn btn-secondary" onclick="hideCreateLineModal()">Cancel</button>
+        </div>
+    </div>
+</div>
