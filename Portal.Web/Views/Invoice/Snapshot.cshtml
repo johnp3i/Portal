@@ -27,11 +27,11 @@
             --border: rgba(13,94,166,.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: #fff; font-size: 14px; line-height: 1.6; padding: 0; margin: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: #fff; font-size: 12.5px; line-height: 1.55; padding: 0; margin: 0; }
         .page { max-width: 100%; margin: 0; background: #fff; padding: 56px 48px; min-height: 100vh; display: flex; flex-direction: column; }
-        h1 { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
-        h2 { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; }
-        h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+        h1 { font-family: 'Manrope', sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
+        h2 { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; margin-top: 30px; margin-bottom: 12px; }
+        h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
         .logo-section { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 24px; margin-bottom: 28px; border-bottom: 1px solid var(--border); }
         .logo-section img { max-height: 60px; max-width: 200px; }
         .business-info { text-align: right; font-size: 13px; line-height: 1.6; color: var(--text); }
@@ -48,7 +48,7 @@
         table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
         th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
         th.right { text-align: right; }
-        td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 12.5px; }
         td.right { text-align: right; }
         .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
         .section-header { margin-bottom: 16px; padding: 12px 16px; background: var(--bg); border-radius: 8px; }
@@ -460,29 +460,48 @@
         </div>
     }
 
-    <!-- Payment Details -->
-    @if (paymentDetails.Any())
-    {
-        <div class="payment-section">
-            <div class="section-title">Payment Details:</div>
-            <div class="payment-grid">
-                @foreach (var pd in paymentDetails)
-                {
-                    <div class="payment-item">
-                        <div class="bank-name">@pd.BankName</div>
-                        <div class="iban">IBAN: @pd.Iban</div>
-                        <div class="payee">Cheque issued to: @pd.PayeeName</div>
-                    </div>
-                }
-            </div>
-        </div>
-    }
-
-    <!-- Platform Branding Footer -->
-    <div style="margin-top:24px;padding-top:12px;border-top:1px solid rgba(13,94,166,.08);font-size:9px;color:#b0bec5;text-align:center;letter-spacing:0.03em;">
-        Powered by 3 Inventors — Operational Intelligence
-    </div>
+    @* Payment details and platform branding now render as a repeating per-page PDF footer
+       (see the #pdf-footer template below, injected via Puppeteer's FooterTemplate). They were
+       removed from the body to avoid duplicating on the last page. *@
     </div>
 </div>
+
+@*
+    Per-page PDF footer source. This element is NOT shown in the normal document flow
+    (display:none). InvoicePdfService extracts its inner HTML and passes it to Puppeteer as
+    the running FooterTemplate, which Chromium repeats at the bottom of every page.
+    All styles here MUST be inline — Puppeteer renders header/footer templates in an
+    isolated context where the page's <style> and web fonts do not apply.
+*@
+<template id="pdf-footer">
+    <div style="width:100%;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A2B3C;padding:0 12mm;box-sizing:border-box;">
+        @if (paymentDetails.Any())
+        {
+            <div style="border-top:1px solid rgba(13,94,166,.15);padding-top:5px;">
+                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#6B7F8E;margin-bottom:3px;">Payment Details</div>
+                <table style="width:100%;border-collapse:collapse;border:none;">
+                    <tr>
+                        @foreach (var pd in paymentDetails)
+                        {
+                            <td style="border:none;padding:0 10px 0 0;vertical-align:top;font-size:8px;line-height:1.5;color:#1A2B3C;">
+                                <div>
+                                    <span style="font-weight:700;">@pd.BankName</span>
+                                    &nbsp;&middot;&nbsp;
+                                    <span style="font-family:'Courier New',monospace;">IBAN: @pd.Iban</span>
+                                </div>
+                                <div style="font-style:italic;color:#6B7F8E;">Cheque to: @pd.PayeeName</div>
+                            </td>
+                        }
+                    </tr>
+                </table>
+            </div>
+        }
+        <div style="font-size:7px;color:#b0bec5;text-align:center;letter-spacing:0.03em;margin-top:12px;">
+            Powered by 3 Inventors &mdash; Operational Intelligence
+            &nbsp;&middot;&nbsp;
+            Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+        </div>
+    </div>
+</template>
 </body>
 </html>
