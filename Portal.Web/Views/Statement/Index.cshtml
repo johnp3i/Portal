@@ -264,13 +264,18 @@
 
         var selectedCustomerId = @(selectedCustomerId.HasValue ? selectedCustomerId.Value.ToString() : "null");
 
-        // Restore filters from localStorage
+        // Restore filters from localStorage.
+        // Note: when a customer is pre-selected via the ?customerId= query param
+        // (selectedCustomerId), that explicit choice wins — don't let a stale
+        // localStorage value overwrite the server-rendered selection.
         (function restoreFilters() {
             var saved = localStorage.getItem('statementFilters');
             if (saved) {
                 try {
                     var filters = JSON.parse(saved);
-                    if (filters.customerId) document.getElementById('customerSelect').value = filters.customerId;
+                    if (filters.customerId && !selectedCustomerId) {
+                        document.getElementById('customerSelect').value = filters.customerId;
+                    }
                     if (filters.fromDate) document.getElementById('fromDate').value = filters.fromDate;
                     if (filters.toDate) document.getElementById('toDate').value = filters.toDate;
                 } catch (e) {}
