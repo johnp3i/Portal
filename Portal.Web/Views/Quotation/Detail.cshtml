@@ -254,10 +254,14 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
                             @foreach (var line in subscriptionLines)
                             {
                                 subRowNum++;
-                                var subAnnualGross = line.UnitPrice * 12;
-                                var subDiscountAmount = line.DiscountType == "Percentage"
-                                    ? (subAnnualGross * line.Discount / 100m)
-                                    : line.Discount;
+                                // Annual view: Subtotal is the gross annual (qty x unit price x 12),
+                                // Annual Total is the net annual (LineTotal already folds in quantity and
+                                // the line discount, x12), and Discount is the difference. Deriving these
+                                // from UnitPrice alone ignored quantity, and the Fixed-discount branch mixed
+                                // a monthly discount into an annual row.
+                                var subAnnualGross = Math.Round(line.Quantity * line.UnitPrice * 12m, 2);
+                                var subAnnualNet = Math.Round(line.LineTotal * 12m, 2);
+                                var subDiscountAmount = subAnnualGross - subAnnualNet;
                                 <tr>
                                     <td><span class="muted">@subRowNum</span></td>
                                     <td>
@@ -268,7 +272,13 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
                                         }
                                     </td>
                                     <td>12</td>
-                                    <td>@(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")/mo</td>
+                                    <td>
+                                        @(ViewBag.CurrencySymbol)@line.UnitPrice.ToString("N2")/mo
+                                        @if (line.Quantity != 1)
+                                        {
+                                            <span class="muted" style="display:block;font-size:11px;">&times; @line.Quantity.ToString("G29")</span>
+                                        }
+                                    </td>
                                     <td style="font-weight:600;color:#0D5EA6;">@(ViewBag.CurrencySymbol)@subAnnualGross.ToString("N2")</td>
                                     <td>@line.VatRate.ToString("G29")%</td>
                                     <td>
@@ -281,7 +291,7 @@ else if (isExpiringSoon && Model.Quotation.QuotationStatusTypeId != 4 && Model.Q
                                             <span>—</span>
                                         }
                                     </td>
-                                    <td><strong>@(ViewBag.CurrencySymbol)@((line.LineTotal * 12).ToString("N2"))</strong></td>
+                                    <td><strong>@(ViewBag.CurrencySymbol)@subAnnualNet.ToString("N2")</strong></td>
                                 </tr>
                             }
                         </tbody>

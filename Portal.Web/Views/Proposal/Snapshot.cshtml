@@ -874,12 +874,35 @@
                                                     {
                                                         <div class="line-subtitle">@line.Subtitle</div>
                                                     }
+                                                    @* For subscription lines the Monthly/Daily/Annual columns show the
+                                                       line's combined figure (qty x unit price - discount), so surface the
+                                                       per-unit economics here when quantity or a discount would otherwise be
+                                                       hidden. *@
+                                                    @if (section.ColumnConfiguration == "Subscription"
+                                                        && (line.Quantity != 1 || line.Discount > 0))
+                                                    {
+                                                        var perUnitParts = new List<string>();
+                                                        perUnitParts.Add($"{line.Quantity.ToString("G29")} \u00D7 {fmt(line.UnitPrice)}/mo");
+                                                        if (line.Discount > 0)
+                                                        {
+                                                            perUnitParts.Add(line.DiscountType == "Fixed"
+                                                                ? $"less {fmt(line.Discount)}/mo"
+                                                                : $"{line.Discount.ToString("G29")}% off");
+                                                        }
+                                                        <div class="line-subtitle">@string.Join(" \u00B7 ", perUnitParts)</div>
+                                                    }
                                                 </td>
                                                 @if (section.ColumnConfiguration == "Subscription")
                                                 {
-                                                    <td class="money">@fmt(line.UnitPrice)</td>
-                                                    <td class="money">@(fmt(Math.Round(line.UnitPrice / 30, 2)))/day</td>
-                                                    <td class="money">@fmt(line.UnitPrice * 12)</td>
+                                                    @* Use the line's actual monthly net (LineTotal = qty x unit price - discount),
+                                                       the same figure the section totals and header use. Deriving these columns
+                                                       from UnitPrice alone ignored quantity and any line discount, so a 150-seat
+                                                       discounted line wrongly showed the single-seat price (e.g. EUR 90 annual
+                                                       instead of EUR 12,150). *@
+                                                    var lineMonthly = line.LineTotal;
+                                                    <td class="money">@fmt(lineMonthly)</td>
+                                                    <td class="money">@(fmt(Math.Round(lineMonthly / 30, 2)))/day</td>
+                                                    <td class="money">@fmt(lineMonthly * 12)</td>
                                                 }
                                                 else
                                                 {
@@ -1022,14 +1045,34 @@
                 <!-- TOTAL BOX -->
                 @if (Model.IsGrandTotalShown)
                 {
-                    var allNormalLines = Model.Sections.SelectMany(s => s.Lines).Where(l => !l.IsAdjustmentLine).ToList();
+                    @* Grand totals must annualize subscription-section lines (x12), exactly as the
+                       engine's RecalculateQuotationTotalsAsync and each subscription section's own
+                       totals box do. Summing raw monthly LineTotals here would badly under-report a
+                       proposal that contains subscription sections. A per-section multiplier keyed on
+                       ColumnConfiguration keeps every surface consistent. *@
+                    decimal SubMult(Portal.Infrastructure.Models.ProposalSectionRenderModel s)
+                        => s.ColumnConfiguration == "Subscription" ? 12m : 1m;
+
                     var proposalAdjustmentLine = Model.Sections.SelectMany(s => s.Lines).FirstOrDefault(l => l.IsAdjustmentLine);
-                    var totalGrossSubtotal = allNormalLines.Sum(l => l.Quantity * l.UnitPrice);
-                    var totalNetSubtotal = allNormalLines.Sum(l => l.LineTotal);
+                    decimal totalGrossSubtotal = 0m;
+                    decimal totalNetSubtotal = 0m;
+                    decimal totalVatRaw = 0m;
+                    foreach (var s in Model.Sections)
+                    {
+                        var m = SubMult(s);
+                        foreach (var l in s.Lines.Where(l => !l.IsAdjustmentLine))
+                        {
+                            totalGrossSubtotal += l.Quantity * l.UnitPrice * m;
+                            totalNetSubtotal += l.LineTotal * m;
+                            totalVatRaw += l.LineTotal * m * l.VatRate / 100m;
+                        }
+                    }
+                    totalGrossSubtotal = Math.Round(totalGrossSubtotal, 2);
+                    totalNetSubtotal = Math.Round(totalNetSubtotal, 2);
                     var totalLineDiscounts = totalGrossSubtotal - totalNetSubtotal;
                     var totalInvoiceDiscount = proposalAdjustmentLine != null ? Math.Abs(proposalAdjustmentLine.LineTotal) : 0m;
                     var totalNetAmount = totalNetSubtotal - totalInvoiceDiscount;
-                    var totalVat = Math.Round(allNormalLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
+                    var totalVat = Math.Round(totalVatRaw, 2);
                     var totalGrand = totalNetAmount + totalVat;
 
                     <!-- Per-section breakdown table (full width) -->
@@ -1049,13 +1092,14 @@
                                 <tbody>
                                     @foreach (var sec in lineItemSections.Where(s => s.Lines.Any(l => !l.IsAdjustmentLine)))
                                     {
+                                        var secMult = SubMult(sec);
                                         var secNormal = sec.Lines.Where(l => !l.IsAdjustmentLine).ToList();
-                                        var secGross = secNormal.Sum(l => l.Quantity * l.UnitPrice);
+                                        var secGross = secNormal.Sum(l => l.Quantity * l.UnitPrice * secMult);
                                         var secDisc = secNormal
                                             .Where(l => l.Discount > 0)
-                                            .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
-                                        var secNet = secNormal.Sum(l => l.LineTotal);
-                                        var secVat = secNormal.Sum(l => l.LineTotal * (l.VatRate / 100));
+                                            .Sum(l => (l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100)) * secMult);
+                                        var secNet = secNormal.Sum(l => l.LineTotal * secMult);
+                                        var secVat = secNormal.Sum(l => l.LineTotal * secMult * (l.VatRate / 100));
                                         var secTotal = secNet + secVat;
 
                                         <tr>

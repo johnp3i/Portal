@@ -107,11 +107,13 @@ else if (isExpiringSoon)
                 <input asp-for="ValidUntil" type="date" />
                 <span asp-validation-for="ValidUntil" class="field-validation-error"></span>
             </div>
-            <div class="field" style="grid-column:1 / -1;position:relative;">
-                <button type="button" onclick="var t=this.parentElement.querySelector('textarea');var svg=this.querySelector('svg');if(t.style.display==='none'){t.style.display='';svg.style.transform='rotate(180deg)';}else{t.style.display='none';svg.style.transform='rotate(0deg)';}" style="position:absolute;top:0;right:0;background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:rotate(@(string.IsNullOrWhiteSpace(Model.Notes) ? "0deg" : "180deg"));"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                <label asp-for="Notes">Notes</label>
+            <div class="field" style="grid-column:1 / -1;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <label asp-for="Notes" style="margin:0;">Notes</label>
+                    <button type="button" aria-label="Toggle notes" onclick="var t=this.closest('.field').querySelector('textarea');var svg=this.querySelector('svg');if(t.style.display==='none'){t.style.display='';svg.style.transform='rotate(180deg)';}else{t.style.display='none';svg.style.transform='rotate(0deg)';}" style="background:rgba(13,94,166,.06);border:1.5px solid rgba(13,94,166,.12);border-radius:10px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:rotate(@(string.IsNullOrWhiteSpace(Model.Notes) ? "0deg" : "180deg"));"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                </div>
                 <textarea asp-for="Notes" placeholder="Optional notes" style="display:@(string.IsNullOrWhiteSpace(Model.Notes) ? "none" : "block");margin-top:8px;"></textarea>
                 <span asp-validation-for="Notes" class="field-validation-error"></span>
             </div>
@@ -164,6 +166,29 @@ else if (isExpiringSoon)
                 <button type="submit" class="btn btn-primary" style="padding:10px 14px;font-size:12px;">Add Contact</button>
             </div>
         </form>
+    </div>
+</section>
+
+<!-- Brand logos help (collapsed by default) -->
+<section class="glass card-pad" style="margin-top:24px;padding:0;overflow:hidden;">
+    <button type="button" aria-expanded="false" aria-controls="logoHelpBodyEdit"
+            onclick="var b=document.getElementById('logoHelpBodyEdit');var svg=this.querySelector('svg.chevron');var open=b.style.display!=='none';b.style.display=open?'none':'block';this.setAttribute('aria-expanded',(!open).toString());svg.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+            style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;background:none;border:none;cursor:pointer;text-align:left;">
+        <span style="display:flex;align-items:center;gap:10px;">
+            <svg width="18" height="18" fill="none" stroke="#0D5EA6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span style="font-size:14px;font-weight:700;color:#0D5EA6;">How to add brand logos to this proposal</span>
+        </span>
+        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E7385" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div id="logoHelpBodyEdit" style="display:none;padding:0 20px 18px;font-size:13px;color:#5E7385;line-height:1.7;">
+        <p style="margin:0 0 10px;">Logos are not part of the quotation itself &mdash; they are applied when you <strong>preview, download, or share</strong> the proposal, so you can tailor branding per send.</p>
+        <ol style="margin:0 0 10px;padding-left:20px;">
+            <li>Upload your logos once in <a href="/MyBusiness?tab=logos" style="color:var(--blue);font-weight:700;">My Business &rarr; Logos</a>. Mark one as <strong>primary</strong> to have it used automatically.</li>
+            <li>Open this quotation&rsquo;s <strong>Detail</strong> page.</li>
+            <li>In <strong>Share with customer</strong>, pick your <strong>Hero logos</strong> (shown prominently at the top of the proposal) and a <strong>Metadata logo</strong> (the small logo beside your business name).</li>
+            <li><strong>Preview Proposal</strong> or <strong>Download PDF</strong> use your primary logo automatically if you don&rsquo;t choose any.</li>
+        </ol>
+        <p style="margin:0;">Logos are drawn from your business profile, so they stay consistent across every quotation and proposal.</p>
     </div>
 </section>
 

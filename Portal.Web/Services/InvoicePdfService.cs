@@ -35,8 +35,26 @@ public class InvoicePdfService : IInvoicePdfService
         // 2. Post-process HTML: replace logo <img src="/uploads/..."> with base64 data URI
         html = await EmbedLogoAsBase64Async(html);
 
-        // 3. Launch PuppeteerSharp and generate PDF
-        return await GeneratePdfFromHtmlAsync(html, cancellationToken);
+        // 3. Extract the per-page footer template (payment details + branding) authored in the view.
+        var footerTemplate = ExtractFooterTemplate(html);
+
+        // 4. Launch PuppeteerSharp and generate PDF with a repeating footer on every page.
+        return await GeneratePdfFromHtmlAsync(html, footerTemplate, cancellationToken);
+    }
+
+    /// <summary>
+    /// Pulls the inner HTML of the view's &lt;template id="pdf-footer"&gt; element so it can be
+    /// handed to Puppeteer as a running FooterTemplate (repeated on every page). Returns an empty
+    /// string if the template is absent, in which case no footer is rendered.
+    /// </summary>
+    private static string ExtractFooterTemplate(string html)
+    {
+        var match = Regex.Match(
+            html,
+            @"<template\s+id\s*=\s*""pdf-footer""\s*>(?<body>.*?)</template>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+        return match.Success ? match.Groups["body"].Value.Trim() : string.Empty;
     }
 
     private async Task<string> EmbedLogoAsBase64Async(string html)
@@ -84,7 +102,7 @@ public class InvoicePdfService : IInvoicePdfService
         }
     }
 
-    private static async Task<byte[]> GeneratePdfFromHtmlAsync(string html, CancellationToken cancellationToken)
+    private static async Task<byte[]> GeneratePdfFromHtmlAsync(string html, string footerTemplate, CancellationToken cancellationToken)
     {
         await new BrowserFetcher().DownloadAsync();
 
@@ -101,19 +119,33 @@ public class InvoicePdfService : IInvoicePdfService
             WaitUntil = new[] { WaitUntilNavigation.Networkidle0 }
         });
 
-        var pdfBytes = await page.PdfDataAsync(new PdfOptions
+        var hasFooter = !string.IsNullOrWhiteSpace(footerTemplate);
+
+        var pdfOptions = new PdfOptions
         {
             Landscape = false,
             Format = PaperFormat.A4,
             PrintBackground = true,
+            // Reserve bottom space for the running footer so page content never overlaps it.
+            // A larger bottom margin is needed only when a footer is present.
             MarginOptions = new MarginOptions
             {
                 Top = "14mm",
-                Bottom = "0mm",
+                Bottom = hasFooter ? "26mm" : "0mm",
                 Left = "0mm",
                 Right = "0mm"
             }
-        });
+        };
+
+        if (hasFooter)
+        {
+            pdfOptions.DisplayHeaderFooter = true;
+            // An empty header keeps Chromium from injecting its default date/title header.
+            pdfOptions.HeaderTemplate = "<span></span>";
+            pdfOptions.FooterTemplate = footerTemplate;
+        }
+
+        var pdfBytes = await page.PdfDataAsync(pdfOptions);
 
         cancellationToken.ThrowIfCancellationRequested();
 
