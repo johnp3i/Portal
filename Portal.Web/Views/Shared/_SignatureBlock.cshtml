@@ -23,7 +23,7 @@
                 var sigBase64 = Convert.ToBase64String(ms.ToArray());
                 var sigMime = defaultSig.ContentType ?? "image/png";
                 <div style="margin-top:40px;page-break-inside:avoid;display:inline-block;">
-                    <img src="data:@sigMime;base64,@sigBase64" style="max-height:60px;margin-bottom:8px;display:block;" />
+                    <img src="data:@sigMime;base64,@sigBase64" style="max-height:100px;margin-bottom:8px;display:block;" />
                     <div style="border-top:2px solid #1a2b3c;width:180px;margin-bottom:8px;"></div>
                     <p style="font-size:13px;color:#1a2b3c;font-weight:700;margin:0;">@defaultSig.Label</p>
                     @if (!string.IsNullOrEmpty(defaultSig.Position))
