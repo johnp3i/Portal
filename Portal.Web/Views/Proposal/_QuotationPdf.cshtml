@@ -9,7 +9,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quotation @Model.Reference</title>
+    <title>Proposal @Model.Reference</title>
     <style>
         :root {
             --blue: #0D5EA6;
@@ -36,9 +36,9 @@
         }
         h1 {
             font-family: 'Manrope', sans-serif;
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 800;
-            letter-spacing: -0.02em;
+            letter-spacing: 0.02em;
         }
         h2 {
             font-family: 'Manrope', sans-serif;
@@ -75,9 +75,9 @@
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 40px;
-            padding-bottom: 24px;
+            align-items: baseline;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
             border-bottom: 2px solid var(--blue);
         }
         .header-left h1 { color: var(--blue); }
@@ -95,6 +95,35 @@
             margin-top: 2px;
         }
         .header-right .detail {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Parties: Prepared By (left) opposite Prepared For (right) */
+        .parties {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        .party { flex: 1; }
+        .party-left { text-align: left; }
+        .party-right { text-align: right; }
+        .party .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .party .value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .party .detail {
             font-size: 12px;
             color: var(--muted);
             margin-top: 2px;
@@ -169,6 +198,22 @@
         }
         td.right { text-align: right; }
         .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+        /* Summary table grand-totals footer row — compact, aligned under the columns */
+        tfoot td { border-bottom: none; }
+        tfoot .grand-sep td {
+            border-top: 2px solid var(--blue);
+            padding-top: 10px;
+            font-size: 12px;
+        }
+        tfoot .tf-label {
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        tfoot .tf-value { font-weight: 700; }
+        tfoot .tf-value.disc { color: #129867; }
 
         /* Section styling */
         .section-header {
@@ -286,8 +331,18 @@
             border-radius: 12px;
             break-inside: avoid;
             page-break-inside: avoid;
+            /* Align both columns to the bottom so the signature line sits on the same baseline
+               whether a side shows a real signature image or just a blank line. */
+            align-items: end;
         }
-        .signature-block { padding-top: 60px; }
+        /* Each column: label pinned to the top, the signature group (.sig-bottom) pinned to the
+           bottom, with a shared minimum height so both sides line up on the same baseline. */
+        .signature-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 150px;
+        }
         .signature-block .sig-label {
             font-size: 13px;
             color: var(--muted);
@@ -295,9 +350,14 @@
             margin-bottom: 8px;
         }
         .signature-block .sig-line {
-            border-bottom: 2px solid #0D5EA6;
+            border-top: 2px solid #1a2b3c;
             width: 220px;
+            margin-bottom: 8px;
         }
+        .signature-block .sig-name { font-size: 13px; color: #1a2b3c; font-weight: 700; }
+        .signature-block .sig-date { font-size: 12px; color: var(--muted); margin-top: 6px; }
+        /* Keep the embedded signature image compact, sitting just above the line. */
+        .signature-block img { max-height: 70px; display: block; margin: 0 0 8px 0; }
 
         /* Footer */
         .footer-powered {
@@ -356,13 +416,33 @@
         </div>
     </div>
 
-    <!-- Header: QUOTATION + Customer -->
+    <!-- Title + reference on one line -->
     <div class="header">
         <div class="header-left">
-            <h1>QUOTATION</h1>
-            <div style="margin-top:8px;font-size:16px;font-weight:700;">@Model.Reference</div>
+            <h1>PROPOSAL</h1>
         </div>
         <div class="header-right">
+            <div style="font-size:15px;font-weight:700;color:var(--text);">@Model.Reference</div>
+        </div>
+    </div>
+
+    <!-- Prepared By (left) opposite Prepared For (right) -->
+    <div class="parties">
+        <div class="party party-left">
+            @if (!string.IsNullOrWhiteSpace(Model.PreparedByName))
+            {
+                <div class="label">Prepared By</div>
+                <div class="value">@Model.PreparedByName</div>
+                var contactDetails = new List<string>();
+                if (!string.IsNullOrWhiteSpace(Model.PreparedByPhone)) { contactDetails.Add(Model.PreparedByPhone); }
+                if (!string.IsNullOrWhiteSpace(Model.PreparedByEmail)) { contactDetails.Add(Model.PreparedByEmail); }
+                if (contactDetails.Any())
+                {
+                    <div class="detail">@string.Join(" · ", contactDetails)</div>
+                }
+            }
+        </div>
+        <div class="party party-right">
             <div class="label">Prepared For</div>
             <div class="value">@(Model.CustomerContactPerson ?? Model.CustomerName)</div>
             @if (!string.IsNullOrWhiteSpace(Model.CustomerContactPerson))
@@ -403,24 +483,6 @@
         </div>
     </div>
 
-    <!-- Prepared By (if contact person specified) -->
-    @if (!string.IsNullOrWhiteSpace(Model.PreparedByName))
-    {
-        <div class="prepared-by">
-            <div class="pb-label">Prepared By</div>
-            <div class="pb-name">@Model.PreparedByName</div>
-            @{
-                var contactDetails = new List<string>();
-                if (!string.IsNullOrWhiteSpace(Model.PreparedByPhone)) { contactDetails.Add(Model.PreparedByPhone); }
-                if (!string.IsNullOrWhiteSpace(Model.PreparedByEmail)) { contactDetails.Add(Model.PreparedByEmail); }
-            }
-            @if (contactDetails.Any())
-            {
-                <div class="pb-detail">@string.Join(" · ", contactDetails)</div>
-            }
-        </div>
-    }
-
     <!-- Sections -->
     @{
         var orderedSections = Model.Sections.OrderBy(s => s.SortOrder).ToList();
@@ -452,60 +514,137 @@
             }
         </div>
 
-        @if (sec.Lines.Any())
+        @{
+            // Exclude proposal-level adjustment lines (IsAdjustmentLine) from the section tables and
+            // section totals — they are a document-level discount shown only in the grand-total box,
+            // never a priced row inside a section (mirrors the invoice PDF and the on-screen preview).
+            var secLines = sec.Lines.Where(l => !l.IsAdjustmentLine).ToList();
+        }
+        @if (secLines.Any())
         {
-            <table>
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th class="right">Qty</th>
-                        <th class="right">Unit Price</th>
-                        <th class="right">VAT %</th>
-                        <th class="right">Discount</th>
-                        <th class="right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var line in sec.Lines.OrderBy(l => l.SortOrder))
-                    {
-                        <tr>
-                            <td>
-                                <strong>@line.Description</strong>
-                                @if (!string.IsNullOrWhiteSpace(line.Subtitle))
-                                {
-                                    <div class="subtitle">@line.Subtitle</div>
-                                }
-                            </td>
-                            <td class="right">@line.Quantity.ToString("N2")</td>
-                            <td class="right">@fmt(line.UnitPrice)</td>
-                            <td class="right">@line.VatRate.ToString("N2")%</td>
-                            <td class="right">
-                                @if (line.Discount > 0)
-                                {
-                                    @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : fmt(line.Discount))
-                                }
-                                else
-                                {
-                                    <span style="color:var(--muted);">—</span>
-                                }
-                            </td>
-                            <td class="right"><strong>@fmt(line.LineTotal)</strong></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            var isSubscriptionSection = sec.ColumnConfiguration == "Subscription";
 
-            @if (sec.IsTotalsTableShown)
+            if (isSubscriptionSection)
             {
-                var secSubtotal = sec.Lines.Sum(l => l.LineTotal);
-                var secVat = sec.Lines.Sum(l => l.LineTotal * l.VatRate / 100);
-                var secTotal = secSubtotal + secVat;
+                <!-- Subscription section: monthly unit prices annualised x12 (matches the on-screen preview). -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="right">Monthly Price</th>
+                            <th class="right">Daily Cost</th>
+                            <th class="right">Annual Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in secLines.OrderBy(l => l.SortOrder))
+                        {
+                            // LineTotal already folds in quantity and the line discount; it is the
+                            // monthly net. Daily and annual derive from it, exactly like the preview.
+                            var lineMonthly = line.LineTotal;
+                            <tr>
+                                <td>
+                                    <strong>@line.Description</strong>
+                                    @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                    {
+                                        <div class="subtitle">@line.Subtitle</div>
+                                    }
+                                    @if (line.Quantity != 1 || line.Discount > 0)
+                                    {
+                                        var perUnitParts = new List<string>();
+                                        perUnitParts.Add($"{line.Quantity.ToString("G29")} \u00D7 {fmt(line.UnitPrice)}/mo");
+                                        if (line.Discount > 0)
+                                        {
+                                            perUnitParts.Add(line.DiscountType == "Fixed"
+                                                ? $"less {fmt(line.Discount)}/mo"
+                                                : $"{line.Discount.ToString("G29")}% off");
+                                        }
+                                        <div class="subtitle">@string.Join(" \u00B7 ", perUnitParts)</div>
+                                    }
+                                </td>
+                                <td class="right">@fmt(lineMonthly)</td>
+                                <td class="right">@(fmt(Math.Round(lineMonthly / 30, 2)))/day</td>
+                                <td class="right"><strong>@fmt(lineMonthly * 12)</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
 
-                <div class="totals-card">
-                    <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@fmt(secSubtotal)</span></div>
-                    <div class="totals-row"><span class="label">Section VAT</span><span class="value">@fmt(secVat)</span></div>
-                    <div class="totals-row"><span class="label">Section Total</span><span class="value">@fmt(secTotal)</span></div>
-                </div>
+                @if (sec.IsTotalsTableShown)
+                {
+                    var subMonthlyTotal = secLines.Sum(l => l.LineTotal);
+                    var subDailyCost = Math.Round(subMonthlyTotal / 30, 2);
+                    var subAnnualTotal = subMonthlyTotal * 12;
+                    var subAnnualVat = Math.Round(secLines.Sum(l => l.LineTotal * l.VatRate / 100m) * 12, 2);
+                    var subAnnualWithVat = subAnnualTotal + subAnnualVat;
+
+                    <div class="totals-card">
+                        <div class="totals-row"><span class="label">Total Monthly</span><span class="value">@fmt(subMonthlyTotal)</span></div>
+                        <div class="totals-row"><span class="label">Total Daily Cost</span><span class="value">@(fmt(subDailyCost))/day</span></div>
+                        <div class="totals-row"><span class="label">Total Annual</span><span class="value">@fmt(subAnnualTotal)</span></div>
+                        @if (subAnnualVat > 0)
+                        {
+                            <div class="totals-row"><span class="label">VAT (Annual)</span><span class="value">@fmt(subAnnualVat)</span></div>
+                            <div class="totals-row"><span class="label">Annual Total incl. VAT</span><span class="value">@fmt(subAnnualWithVat)</span></div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="right">Qty</th>
+                            <th class="right">Unit Price</th>
+                            <th class="right">VAT %</th>
+                            <th class="right">Discount</th>
+                            <th class="right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in secLines.OrderBy(l => l.SortOrder))
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@line.Description</strong>
+                                    @if (!string.IsNullOrWhiteSpace(line.Subtitle))
+                                    {
+                                        <div class="subtitle">@line.Subtitle</div>
+                                    }
+                                </td>
+                                <td class="right">@line.Quantity.ToString("N2")</td>
+                                <td class="right">@fmt(line.UnitPrice)</td>
+                                <td class="right">@line.VatRate.ToString("N2")%</td>
+                                <td class="right">
+                                    @if (line.Discount > 0)
+                                    {
+                                        @(line.DiscountType == "Percentage" ? $"{line.Discount:N2}%" : fmt(line.Discount))
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--muted);">—</span>
+                                    }
+                                </td>
+                                <td class="right"><strong>@fmt(line.LineTotal)</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (sec.IsTotalsTableShown)
+                {
+                    var secSubtotal = secLines.Sum(l => l.LineTotal);
+                    var secVat = secLines.Sum(l => l.LineTotal * l.VatRate / 100);
+                    var secTotal = secSubtotal + secVat;
+
+                    <div class="totals-card">
+                        <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@fmt(secSubtotal)</span></div>
+                        <div class="totals-row"><span class="label">Section VAT</span><span class="value">@fmt(secVat)</span></div>
+                        <div class="totals-row"><span class="label">Section Total</span><span class="value">@fmt(secTotal)</span></div>
+                    </div>
+                }
             }
         }
         else
@@ -570,10 +709,29 @@
     <!-- Summary Table (per-section breakdown) -->
     @if (Model.IsGrandTotalShown)
     {
-        var sectionsWithLines = lineItemSections.Where(s => s.Lines.Any()).ToList();
-        var totalDiscount = Model.Sections.SelectMany(s => s.Lines)
-            .Where(l => l.Discount > 0)
-            .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
+        var sectionsWithLines = lineItemSections.Where(s => s.Lines.Any(l => !l.IsAdjustmentLine)).ToList();
+        // Annualise subscription-section figures (x12) so the grand-total box reconciles with the
+        // annualised per-section summary and the engine's header values.
+        //   Gross subtotal (before discount)  -> totalGrossSubtotal
+        //   Line discounts                     -> totalDiscount
+        //   Net subtotal (= Model.Subtotal)    -> totalGrossSubtotal - totalDiscount
+        // The box must read: Subtotal(gross) - Discount + Tax = Total. Showing Model.Subtotal (which
+        // is already NET) on the "Subtotal" line while ALSO showing a Discount line double-counts the
+        // discount and makes the column fail to add up to the Total. So surface the GROSS subtotal.
+        //
+        // Adjustment lines (a proposal-level discount, IsAdjustmentLine = true) are NOT priced items:
+        // they must be excluded from the gross/discount/section sums and surfaced as their own row,
+        // exactly as the on-screen preview (Snapshot.cshtml) and the invoice PDF do. Including one in
+        // these sums would both mis-price the breakdown and render it as a bogus line item.
+        var proposalAdjustmentLine = Model.Sections.SelectMany(s => s.Lines).FirstOrDefault(l => l.IsAdjustmentLine);
+        var totalInvoiceDiscount = proposalAdjustmentLine != null ? Math.Abs(proposalAdjustmentLine.LineTotal) : 0m;
+        var totalGrossSubtotal = Model.Sections
+            .SelectMany(s => s.Lines.Where(l => !l.IsAdjustmentLine).Select(l => new { Line = l, Mult = s.ColumnConfiguration == "Subscription" ? 12m : 1m }))
+            .Sum(x => x.Line.Quantity * x.Line.UnitPrice * x.Mult);
+        var totalDiscount = Model.Sections
+            .SelectMany(s => s.Lines.Where(l => !l.IsAdjustmentLine).Select(l => new { Line = l, Mult = s.ColumnConfiguration == "Subscription" ? 12m : 1m }))
+            .Where(x => x.Line.Discount > 0)
+            .Sum(x => (x.Line.DiscountType == "Fixed" ? x.Line.Discount : x.Line.Quantity * x.Line.UnitPrice * (x.Line.Discount / 100)) * x.Mult);
 
         @if (sectionsWithLines.Count > 1)
         {
@@ -593,12 +751,18 @@
                 <tbody>
                     @foreach (var sec in sectionsWithLines)
                     {
-                        var secGross = sec.Lines.Sum(l => l.Quantity * l.UnitPrice);
-                        var secDisc = sec.Lines
+                        // Annualise subscription sections (x12) so the summary matches each section's
+                        // own totals and the header grand total. Adjustment lines are excluded — they
+                        // are a proposal-level discount surfaced in the grand-total box, not a priced
+                        // section item.
+                        var secMult = sec.ColumnConfiguration == "Subscription" ? 12m : 1m;
+                        var secNormal = sec.Lines.Where(l => !l.IsAdjustmentLine).ToList();
+                        var secGross = secNormal.Sum(l => l.Quantity * l.UnitPrice * secMult);
+                        var secDisc = secNormal
                             .Where(l => l.Discount > 0)
-                            .Sum(l => l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100));
-                        var secNet = sec.Lines.Sum(l => l.LineTotal);
-                        var secVat = sec.Lines.Sum(l => l.LineTotal * (l.VatRate / 100));
+                            .Sum(l => (l.DiscountType == "Fixed" ? l.Discount : l.Quantity * l.UnitPrice * (l.Discount / 100)) * secMult);
+                        var secNet = secNormal.Sum(l => l.LineTotal * secMult);
+                        var secVat = secNormal.Sum(l => l.LineTotal * secMult * (l.VatRate / 100));
                         var secTotal = secNet + secVat;
 
                         <tr>
@@ -610,15 +774,37 @@
                         </tr>
                     }
                 </tbody>
+                <tfoot>
+                    @* Compact grand-totals row — each value aligns under its matching column so the
+                       section figures tie out visually. The Discount column folds in both the per-line
+                       discounts and any proposal-level adjustment, so Subtotal - Discount + VAT = Total. *@
+                    @{
+                        var footTotalDiscount = totalDiscount + totalInvoiceDiscount;
+                    }
+                    <tr class="grand-sep">
+                        <td class="tf-label" style="text-align:right;">Grand totals</td>
+                        <td class="right tf-value">@fmt(totalGrossSubtotal)</td>
+                        <td class="right tf-value disc">@(footTotalDiscount > 0 ? $"-{fmt(footTotalDiscount)}" : "—")</td>
+                        <td class="right tf-value">@fmt(Model.TaxAmount)</td>
+                        <td class="right tf-value">@fmt(Model.TotalAmount)</td>
+                    </tr>
+                </tfoot>
             </table>
         }
 
         <!-- Grand Totals -->
+        @* Subtotal shows the GROSS figure (before discount) so the column reconciles:
+           gross subtotal - line discounts + tax = total. When there is no discount the gross
+           equals the net, so Model.Subtotal and totalGrossSubtotal coincide. *@
         <div class="totals-card" style="margin-top:32px;">
-            <div class="totals-row"><span class="label">Subtotal</span><span class="value">@fmt(Model.Subtotal)</span></div>
+            <div class="totals-row"><span class="label">Subtotal</span><span class="value">@fmt(totalDiscount > 0 ? totalGrossSubtotal : Model.Subtotal)</span></div>
             @if (totalDiscount > 0)
             {
-                <div class="totals-row"><span class="label" style="color:#129867;">Discount</span><span class="value" style="color:#129867;">-@fmt(totalDiscount)</span></div>
+                <div class="totals-row"><span class="label" style="color:#129867;">Line Discounts</span><span class="value" style="color:#129867;">-@fmt(totalDiscount)</span></div>
+            }
+            @if (proposalAdjustmentLine != null)
+            {
+                <div class="totals-row"><span class="label" style="color:#129867;">@proposalAdjustmentLine.Description</span><span class="value" style="color:#129867;">-@fmt(totalInvoiceDiscount)</span></div>
             }
             <div class="totals-row"><span class="label">Tax</span><span class="value">@fmt(Model.TaxAmount)</span></div>
             <div class="totals-row grand-total"><span class="label">Total</span><span class="value">@fmt(Model.TotalAmount)</span></div>
@@ -629,7 +815,7 @@
     @if (Model.ValidUntil.HasValue)
     {
         <div class="validity-notice">
-            This quotation is valid until @Model.ValidUntil.Value.ToString("dd MMM yyyy"). After this date, pricing may be subject to change.
+            This proposal is valid until @Model.ValidUntil.Value.ToString("dd MMM yyyy"). After this date, pricing may be subject to change.
         </div>
     }
 
@@ -643,16 +829,43 @@
     }
 
     <!-- Signature -->
-    <div style="margin-top:32px;">
+    @inject Portal.Infrastructure.Services.ISignatureService _sigServiceProposal
+    @inject Portal.Infrastructure.Services.ICurrentTenantService _tenantServiceProposal
+    @inject Portal.Infrastructure.Data.PortalDbContext _sigDbContextProposal
+    @{
+        var bizIdProposal = _tenantServiceProposal.CurrentBusinessId;
+        var defaultSigProposal = await _sigServiceProposal.GetDefaultAsync(bizIdProposal);
+        var bizForSigProposal = await _sigDbContextProposal.Businesses.FindAsync(bizIdProposal);
+        var isAutoSigEnabledProposal = bizForSigProposal?.IsAutoInvoiceSignatureEnabled ?? false;
+    }
+    <!-- Keep the "Signature" heading together with the signature box so a page break can't
+         orphan the heading on the previous page. -->
+    <div style="margin-top:32px;break-inside:avoid;page-break-inside:avoid;">
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#0D5EA6;margin-bottom:12px;">Signature</div>
     <div class="signature-section">
         <div class="signature-block">
             <div class="sig-label">Issued by</div>
-            <div class="sig-line"></div>
+            <div class="sig-bottom">
+                @if (isAutoSigEnabledProposal && defaultSigProposal != null)
+                {
+                    @* Real digital signature. _SignatureBlock inlines the image as base64, so it is
+                       self-contained in the PDF (no external/private URL to fetch). *@
+                    @await Html.PartialAsync("_SignatureBlock")
+                }
+                else
+                {
+                    <div class="sig-line"></div>
+                    <div class="sig-name">@Model.BusinessName</div>
+                }
+            </div>
         </div>
         <div class="signature-block">
             <div class="sig-label">Accepted by</div>
-            <div class="sig-line"></div>
+            <div class="sig-bottom">
+                <div class="sig-line"></div>
+                <div class="sig-name">@(Model.CustomerContactPerson ?? Model.CustomerName)</div>
+                <div class="sig-date">Date: _______________</div>
+            </div>
         </div>
     </div>
     </div>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proposal Totals — Option A (aligned footer row + grand totals card)</title>
+<style>
+    :root {
+        --blue: #0D5EA6;
+        --text: #1A2B3C;
+        --muted: #6B7F8E;
+        --bg: #F7FAFC;
+        --border: rgba(13,94,166,.08);
+        --green: #129867;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text);
+        background: #EEF4F8;
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 40px;
+    }
+    .page {
+        max-width: 820px;
+        margin: 0 auto 48px;
+        background: #fff;
+        padding: 48px;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(13,94,166,.08);
+    }
+    h3 { font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .section-header {
+        margin-bottom: 16px;
+        padding: 12px 16px;
+        background: var(--bg);
+        border-radius: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    th {
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left;
+    }
+    th.right { text-align: right; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    td.right { text-align: right; }
+
+    /* ---- Option A: a single COMPACT "Grand totals" footer row, aligned under the columns ---- */
+    tfoot td { border-bottom: none; }
+    tfoot .grand-sep td {
+        border-top: 2px solid var(--blue);
+        padding-top: 10px;
+        font-size: 12px;            /* small text, per request */
+    }
+    tfoot .tf-label { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    tfoot .tf-value { font-weight: 700; }
+    tfoot .tf-value.disc { color: var(--green); }
+
+    /* ---- Existing grand-totals card, kept as-is (right-aligned) ---- */
+    .totals-card {
+        margin-left: auto;
+        max-width: 320px;
+        margin-top: 24px;
+        padding: 16px 20px;
+        background: var(--bg);
+        border-radius: 12px;
+    }
+    .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--border); }
+    .totals-row:first-child { border-top: none; padding-top: 0; }
+    .totals-row .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+    .totals-row .value { font-weight: 700; font-size: 14px; }
+    .totals-row.disc .label, .totals-row.disc .value { color: var(--green); }
+    .grand-total .value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+
+    .note { max-width: 820px; margin: 0 auto 20px; color: var(--muted); font-size: 13px; }
+    .tag { display:inline-block; background:var(--blue); color:#fff; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:.04em; }
+</style>
+</head>
+<body>
+
+<div class="note"><span class="tag">OPTION A</span> &nbsp; A compact <strong>Grand totals</strong> footer row aligns the totals under the Subtotal / Discount / VAT / Total columns, and the existing <strong>grand-totals card</strong> is kept below it. Real Aquamare figures.</div>
+
+<div class="page">
+    <div class="section-header"><h3>Summary</h3></div>
+    <table>
+        <thead>
+            <tr>
+                <th>Section</th>
+                <th class="right">Subtotal</th>
+                <th class="right">Discount</th>
+                <th class="right">VAT</th>
+                <th class="right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>WorkforcePi Enhanced</strong></td>
+                <td class="right">€13,500.00</td>
+                <td class="right" style="color:#129867;">-€1,350.00</td>
+                <td class="right">€2,308.50</td>
+                <td class="right"><strong>€14,458.50</strong></td>
+            </tr>
+            <tr>
+                <td><strong>3 Inventors Payroll</strong></td>
+                <td class="right">€1,788.00</td>
+                <td class="right" style="color:#129867;">-€297.96</td>
+                <td class="right">€283.11</td>
+                <td class="right"><strong>€1,773.15</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Banking &amp; Payroll Payment Services</strong></td>
+                <td class="right">€940.00</td>
+                <td class="right">—</td>
+                <td class="right">€178.60</td>
+                <td class="right"><strong>€1,118.60</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Implementation, Configuration &amp; Go-Live</strong></td>
+                <td class="right">€1,750.00</td>
+                <td class="right">—</td>
+                <td class="right">€332.50</td>
+                <td class="right"><strong>€2,082.50</strong></td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <!-- Compact grand-totals row: each value aligns under its column -->
+            <tr class="grand-sep">
+                <td class="tf-label" style="text-align:right;">Grand totals</td>
+                <td class="right tf-value">€17,978.00</td>
+                <td class="right tf-value disc">-€1,647.96</td>
+                <td class="right tf-value">€3,102.71</td>
+                <td class="right tf-value">€19,432.75</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- Existing grand-totals card, unchanged -->
+    <div class="totals-card">
+        <div class="totals-row"><span class="label">Subtotal</span><span class="value">€17,978.00</span></div>
+        <div class="totals-row disc"><span class="label">Line Discounts</span><span class="value">-€1,647.96</span></div>
+        <div class="totals-row"><span class="label">VAT</span><span class="value">€3,102.71</span></div>
+        <div class="totals-row grand-total"><span class="label">Total</span><span class="value">€19,432.75</span></div>
+    </div>
+</div>
+
+<div class="note" style="margin-top:-4px;"><strong>Reconciliation:</strong> €17,978.00 − €1,647.96 + €3,102.71 = <strong>€19,432.75</strong> ✓ &nbsp; The footer row ties out column-by-column with the section rows; the card restates the same totals prominently.</div>
+
+</body>
+</html>

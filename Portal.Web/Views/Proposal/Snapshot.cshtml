@@ -1111,6 +1111,22 @@
                                         </tr>
                                     }
                                 </tbody>
+                                <tfoot>
+                                    @* Compact grand-totals row — each value aligns under its matching
+                                       column so the section figures tie out visually. The Discount
+                                       column folds in both the per-line discounts and any proposal-level
+                                       adjustment, so Subtotal - Discount + VAT = Total. *@
+                                    @{
+                                        var footTotalDiscount = totalLineDiscounts + totalInvoiceDiscount;
+                                    }
+                                    <tr>
+                                        <td class="money" style="text-align:right;border-top:2px solid var(--blue);padding-top:10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);">Grand totals</td>
+                                        <td class="money" style="border-top:2px solid var(--blue);padding-top:10px;font-size:12px;font-weight:700;">@fmt(totalGrossSubtotal)</td>
+                                        <td class="money" style="border-top:2px solid var(--blue);padding-top:10px;font-size:12px;font-weight:700;color:#129867;">@(footTotalDiscount > 0 ? $"-{fmt(footTotalDiscount)}" : "—")</td>
+                                        <td class="money" style="border-top:2px solid var(--blue);padding-top:10px;font-size:12px;font-weight:700;">@fmt(totalVat)</td>
+                                        <td class="money" style="border-top:2px solid var(--blue);padding-top:10px;font-size:12px;font-weight:700;">@fmt(totalGrand)</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>

@@ -492,7 +492,12 @@
             }
 
             function fillFormFields(form, entry) {
-                var fields = { 'unitPrice': entry.unitPrice, 'vatRate': entry.vatRate, 'costPrice': entry.costPrice || '' };
+                // Null-safe: the Product/Autocomplete DTO may omit VatRate/CostPrice.
+                var fields = {
+                    'unitPrice': (entry.unitPrice !== null && entry.unitPrice !== undefined) ? entry.unitPrice : '',
+                    'vatRate': (entry.vatRate !== null && entry.vatRate !== undefined) ? entry.vatRate : '',
+                    'costPrice': (entry.costPrice !== null && entry.costPrice !== undefined) ? entry.costPrice : ''
+                };
                 Object.keys(fields).forEach(function(name) {
                     var el = form.querySelector('[name="' + name + '"]');
                     if (el) el.value = fields[name];
@@ -525,8 +530,11 @@
                     var discount = entry.discount > 0
                         ? ' | Discount: ' + entry.discount + (entry.discountType === 'Percentage' ? '%' : ' Fixed')
                         : '';
+                    // Defensive formatting: the Product/Autocomplete DTO may carry null VatRate/CostPrice.
+                    var priceText = (parseFloat(entry.unitPrice) || 0).toFixed(2);
+                    var vatText = (entry.vatRate !== null && entry.vatRate !== undefined) ? entry.vatRate : 0;
                     item.innerHTML = '<div class="catalog-desc">' + escapeHtml(entry.description) + '</div>'
-                        + '<div class="catalog-meta">Price: ' + entry.unitPrice.toFixed(2) + ' | VAT: ' + entry.vatRate + '%' + discount + '</div>';
+                        + '<div class="catalog-meta">Price: ' + priceText + ' | VAT: ' + vatText + '%' + discount + '</div>';
                     item.addEventListener('mousedown', function(e) {
                         e.preventDefault();
                         var form = input.closest('form');
@@ -549,7 +557,12 @@
                     return;
                 }
                 try {
-                    var response = await fetch('/api/catalog/search?q=' + encodeURIComponent(query));
+                    // Invoice-gated product autocomplete: same data source as the quotation modal
+                    // (Product catalog + historical invoice/quotation lines) but served by the Invoice
+                    // controller, so it's reachable for invoice users regardless of Quotation/Products
+                    // module grants. The previous /api/catalog/search was gated by the Quotation module
+                    // and backed only by the quotation-populated LineItemCatalog (often forbidden/empty).
+                    var response = await fetch('/Invoice/AxGetProductAutocomplete?query=' + encodeURIComponent(query));
                     if (!response.ok) return;
                     var results = await response.json();
                     var dropdown = createDropdown(input);

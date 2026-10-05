@@ -41,6 +41,7 @@ public class InvoiceController : Controller
     private readonly IPermissionService _permissionService;
     private readonly IProductPriceTierService _priceTierService;
     private readonly ProductRepository _productRepository;
+    private readonly IProductAutocompleteService _autocompleteService;
     private readonly PortalDbContext _dbContext;
     private readonly ILogger<InvoiceController> _logger;
 
@@ -64,6 +65,7 @@ public class InvoiceController : Controller
         IPermissionService permissionService,
         IProductPriceTierService priceTierService,
         ProductRepository productRepository,
+        IProductAutocompleteService autocompleteService,
         PortalDbContext dbContext,
         ILogger<InvoiceController> logger)
     {
@@ -86,8 +88,29 @@ public class InvoiceController : Controller
         _permissionService = permissionService;
         _priceTierService = priceTierService;
         _productRepository = productRepository;
+        _autocompleteService = autocompleteService;
         _dbContext = dbContext;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Product/line-item autocomplete for the invoice line-item modal. Gated by the Invoice module
+    /// so invoice users always have access, and backed by the same IProductAutocompleteService the
+    /// quotation modal uses (searches the Product catalog plus historical invoice/quotation lines).
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetProductAutocomplete(string query)
+    {
+        try
+        {
+            var results = await _autocompleteService.SearchAsync(query ?? string.Empty);
+            return Json(results);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Invoice product autocomplete failed for query {Query}", query);
+            return Json(new List<Portal.Infrastructure.Models.AutocompleteResultDto>());
+        }
     }
 
     [HttpGet]

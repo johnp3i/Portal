@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using Portal.Infrastructure.Services;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
@@ -14,17 +15,45 @@ public class InvoicePdfService : IInvoicePdfService
     private readonly IConfiguration _configuration;
     private readonly ILogoService _logoService;
     private readonly ICurrentTenantService _tenantService;
+    private readonly ILogger<InvoicePdfService> _logger;
 
     public InvoicePdfService(
         IInvoiceRenderer invoiceRenderer,
         IConfiguration configuration,
         ILogoService logoService,
-        ICurrentTenantService tenantService)
+        ICurrentTenantService tenantService,
+        ILogger<InvoicePdfService> logger)
     {
         _invoiceRenderer = invoiceRenderer;
         _configuration = configuration;
         _logoService = logoService;
         _tenantService = tenantService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Pre-render canary: warns if any image src still points at a local app/storage URL (not an
+    /// embedded data: URI or a public URL), which would render as a broken image and can make some
+    /// PDF viewers report the file as corrupt. Logged only; generation proceeds (the embed step's
+    /// display:none safety net already hides any such image).
+    /// </summary>
+    private void WarnOnUnembeddedImages(string html, int invoiceId)
+    {
+        var offenders = Regex.Matches(
+                html,
+                @"<img\s[^>]*src\s*=\s*[""'](?<src>(?:/|~/)[^""']*)[""']",
+                RegexOptions.IgnoreCase)
+            .Select(m => m.Groups["src"].Value)
+            .Where(src => !src.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            .Distinct()
+            .ToList();
+
+        if (offenders.Count > 0)
+        {
+            _logger.LogWarning(
+                "Invoice PDF for invoice {InvoiceId} contains {Count} image(s) that were not embedded and may render broken: {Sources}",
+                invoiceId, offenders.Count, string.Join(", ", offenders));
+        }
     }
 
     public async Task<byte[]> GenerateAsync(int invoiceId, CancellationToken cancellationToken = default)
@@ -34,6 +63,9 @@ public class InvoicePdfService : IInvoicePdfService
 
         // 2. Post-process HTML: replace logo <img src="/uploads/..."> with base64 data URI
         html = await EmbedLogoAsBase64Async(html);
+
+        // 2b. Pre-render canary: warn if any local image src survived the embed step.
+        WarnOnUnembeddedImages(html, invoiceId);
 
         // 3. Extract the per-page footer template (payment details + branding) authored in the view.
         var footerTemplate = ExtractFooterTemplate(html);
@@ -59,16 +91,33 @@ public class InvoicePdfService : IInvoicePdfService
 
     private async Task<string> EmbedLogoAsBase64Async(string html)
     {
+        // Embed every business logo by its exact PublicUrl as a base64 data URI so the PDF is fully
+        // self-contained. Matching only a "/logo/" prefix (and only the primary logo) left other
+        // logo URLs as unresolvable links that render as broken images — which some PDF viewers
+        // report as a corrupt file.
         var logos = await _logoService.GetByBusinessIdAsync(_tenantService.CurrentBusinessId);
-        var primaryLogo = logos.FirstOrDefault(l => l.IsPrimary) ?? logos.FirstOrDefault();
 
-        var dataUri = GetLogoAsDataUri(primaryLogo);
-        if (string.IsNullOrEmpty(dataUri))
-            return html;
+        foreach (var logo in logos)
+        {
+            if (string.IsNullOrWhiteSpace(logo.PublicUrl))
+                continue;
 
-        // Replace the logo <img src="/logo/..."> with the base64 data URI so the PDF is self-contained.
-        var pattern = @"(<img\s[^>]*src\s*=\s*"")(/logo/[^""]+)("")";
-        html = Regex.Replace(html, pattern, $"$1{dataUri}$3", RegexOptions.IgnoreCase);
+            var dataUri = GetLogoAsDataUri(logo);
+            if (string.IsNullOrEmpty(dataUri))
+                continue;
+
+            var escapedUrl = Regex.Escape(logo.PublicUrl);
+            var pattern = $@"(<img\s[^>]*src\s*=\s*[""']){escapedUrl}([""'])";
+            html = Regex.Replace(html, pattern, $"$1{dataUri}$2", RegexOptions.IgnoreCase);
+        }
+
+        // Safety net: hide any logo <img> we could not embed so it renders as nothing rather than a
+        // broken-image icon (a dangling src is what makes some viewers flag the PDF as corrupt).
+        html = Regex.Replace(
+            html,
+            @"<img\s([^>]*?)src\s*=\s*[""'](?:/logo/|/uploads/)[^""']*[""']([^>]*)>",
+            "<img $1$2 style=\"display:none\">",
+            RegexOptions.IgnoreCase);
 
         return html;
     }

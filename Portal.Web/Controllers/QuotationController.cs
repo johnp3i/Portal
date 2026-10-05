@@ -815,6 +815,10 @@ public class QuotationController : Controller
         sanitized = sanitized.Trim().Trim('.');
         if (string.IsNullOrWhiteSpace(sanitized))
             return "QUO-download.pdf";
-        return $"QUO-{sanitized}.pdf";
+        // The reference already starts with "QUO-" (e.g. QUO-2026-10-00004); only add the prefix
+        // when it is missing, so we don't produce "QUO-QUO-...".
+        return sanitized.StartsWith("QUO-", StringComparison.OrdinalIgnoreCase)
+            ? $"{sanitized}.pdf"
+            : $"QUO-{sanitized}.pdf";
     }
 }

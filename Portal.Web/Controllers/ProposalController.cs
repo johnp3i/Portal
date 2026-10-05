@@ -19,6 +19,7 @@ public class ProposalController : Controller
     private readonly IWebHostEnvironment _environment;
     private readonly ILogoService _logoService;
     private readonly IViewRenderService _viewRenderService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<ProposalController> _logger;
 
     public ProposalController(
@@ -27,6 +28,7 @@ public class ProposalController : Controller
         IWebHostEnvironment environment,
         ILogoService logoService,
         IViewRenderService viewRenderService,
+        IConfiguration configuration,
         ILogger<ProposalController> logger)
     {
         _proposalService = proposalService;
@@ -34,6 +36,7 @@ public class ProposalController : Controller
         _environment = environment;
         _logoService = logoService;
         _viewRenderService = viewRenderService;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -273,28 +276,51 @@ async function downloadProposalPdf() {{
 
     private async Task<string> EmbedLogoAsBase64Async(string html, int businessId)
     {
+        // Embed every business logo by its exact PublicUrl as a base64 data URI so the PDF is fully
+        // self-contained. The old version only matched a "/uploads/" prefix (proposal logos use
+        // "/logo/...") AND read from WebRootPath instead of the private FileStorage base path, so the
+        // logo was never embedded and rendered as a broken image — which is what made the shared-link
+        // PDF download appear corrupt.
         var logos = await _logoService.GetByBusinessIdAsync(businessId);
-        var primaryLogo = logos.FirstOrDefault(l => l.IsPrimary) ?? logos.FirstOrDefault();
 
-        var dataUri = GetLogoAsDataUri(primaryLogo);
-        if (string.IsNullOrEmpty(dataUri))
-            return html;
+        foreach (var logo in logos)
+        {
+            if (string.IsNullOrWhiteSpace(logo.PublicUrl))
+                continue;
 
-        var pattern = @"(<img\s[^>]*src\s*=\s*"")(/uploads/[^""]+)("")";
-        html = Regex.Replace(html, pattern, $"$1{dataUri}$3", RegexOptions.IgnoreCase);
+            var dataUri = GetLogoAsDataUri(logo);
+            if (string.IsNullOrEmpty(dataUri))
+                continue;
+
+            var escapedUrl = Regex.Escape(logo.PublicUrl);
+            var pattern = $@"(<img\s[^>]*src\s*=\s*[""']){escapedUrl}([""'])";
+            html = Regex.Replace(html, pattern, $"$1{dataUri}$2", RegexOptions.IgnoreCase);
+        }
+
+        // Safety net: hide any logo <img> we could not embed so it renders as nothing rather than a
+        // broken-image icon (a dangling src is what makes some viewers flag the PDF as corrupt).
+        html = Regex.Replace(
+            html,
+            @"<img\s([^>]*?)src\s*=\s*[""'](?:/logo/|/uploads/)[^""']*[""']([^>]*)>",
+            "<img $1$2 style=\"display:none\">",
+            RegexOptions.IgnoreCase);
 
         return html;
     }
 
     private string? GetLogoAsDataUri(Infrastructure.Entities.BusinessLogo? logo)
     {
-        if (logo == null || string.IsNullOrWhiteSpace(logo.PublicUrl))
+        if (logo == null || string.IsNullOrWhiteSpace(logo.FileName))
             return null;
 
         try
         {
-            var relativePath = logo.PublicUrl.TrimStart('/');
-            var filePath = Path.Combine(_environment.WebRootPath, relativePath);
+            // Logos live under the private storage root: {BasePath}/{businessId}/logos/{fileName}
+            var basePath = _configuration["FileStorage:BasePath"];
+            if (string.IsNullOrWhiteSpace(basePath))
+                return null;
+
+            var filePath = Path.Combine(basePath, logo.BusinessId.ToString(), "logos", logo.FileName);
 
             if (!System.IO.File.Exists(filePath))
                 return null;
@@ -311,6 +337,17 @@ async function downloadProposalPdf() {{
             return null;
         }
     }
+
+    // Per-page PDF footer: thin top rule + centered branding and page numbers. Inlined styles
+    // (Puppeteer renders footer templates in an isolated context without the page's CSS/fonts).
+    private const string PdfFooterTemplate =
+        "<div style=\"width:100%;padding:0 12mm;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif;\">" +
+            "<div style=\"border-top:1px solid rgba(13,94,166,.15);padding-top:4px;font-size:7px;color:#b0bec5;text-align:center;letter-spacing:0.03em;\">" +
+                "Powered by 3 Inventors &mdash; Operational Intelligence" +
+                "&nbsp;&middot;&nbsp;" +
+                "Page <span class=\"pageNumber\"></span> of <span class=\"totalPages\"></span>" +
+            "</div>" +
+        "</div>";
 
     private static async Task<byte[]> GeneratePdfFromHtmlAsync(string html, CancellationToken cancellationToken)
     {
@@ -334,10 +371,13 @@ async function downloadProposalPdf() {{
             Landscape = false,
             Format = PaperFormat.A4,
             PrintBackground = true,
+            DisplayHeaderFooter = true,
+            HeaderTemplate = "<span></span>",
+            FooterTemplate = PdfFooterTemplate,
             MarginOptions = new MarginOptions
             {
                 Top = "14mm",
-                Bottom = "0mm",
+                Bottom = "16mm",
                 Left = "0mm",
                 Right = "0mm"
             }
@@ -357,6 +397,10 @@ async function downloadProposalPdf() {{
         sanitized = sanitized.Trim().Trim('.');
         if (string.IsNullOrWhiteSpace(sanitized))
             return "QUO-download.pdf";
-        return $"QUO-{sanitized}.pdf";
+        // The reference already starts with "QUO-" (e.g. QUO-2026-10-00004); only add the prefix
+        // when it is missing, so we don't produce "QUO-QUO-...".
+        return sanitized.StartsWith("QUO-", StringComparison.OrdinalIgnoreCase)
+            ? $"{sanitized}.pdf"
+            : $"QUO-{sanitized}.pdf";
     }
 }
