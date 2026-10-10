@@ -36,6 +36,7 @@ public class InvoiceController : Controller
     private readonly VatSubmissionPeriodRepository _vatPeriodRepository;
     private readonly IViewRenderService _viewRenderService;
     private readonly IInvoicePdfService _invoicePdfService;
+    private readonly IInvoiceExcelService _invoiceExcelService;
     private readonly IPaymentInstructionsService _paymentInstructionsService;
     private readonly IPlanCheckService _planCheckService;
     private readonly IPermissionService _permissionService;
@@ -60,6 +61,7 @@ public class InvoiceController : Controller
         VatSubmissionPeriodRepository vatPeriodRepository,
         IViewRenderService viewRenderService,
         IInvoicePdfService invoicePdfService,
+        IInvoiceExcelService invoiceExcelService,
         IPaymentInstructionsService paymentInstructionsService,
         IPlanCheckService planCheckService,
         IPermissionService permissionService,
@@ -83,6 +85,7 @@ public class InvoiceController : Controller
         _vatPeriodRepository = vatPeriodRepository;
         _viewRenderService = viewRenderService;
         _invoicePdfService = invoicePdfService;
+        _invoiceExcelService = invoiceExcelService;
         _paymentInstructionsService = paymentInstructionsService;
         _planCheckService = planCheckService;
         _permissionService = permissionService;
@@ -772,6 +775,41 @@ public class InvoiceController : Controller
     }
 
     /// <summary>
+    /// Downloads a single invoice as an .xlsx workbook. Unlike the PDF, the Excel export has no
+    /// pagination, so long invoices never split items/sections across pages — this is the
+    /// print-friendly alternative requested by customers who struggled with the PDF layout.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetDownloadExcel(int id)
+    {
+        var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
+        if (invoice == null || invoice.BusinessId != _tenantService.CurrentBusinessId)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var excelBytes = await _invoiceExcelService.GenerateAsync(id, cts.Token);
+            var filename = GenerateInvoiceExcelFilename(invoice.InvoiceNumber);
+            return File(excelBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                filename);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogError("Excel generation timed out for invoice {InvoiceId}", id);
+            return StatusCode(500, new { success = false, message = "Excel generation timed out. Please try again." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate Excel for invoice {InvoiceId}", id);
+            return StatusCode(500, new { success = false, message = "Failed to generate Excel. Please try again." });
+        }
+    }
+
+    /// <summary>
     /// Sets the per-invoice payment instructions override.
     /// Value: null = follow business default, 1 = force show, 0 = force hide.
     /// </summary>
@@ -914,5 +952,14 @@ public class InvoiceController : Controller
         if (string.IsNullOrWhiteSpace(sanitized))
             return "INV-download.pdf";
         return $"INV-{sanitized}.pdf";
+    }
+
+    private static string GenerateInvoiceExcelFilename(string invoiceNumber)
+    {
+        var invalidChars = new[] { '<', '>', ':', '"', '/', '\\', '|', '?', '*' };
+        var sanitized = new string(invoiceNumber.Where(c => !invalidChars.Contains(c)).ToArray());
+        if (string.IsNullOrWhiteSpace(sanitized))
+            return "INV-download.xlsx";
+        return $"INV-{sanitized}.xlsx";
     }
 }

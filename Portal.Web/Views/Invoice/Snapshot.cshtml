@@ -28,7 +28,11 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: #fff; font-size: 12.5px; line-height: 1.55; padding: 0; margin: 0; }
-        .page { max-width: 100%; margin: 0; background: #fff; padding: 56px 48px; min-height: 100vh; display: flex; flex-direction: column; }
+        /* Content flows naturally. A previous min-height:100vh + flex column forced the page box
+           to a full viewport/page height even for short invoices, which in print padded out the
+           page and pushed the signature onto a blank second page. Payment details now live in the
+           per-page running footer, so no bottom-pinning is needed here. */
+        .page { max-width: 100%; margin: 0; background: #fff; padding: 56px 48px; }
         h1 { font-family: 'Manrope', sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
         h2 { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; margin-top: 30px; margin-bottom: 12px; }
         h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
@@ -45,17 +49,26 @@
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 24px; margin-bottom: 32px; }
         .meta-item .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
         .meta-item .value { font-size: 14px; font-weight: 600; margin-top: 4px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+        /* Tables are allowed to flow across pages; only individual rows are kept intact so a
+           long line-item table splits cleanly between rows instead of forcing the whole section
+           (and the page before it) to be left blank. The header row repeats on each page. */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; break-inside: auto; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tr { break-inside: avoid; page-break-inside: avoid; }
         th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
         th.right { text-align: right; }
         td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 12.5px; }
         td.right { text-align: right; }
         .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
-        .section-header { margin-bottom: 16px; padding: 12px 16px; background: var(--bg); border-radius: 8px; }
+        /* Keep a section's header with the rows that follow it (don't strand a header at the
+           bottom of a page), but do NOT keep the whole header boxed off on its own. */
+        .section-header { margin-bottom: 16px; padding: 12px 16px; background: var(--bg); border-radius: 8px; break-after: avoid; page-break-after: avoid; }
         .section-label { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--blue); margin-left: 8px; }
         .section-desc { font-size: 13px; color: var(--muted); margin-top: 6px; }
-        .section-block { margin-top: 28px; page-break-inside: avoid; break-inside: avoid; }
-        .section-block + .section-block { page-break-before: always; break-before: always; }
+        /* Sections flow naturally and MAY split across pages. Previously each section was kept
+           whole (break-inside:avoid) and forced onto a fresh page (page-break-before:always),
+           which left large blank areas and sprawled small invoices across several pages. */
+        .section-block { margin-top: 28px; }
         .narrative-card { margin: 28px 0; padding: 24px 28px; border-left: 4px solid var(--blue); background: var(--bg); border-radius: 12px; }
         .narrative-card ul, .narrative-card ol { margin: 12px 0; padding-left: 24px; }
         .narrative-card li { margin-bottom: 4px; line-height: 1.7; }
@@ -69,8 +82,11 @@
         .notes { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
         .notes .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
         .notes p { font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+        /* The signature box stays intact (never split), but it should flow right after the
+           preceding content rather than being pushed onto a page of its own. The signature
+           line sits a comfortable distance below the label without a large forced gap. */
         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 0; padding: 24px 28px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; break-inside: avoid; page-break-inside: avoid; }
-        .signature-block { padding-top: 60px; }
+        .signature-block { padding-top: 40px; }
         .signature-block .sig-label { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 8px; }
         .signature-block .sig-line { border-bottom: 2px solid var(--text); width: 220px; }
         .payment-section { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); break-inside: avoid; page-break-inside: avoid; }
@@ -413,8 +429,10 @@
         </div>
     }
 
-    <!-- Document Footer (signature + payment + branding — kept together, pushed to bottom) -->
-    <div style="break-inside:avoid;page-break-inside:avoid;margin-top:40px;padding-top:32px;">
+    <!-- Document Footer (signature + branding). Flows after the content; the signature box
+         itself is kept intact via its own break-inside:avoid, so the wrapper no longer forces
+         the whole block onto a page of its own (which previously stranded the signature). -->
+    <div style="margin-top:32px;">
     <!-- Digital Signature (from business default) -->
     @inject Portal.Infrastructure.Services.ISignatureService _sigCheckService
     @inject Portal.Infrastructure.Services.ICurrentTenantService _tenantCheckService
