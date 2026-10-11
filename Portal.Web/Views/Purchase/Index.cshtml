@@ -353,7 +353,18 @@
                         </td>
                         <td data-mobile="hide">@purchase.ExpenseCategory?.Name</td>
                         <td id="attachCell-@purchase.Id" data-mobile="hide" style="cursor:pointer;text-decoration:none;" title="View or attach files" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
-                            @await Component.InvokeAsync("AttachmentCount", new { entityType = "Purchase", entityId = purchase.Id })
+                            @{
+                                // Inline attachment-count badge from the batch-loaded dictionary —
+                                // no per-row DB query (replaces the AttachmentCount view component).
+                                Model.AttachmentCounts.TryGetValue(purchase.Id, out var attachCount);
+                            }
+                            @if (attachCount > 0)
+                            {
+                                <span class="attachment-count-indicator" title="@attachCount attachment@(attachCount == 1 ? "" : "s")">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px;"><path d="M10.5 3.5L4.5 9.5a2.12 2.12 0 003 3l6-6a3.54 3.54 0 00-5-5l-6 6a4.95 4.95 0 007 7l5.5-5.5" stroke="#5a6a7a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    <span class="attachment-count-number">@attachCount</span>
+                                </span>
+                            }
                             <span class="attach-add-hint" title="Attach a file">
                                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="vertical-align:-3px;"><path d="M10.5 3.5L4.5 9.5a2.12 2.12 0 003 3l6-6a3.54 3.54 0 00-5-5l-6 6a4.95 4.95 0 007 7l5.5-5.5" stroke="#0D5EA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 <span>Add</span>
@@ -431,7 +442,7 @@
                         </td>
                         <td data-mobile="hide" style="white-space:nowrap;">
                             <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
-                            <a asp-action="Create" asp-route-duplicateFrom="@purchase.Id" class="tbl-action tbl-action--secondary" title="Create a new purchase pre-filled from this one (for recurring bills)">Duplicate</a>
+                            <a asp-action="Create" asp-route-duplicateFrom="@purchase.Id" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary" title="Create a new purchase pre-filled from this one (opens in a new tab, for recurring bills)">Duplicate</a>
                             @if (!purchase.IsCancelled)
                             {
                                 if (purchase.IsPaid)
@@ -543,6 +554,23 @@
     #purchaseTable td:has(.attachment-count-indicator) .attach-add-hint {
         display: none;
     }
+
+    /* Attachment-count badge. Previously supplied by the AttachmentCount view component's own
+       <style>; now defined here so the badge is styled whether rendered server-side inline or
+       rebuilt client-side after an upload (the component is no longer invoked per row). */
+    .attachment-count-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #5a6a7a;
+        background: #EEF4F8;
+        border-radius: 12px;
+        padding: 2px 8px 2px 6px;
+        white-space: nowrap;
+    }
+    .attachment-count-number { font-size: 11px; }
 
     /* ─── Native-app card layout for the Purchases list on phones ─────────────
        Scoped to #purchaseTable so it overrides the generic .index-table grid

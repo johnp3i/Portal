@@ -15,12 +15,12 @@
 
 <section class="glass card-pad">
     <div id="uploadSection">
-        <div style="margin-bottom:16px;">
+        <div class="field" style="margin-bottom:16px;">
             <label style="font-weight:600;font-size:14px;display:block;margin-bottom:8px;">Select CSV File</label>
             <p class="muted" style="font-size:13px;margin-bottom:12px;">
                 Expected columns: InvoiceDate, InvoiceNumber, SupplierName, ExpenseCategoryName, Description, AmountExcludingVat, VatAmount, PurchaseOriginType, Country, Notes
             </p>
-            <input type="file" id="csvFileInput" accept=".csv" style="font-family:inherit;font-size:14px;" />
+            <input type="file" id="csvFileInput" accept=".csv" />
         </div>
         <button type="button" class="btn btn-primary" onclick="uploadCsv()">Upload &amp; Preview</button>
     </div>

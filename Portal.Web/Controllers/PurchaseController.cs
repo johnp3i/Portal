@@ -25,6 +25,7 @@ public class PurchaseController : Controller
     private readonly PortalDbContext _dbContext;
     private readonly IViewRenderService _viewRenderService;
     private readonly IPlanCheckService _planCheckService;
+    private readonly IDocumentAttachmentService _attachmentService;
 
     public PurchaseController(
         IPurchaseService purchaseService,
@@ -33,7 +34,8 @@ public class PurchaseController : Controller
         ICurrentTenantService currentTenantService,
         PortalDbContext dbContext,
         IViewRenderService viewRenderService,
-        IPlanCheckService planCheckService)
+        IPlanCheckService planCheckService,
+        IDocumentAttachmentService attachmentService)
     {
         _purchaseService = purchaseService;
         _supplierService = supplierService;
@@ -42,6 +44,7 @@ public class PurchaseController : Controller
         _dbContext = dbContext;
         _viewRenderService = viewRenderService;
         _planCheckService = planCheckService;
+        _attachmentService = attachmentService;
     }
 
     [HttpGet]
@@ -63,6 +66,15 @@ public class PurchaseController : Controller
                 purchase.VatSubmissionPeriod = period;
             }
         }
+
+        // Batch-load attachment counts for all purchases in a single query. Rendering the paperclip
+        // badge via a per-row view component previously issued one count query per row, so a list of
+        // ~1000 purchases triggered ~1000 sequential queries and the table streamed in over several
+        // seconds. One batched lookup keeps the list fast and the page paints in a single pass.
+        var purchaseIds = purchases.Select(p => p.Id).ToArray();
+        var attachmentCounts = purchaseIds.Length > 0
+            ? await _attachmentService.GetCountsForEntitiesAsync(businessId, "Purchase", purchaseIds)
+            : new Dictionary<int, int>();
 
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var categories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
@@ -99,6 +111,7 @@ public class PurchaseController : Controller
             PurchaseTypes = purchaseTypes,
             VatPeriods = vatPeriods,
             CurrencySymbol = currencySymbol,
+            AttachmentCounts = attachmentCounts,
             SupplierId = supplierId,
             ExpenseCategoryId = expenseCategoryId,
             PurchaseOriginTypeId = purchaseOriginTypeId,

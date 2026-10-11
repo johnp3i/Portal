@@ -12,6 +12,11 @@ public class PurchaseListViewModel
     public List<VatSubmissionPeriod> VatPeriods { get; set; } = new();
     public string CurrencySymbol { get; set; } = "€";
 
+    // Attachment counts keyed by purchase Id, batch-loaded once in the controller so the list
+    // view can render the paperclip badge without a per-row DB query (avoids an N+1 that made the
+    // table render progressively over several seconds).
+    public Dictionary<int, int> AttachmentCounts { get; set; } = new();
+
     // Filter state
     public int? SupplierId { get; set; }
     public int? ExpenseCategoryId { get; set; }
