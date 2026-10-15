@@ -184,16 +184,22 @@
                 var last = p.lastActivityAtUtc
                     ? fmtDate(p.lastActivityAtUtc) + ' · ' + (ACTIVITY_NAMES[p.lastActivityType] || '')
                     : '—';
+                var isStopPoint = (p.lastActivitySentiment === 3);
                 var next = p.nextAction
                     ? '<span style="color:#C8912E;font-weight:700;">' + (p.nextActionDate ? fmtDate(p.nextActionDate) + ' — ' : '') + esc(p.nextAction) + '</span>'
                     : '<span style="color:#73889a;">—</span>';
+                // When the prospect is at a stop point, note it right in the Next Action column so the
+                // reason there is no next step is explained where the user looks for one.
+                if (isStopPoint) {
+                    next += '<div style="font-size:11px;font-weight:700;color:#C24A4A;margin-top:3px;">Stopped — last contact was negative</div>';
+                }
                 var action = (p.status === 4)
                     ? '<button class="tbl-action tbl-action--primary" onclick="location.href=\'/Prospecting/ProspectDetail/' + p.id + '\'">Convert</button>'
                     : '';
                 // Stop point: the most recent activity had a negative interaction signal (sentiment 3).
                 // Surfaced so the operator can see at a glance which prospects hit a dead end
                 // (e.g. "not a fit", "do not contact", closed business) without opening each one.
-                var stopPoint = (p.lastActivitySentiment === 3)
+                var stopPoint = isStopPoint
                     ? '<div style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#C24A4A;margin-top:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Stop point</div>'
                     : '';
                 html += '<tr>' +
