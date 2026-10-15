@@ -15,7 +15,8 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
     // Full entity column list — FromSqlRaw materializes every mapped property.
     private const string Columns =
         "[Id], [BusinessId], [ProspectId], [ActivityType], [OccurredAtUtc], [PerformedByUserId], " +
-        "[Sentiment], [IsFollowUp], [Outcome], [Notes], [NextAction], [NextActionDate], [CreatedAtUtc]";
+        "[Sentiment], [IsFollowUp], [Outcome], [Notes], [NextAction], [NextActionDate], " +
+        "[NextActionTime], [NextActionContactName], [NextActionPhone], [CreatedAtUtc]";
 
     public ProspectActivityRepository(DbContext context) : base(context) { }
 
@@ -26,10 +27,12 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
             const string query = @"
                 INSERT INTO [sales].[ProspectActivity]
                     ([BusinessId], [ProspectId], [ActivityType], [OccurredAtUtc], [PerformedByUserId],
-                     [Sentiment], [IsFollowUp], [Outcome], [Notes], [NextAction], [NextActionDate], [CreatedAtUtc])
+                     [Sentiment], [IsFollowUp], [Outcome], [Notes], [NextAction], [NextActionDate],
+                     [NextActionTime], [NextActionContactName], [NextActionPhone], [CreatedAtUtc])
                 VALUES
                     (@BusinessId, @ProspectId, @ActivityType, @OccurredAtUtc, @PerformedByUserId,
-                     @Sentiment, @IsFollowUp, @Outcome, @Notes, @NextAction, @NextActionDate, @CreatedAtUtc);
+                     @Sentiment, @IsFollowUp, @Outcome, @Notes, @NextAction, @NextActionDate,
+                     @NextActionTime, @NextActionContactName, @NextActionPhone, @CreatedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
@@ -55,6 +58,9 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                 command.Parameters.Add(new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@NextAction", entity.NextAction ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@NextActionDate", entity.NextActionDate.HasValue ? entity.NextActionDate.Value.ToDateTime(TimeOnly.MinValue) : (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@NextActionTime", SqlDbType.Time) { Value = entity.NextActionTime.HasValue ? entity.NextActionTime.Value.ToTimeSpan() : (object)DBNull.Value });
+                command.Parameters.Add(new SqlParameter("@NextActionContactName", entity.NextActionContactName ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
 
                 var result = await command.ExecuteScalarAsync();
@@ -134,7 +140,10 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                     [Outcome] = @Outcome,
                     [Notes] = @Notes,
                     [NextAction] = @NextAction,
-                    [NextActionDate] = @NextActionDate
+                    [NextActionDate] = @NextActionDate,
+                    [NextActionTime] = @NextActionTime,
+                    [NextActionContactName] = @NextActionContactName,
+                    [NextActionPhone] = @NextActionPhone
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -147,7 +156,10 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                 new SqlParameter("@Outcome", entity.Outcome ?? (object)DBNull.Value),
                 new SqlParameter("@Notes", entity.Notes ?? (object)DBNull.Value),
                 new SqlParameter("@NextAction", entity.NextAction ?? (object)DBNull.Value),
-                new SqlParameter("@NextActionDate", entity.NextActionDate.HasValue ? entity.NextActionDate.Value.ToDateTime(TimeOnly.MinValue) : (object)DBNull.Value));
+                new SqlParameter("@NextActionDate", entity.NextActionDate.HasValue ? entity.NextActionDate.Value.ToDateTime(TimeOnly.MinValue) : (object)DBNull.Value),
+                new SqlParameter("@NextActionTime", SqlDbType.Time) { Value = entity.NextActionTime.HasValue ? entity.NextActionTime.Value.ToTimeSpan() : (object)DBNull.Value },
+                new SqlParameter("@NextActionContactName", entity.NextActionContactName ?? (object)DBNull.Value),
+                new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value));
         }
         catch (Exception ex)
         {
@@ -224,6 +236,8 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
         string? S(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : r.GetString(r.GetOrdinal(c));
         DateOnly? D(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal(c)));
         byte? B(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : r.GetByte(r.GetOrdinal(c));
+        // TIME columns surface as TimeSpan via the ADO reader.
+        TimeOnly? T(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : TimeOnly.FromTimeSpan((TimeSpan)r.GetValue(r.GetOrdinal(c)));
 
         return new ProspectActivity
         {
@@ -239,6 +253,9 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
             Notes = S("Notes"),
             NextAction = S("NextAction"),
             NextActionDate = D("NextActionDate"),
+            NextActionTime = T("NextActionTime"),
+            NextActionContactName = S("NextActionContactName"),
+            NextActionPhone = S("NextActionPhone"),
             CreatedAtUtc = r.GetDateTime(r.GetOrdinal("CreatedAtUtc"))
         };
     }

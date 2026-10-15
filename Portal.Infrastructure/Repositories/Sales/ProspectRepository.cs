@@ -19,7 +19,8 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
         "[PublicContactRole], [Phone], [Email], [Website], [PublicEvidence], [WhyFit], " +
         "[ResearchSourceUrl], [RecommendedFirstContact], [IcpFitScore], [PainProbabilityScore], " +
         "[AccessibilityScore], [LearningValueScore], [Status], [AssignedToUserId], [NextAction], " +
-        "[NextActionDate], [ConvertedLeadRequestId], [ConvertedAtUtc], [ImportRowId], [CreatedAtUtc]";
+        "[NextActionDate], [NextActionTime], [NextActionContactName], [NextActionPhone], " +
+        "[ConvertedLeadRequestId], [ConvertedAtUtc], [ImportRowId], [CreatedAtUtc]";
 
     public ProspectRepository(DbContext context) : base(context) { }
 
@@ -111,7 +112,9 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
                     [RecommendedFirstContact] = @RecommendedFirstContact, [IcpFitScore] = @IcpFitScore,
                     [PainProbabilityScore] = @PainProbabilityScore, [AccessibilityScore] = @AccessibilityScore,
                     [LearningValueScore] = @LearningValueScore, [AssignedToUserId] = @AssignedToUserId,
-                    [NextAction] = @NextAction, [NextActionDate] = @NextActionDate
+                    [NextAction] = @NextAction, [NextActionDate] = @NextActionDate,
+                    [NextActionTime] = @NextActionTime, [NextActionContactName] = @NextActionContactName,
+                    [NextActionPhone] = @NextActionPhone
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -135,7 +138,10 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
                 new SqlParameter("@LearningValueScore", entity.LearningValueScore),
                 new SqlParameter("@AssignedToUserId", entity.AssignedToUserId ?? (object)DBNull.Value),
                 new SqlParameter("@NextAction", entity.NextAction ?? (object)DBNull.Value),
-                new SqlParameter("@NextActionDate", entity.NextActionDate.HasValue ? entity.NextActionDate.Value.ToDateTime(TimeOnly.MinValue) : (object)DBNull.Value)
+                new SqlParameter("@NextActionDate", entity.NextActionDate.HasValue ? entity.NextActionDate.Value.ToDateTime(TimeOnly.MinValue) : (object)DBNull.Value),
+                new SqlParameter("@NextActionTime", System.Data.SqlDbType.Time) { Value = entity.NextActionTime.HasValue ? entity.NextActionTime.Value.ToTimeSpan() : (object)DBNull.Value },
+                new SqlParameter("@NextActionContactName", entity.NextActionContactName ?? (object)DBNull.Value),
+                new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value)
             );
         }
         catch (Exception ex)

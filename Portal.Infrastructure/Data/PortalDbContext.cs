@@ -3873,6 +3873,8 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.RecommendedFirstContact).HasMaxLength(300);
             entity.Property(e => e.AssignedToUserId).HasMaxLength(450);
             entity.Property(e => e.NextAction).HasMaxLength(300);
+            entity.Property(e => e.NextActionContactName).HasMaxLength(200);
+            entity.Property(e => e.NextActionPhone).HasMaxLength(30);
             entity.Property(e => e.ImportRowId).HasMaxLength(40);
             entity.Property(e => e.Status).IsRequired().HasDefaultValue((byte)1);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
@@ -3908,6 +3910,8 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.PerformedByUserId).HasMaxLength(450);
             entity.Property(e => e.Outcome).HasMaxLength(200);
             entity.Property(e => e.NextAction).HasMaxLength(300);
+            entity.Property(e => e.NextActionContactName).HasMaxLength(200);
+            entity.Property(e => e.NextActionPhone).HasMaxLength(30);
             entity.Property(e => e.IsFollowUp).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.OccurredAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");

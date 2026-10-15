@@ -270,6 +270,9 @@ public class ProspectActivityDto
     public string? Notes { get; set; }
     public string? NextAction { get; set; }
     public DateOnly? NextActionDate { get; set; }
+    public TimeOnly? NextActionTime { get; set; }
+    public string? NextActionContactName { get; set; }
+    public string? NextActionPhone { get; set; }
 }
 
 /// <summary>Request to add an activity to a prospect. Never creates a Lead or Contact.</summary>
@@ -285,6 +288,9 @@ public class AddProspectActivityRequest
     public string? Notes { get; set; }
     public string? NextAction { get; set; }
     public DateOnly? NextActionDate { get; set; }
+    public TimeOnly? NextActionTime { get; set; }
+    public string? NextActionContactName { get; set; }
+    public string? NextActionPhone { get; set; }
     /// <summary>Optional new status to move the prospect to (e.g. Contacting after first call).</summary>
     public byte? NewStatus { get; set; }
 }
@@ -302,6 +308,9 @@ public class UpdateProspectActivityRequest
     public string? Notes { get; set; }
     public string? NextAction { get; set; }
     public DateOnly? NextActionDate { get; set; }
+    public TimeOnly? NextActionTime { get; set; }
+    public string? NextActionContactName { get; set; }
+    public string? NextActionPhone { get; set; }
 }
 
 /// <summary>An entry in the campaign-wide recent activity feed (across all prospects).</summary>

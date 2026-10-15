@@ -35,6 +35,15 @@ public class ProspectActivity
 
     public DateOnly? NextActionDate { get; set; }
 
+    /// <summary>Optional time-of-day for the next action (e.g. 10:00). NULL = no specific time.</summary>
+    public TimeOnly? NextActionTime { get; set; }
+
+    /// <summary>Optional contact name captured for the follow-up (e.g. the person who called back).</summary>
+    public string? NextActionContactName { get; set; }
+
+    /// <summary>Optional phone number to use for the follow-up (e.g. the mobile they called from).</summary>
+    public string? NextActionPhone { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties

@@ -359,6 +359,9 @@
     // Next-action shortcut chips (fill the text field).
     window.setNextAction = function (text) { setEl('activityNextAction', text); };
 
+    // Next-action time shortcut chips (fill the time field with HH:mm).
+    window.setNextActionTime = function (time) { setEl('activityNextActionTime', time); };
+
     // Due-date shortcut chips (set the date input relative to today).
     window.setNextActionDate = function (which) {
         var d = new Date();
@@ -416,6 +419,9 @@
         setEl('activityNotes', '');
         setEl('activityNextAction', '');
         setEl('activityNextActionDate', '');
+        setEl('activityNextActionTime', '');
+        setEl('activityNextActionContactName', '');
+        setEl('activityNextActionPhone', '');
         setSentiment(null);
         setFollowUp(false);
         renderActivityPresets('2');
@@ -437,6 +443,9 @@
         setEl('activityNotes', row.getAttribute('data-notes'));
         setEl('activityNextAction', row.getAttribute('data-nextaction'));
         setEl('activityNextActionDate', row.getAttribute('data-nextactiondate'));
+        setEl('activityNextActionTime', row.getAttribute('data-nextactiontime'));
+        setEl('activityNextActionContactName', row.getAttribute('data-nextactioncontactname'));
+        setEl('activityNextActionPhone', row.getAttribute('data-nextactionphone'));
         setSentiment(row.getAttribute('data-sentiment'));
         setFollowUp(row.getAttribute('data-isfollowup') === '1');
         showEl('activityNewStatusField', false); // editing a past entry shouldn't move the prospect's status
@@ -461,7 +470,10 @@
                 outcome: strOrNull('activityOutcome'),
                 notes: strOrNull('activityNotes'),
                 nextAction: strOrNull('activityNextAction'),
-                nextActionDate: strOrNull('activityNextActionDate')
+                nextActionDate: strOrNull('activityNextActionDate'),
+                nextActionTime: strOrNull('activityNextActionTime'),
+                nextActionContactName: strOrNull('activityNextActionContactName'),
+                nextActionPhone: strOrNull('activityNextActionPhone')
             };
             BlockUI.show('Saving...');
             try {
@@ -485,6 +497,9 @@
             notes: strOrNull('activityNotes'),
             nextAction: strOrNull('activityNextAction'),
             nextActionDate: strOrNull('activityNextActionDate'),
+            nextActionTime: strOrNull('activityNextActionTime'),
+            nextActionContactName: strOrNull('activityNextActionContactName'),
+            nextActionPhone: strOrNull('activityNextActionPhone'),
             newStatus: num('activityNewStatus')
         };
         BlockUI.show('Saving...');

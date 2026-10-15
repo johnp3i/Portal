@@ -62,6 +62,15 @@ public class Prospect
 
     public DateOnly? NextActionDate { get; set; }
 
+    /// <summary>Optional time-of-day for the next action (mirrors the latest follow-up activity).</summary>
+    public TimeOnly? NextActionTime { get; set; }
+
+    /// <summary>Optional contact name for the next action (mirrors the latest follow-up activity).</summary>
+    public string? NextActionContactName { get; set; }
+
+    /// <summary>Optional phone for the next action (mirrors the latest follow-up activity).</summary>
+    public string? NextActionPhone { get; set; }
+
     /// <summary>
     /// Measurement link: the lead created when this prospect was converted. Kept so predicted
     /// score/priority can later be compared against actual conversion outcomes.

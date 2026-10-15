@@ -99,11 +99,17 @@ if (systemBriefing != null)
 @if (Model.ShowSales)
 {
     <section class="glass card-pad" style="margin-bottom:22px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-            <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v10l4.5 2.6"/><circle cx="12" cy="12" r="10"/></svg>
-            <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;">Today's Brief</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <svg width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v10l4.5 2.6"/><circle cx="12" cy="12" r="10"/></svg>
+                <h3 style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;">Today's Brief</h3>
+            </div>
+            <button type="button" class="btn btn-secondary" style="padding:5px 8px;" onclick="toggleTodaysBrief()" title="Collapse" aria-label="Collapse Today's Brief">
+                <svg id="todaysBriefCollapseIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+            </button>
         </div>
 
+        <div id="todaysBriefBody">
         @if (!Model.BriefTasks.Any() && !Model.BriefMeetings.Any())
         {
             <p style="font-family:'Inter',sans-serif;font-size:14px;color:#5a6a7a;margin:0;">All clear — no tasks or meetings for the days ahead</p>
@@ -203,6 +209,28 @@ if (systemBriefing != null)
                 }
             }
         }
+        </div>
+
+        <script>
+            // Collapse/expand the Today's Brief body, persisting the choice like the pipeline panels.
+            (function () {
+                var collapsed = localStorage.getItem('todaysBriefCollapsed') === 'true';
+                var body = document.getElementById('todaysBriefBody');
+                var icon = document.getElementById('todaysBriefCollapseIcon');
+                function apply() {
+                    if (!body || !icon) return;
+                    body.style.display = collapsed ? 'none' : '';
+                    // Chevron down when collapsed, up when expanded.
+                    icon.innerHTML = collapsed ? '<path d="M6 9l6 6 6-6"/>' : '<path d="M18 15l-6-6-6 6"/>';
+                }
+                window.toggleTodaysBrief = function () {
+                    collapsed = !collapsed;
+                    localStorage.setItem('todaysBriefCollapsed', collapsed);
+                    apply();
+                };
+                apply();
+            })();
+        </script>
     </section>
 }
 

@@ -251,7 +251,10 @@
                              data-outcome="@a.Outcome"
                              data-notes="@a.Notes"
                              data-nextaction="@a.NextAction"
-                             data-nextactiondate="@(a.NextActionDate?.ToString("yyyy-MM-dd") ?? "")">
+                             data-nextactiondate="@(a.NextActionDate?.ToString("yyyy-MM-dd") ?? "")"
+                             data-nextactiontime="@(a.NextActionTime?.ToString("HH:mm") ?? "")"
+                             data-nextactioncontactname="@a.NextActionContactName"
+                             data-nextactionphone="@a.NextActionPhone">
                             <span class="tl-dot" style="background:@DotColour(a.ActivityType);"></span>
                             <div class="tl-body">
                                 <div class="tl-line">
@@ -279,9 +282,17 @@
                                 {
                                     <div class="tl-notes">@a.Notes</div>
                                 }
-                                @if (!string.IsNullOrWhiteSpace(a.NextAction))
+                                @if (!string.IsNullOrWhiteSpace(a.NextAction) || a.NextActionDate.HasValue || !string.IsNullOrWhiteSpace(a.NextActionContactName) || !string.IsNullOrWhiteSpace(a.NextActionPhone))
                                 {
-                                    <div class="tl-next">Next: @a.NextAction @(a.NextActionDate.HasValue ? "· " + a.NextActionDate.Value.ToString("dd MMM yyyy") : "")</div>
+                                    var whenParts = new List<string>();
+                                    if (a.NextActionDate.HasValue) { whenParts.Add(a.NextActionDate.Value.ToString("dd MMM yyyy")); }
+                                    if (a.NextActionTime.HasValue) { whenParts.Add(a.NextActionTime.Value.ToString("HH:mm")); }
+                                    var contactParts = new List<string>();
+                                    if (!string.IsNullOrWhiteSpace(a.NextActionContactName)) { contactParts.Add(a.NextActionContactName!); }
+                                    if (!string.IsNullOrWhiteSpace(a.NextActionPhone)) { contactParts.Add(a.NextActionPhone!); }
+                                    <div class="tl-next">
+                                        Next: @(string.IsNullOrWhiteSpace(a.NextAction) ? "Follow up" : a.NextAction)@(whenParts.Any() ? " · " + string.Join(" ", whenParts) : "")@(contactParts.Any() ? " · " + string.Join(" — ", contactParts) : "")
+                                    </div>
                                 }
                             </div>
                         </div>
@@ -419,7 +430,7 @@
                 </div>
                 <input type="text" id="activityNextAction" />
             </div>
-            <div class="field" style="margin-bottom:0;">
+            <div class="field" style="margin-bottom:12px;">
                 <label>Due date</label>
                 <div class="act-chips" style="margin-bottom:8px;">
                     <button type="button" class="act-chip" onclick="setNextActionDate('tomorrow')">Tomorrow</button>
@@ -429,6 +440,25 @@
                     <button type="button" class="act-chip" onclick="setNextActionDate('1m')">+1 month</button>
                 </div>
                 <input type="date" id="activityNextActionDate" />
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:0;">
+                <div class="field" style="margin-bottom:0;flex:0 0 120px;">
+                    <label>Time</label>
+                    <div class="act-chips" style="margin-bottom:8px;">
+                        <button type="button" class="act-chip" onclick="setNextActionTime('09:00')">09:00</button>
+                        <button type="button" class="act-chip" onclick="setNextActionTime('10:00')">10:00</button>
+                        <button type="button" class="act-chip" onclick="setNextActionTime('14:00')">14:00</button>
+                    </div>
+                    <input type="time" id="activityNextActionTime" />
+                </div>
+                <div class="field" style="margin-bottom:0;flex:1 1 180px;">
+                    <label>Contact name</label>
+                    <input type="text" id="activityNextActionContactName" placeholder="e.g. Mrs Louiza" maxlength="200" />
+                </div>
+                <div class="field" style="margin-bottom:0;flex:1 1 150px;">
+                    <label>Phone</label>
+                    <input type="text" id="activityNextActionPhone" placeholder="e.g. 99464295" maxlength="30" />
+                </div>
             </div>
             <div style="font-size:11px;color:#8D5D07;margin-top:8px;">Counts toward the campaign's "follow-ups due".</div>
         </div>
@@ -469,5 +499,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/prospecting.js?v=8"></script>
+    <script src="~/js/sales/prospecting.js?v=9"></script>
 }

@@ -271,8 +271,9 @@ public class ProspectService : IProspectService
                     // Fall back to a generic label when no next-action text was captured.
                     Title = string.IsNullOrWhiteSpace(p.NextAction) ? $"Follow up: {p.Name}" : p.NextAction!,
                     TaskType = "Prospect",
-                    DueAtUtc = dueDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
-                    ScheduledTimeUtc = null,
+                    DueAtUtc = dueDate.ToDateTime(p.NextActionTime ?? TimeOnly.MinValue, DateTimeKind.Utc),
+                    // Surface the planned time (e.g. 10:00) so the brief can show "at 10:00".
+                    ScheduledTimeUtc = p.NextActionTime,
                     ContactName = p.Name,
                     Urgency = urgency,
                     IsProspect = true,
@@ -343,7 +344,10 @@ public class ProspectService : IProspectService
                     Outcome = a.Outcome,
                     Notes = a.Notes,
                     NextAction = a.NextAction,
-                    NextActionDate = a.NextActionDate
+                    NextActionDate = a.NextActionDate,
+                    NextActionTime = a.NextActionTime,
+                    NextActionContactName = a.NextActionContactName,
+                    NextActionPhone = a.NextActionPhone
                 }).ToList()
             };
         }
@@ -380,7 +384,10 @@ public class ProspectService : IProspectService
                 Outcome = request.Outcome,
                 Notes = request.Notes,
                 NextAction = request.NextAction,
-                NextActionDate = request.NextActionDate
+                NextActionDate = request.NextActionDate,
+                NextActionTime = request.NextActionTime,
+                NextActionContactName = request.NextActionContactName,
+                NextActionPhone = request.NextActionPhone
             };
 
             var id = await _activityRepository.InsertAsync(activity);
@@ -396,11 +403,18 @@ public class ProspectService : IProspectService
                 await _prospectRepository.UpdateStatusAsync(request.ProspectId, businessId, request.NewStatus.Value);
             }
 
-            // Mirror the follow-up onto the prospect so the working list "Next Action" stays current.
-            if (!string.IsNullOrWhiteSpace(request.NextAction) || request.NextActionDate.HasValue)
+            // Mirror the follow-up onto the prospect so the working list "Next Action" stays current,
+            // including the structured time / contact name / phone captured for the next action.
+            if (!string.IsNullOrWhiteSpace(request.NextAction) || request.NextActionDate.HasValue
+                || request.NextActionTime.HasValue
+                || !string.IsNullOrWhiteSpace(request.NextActionContactName)
+                || !string.IsNullOrWhiteSpace(request.NextActionPhone))
             {
                 prospect.NextAction = request.NextAction;
                 prospect.NextActionDate = request.NextActionDate;
+                prospect.NextActionTime = request.NextActionTime;
+                prospect.NextActionContactName = request.NextActionContactName;
+                prospect.NextActionPhone = request.NextActionPhone;
                 await _prospectRepository.UpdateAsync(prospect);
             }
 
@@ -436,8 +450,26 @@ public class ProspectService : IProspectService
             existing.Notes = request.Notes;
             existing.NextAction = request.NextAction;
             existing.NextActionDate = request.NextActionDate;
+            existing.NextActionTime = request.NextActionTime;
+            existing.NextActionContactName = request.NextActionContactName;
+            existing.NextActionPhone = request.NextActionPhone;
 
             await _activityRepository.UpdateActivityAsync(existing);
+
+            // Keep the prospect's mirrored "next action" in step with the edited activity, so the
+            // working list and dashboard brief reflect the change (the Add path already does this;
+            // previously the Update path did not, leaving the prospect stale after an edit).
+            var prospect = await _prospectRepository.GetByIdAsync(existing.ProspectId, businessId);
+            if (prospect != null)
+            {
+                prospect.NextAction = request.NextAction;
+                prospect.NextActionDate = request.NextActionDate;
+                prospect.NextActionTime = request.NextActionTime;
+                prospect.NextActionContactName = request.NextActionContactName;
+                prospect.NextActionPhone = request.NextActionPhone;
+                await _prospectRepository.UpdateAsync(prospect);
+            }
+
             return ServiceResult.Ok(existing.Id);
         }
         catch (Exception ex)
