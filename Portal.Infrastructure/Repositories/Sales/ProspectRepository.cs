@@ -187,6 +187,41 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
         }
     }
 
+    /// <summary>
+    /// Prospects with a planned next action falling within [today, today + lookAheadDays], used to
+    /// surface prospecting work alongside sales tasks on the dashboard brief and pipeline panel.
+    /// Excludes Converted (5) and Disqualified (6) prospects — their next action is moot — and only
+    /// returns rows that actually carry a NextActionDate.
+    /// </summary>
+    public async Task<List<Prospect>> GetUpcomingNextActionsAsync(int businessId, int lookAheadDays)
+    {
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var windowEnd = today.AddDays(Math.Max(0, lookAheadDays));
+
+            var query = $@"
+                SELECT {Columns}
+                FROM [sales].[Prospect]
+                WHERE [BusinessId] = @BusinessId
+                  AND [NextActionDate] IS NOT NULL
+                  AND [NextActionDate] >= @Today
+                  AND [NextActionDate] <= @WindowEnd
+                  AND [Status] NOT IN (5, 6)
+                ORDER BY [NextActionDate] ASC, [Name] ASC";
+
+            var results = await ExecuteStoredProcedureUnfiltered(query,
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@Today", today),
+                new SqlParameter("@WindowEnd", windowEnd));
+            return results.ToList();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public async Task<Prospect?> GetByIdAsync(int id, int businessId)
     {
         try

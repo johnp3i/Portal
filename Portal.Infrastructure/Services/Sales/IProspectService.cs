@@ -18,6 +18,12 @@ public interface IProspectService
 
     Task<ProspectDetailDto?> GetProspectDetailAsync(int prospectId);
 
+    /// <summary>
+    /// Prospect next-actions due within [today, today + lookAheadDays], shaped as dashboard-brief
+    /// items so they can be shown alongside sales tasks on the dashboard and pipeline panels.
+    /// </summary>
+    Task<List<DashboardTaskBriefDto>> GetUpcomingNextActionsBriefAsync(int businessId, int lookAheadDays);
+
     /// <summary>Adds a timeline activity. Never creates a Lead or Contact. Optionally advances status.</summary>
     Task<ServiceResult> AddActivityAsync(AddProspectActivityRequest request);
 

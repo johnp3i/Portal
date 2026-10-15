@@ -196,6 +196,20 @@
                 </div>
             </div>
 
+            <!-- Sales module settings -->
+            <h3 style="margin-top:28px;font-size:16px;font-weight:700;color:#0B1B28;">Sales</h3>
+            <div class="form-grid" style="margin-top:12px;">
+                <div class="field">
+                    <label asp-for="SalesBriefLookAheadDays">Upcoming tasks look-ahead (days)</label>
+                    <input asp-for="SalesBriefLookAheadDays" type="number" min="0" max="60" step="1"
+                           placeholder="7" disabled="@isReadOnly" />
+                    <p style="font-size:12px;color:#5E7385;margin-top:4px;">
+                        How many days ahead the dashboard "Today's Brief" and the pipeline "Today's Actions"
+                        show upcoming sales tasks and prospect next-actions. Leave blank to use the default (7 days).
+                    </p>
+                </div>
+            </div>
+
             <div style="margin-top:24px;">
                 @if (!isReadOnly)
                 {

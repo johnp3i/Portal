@@ -155,6 +155,9 @@ public class ProspectListDto
     public DateOnly? NextActionDate { get; set; }
     public byte? LastActivityType { get; set; }
     public DateTime? LastActivityAtUtc { get; set; }
+    /// <summary>Sentiment of the most recent activity: 1 Positive, 2 Neutral, 3 Negative, or null.
+    /// A negative last activity surfaces a "stop point" flag in the working list.</summary>
+    public byte? LastActivitySentiment { get; set; }
     public bool IsConverted { get; set; }
 }
 

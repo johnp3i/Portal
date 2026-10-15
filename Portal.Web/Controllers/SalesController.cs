@@ -35,6 +35,7 @@ public class SalesController : Controller
     private readonly IInsightsService _insightsService;
     private readonly ITimelineService _timelineService;
     private readonly IPlanCheckService _planCheckService;
+    private readonly IProspectService _prospectService;
     private readonly ILogger<SalesController> _logger;
 
     public SalesController(
@@ -57,6 +58,7 @@ public class SalesController : Controller
         IInsightsService insightsService,
         ITimelineService timelineService,
         IPlanCheckService planCheckService,
+        IProspectService prospectService,
         ILogger<SalesController> logger)
     {
         _leadRequestService = leadRequestService;
@@ -78,6 +80,7 @@ public class SalesController : Controller
         _insightsService = insightsService;
         _timelineService = timelineService;
         _planCheckService = planCheckService;
+        _prospectService = prospectService;
         _logger = logger;
     }
 
@@ -1451,7 +1454,27 @@ public class SalesController : Controller
         try
         {
             var tasks = await _followUpTaskService.GetTodaysActionsAsync(teamMemberId);
-            return Json(new { success = true, data = tasks });
+
+            // Prospecting next-actions due within the per-business look-ahead window, surfaced in the
+            // same panel (flagged client-side with a "Prospect" note and a link to the prospect).
+            // Loaded best-effort: a prospecting failure must not break the sales actions panel.
+            List<Portal.Infrastructure.Models.Sales.DashboardTaskBriefDto> prospectActions;
+            try
+            {
+                var businessId = _tenantService.CurrentBusinessId;
+                var profile = await _businessService.GetBusinessProfileAsync(businessId);
+                var lookAheadDays = Portal.Web.Services.SalesBriefConfig.ResolveLookAheadDays(
+                    profile?.SalesBriefLookAheadDays);
+                prospectActions = await _prospectService.GetUpcomingNextActionsBriefAsync(
+                    businessId, lookAheadDays);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading prospect next-actions for today's actions panel");
+                prospectActions = new List<Portal.Infrastructure.Models.Sales.DashboardTaskBriefDto>();
+            }
+
+            return Json(new { success = true, data = tasks, prospectActions });
         }
         catch (Exception ex)
         {

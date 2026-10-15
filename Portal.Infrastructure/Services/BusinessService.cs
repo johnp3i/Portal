@@ -107,6 +107,7 @@ public class BusinessService : IBusinessService
             existing.Email = profile.Email;
             existing.Website = profile.Website;
             existing.CurrencySymbol = profile.CurrencySymbol;
+            existing.SalesBriefLookAheadDays = profile.SalesBriefLookAheadDays;
         }
         else
         {

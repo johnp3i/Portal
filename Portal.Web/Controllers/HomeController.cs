@@ -7,6 +7,7 @@ using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Models.Sales;
 using Portal.Infrastructure.Services;
 using Portal.Infrastructure.Services.Sales;
+using Portal.Web.Services;
 
 namespace Portal.Web.Controllers;
 
@@ -25,6 +26,7 @@ public class HomeController : Controller
     private readonly IAnnouncementService _announcementService;
     private readonly IFollowUpTaskService _followUpTaskService;
     private readonly IMeetingService _meetingService;
+    private readonly IProspectService _prospectService;
     private readonly IPlanCheckService _planCheckService;
     private readonly IStorageUsageService _storageUsageService;
     private readonly ILogger<HomeController> _logger;
@@ -42,6 +44,7 @@ public class HomeController : Controller
         IAnnouncementService announcementService,
         IFollowUpTaskService followUpTaskService,
         IMeetingService meetingService,
+        IProspectService prospectService,
         IPlanCheckService planCheckService,
         IStorageUsageService storageUsageService,
         ILogger<HomeController> logger)
@@ -59,6 +62,7 @@ public class HomeController : Controller
         _announcementService = announcementService;
         _followUpTaskService = followUpTaskService;
         _meetingService = meetingService;
+        _prospectService = prospectService;
         _planCheckService = planCheckService;
         _storageUsageService = storageUsageService;
         _logger = logger;
@@ -248,9 +252,32 @@ public class HomeController : Controller
 
         if (hasSalesAccess)
         {
+            // Per-business look-ahead window (days) for the brief; defaults to 7 when unset.
+            var lookAheadDays = SalesBriefConfig.ResolveLookAheadDays(profile?.SalesBriefLookAheadDays);
+
             try
             {
-                model.BriefTasks = await _followUpTaskService.GetDashboardBriefAsync(businessId);
+                var salesTasks = await _followUpTaskService.GetDashboardBriefAsync(businessId, lookAheadDays);
+
+                // Merge in prospecting next-actions so prospect work shows alongside sales tasks in
+                // the same brief (flagged IsProspect so the view can note the source). Failure to
+                // load prospect actions must not drop the sales tasks, so it is caught separately.
+                List<DashboardTaskBriefDto> prospectTasks;
+                try
+                {
+                    prospectTasks = await _prospectService.GetUpcomingNextActionsBriefAsync(businessId, lookAheadDays);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load prospect next-actions for dashboard brief");
+                    prospectTasks = new List<DashboardTaskBriefDto>();
+                }
+
+                model.BriefTasks = salesTasks
+                    .Concat(prospectTasks)
+                    .OrderBy(t => t.DueAtUtc)
+                    .ThenBy(t => t.ScheduledTimeUtc ?? TimeOnly.MaxValue)
+                    .ToList();
             }
             catch (Exception ex)
             {

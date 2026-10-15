@@ -106,87 +106,100 @@ if (systemBriefing != null)
 
         @if (!Model.BriefTasks.Any() && !Model.BriefMeetings.Any())
         {
-            <p style="font-family:'Inter',sans-serif;font-size:14px;color:#5a6a7a;margin:0;">All clear — no tasks or meetings for today and tomorrow</p>
+            <p style="font-family:'Inter',sans-serif;font-size:14px;color:#5a6a7a;margin:0;">All clear — no tasks or meetings for the days ahead</p>
         }
         else
         {
-            var todayTasks = Model.BriefTasks.Where(t => t.Urgency == "today").ToList();
-            var todayMeetings = Model.BriefMeetings.Where(m => m.Urgency == "today").ToList();
-            var tomorrowTasks = Model.BriefTasks.Where(t => t.Urgency == "tomorrow").ToList();
-            var tomorrowMeetings = Model.BriefMeetings.Where(m => m.Urgency == "tomorrow").ToList();
+            @* Each brief item links to its source so the user can act in one click (Request 4):
+               a prospect next-action -> that prospect's detail; a sales task -> the Tasks list;
+               a meeting -> the Meetings list. Rendered via local helpers to avoid repeating the
+               markup across the today / tomorrow / upcoming buckets. *@
+            Func<Portal.Infrastructure.Models.Sales.DashboardTaskBriefDto, string> taskHref = t =>
+                t.IsProspect && t.ProspectId.HasValue
+                    ? $"/Prospecting/ProspectDetail/{t.ProspectId.Value}"
+                    : "/Sales/Tasks";
 
-            @if (todayTasks.Any() || todayMeetings.Any())
+            Func<Portal.Infrastructure.Models.Sales.DashboardTaskBriefDto, Microsoft.AspNetCore.Html.IHtmlContent> renderTask = t =>
             {
-                <h4 style="font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#0B1B28;margin:0 0 10px;">Today</h4>
-
-                @if (todayTasks.Any())
+                var pillClass = t.IsProspect ? "pill-gold" : "pill-blue";
+                var bg = t.IsProspect ? "rgba(200,145,46,.05)" : "rgba(13,94,166,.03)";
+                var time = t.ScheduledTimeUtc.HasValue ? t.ScheduledTimeUtc.Value.ToString("HH:mm") : "";
+                var builder = new Microsoft.AspNetCore.Html.HtmlContentBuilder();
+                builder.AppendHtml($@"<a href=""{taskHref(t)}"" style=""display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:{bg};margin-bottom:6px;text-decoration:none;color:inherit;"">");
+                builder.AppendHtml($@"<span class=""pill {pillClass}"" style=""font-size:11px;margin:0;"">");
+                builder.Append(t.TaskType);
+                builder.AppendHtml("</span>");
+                builder.AppendHtml(@"<span style=""font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0B1B28;flex:1;"">");
+                builder.Append(t.Title);
+                if (t.IsProspect)
                 {
-                    <div style="margin-bottom:10px;">
-                        @foreach (var task in todayTasks)
-                        {
-                            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(13,94,166,.03);margin-bottom:6px;">
-                                <span class="pill pill-blue" style="font-size:11px;margin:0;">@task.TaskType</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0B1B28;flex:1;">@task.Title</span>
-                                @if (task.ScheduledTimeUtc.HasValue)
-                                {
-                                    <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#5a6a7a;">@task.ScheduledTimeUtc.Value.ToString("HH:mm")</span>
-                                }
-                            </div>
-                        }
-                    </div>
+                    builder.AppendHtml(@"<span style=""font-size:11px;font-style:italic;color:#C8912E;margin-left:8px;"">· Prospect</span>");
                 }
-
-                @if (todayMeetings.Any())
+                builder.AppendHtml("</span>");
+                if (!string.IsNullOrEmpty(time))
                 {
-                    <div style="margin-bottom:10px;">
-                        @foreach (var meeting in todayMeetings)
-                        {
-                            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(18,152,103,.03);margin-bottom:6px;">
-                                <span class="pill pill-green" style="font-size:11px;margin:0;">@meeting.MeetingTypeName</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0B1B28;flex:1;">@meeting.Subject</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:12px;color:#5a6a7a;">@meeting.ContactName</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#5a6a7a;">@meeting.ScheduledAtUtc.ToString("HH:mm")</span>
-                            </div>
-                        }
-                    </div>
+                    builder.AppendHtml(@"<span style=""font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#5a6a7a;"">");
+                    builder.Append(time);
+                    builder.AppendHtml("</span>");
                 }
-            }
+                builder.AppendHtml("</a>");
+                return builder;
+            };
 
-            @if (tomorrowTasks.Any() || tomorrowMeetings.Any())
+            Func<Portal.Infrastructure.Models.Sales.DashboardMeetingBriefDto, Microsoft.AspNetCore.Html.IHtmlContent> renderMeeting = m =>
             {
-                <h4 style="font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#0B1B28;margin:14px 0 10px;">Tomorrow</h4>
+                var builder = new Microsoft.AspNetCore.Html.HtmlContentBuilder();
+                builder.AppendHtml(@"<a href=""/Sales/Meetings"" style=""display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(18,152,103,.03);margin-bottom:6px;text-decoration:none;color:inherit;"">");
+                builder.AppendHtml(@"<span class=""pill pill-green"" style=""font-size:11px;margin:0;"">");
+                builder.Append(m.MeetingTypeName);
+                builder.AppendHtml("</span>");
+                builder.AppendHtml(@"<span style=""font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0B1B28;flex:1;"">");
+                builder.Append(m.Subject);
+                builder.AppendHtml("</span>");
+                builder.AppendHtml(@"<span style=""font-family:'Inter',sans-serif;font-size:12px;color:#5a6a7a;"">");
+                builder.Append(m.ContactName);
+                builder.AppendHtml("</span>");
+                builder.AppendHtml(@"<span style=""font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#5a6a7a;"">");
+                builder.Append(m.ScheduledAtUtc.ToString("HH:mm"));
+                builder.AppendHtml("</span></a>");
+                return builder;
+            };
 
-                @if (tomorrowTasks.Any())
-                {
-                    <div style="margin-bottom:10px;">
-                        @foreach (var task in tomorrowTasks)
-                        {
-                            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(13,94,166,.03);margin-bottom:6px;">
-                                <span class="pill pill-blue" style="font-size:11px;margin:0;">@task.TaskType</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0B1B28;flex:1;">@task.Title</span>
-                                @if (task.ScheduledTimeUtc.HasValue)
-                                {
-                                    <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#5a6a7a;">@task.ScheduledTimeUtc.Value.ToString("HH:mm")</span>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
+            var buckets = new[]
+            {
+                new { Key = "today", Label = "Today" },
+                new { Key = "tomorrow", Label = "Tomorrow" },
+                new { Key = "upcoming", Label = "Upcoming" }
+            };
 
-                @if (tomorrowMeetings.Any())
+            @foreach (var bucket in buckets)
+            {
+                var bucketTasks = Model.BriefTasks.Where(t => t.Urgency == bucket.Key).ToList();
+                var bucketMeetings = Model.BriefMeetings.Where(m => m.Urgency == bucket.Key).ToList();
+
+                if (bucketTasks.Any() || bucketMeetings.Any())
                 {
-                    <div style="margin-bottom:10px;">
-                        @foreach (var meeting in tomorrowMeetings)
-                        {
-                            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(18,152,103,.03);margin-bottom:6px;">
-                                <span class="pill pill-green" style="font-size:11px;margin:0;">@meeting.MeetingTypeName</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0B1B28;flex:1;">@meeting.Subject</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:12px;color:#5a6a7a;">@meeting.ContactName</span>
-                                <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#5a6a7a;">@meeting.ScheduledAtUtc.ToString("HH:mm")</span>
-                            </div>
-                            <p style="font-family:'Inter',sans-serif;font-size:12px;font-style:italic;color:#C8912E;margin:0 0 6px 22px;">Prepare for tomorrow's meeting with @meeting.ContactName at @meeting.ScheduledAtUtc.ToString("HH:mm")</p>
-                        }
-                    </div>
+                    <h4 style="font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#0B1B28;margin:14px 0 10px;">@bucket.Label</h4>
+
+                    @if (bucketTasks.Any())
+                    {
+                        <div style="margin-bottom:10px;">
+                            @foreach (var task in bucketTasks)
+                            {
+                                @renderTask(task)
+                            }
+                        </div>
+                    }
+
+                    @if (bucketMeetings.Any())
+                    {
+                        <div style="margin-bottom:10px;">
+                            @foreach (var meeting in bucketMeetings)
+                            {
+                                @renderMeeting(meeting)
+                            }
+                        </div>
+                    }
                 }
             }
         }

@@ -18,6 +18,7 @@ async function loadTodaysActions() {
         if (!data.success) return;
 
         var tasks = data.data;
+        var prospectActions = data.prospectActions || [];
         var panel = document.getElementById('todaysActionsPanel');
         var list = document.getElementById('todaysActionsList');
         var badges = document.getElementById('todaysBadges');
@@ -30,11 +31,12 @@ async function loadTodaysActions() {
         // Remove skeleton if present
         if (skeleton) skeleton.remove();
 
-        if (!tasks || tasks.length === 0) {
+        if ((!tasks || tasks.length === 0) && prospectActions.length === 0) {
             panel.style.display = 'none';
             return;
         }
 
+        tasks = tasks || [];
         panel.style.display = '';
 
         // Count badges
@@ -48,6 +50,7 @@ async function loadTodaysActions() {
         if (today > 0) badgeHtml += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(200,145,46,.08);color:#C8912E;">' + today + ' today</span>';
         if (tomorrow > 0) badgeHtml += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(138,155,171,.08);color:#8a9bab;">' + tomorrow + ' tomorrow</span>';
         if (upcoming > 0) badgeHtml += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(13,94,166,.06);color:#0D5EA6;">' + upcoming + ' upcoming</span>';
+        if (prospectActions.length > 0) badgeHtml += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(200,145,46,.08);color:#C8912E;">' + prospectActions.length + ' prospect</span>';
         if (badges) badges.innerHTML = badgeHtml;
 
         // Render tasks
@@ -61,6 +64,12 @@ async function loadTodaysActions() {
         var html = '';
         tasks.forEach(function (t) {
             html += renderTaskCard(t);
+        });
+        // Prospect next-actions render as lightweight, read-only cards (no complete/snooze — those
+        // belong to sales tasks). Each links to the prospect detail and is clearly noted as a
+        // prospecting item so the two sources don't get confused in the same list.
+        prospectActions.forEach(function (p) {
+            html += renderProspectActionCard(p);
         });
         list.innerHTML = html;
 
@@ -112,6 +121,35 @@ function toggleTodaysActions() {
         list.style.display = '';
         icon.innerHTML = '<path d="M18 15l-6-6-6 6"/>';
     }
+}
+
+// ─── Prospect Next-Action Card (read-only) ──────────────────
+
+// Renders a prospecting next-action as a compact, clickable card inside the Today's Actions
+// panel. Unlike sales tasks it carries no complete/snooze controls (those are sales-task
+// concepts); the whole card links to the prospect so the user can act there.
+function renderProspectActionCard(p) {
+    var urgencyColor = p.urgency === 'today' ? '#C8912E' : (p.urgency === 'tomorrow' ? '#8a9bab' : '#0D5EA6');
+    var dueLabel = '';
+    if (p.dueAtUtc) {
+        var d = new Date(p.dueAtUtc);
+        if (!isNaN(d.getTime())) {
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            dueLabel = String(d.getDate()).padStart(2, '0') + ' ' + months[d.getMonth()];
+        }
+    }
+    var href = p.prospectId ? '/Prospecting/ProspectDetail/' + p.prospectId : '#';
+    return '' +
+        '<a href="' + href + '" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-radius:14px;border:1px solid rgba(200,145,46,.18);margin-bottom:10px;text-decoration:none;color:inherit;">' +
+            '<span style="width:8px;height:8px;border-radius:50%;background:' + urgencyColor + ';flex-shrink:0;"></span>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:14px;font-weight:700;color:#0B1B28;">' + escapeHtml(p.title || '') + '</div>' +
+                '<div style="font-size:12px;color:#8a9bab;margin-top:2px;">' +
+                    '<span style="color:#C8912E;font-weight:700;">Prospect</span> &middot; ' + escapeHtml(p.contactName || '') +
+                    (dueLabel ? ' &middot; ' + dueLabel : '') +
+                '</div>' +
+            '</div>' +
+        '</a>';
 }
 
 // ─── Task Card Rendering ────────────────────────────────────

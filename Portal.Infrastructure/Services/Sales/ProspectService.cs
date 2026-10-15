@@ -231,6 +231,7 @@ public class ProspectService : IProspectService
                     NextActionDate = p.NextActionDate,
                     LastActivityType = last?.ActivityType,
                     LastActivityAtUtc = last?.OccurredAtUtc,
+                    LastActivitySentiment = last?.Sentiment,
                     IsConverted = p.Status == StatusConverted
                 };
             }).ToList();
@@ -242,6 +243,42 @@ public class ProspectService : IProspectService
                 PageSize = paged.PageSize,
                 TotalCount = paged.TotalCount
             };
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<DashboardTaskBriefDto>> GetUpcomingNextActionsBriefAsync(int businessId, int lookAheadDays)
+    {
+        try
+        {
+            var prospects = await _prospectRepository.GetUpcomingNextActionsAsync(businessId, lookAheadDays);
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var tomorrow = today.AddDays(1);
+
+            return prospects.Select(p =>
+            {
+                // NextActionDate is date-only (no time); represent it at midnight UTC so the brief's
+                // date handling (DueAtUtc) stays uniform with sales tasks.
+                var dueDate = p.NextActionDate!.Value;
+                var urgency = dueDate <= today ? "today" : (dueDate == tomorrow ? "tomorrow" : "upcoming");
+
+                return new DashboardTaskBriefDto
+                {
+                    Id = p.Id,
+                    // Fall back to a generic label when no next-action text was captured.
+                    Title = string.IsNullOrWhiteSpace(p.NextAction) ? $"Follow up: {p.Name}" : p.NextAction!,
+                    TaskType = "Prospect",
+                    DueAtUtc = dueDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+                    ScheduledTimeUtc = null,
+                    ContactName = p.Name,
+                    Urgency = urgency,
+                    IsProspect = true,
+                    ProspectId = p.Id
+                };
+            }).ToList();
         }
         catch (Exception ex)
         {

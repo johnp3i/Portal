@@ -145,6 +145,13 @@ public class DashboardTaskBriefDto
 
     public string? ContactName { get; set; }
 
-    /// <summary>"today" or "tomorrow"</summary>
+    /// <summary>"today", "tomorrow", or "upcoming" (within the look-ahead window).</summary>
     public string Urgency { get; set; } = null!;
+
+    /// <summary>True when this brief item is a prospecting next-action rather than a sales
+    /// follow-up task. Drives a "Prospect" note and a link to the prospect detail.</summary>
+    public bool IsProspect { get; set; }
+
+    /// <summary>When IsProspect is true, the prospect this action belongs to (for linking).</summary>
+    public int? ProspectId { get; set; }
 }

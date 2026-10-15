@@ -45,6 +45,20 @@
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Renders the meeting location inline beneath the subject. When the location is a valid
+    // http(s) URL (e.g. a Zoom/Meet/Maps link) it becomes a clickable link that opens in a new
+    // tab; otherwise it is shown as plain text (e.g. "Our office"). Empty locations render nothing.
+    function renderMeetingLocation(location) {
+        if (!location || String(location).trim() === '') return '';
+        var loc = String(location).trim();
+        var isUrl = /^https?:\/\/\S+$/i.test(loc);
+        var pin = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+        if (isUrl) {
+            return '<div style="font-size:11px;margin-top:3px;"><a href="' + escapeHtml(loc) + '" target="_blank" rel="noopener" style="color:#0D5EA6;text-decoration:none;" title="Open location link">' + pin + escapeHtml(loc) + '</a></div>';
+        }
+        return '<div style="font-size:11px;color:#8a9bab;margin-top:3px;">' + pin + escapeHtml(loc) + '</div>';
+    }
+
     // ─── Urgency Badge ──────────────────────────────────────────
 
     function getUrgencyBadgeHtml(urgency) {
@@ -187,7 +201,7 @@
             }
 
             html += '<tr>';
-            html += '<td>' + escapeHtml(m.subject) + leadLink + getTaskBadgeHtml(m.taskCount, m.pendingTaskCount) + '</td>';
+            html += '<td>' + escapeHtml(m.subject) + leadLink + getTaskBadgeHtml(m.taskCount, m.pendingTaskCount) + renderMeetingLocation(m.location) + '</td>';
             html += '<td>' + escapeHtml(m.meetingTypeName || '') + '</td>';
             html += '<td>' + (m.contactName ? (m.contactId ? '<span style="color:#0D5EA6;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;" onclick="openContactModal(' + m.contactId + ')" title="View contact info">' + escapeHtml(m.contactName) + '</span>' : escapeHtml(m.contactName)) : '') + '</td>';
             html += '<td>' + scheduledDisplay + relativeHtml + '</td>';

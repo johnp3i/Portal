@@ -40,6 +40,13 @@ public class BusinessProfile
 
     public bool IsZReportEnabled { get; set; }
 
+    /// <summary>
+    /// Per-business look-ahead window (in days) for the dashboard "Today's Brief" and the pipeline
+    /// "Today's Actions" panel — how far ahead upcoming sales tasks and prospect next-actions are
+    /// surfaced. NULL means "use the platform default" (7 days).
+    /// </summary>
+    public int? SalesBriefLookAheadDays { get; set; }
+
     // Navigation properties
     public Business Business { get; set; } = null!;
 }

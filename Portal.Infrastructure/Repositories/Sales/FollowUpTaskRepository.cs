@@ -349,12 +349,14 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
     /// <summary>
     /// Gets incomplete tasks due today or tomorrow for the dashboard brief.
     /// </summary>
-    public async Task<List<FollowUpTask>> GetDashboardBriefAsync(int businessId)
+    public async Task<List<FollowUpTask>> GetDashboardBriefAsync(int businessId, int lookAheadDays)
     {
         try
         {
             var today = DateTime.UtcNow.Date;
-            var tomorrow = today.AddDays(1);
+            // The window spans today through today + lookAheadDays (inclusive). A floor of 0 keeps
+            // the window at least "today" even if a misconfigured value is passed.
+            var windowEnd = today.AddDays(Math.Max(0, lookAheadDays));
 
             const string query = @"
                 SELECT [Id], [BusinessId], [LeadRequestId], [ContactId], [TeamMemberId],
@@ -366,13 +368,13 @@ public class FollowUpTaskRepository : GenericStoredProcedureRepository<FollowUpT
                 WHERE [BusinessId] = @BusinessId
                   AND [IsCompleted] = 0
                   AND CAST([DueAtUtc] AS DATE) >= @Today
-                  AND CAST([DueAtUtc] AS DATE) <= @Tomorrow
+                  AND CAST([DueAtUtc] AS DATE) <= @WindowEnd
                 ORDER BY [DueAtUtc] ASC, CASE WHEN [ScheduledTimeUtc] IS NOT NULL THEN 0 ELSE 1 END ASC, [ScheduledTimeUtc] ASC";
 
             var results = await ExecuteStoredProcedureUnfiltered(query,
                 new SqlParameter("@BusinessId", businessId),
                 new SqlParameter("@Today", today),
-                new SqlParameter("@Tomorrow", tomorrow));
+                new SqlParameter("@WindowEnd", windowEnd));
             return results.ToList();
         }
         catch (Exception ex)

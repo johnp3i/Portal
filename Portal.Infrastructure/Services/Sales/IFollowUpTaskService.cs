@@ -18,5 +18,5 @@ public interface IFollowUpTaskService
     Task<List<FollowUpTaskDto>> GetByLeadIdAsync(int leadRequestId);
     Task<PagedResult<FollowUpTaskDto>> GetTasksPagedAsync(FollowUpTaskFilter filter, int page, int pageSize);
     Task<int> GetOverdueCountAsync(int? teamMemberId = null);
-    Task<List<DashboardTaskBriefDto>> GetDashboardBriefAsync(int businessId);
+    Task<List<DashboardTaskBriefDto>> GetDashboardBriefAsync(int businessId, int lookAheadDays);
 }

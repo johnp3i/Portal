@@ -355,12 +355,13 @@ public class FollowUpTaskService : IFollowUpTaskService
         }
     }
 
-    public async Task<List<DashboardTaskBriefDto>> GetDashboardBriefAsync(int businessId)
+    public async Task<List<DashboardTaskBriefDto>> GetDashboardBriefAsync(int businessId, int lookAheadDays)
     {
         try
         {
-            var tasks = await _taskRepository.GetDashboardBriefAsync(businessId);
+            var tasks = await _taskRepository.GetDashboardBriefAsync(businessId, lookAheadDays);
             var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
 
             var contactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
@@ -377,6 +378,10 @@ public class FollowUpTaskService : IFollowUpTaskService
                         : $"{contact.FirstName} {contact.LastName}";
                 }
 
+                // today / tomorrow / upcoming (anything within the look-ahead window beyond tomorrow).
+                var dueDate = t.DueAtUtc.Date;
+                var urgency = dueDate <= today ? "today" : (dueDate == tomorrow ? "tomorrow" : "upcoming");
+
                 return new DashboardTaskBriefDto
                 {
                     Id = t.Id,
@@ -385,7 +390,8 @@ public class FollowUpTaskService : IFollowUpTaskService
                     DueAtUtc = t.DueAtUtc,
                     ScheduledTimeUtc = t.ScheduledTimeUtc,
                     ContactName = contactName,
-                    Urgency = t.DueAtUtc.Date == today ? "today" : "tomorrow"
+                    Urgency = urgency,
+                    IsProspect = false
                 };
             }).ToList();
         }

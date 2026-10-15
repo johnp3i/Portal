@@ -489,6 +489,9 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.IsZReportEnabled)
                 .IsRequired()
                 .HasDefaultValue(false);
+
+            // Nullable: NULL falls back to the platform default look-ahead (7 days).
+            entity.Property(e => e.SalesBriefLookAheadDays);
         });
     }
 

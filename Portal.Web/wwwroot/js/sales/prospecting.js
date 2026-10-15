@@ -190,9 +190,16 @@
                 var action = (p.status === 4)
                     ? '<button class="tbl-action tbl-action--primary" onclick="location.href=\'/Prospecting/ProspectDetail/' + p.id + '\'">Convert</button>'
                     : '';
+                // Stop point: the most recent activity had a negative interaction signal (sentiment 3).
+                // Surfaced so the operator can see at a glance which prospects hit a dead end
+                // (e.g. "not a fit", "do not contact", closed business) without opening each one.
+                var stopPoint = (p.lastActivitySentiment === 3)
+                    ? '<div style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#C24A4A;margin-top:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Stop point</div>'
+                    : '';
                 html += '<tr>' +
                     '<td><a href="/Prospecting/ProspectDetail/' + p.id + '" style="color:var(--blue);font-weight:600;">' + esc(p.name) + '</a>' +
-                    (p.location ? '<div style="font-size:11px;color:#73889a;">' + esc(p.location) + '</div>' : '') + '</td>' +
+                    (p.location ? '<div style="font-size:11px;color:#73889a;">' + esc(p.location) + '</div>' : '') +
+                    stopPoint + '</td>' +
                     '<td>' + esc(p.segment || '—') + '</td>' +
                     '<td><span class="pill pill-sm ' + priorityPill(p.priority) + '">' + esc(p.priority) + '</span></td>' +
                     '<td style="font-weight:700;">' + p.total + '</td>' +
@@ -200,7 +207,7 @@
                     '<td>' + esc(last) + '</td>' +
                     '<td>' + next + '</td>' +
                     '<td style="white-space:nowrap;text-align:right;">' +
-                    '<a href="/Prospecting/ProspectDetail/' + p.id + '" class="tbl-action tbl-action--secondary">Open</a>' + action + '</td>' +
+                    '<a href="/Prospecting/ProspectDetail/' + p.id + '" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary">Open</a>' + action + '</td>' +
                     '</tr>';
             });
             body.innerHTML = html;
@@ -302,14 +309,23 @@
 
     // Type-aware outcome presets (chips populate the Outcome field).
     var ACTIVITY_PRESETS = {
-        '1': ['Strong ICP', 'Weak fit', 'Needs more research'],
-        '2': ['No answer', 'Left voicemail', 'Gatekeeper', 'Spoke — interested', 'Spoke — not now'],
-        '3': ['Intro sent', 'Replied', 'Bounced', 'No reply yet'],
-        '4': ['Meeting booked', 'Met — positive', 'Met — no fit'],
-        '5': ['Demo booked', 'Demo done — interested', 'Demo done — not now'],
+        // Research: fit assessment + "business looks dead" stop-points discovered while researching.
+        '1': ['Strong ICP', 'Weak fit', 'Needs more research', 'Website down', 'Appears closed', 'No contact details found'],
+        // Call: the full real-world spread — reached/not reached, gatekeepers, wrong-person,
+        // dead-line / closed-business stop-points, and the common dispositions.
+        '2': [
+            'No answer', 'Left voicemail', 'Line disconnected', 'Wrong number',
+            'Gatekeeper', 'Reached reception — not decision-maker', 'Decision-maker unavailable', 'Call back later',
+            'Appears closed / out of business',
+            'Spoke — interested', 'Spoke — not now', 'Spoke — not a fit', 'Do not contact'
+        ],
+        // Email: delivery + response dispositions, including hard bounces that flag a dead address.
+        '3': ['Intro sent', 'Replied — interested', 'Replied — not now', 'No reply yet', 'Bounced', 'Auto-reply / away', 'Unsubscribed'],
+        '4': ['Meeting booked', 'Met — positive', 'Met — no fit', 'No-show'],
+        '5': ['Demo booked', 'Demo done — interested', 'Demo done — not now', 'No-show'],
         '6': [],
-        '7': ['DM sent', 'Connected', 'Followed'],
-        '8': []
+        '7': ['DM sent', 'Connected', 'Followed', 'No response'],
+        '8': ['Appears closed / out of business', 'Do not contact']
     };
 
     function renderActivityPresets(type) {
