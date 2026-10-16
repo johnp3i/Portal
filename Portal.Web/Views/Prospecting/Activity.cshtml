@@ -1,0 +1,149 @@
+@using Portal.Infrastructure.Models.Sales
+@{
+    ViewData["Title"] = "Prospect Activity";
+    var campaigns = ViewBag.Campaigns as List<ProspectCampaignListDto> ?? new List<ProspectCampaignListDto>();
+    var cities = ViewBag.Cities as List<string> ?? new List<string>();
+    var selectedCampaignId = ViewBag.SelectedCampaignId as int?;
+}
+
+<div class="topbar">
+    <div>
+        <div style="font-size:12px;color:#73889a;margin-bottom:4px;">
+            Opportunities / <a href="/Prospecting/Campaigns" style="color:var(--blue);">Prospecting</a> / <strong>Activity</strong>
+        </div>
+        <div class="eyebrow"><span class="dot"></span> Prospect Activity</div>
+        <h1 class="topbar-heading">Prospect Activity</h1>
+        <p class="topbar-subtitle">Every call, email, meeting and note logged against your prospects — review what was done in any period.</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="exportActivityCsv()">Export CSV</button>
+    </div>
+</div>
+
+<!-- Filters -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:200px;">
+            <label>Campaign</label>
+            <select id="filterCampaign">
+                <option value="">All campaigns</option>
+                @foreach (var c in campaigns)
+                {
+                    if (selectedCampaignId.HasValue && selectedCampaignId.Value == c.Id)
+                    {
+                        <option value="@c.Id" selected>@c.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>Activity type</label>
+            <select id="filterActivityType">
+                <option value="">All types</option>
+                <option value="2">Call</option>
+                <option value="3">Email</option>
+                <option value="4">Meeting</option>
+                <option value="5">Demo</option>
+                <option value="6">Note</option>
+                <option value="1">Research</option>
+                <option value="7">Social</option>
+                <option value="8">Other</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>Interaction signal</label>
+            <select id="filterSentiment">
+                <option value="">Any</option>
+                <option value="1">Positive</option>
+                <option value="2">Neutral</option>
+                <option value="3">Negative</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>City</label>
+            <select id="filterCity">
+                <option value="">All cities</option>
+                @foreach (var city in cities)
+                {
+                    <option value="@city">@city</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:150px;">
+            <label>Date from</label>
+            <input type="date" id="filterDateFrom" />
+        </div>
+        <div class="field" style="min-width:150px;">
+            <label>Date to</label>
+            <input type="date" id="filterDateTo" />
+        </div>
+        <div class="field" style="min-width:200px;flex:1;">
+            <label>Search</label>
+            <input type="text" id="filterSearch" placeholder="Prospect, outcome or note…" />
+        </div>
+        <div style="padding-bottom:2px;display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="applyActivityFilters()">Filter</button>
+            <button class="btn btn-secondary" onclick="clearActivityFilters()">Clear</button>
+        </div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;align-items:center;">
+        <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#73889a;margin-right:4px;">Quick</span>
+        <button type="button" class="act-period chip" data-period="today" onclick="setActivityPeriod(this,'today')">Today</button>
+        <button type="button" class="act-period chip" data-period="yesterday" onclick="setActivityPeriod(this,'yesterday')">Yesterday</button>
+        <button type="button" class="act-period chip" data-period="this_week" onclick="setActivityPeriod(this,'this_week')">This week</button>
+        <button type="button" class="act-period chip" data-period="last_7" onclick="setActivityPeriod(this,'last_7')">Last 7 days</button>
+        <button type="button" class="act-period chip" data-period="this_month" onclick="setActivityPeriod(this,'this_month')">This month</button>
+        <button type="button" class="act-period chip" data-period="all" onclick="setActivityPeriod(this,'all')">All time</button>
+    </div>
+</section>
+
+<!-- Period summary -->
+<div id="activitySummary" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;"></div>
+
+<!-- Activity log -->
+<section class="glass card-pad">
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="activityTable">
+            <thead>
+                <tr>
+                    <th style="width:120px;">When</th>
+                    <th>Prospect</th>
+                    <th>Campaign</th>
+                    <th>Type</th>
+                    <th>Outcome</th>
+                    <th>Signal</th>
+                    <th>Next action</th>
+                    <th>By</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="activityTableBody">
+                <tr><td colspan="9" style="text-align:center;color:#73889a;padding:24px;">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+        <div id="activityPaginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
+        <div id="activityPaginationControls" style="display:flex;gap:6px;"></div>
+    </div>
+</section>
+
+@section Scripts {
+    <style>
+        .act-period.chip { border:1px solid rgba(13,94,166,.10); background:#fff; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--blue); cursor:pointer; }
+        .act-period.chip.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+        #activitySummary .stat { flex:1 1 150px; background:rgba(255,255,255,.78); border:1px solid rgba(13,94,166,.10); border-radius:16px; padding:16px 18px; }
+        #activitySummary .stat .label { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#73889a; }
+        #activitySummary .stat .value { font-family:'Manrope',Inter,sans-serif; font-size:26px; font-weight:800; margin-top:4px; }
+    </style>
+    <script src="~/js/sales/prospecting.js?v=14"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            initActivityLog();
+        });
+    </script>
+}

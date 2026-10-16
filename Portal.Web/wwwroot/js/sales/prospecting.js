@@ -174,6 +174,40 @@
         return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
     }
 
+    // Formats a TimeOnly value (serialized as "HH:mm" or "HH:mm:ss") to "HH:mm". Returns '' if empty.
+    function fmtTime(t) {
+        if (!t) return '';
+        var s = String(t);
+        var m = s.match(/^(\d{1,2}):(\d{2})/);
+        if (!m) return '';
+        return m[1].padStart(2, '0') + ':' + m[2];
+    }
+
+    // Privacy-safe "contact / phone on file" badges for the Next Action column, shared by the
+    // working list and the activity view so they look identical. Rendered as small rounded chips so
+    // they read as deliberate badges, not faint marks. We never show the actual name/number — only
+    // that one is on file (generic tooltip); the real values live on the prospect detail.
+    function nextActionBadges(hasContact, hasPhone) {
+        if (!hasContact && !hasPhone) return '';
+        // Soft rounded chips, aligned on their own baseline, with light elegant tints:
+        //   user/contact → blue, phone → green. Only presence is shown, never the value.
+        var base = 'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;margin-left:6px;';
+        var blue = base + 'background:rgba(13,94,166,.08);color:#0D5EA6;';
+        var green = base + 'background:rgba(18,152,103,.10);color:#129867;';
+        var userSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+        var phoneSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+        // Wrapper keeps the badges on one line, vertically centred against the text.
+        var out = '<span style="display:inline-flex;align-items:center;vertical-align:middle;">';
+        if (hasContact) {
+            out += '<span title="Contact name on file" aria-label="Contact name on file" style="' + blue + '">' + userSvg + '</span>';
+        }
+        if (hasPhone) {
+            out += '<span title="Phone number on file" aria-label="Phone number on file" style="' + green + '">' + phoneSvg + '</span>';
+        }
+        out += '</span>';
+        return out;
+    }
+
     function renderProspects(items, pagination) {
         var body = document.getElementById('prospectTableBody');
         if (!items || items.length === 0) {
@@ -185,9 +219,22 @@
                     ? fmtDate(p.lastActivityAtUtc) + ' · ' + (ACTIVITY_NAMES[p.lastActivityType] || '')
                     : '—';
                 var isStopPoint = (p.lastActivitySentiment === 3);
+
+                // Date + optional time prefix for the next action (e.g. "20 Oct 10:00 — ").
+                var whenPrefix = '';
+                if (p.nextActionDate) {
+                    whenPrefix = fmtDate(p.nextActionDate) + (p.nextActionTime ? ' ' + fmtTime(p.nextActionTime) : '') + ' — ';
+                }
+
+                // Privacy: a contact name / phone attached to the follow-up is shown ONLY as a badge —
+                // never the actual value (the server sends presence flags, not the data).
+                var contactIcons = nextActionBadges(p.hasNextActionContact, p.hasNextActionPhone);
+
                 var next = p.nextAction
-                    ? '<span style="color:#C8912E;font-weight:700;">' + (p.nextActionDate ? fmtDate(p.nextActionDate) + ' — ' : '') + esc(p.nextAction) + '</span>'
-                    : '<span style="color:#73889a;">—</span>';
+                    ? '<span style="color:#C8912E;font-weight:700;">' + whenPrefix + esc(p.nextAction) + '</span>' + contactIcons
+                    : (whenPrefix || contactIcons
+                        ? '<span style="color:#C8912E;font-weight:700;">' + whenPrefix + 'Follow up</span>' + contactIcons
+                        : '<span style="color:#73889a;">—</span>');
                 // When the prospect is at a stop point, note it right in the Next Action column so the
                 // reason there is no next step is explained where the user looks for one.
                 if (isStopPoint) {
@@ -739,4 +786,198 @@
             } else { err(result.message); }
         } catch (e) { BlockUI.hide(); err('Import failed. No prospects were changed. Please try again.'); }
     };
+
+    // ══════════════════════════════════════════════════════════
+    // PROSPECT ACTIVITY VIEW — read-only, paged, filterable log
+    // ══════════════════════════════════════════════════════════
+
+    var _activityPage = 1;
+    var _activityPeriod = 'last_7'; // active quick-period chip; '' once explicit dates are used
+
+    var ACT_TYPE_PILL = {
+        2: { cls: 'pill-blue', name: 'Call' },
+        3: { cls: 'pill-cyan', name: 'Email' },
+        4: { cls: 'pill-gold', name: 'Meeting' },
+        5: { cls: 'pill-gold', name: 'Demo' },
+        1: { cls: 'pill-grey', name: 'Research' },
+        6: { cls: 'pill-grey', name: 'Note' },
+        7: { cls: 'pill-grey', name: 'Social' },
+        8: { cls: 'pill-grey', name: 'Other' }
+    };
+
+    window.initActivityLog = function () {
+        // Default to the Last 7 days chip.
+        var defaultChip = document.querySelector('.act-period[data-period="last_7"]');
+        if (defaultChip) defaultChip.classList.add('active');
+        _activityPeriod = 'last_7';
+        loadActivityLog(1);
+    };
+
+    window.setActivityPeriod = function (btn, period) {
+        _activityPeriod = period;
+        document.querySelectorAll('.act-period').forEach(function (b) { b.classList.remove('active'); });
+        if (btn) btn.classList.add('active');
+        // Choosing a quick period clears any explicit date inputs.
+        var df = document.getElementById('filterDateFrom'); if (df) df.value = '';
+        var dt = document.getElementById('filterDateTo'); if (dt) dt.value = '';
+        loadActivityLog(1);
+    };
+
+    window.applyActivityFilters = function () { loadActivityLog(1); };
+
+    window.clearActivityFilters = function () {
+        ['filterActivityType', 'filterSentiment', 'filterCity', 'filterSearch', 'filterDateFrom', 'filterDateTo']
+            .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+        // Campaign filter is left as-is (it may be a deep-link scope); reset the period to Last 7 days.
+        setActivityPeriod(document.querySelector('.act-period[data-period="last_7"]'), 'last_7');
+    };
+
+    window.gotoActivityPage = function (page) { loadActivityLog(page); };
+
+    // Collects the current filter values into a URLSearchParams (shared by load + export).
+    function activityFilterParams() {
+        var params = new URLSearchParams();
+        var campaign = val('filterCampaign'); if (campaign) params.set('campaignId', campaign);
+        var type = val('filterActivityType'); if (type) params.set('activityType', type);
+        var sentiment = val('filterSentiment'); if (sentiment) params.set('sentiment', sentiment);
+        var city = val('filterCity'); if (city) params.set('city', city);
+        var search = val('filterSearch'); if (search) params.set('search', search);
+        var df = val('filterDateFrom'); var dt = val('filterDateTo');
+        if (df || dt) {
+            if (df) params.set('dateFrom', df);
+            if (dt) params.set('dateTo', dt);
+        } else {
+            params.set('period', _activityPeriod || 'today');
+        }
+        return params;
+    }
+
+    window.exportActivityCsv = function () {
+        // Navigate to the export endpoint with the current filters; it streams a CSV download.
+        window.location.href = '/Prospecting/ExportProspectActivityCsv?' + activityFilterParams().toString();
+    };
+
+    async function loadActivityLog(page) {
+        _activityPage = page || 1;
+        var params = activityFilterParams();
+        params.set('page', _activityPage);
+
+        var body = document.getElementById('activityTableBody');
+        if (body) body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#73889a;padding:24px;">Loading…</td></tr>';
+
+        BlockUI.show('Loading activity…');
+        try {
+            var response = await fetch('/Prospecting/AxGetProspectActivity?' + params.toString());
+            var result = await response.json();
+            BlockUI.hide();
+            if (!result.success) { err(result.message || 'Could not load activity.'); return; }
+            renderActivitySummary(result.summary);
+            renderActivityRows(result.data, result.pagination);
+        } catch (e) {
+            BlockUI.hide();
+            if (body) body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#C24A4A;padding:24px;">Failed to load activity.</td></tr>';
+        }
+    }
+
+    function renderActivitySummary(s) {
+        var box = document.getElementById('activitySummary');
+        if (!box) return;
+        s = s || {};
+        function stat(label, value) {
+            return '<div class="stat"><div class="label">' + label + '</div><div class="value">' + (value || 0) + '</div></div>';
+        }
+        box.innerHTML =
+            stat('Activities', s.total) +
+            stat('Calls', s.calls) +
+            stat('Emails', s.emails) +
+            stat('Meetings', s.meetings) +
+            stat('Follow-ups', s.followUps) +
+            '<div class="stat"><div class="label">Positive / Negative</div><div class="value">' + (s.positive || 0) + ' <span style="color:#73889a;font-weight:600;">·</span> ' + (s.negative || 0) + '</div></div>';
+    }
+
+    function renderActivityRows(items, pagination) {
+        var body = document.getElementById('activityTableBody');
+        if (!body) return;
+
+        if (!items || items.length === 0) {
+            body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#73889a;padding:24px;">No prospect activity for these filters.</td></tr>';
+            renderActivityPagination(pagination);
+            return;
+        }
+
+        var html = '';
+        items.forEach(function (a) {
+            // When: date + time (time only shown when the occurred timestamp carries one).
+            var occurred = a.occurredAtUtc ? new Date(a.occurredAtUtc) : null;
+            var whenMain = occurred && !isNaN(occurred) ? fmtDate(a.occurredAtUtc) : '';
+            var whenTime = '';
+            if (occurred && !isNaN(occurred)) {
+                var hh = occurred.getHours(), mm = occurred.getMinutes();
+                if (hh !== 0 || mm !== 0) {
+                    whenTime = ' <span style="color:#73889a;font-weight:600;font-size:12px;">' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + '</span>';
+                }
+            }
+
+            var pill = ACT_TYPE_PILL[a.activityType] || { cls: 'pill-grey', name: a.activityTypeName || '' };
+            var typeCell = '<span class="pill pill-sm ' + pill.cls + '">' + esc(a.activityTypeName || pill.name) + '</span>';
+
+            var outcomeCell = a.outcome ? esc(a.outcome) : '<span style="color:#73889a;">—</span>';
+            if (a.isFollowUp) {
+                outcomeCell += ' <span style="font-size:11px;font-weight:700;color:#C8912E;">⚑ follow-up</span>';
+            }
+
+            var signalCell = '<span style="color:#73889a;">—</span>';
+            if (a.sentiment === 1) signalCell = '<span class="pill pill-sm pill-green">Positive</span>';
+            else if (a.sentiment === 2) signalCell = '<span class="pill pill-sm pill-blue">Neutral</span>';
+            else if (a.sentiment === 3) signalCell = '<span class="pill pill-sm pill-red">Negative</span>';
+
+            // Next action: text + date/time + privacy-safe contact/phone icon badges (presence only).
+            var nextParts = [];
+            if (a.nextActionDate) {
+                nextParts.push(fmtDate(a.nextActionDate) + (a.nextActionTime ? ' ' + fmtTime(a.nextActionTime) : ''));
+            }
+            var nextText = a.nextAction ? esc(a.nextAction) : (nextParts.length ? 'Follow up' : '');
+            var nextCell;
+            if (nextText) {
+                var icons = nextActionBadges(a.hasNextActionContact, a.hasNextActionPhone);
+                nextCell = '<span style="color:#C8912E;font-weight:700;">' + nextText + '</span>' + icons +
+                    (nextParts.length ? '<div style="font-size:12px;color:#C8912E;font-weight:700;margin-top:3px;">' + esc(nextParts.join(' ')) + '</div>' : '');
+            } else {
+                nextCell = '<span style="color:#73889a;">—</span>';
+            }
+
+            var sub = [];
+            if (a.city) sub.push(esc(a.city));
+            if (a.segment) sub.push(esc(a.segment));
+
+            html += '<tr>' +
+                '<td style="font-weight:700;">' + whenMain + whenTime + '</td>' +
+                '<td><a href="/Prospecting/ProspectDetail/' + a.prospectId + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:700;">' + esc(a.prospectName) + '</a>' +
+                    (sub.length ? '<div style="font-size:11px;color:#73889a;margin-top:2px;">' + sub.join(' · ') + '</div>' : '') + '</td>' +
+                '<td><span style="font-size:11px;font-weight:700;color:#0B4E89;background:rgba(13,94,166,.06);border:1px solid rgba(13,94,166,.10);border-radius:8px;padding:2px 8px;">' + esc(a.campaignName || '') + '</span></td>' +
+                '<td>' + typeCell + '</td>' +
+                '<td>' + outcomeCell + '</td>' +
+                '<td>' + signalCell + '</td>' +
+                '<td>' + nextCell + '</td>' +
+                '<td>' + esc(a.performedByName || '—') + '</td>' +
+                '<td style="white-space:nowrap;text-align:right;"><a href="/Prospecting/ProspectDetail/' + a.prospectId + '" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary">Open</a></td>' +
+                '</tr>';
+        });
+        body.innerHTML = html;
+        renderActivityPagination(pagination);
+    }
+
+    function renderActivityPagination(p) {
+        var info = document.getElementById('activityPaginationInfo');
+        var controls = document.getElementById('activityPaginationControls');
+        if (!info || !controls) return;
+        if (!p || p.totalCount === 0) { info.textContent = ''; controls.innerHTML = ''; return; }
+        var from = (p.currentPage - 1) * p.pageSize + 1;
+        var to = Math.min(p.currentPage * p.pageSize, p.totalCount);
+        info.textContent = 'Showing ' + from + '–' + to + ' of ' + p.totalCount;
+        var html = '';
+        if (p.currentPage > 1) html += '<button class="btn btn-secondary" style="padding:6px 12px;font-size:13px;" onclick="gotoActivityPage(' + (p.currentPage - 1) + ')">Previous</button> ';
+        if (p.currentPage < p.totalPages) html += '<button class="btn btn-secondary" style="padding:6px 12px;font-size:13px;" onclick="gotoActivityPage(' + (p.currentPage + 1) + ')">Next</button>';
+        controls.innerHTML = html;
+    }
 })();

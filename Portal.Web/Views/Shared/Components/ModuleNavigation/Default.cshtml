@@ -78,11 +78,19 @@
             <span class="nav-text">Insights</span>
         </a>
         @{
-            var isProspectingActive = currentController.Equals("Prospecting", StringComparison.OrdinalIgnoreCase);
+            var isProspectingController = currentController.Equals("Prospecting", StringComparison.OrdinalIgnoreCase);
+            var isProspectingActivityActive = isProspectingController && currentAction.Equals("Activity", StringComparison.OrdinalIgnoreCase);
+            // The main Prospecting link stays active for every Prospecting page except the Activity view,
+            // which has its own entry below.
+            var isProspectingActive = isProspectingController && !isProspectingActivityActive;
         }
         <a class="nav-sub-item @(isProspectingActive ? "active" : "")" asp-controller="Prospecting" asp-action="Go">
             <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
             <span class="nav-text">Prospecting</span>
+        </a>
+        <a class="nav-sub-item @(isProspectingActivityActive ? "active" : "")" asp-controller="Prospecting" asp-action="Activity">
+            <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+            <span class="nav-text">Prospect Activity</span>
         </a>
         @{
             var isSalesContactsActive = currentController.Equals("Sales", StringComparison.OrdinalIgnoreCase)

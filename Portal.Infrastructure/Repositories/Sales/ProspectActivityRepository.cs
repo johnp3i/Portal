@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Portal.Infrastructure.Entities.Sales;
+using Portal.Infrastructure.Models.Sales;
 
 namespace Portal.Infrastructure.Repositories.Sales;
 
@@ -321,6 +322,301 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
         {
             throw;
         }
+    }
+
+    // ─── Prospect Activity View (paged, filtered log + summary + cities) ─────────────────────────
+
+    // Builds the shared WHERE clause + parameters for the activity log and its summary, so both apply
+    // identical filtering. Full table names are used (no short aliases) per the SQL steering.
+    private static string BuildActivityLogWhere(int businessId, ProspectActivityFilter f, List<SqlParameter> p)
+    {
+        var where = "[sales].[ProspectActivity].[BusinessId] = @BusinessId";
+        p.Add(new SqlParameter("@BusinessId", businessId));
+
+        if (f.CampaignId.HasValue)
+        {
+            where += " AND [sales].[Prospect].[ProspectCampaignId] = @CampaignId";
+            p.Add(new SqlParameter("@CampaignId", f.CampaignId.Value));
+        }
+        if (f.ActivityType.HasValue)
+        {
+            where += " AND [sales].[ProspectActivity].[ActivityType] = @ActivityType";
+            p.Add(new SqlParameter("@ActivityType", f.ActivityType.Value));
+        }
+        if (f.Sentiment.HasValue)
+        {
+            where += " AND [sales].[ProspectActivity].[Sentiment] = @Sentiment";
+            p.Add(new SqlParameter("@Sentiment", f.Sentiment.Value));
+        }
+        if (!string.IsNullOrWhiteSpace(f.City))
+        {
+            where += " AND [sales].[Prospect].[Location] = @City";
+            p.Add(new SqlParameter("@City", f.City.Trim()));
+        }
+        if (f.DateFrom.HasValue)
+        {
+            where += " AND CAST([sales].[ProspectActivity].[OccurredAtUtc] AS DATE) >= @DateFrom";
+            p.Add(new SqlParameter("@DateFrom", f.DateFrom.Value.ToDateTime(TimeOnly.MinValue)));
+        }
+        if (f.DateTo.HasValue)
+        {
+            where += " AND CAST([sales].[ProspectActivity].[OccurredAtUtc] AS DATE) <= @DateTo";
+            p.Add(new SqlParameter("@DateTo", f.DateTo.Value.ToDateTime(TimeOnly.MinValue)));
+        }
+        if (!string.IsNullOrWhiteSpace(f.Search))
+        {
+            where += @" AND (
+                [sales].[Prospect].[Name] LIKE @Search
+                OR [sales].[ProspectActivity].[Outcome] LIKE @Search
+                OR [sales].[ProspectActivity].[Notes] LIKE @Search
+                OR [sales].[ProspectActivity].[NextAction] LIKE @Search)";
+            p.Add(new SqlParameter("@Search", "%" + f.Search.Trim() + "%"));
+        }
+        return where;
+    }
+
+    /// <summary>
+    /// Paged, filtered prospect activity log joined to the prospect and campaign. Tenant-scoped.
+    /// Ordered newest-first by OccurredAtUtc. Returns the page rows plus the total matching count.
+    /// </summary>
+    public async Task<(List<ProspectActivityLogRow> Rows, int TotalCount)> GetActivityLogPagedAsync(
+        int businessId, ProspectActivityFilter filter, int page, int pageSize)
+    {
+        try
+        {
+            var parameters = new List<SqlParameter>();
+            var where = BuildActivityLogWhere(businessId, filter, parameters);
+
+            var fromJoin = @"
+                FROM [sales].[ProspectActivity]
+                INNER JOIN [sales].[Prospect] ON [sales].[Prospect].[Id] = [sales].[ProspectActivity].[ProspectId]
+                INNER JOIN [sales].[ProspectCampaign] ON [sales].[ProspectCampaign].[Id] = [sales].[Prospect].[ProspectCampaignId]";
+
+            var countQuery = $"SELECT COUNT(*) {fromJoin} WHERE {where}";
+
+            var dataQuery = $@"
+                SELECT [sales].[ProspectActivity].[Id] AS [ActivityId],
+                       [sales].[Prospect].[Id] AS [ProspectId],
+                       [sales].[Prospect].[Name] AS [ProspectName],
+                       [sales].[Prospect].[Location] AS [City],
+                       [sales].[Prospect].[Segment] AS [Segment],
+                       [sales].[Prospect].[ProspectCampaignId] AS [ProspectCampaignId],
+                       [sales].[ProspectCampaign].[Name] AS [CampaignName],
+                       [sales].[ProspectActivity].[ActivityType] AS [ActivityType],
+                       [sales].[ProspectActivity].[OccurredAtUtc] AS [OccurredAtUtc],
+                       [sales].[ProspectActivity].[Sentiment] AS [Sentiment],
+                       [sales].[ProspectActivity].[IsFollowUp] AS [IsFollowUp],
+                       [sales].[ProspectActivity].[Outcome] AS [Outcome],
+                       [sales].[ProspectActivity].[NextAction] AS [NextAction],
+                       [sales].[ProspectActivity].[NextActionDate] AS [NextActionDate],
+                       [sales].[ProspectActivity].[NextActionTime] AS [NextActionTime],
+                       [sales].[ProspectActivity].[NextActionContactName] AS [NextActionContactName],
+                       [sales].[ProspectActivity].[NextActionPhone] AS [NextActionPhone],
+                       [sales].[ProspectActivity].[PerformedByUserId] AS [PerformedByUserId]
+                {fromJoin}
+                WHERE {where}
+                ORDER BY [sales].[ProspectActivity].[OccurredAtUtc] DESC, [sales].[ProspectActivity].[Id] DESC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            var rows = new List<ProspectActivityLogRow>();
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                var transaction = _context.Database.CurrentTransaction;
+
+                int totalCount;
+                using (var countCommand = connection.CreateCommand())
+                {
+                    countCommand.CommandText = countQuery;
+                    if (transaction != null) countCommand.Transaction = transaction.GetDbTransaction();
+                    foreach (var prm in parameters)
+                        countCommand.Parameters.Add(new SqlParameter(prm.ParameterName, prm.Value));
+                    var countResult = await countCommand.ExecuteScalarAsync();
+                    totalCount = countResult != null && countResult != DBNull.Value ? (int)countResult : 0;
+                }
+
+                if (totalCount == 0)
+                    return (rows, 0);
+
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                if (page > totalPages) page = totalPages;
+                if (page < 1) page = 1;
+                var offset = (page - 1) * pageSize;
+
+                using (var dataCommand = connection.CreateCommand())
+                {
+                    dataCommand.CommandText = dataQuery;
+                    if (transaction != null) dataCommand.Transaction = transaction.GetDbTransaction();
+                    foreach (var prm in parameters)
+                        dataCommand.Parameters.Add(new SqlParameter(prm.ParameterName, prm.Value));
+                    dataCommand.Parameters.Add(new SqlParameter("@Offset", offset));
+                    dataCommand.Parameters.Add(new SqlParameter("@PageSize", pageSize));
+
+                    using var reader = await dataCommand.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                        rows.Add(ReadActivityLogRow(reader));
+                }
+
+                return (rows, totalCount);
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>Aggregate counts for the SAME filtered set (ignores pagination).</summary>
+    public async Task<ProspectActivitySummaryDto> GetActivitySummaryAsync(int businessId, ProspectActivityFilter filter)
+    {
+        try
+        {
+            var parameters = new List<SqlParameter>();
+            var where = BuildActivityLogWhere(businessId, filter, parameters);
+
+            var query = $@"
+                SELECT
+                    COUNT(*) AS [Total],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityType] = 2 THEN 1 ELSE 0 END) AS [Calls],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityType] = 3 THEN 1 ELSE 0 END) AS [Emails],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityType] = 4 THEN 1 ELSE 0 END) AS [Meetings],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[IsFollowUp] = 1 THEN 1 ELSE 0 END) AS [FollowUps],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[Sentiment] = 1 THEN 1 ELSE 0 END) AS [Positive],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[Sentiment] = 3 THEN 1 ELSE 0 END) AS [Negative]
+                FROM [sales].[ProspectActivity]
+                INNER JOIN [sales].[Prospect] ON [sales].[Prospect].[Id] = [sales].[ProspectActivity].[ProspectId]
+                INNER JOIN [sales].[ProspectCampaign] ON [sales].[ProspectCampaign].[Id] = [sales].[Prospect].[ProspectCampaignId]
+                WHERE {where}";
+
+            var summary = new ProspectActivitySummaryDto();
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null) command.Transaction = transaction.GetDbTransaction();
+                foreach (var prm in parameters)
+                    command.Parameters.Add(new SqlParameter(prm.ParameterName, prm.Value));
+
+                using var reader = await command.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    int GetI(string c) => reader.IsDBNull(reader.GetOrdinal(c)) ? 0 : Convert.ToInt32(reader.GetValue(reader.GetOrdinal(c)));
+                    summary.Total = GetI("Total");
+                    summary.Calls = GetI("Calls");
+                    summary.Emails = GetI("Emails");
+                    summary.Meetings = GetI("Meetings");
+                    summary.FollowUps = GetI("FollowUps");
+                    summary.Positive = GetI("Positive");
+                    summary.Negative = GetI("Negative");
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+            return summary;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>Distinct non-empty prospect cities for the City filter, within an optional campaign scope.</summary>
+    public async Task<List<string>> GetDistinctCitiesAsync(int businessId, int? campaignId)
+    {
+        try
+        {
+            var where = "[sales].[Prospect].[BusinessId] = @BusinessId AND [sales].[Prospect].[Location] IS NOT NULL AND LTRIM(RTRIM([sales].[Prospect].[Location])) <> ''";
+            var parameters = new List<SqlParameter> { new SqlParameter("@BusinessId", businessId) };
+            if (campaignId.HasValue)
+            {
+                where += " AND [sales].[Prospect].[ProspectCampaignId] = @CampaignId";
+                parameters.Add(new SqlParameter("@CampaignId", campaignId.Value));
+            }
+
+            var query = $@"
+                SELECT DISTINCT [sales].[Prospect].[Location]
+                FROM [sales].[Prospect]
+                WHERE {where}
+                ORDER BY [sales].[Prospect].[Location] ASC";
+
+            var cities = new List<string>();
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null) command.Transaction = transaction.GetDbTransaction();
+                foreach (var prm in parameters)
+                    command.Parameters.Add(new SqlParameter(prm.ParameterName, prm.Value));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    if (!reader.IsDBNull(0))
+                        cities.Add(reader.GetString(0));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+            return cities;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    private static ProspectActivityLogRow ReadActivityLogRow(System.Data.Common.DbDataReader r)
+    {
+        string? S(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : r.GetString(r.GetOrdinal(c));
+        DateOnly? D(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal(c)));
+        byte? B(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : r.GetByte(r.GetOrdinal(c));
+        TimeOnly? T(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : TimeOnly.FromTimeSpan((TimeSpan)r.GetValue(r.GetOrdinal(c)));
+
+        return new ProspectActivityLogRow
+        {
+            ActivityId = r.GetInt32(r.GetOrdinal("ActivityId")),
+            ProspectId = r.GetInt32(r.GetOrdinal("ProspectId")),
+            ProspectName = r.GetString(r.GetOrdinal("ProspectName")),
+            City = S("City"),
+            Segment = S("Segment"),
+            ProspectCampaignId = r.GetInt32(r.GetOrdinal("ProspectCampaignId")),
+            CampaignName = r.GetString(r.GetOrdinal("CampaignName")),
+            ActivityType = r.GetByte(r.GetOrdinal("ActivityType")),
+            OccurredAtUtc = r.GetDateTime(r.GetOrdinal("OccurredAtUtc")),
+            Sentiment = B("Sentiment"),
+            IsFollowUp = !r.IsDBNull(r.GetOrdinal("IsFollowUp")) && r.GetBoolean(r.GetOrdinal("IsFollowUp")),
+            Outcome = S("Outcome"),
+            NextAction = S("NextAction"),
+            NextActionDate = D("NextActionDate"),
+            NextActionTime = T("NextActionTime"),
+            NextActionContactName = S("NextActionContactName"),
+            NextActionPhone = S("NextActionPhone"),
+            PerformedByUserId = S("PerformedByUserId")
+        };
     }
 }
 

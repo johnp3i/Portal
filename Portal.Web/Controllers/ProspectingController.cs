@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Infrastructure.Constants;
@@ -18,6 +19,7 @@ public class ProspectingController : Controller
 {
     private readonly IProspectCampaignService _campaignService;
     private readonly IProspectService _prospectService;
+    private readonly IProspectActivityLogService _activityLogService;
     private readonly IProspectImportService _importService;
     private readonly ISalesProductService _productService;
     private readonly ILogger<ProspectingController> _logger;
@@ -25,15 +27,71 @@ public class ProspectingController : Controller
     public ProspectingController(
         IProspectCampaignService campaignService,
         IProspectService prospectService,
+        IProspectActivityLogService activityLogService,
         IProspectImportService importService,
         ISalesProductService productService,
         ILogger<ProspectingController> logger)
     {
         _campaignService = campaignService;
         _prospectService = prospectService;
+        _activityLogService = activityLogService;
         _importService = importService;
         _productService = productService;
         _logger = logger;
+    }
+
+    // Fixed page size for the activity log, consistent with other list views.
+    private const int ActivityPageSize = 15;
+
+    // Maps the quick-period chip name to an inclusive [from, to] date range (business-local "today"
+    // is approximated with UtcNow.Date, consistent with how other brief/period features compute it).
+    private static (DateOnly? From, DateOnly? To) ResolvePeriod(string? period)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        switch ((period ?? "last_7").Trim().ToLowerInvariant())
+        {
+            case "today": return (today, today);
+            case "yesterday": var y = today.AddDays(-1); return (y, y);
+            case "this_week":
+                // Week starting Monday.
+                var dow = (int)today.DayOfWeek; // Sun=0..Sat=6
+                var daysFromMonday = (dow + 6) % 7;
+                return (today.AddDays(-daysFromMonday), today);
+            case "last_7": return (today.AddDays(-6), today);
+            case "this_month": return (new DateOnly(today.Year, today.Month, 1), today);
+            case "all": return (null, null);
+            // Default to the last 7 days (matches the page's default chip).
+            default: return (today.AddDays(-6), today);
+        }
+    }
+
+    // Builds the activity filter from the raw query parameters, shared by the list endpoint and the
+    // CSV export so both apply identical filtering. Explicit dates win over the quick-period chip.
+    private ProspectActivityFilter BuildActivityFilter(
+        int? campaignId, byte? activityType, byte? sentiment, string? city, string? search,
+        string? period, DateTime? dateFrom, DateTime? dateTo)
+    {
+        DateOnly? from, to;
+        if (dateFrom.HasValue || dateTo.HasValue)
+        {
+            from = dateFrom.HasValue ? DateOnly.FromDateTime(dateFrom.Value) : null;
+            to = dateTo.HasValue ? DateOnly.FromDateTime(dateTo.Value) : null;
+        }
+        else
+        {
+            (from, to) = ResolvePeriod(period);
+        }
+
+        return new ProspectActivityFilter
+        {
+            CampaignId = campaignId,
+            ActivityType = activityType,
+            Sentiment = sentiment,
+            City = string.IsNullOrWhiteSpace(city) ? null : city,
+            Search = string.IsNullOrWhiteSpace(search) ? null : search,
+            DateFrom = from,
+            DateTo = to
+        };
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -106,9 +164,120 @@ public class ProspectingController : Controller
         return View(dashboard);
     }
 
+    /// <summary>
+    /// Prospect Activity log — "what did we do" across prospecting, overall or for one campaign.
+    /// Read-only. The AJAX endpoint feeds the table/summary; this action renders the shell and
+    /// supplies the campaign dropdown + city options for the filters.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> Activity(int? campaignId)
+    {
+        var campaigns = await _campaignService.GetCampaignsAsync();
+        var cities = await _activityLogService.GetCitiesAsync(campaignId);
+
+        ViewBag.Campaigns = campaigns;
+        ViewBag.SelectedCampaignId = campaignId;
+        ViewBag.Cities = cities;
+        return View();
+    }
+
     // ═══════════════════════════════════════════════════════════
     // CAMPAIGN AJAX ENDPOINTS
     // ═══════════════════════════════════════════════════════════
+
+    /// <summary>Paged, filtered prospect activity log + period summary (read-only, tenant-scoped).</summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetProspectActivity(
+        int? campaignId, byte? activityType, byte? sentiment, string? city, string? search,
+        string? period, DateTime? dateFrom, DateTime? dateTo, int page = 1)
+    {
+        try
+        {
+            var filter = BuildActivityFilter(campaignId, activityType, sentiment, city, search, period, dateFrom, dateTo);
+            var result = await _activityLogService.GetAsync(filter, page, ActivityPageSize);
+
+            return Json(new
+            {
+                success = true,
+                data = result.Items,
+                summary = result.Summary,
+                pagination = new { result.CurrentPage, result.PageSize, result.TotalCount, result.TotalPages }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load prospect activity log");
+            return Json(new { success = false, message = "Could not load prospect activity." });
+        }
+    }
+
+    /// <summary>Distinct prospect cities for the activity-log City filter (optional campaign scope).</summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetProspectActivityCities(int? campaignId)
+    {
+        try
+        {
+            var cities = await _activityLogService.GetCitiesAsync(campaignId);
+            return Json(new { success = true, data = cities });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load prospect activity cities");
+            return Json(new { success = false, message = "Could not load cities." });
+        }
+    }
+
+    /// <summary>
+    /// CSV export of the CURRENT filtered activity set (all matching rows, not just a page).
+    /// PRIVACY: the next-action contact name and phone are intentionally excluded — the CSV mirrors
+    /// the on-screen rule and only indicates whether a contact/phone is on file.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> ExportProspectActivityCsv(
+        int? campaignId, byte? activityType, byte? sentiment, string? city, string? search,
+        string? period, DateTime? dateFrom, DateTime? dateTo)
+    {
+        try
+        {
+            var filter = BuildActivityFilter(campaignId, activityType, sentiment, city, search, period, dateFrom, dateTo);
+            var items = await _activityLogService.GetAllForExportAsync(filter);
+
+            static string Esc(string? v) => "\"" + (v ?? string.Empty).Replace("\"", "\"\"") + "\"";
+
+            var csv = new StringBuilder();
+            csv.AppendLine("Occurred,Prospect,City,Segment,Campaign,Type,Outcome,Signal,Follow-up,Next action,Next action date,Next action time,Has contact,Has phone,By");
+            foreach (var a in items)
+            {
+                var occurred = a.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm");
+                var naDate = a.NextActionDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+                var naTime = a.NextActionTime?.ToString("HH:mm") ?? string.Empty;
+                csv.AppendLine(string.Join(",",
+                    Esc(occurred),
+                    Esc(a.ProspectName),
+                    Esc(a.City),
+                    Esc(a.Segment),
+                    Esc(a.CampaignName),
+                    Esc(a.ActivityTypeName),
+                    Esc(a.Outcome),
+                    Esc(a.SentimentName),
+                    Esc(a.IsFollowUp ? "Yes" : "No"),
+                    Esc(a.NextAction),
+                    Esc(naDate),
+                    Esc(naTime),
+                    Esc(a.HasNextActionContact ? "Yes" : "No"),
+                    Esc(a.HasNextActionPhone ? "Yes" : "No"),
+                    Esc(a.PerformedByName)));
+            }
+
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+            return File(bytes, "text/csv", $"prospect-activity-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to export prospect activity CSV");
+            return StatusCode(500, "Could not export prospect activity.");
+        }
+    }
 
     [HttpGet]
     public async Task<IActionResult> AxGetCampaignFunnel(int campaignId)

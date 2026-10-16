@@ -320,6 +320,7 @@ builder.Services.AddScoped<ISalesProductService, SalesProductService>();
 builder.Services.AddScoped<ILeadRequestService, LeadRequestService>();
 builder.Services.AddScoped<IProspectCampaignService, ProspectCampaignService>();
 builder.Services.AddScoped<IProspectService, ProspectService>();
+builder.Services.AddScoped<IProspectActivityLogService, ProspectActivityLogService>();
 builder.Services.AddScoped<IProspectImportService, ProspectImportService>();
 builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.IBusinessTimeZoneService, Portal.Infrastructure.Services.BusinessTimeZoneService>();

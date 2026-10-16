@@ -229,6 +229,11 @@ public class ProspectService : IProspectService
                     AssignedToUserId = p.AssignedToUserId,
                     NextAction = p.NextAction,
                     NextActionDate = p.NextActionDate,
+                    NextActionTime = p.NextActionTime,
+                    // Expose only presence flags, never the actual name/phone, so personal data
+                    // is not surfaced in the scannable working-list column.
+                    HasNextActionContact = !string.IsNullOrWhiteSpace(p.NextActionContactName),
+                    HasNextActionPhone = !string.IsNullOrWhiteSpace(p.NextActionPhone),
                     LastActivityType = last?.ActivityType,
                     LastActivityAtUtc = last?.OccurredAtUtc,
                     LastActivitySentiment = last?.Sentiment,

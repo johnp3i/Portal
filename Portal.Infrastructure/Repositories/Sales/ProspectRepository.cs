@@ -430,6 +430,8 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
         DateOnly? D(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal(c)));
         int? I(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : r.GetInt32(r.GetOrdinal(c));
         DateTime? DT(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : r.GetDateTime(r.GetOrdinal(c));
+        // TIME columns surface as TimeSpan via the ADO reader.
+        TimeOnly? T(string c) => r.IsDBNull(r.GetOrdinal(c)) ? null : TimeOnly.FromTimeSpan((TimeSpan)r.GetValue(r.GetOrdinal(c)));
 
         return new Prospect
         {
@@ -456,6 +458,9 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
             AssignedToUserId = S("AssignedToUserId"),
             NextAction = S("NextAction"),
             NextActionDate = D("NextActionDate"),
+            NextActionTime = T("NextActionTime"),
+            NextActionContactName = S("NextActionContactName"),
+            NextActionPhone = S("NextActionPhone"),
             ConvertedLeadRequestId = I("ConvertedLeadRequestId"),
             ConvertedAtUtc = DT("ConvertedAtUtc"),
             ImportRowId = S("ImportRowId"),

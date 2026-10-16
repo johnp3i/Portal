@@ -153,6 +153,16 @@ public class ProspectListDto
     public string? AssignedToUserId { get; set; }
     public string? NextAction { get; set; }
     public DateOnly? NextActionDate { get; set; }
+    /// <summary>Time-of-day for the next action (e.g. 10:00). A time is not sensitive, so it is shown
+    /// directly in the working list's Next Action column.</summary>
+    public TimeOnly? NextActionTime { get; set; }
+    /// <summary>Whether a contact name is attached to the next action. The NAME ITSELF is deliberately
+    /// NOT sent to the list — only this flag — so personal data isn't exposed in a scannable column;
+    /// the column renders a generic icon badge and the real name lives on the prospect detail.</summary>
+    public bool HasNextActionContact { get; set; }
+    /// <summary>Whether a phone number is attached to the next action. The NUMBER ITSELF is deliberately
+    /// NOT sent to the list — only this flag — for the same privacy reason as the contact name.</summary>
+    public bool HasNextActionPhone { get; set; }
     public byte? LastActivityType { get; set; }
     public DateTime? LastActivityAtUtc { get; set; }
     /// <summary>Sentiment of the most recent activity: 1 Positive, 2 Neutral, 3 Negative, or null.
@@ -339,4 +349,105 @@ public class ConvertProspectRequest
     public string? JobTitle { get; set; }
     public string? Country { get; set; }
     public string? RequestText { get; set; }
+}
+
+// ---------------------------------------------------------------------------
+// Prospect Activity View — read-only, paged, filterable activity log.
+// ---------------------------------------------------------------------------
+
+/// <summary>Filter for the prospect activity log. All members optional (null = no constraint).</summary>
+public class ProspectActivityFilter
+{
+    /// <summary>Null = all campaigns (overall view); otherwise a single campaign's prospects.</summary>
+    public int? CampaignId { get; set; }
+    /// <summary>1 Research, 2 Call, 3 Email, 4 Meeting, 5 Demo, 6 Note, 7 Social, 8 Other. Null = all.</summary>
+    public byte? ActivityType { get; set; }
+    /// <summary>1 Positive, 2 Neutral, 3 Negative. Null = any.</summary>
+    public byte? Sentiment { get; set; }
+    /// <summary>Exact match on the prospect's Location. Null/empty = all cities.</summary>
+    public string? City { get; set; }
+    /// <summary>Case-insensitive "contains" over prospect name / outcome / notes / next action.</summary>
+    public string? Search { get; set; }
+    /// <summary>Inclusive lower bound on the activity's occurred date. Null = no lower bound.</summary>
+    public DateOnly? DateFrom { get; set; }
+    /// <summary>Inclusive upper bound on the activity's occurred date. Null = no upper bound.</summary>
+    public DateOnly? DateTo { get; set; }
+}
+
+/// <summary>
+/// One row in the prospect activity log. PRIVACY: the next-action contact name and phone are NEVER
+/// included — only the presence flags — so personal data is not surfaced in a scannable list; the
+/// real values live on the prospect detail.
+/// </summary>
+public class ProspectActivityLogItemDto
+{
+    public int ActivityId { get; set; }
+    public int ProspectId { get; set; }
+    public string ProspectName { get; set; } = null!;
+    public string? City { get; set; }
+    public string? Segment { get; set; }
+    public int ProspectCampaignId { get; set; }
+    public string CampaignName { get; set; } = null!;
+    public byte ActivityType { get; set; }
+    public string ActivityTypeName { get; set; } = null!;
+    public DateTime OccurredAtUtc { get; set; }
+    public byte? Sentiment { get; set; }
+    public string? SentimentName { get; set; }
+    public bool IsFollowUp { get; set; }
+    public string? Outcome { get; set; }
+    public string? NextAction { get; set; }
+    public DateOnly? NextActionDate { get; set; }
+    public TimeOnly? NextActionTime { get; set; }
+    /// <summary>Whether a contact name is attached to the next action (the name itself is NOT sent).</summary>
+    public bool HasNextActionContact { get; set; }
+    /// <summary>Whether a phone number is attached to the next action (the number itself is NOT sent).</summary>
+    public bool HasNextActionPhone { get; set; }
+    /// <summary>Display name of who logged the activity, or null when unresolved.</summary>
+    public string? PerformedByName { get; set; }
+}
+
+/// <summary>Aggregate counts for the filtered activity set (ignores pagination).</summary>
+public class ProspectActivitySummaryDto
+{
+    public int Total { get; set; }
+    public int Calls { get; set; }
+    public int Emails { get; set; }
+    public int Meetings { get; set; }
+    public int FollowUps { get; set; }
+    public int Positive { get; set; }
+    public int Negative { get; set; }
+}
+
+/// <summary>Combined response for the activity log AJAX endpoint: rows + pagination + summary.</summary>
+public class ProspectActivityLogResultDto
+{
+    public List<ProspectActivityLogItemDto> Items { get; set; } = new();
+    public int CurrentPage { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages { get; set; }
+    public ProspectActivitySummaryDto Summary { get; set; } = new();
+}
+
+/// <summary>Lightweight repository projection for one activity-log row (joined to prospect + campaign).</summary>
+public class ProspectActivityLogRow
+{
+    public int ActivityId { get; set; }
+    public int ProspectId { get; set; }
+    public string ProspectName { get; set; } = null!;
+    public string? City { get; set; }
+    public string? Segment { get; set; }
+    public int ProspectCampaignId { get; set; }
+    public string CampaignName { get; set; } = null!;
+    public byte ActivityType { get; set; }
+    public DateTime OccurredAtUtc { get; set; }
+    public byte? Sentiment { get; set; }
+    public bool IsFollowUp { get; set; }
+    public string? Outcome { get; set; }
+    public string? NextAction { get; set; }
+    public DateOnly? NextActionDate { get; set; }
+    public TimeOnly? NextActionTime { get; set; }
+    public string? NextActionContactName { get; set; }
+    public string? NextActionPhone { get; set; }
+    public string? PerformedByUserId { get; set; }
 }
