@@ -116,6 +116,14 @@
                             {
                                 <span class="pill pill-green">Finalised</span>
                             }
+                            else if (period.Status == "Unlocked")
+                            {
+                                <span class="pill pill-amber">Unlocked</span>
+                            }
+                            else if (period.Status == "Re-finalised")
+                            {
+                                <span class="pill pill-green">Re-finalised</span>
+                            }
                         </td>
                         <td data-mobile="hide">@(period.PayslipCount > 0 ? period.PayslipCount.ToString() : "—")</td>
                         <td class="text-right" data-mobile="hide">@(period.PayslipCount > 0 ? $"€{period.TotalNetSalary:N2}" : "—")</td>
