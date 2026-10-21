@@ -16,7 +16,7 @@
 
 @section Head {
     <script>
-        // ─── Filter State Persistence (runs in <head>, BEFORE the body paints) ──
+        // ─── Filter State Persistence (runs in the page head, BEFORE first paint) ──
         // Remembers the active purchase filters across navigation. Common flow:
         // filter by supplier → open/create a purchase → come back → filters restored.
         //
@@ -26,7 +26,7 @@
         //    saves (not re-restores) — no redirect loop.
         //  • The "Clear" button removes the saved state, so clearing is sticky too.
         //
-        // Running here (not at the end of <body>) means the restore redirect fires before the
+        // Running here (not at the end of the page) means the restore redirect fires before the
         // page renders, so there is no visible "load bare list → flash → reload filtered" flicker.
         (function () {
             var STORAGE_KEY = 'purchase_filter_state';
@@ -43,6 +43,197 @@
             }
         })();
     </script>
+
+    <style>
+        /* ══ Purchases list — native stacked card feed on phones ═══════════════════
+           Loaded in the page head so it applies before first paint (prevents the flash
+           of the desktop table / origin-breakdown layout). One purchase = one card:
+
+             Row 1:  description (left)        total (right, bold)
+             Row 2:  invoice# · added (left)   status pill(s) (right)
+             Row 3:  supplier (left)
+             Row 4:  origin + type pills + attachment chip ......... due (right)
+             Footer: primary action  +  ⋯ More (opens the bottom action sheet)
+
+           Scoped to #purchaseTable so it overrides the generic .index-table card
+           grid without affecting other index tables. */
+        @@media (max-width: 768px) {
+            /* Cancel the desktop/≤1100px table rules (max-content width + nowrap) so
+               cards shrink to the viewport and never scroll/clip horizontally. */
+            #purchaseTable,
+            #purchaseTable tbody {
+                display: block !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+            }
+            #purchaseTable thead { display: none !important; }
+
+            #purchaseTable tbody td {
+                white-space: normal !important;
+                min-width: 0 !important;
+                overflow-wrap: anywhere;
+                border: none !important;
+                padding: 0;
+            }
+
+            /* The card */
+            #purchaseTable tbody tr {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 2px 12px;
+                align-items: start;
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+                padding: 16px !important;
+                margin-bottom: 12px;
+                border: 1px solid rgba(13, 94, 166, 0.10) !important;
+                border-radius: 16px;
+                background: #fff !important;
+                box-shadow: 0 1px 3px rgba(11, 27, 40, 0.05);
+            }
+            #purchaseTable tbody tr:active { background: #fff !important; }
+
+            /* Row 1 — Description (title) */
+            #purchaseTable tbody td:nth-child(1) {
+                grid-row: 1; grid-column: 1;
+                font-weight: 700; font-size: 15px; line-height: 1.25;
+            }
+            /* Sub-lines (invoice #, "Added …") tucked under the title */
+            #purchaseTable tbody td:nth-child(1) div { font-size: 11px !important; margin-top: 2px; }
+
+            /* Row 1 — Total (right, bold) */
+            #purchaseTable tbody td:nth-child(9) {
+                grid-row: 1; grid-column: 2;
+                text-align: right; font-weight: 800; font-size: 16px;
+                white-space: nowrap; font-family: 'Manrope', sans-serif;
+            }
+
+            /* Row 2 — Supplier (left, muted) */
+            #purchaseTable tbody td:nth-child(2) {
+                grid-row: 2; grid-column: 1;
+                font-size: 12.5px; color: #5a6a7a; margin-top: 6px;
+            }
+
+            /* Status pill(s) — right, spanning rows 2–3 so they sit beside supplier/meta */
+            #purchaseTable tbody td:nth-child(11) {
+                grid-row: 2; grid-column: 2;
+                display: flex !important; flex-direction: column; align-items: flex-end; gap: 5px;
+                margin-top: 6px;
+            }
+
+            /* Row 3 — meta: origin pill + type pill + attachment chip + due (right) */
+            #purchaseTable tbody td:nth-child(10),   /* Classification (origin + type) */
+            #purchaseTable tbody td:nth-child(4),    /* Due */
+            #purchaseTable tbody td:nth-child(6) {   /* File (attachment chip) */
+                display: inline-flex !important;
+                align-items: center;
+            }
+            #purchaseTable tbody td:nth-child(10) {
+                grid-row: 3; grid-column: 1;
+                gap: 6px; flex-wrap: wrap; margin-top: 9px;
+            }
+            /* Classification cell renders origin + type as a stacked div on desktop;
+               on mobile lay them inline as pills. */
+            #purchaseTable tbody td:nth-child(10) > div {
+                display: inline-flex !important; flex-direction: row; gap: 6px; align-items: center;
+            }
+
+            /* Attachment chip — only present when the row has files (count badge).
+               Pin it into the meta row, right after the classification pills. */
+            #purchaseTable tbody td:nth-child(6) {
+                grid-row: 3; grid-column: 1;
+                justify-self: end; margin-top: 9px;
+            }
+            /* Hide the "Add" hint on mobile — only the count chip shows, and only when files exist */
+            #purchaseTable tbody td:nth-child(6) .attach-add-hint { display: none !important; }
+
+            /* Due — right side of the meta row */
+            #purchaseTable tbody td:nth-child(4) {
+                grid-row: 3; grid-column: 2;
+                justify-content: flex-end; text-align: right;
+                font-size: 11.5px; margin-top: 9px;
+            }
+
+            /* Hidden on phone: Date(3), Category(5), Excl.VAT(7), VAT(8) */
+            #purchaseTable tbody td:nth-child(3),
+            #purchaseTable tbody td:nth-child(5),
+            #purchaseTable tbody td:nth-child(7),
+            #purchaseTable tbody td:nth-child(8) { display: none !important; }
+
+            /* Footer — primary action + ⋯ More. The secondary actions (Duplicate,
+               Mark unpaid, Cancel) are hidden here and surfaced via the sheet. */
+            #purchaseTable tbody td:nth-child(12) {
+                display: flex !important;
+                grid-row: 4; grid-column: 1 / -1;
+                gap: 8px; align-items: stretch;
+                margin-top: 14px; padding-top: 14px !important;
+                border-top: 1px solid rgba(13, 94, 166, 0.08) !important;
+                width: 100%; box-sizing: border-box;
+            }
+            #purchaseTable tbody td:nth-child(12) .act-mobile-secondary { display: none !important; }
+            #purchaseTable tbody td:nth-child(12) .act-mobile-primary,
+            #purchaseTable tbody td:nth-child(12) .act-mobile-edit {
+                margin: 0 !important; flex: 1 1 auto; width: auto;
+                text-align: center; padding: 11px 12px; font-size: 13.5px;
+                box-sizing: border-box; white-space: nowrap;
+            }
+            /* When a primary (Mark paid) is present, Edit is secondary-styled next to it;
+               when absent (paid/cancelled), Edit becomes the sole primary and stretches. */
+            #purchaseTable tbody td:nth-child(12) .act-more-trigger {
+                flex: 0 0 48px; display: inline-flex; align-items: center; justify-content: center;
+                margin: 0 !important; padding: 0; background: rgba(13,94,166,.05);
+                color: #5a6a7a; border-radius: 10px;
+            }
+
+            /* Origin breakdown in the summary card: compact 2×2 grid (unchanged) */
+            .origin-breakdown {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px !important; margin-top: 14px !important; padding-top: 14px !important;
+            }
+            .origin-breakdown .origin-chip {
+                margin: 0 !important; padding: 10px 12px !important;
+                background: rgba(13, 94, 166, 0.06) !important;
+                border: 1px solid rgba(13, 94, 166, 0.12) !important; text-align: center;
+            }
+            .origin-breakdown .origin-filter-label {
+                grid-column: 1 / -1; margin-left: 0 !important;
+                justify-content: center; background: rgba(13, 94, 166, 0.04) !important;
+            }
+
+            /* ── Bottom action sheet ── */
+            .purchase-sheet-backdrop {
+                position: fixed; inset: 0; background: rgba(11,27,40,.4);
+                display: none; z-index: 10050;
+            }
+            .purchase-sheet-backdrop.open { display: block; }
+            .purchase-sheet {
+                position: fixed; left: 0; right: 0; bottom: 0; z-index: 10051;
+                background: #fff; border-radius: 20px 20px 0 0;
+                transform: translateY(100%); transition: transform .22s ease;
+                padding: 8px 12px calc(14px + env(safe-area-inset-bottom));
+                box-shadow: 0 -12px 40px rgba(11,27,40,.18);
+            }
+            .purchase-sheet.open { transform: translateY(0); }
+            .purchase-sheet__grab { width: 40px; height: 4px; background: rgba(13,94,166,.18); border-radius: 3px; margin: 8px auto 10px; }
+            .purchase-sheet__title { font-weight: 700; font-size: 14px; padding: 4px 10px 10px; border-bottom: 1px solid rgba(13,94,166,.10); margin-bottom: 6px; color: #0B1B28; }
+            .purchase-sheet__item { display: flex; align-items: center; gap: 12px; padding: 15px 12px; border-radius: 12px; font-size: 15px; font-weight: 600; color: #0B1B28; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: inherit; text-decoration: none; }
+            .purchase-sheet__item:active { background: rgba(13,94,166,.05); }
+            .purchase-sheet__item svg { color: #5a6a7a; flex-shrink: 0; }
+            .purchase-sheet__item.danger { color: #C24A4A; }
+            .purchase-sheet__item.danger svg { color: #C24A4A; }
+            .purchase-sheet__cancel { margin-top: 4px; text-align: center; padding: 15px; font-weight: 700; color: #5a6a7a; border-top: 1px solid rgba(13,94,166,.10); cursor: pointer; }
+        }
+
+        /* The sheet + backdrop must never show on desktop. */
+        @@media (min-width: 769px) {
+            .purchase-sheet, .purchase-sheet-backdrop { display: none !important; }
+            /* The per-card mobile "More" trigger is phone-only. */
+            .act-more-trigger { display: none !important; }
+        }
+    </style>
 }
 
 <div class="topbar">
@@ -383,7 +574,7 @@
                             }
                         </td>
                         <td data-mobile="hide">@purchase.ExpenseCategory?.Name</td>
-                        <td id="attachCell-@purchase.Id" data-mobile="hide" style="cursor:pointer;text-decoration:none;" title="View or attach files" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
+                        <td id="attachCell-@purchase.Id" data-mobile="attach" style="cursor:pointer;text-decoration:none;" title="View or attach files" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
                             @{
                                 // Inline attachment-count badge from the batch-loaded dictionary —
                                 // no per-row DB query (replaces the AttachmentCount view component).
@@ -471,21 +662,35 @@
                                 }
                             </div>
                         </td>
-                        <td data-mobile="hide" style="white-space:nowrap;">
-                            <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary">Edit</a>
-                            <a asp-action="Create" asp-route-duplicateFrom="@purchase.Id" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary" title="Create a new purchase pre-filled from this one (opens in a new tab, for recurring bills)">Duplicate</a>
+                        <td data-mobile="actions" style="white-space:nowrap;">
+                            @* Primary mobile action: Mark paid (or Edit when already paid/cancelled). The
+                               secondary actions stay in this cell for desktop but are hidden on phone and
+                               surfaced through the "More" bottom sheet instead. *@
+                            @if (!purchase.IsCancelled && !purchase.IsPaid)
+                            {
+                                <button type="button" class="tbl-action tbl-action--primary btn-set-paid act-mobile-primary" data-id="@purchase.Id" data-paid="true">Mark paid</button>
+                            }
+                            <a asp-action="Edit" asp-route-id="@purchase.Id" class="tbl-action tbl-action--primary act-mobile-edit">Edit</a>
+                            <a asp-action="Create" asp-route-duplicateFrom="@purchase.Id" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary act-mobile-secondary" title="Create a new purchase pre-filled from this one (opens in a new tab, for recurring bills)">Duplicate</a>
                             @if (!purchase.IsCancelled)
                             {
                                 if (purchase.IsPaid)
                                 {
-                                    <button type="button" class="tbl-action btn-set-paid" data-id="@purchase.Id" data-paid="false">Mark unpaid</button>
+                                    <button type="button" class="tbl-action btn-set-paid act-mobile-secondary" data-id="@purchase.Id" data-paid="false">Mark unpaid</button>
                                 }
-                                else
-                                {
-                                    <button type="button" class="tbl-action tbl-action--primary btn-set-paid" data-id="@purchase.Id" data-paid="true">Mark paid</button>
-                                }
-                                <button type="button" class="tbl-action tbl-action--danger btn-cancel-purchase" data-id="@purchase.Id">Cancel</button>
+                                <button type="button" class="tbl-action tbl-action--danger btn-cancel-purchase act-mobile-secondary" data-id="@purchase.Id">Cancel</button>
                             }
+                            @* Mobile-only: opens the shared bottom action sheet with this row's actions. *@
+                            <button type="button" class="tbl-action act-more-trigger"
+                                    data-id="@purchase.Id"
+                                    data-paid="@(purchase.IsPaid ? "true" : "false")"
+                                    data-cancelled="@(purchase.IsCancelled ? "true" : "false")"
+                                    data-editurl="@Url.Action("Edit", new { id = purchase.Id })"
+                                    data-dupurl="@Url.Action("Create", new { duplicateFrom = purchase.Id })"
+                                    data-label="@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("\"", ""))"
+                                    aria-label="More actions">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                            </button>
                         </td>
                     </tr>
                 }
@@ -506,6 +711,18 @@
         </div>
     }
 </section>
+
+<!-- ── Mobile action sheet (opened by a card's ⋯ More button) ───────────────────
+     A single shared bottom sheet, populated per row from the trigger's data-* attrs.
+     Its action buttons reuse the same classes/data as the inline buttons so the
+     existing delegated click handlers (btn-set-paid / btn-cancel-purchase) apply. -->
+<div class="purchase-sheet-backdrop" id="purchaseSheetBackdrop" onclick="closePurchaseSheet()"></div>
+<div class="purchase-sheet" id="purchaseSheet" role="dialog" aria-modal="true" aria-label="Purchase actions">
+    <div class="purchase-sheet__grab"></div>
+    <div class="purchase-sheet__title" id="purchaseSheetTitle">Actions</div>
+    <div id="purchaseSheetItems"></div>
+    <div class="purchase-sheet__cancel" onclick="closePurchaseSheet()">Close</div>
+</div>
 
 <!-- Expense Insights Teaser (shown only for Starter plan users without expense_insights access) -->
 @if (Model.ShowExpenseInsightsTeaser)
@@ -608,168 +825,8 @@
        without affecting other index tables. Each row becomes a self-contained
        card: title + total on top, supplier + status next, due + classification,
        then a full-width actions row (Edit / Mark paid / Cancel). */
-    @@media (max-width: 768px) {
-        /* Belt-and-braces: the generic .index-table rules (and the ≤1100px block)
-           set the table to max-content width with nowrap cells for horizontal
-           scrolling. For the Purchases card layout we must cancel that so cards
-           fit the viewport and never overflow horizontally. */
-        #purchaseTable,
-        #purchaseTable tbody {
-            display: block !important;
-            width: 100% !important;
-            min-width: 0 !important;
-            max-width: 100% !important;
-        }
-        #purchaseTable tbody td {
-            white-space: normal !important;
-            min-width: 0 !important;
-            overflow-wrap: anywhere;
-        }
-
-        #purchaseTable tbody tr {
-            display: grid !important;
-            grid-template-columns: minmax(0, 1fr) auto;
-            grid-template-rows: auto auto auto auto;
-            gap: 6px 12px;
-            align-items: center;
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-            padding: 14px 16px !important;
-            margin-bottom: 12px;
-            border: 1px solid rgba(13, 94, 166, 0.10) !important;
-            border-radius: 16px;
-            background: #fff !important;
-            box-shadow: 0 1px 3px rgba(11, 27, 40, 0.05);
-            cursor: default;
-        }
-
-        #purchaseTable tbody tr:active {
-            background: #fff !important;
-        }
-
-        /* Description — title, top-left */
-        #purchaseTable tbody td:nth-child(1) {
-            grid-row: 1;
-            grid-column: 1;
-            font-weight: 700;
-            font-size: 14px;
-            line-height: 1.3;
-        }
-        /* Trim the sub-lines (invoice #, "Added ...") so the card stays tight */
-        #purchaseTable tbody td:nth-child(1) div {
-            font-size: 10.5px !important;
-        }
-
-        /* Total — top-right, bold */
-        #purchaseTable tbody td:nth-child(9) {
-            grid-row: 1;
-            grid-column: 2;
-            text-align: right;
-            font-weight: 800;
-            font-size: 15px;
-            white-space: nowrap;
-        }
-
-        /* Supplier — second row, left, muted */
-        #purchaseTable tbody td:nth-child(2) {
-            grid-row: 2;
-            grid-column: 1;
-            font-size: 12px;
-            color: #5a6a7a;
-        }
-
-        /* Status pill — second row, right */
-        #purchaseTable tbody td:nth-child(11) {
-            grid-row: 2;
-            grid-column: 2;
-            text-align: right;
-            display: block !important;
-        }
-
-        /* Due date — third row, left (un-hidden on mobile) */
-        #purchaseTable tbody td:nth-child(4) {
-            display: block !important;
-            grid-row: 3;
-            grid-column: 1;
-            font-size: 12px;
-        }
-
-        /* Classification — third row, right (un-hidden on mobile) */
-        #purchaseTable tbody td:nth-child(10) {
-            display: block !important;
-            grid-row: 3;
-            grid-column: 2;
-            text-align: right;
-        }
-        #purchaseTable tbody td:nth-child(10) div {
-            display: none; /* hide the accounting-type sub-label to save space */
-        }
-
-        /* Hidden on mobile: Date(3), Category(5), File(6), Excl.VAT(7), VAT(8) */
-        #purchaseTable tbody td:nth-child(3),
-        #purchaseTable tbody td:nth-child(5),
-        #purchaseTable tbody td:nth-child(6),
-        #purchaseTable tbody td:nth-child(7),
-        #purchaseTable tbody td:nth-child(8) {
-            display: none !important;
-        }
-
-        /* Actions — full-width row at the bottom. A 2-up grid (not flex) so the
-           buttons always fit the card width and can never overflow/clip off the
-           right edge. Each button stretches to fill its column. */
-        #purchaseTable tbody td:nth-child(12) {
-            display: grid !important;
-            grid-row: 4;
-            grid-column: 1 / -1;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 8px;
-            padding-top: 12px !important;
-            border-top: 1px solid rgba(13, 94, 166, 0.08);
-            white-space: normal !important;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #purchaseTable tbody td:nth-child(12) > .tbl-action {
-            margin: 0 !important;
-            width: 100%;
-            text-align: center;
-            padding: 10px 12px;
-            font-size: 13px;
-            box-sizing: border-box;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Mobile action-bar layout is now shared in mobile.css (phone media
-           block) — including .topbar-actions-desktop and .mobile-filter-card. */
-
-        /* ── Origin breakdown: compact 2×2 grid with clearer tints, matching the
-              crisp look of the top KPI cards. */
-        .origin-breakdown {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 10px !important;
-            margin-top: 14px !important;
-            padding-top: 14px !important;
-        }
-        .origin-breakdown .origin-chip {
-            margin: 0 !important;
-            padding: 10px 12px !important;
-            background: rgba(13, 94, 166, 0.06) !important;
-            border: 1px solid rgba(13, 94, 166, 0.12) !important;
-            text-align: center;
-        }
-        /* Filter label drops to its own full-width row below the 2×2 grid */
-        .origin-breakdown .origin-filter-label {
-            grid-column: 1 / -1;
-            margin-left: 0 !important;
-            justify-content: center;
-            background: rgba(13, 94, 166, 0.04) !important;
-        }
-    }
+    /* The phone card-list layout for #purchaseTable is defined in the page-head
+       section so it applies before first paint — no flash of the desktop table. */
 </style>
 
 <script>
@@ -789,6 +846,68 @@
         panel.classList.remove('open');
         var toggle = document.querySelector('.mab-more-toggle');
         if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+
+    // ─── Per-card "More" bottom action sheet (mobile) ───────────────────────
+    // Built once; populated from the tapped card's ⋯ trigger data-* attributes.
+    // The Mark paid/unpaid and Cancel items reuse the SAME classes + data-id as the
+    // inline buttons, so the existing delegated handlers act on them unchanged.
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.act-more-trigger');
+        if (!trigger) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        var id = trigger.getAttribute('data-id');
+        var isPaid = trigger.getAttribute('data-paid') === 'true';
+        var isCancelled = trigger.getAttribute('data-cancelled') === 'true';
+        var editUrl = trigger.getAttribute('data-editurl');
+        var dupUrl = trigger.getAttribute('data-dupurl');
+        var label = trigger.getAttribute('data-label') || 'Purchase';
+
+        var editIcon = '<svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4Z"/></svg>';
+        var dupIcon = '<svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>';
+        var paidIcon = '<svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+        var undoIcon = '<svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 103-7"/></svg>';
+        var cancelIcon = '<svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+
+        var html = '';
+        html += '<a class="purchase-sheet__item" href="' + esc(editUrl) + '">' + editIcon + ' Edit</a>';
+        html += '<a class="purchase-sheet__item" href="' + esc(dupUrl) + '" target="_blank" rel="noopener">' + dupIcon + ' Duplicate</a>';
+        if (!isCancelled) {
+            if (isPaid) {
+                html += '<button type="button" class="purchase-sheet__item btn-set-paid" data-id="' + esc(id) + '" data-paid="false">' + undoIcon + ' Mark unpaid</button>';
+            } else {
+                html += '<button type="button" class="purchase-sheet__item btn-set-paid" data-id="' + esc(id) + '" data-paid="true">' + paidIcon + ' Mark paid</button>';
+            }
+            html += '<button type="button" class="purchase-sheet__item danger btn-cancel-purchase" data-id="' + esc(id) + '">' + cancelIcon + ' Cancel purchase</button>';
+        }
+
+        document.getElementById('purchaseSheetTitle').textContent = label;
+        document.getElementById('purchaseSheetItems').innerHTML = html;
+        document.getElementById('purchaseSheetBackdrop').classList.add('open');
+        document.getElementById('purchaseSheet').classList.add('open');
+    });
+
+    function closePurchaseSheet() {
+        var b = document.getElementById('purchaseSheetBackdrop');
+        var s = document.getElementById('purchaseSheet');
+        if (b) b.classList.remove('open');
+        if (s) s.classList.remove('open');
+    }
+
+    // A sheet action that triggers a page reload (paid/cancel) or navigates (edit/dup)
+    // will close the sheet naturally; also close it right after any item tap.
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.purchase-sheet__item')) {
+            // Let the delegated handler run first, then dismiss the sheet.
+            setTimeout(closePurchaseSheet, 0);
+        }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closePurchaseSheet();
     });
 </script>
 

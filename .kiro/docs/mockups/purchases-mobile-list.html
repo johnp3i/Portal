@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Purchases — mobile list mockup</title>
+<style>
+    :root {
+        --bg:#F7FAFC; --bg2:#EEF4F8; --text:#0B1B28; --muted:#5E7385; --muted2:#73889A;
+        --blue:#0D5EA6; --blue3:#0B4E89; --cyan:#57B8E8; --green:#129867; --red:#C24A4A; --gold:#C8912E;
+        --line:rgba(13,94,166,.10);
+    }
+    * { box-sizing:border-box; }
+    body {
+        margin:0; font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--text);
+        background:var(--bg2);
+        -webkit-font-smoothing:antialiased;
+    }
+    h1,h2,h3 { font-family:Manrope,Inter,sans-serif; letter-spacing:-.02em; margin:0; }
+
+    /* Phone frame just for the mockup preview */
+    .phone { max-width:420px; margin:0 auto; background:var(--bg2); min-height:100vh; }
+
+    /* Simulated app top bar */
+    .topbar-sim { display:flex; align-items:center; justify-content:space-between; background:#fff; padding:12px 16px; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
+    .topbar-sim .burger, .topbar-sim .avatar { width:36px; height:36px; display:flex; align-items:center; justify-content:center; }
+    .topbar-sim .avatar { background:var(--blue); color:#fff; border-radius:50%; font-weight:700; font-size:14px; }
+    .topbar-sim .brand { font-family:Manrope; font-weight:800; color:var(--blue); font-size:16px; }
+
+    .page { padding:16px; }
+
+    .eyebrow { font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--muted2); display:flex; align-items:center; gap:7px; }
+    .eyebrow .dot { width:7px; height:7px; border-radius:50%; background:var(--cyan); }
+    h1.title { font-size:26px; margin:6px 0 2px; }
+    .subtitle { font-size:13px; color:var(--muted); margin:0 0 16px; }
+
+    /* Action bar */
+    .action-bar { display:flex; gap:8px; margin-bottom:16px; }
+    .btn { border:1px solid var(--line); border-radius:12px; padding:11px 16px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; background:#fff; color:var(--text); display:inline-flex; align-items:center; gap:7px; justify-content:center; }
+    .btn-primary { background:linear-gradient(180deg,#1A6BB8 0%, #0D5EA6 100%); color:#fff; border:none; flex:1; }
+    .btn-ghost { background:#fff; color:var(--blue); border:1px solid var(--line); }
+    .btn-count { background:var(--blue); color:#fff; border-radius:999px; font-size:11px; font-weight:800; min-width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+
+    /* KPI cards 2x2 */
+    .glass { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 8px 24px rgba(13,94,166,.05); }
+    .kpi-card { padding:16px; margin-bottom:14px; }
+    .kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .kpi { padding:14px; border-radius:14px; }
+    .kpi .label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .kpi .value { font-family:Manrope; font-size:24px; font-weight:800; margin-top:5px; }
+    .kpi.k-total { background:rgba(13,94,166,.04); border:1px solid rgba(13,94,166,.08); }
+    .kpi.k-spend { background:rgba(18,152,103,.04); border:1px solid rgba(18,152,103,.08); }
+    .kpi.k-spend .value { color:var(--green); }
+    .kpi.k-vat { background:rgba(87,184,232,.04); border:1px solid rgba(87,184,232,.08); }
+    .kpi.k-out { background:rgba(194,74,74,.04); border:1px solid rgba(194,74,74,.08); }
+    .kpi.k-out .value { color:var(--red); }
+
+    .filter-note { margin-top:12px; padding:11px 14px; border-radius:12px; background:rgba(13,94,166,.03); border:1px solid rgba(13,94,166,.06); font-size:12.5px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:9px; }
+
+    /* ── The list header ── */
+    .list-head { display:flex; align-items:center; justify-content:space-between; margin:4px 2px 10px; }
+    .list-head .count { font-size:12px; color:var(--muted); font-weight:600; }
+    .list-head .sort { font-size:12px; color:var(--blue); font-weight:700; display:inline-flex; align-items:center; gap:5px; cursor:pointer; }
+
+    /* ── Purchase card: one item, full width, stacked ────────────────────────
+       Row 1: description (+ invoice#, date) ............ total
+       Row 2: supplier ................................. status pill
+       Row 3: origin/type pills ........................ due
+       Tapping the card body = Edit. One primary action + a ⋯ More button. */
+    .p-card { background:#fff; border:1px solid var(--line); border-radius:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(11,27,40,.05); overflow:hidden; }
+    .p-main { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; padding:14px 16px; cursor:pointer; }
+    .p-main:active { background:rgba(13,94,166,.02); }
+
+    .p-title { grid-column:1; grid-row:1; font-weight:700; font-size:15px; line-height:1.25; overflow-wrap:anywhere; }
+    .p-total { grid-column:2; grid-row:1; text-align:right; font-family:Manrope; font-weight:800; font-size:16px; white-space:nowrap; }
+    .p-sub { grid-column:1; grid-row:2; font-size:11.5px; color:var(--muted2); margin-top:1px; }
+    .p-sub .inv { color:var(--blue); font-weight:600; }
+    .p-supplier { grid-column:1; grid-row:3; font-size:12.5px; color:var(--muted); margin-top:4px; }
+    .p-status { grid-column:2; grid-row:2 / span 2; text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:5px; justify-content:center; }
+
+    .p-meta { grid-column:1 / -1; grid-row:4; display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:9px; }
+    .p-due { margin-left:auto; font-size:11.5px; color:var(--muted); }
+    .p-due.overdue { color:var(--red); font-weight:700; }
+    .p-due.soon { color:var(--gold); font-weight:600; }
+
+    /* Attachment chip — shown ONLY when the purchase has files. Tap to view them. */
+    .p-attach { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--muted); background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:3px 9px 3px 7px; cursor:pointer; }
+    .p-attach svg { opacity:.8; }
+    .p-attach:active { background:rgba(13,94,166,.08); }
+
+    .pill { display:inline-block; padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:800; letter-spacing:.02em; }
+    .pill-slate { background:rgba(90,106,122,.12); color:#4A5568; }
+    .pill-blue { background:rgba(13,94,166,.10); color:var(--blue); }
+    .pill-gold { background:rgba(200,145,46,.14); color:var(--gold); }
+    .pill-cyan { background:rgba(26,138,181,.12); color:#1A7BB0; }
+    .pill-green { background:rgba(18,152,103,.14); color:var(--green); }
+    .pill-red { background:rgba(194,74,74,.12); color:var(--red); }
+    .pill-grey { background:rgba(90,106,122,.10); color:#5a6a7a; }
+    .pill-amber { background:rgba(200,145,46,.14); color:#8D5D07; }
+
+    /* Card footer: one primary action + More */
+    .p-foot { display:flex; gap:8px; padding:0 16px 14px; }
+    .p-foot .act { flex:1; border:none; border-radius:10px; padding:11px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; text-align:center; }
+    .act-primary { background:rgba(13,94,166,.08); color:var(--blue); }
+    .act-paid { background:rgba(18,152,103,.10); color:var(--green); }
+    .act-more { flex:0 0 46px; background:rgba(13,94,166,.05); color:var(--muted); display:flex; align-items:center; justify-content:center; }
+
+    .end-note { text-align:center; font-size:11px; color:var(--muted2); padding:10px 0 24px; }
+
+    /* ── Action sheet (bottom sheet) revealed by ⋯ More ── */
+    .sheet-backdrop { position:fixed; inset:0; background:rgba(11,27,40,.4); display:none; z-index:50; }
+    .sheet-backdrop.open { display:block; }
+    .sheet { position:fixed; left:0; right:0; bottom:0; background:#fff; border-radius:20px 20px 0 0; z-index:51; transform:translateY(100%); transition:transform .22s ease; padding:8px 12px calc(12px + env(safe-area-inset-bottom)); max-width:420px; margin:0 auto; }
+    .sheet.open { transform:translateY(0); }
+    .sheet .grab { width:40px; height:4px; background:rgba(13,94,166,.18); border-radius:3px; margin:8px auto 10px; }
+    .sheet .sheet-title { font-weight:700; font-size:14px; padding:4px 10px 10px; border-bottom:1px solid var(--line); margin-bottom:6px; }
+    .sheet .sheet-item { display:flex; align-items:center; gap:12px; padding:14px 12px; border-radius:12px; font-size:15px; font-weight:600; color:var(--text); cursor:pointer; }
+    .sheet .sheet-item:active { background:rgba(13,94,166,.05); }
+    .sheet .sheet-item svg { color:var(--muted); }
+    .sheet .sheet-item.danger { color:var(--red); }
+    .sheet .sheet-item.danger svg { color:var(--red); }
+    .sheet .sheet-cancel { margin-top:4px; text-align:center; padding:14px; font-weight:700; color:var(--muted); border-top:1px solid var(--line); cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="phone">
+    <div class="topbar-sim">
+        <div class="burger"><svg width="22" height="22" fill="none" stroke="#0B1B28" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></div>
+        <div class="brand">◈ 3 Inventors</div>
+        <div class="avatar">J</div>
+    </div>
+
+    <div class="page">
+        <div class="eyebrow"><span class="dot"></span> Purchases</div>
+        <h1 class="title">Purchases</h1>
+        <p class="subtitle">Track and manage your business expenses.</p>
+
+        <div class="action-bar">
+            <button class="btn btn-primary">+ Create</button>
+            <button class="btn btn-ghost"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg> Filters</button>
+            <button class="btn btn-ghost" aria-label="More"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
+        </div>
+
+        <!-- KPI summary -->
+        <section class="glass kpi-card">
+            <div class="kpi-grid">
+                <div class="kpi k-total"><div class="label">Total Purchases</div><div class="value">1142</div></div>
+                <div class="kpi k-spend"><div class="label">Total Spend</div><div class="value">€73,282.49</div></div>
+                <div class="kpi k-vat"><div class="label">Total VAT</div><div class="value">€7,066.34</div></div>
+                <div class="kpi k-out"><div class="label">Outdated</div><div class="value">36</div></div>
+            </div>
+            <div class="kpi-grid" style="margin-top:10px;">
+                <div class="kpi" style="background:rgba(13,94,166,.04);text-align:center;"><div class="label">Domestic</div><div class="value" style="font-size:18px;">915</div></div>
+                <div class="kpi" style="background:rgba(13,94,166,.04);text-align:center;"><div class="label">EU RC</div><div class="value" style="font-size:18px;color:var(--blue);">121</div></div>
+                <div class="kpi" style="background:rgba(13,94,166,.04);text-align:center;"><div class="label">EU Paid</div><div class="value" style="font-size:18px;color:#1A7BB0;">2</div></div>
+                <div class="kpi" style="background:rgba(13,94,166,.04);text-align:center;"><div class="label">Non-EU</div><div class="value" style="font-size:18px;color:#8D5D07;">104</div></div>
+            </div>
+            <div class="filter-note">
+                <svg width="15" height="15" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+                Showing all purchases (no filters applied)
+            </div>
+        </section>
+
+        <!-- List header -->
+        <div class="list-head">
+            <span class="count">1&ndash;10 of 1142</span>
+            <span class="sort">Recently Added <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        </div>
+
+        <!-- ── Purchase cards (one item each) ────────────────────────────────── -->
+
+        <!-- Card 1: Open, Non-EU, Expense -->
+        <article class="p-card">
+            <div class="p-main" onclick="editPurchase('Email Server')">
+                <div class="p-title">Email Server</div>
+                <div class="p-total">€73.78</div>
+                <div class="p-sub"><span class="inv">665113</span> · Added 15 Oct 2026</div>
+                <div class="p-supplier">Database Mart</div>
+                <div class="p-status">
+                    <span class="pill pill-slate">Open</span>
+                </div>
+                <div class="p-meta">
+                    <span class="pill pill-gold">Non-EU</span>
+                    <span class="pill pill-grey">Expense</span>
+                    <span class="p-attach" title="2 attachments" onclick="event.stopPropagation(); viewAttachments('Email Server');">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10.5 3.5L4.5 9.5a2.12 2.12 0 003 3l6-6a3.54 3.54 0 00-5-5l-6 6a4.95 4.95 0 007 7l5.5-5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        2
+                    </span>
+                    <span class="p-due">No due date</span>
+                </div>
+            </div>
+            <div class="p-foot">
+                <button class="act act-paid">Mark paid</button>
+                <button class="act act-primary">Edit</button>
+                <button class="act act-more" aria-label="More actions" onclick="openSheet('Email Server')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
+            </div>
+        </article>
+
+        <!-- Card 2: Overdue -->
+        <article class="p-card">
+            <div class="p-main" onclick="editPurchase('Web Server')">
+                <div class="p-title">Web Server</div>
+                <div class="p-total">€222.46</div>
+                <div class="p-sub"><span class="inv">662680</span> · Added 15 Oct 2026</div>
+                <div class="p-supplier">Database Mart</div>
+                <div class="p-status">
+                    <span class="pill pill-red">Overdue</span>
+                </div>
+                <div class="p-meta">
+                    <span class="pill pill-gold">Non-EU</span>
+                    <span class="pill pill-grey">Expense</span>
+                    <span class="p-due overdue">Due 10 Oct 2026</span>
+                </div>
+            </div>
+            <div class="p-foot">
+                <button class="act act-paid">Mark paid</button>
+                <button class="act act-primary">Edit</button>
+                <button class="act act-more" aria-label="More actions" onclick="openSheet('Web Server')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
+            </div>
+        </article>
+
+        <!-- Card 3: Paid, Domestic, Asset (primary action becomes Edit since already paid) -->
+        <article class="p-card">
+            <div class="p-main" onclick="editPurchase('Office Laptop')">
+                <div class="p-title">Office Laptop &mdash; Dell XPS</div>
+                <div class="p-total">€1,480.00</div>
+                <div class="p-sub"><span class="inv">INV-2041</span> · Added 12 Oct 2026</div>
+                <div class="p-supplier">PC World Cyprus</div>
+                <div class="p-status">
+                    <span class="pill pill-green">Paid</span>
+                </div>
+                <div class="p-meta">
+                    <span class="pill pill-slate">Domestic</span>
+                    <span class="pill pill-grey">Asset</span>
+                    <span class="p-attach" title="1 attachment" onclick="event.stopPropagation(); viewAttachments('Office Laptop');">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10.5 3.5L4.5 9.5a2.12 2.12 0 003 3l6-6a3.54 3.54 0 00-5-5l-6 6a4.95 4.95 0 007 7l5.5-5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        1
+                    </span>
+                    <span class="p-due">Paid 12 Oct 2026</span>
+                </div>
+            </div>
+            <div class="p-foot">
+                <button class="act act-primary" style="flex:1;">Edit</button>
+                <button class="act act-more" aria-label="More actions" onclick="openSheet('Office Laptop')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
+            </div>
+        </article>
+
+        <!-- Card 4: EU RC, due soon, outdated flag -->
+        <article class="p-card">
+            <div class="p-main" onclick="editPurchase('SaaS Subscription')">
+                <div class="p-title">Analytics SaaS &mdash; annual</div>
+                <div class="p-total">€960.00</div>
+                <div class="p-sub"><span class="inv">EU-88213</span> · Added 09 Oct 2026</div>
+                <div class="p-supplier">Metrics Ltd (IE)</div>
+                <div class="p-status">
+                    <span class="pill pill-slate">Open</span>
+                    <span class="pill pill-amber" title="Reported in a different VAT period than its invoice date">Outdated</span>
+                </div>
+                <div class="p-meta">
+                    <span class="pill pill-blue">EU RC</span>
+                    <span class="pill pill-grey">Expense</span>
+                    <span class="p-due soon">Due in 5 days</span>
+                </div>
+            </div>
+            <div class="p-foot">
+                <button class="act act-paid">Mark paid</button>
+                <button class="act act-primary">Edit</button>
+                <button class="act act-more" aria-label="More actions" onclick="openSheet('SaaS Subscription')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
+            </div>
+        </article>
+
+        <div class="end-note">Showing 1&ndash;10 · scroll for more</div>
+    </div>
+</div>
+
+<!-- Bottom action sheet (⋯ More) -->
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <div class="sheet-title" id="sheetTitle">Actions</div>
+    <div class="sheet-item"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4Z"/></svg> Edit</div>
+    <div class="sheet-item"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg> Duplicate</div>
+    <div class="sheet-item"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Mark paid</div>
+    <div class="sheet-item danger"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> Cancel purchase</div>
+    <div class="sheet-cancel" onclick="closeSheet()">Close</div>
+</div>
+
+<script>
+    function editPurchase(name){ /* would navigate to Edit */ }
+    function viewAttachments(name){ alert('Attachments for: ' + name); }
+    function openSheet(name){
+        document.getElementById('sheetTitle').textContent = name;
+        document.getElementById('sheetBackdrop').classList.add('open');
+        document.getElementById('sheet').classList.add('open');
+    }
+    function closeSheet(){
+        document.getElementById('sheetBackdrop').classList.remove('open');
+        document.getElementById('sheet').classList.remove('open');
+    }
+</script>
+</body>
+</html>
