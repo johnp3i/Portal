@@ -24,7 +24,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets all departments for a business, ordered by name.
     /// </summary>
-    public async Task<List<Department>> GetDepartmentsByBusinessAsync(int businessId)
+    public virtual async Task<List<Department>> GetDepartmentsByBusinessAsync(int businessId)
     {
         try
         {
@@ -548,7 +548,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets active employees for a business that are eligible for a given payroll period.
     /// </summary>
-    public async Task<List<Employee>> GetActiveEmployeesForPeriodAsync(int businessId, DateTime periodStart)
+    public virtual async Task<List<Employee>> GetActiveEmployeesForPeriodAsync(int businessId, DateTime periodStart)
     {
         try
         {
@@ -855,7 +855,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets active deduction types with rates for a business (for calculation engine).
     /// </summary>
-    public async Task<List<DeductionType>> GetActiveDeductionsWithRatesAsync(int businessId)
+    public virtual async Task<List<DeductionType>> GetActiveDeductionsWithRatesAsync(int businessId)
     {
         try
         {
@@ -1008,7 +1008,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets rate history for a deduction type, ordered by EffectiveFromUtc descending.
     /// </summary>
-    public async Task<List<DeductionRateHistory>> GetRateHistoryAsync(int deductionTypeId)
+    public virtual async Task<List<DeductionRateHistory>> GetRateHistoryAsync(int deductionTypeId)
     {
         try
         {
@@ -1188,7 +1188,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// Uses optimistic concurrency: only succeeds if the current status matches expectedCurrentStatus.
     /// Returns true if 1 row was affected (success), false if 0 rows (concurrency conflict).
     /// </summary>
-    public async Task<bool> UpdatePeriodStatusAsync(int id, byte newStatusId, byte expectedCurrentStatus, DateTime? processedAtUtc)
+    public virtual async Task<bool> UpdatePeriodStatusAsync(int id, byte newStatusId, byte expectedCurrentStatus, DateTime? processedAtUtc)
     {
         try
         {
@@ -1216,7 +1216,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Updates all payslips in a given period to the specified status.
     /// </summary>
-    public async Task UpdateAllPayslipStatusesInPeriodAsync(int periodId, byte statusId)
+    public virtual async Task UpdateAllPayslipStatusesInPeriodAsync(int periodId, byte statusId)
     {
         try
         {
@@ -1483,7 +1483,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Inserts a new payslip and returns the generated Id.
     /// </summary>
-    public async Task<int> InsertPayslipAsync(Payslip entity)
+    public virtual async Task<int> InsertPayslipAsync(Payslip entity)
     {
         try
         {
@@ -1682,7 +1682,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Inserts a new earning line for a payslip.
     /// </summary>
-    public async Task InsertEarningLineAsync(PayslipEarningLine entity)
+    public virtual async Task InsertEarningLineAsync(PayslipEarningLine entity)
     {
         try
         {
@@ -1783,7 +1783,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Inserts a new deduction line for a payslip.
     /// </summary>
-    public async Task InsertDeductionLineAsync(PayslipDeductionLine entity)
+    public virtual async Task InsertDeductionLineAsync(PayslipDeductionLine entity)
     {
         try
         {
@@ -1885,7 +1885,7 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
     /// <summary>
     /// Gets all default earnings for an employee.
     /// </summary>
-    public async Task<List<EmployeeDefaultEarnings>> GetDefaultEarningsByEmployeeAsync(int employeeId)
+    public virtual async Task<List<EmployeeDefaultEarnings>> GetDefaultEarningsByEmployeeAsync(int employeeId)
     {
         try
         {

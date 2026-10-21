@@ -891,7 +891,7 @@ public class PayrollService : IPayrollService
         }
     }
 
-    public async Task<ServiceResult> FinalisePeriodAsync(int id, int businessId)
+    public async Task<ServiceResult> FinalisePeriodAsync(int id, int businessId, string? userId = null)
     {
         try
         {
@@ -927,7 +927,7 @@ public class PayrollService : IPayrollService
                 // Phase D: Non-blocking compliance integration (after commit)
                 try
                 {
-                    await _complianceIntegrationService.UpdateComplianceFilingFromPayrollAsync(id, businessId, "system");
+                    await _complianceIntegrationService.UpdateComplianceFilingFromPayrollAsync(id, businessId, userId ?? "system");
                 }
                 catch
                 {
@@ -1099,6 +1099,8 @@ public class PayrollService : IPayrollService
                     var dt = deductionsWithRates.FirstOrDefault(d => d.Id == dl.DeductionTypeId);
                     return new DeductionLineDto
                     {
+                        DeductionTypeId = dl.DeductionTypeId,
+                        DeductionCategoryTypeId = dl.DeductionCategoryTypeId,
                         DeductionTypeName = dt?.Name ?? "Unknown",
                         BaseAmount = dl.BaseAmount,
                         Rate = dl.Rate,
@@ -1158,6 +1160,10 @@ public class PayrollService : IPayrollService
             var deductionTypes = await _repository.GetActiveDeductionsWithRatesAsync(businessId);
             var periodDate = new DateTime(period.Year, period.Month, 1);
 
+            // R3: all payslip/earning/deduction inserts + the status transition must be atomic.
+            using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
+            try
+            {
             foreach (var payslipPreview in preview.Payslips)
             {
                 // Insert the payslip
@@ -1193,8 +1199,10 @@ public class PayrollService : IPayrollService
                 // Insert deduction lines
                 foreach (var dl in payslipPreview.DeductionLines)
                 {
-                    // Find the deduction type by name to get the ID
-                    var dedType = deductionTypes.FirstOrDefault(d => d.Name == dl.DeductionTypeName);
+                    // Resolve the deduction type by Id, not Name: employee and employer SI/GESY
+                    // share display names, so a name lookup collides and mis-assigns the employer
+                    // contribution to the employee deduction type (wrong Id + category on the line).
+                    var dedType = deductionTypes.FirstOrDefault(d => d.Id == dl.DeductionTypeId);
                     if (dedType == null) continue;
 
                     // For PAYE lines (IsPercentage = false, Code = "PAYE"), DeductionRateHistoryId is null
@@ -1225,11 +1233,18 @@ public class PayrollService : IPayrollService
                 }
             }
 
-            // Update period status to Preview
-            await _repository.UpdatePeriodStatusAsync(periodId, 2, period.PayslipStatusTypeId, null); // 2 = Preview
-            await _repository.UpdateAllPayslipStatusesInPeriodAsync(periodId, 2);
+                // Update period status to Preview
+                await _repository.UpdatePeriodStatusAsync(periodId, 2, period.PayslipStatusTypeId, null); // 2 = Preview
+                await _repository.UpdateAllPayslipStatusesInPeriodAsync(periodId, 2);
 
-            return ServiceResult.Ok();
+                await transaction.CommitAsync();
+                return ServiceResult.Ok();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
         catch (Exception ex)
         {
@@ -1341,7 +1356,7 @@ public class PayrollService : IPayrollService
         }
     }
 
-    public async Task<ServiceResult> SaveEarningLinesAsync(int businessId, SaveEarningLinesRequest request)
+    public async Task<ServiceResult> SaveEarningLinesAsync(int businessId, SaveEarningLinesRequest request, string? userId = null)
     {
         try
         {
@@ -1460,7 +1475,7 @@ public class PayrollService : IPayrollService
                 var newEarningLines = await _repository.GetEarningLinesByPayslipAsync(request.PayslipId);
                 await _auditService.RecordEarningLineChangesAsync(
                     request.PayslipId,
-                    "system", // userId will be passed from controller in a future refactor
+                    userId ?? "system",
                     oldEarningLines,
                     newEarningLines,
                     earningTypes);
@@ -1590,7 +1605,178 @@ public class PayrollService : IPayrollService
 
     public async Task<ServiceResult> RefinalisePeriodAsync(int periodId, int businessId, string userId, string userRole)
     {
-        return await _periodStatusService.RefinalisePeriodAsync(periodId, businessId, userId, userRole);
+        // Re-finalisation must (Phase B Req 5 & 7): recalculate every payslip, transition
+        // Unlocked -> Re-finalised with audit, and ADJUST P&L (reverse old entries, create new).
+        // All money mutations run in a single transaction; compliance runs post-commit (non-blocking).
+        try
+        {
+            if (userRole != "Owner" && userRole != "SuperAdmin")
+                return ServiceResult.Fail("Only the business owner or a SuperAdmin can re-finalise a period.");
+
+            var period = await _repository.GetPeriodByIdAsync(periodId, businessId);
+            if (period == null)
+                return ServiceResult.Fail("Period not found.");
+
+            if (period.PayslipStatusTypeId != 4) // Unlocked
+                return ServiceResult.Fail("Only Unlocked periods can be re-finalised.");
+
+            using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
+            try
+            {
+                // C1: Recalculate all payslips in the period from their current earning lines.
+                var recalc = await RecalculatePeriodPayslipsAsync(period, businessId);
+                if (!recalc.Success)
+                {
+                    await transaction.RollbackAsync();
+                    return recalc;
+                }
+
+                // Transition Unlocked -> Re-finalised (optimistic concurrency) + cascade payslip statuses.
+                var updated = await _repository.UpdatePeriodStatusAsync(periodId, 5, 4, DateTime.UtcNow);
+                if (!updated)
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResult.Fail("Period status has been changed by another user. Please refresh and try again.");
+                }
+                await _repository.UpdateAllPayslipStatusesInPeriodAsync(periodId, 5);
+
+                // Audit: one Re-finalised entry per payslip.
+                var payslips = await _repository.GetPayslipsByPeriodAsync(periodId);
+                foreach (var ps in payslips)
+                {
+                    await _repository.InsertAuditLogAsync(new PayslipAuditLog
+                    {
+                        PayslipId = ps.Id,
+                        UserId = userId,
+                        PayslipAuditActionTypeId = 3, // Re-finalised
+                        FieldName = null,
+                        OldValue = null,
+                        NewValue = null
+                    });
+                }
+
+                // C2: Adjust P&L — reverse existing entries for the period and recreate from new totals.
+                var pnlResult = await _pnlService.AdjustPnlEntriesAsync(periodId, businessId, userId);
+                if (!pnlResult.Success)
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResult.Fail(pnlResult.Message ?? "Failed to adjust P&L entries. Re-finalisation rolled back.");
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            // Compliance integration — post-commit, non-blocking (matches FinalisePeriodAsync).
+            try
+            {
+                await _complianceIntegrationService.UpdateComplianceFilingFromPayrollAsync(periodId, businessId, userId);
+            }
+            catch (Exception ex)
+            {
+                // Non-blocking: compliance failure must not affect re-finalisation result.
+            }
+
+            return ServiceResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Recalculates and re-persists every payslip in a period from its CURRENT earning lines,
+    /// using the orchestrator (PAYE-aware). Deductions-with-rates are loaded once for the period.
+    /// Caller is responsible for the surrounding transaction. Returns Fail on first invalid payslip.
+    /// </summary>
+    private async Task<ServiceResult> RecalculatePeriodPayslipsAsync(PayslipPeriod period, int businessId)
+    {
+        var periodDate = new DateTime(period.Year, period.Month, 1);
+        var earningTypes = await _repository.GetAllEarningTypesAsync();
+        var earningTypeLookup = earningTypes.ToDictionary(e => e.Id, e => e);
+
+        // Load active deductions with rates ONCE for the whole period (not per payslip).
+        var deductionTypes = await _repository.GetActiveDeductionsWithRatesAsync(businessId);
+        var deductionsWithRates = new List<DeductionTypeWithHistory>();
+        foreach (var dt in deductionTypes)
+        {
+            var rates = await _repository.GetRateHistoryAsync(dt.Id);
+            deductionsWithRates.Add(new DeductionTypeWithHistory
+            {
+                Id = dt.Id,
+                Name = dt.Name,
+                Code = dt.Code,
+                IsPercentage = dt.IsPercentage,
+                DeductionCategoryTypeId = dt.DeductionCategoryTypeId,
+                IsPayeDeductible = dt.IsPayeDeductible,
+                RateHistories = rates
+            });
+        }
+
+        var payslips = await _repository.GetPayslipsByPeriodAsync(period.Id);
+        foreach (var payslip in payslips)
+        {
+            var employee = await _repository.GetEmployeeByIdAsync(payslip.EmployeeId, businessId);
+            if (employee == null)
+                return ServiceResult.Fail($"Employee for payslip {payslip.Id} not found.");
+
+            // Rebuild calculation inputs from the payslip's CURRENT earning lines.
+            var existingEarnings = await _repository.GetEarningLinesByPayslipAsync(payslip.Id);
+            var earningInputs = existingEarnings.Select(el =>
+            {
+                var et = earningTypeLookup.GetValueOrDefault(el.EarningTypeId);
+                return new EarningLineInput
+                {
+                    EarningTypeId = el.EarningTypeId,
+                    EarningTypeCode = et?.Code ?? string.Empty,
+                    Description = el.Description,
+                    Amount = el.Amount,
+                    OvertimeMultiplier = el.OvertimeMultiplier,
+                    OvertimeHours = el.OvertimeHours
+                };
+            }).ToList();
+
+            var calcInput = new PayslipCalculationInput
+            {
+                Employee = employee,
+                EarningLines = earningInputs,
+                ApplicableDeductions = deductionsWithRates,
+                PeriodDate = periodDate
+            };
+
+            var calcResult = await _orchestrator.CalculateWithPayeAsync(calcInput, employee.IsPayeApplicable);
+            if (!calcResult.IsValid)
+                return ServiceResult.Fail($"Recalculation failed for {employee.Name}: {calcResult.ValidationError}");
+
+            // Re-persist deduction lines (earning lines are unchanged on re-finalise).
+            await _repository.DeleteDeductionLinesByPayslipAsync(payslip.Id);
+            foreach (var dl in calcResult.DeductionLines)
+            {
+                await _repository.InsertDeductionLineAsync(new PayslipDeductionLine
+                {
+                    PayslipId = payslip.Id,
+                    DeductionTypeId = dl.DeductionTypeId,
+                    BaseAmount = dl.BaseAmount,
+                    Rate = dl.Rate,
+                    CalculatedAmount = dl.CalculatedAmount,
+                    DeductionCategoryTypeId = dl.DeductionCategoryTypeId,
+                    DeductionRateHistoryId = dl.DeductionRateHistoryId
+                });
+            }
+
+            payslip.TotalEarnings = calcResult.TotalEarnings;
+            payslip.TotalEmployeeDeductions = calcResult.TotalEmployeeDeductions;
+            payslip.NetSalary = calcResult.NetSalary;
+            payslip.TotalEmployerContributions = calcResult.TotalEmployerContributions;
+            await _repository.UpdatePayslipTotalsAsync(payslip);
+        }
+
+        return ServiceResult.Ok();
     }
 
     #endregion

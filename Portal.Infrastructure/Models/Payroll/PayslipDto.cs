@@ -49,6 +49,8 @@ public class EarningLineDto
 public class DeductionLineDto
 {
     public int Id { get; set; }
+    public int DeductionTypeId { get; set; }
+    public byte DeductionCategoryTypeId { get; set; }
     public string DeductionTypeName { get; set; } = string.Empty;
     public decimal BaseAmount { get; set; }
     public decimal Rate { get; set; }
