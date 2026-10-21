@@ -183,6 +183,9 @@ public class PortalDbContext : DbContext
     public DbSet<ProspectCampaign> ProspectCampaigns { get; set; } = null!;
     public DbSet<Prospect> Prospects { get; set; } = null!;
     public DbSet<ProspectActivity> ProspectActivities { get; set; } = null!;
+    public DbSet<ActivityType> ActivityTypes { get; set; } = null!;
+    public DbSet<ActivitySelfEvaluation> ActivitySelfEvaluations { get; set; } = null!;
+    public DbSet<UserPracticeFocus> UserPracticeFocuses { get; set; } = null!;
 
     // Compliance schema
     public DbSet<ApplicationCategory> ApplicationCategories { get; set; } = null!;
@@ -327,7 +330,10 @@ public class PortalDbContext : DbContext
         ConfigureActivityFeed(modelBuilder);
         ConfigureProspectCampaign(modelBuilder);
         ConfigureProspect(modelBuilder);
+        ConfigureActivityType(modelBuilder);
         ConfigureProspectActivity(modelBuilder);
+        ConfigureActivitySelfEvaluation(modelBuilder);
+        ConfigureUserPracticeFocus(modelBuilder);
 
         // Compliance
         ConfigureApplicationCategory(modelBuilder);
@@ -3875,6 +3881,7 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.NextAction).HasMaxLength(300);
             entity.Property(e => e.NextActionContactName).HasMaxLength(200);
             entity.Property(e => e.NextActionPhone).HasMaxLength(30);
+            entity.Property(e => e.NextActionEmail).HasMaxLength(320);
             entity.Property(e => e.ImportRowId).HasMaxLength(40);
             entity.Property(e => e.Status).IsRequired().HasDefaultValue((byte)1);
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
@@ -3900,6 +3907,19 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureActivityType(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ActivityType>(entity =>
+        {
+            entity.ToTable("ActivityType", "sales");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever(); // seeded ids, not identity
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.SortOrder).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+        });
+    }
+
     private static void ConfigureProspectActivity(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ProspectActivity>(entity =>
@@ -3907,11 +3927,22 @@ public class PortalDbContext : DbContext
             entity.ToTable("ProspectActivity", "sales");
             entity.HasKey(e => e.Id);
 
+            // The property keeps the short name "ActivityType"; the column is the FK "ActivityTypeId".
+            // No reference navigation is mapped (names are resolved via the cached lookup service,
+            // not EF navigation), which also avoids the required-navigation-vs-query-filter warning
+            // between the tenant-filtered ProspectActivity and the global ActivityType reference table.
+            entity.Property(e => e.ActivityType).HasColumnName("ActivityTypeId");
+            entity.HasOne<ActivityType>()
+                .WithMany()
+                .HasForeignKey(e => e.ActivityType)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
             entity.Property(e => e.PerformedByUserId).HasMaxLength(450);
             entity.Property(e => e.Outcome).HasMaxLength(200);
             entity.Property(e => e.NextAction).HasMaxLength(300);
             entity.Property(e => e.NextActionContactName).HasMaxLength(200);
             entity.Property(e => e.NextActionPhone).HasMaxLength(30);
+            entity.Property(e => e.NextActionEmail).HasMaxLength(320);
             entity.Property(e => e.IsFollowUp).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.OccurredAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
@@ -3927,6 +3958,65 @@ public class PortalDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
             entity.HasIndex(e => new { e.ProspectId, e.OccurredAtUtc }).HasDatabaseName("IX_ProspectActivity_Prospect");
+        });
+    }
+
+    private static void ConfigureActivitySelfEvaluation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ActivitySelfEvaluation>(entity =>
+        {
+            entity.ToTable("ActivitySelfEvaluation", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.EvaluatorUserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.Observations).HasMaxLength(2000);
+            entity.Property(e => e.Strengths).HasMaxLength(2000);
+            entity.Property(e => e.NextImprovement).HasMaxLength(2000);
+            entity.Property(e => e.PreCallObjective).HasMaxLength(1000);
+            entity.Property(e => e.PreCallFocus).HasMaxLength(1000);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(e => e.ProspectActivity)
+                .WithMany()
+                .HasForeignKey(e => e.ProspectActivityId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            // One private reflection per author per activity.
+            entity.HasIndex(e => new { e.BusinessId, e.ProspectActivityId, e.EvaluatorUserId })
+                .IsUnique()
+                .HasDatabaseName("UX_ActivitySelfEvaluation_Business_Activity_Evaluator");
+
+            // Author-scoped dashboard / date-range queries.
+            entity.HasIndex(e => new { e.BusinessId, e.EvaluatorUserId, e.CreatedAtUtc })
+                .HasDatabaseName("IX_ActivitySelfEvaluation_Business_Evaluator_Created");
+        });
+    }
+
+    private static void ConfigureUserPracticeFocus(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserPracticeFocus>(entity =>
+        {
+            entity.ToTable("UserPracticeFocus", "sales");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.Focus).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            // One focus per user per business.
+            entity.HasIndex(e => new { e.BusinessId, e.UserId })
+                .IsUnique()
+                .HasDatabaseName("UX_UserPracticeFocus_Business_User");
         });
     }
 
@@ -4872,6 +4962,12 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<ProspectActivity>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<ActivitySelfEvaluation>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        modelBuilder.Entity<UserPracticeFocus>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         // Compliance entities

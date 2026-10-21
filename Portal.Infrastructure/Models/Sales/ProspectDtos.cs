@@ -163,7 +163,13 @@ public class ProspectListDto
     /// <summary>Whether a phone number is attached to the next action. The NUMBER ITSELF is deliberately
     /// NOT sent to the list — only this flag — for the same privacy reason as the contact name.</summary>
     public bool HasNextActionPhone { get; set; }
+    /// <summary>Whether an email is attached to the next action. The ADDRESS ITSELF is deliberately
+    /// NOT sent to the list — only this flag — for the same privacy reason as the contact name.</summary>
+    public bool HasNextActionEmail { get; set; }
     public byte? LastActivityType { get; set; }
+    /// <summary>Resolved display name of the last activity's type (from [sales].[ActivityType]), so
+    /// new types render correctly in the list without a client-side name map.</summary>
+    public string? LastActivityTypeName { get; set; }
     public DateTime? LastActivityAtUtc { get; set; }
     /// <summary>Sentiment of the most recent activity: 1 Positive, 2 Neutral, 3 Negative, or null.
     /// A negative last activity surfaces a "stop point" flag in the working list.</summary>
@@ -283,6 +289,7 @@ public class ProspectActivityDto
     public TimeOnly? NextActionTime { get; set; }
     public string? NextActionContactName { get; set; }
     public string? NextActionPhone { get; set; }
+    public string? NextActionEmail { get; set; }
 }
 
 /// <summary>Request to add an activity to a prospect. Never creates a Lead or Contact.</summary>
@@ -301,6 +308,7 @@ public class AddProspectActivityRequest
     public TimeOnly? NextActionTime { get; set; }
     public string? NextActionContactName { get; set; }
     public string? NextActionPhone { get; set; }
+    public string? NextActionEmail { get; set; }
     /// <summary>Optional new status to move the prospect to (e.g. Contacting after first call).</summary>
     public byte? NewStatus { get; set; }
 }
@@ -321,6 +329,7 @@ public class UpdateProspectActivityRequest
     public TimeOnly? NextActionTime { get; set; }
     public string? NextActionContactName { get; set; }
     public string? NextActionPhone { get; set; }
+    public string? NextActionEmail { get; set; }
 }
 
 /// <summary>An entry in the campaign-wide recent activity feed (across all prospects).</summary>
@@ -402,6 +411,8 @@ public class ProspectActivityLogItemDto
     public bool HasNextActionContact { get; set; }
     /// <summary>Whether a phone number is attached to the next action (the number itself is NOT sent).</summary>
     public bool HasNextActionPhone { get; set; }
+    /// <summary>Whether an email is attached to the next action (the address itself is NOT sent).</summary>
+    public bool HasNextActionEmail { get; set; }
     /// <summary>Display name of who logged the activity, or null when unresolved.</summary>
     public string? PerformedByName { get; set; }
 }
@@ -449,5 +460,6 @@ public class ProspectActivityLogRow
     public TimeOnly? NextActionTime { get; set; }
     public string? NextActionContactName { get; set; }
     public string? NextActionPhone { get; set; }
+    public string? NextActionEmail { get; set; }
     public string? PerformedByUserId { get; set; }
 }

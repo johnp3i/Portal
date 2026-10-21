@@ -14,7 +14,11 @@ public class ProspectActivity
 
     public int ProspectId { get; set; }
 
-    /// <summary>1 Research, 2 Call, 3 Email, 4 Meeting, 5 Demo, 6 Note, 7 Social, 8 Other.</summary>
+    /// <summary>
+    /// FK to [sales].[ActivityType].[Id] (1 Research, 2 Call, 3 Email, 4 Meeting, 5 Demo, 6 Note,
+    /// 7 Social, 8 Other, plus any added later). Mapped to the DB column [ActivityTypeId]; the
+    /// property keeps the shorter name used across the codebase.
+    /// </summary>
     public byte ActivityType { get; set; }
 
     public DateTime OccurredAtUtc { get; set; }
@@ -44,10 +48,15 @@ public class ProspectActivity
     /// <summary>Optional phone number to use for the follow-up (e.g. the mobile they called from).</summary>
     public string? NextActionPhone { get; set; }
 
+    /// <summary>Optional email address to use for the follow-up (e.g. the contact's email).</summary>
+    public string? NextActionEmail { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     // Navigation properties
     public Business Business { get; set; } = null!;
 
     public Prospect Prospect { get; set; } = null!;
+    // No ActivityType reference navigation: the FK is configured in PortalDbContext without one, and
+    // type names are resolved through the cached IActivityTypeLookupService rather than EF Include.
 }

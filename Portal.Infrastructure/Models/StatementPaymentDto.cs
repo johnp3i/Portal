@@ -13,5 +13,7 @@ public class StatementPaymentDto
     public string PaymentMethodName { get; set; } = string.Empty;
     public int? ParentPaymentId { get; set; }
     public string? InvoiceNumber { get; set; }
+    /// <summary>The numeric Id of the invoice this payment is allocated to (null for unallocated/standalone credit payments).</summary>
+    public int? InvoiceId { get; set; }
     public bool IsAutoAllocated { get; set; }
 }

@@ -15,9 +15,9 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
 {
     // Full entity column list — FromSqlRaw materializes every mapped property.
     private const string Columns =
-        "[Id], [BusinessId], [ProspectId], [ActivityType], [OccurredAtUtc], [PerformedByUserId], " +
+        "[Id], [BusinessId], [ProspectId], [ActivityTypeId], [OccurredAtUtc], [PerformedByUserId], " +
         "[Sentiment], [IsFollowUp], [Outcome], [Notes], [NextAction], [NextActionDate], " +
-        "[NextActionTime], [NextActionContactName], [NextActionPhone], [CreatedAtUtc]";
+        "[NextActionTime], [NextActionContactName], [NextActionPhone], [NextActionEmail], [CreatedAtUtc]";
 
     public ProspectActivityRepository(DbContext context) : base(context) { }
 
@@ -27,13 +27,13 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
         {
             const string query = @"
                 INSERT INTO [sales].[ProspectActivity]
-                    ([BusinessId], [ProspectId], [ActivityType], [OccurredAtUtc], [PerformedByUserId],
+                    ([BusinessId], [ProspectId], [ActivityTypeId], [OccurredAtUtc], [PerformedByUserId],
                      [Sentiment], [IsFollowUp], [Outcome], [Notes], [NextAction], [NextActionDate],
-                     [NextActionTime], [NextActionContactName], [NextActionPhone], [CreatedAtUtc])
+                     [NextActionTime], [NextActionContactName], [NextActionPhone], [NextActionEmail], [CreatedAtUtc])
                 VALUES
-                    (@BusinessId, @ProspectId, @ActivityType, @OccurredAtUtc, @PerformedByUserId,
+                    (@BusinessId, @ProspectId, @ActivityTypeId, @OccurredAtUtc, @PerformedByUserId,
                      @Sentiment, @IsFollowUp, @Outcome, @Notes, @NextAction, @NextActionDate,
-                     @NextActionTime, @NextActionContactName, @NextActionPhone, @CreatedAtUtc);
+                     @NextActionTime, @NextActionContactName, @NextActionPhone, @NextActionEmail, @CreatedAtUtc);
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var connection = _context.Database.GetDbConnection();
@@ -50,7 +50,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
 
                 command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
                 command.Parameters.Add(new SqlParameter("@ProspectId", entity.ProspectId));
-                command.Parameters.Add(new SqlParameter("@ActivityType", entity.ActivityType));
+                command.Parameters.Add(new SqlParameter("@ActivityTypeId", entity.ActivityType));
                 command.Parameters.Add(new SqlParameter("@OccurredAtUtc", entity.OccurredAtUtc == default ? DateTime.UtcNow : entity.OccurredAtUtc));
                 command.Parameters.Add(new SqlParameter("@PerformedByUserId", entity.PerformedByUserId ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@Sentiment", entity.Sentiment.HasValue ? entity.Sentiment.Value : (object)DBNull.Value));
@@ -62,6 +62,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                 command.Parameters.Add(new SqlParameter("@NextActionTime", SqlDbType.Time) { Value = entity.NextActionTime.HasValue ? entity.NextActionTime.Value.ToTimeSpan() : (object)DBNull.Value });
                 command.Parameters.Add(new SqlParameter("@NextActionContactName", entity.NextActionContactName ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@NextActionEmail", entity.NextActionEmail ?? (object)DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CreatedAtUtc", DateTime.UtcNow));
 
                 var result = await command.ExecuteScalarAsync();
@@ -134,7 +135,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
         {
             const string query = @"
                 UPDATE [sales].[ProspectActivity]
-                SET [ActivityType] = @ActivityType,
+                SET [ActivityTypeId] = @ActivityTypeId,
                     [OccurredAtUtc] = @OccurredAtUtc,
                     [Sentiment] = @Sentiment,
                     [IsFollowUp] = @IsFollowUp,
@@ -144,13 +145,14 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                     [NextActionDate] = @NextActionDate,
                     [NextActionTime] = @NextActionTime,
                     [NextActionContactName] = @NextActionContactName,
-                    [NextActionPhone] = @NextActionPhone
+                    [NextActionPhone] = @NextActionPhone,
+                    [NextActionEmail] = @NextActionEmail
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", entity.Id),
                 new SqlParameter("@BusinessId", entity.BusinessId),
-                new SqlParameter("@ActivityType", entity.ActivityType),
+                new SqlParameter("@ActivityTypeId", entity.ActivityType),
                 new SqlParameter("@OccurredAtUtc", entity.OccurredAtUtc),
                 new SqlParameter("@Sentiment", entity.Sentiment.HasValue ? entity.Sentiment.Value : (object)DBNull.Value),
                 new SqlParameter("@IsFollowUp", entity.IsFollowUp),
@@ -160,7 +162,8 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                 new SqlParameter("@NextActionDate", entity.NextActionDate.HasValue ? entity.NextActionDate.Value.ToDateTime(TimeOnly.MinValue) : (object)DBNull.Value),
                 new SqlParameter("@NextActionTime", SqlDbType.Time) { Value = entity.NextActionTime.HasValue ? entity.NextActionTime.Value.ToTimeSpan() : (object)DBNull.Value },
                 new SqlParameter("@NextActionContactName", entity.NextActionContactName ?? (object)DBNull.Value),
-                new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value));
+                new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value),
+                new SqlParameter("@NextActionEmail", entity.NextActionEmail ?? (object)DBNull.Value));
         }
         catch (Exception ex)
         {
@@ -245,7 +248,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
             Id = r.GetInt32(r.GetOrdinal("Id")),
             BusinessId = r.GetInt32(r.GetOrdinal("BusinessId")),
             ProspectId = r.GetInt32(r.GetOrdinal("ProspectId")),
-            ActivityType = r.GetByte(r.GetOrdinal("ActivityType")),
+            ActivityType = r.GetByte(r.GetOrdinal("ActivityTypeId")),
             OccurredAtUtc = r.GetDateTime(r.GetOrdinal("OccurredAtUtc")),
             PerformedByUserId = S("PerformedByUserId"),
             Sentiment = B("Sentiment"),
@@ -257,6 +260,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
             NextActionTime = T("NextActionTime"),
             NextActionContactName = S("NextActionContactName"),
             NextActionPhone = S("NextActionPhone"),
+            NextActionEmail = S("NextActionEmail"),
             CreatedAtUtc = r.GetDateTime(r.GetOrdinal("CreatedAtUtc"))
         };
     }
@@ -272,7 +276,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
         {
             var query = $@"
                 SELECT TOP (@Take)
-                       [act].[ProspectId], [pr].[Name] AS [ProspectName], [act].[ActivityType],
+                       [act].[ProspectId], [pr].[Name] AS [ProspectName], [act].[ActivityTypeId] AS [ActivityType],
                        [act].[Outcome], [act].[OccurredAtUtc], [act].[Sentiment], [act].[IsFollowUp]
                 FROM [sales].[ProspectActivity] AS [act]
                 INNER JOIN [sales].[Prospect] AS [pr] ON [pr].[Id] = [act].[ProspectId]
@@ -324,6 +328,126 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
         }
     }
 
+    /// <summary>
+    /// Eligible conversational activities (Call / Meeting / Demo) across all prospects in a date
+    /// window, joined to the prospect name. Feeds the private My Development review queue and the
+    /// dashboard's "eligible calls" count. Newest first; tenant-scoped. Lightweight projection.
+    /// </summary>
+    public async Task<List<ReviewQueueItemDto>> GetEligibleActivitiesInRangeAsync(
+        int businessId, DateTime fromUtc, DateTime toUtc, int take)
+    {
+        try
+        {
+            // Types 2 Call, 4 Meeting, 5 Demo — the conversations worth reflecting on.
+            const string query = @"
+                SELECT TOP (@Take)
+                       [sales].[ProspectActivity].[Id] AS [ProspectActivityId],
+                       [sales].[ProspectActivity].[ProspectId] AS [ProspectId],
+                       [sales].[Prospect].[Name] AS [ProspectName],
+                       [sales].[ProspectActivity].[ActivityTypeId] AS [ActivityType],
+                       [sales].[ProspectActivity].[Outcome] AS [Outcome],
+                       [sales].[ProspectActivity].[OccurredAtUtc] AS [OccurredAtUtc]
+                FROM [sales].[ProspectActivity]
+                INNER JOIN [sales].[Prospect] ON [sales].[Prospect].[Id] = [sales].[ProspectActivity].[ProspectId]
+                WHERE [sales].[ProspectActivity].[BusinessId] = @BusinessId
+                  AND [sales].[ProspectActivity].[ActivityTypeId] IN (2, 4, 5)
+                  AND [sales].[ProspectActivity].[OccurredAtUtc] >= @FromUtc
+                  AND [sales].[ProspectActivity].[OccurredAtUtc] < @ToUtc
+                ORDER BY [sales].[ProspectActivity].[OccurredAtUtc] DESC, [sales].[ProspectActivity].[Id] DESC";
+
+            var result = new List<ReviewQueueItemDto>();
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@Take", take));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@FromUtc", fromUtc));
+                command.Parameters.Add(new SqlParameter("@ToUtc", toUtc));
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    result.Add(new ReviewQueueItemDto
+                    {
+                        ProspectActivityId = reader.GetInt32(0),
+                        ProspectId = reader.GetInt32(1),
+                        ProspectName = reader.GetString(2),
+                        ActivityType = reader.GetByte(3),
+                        Outcome = reader.IsDBNull(4) ? null : reader.GetString(4),
+                        OccurredAtUtc = reader.GetDateTime(5)
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Count of eligible conversational activities (Call / Meeting / Demo) in a date window.
+    /// Accurate regardless of any list cap, so the dashboard's "X of Y reflected" is correct.
+    /// Tenant-scoped.
+    /// </summary>
+    public async Task<int> CountEligibleActivitiesInRangeAsync(int businessId, DateTime fromUtc, DateTime toUtc)
+    {
+        try
+        {
+            const string query = @"
+                SELECT COUNT(*)
+                FROM [sales].[ProspectActivity]
+                WHERE [BusinessId] = @BusinessId
+                  AND [ActivityTypeId] IN (2, 4, 5)
+                  AND [OccurredAtUtc] >= @FromUtc
+                  AND [OccurredAtUtc] < @ToUtc";
+
+            var connection = _context.Database.GetDbConnection();
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@FromUtc", fromUtc));
+                command.Parameters.Add(new SqlParameter("@ToUtc", toUtc));
+
+                var result = await command.ExecuteScalarAsync();
+                return Convert.ToInt32(result ?? 0);
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     // ─── Prospect Activity View (paged, filtered log + summary + cities) ─────────────────────────
 
     // Builds the shared WHERE clause + parameters for the activity log and its summary, so both apply
@@ -340,8 +464,8 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
         }
         if (f.ActivityType.HasValue)
         {
-            where += " AND [sales].[ProspectActivity].[ActivityType] = @ActivityType";
-            p.Add(new SqlParameter("@ActivityType", f.ActivityType.Value));
+            where += " AND [sales].[ProspectActivity].[ActivityTypeId] = @ActivityTypeId";
+            p.Add(new SqlParameter("@ActivityTypeId", f.ActivityType.Value));
         }
         if (f.Sentiment.HasValue)
         {
@@ -402,7 +526,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                        [sales].[Prospect].[Segment] AS [Segment],
                        [sales].[Prospect].[ProspectCampaignId] AS [ProspectCampaignId],
                        [sales].[ProspectCampaign].[Name] AS [CampaignName],
-                       [sales].[ProspectActivity].[ActivityType] AS [ActivityType],
+                       [sales].[ProspectActivity].[ActivityTypeId] AS [ActivityType],
                        [sales].[ProspectActivity].[OccurredAtUtc] AS [OccurredAtUtc],
                        [sales].[ProspectActivity].[Sentiment] AS [Sentiment],
                        [sales].[ProspectActivity].[IsFollowUp] AS [IsFollowUp],
@@ -412,6 +536,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
                        [sales].[ProspectActivity].[NextActionTime] AS [NextActionTime],
                        [sales].[ProspectActivity].[NextActionContactName] AS [NextActionContactName],
                        [sales].[ProspectActivity].[NextActionPhone] AS [NextActionPhone],
+                       [sales].[ProspectActivity].[NextActionEmail] AS [NextActionEmail],
                        [sales].[ProspectActivity].[PerformedByUserId] AS [PerformedByUserId]
                 {fromJoin}
                 WHERE {where}
@@ -485,9 +610,9 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
             var query = $@"
                 SELECT
                     COUNT(*) AS [Total],
-                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityType] = 2 THEN 1 ELSE 0 END) AS [Calls],
-                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityType] = 3 THEN 1 ELSE 0 END) AS [Emails],
-                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityType] = 4 THEN 1 ELSE 0 END) AS [Meetings],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityTypeId] = 2 THEN 1 ELSE 0 END) AS [Calls],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityTypeId] = 3 THEN 1 ELSE 0 END) AS [Emails],
+                    SUM(CASE WHEN [sales].[ProspectActivity].[ActivityTypeId] = 4 THEN 1 ELSE 0 END) AS [Meetings],
                     SUM(CASE WHEN [sales].[ProspectActivity].[IsFollowUp] = 1 THEN 1 ELSE 0 END) AS [FollowUps],
                     SUM(CASE WHEN [sales].[ProspectActivity].[Sentiment] = 1 THEN 1 ELSE 0 END) AS [Positive],
                     SUM(CASE WHEN [sales].[ProspectActivity].[Sentiment] = 3 THEN 1 ELSE 0 END) AS [Negative]
@@ -615,6 +740,7 @@ public class ProspectActivityRepository : GenericStoredProcedureRepository<Prosp
             NextActionTime = T("NextActionTime"),
             NextActionContactName = S("NextActionContactName"),
             NextActionPhone = S("NextActionPhone"),
+            NextActionEmail = S("NextActionEmail"),
             PerformedByUserId = S("PerformedByUserId")
         };
     }

@@ -71,6 +71,9 @@ public class Prospect
     /// <summary>Optional phone for the next action (mirrors the latest follow-up activity).</summary>
     public string? NextActionPhone { get; set; }
 
+    /// <summary>Optional email for the next action (mirrors the latest follow-up activity).</summary>
+    public string? NextActionEmail { get; set; }
+
     /// <summary>
     /// Measurement link: the lead created when this prospect was converted. Kept so predicted
     /// score/priority can later be compared against actual conversion outcomes.

@@ -44,14 +44,13 @@
             <label>Activity type</label>
             <select id="filterActivityType">
                 <option value="">All types</option>
-                <option value="2">Call</option>
-                <option value="3">Email</option>
-                <option value="4">Meeting</option>
-                <option value="5">Demo</option>
-                <option value="6">Note</option>
-                <option value="1">Research</option>
-                <option value="7">Social</option>
-                <option value="8">Other</option>
+                @{
+                    var activityTypes = ViewBag.ActivityTypes as IReadOnlyList<ActivityTypeDto> ?? new List<ActivityTypeDto>();
+                }
+                @foreach (var t in activityTypes)
+                {
+                    <option value="@t.Id">@t.Name</option>
+                }
             </select>
         </div>
         <div class="field" style="min-width:160px;">
@@ -140,7 +139,7 @@
         #activitySummary .stat .label { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#73889a; }
         #activitySummary .stat .value { font-family:'Manrope',Inter,sans-serif; font-size:26px; font-weight:800; margin-top:4px; }
     </style>
-    <script src="~/js/sales/prospecting.js?v=14"></script>
+    <script src="~/js/sales/prospecting.js?v=16"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             initActivityLog();

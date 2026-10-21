@@ -315,12 +315,20 @@ builder.Services.AddScoped<ProspectRepository>(sp =>
     new ProspectRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<ProspectActivityRepository>(sp =>
     new ProspectActivityRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ActivityTypeRepository>(sp =>
+    new ActivityTypeRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ActivitySelfEvaluationRepository>(sp =>
+    new ActivitySelfEvaluationRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<UserPracticeFocusRepository>(sp =>
+    new UserPracticeFocusRepository(sp.GetRequiredService<PortalDbContext>()));
 builder.Services.AddScoped<Portal.Infrastructure.Services.Sales.IContactService, Portal.Infrastructure.Services.Sales.ContactService>();
 builder.Services.AddScoped<ISalesProductService, SalesProductService>();
 builder.Services.AddScoped<ILeadRequestService, LeadRequestService>();
 builder.Services.AddScoped<IProspectCampaignService, ProspectCampaignService>();
 builder.Services.AddScoped<IProspectService, ProspectService>();
 builder.Services.AddScoped<IProspectActivityLogService, ProspectActivityLogService>();
+builder.Services.AddScoped<IActivityTypeLookupService, ActivityTypeLookupService>();
+builder.Services.AddScoped<IProspectSelfEvaluationService, ProspectSelfEvaluationService>();
 builder.Services.AddScoped<IProspectImportService, ProspectImportService>();
 builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<Portal.Infrastructure.Services.IBusinessTimeZoneService, Portal.Infrastructure.Services.BusinessTimeZoneService>();

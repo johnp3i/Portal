@@ -25,6 +25,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="/js/block-ui.js"></script>
+    @await RenderSectionAsync("Head", required: false)
 </head>
 <body>
     @if (User.HasClaim("IsImpersonating", "true"))

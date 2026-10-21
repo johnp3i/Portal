@@ -118,6 +118,7 @@ public class StatementController : Controller
                 debit = l.Debit,
                 credit = l.Credit,
                 runningBalance = l.RunningBalance,
+                invoiceId = l.InvoiceId,
                 paymentId = l.PaymentId,
                 isVoided = l.IsVoided
             })

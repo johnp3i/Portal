@@ -82,6 +82,7 @@ public class StatementService : IStatementService
                 Description = invoice.Notes ?? string.Empty,
                 Debit = invoice.TotalAmount,
                 Credit = 0m,
+                InvoiceId = invoice.Id,
                 RunningBalance = 0m // Will be computed after sorting
             });
         }
@@ -137,6 +138,7 @@ public class StatementService : IStatementService
                 Description = description,
                 Debit = 0m,
                 Credit = payment.Amount,
+                InvoiceId = payment.InvoiceId,
                 RunningBalance = 0m,
                 PaymentId = payment.Id,
                 IsVoided = false
@@ -164,6 +166,7 @@ public class StatementService : IStatementService
                     : "Credit applied",
                 Debit = 0m,
                 Credit = credit.AmountApplied,
+                InvoiceId = credit.InvoiceId,
                 RunningBalance = 0m
             });
         }

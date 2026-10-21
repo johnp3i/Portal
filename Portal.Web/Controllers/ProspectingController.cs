@@ -1,4 +1,5 @@
 using System.Text;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Infrastructure.Constants;
@@ -20,6 +21,8 @@ public class ProspectingController : Controller
     private readonly IProspectCampaignService _campaignService;
     private readonly IProspectService _prospectService;
     private readonly IProspectActivityLogService _activityLogService;
+    private readonly IProspectSelfEvaluationService _selfEvaluationService;
+    private readonly IActivityTypeLookupService _activityTypeLookup;
     private readonly IProspectImportService _importService;
     private readonly ISalesProductService _productService;
     private readonly ILogger<ProspectingController> _logger;
@@ -28,6 +31,8 @@ public class ProspectingController : Controller
         IProspectCampaignService campaignService,
         IProspectService prospectService,
         IProspectActivityLogService activityLogService,
+        IProspectSelfEvaluationService selfEvaluationService,
+        IActivityTypeLookupService activityTypeLookup,
         IProspectImportService importService,
         ISalesProductService productService,
         ILogger<ProspectingController> logger)
@@ -35,6 +40,8 @@ public class ProspectingController : Controller
         _campaignService = campaignService;
         _prospectService = prospectService;
         _activityLogService = activityLogService;
+        _selfEvaluationService = selfEvaluationService;
+        _activityTypeLookup = activityTypeLookup;
         _importService = importService;
         _productService = productService;
         _logger = logger;
@@ -151,6 +158,22 @@ public class ProspectingController : Controller
         if (detail == null)
             return NotFound();
 
+        // Which of this prospect's activities already have THIS user's private reflection, so the
+        // timeline can render the correct "Evaluate" vs "View Reflection" label + the lock indicator
+        // on first paint (author-scoped; never reveals another user's reflections).
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var evaluatedIds = new HashSet<int>();
+        if (!string.IsNullOrEmpty(userId) && detail.Activities.Count > 0)
+        {
+            evaluatedIds = await _selfEvaluationService.GetEvaluatedActivityIdsAsync(
+                detail.Activities.Select(a => a.Id), userId);
+        }
+        ViewBag.EvaluatedActivityIds = evaluatedIds;
+
+        // Activity types for the Add/Edit Activity dropdown — data-driven so new types added to
+        // [sales].[ActivityType] appear without a code change.
+        ViewBag.ActivityTypes = await _activityTypeLookup.GetAllAsync(activeOnly: true);
+
         return View(detail);
     }
 
@@ -178,6 +201,20 @@ public class ProspectingController : Controller
         ViewBag.Campaigns = campaigns;
         ViewBag.SelectedCampaignId = campaignId;
         ViewBag.Cities = cities;
+        // Activity types for the filter dropdown — data-driven from [sales].[ActivityType].
+        ViewBag.ActivityTypes = await _activityTypeLookup.GetAllAsync(activeOnly: false);
+        return View();
+    }
+
+    /// <summary>
+    /// My Development — a PRIVATE, author-only personal-learning dashboard (Call Reflection module).
+    /// Shows the current user's own reflection trends, recent lessons, review queue and practice
+    /// focus. Separate from the commercial sales/pipeline views; never a team ranking. The AJAX
+    /// endpoint supplies the data; this renders the shell.
+    /// </summary>
+    [HttpGet]
+    public IActionResult MyDevelopment()
+    {
         return View();
     }
 
@@ -229,8 +266,8 @@ public class ProspectingController : Controller
 
     /// <summary>
     /// CSV export of the CURRENT filtered activity set (all matching rows, not just a page).
-    /// PRIVACY: the next-action contact name and phone are intentionally excluded — the CSV mirrors
-    /// the on-screen rule and only indicates whether a contact/phone is on file.
+    /// PRIVACY: the next-action contact name, phone and email are intentionally excluded — the CSV
+    /// mirrors the on-screen rule and only indicates whether a contact/phone/email is on file.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> ExportProspectActivityCsv(
@@ -245,7 +282,7 @@ public class ProspectingController : Controller
             static string Esc(string? v) => "\"" + (v ?? string.Empty).Replace("\"", "\"\"") + "\"";
 
             var csv = new StringBuilder();
-            csv.AppendLine("Occurred,Prospect,City,Segment,Campaign,Type,Outcome,Signal,Follow-up,Next action,Next action date,Next action time,Has contact,Has phone,By");
+            csv.AppendLine("Occurred,Prospect,City,Segment,Campaign,Type,Outcome,Signal,Follow-up,Next action,Next action date,Next action time,Has contact,Has phone,Has email,By");
             foreach (var a in items)
             {
                 var occurred = a.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm");
@@ -266,6 +303,7 @@ public class ProspectingController : Controller
                     Esc(naTime),
                     Esc(a.HasNextActionContact ? "Yes" : "No"),
                     Esc(a.HasNextActionPhone ? "Yes" : "No"),
+                    Esc(a.HasNextActionEmail ? "Yes" : "No"),
                     Esc(a.PerformedByName)));
             }
 
@@ -532,5 +570,149 @@ public class ProspectingController : Controller
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "Prospects-Import-Template.xlsx");
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CALL REFLECTION / SELF-EVALUATION AJAX ENDPOINTS
+    // Private, author-only personal-development layer on prospect activities. These endpoints never
+    // touch commercial data (status, scores, conversion). The evaluator is the authenticated user.
+    // ═══════════════════════════════════════════════════════════
+
+    /// <summary>The current user's private reflection for an activity (null data if none yet).</summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetSelfEvaluation(int activityId)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Not authenticated." });
+
+            var result = await _selfEvaluationService.GetForActivityAsync(activityId, userId);
+            return Json(new { success = result.Success, message = result.Message, data = result.Data });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load self-evaluation for activity {ActivityId}", activityId);
+            return Json(new { success = false, message = "Could not load the reflection." });
+        }
+    }
+
+    /// <summary>Creates or updates the current user's private reflection for an activity.</summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSaveSelfEvaluation([FromBody] SaveSelfEvaluationRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Not authenticated." });
+
+            var result = await _selfEvaluationService.SaveAsync(request, userId);
+            return Json(new { success = result.Success, message = result.Message, data = result.Data });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save self-evaluation for activity {ActivityId}", request.ProspectActivityId);
+            return Json(new { success = false, message = "Something went wrong saving the reflection." });
+        }
+    }
+
+    /// <summary>Deletes the current user's private reflection for an activity.</summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostDeleteSelfEvaluation([FromBody] DeleteSelfEvaluationRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Not authenticated." });
+
+            var result = await _selfEvaluationService.DeleteAsync(request.ProspectActivityId, userId);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete self-evaluation for activity {ActivityId}", request.ProspectActivityId);
+            return Json(new { success = false, message = "Something went wrong deleting the reflection." });
+        }
+    }
+
+    /// <summary>Private My Development dashboard data for the current user over a date window.</summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetMyDevelopment(string? period, DateTime? dateFrom, DateTime? dateTo)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Not authenticated." });
+
+            // Resolve the window: explicit dates win, otherwise the quick-period chip (default 30 days).
+            DateOnly fromDay, toDay;
+            if (dateFrom.HasValue || dateTo.HasValue)
+            {
+                fromDay = dateFrom.HasValue ? DateOnly.FromDateTime(dateFrom.Value) : DateOnly.FromDateTime(DateTime.UtcNow.Date).AddDays(-29);
+                toDay = dateTo.HasValue ? DateOnly.FromDateTime(dateTo.Value) : DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            }
+            else
+            {
+                var (f, t) = ResolveDevelopmentPeriod(period);
+                fromDay = f;
+                toDay = t;
+            }
+
+            // Inclusive day range -> half-open UTC window [from 00:00, dayAfterTo 00:00).
+            var fromUtc = fromDay.ToDateTime(TimeOnly.MinValue);
+            var toUtc = toDay.AddDays(1).ToDateTime(TimeOnly.MinValue);
+
+            var data = await _selfEvaluationService.GetMyDevelopmentAsync(userId, fromUtc, toUtc);
+            return Json(new { success = true, data });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load My Development dashboard");
+            return Json(new { success = false, message = "Could not load your development data." });
+        }
+    }
+
+    /// <summary>Sets or clears the current user's standing practice focus.</summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostSavePracticeFocus([FromBody] SavePracticeFocusRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Not authenticated." });
+
+            var result = await _selfEvaluationService.SavePracticeFocusAsync(userId, request.Focus);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save practice focus");
+            return Json(new { success = false, message = "Something went wrong saving your focus." });
+        }
+    }
+
+    // Quick-period resolver for the My Development window. Defaults to the last 30 days (the
+    // dashboard's default chip). Distinct from the activity log's ResolvePeriod (different defaults).
+    private static (DateOnly From, DateOnly To) ResolveDevelopmentPeriod(string? period)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        switch ((period ?? "last_30").Trim().ToLowerInvariant())
+        {
+            case "last_7": return (today.AddDays(-6), today);
+            case "this_quarter":
+                var qStartMonth = ((today.Month - 1) / 3) * 3 + 1;
+                return (new DateOnly(today.Year, qStartMonth, 1), today);
+            case "all": return (new DateOnly(2000, 1, 1), today);
+            case "last_30":
+            default: return (today.AddDays(-29), today);
+        }
     }
 }

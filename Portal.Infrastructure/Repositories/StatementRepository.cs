@@ -232,6 +232,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                        [revenue].[Payment].[ParentPaymentId],
                        [revenue].[Payment].[IsAutoAllocated],
                        [revenue].[PaymentMethodType].[Name],
+                       [invoice].[Invoice].[Id] AS [InvoiceId],
                        [invoice].[Invoice].[InvoiceNumber]
                 FROM [revenue].[Payment]
                 LEFT JOIN [invoice].[Invoice]
@@ -280,6 +281,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                         Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
                         PaymentMethodName = reader.GetString(reader.GetOrdinal("Name")),
                         ParentPaymentId = reader.IsDBNull(reader.GetOrdinal("ParentPaymentId")) ? null : reader.GetInt32(reader.GetOrdinal("ParentPaymentId")),
+                        InvoiceId = reader.IsDBNull(reader.GetOrdinal("InvoiceId")) ? null : reader.GetInt32(reader.GetOrdinal("InvoiceId")),
                         InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber")),
                         IsAutoAllocated = reader.GetBoolean(reader.GetOrdinal("IsAutoAllocated"))
                     });
@@ -370,6 +372,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                        [credit].[CreditNoteApplication].[AppliedAtUtc],
                        [credit].[CreditNoteApplication].[AmountApplied],
                        [credit].[CreditNote].[CreditNoteNumber],
+                       [invoice].[Invoice].[Id] AS [InvoiceId],
                        [invoice].[Invoice].[InvoiceNumber]
                 FROM [credit].[CreditNoteApplication]
                 INNER JOIN [credit].[CreditNote]
@@ -414,6 +417,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                         AppliedDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("AppliedAtUtc"))),
                         AmountApplied = reader.GetDecimal(reader.GetOrdinal("AmountApplied")),
                         CreditNoteNumber = reader.GetString(reader.GetOrdinal("CreditNoteNumber")),
+                        InvoiceId = reader.IsDBNull(reader.GetOrdinal("InvoiceId")) ? null : reader.GetInt32(reader.GetOrdinal("InvoiceId")),
                         InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber"))
                     });
                 }

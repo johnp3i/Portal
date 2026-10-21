@@ -17,6 +17,7 @@ public class ProspectService : IProspectService
     private readonly ProspectActivityRepository _activityRepository;
     private readonly IContactService _contactService;
     private readonly ILeadRequestService _leadRequestService;
+    private readonly IActivityTypeLookupService _activityTypeLookup;
     private readonly ICurrentTenantService _tenantService;
 
     // Cold Call lead source — already seeded, reused for all prospect conversions.
@@ -33,19 +34,6 @@ public class ProspectService : IProspectService
         [6] = "Disqualified"
     };
 
-    // Activity type: 1 Research, 2 Call, 3 Email, 4 Meeting, 5 Demo, 6 Note, 7 Social, 8 Other.
-    private static readonly Dictionary<byte, string> ActivityTypeNames = new()
-    {
-        [1] = "Research",
-        [2] = "Call",
-        [3] = "Email",
-        [4] = "Meeting",
-        [5] = "Demo",
-        [6] = "Note",
-        [7] = "Social",
-        [8] = "Other"
-    };
-
     private const byte StatusConverted = 5;
 
     public ProspectService(
@@ -54,6 +42,7 @@ public class ProspectService : IProspectService
         ProspectActivityRepository activityRepository,
         IContactService contactService,
         ILeadRequestService leadRequestService,
+        IActivityTypeLookupService activityTypeLookup,
         ICurrentTenantService tenantService)
     {
         _prospectRepository = prospectRepository;
@@ -61,14 +50,12 @@ public class ProspectService : IProspectService
         _activityRepository = activityRepository;
         _contactService = contactService;
         _leadRequestService = leadRequestService;
+        _activityTypeLookup = activityTypeLookup;
         _tenantService = tenantService;
     }
 
     internal static string StatusName(byte status)
         => StatusNames.TryGetValue(status, out var name) ? name : "Unknown";
-
-    internal static string ActivityTypeName(byte type)
-        => ActivityTypeNames.TryGetValue(type, out var name) ? name : "Unknown";
 
     public async Task<ServiceResult> CreateProspectAsync(CreateProspectRequest request)
     {
@@ -211,6 +198,8 @@ public class ProspectService : IProspectService
                 ? await _activityRepository.GetLastActivityByProspectIdsAsync(ids, businessId)
                 : new Dictionary<int, ProspectActivity>();
 
+            var typeNames = await _activityTypeLookup.GetNameMapAsync();
+
             var items = paged.Items.Select(p =>
             {
                 var total = ProspectScoring.ComputeTotal(p.IcpFitScore, p.PainProbabilityScore, p.AccessibilityScore, p.LearningValueScore);
@@ -234,7 +223,9 @@ public class ProspectService : IProspectService
                     // is not surfaced in the scannable working-list column.
                     HasNextActionContact = !string.IsNullOrWhiteSpace(p.NextActionContactName),
                     HasNextActionPhone = !string.IsNullOrWhiteSpace(p.NextActionPhone),
+                    HasNextActionEmail = !string.IsNullOrWhiteSpace(p.NextActionEmail),
                     LastActivityType = last?.ActivityType,
+                    LastActivityTypeName = last != null && typeNames.TryGetValue(last.ActivityType, out var ltn) ? ltn : null,
                     LastActivityAtUtc = last?.OccurredAtUtc,
                     LastActivitySentiment = last?.Sentiment,
                     IsConverted = p.Status == StatusConverted
@@ -302,6 +293,7 @@ public class ProspectService : IProspectService
 
             var campaign = await _campaignRepository.GetByIdAsync(p.ProspectCampaignId, businessId);
             var activities = await _activityRepository.GetByProspectAsync(prospectId, businessId);
+            var typeNames = await _activityTypeLookup.GetNameMapAsync();
 
             var total = ProspectScoring.ComputeTotal(p.IcpFitScore, p.PainProbabilityScore, p.AccessibilityScore, p.LearningValueScore);
 
@@ -341,7 +333,7 @@ public class ProspectService : IProspectService
                 {
                     Id = a.Id,
                     ActivityType = a.ActivityType,
-                    ActivityTypeName = ActivityTypeName(a.ActivityType),
+                    ActivityTypeName = typeNames.TryGetValue(a.ActivityType, out var tn) ? tn : "Unknown",
                     OccurredAtUtc = a.OccurredAtUtc,
                     PerformedByUserId = a.PerformedByUserId,
                     Sentiment = a.Sentiment,
@@ -352,7 +344,8 @@ public class ProspectService : IProspectService
                     NextActionDate = a.NextActionDate,
                     NextActionTime = a.NextActionTime,
                     NextActionContactName = a.NextActionContactName,
-                    NextActionPhone = a.NextActionPhone
+                    NextActionPhone = a.NextActionPhone,
+                    NextActionEmail = a.NextActionEmail
                 }).ToList()
             };
         }
@@ -368,7 +361,7 @@ public class ProspectService : IProspectService
         {
             var businessId = _tenantService.CurrentBusinessId;
 
-            if (!ActivityTypeNames.ContainsKey(request.ActivityType))
+            if (!await _activityTypeLookup.ExistsAsync(request.ActivityType))
                 return ServiceResult.Fail("Invalid activity type.");
 
             var prospect = await _prospectRepository.GetByIdAsync(request.ProspectId, businessId);
@@ -392,7 +385,8 @@ public class ProspectService : IProspectService
                 NextActionDate = request.NextActionDate,
                 NextActionTime = request.NextActionTime,
                 NextActionContactName = request.NextActionContactName,
-                NextActionPhone = request.NextActionPhone
+                NextActionPhone = request.NextActionPhone,
+                NextActionEmail = request.NextActionEmail
             };
 
             var id = await _activityRepository.InsertAsync(activity);
@@ -413,13 +407,15 @@ public class ProspectService : IProspectService
             if (!string.IsNullOrWhiteSpace(request.NextAction) || request.NextActionDate.HasValue
                 || request.NextActionTime.HasValue
                 || !string.IsNullOrWhiteSpace(request.NextActionContactName)
-                || !string.IsNullOrWhiteSpace(request.NextActionPhone))
+                || !string.IsNullOrWhiteSpace(request.NextActionPhone)
+                || !string.IsNullOrWhiteSpace(request.NextActionEmail))
             {
                 prospect.NextAction = request.NextAction;
                 prospect.NextActionDate = request.NextActionDate;
                 prospect.NextActionTime = request.NextActionTime;
                 prospect.NextActionContactName = request.NextActionContactName;
                 prospect.NextActionPhone = request.NextActionPhone;
+                prospect.NextActionEmail = request.NextActionEmail;
                 await _prospectRepository.UpdateAsync(prospect);
             }
 
@@ -437,7 +433,7 @@ public class ProspectService : IProspectService
         {
             var businessId = _tenantService.CurrentBusinessId;
 
-            if (!ActivityTypeNames.ContainsKey(request.ActivityType))
+            if (!await _activityTypeLookup.ExistsAsync(request.ActivityType))
                 return ServiceResult.Fail("Invalid activity type.");
 
             if (!IsValidSentiment(request.Sentiment))
@@ -458,6 +454,7 @@ public class ProspectService : IProspectService
             existing.NextActionTime = request.NextActionTime;
             existing.NextActionContactName = request.NextActionContactName;
             existing.NextActionPhone = request.NextActionPhone;
+            existing.NextActionEmail = request.NextActionEmail;
 
             await _activityRepository.UpdateActivityAsync(existing);
 
@@ -472,6 +469,7 @@ public class ProspectService : IProspectService
                 prospect.NextActionTime = request.NextActionTime;
                 prospect.NextActionContactName = request.NextActionContactName;
                 prospect.NextActionPhone = request.NextActionPhone;
+                prospect.NextActionEmail = request.NextActionEmail;
                 await _prospectRepository.UpdateAsync(prospect);
             }
 

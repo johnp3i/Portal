@@ -20,6 +20,9 @@ public class StatementCreditNoteDto
     /// <summary>The invoice number the credit was applied against.</summary>
     public string? InvoiceNumber { get; set; }
 
+    /// <summary>The numeric Id of the invoice the credit was applied against (null if not linked to an invoice).</summary>
+    public int? InvoiceId { get; set; }
+
     /// <summary>The amount applied — the credit shown on the statement.</summary>
     public decimal AmountApplied { get; set; }
 }

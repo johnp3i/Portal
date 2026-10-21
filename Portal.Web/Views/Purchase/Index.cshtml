@@ -14,6 +14,37 @@
         + (!string.IsNullOrWhiteSpace(Model.SearchTerm) ? 1 : 0);
 }
 
+@section Head {
+    <script>
+        // ─── Filter State Persistence (runs in <head>, BEFORE the body paints) ──
+        // Remembers the active purchase filters across navigation. Common flow:
+        // filter by supplier → open/create a purchase → come back → filters restored.
+        //
+        //  • When the page has a query string, save it as the current filter state.
+        //  • When the page has NO query string but a filter state was saved, restore it by
+        //    replacing to /Purchase{savedQuery}. Landing there has a query string, so it
+        //    saves (not re-restores) — no redirect loop.
+        //  • The "Clear" button removes the saved state, so clearing is sticky too.
+        //
+        // Running here (not at the end of <body>) means the restore redirect fires before the
+        // page renders, so there is no visible "load bare list → flash → reload filtered" flicker.
+        (function () {
+            var STORAGE_KEY = 'purchase_filter_state';
+            var search = window.location.search;
+
+            if (search && search !== '?') {
+                sessionStorage.setItem(STORAGE_KEY, search);
+                return;
+            }
+
+            var saved = sessionStorage.getItem(STORAGE_KEY);
+            if (saved && saved !== '?' && saved.length > 1) {
+                window.location.replace('/Purchase' + saved);
+            }
+        })();
+    </script>
+}
+
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Purchases</div>
@@ -578,12 +609,32 @@
        card: title + total on top, supplier + status next, due + classification,
        then a full-width actions row (Edit / Mark paid / Cancel). */
     @@media (max-width: 768px) {
+        /* Belt-and-braces: the generic .index-table rules (and the ≤1100px block)
+           set the table to max-content width with nowrap cells for horizontal
+           scrolling. For the Purchases card layout we must cancel that so cards
+           fit the viewport and never overflow horizontally. */
+        #purchaseTable,
+        #purchaseTable tbody {
+            display: block !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+        }
+        #purchaseTable tbody td {
+            white-space: normal !important;
+            min-width: 0 !important;
+            overflow-wrap: anywhere;
+        }
+
         #purchaseTable tbody tr {
             display: grid !important;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: minmax(0, 1fr) auto;
             grid-template-rows: auto auto auto auto;
             gap: 6px 12px;
             align-items: center;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
             padding: 14px 16px !important;
             margin-bottom: 12px;
             border: 1px solid rgba(13, 94, 166, 0.10) !important;
@@ -664,23 +715,32 @@
             display: none !important;
         }
 
-        /* Actions — full-width row at the bottom, un-hidden and laid out as a button row */
+        /* Actions — full-width row at the bottom. A 2-up grid (not flex) so the
+           buttons always fit the card width and can never overflow/clip off the
+           right edge. Each button stretches to fill its column. */
         #purchaseTable tbody td:nth-child(12) {
-            display: flex !important;
+            display: grid !important;
             grid-row: 4;
             grid-column: 1 / -1;
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
-            flex-wrap: wrap;
             margin-top: 8px;
             padding-top: 12px !important;
             border-top: 1px solid rgba(13, 94, 166, 0.08);
             white-space: normal !important;
+            width: 100%;
+            box-sizing: border-box;
         }
         #purchaseTable tbody td:nth-child(12) > .tbl-action {
-            flex: 1 1 auto;
+            margin: 0 !important;
+            width: 100%;
             text-align: center;
-            padding: 9px 12px;
+            padding: 10px 12px;
             font-size: 13px;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Mobile action-bar layout is now shared in mobile.css (phone media
@@ -732,33 +792,7 @@
     });
 </script>
 
-<script>
-    // ─── Filter State Persistence ──────────────────────────────────────────
-    // Remembers the active purchase filters across navigation. Common flow:
-    // filter by supplier → open/create a purchase → come back to the list → filters restored.
-    //
-    //  • When the page has a query string, save it as the current filter state.
-    //  • When the page has NO query string but a filter state was saved, restore it by
-    //    redirecting to /Purchase{savedQuery}. Landing there then has a query string, so it
-    //    saves (not re-restores) — no redirect loop.
-    //  • The "Clear" button removes the saved state, so clearing is sticky too.
-    (function() {
-        var STORAGE_KEY = 'purchase_filter_state';
-        var search = window.location.search;
 
-        if (search && search !== '?') {
-            // Explicit filters in the URL → treat as the current state.
-            sessionStorage.setItem(STORAGE_KEY, search);
-            return;
-        }
-
-        // Bare /Purchase → restore the last-used filters if we have any.
-        var saved = sessionStorage.getItem(STORAGE_KEY);
-        if (saved && saved !== '?' && saved.length > 1) {
-            window.location.replace('/Purchase' + saved);
-        }
-    })();
-</script>
 <script>
 // Remembers the current attachment modal's target so we can reopen it after a nested confirm
 // dialog (e.g. the delete confirmation) has closed the attachments modal.

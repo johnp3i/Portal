@@ -187,15 +187,27 @@
     // working list and the activity view so they look identical. Rendered as small rounded chips so
     // they read as deliberate badges, not faint marks. We never show the actual name/number — only
     // that one is on file (generic tooltip); the real values live on the prospect detail.
-    function nextActionBadges(hasContact, hasPhone) {
-        if (!hasContact && !hasPhone) return '';
+    // Interaction-signal pill for the most recent activity, matching the activity-view convention
+    // (positive → green, neutral → blue, negative → red). Shown in the working-list Last Activity
+    // column so the tone of the last contact is visible without opening the prospect.
+    function signalPill(sentiment) {
+        var label = sentiment === 1 ? 'Positive' : (sentiment === 2 ? 'Neutral' : (sentiment === 3 ? 'Negative' : ''));
+        if (!label) return '';
+        var cls = sentiment === 1 ? 'pill-green' : (sentiment === 2 ? 'pill-blue' : 'pill-red');
+        return '<div style="margin-top:4px;"><span class="pill pill-sm ' + cls + '">' + label + '</span></div>';
+    }
+
+    function nextActionBadges(hasContact, hasPhone, hasEmail) {
+        if (!hasContact && !hasPhone && !hasEmail) return '';
         // Soft rounded chips, aligned on their own baseline, with light elegant tints:
-        //   user/contact → blue, phone → green. Only presence is shown, never the value.
+        //   user/contact → blue, phone → green, email → amber. Only presence is shown, never the value.
         var base = 'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;margin-left:6px;';
         var blue = base + 'background:rgba(13,94,166,.08);color:#0D5EA6;';
         var green = base + 'background:rgba(18,152,103,.10);color:#129867;';
+        var amber = base + 'background:rgba(200,145,46,.10);color:#C8912E;';
         var userSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
         var phoneSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+        var mailSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>';
         // Wrapper keeps the badges on one line, vertically centred against the text.
         var out = '<span style="display:inline-flex;align-items:center;vertical-align:middle;">';
         if (hasContact) {
@@ -203,6 +215,9 @@
         }
         if (hasPhone) {
             out += '<span title="Phone number on file" aria-label="Phone number on file" style="' + green + '">' + phoneSvg + '</span>';
+        }
+        if (hasEmail) {
+            out += '<span title="Email address on file" aria-label="Email address on file" style="' + amber + '">' + mailSvg + '</span>';
         }
         out += '</span>';
         return out;
@@ -216,9 +231,17 @@
             var html = '';
             items.forEach(function (p) {
                 var last = p.lastActivityAtUtc
-                    ? fmtDate(p.lastActivityAtUtc) + ' · ' + (ACTIVITY_NAMES[p.lastActivityType] || '')
+                    ? fmtDate(p.lastActivityAtUtc) + ' · ' + (p.lastActivityTypeName || ACTIVITY_NAMES[p.lastActivityType] || '')
                     : '—';
                 var isStopPoint = (p.lastActivitySentiment === 3);
+
+                // Interaction signal on the last activity: positive (green), neutral (blue) or
+                // negative (red). Rendered as a small labelled pill beneath the date/type so the
+                // operator can read the tone of the most recent contact at a glance.
+                var lastCell = '<span style="color:' + (p.lastActivityAtUtc ? 'inherit' : '#73889a') + ';">' + esc(last) + '</span>';
+                if (p.lastActivityAtUtc && p.lastActivitySentiment) {
+                    lastCell += signalPill(p.lastActivitySentiment);
+                }
 
                 // Date + optional time prefix for the next action (e.g. "20 Oct 10:00 — ").
                 var whenPrefix = '';
@@ -228,7 +251,7 @@
 
                 // Privacy: a contact name / phone attached to the follow-up is shown ONLY as a badge —
                 // never the actual value (the server sends presence flags, not the data).
-                var contactIcons = nextActionBadges(p.hasNextActionContact, p.hasNextActionPhone);
+                var contactIcons = nextActionBadges(p.hasNextActionContact, p.hasNextActionPhone, p.hasNextActionEmail);
 
                 var next = p.nextAction
                     ? '<span style="color:#C8912E;font-weight:700;">' + whenPrefix + esc(p.nextAction) + '</span>' + contactIcons
@@ -257,7 +280,7 @@
                     '<td><span class="pill pill-sm ' + priorityPill(p.priority) + '">' + esc(p.priority) + '</span></td>' +
                     '<td style="font-weight:700;">' + p.total + '</td>' +
                     '<td><span class="pill pill-sm ' + statusPill(p.status) + '">' + (STATUS_NAMES[p.status] || '') + '</span></td>' +
-                    '<td>' + esc(last) + '</td>' +
+                    '<td>' + lastCell + '</td>' +
                     '<td>' + next + '</td>' +
                     '<td style="white-space:nowrap;text-align:right;">' +
                     '<a href="/Prospecting/ProspectDetail/' + p.id + '" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary">Open</a>' + action + '</td>' +
@@ -469,6 +492,7 @@
         setEl('activityNextActionTime', '');
         setEl('activityNextActionContactName', '');
         setEl('activityNextActionPhone', '');
+        setEl('activityNextActionEmail', '');
         setSentiment(null);
         setFollowUp(false);
         renderActivityPresets('2');
@@ -493,6 +517,7 @@
         setEl('activityNextActionTime', row.getAttribute('data-nextactiontime'));
         setEl('activityNextActionContactName', row.getAttribute('data-nextactioncontactname'));
         setEl('activityNextActionPhone', row.getAttribute('data-nextactionphone'));
+        setEl('activityNextActionEmail', row.getAttribute('data-nextactionemail'));
         setSentiment(row.getAttribute('data-sentiment'));
         setFollowUp(row.getAttribute('data-isfollowup') === '1');
         showEl('activityNewStatusField', false); // editing a past entry shouldn't move the prospect's status
@@ -520,7 +545,8 @@
                 nextActionDate: strOrNull('activityNextActionDate'),
                 nextActionTime: strOrNull('activityNextActionTime'),
                 nextActionContactName: strOrNull('activityNextActionContactName'),
-                nextActionPhone: strOrNull('activityNextActionPhone')
+                nextActionPhone: strOrNull('activityNextActionPhone'),
+                nextActionEmail: strOrNull('activityNextActionEmail')
             };
             BlockUI.show('Saving...');
             try {
@@ -547,6 +573,7 @@
             nextActionTime: strOrNull('activityNextActionTime'),
             nextActionContactName: strOrNull('activityNextActionContactName'),
             nextActionPhone: strOrNull('activityNextActionPhone'),
+            nextActionEmail: strOrNull('activityNextActionEmail'),
             newStatus: num('activityNewStatus')
         };
         BlockUI.show('Saving...');
@@ -939,7 +966,7 @@
             var nextText = a.nextAction ? esc(a.nextAction) : (nextParts.length ? 'Follow up' : '');
             var nextCell;
             if (nextText) {
-                var icons = nextActionBadges(a.hasNextActionContact, a.hasNextActionPhone);
+                var icons = nextActionBadges(a.hasNextActionContact, a.hasNextActionPhone, a.hasNextActionEmail);
                 nextCell = '<span style="color:#C8912E;font-weight:700;">' + nextText + '</span>' + icons +
                     (nextParts.length ? '<div style="font-size:12px;color:#C8912E;font-weight:700;margin-top:3px;">' + esc(nextParts.join(' ')) + '</div>' : '');
             } else {

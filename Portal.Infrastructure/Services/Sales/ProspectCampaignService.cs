@@ -13,6 +13,7 @@ public class ProspectCampaignService : IProspectCampaignService
     private readonly ProspectCampaignRepository _campaignRepository;
     private readonly ProspectActivityRepository _activityRepository;
     private readonly ISalesProductService _productService;
+    private readonly IActivityTypeLookupService _activityTypeLookup;
     private readonly ICurrentTenantService _tenantService;
 
     // How many entries the campaign dashboard's Recent Activity feed shows.
@@ -26,13 +27,6 @@ public class ProspectCampaignService : IProspectCampaignService
         [3] = "Closed"
     };
 
-    // Activity type: 1 Research, 2 Call, 3 Email, 4 Meeting, 5 Demo, 6 Note, 7 Social, 8 Other.
-    private static readonly Dictionary<byte, string> ActivityTypeNames = new()
-    {
-        [1] = "Research", [2] = "Call", [3] = "Email", [4] = "Meeting",
-        [5] = "Demo", [6] = "Note", [7] = "Social", [8] = "Other"
-    };
-
     // Sentiment: 1 Positive, 2 Neutral, 3 Negative.
     private static readonly Dictionary<byte, string> SentimentNames = new()
     {
@@ -43,11 +37,13 @@ public class ProspectCampaignService : IProspectCampaignService
         ProspectCampaignRepository campaignRepository,
         ProspectActivityRepository activityRepository,
         ISalesProductService productService,
+        IActivityTypeLookupService activityTypeLookup,
         ICurrentTenantService tenantService)
     {
         _campaignRepository = campaignRepository;
         _activityRepository = activityRepository;
         _productService = productService;
+        _activityTypeLookup = activityTypeLookup;
         _tenantService = tenantService;
     }
 
@@ -271,12 +267,13 @@ public class ProspectCampaignService : IProspectCampaignService
     private async Task<List<CampaignActivityFeedItemDto>> BuildRecentActivityAsync(int campaignId, int businessId)
     {
         var rows = await _activityRepository.GetRecentByCampaignAsync(campaignId, businessId, RecentActivityCount);
+        var typeNames = await _activityTypeLookup.GetNameMapAsync();
         return rows.Select(r => new CampaignActivityFeedItemDto
         {
             ProspectId = r.ProspectId,
             ProspectName = r.ProspectName,
             ActivityType = r.ActivityType,
-            ActivityTypeName = ActivityTypeNames.TryGetValue(r.ActivityType, out var tn) ? tn : "Unknown",
+            ActivityTypeName = typeNames.TryGetValue(r.ActivityType, out var tn) ? tn : "Unknown",
             Outcome = r.Outcome,
             OccurredAtUtc = r.OccurredAtUtc,
             Sentiment = r.Sentiment,

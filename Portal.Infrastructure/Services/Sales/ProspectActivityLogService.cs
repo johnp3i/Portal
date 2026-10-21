@@ -12,13 +12,8 @@ namespace Portal.Infrastructure.Services.Sales;
 public class ProspectActivityLogService : IProspectActivityLogService
 {
     private readonly ProspectActivityRepository _activityRepository;
+    private readonly IActivityTypeLookupService _activityTypeLookup;
     private readonly ICurrentTenantService _tenantService;
-
-    private static readonly Dictionary<byte, string> ActivityTypeNames = new()
-    {
-        [1] = "Research", [2] = "Call", [3] = "Email", [4] = "Meeting",
-        [5] = "Demo", [6] = "Note", [7] = "Social", [8] = "Other"
-    };
 
     private static readonly Dictionary<byte, string> SentimentNames = new()
     {
@@ -27,9 +22,11 @@ public class ProspectActivityLogService : IProspectActivityLogService
 
     public ProspectActivityLogService(
         ProspectActivityRepository activityRepository,
+        IActivityTypeLookupService activityTypeLookup,
         ICurrentTenantService tenantService)
     {
         _activityRepository = activityRepository;
+        _activityTypeLookup = activityTypeLookup;
         _tenantService = tenantService;
     }
 
@@ -42,7 +39,8 @@ public class ProspectActivityLogService : IProspectActivityLogService
             var (rows, totalCount) = await _activityRepository.GetActivityLogPagedAsync(businessId, filter, page, pageSize);
             var summary = await _activityRepository.GetActivitySummaryAsync(businessId, filter);
 
-            var items = rows.Select(MapRow).ToList();
+            var typeNames = await _activityTypeLookup.GetNameMapAsync();
+            var items = rows.Select(r => MapRow(r, typeNames)).ToList();
 
             var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
             if (page < 1) page = 1;
@@ -75,7 +73,8 @@ public class ProspectActivityLogService : IProspectActivityLogService
             var businessId = _tenantService.CurrentBusinessId;
             // Reuse the paged query with a single large page — returns the whole filtered set.
             var (rows, _) = await _activityRepository.GetActivityLogPagedAsync(businessId, filter, 1, ExportMaxRows);
-            return rows.Select(MapRow).ToList();
+            var typeNames = await _activityTypeLookup.GetNameMapAsync();
+            return rows.Select(r => MapRow(r, typeNames)).ToList();
         }
         catch (Exception ex)
         {
@@ -98,7 +97,7 @@ public class ProspectActivityLogService : IProspectActivityLogService
 
     // Shared row → DTO mapping. PRIVACY: carries only presence flags, never the raw contact
     // name/phone — so neither the on-screen list nor the CSV export can leak personal data.
-    private static ProspectActivityLogItemDto MapRow(ProspectActivityLogRow r) => new()
+    private static ProspectActivityLogItemDto MapRow(ProspectActivityLogRow r, IReadOnlyDictionary<byte, string> typeNames) => new()
     {
         ActivityId = r.ActivityId,
         ProspectId = r.ProspectId,
@@ -108,7 +107,7 @@ public class ProspectActivityLogService : IProspectActivityLogService
         ProspectCampaignId = r.ProspectCampaignId,
         CampaignName = r.CampaignName,
         ActivityType = r.ActivityType,
-        ActivityTypeName = ActivityTypeNames.TryGetValue(r.ActivityType, out var tn) ? tn : "Other",
+        ActivityTypeName = typeNames.TryGetValue(r.ActivityType, out var tn) ? tn : "Unknown",
         OccurredAtUtc = r.OccurredAtUtc,
         Sentiment = r.Sentiment,
         SentimentName = r.Sentiment.HasValue && SentimentNames.TryGetValue(r.Sentiment.Value, out var sn) ? sn : null,
@@ -119,6 +118,7 @@ public class ProspectActivityLogService : IProspectActivityLogService
         NextActionTime = r.NextActionTime,
         HasNextActionContact = !string.IsNullOrWhiteSpace(r.NextActionContactName),
         HasNextActionPhone = !string.IsNullOrWhiteSpace(r.NextActionPhone),
+        HasNextActionEmail = !string.IsNullOrWhiteSpace(r.NextActionEmail),
         PerformedByName = string.IsNullOrWhiteSpace(r.PerformedByUserId) ? null : "You"
     };
 }

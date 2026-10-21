@@ -414,6 +414,18 @@
             renderTransactionTable(data.lines, data.closingBalance);
         }
 
+        // Builds the invoice-number cell markup. When an invoiceId is available the number is
+        // rendered as a link to the invoice detail page (opens in a new tab so the statement
+        // stays put); otherwise it falls back to the previous bold-text styling.
+        function invoiceRefMarkup(invoiceNumber, invoiceId) {
+            var label = '<strong style="color:#0D5EA6;">' + escapeHtml(invoiceNumber) + '</strong>';
+            if (invoiceId) {
+                return '<a href="/Invoice/Detail/' + encodeURIComponent(invoiceId) +
+                    '" target="_blank" rel="noopener" style="text-decoration:none;">' + label + '</a>';
+            }
+            return label;
+        }
+
         function renderTransactionTable(lines, closingBalance) {
             var tbody = document.getElementById('transactionTableBody');
             tbody.innerHTML = '';
@@ -440,18 +452,20 @@
                 tdType.innerHTML = '<span class="pill ' + pillClass + '">' + typeLabel + '</span>';
                 tr.appendChild(tdType);
 
-                // Reference — styled based on line type
+                // Reference — styled based on line type.
+                // When the line is linked to an invoice (line.invoiceId), the invoice number
+                // becomes a link to the invoice detail page; otherwise it stays as bold text.
                 var tdRef = document.createElement('td');
                 if (line.type === 'Invoice') {
-                    tdRef.innerHTML = '<strong style="color:#0D5EA6;">' + escapeHtml(line.reference) + '</strong>';
+                    tdRef.innerHTML = invoiceRefMarkup(line.reference, line.invoiceId);
                 } else if (line.type === 'Payment' || line.type === 'CreditNote') {
-                    // Split reference: highlight invoice number, mute the rest
+                    // Split reference: highlight (and link) the invoice number, mute the rest
                     var refText = line.reference || '';
                     var invoiceMatch = refText.match(/(INV-\d+-\d+)/);
                     if (invoiceMatch) {
                         var parts = refText.split(invoiceMatch[1]);
                         tdRef.innerHTML = '<span style="color:#5a6a7a;">' + escapeHtml(parts[0]) + '</span>' +
-                            '<strong style="color:#0D5EA6;">' + invoiceMatch[1] + '</strong>' +
+                            invoiceRefMarkup(invoiceMatch[1], line.invoiceId) +
                             '<span style="color:#94a3b8;font-size:12px;">' + escapeHtml(parts[1] || '') + '</span>';
                     } else {
                         tdRef.innerHTML = '<span style="color:#5a6a7a;">' + escapeHtml(refText) + '</span>';

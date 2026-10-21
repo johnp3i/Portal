@@ -19,7 +19,7 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
         "[PublicContactRole], [Phone], [Email], [Website], [PublicEvidence], [WhyFit], " +
         "[ResearchSourceUrl], [RecommendedFirstContact], [IcpFitScore], [PainProbabilityScore], " +
         "[AccessibilityScore], [LearningValueScore], [Status], [AssignedToUserId], [NextAction], " +
-        "[NextActionDate], [NextActionTime], [NextActionContactName], [NextActionPhone], " +
+        "[NextActionDate], [NextActionTime], [NextActionContactName], [NextActionPhone], [NextActionEmail], " +
         "[ConvertedLeadRequestId], [ConvertedAtUtc], [ImportRowId], [CreatedAtUtc]";
 
     public ProspectRepository(DbContext context) : base(context) { }
@@ -114,7 +114,7 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
                     [LearningValueScore] = @LearningValueScore, [AssignedToUserId] = @AssignedToUserId,
                     [NextAction] = @NextAction, [NextActionDate] = @NextActionDate,
                     [NextActionTime] = @NextActionTime, [NextActionContactName] = @NextActionContactName,
-                    [NextActionPhone] = @NextActionPhone
+                    [NextActionPhone] = @NextActionPhone, [NextActionEmail] = @NextActionEmail
                 WHERE [Id] = @Id AND [BusinessId] = @BusinessId";
 
             await _context.Database.ExecuteSqlRawAsync(query,
@@ -141,7 +141,8 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
                 new SqlParameter("@NextActionDate", entity.NextActionDate.HasValue ? entity.NextActionDate.Value.ToDateTime(TimeOnly.MinValue) : (object)DBNull.Value),
                 new SqlParameter("@NextActionTime", System.Data.SqlDbType.Time) { Value = entity.NextActionTime.HasValue ? entity.NextActionTime.Value.ToTimeSpan() : (object)DBNull.Value },
                 new SqlParameter("@NextActionContactName", entity.NextActionContactName ?? (object)DBNull.Value),
-                new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value)
+                new SqlParameter("@NextActionPhone", entity.NextActionPhone ?? (object)DBNull.Value),
+                new SqlParameter("@NextActionEmail", entity.NextActionEmail ?? (object)DBNull.Value)
             );
         }
         catch (Exception ex)
@@ -461,6 +462,7 @@ public class ProspectRepository : GenericStoredProcedureRepository<Prospect>
             NextActionTime = T("NextActionTime"),
             NextActionContactName = S("NextActionContactName"),
             NextActionPhone = S("NextActionPhone"),
+            NextActionEmail = S("NextActionEmail"),
             ConvertedLeadRequestId = I("ConvertedLeadRequestId"),
             ConvertedAtUtc = DT("ConvertedAtUtc"),
             ImportRowId = S("ImportRowId"),

@@ -30,6 +30,41 @@
     .prospect-timeline .tl-next { font-size: 12px; color: #C8912E; margin-top: 4px; }
     .prospect-timeline .tl-edit { margin-left: auto; background: none; border: none; color: #73889a; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 0 0 8px; font-family: inherit; }
     .prospect-timeline .tl-edit:hover { color: #0D5EA6; text-decoration: underline; }
+    /* Per-activity private self-evaluation entry point. Sits after Edit; not auto-margined so Edit
+       keeps the right edge. */
+    .prospect-timeline .tl-reflect { background: none; border: none; color: #0D5EA6; font-size: 12px; font-weight: 700; cursor: pointer; padding: 0 0 0 10px; font-family: inherit; }
+    .prospect-timeline .tl-reflect:hover { text-decoration: underline; }
+    /* Private "reflected" lock chip — presence only, never a score. */
+    .prospect-timeline .tl-reflect-lock { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; font-size: 11px; font-weight: 700; color: #6b4d8a; background: rgba(107,77,138,.10); border-radius: 7px; padding: 1px 7px; }
+    .prospect-timeline .tl-reflect-lock svg { opacity: .85; }
+
+    /* ── Call Reflection modal ─────────────────────────────────────────────── */
+    .reflect-close { background: rgba(13,94,166,.06); border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 22px; line-height: 1; color: #5E7385; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+    .reflect-close:hover { background: rgba(13,94,166,.12); color: #0B1B28; }
+    .reflection-modal .reflect-privacy { display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 12px; line-height: 1.5; color: #4a3a63; background: rgba(107,77,138,.07); border: 1px solid rgba(107,77,138,.16); border-radius: 12px; padding: 10px 13px; }
+    .reflection-modal .reflect-privacy svg { flex-shrink: 0; margin-top: 1px; color: #6b4d8a; }
+    .reflect-section-title { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #73889a; margin-bottom: 10px; }
+    /* Criterion row */
+    .reflect-crit { padding: 13px 0; border-bottom: 1px solid rgba(13,94,166,.07); }
+    .reflect-crit:last-child { border-bottom: none; }
+    .reflect-crit-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .reflect-crit-title { font-weight: 700; font-size: 13.5px; color: #0B1B28; }
+    .reflect-crit-state { font-size: 11px; font-weight: 700; color: #73889a; }
+    .reflect-crit-q { font-size: 12px; color: #73889a; margin: 3px 0 9px; }
+    .reflect-scores { display: flex; gap: 6px; flex-wrap: wrap; }
+    .reflect-score { min-width: 38px; height: 34px; border: 1.5px solid rgba(13,94,166,.16); background: #fff; color: #55748c; border-radius: 9px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
+    .reflect-score:hover { border-color: #0D5EA6; }
+    .reflect-score.sel { background: #0D5EA6; border-color: #0D5EA6; color: #fff; }
+    .reflect-score.na { width: auto; padding: 0 12px; font-size: 11px; font-weight: 700; }
+    .reflect-score.na.sel { background: rgba(13,94,166,.1); border-color: #0D5EA6; color: #0D5EA6; }
+    .reflect-summary { display: flex; justify-content: space-between; align-items: center; background: rgba(13,94,166,.04); border: 1px solid rgba(13,94,166,.1); border-radius: 13px; padding: 13px 16px; margin: 14px 0; }
+    .reflect-avg { font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -.03em; color: #0B1B28; }
+    .reflect-tips { margin-top: 14px; border: 1px solid rgba(13,94,166,.1); border-radius: 12px; padding: 4px 14px; }
+    .reflect-tips summary { cursor: pointer; font-weight: 700; color: #0D5EA6; padding: 10px 0; font-size: 13px; }
+    .reflect-tip-note { font-size: 12px; font-weight: 700; color: #6b4d8a; background: rgba(107,77,138,.07); border-radius: 10px; padding: 9px 12px; }
+    .reflect-tip-body { font-size: 13px; color: #334155; line-height: 1.5; background: rgba(13,94,166,.04); border-radius: 10px; padding: 11px 13px; margin-bottom: 12px; }
+    .reflect-delete { color: #C24A4A; border-color: rgba(194,74,74,.3); }
+    .reflect-delete:hover { background: rgba(194,74,74,.06); }
 
     /* Activity modal enhancements */
     .act-chips { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -167,6 +202,30 @@
     </div>
     <div class="prospect-topbar-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
         <span class="pill @PriorityPill(Model.Priority) prospect-priority-mobile">Priority @Model.Priority · @Model.Total/20</span>
+        @{
+            // Latest conversational activity (Call / Meeting / Demo) the founder would reflect on.
+            // Activities arrive newest-first from the service.
+            var latestReflectable = Model.Activities.FirstOrDefault(a => a.ActivityType is 2 or 4 or 5);
+        }
+        <button class="btn btn-secondary prospect-reflect-btn" style="display:inline-flex;align-items:center;gap:6px;"
+                onclick="openPreCallIntention()" title="Record a pre-call objective and practice focus (private)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+            Pre-call intention
+        </button>
+        @if (latestReflectable != null)
+        {
+            <button class="btn btn-secondary prospect-reflect-btn" style="display:inline-flex;align-items:center;gap:6px;"
+                    data-reflect-for="@latestReflectable.Id"
+                    data-reflect-type="@((byte)latestReflectable.ActivityType)"
+                    data-reflect-typename="@latestReflectable.ActivityTypeName"
+                    data-reflect-date="@latestReflectable.OccurredAtUtc.ToString("dd MMM yyyy")"
+                    data-reflect-outcome="@latestReflectable.Outcome"
+                    onclick="openReflectionFromButton(this)"
+                    title="Self-evaluate your most recent call / meeting / demo (private)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4Z"/></svg>
+                Evaluate latest call
+            </button>
+        }
         @if (!Model.IsConverted)
         {
             <button class="btn btn-primary" onclick="openConvertModal()">Convert to Lead</button>
@@ -254,7 +313,8 @@
                              data-nextactiondate="@(a.NextActionDate?.ToString("yyyy-MM-dd") ?? "")"
                              data-nextactiontime="@(a.NextActionTime?.ToString("HH:mm") ?? "")"
                              data-nextactioncontactname="@a.NextActionContactName"
-                             data-nextactionphone="@a.NextActionPhone">
+                             data-nextactionphone="@a.NextActionPhone"
+                             data-nextactionemail="@a.NextActionEmail">
                             <span class="tl-dot" style="background:@DotColour(a.ActivityType);"></span>
                             <div class="tl-body">
                                 <div class="tl-line">
@@ -275,7 +335,30 @@
                                     {
                                         <span style="margin-left:6px;font-size:11px;color:#8D5D07;">⚑ follow-up</span>
                                     }
+                                    @{
+                                        var evaluatedIds = ViewBag.EvaluatedActivityIds as HashSet<int> ?? new HashSet<int>();
+                                        var isReflectable = a.ActivityType is 2 or 4 or 5; // Call / Meeting / Demo
+                                        var hasReflection = evaluatedIds.Contains(a.Id);
+                                    }
+                                    @if (isReflectable && hasReflection)
+                                    {
+                                        <span class="tl-reflect-lock" title="You have a private reflection on this activity" aria-label="Private reflection recorded">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                                            Reflected
+                                        </span>
+                                    }
                                     <button class="tl-edit" onclick="editActivityFromRow(this)" title="Edit activity">Edit</button>
+                                    @if (isReflectable)
+                                    {
+                                        <button class="tl-reflect"
+                                                data-reflect-for="@a.Id"
+                                                data-reflect-type="@((byte)a.ActivityType)"
+                                                data-reflect-typename="@a.ActivityTypeName"
+                                                data-reflect-date="@a.OccurredAtUtc.ToString("dd MMM yyyy")"
+                                                data-reflect-outcome="@a.Outcome"
+                                                onclick="openReflectionFromButton(this)"
+                                                title="Private self-evaluation">@(hasReflection ? "View Reflection" : "Evaluate")</button>
+                                    }
                                 </div>
                                 <div class="tl-sub">@a.OccurredAtUtc.ToString("dd MMM yyyy") · You</div>
                                 @if (!string.IsNullOrWhiteSpace(a.Notes))
@@ -290,6 +373,7 @@
                                     var contactParts = new List<string>();
                                     if (!string.IsNullOrWhiteSpace(a.NextActionContactName)) { contactParts.Add(a.NextActionContactName!); }
                                     if (!string.IsNullOrWhiteSpace(a.NextActionPhone)) { contactParts.Add(a.NextActionPhone!); }
+                                    if (!string.IsNullOrWhiteSpace(a.NextActionEmail)) { contactParts.Add(a.NextActionEmail!); }
                                     <div class="tl-next">
                                         Next: @(string.IsNullOrWhiteSpace(a.NextAction) ? "Follow up" : a.NextAction)@(whenParts.Any() ? " · " + string.Join(" ", whenParts) : "")@(contactParts.Any() ? " · " + string.Join(" — ", contactParts) : "")
                                     </div>
@@ -355,6 +439,41 @@
                     </select>
                 </div>
             </div>
+
+            @{
+                // Status meaning reference — explains each stage of the prospect lifecycle so the
+                // operator understands what a status represents and what moves a prospect forward.
+                // The current stage is highlighted; terminal stages (Converted / Disqualified) are
+                // shown with their own tints.
+                var statusGuide = new (int Id, string Name, string Meaning, string Tint, string Fg)[]
+                {
+                    (1, "Research", "Gathering intel. Not yet ready to contact — qualification is still being built.", "rgba(115,136,154,.10)", "#5a6a7a"),
+                    (2, "Ready", "Qualified and cleared for outreach. Waiting for the first contact to be made.", "rgba(13,94,166,.08)", "#0D5EA6"),
+                    (3, "Contacting", "Outreach has started. Attempting to reach the prospect, no two-way conversation yet.", "rgba(87,184,232,.12)", "#2b7bb0"),
+                    (4, "Engaged", "A real conversation is underway — replies, meetings or demos. Ready to convert when it lands.", "rgba(200,145,46,.12)", "#C8912E"),
+                    (5, "Converted", "Became a customer. The prospect record is closed-won and locked.", "rgba(18,152,103,.12)", "#129867"),
+                    (6, "Disqualified", "Not a fit, or will not proceed. Closed-lost — kept for history, no further action.", "rgba(194,74,74,.10)", "#C24A4A"),
+                };
+            }
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(13,94,166,.1);">
+                <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#73889a;margin-bottom:10px;">What these statuses mean</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    @foreach (var s in statusGuide)
+                    {
+                        var isCurrent = Model.Status == s.Id;
+                        <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:12px;background:@(isCurrent ? s.Tint : "transparent");@(isCurrent ? "border:1px solid " + s.Fg + "33;" : "border:1px solid transparent;")">
+                            <span style="flex:0 0 auto;margin-top:1px;font-size:11px;font-weight:800;color:@s.Fg;background:@s.Tint;border-radius:7px;padding:2px 8px;white-space:nowrap;">@s.Name</span>
+                            <div style="font-size:12px;line-height:1.5;color:#5a6a7a;">
+                                @s.Meaning
+                                @if (isCurrent)
+                                {
+                                    <span style="display:inline-block;margin-left:4px;font-weight:800;color:@s.Fg;">• Current</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         </section>
     </div>
 </div>
@@ -369,14 +488,13 @@
             <div class="field">
                 <label>Type</label>
                 <select id="activityType">
-                    <option value="1">Research</option>
-                    <option value="2">Call</option>
-                    <option value="3">Email</option>
-                    <option value="4">Meeting</option>
-                    <option value="5">Demo</option>
-                    <option value="6">Note</option>
-                    <option value="7">Social</option>
-                    <option value="8">Other</option>
+                    @{
+                        var activityTypes = ViewBag.ActivityTypes as IReadOnlyList<ActivityTypeDto> ?? new List<ActivityTypeDto>();
+                    }
+                    @foreach (var t in activityTypes)
+                    {
+                        <option value="@t.Id">@t.Name</option>
+                    }
                 </select>
             </div>
             <div class="field" id="activityNewStatusField">
@@ -422,6 +540,7 @@
                 <label>Next action</label>
                 <div class="act-chips" style="margin-bottom:8px;">
                     <button type="button" class="act-chip" onclick="setNextAction('Call again')">Call again</button>
+                    <button type="button" class="act-chip" onclick="setNextAction('Send SMS')">Send SMS</button>
                     <button type="button" class="act-chip" onclick="setNextAction('Send email')">Send email</button>
                     <button type="button" class="act-chip" onclick="setNextAction('Send proposal')">Send proposal</button>
                     <button type="button" class="act-chip" onclick="setNextAction('Book meeting')">Book meeting</button>
@@ -458,6 +577,10 @@
                 <div class="field" style="margin-bottom:0;flex:1 1 150px;">
                     <label>Phone</label>
                     <input type="text" id="activityNextActionPhone" placeholder="e.g. 99464295" maxlength="30" />
+                </div>
+                <div class="field" style="margin-bottom:0;flex:1 1 200px;">
+                    <label>Email</label>
+                    <input type="email" id="activityNextActionEmail" placeholder="e.g. stella@acme.com" maxlength="320" />
                 </div>
             </div>
             <div style="font-size:11px;color:#8D5D07;margin-top:8px;">Counts toward the campaign's "follow-ups due".</div>
@@ -498,6 +621,95 @@
     </div>
 </div>
 
+<!-- ══ Call Reflection (private self-evaluation) Modal ══════════════════════════ -->
+<div id="reflectionModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content reflection-modal" style="max-width:640px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div>
+                <div class="eyebrow" style="color:#6b4d8a;"><span class="dot" style="background:#6b4d8a;"></span> Private self-assessment</div>
+                <h3 id="reflectionTitle" style="margin:4px 0 2px;">Call Reflection</h3>
+                <div style="font-size:12px;color:#73889a;" id="reflectionContext">Personal development · Private evaluation</div>
+            </div>
+            <button type="button" class="reflect-close" onclick="closeReflection()" aria-label="Close reflection">&times;</button>
+        </div>
+
+        <div class="reflect-privacy">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span>Personal development only. Private to you — never shown in shared views, exports, or the activity feed, and it never changes the prospect's status, score, or conversion.</span>
+        </div>
+
+        <input type="hidden" id="reflectionActivityId" value="" />
+        <input type="hidden" id="reflectionMode" value="activity" />
+
+        <!-- Pre-call intention (shown in both modes; the only section in pre-call mode) -->
+        <div id="reflectionPreCallBox" style="margin-top:18px;">
+            <div class="reflect-section-title">Before the call — intention <span style="font-weight:500;color:#73889a;">(optional)</span></div>
+            <div class="field" style="margin-bottom:12px;">
+                <label for="reflectPreCallObjective">Commercial objective</label>
+                <textarea id="reflectPreCallObjective" rows="2" maxlength="1000" placeholder="e.g. Understand their client-coordination workflow and assess whether a demo fits."></textarea>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+                <label for="reflectPreCallFocus">Personal practice focus</label>
+                <textarea id="reflectPreCallFocus" rows="2" maxlength="1000" placeholder="e.g. Ask one discovery question before describing features."></textarea>
+            </div>
+        </div>
+
+        <!-- Everything below is the post-call reflection; hidden in pure pre-call mode -->
+        <div id="reflectionBody">
+            <div class="reflect-section-title" style="margin-top:20px;">How did I communicate?</div>
+            <p style="font-size:12px;color:#73889a;margin:0 0 6px;">Rate 1–5, or leave a criterion <strong>Not assessed</strong>. 1 = needs improvement · 5 = particularly effective.</p>
+            <div id="reflectionCriteria"></div>
+
+            <div class="reflect-summary">
+                <div>
+                    <div style="font-weight:700;color:#0B1B28;">Self-assessment average</div>
+                    <div style="font-size:12px;color:#73889a;" id="reflectionAssessedCount">Not scored · 0 of 6 assessed</div>
+                </div>
+                <div class="reflect-avg" id="reflectionAverage">—</div>
+            </div>
+
+            <div class="field" style="margin-bottom:12px;">
+                <label for="reflectObservations">What did I notice about this conversation?</label>
+                <textarea id="reflectObservations" rows="2" maxlength="2000" placeholder="Consider the circumstances, your listening, and how they responded."></textarea>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+                <label for="reflectStrengths">What did I do effectively?</label>
+                <textarea id="reflectStrengths" rows="2" maxlength="2000" placeholder="Identify what worked — even if there was no commercial progress."></textarea>
+            </div>
+            <div class="field" style="margin-bottom:4px;">
+                <label for="reflectImprovement">What will I do differently next time?</label>
+                <textarea id="reflectImprovement" rows="2" maxlength="2000" placeholder="Choose one concrete behaviour to practise."></textarea>
+            </div>
+
+            <details class="reflect-tips">
+                <summary>Communication tips</summary>
+                <div class="reflect-tip-note">Adapt your communication style, not your integrity or claims.</div>
+                <div class="field" style="margin:10px 0;">
+                    <label for="reflectTipSituation">Observed circumstance</label>
+                    <select id="reflectTipSituation" onchange="renderReflectionTip()">
+                        <option value="busy">Busy / direct</option>
+                        <option value="analytical">Analytical / technical questions</option>
+                        <option value="experienced">Experienced / sceptical</option>
+                        <option value="friendly">Friendly / conversational</option>
+                        <option value="price">Price-focused</option>
+                        <option value="distracted">Distracted / driving</option>
+                    </select>
+                </div>
+                <div id="reflectTipBody" class="reflect-tip-body"></div>
+            </details>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;">
+            <button class="btn btn-secondary reflect-delete" id="reflectionDeleteBtn" onclick="deleteReflection()" style="display:none;">Delete reflection</button>
+            <div style="display:flex;gap:12px;margin-left:auto;">
+                <button class="btn btn-secondary" onclick="closeReflection()">Cancel</button>
+                <button class="btn btn-primary" id="reflectionSaveBtn" onclick="saveReflection()">Save reflection</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    <script src="~/js/sales/prospecting.js?v=14"></script>
+    <script src="~/js/sales/prospecting.js?v=16"></script>
+    <script src="~/js/sales/prospect-reflection.js?v=1"></script>
 }
