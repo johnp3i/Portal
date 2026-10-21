@@ -48,13 +48,13 @@ public interface IPayrollService
     Task<List<PayslipPeriodDto>> GetPeriodsAsync(int businessId);
     Task<PayslipPeriodDetailDto?> GetPeriodDetailAsync(int id, int businessId);
     Task<ServiceResult> CreatePeriodAsync(int businessId, CreatePeriodRequest request);
-    Task<ServiceResult> FinalisePeriodAsync(int id, int businessId);
+    Task<ServiceResult> FinalisePeriodAsync(int id, int businessId, string? userId = null);
 
     // Payslip Generation
     Task<BatchGenerationPreview> GeneratePayslipsPreviewAsync(int periodId, int businessId);
     Task<ServiceResult> ConfirmBatchGenerationAsync(int periodId, int businessId);
     Task<PayslipDetailDto?> GetPayslipDetailAsync(int id, int businessId);
-    Task<ServiceResult> SaveEarningLinesAsync(int businessId, SaveEarningLinesRequest request);
+    Task<ServiceResult> SaveEarningLinesAsync(int businessId, SaveEarningLinesRequest request, string? userId = null);
     Task<ServiceResult> SaveManagerNotesAsync(int businessId, SaveManagerNotesRequest request);
 
     // Payslip PDF & Email
