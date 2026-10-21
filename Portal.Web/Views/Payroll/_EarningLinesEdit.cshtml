@@ -33,7 +33,7 @@
 </section>
 
 <script>
-    var earningTypesForLines = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(earningTypes.Where(e => e.IsActive).Select(e => new { e.Id, e.Name, e.Code })));
+    var earningTypesForLines = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(earningTypes.Where(e => e.IsActive).Select(e => new { id = e.Id, name = e.Name, code = e.Code })));
 
     // Populate from existing earning lines on the page
     (function populateEarningLines() {
@@ -109,6 +109,12 @@
 
         rows.forEach(function (row) {
             var earningTypeId = parseInt(row.querySelector('.el-type').value);
+
+            // Guard: a row must have a resolved earning type. An empty dropdown would yield NaN,
+            // which serialises to null and breaks model binding on the server.
+            if (isNaN(earningTypeId) || earningTypeId <= 0) {
+                valid = false;
+            }
             var description = row.querySelector('.el-desc').value || null;
             var amount = row.querySelector('.el-amount').value ? parseFloat(row.querySelector('.el-amount').value) : null;
             var multiplier = row.querySelector('.el-multiplier').value ? parseFloat(row.querySelector('.el-multiplier').value) : null;

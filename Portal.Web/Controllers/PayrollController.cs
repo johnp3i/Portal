@@ -148,6 +148,11 @@ public class PayrollController : Controller
             var isSuperAdmin = User.IsInRole("SuperAdmin");
             ViewBag.CanSendEmail = isOwner || isSuperAdmin;
 
+            // Earning types power the Edit Earning Lines dropdown in the partial. Without this the
+            // dropdown renders empty and the posted earningTypeId is null, which breaks [FromBody]
+            // binding on AxPostSaveEarningLines.
+            ViewBag.EarningTypes = await _payrollService.GetEarningTypesAsync();
+
             return View(detail);
         }
         catch (Exception ex)
@@ -376,7 +381,8 @@ public class PayrollController : Controller
         try
         {
             var businessId = _tenantService.CurrentBusinessId;
-            var result = await _payrollService.FinalisePeriodAsync(periodId, businessId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _payrollService.FinalisePeriodAsync(periodId, businessId, userId);
 
             if (result.Success)
                 return Json(new { success = true, message = "Period finalised successfully." });
@@ -395,8 +401,12 @@ public class PayrollController : Controller
     {
         try
         {
+            if (request == null)
+                return Json(new { success = false, message = "Invalid request. Please reload the page and try again." });
+
             var businessId = _tenantService.CurrentBusinessId;
-            var result = await _payrollService.SaveEarningLinesAsync(businessId, request);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _payrollService.SaveEarningLinesAsync(businessId, request, userId);
 
             if (result.Success)
                 return Json(new { success = true, message = "Earning lines saved successfully." });
