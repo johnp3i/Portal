@@ -49,6 +49,16 @@
     .dev-empty { padding:18px; text-align:center; color:#73889a; font-size:13px; }
 
     @@media(max-width:980px){ .dev-grid{ grid-template-columns:1fr; } }
+
+    @@media(max-width:768px){
+        /* Summary stats: clean 2-column grid instead of uneven flex wrap. */
+        .dev-summary { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .dev-stat { flex:none; padding:14px 15px; }
+        .dev-stat .value { font-size:24px; }
+
+        /* Criterion bars: shrink the label column so the row never overflows. */
+        .bar-row { grid-template-columns:118px 1fr 44px; gap:10px; font-size:12.5px; }
+    }
 </style>
 
 <div class="topbar">

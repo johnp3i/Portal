@@ -977,17 +977,21 @@
             if (a.city) sub.push(esc(a.city));
             if (a.segment) sub.push(esc(a.segment));
 
+            // data-mobile attributes drive the ≤768px stacked-card layout (see
+            // Activity.cshtml #activityTable @media block). Cell order mirrors the
+            // thead: (1) When, (2) Prospect, (3) Campaign, (4) Type, (5) Outcome,
+            // (6) Signal, (7) Next action, (8) By, (9) Open link.
             html += '<tr>' +
-                '<td style="font-weight:700;">' + whenMain + whenTime + '</td>' +
-                '<td><a href="/Prospecting/ProspectDetail/' + a.prospectId + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:700;">' + esc(a.prospectName) + '</a>' +
+                '<td data-mobile="when" style="font-weight:700;">' + whenMain + whenTime + '</td>' +
+                '<td data-mobile="prospect"><a href="/Prospecting/ProspectDetail/' + a.prospectId + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:700;">' + esc(a.prospectName) + '</a>' +
                     (sub.length ? '<div style="font-size:11px;color:#73889a;margin-top:2px;">' + sub.join(' · ') + '</div>' : '') + '</td>' +
-                '<td><span style="font-size:11px;font-weight:700;color:#0B4E89;background:rgba(13,94,166,.06);border:1px solid rgba(13,94,166,.10);border-radius:8px;padding:2px 8px;">' + esc(a.campaignName || '') + '</span></td>' +
-                '<td>' + typeCell + '</td>' +
-                '<td>' + outcomeCell + '</td>' +
-                '<td>' + signalCell + '</td>' +
-                '<td>' + nextCell + '</td>' +
-                '<td>' + esc(a.performedByName || '—') + '</td>' +
-                '<td style="white-space:nowrap;text-align:right;"><a href="/Prospecting/ProspectDetail/' + a.prospectId + '" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary">Open</a></td>' +
+                '<td data-mobile="hide"><span style="font-size:11px;font-weight:700;color:#0B4E89;background:rgba(13,94,166,.06);border:1px solid rgba(13,94,166,.10);border-radius:8px;padding:2px 8px;">' + esc(a.campaignName || '') + '</span></td>' +
+                '<td data-mobile="type">' + typeCell + '</td>' +
+                '<td data-mobile="outcome">' + outcomeCell + '</td>' +
+                '<td data-mobile="signal">' + signalCell + '</td>' +
+                '<td data-mobile="next">' + nextCell + '</td>' +
+                '<td data-mobile="hide">' + esc(a.performedByName || '—') + '</td>' +
+                '<td data-mobile="open" style="white-space:nowrap;text-align:right;"><a href="/Prospecting/ProspectDetail/' + a.prospectId + '" target="_blank" rel="noopener" class="tbl-action tbl-action--secondary">Open</a></td>' +
                 '</tr>';
         });
         body.innerHTML = html;

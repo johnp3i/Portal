@@ -138,8 +138,111 @@
         #activitySummary .stat { flex:1 1 150px; background:rgba(255,255,255,.78); border:1px solid rgba(13,94,166,.10); border-radius:16px; padding:16px 18px; }
         #activitySummary .stat .label { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#73889a; }
         #activitySummary .stat .value { font-family:'Manrope',Inter,sans-serif; font-size:26px; font-weight:800; margin-top:4px; }
+
+        /* ══ Prospect Activity — native stacked card feed on phones ═══════════════
+           Mirrors the Purchases list pattern (Purchase/Index #purchaseTable). One
+           activity = one card. Cell order (data-mobile): when, prospect, hide
+           (campaign), type, outcome, signal, next, hide (by), open.
+           Scoped to #activityTable so it never affects other tables. */
+        @@media (max-width: 768px) {
+            /* Period summary: clean 2-column grid instead of uneven flex wrap. */
+            #activitySummary {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            #activitySummary .stat { flex: none !important; }
+
+            /* Cancel the generic .data-table rules (max-content width + nowrap from
+               mobile.css) so cards shrink to the viewport and never scroll. */
+            #activityTable,
+            #activityTable tbody {
+                display: block !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+            }
+            #activityTable thead { display: none !important; }
+
+            #activityTable tbody td {
+                white-space: normal !important;
+                min-width: 0 !important;
+                overflow-wrap: anywhere;
+                border: none !important;
+                padding: 0;
+            }
+
+            /* The card */
+            #activityTable tbody tr {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 2px 12px;
+                align-items: start;
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+                padding: 16px !important;
+                margin-bottom: 12px;
+                border: 1px solid rgba(13, 94, 166, 0.10) !important;
+                border-radius: 16px;
+                background: #fff !important;
+                box-shadow: 0 1px 3px rgba(11, 27, 40, 0.05);
+            }
+
+            /* Hidden on phone: Campaign + By */
+            #activityTable tbody td[data-mobile="hide"] { display: none !important; }
+
+            /* Row 1 — Prospect (title, left) */
+            #activityTable tbody td[data-mobile="prospect"] {
+                grid-row: 1; grid-column: 1;
+                font-weight: 700; font-size: 15px; line-height: 1.25;
+            }
+            #activityTable tbody td[data-mobile="prospect"] a { font-size: 15px; }
+
+            /* Row 1 — When (right, muted) */
+            #activityTable tbody td[data-mobile="when"] {
+                grid-row: 1; grid-column: 2;
+                text-align: right; font-size: 12px; color: #73889a; font-weight: 700;
+                white-space: nowrap;
+            }
+
+            /* Row 2 — Type + Signal pills together */
+            #activityTable tbody td[data-mobile="type"] {
+                grid-row: 2; grid-column: 1;
+                margin-top: 10px;
+            }
+            #activityTable tbody td[data-mobile="signal"] {
+                grid-row: 2; grid-column: 2;
+                justify-self: end; margin-top: 10px;
+            }
+
+            /* Row 3 — Outcome, full width */
+            #activityTable tbody td[data-mobile="outcome"] {
+                grid-row: 3; grid-column: 1 / -1;
+                margin-top: 10px; font-size: 13.5px; color: #334155;
+            }
+
+            /* Row 4 — Next action, full width (amber, as rendered) */
+            #activityTable tbody td[data-mobile="next"] {
+                grid-row: 4; grid-column: 1 / -1;
+                margin-top: 8px; font-size: 13px;
+            }
+
+            /* Footer — Open link as a full-width action row */
+            #activityTable tbody td[data-mobile="open"] {
+                grid-row: 5; grid-column: 1 / -1;
+                text-align: center !important;
+                margin-top: 14px; padding-top: 14px !important;
+                border-top: 1px solid rgba(13, 94, 166, 0.08) !important;
+                white-space: normal !important;
+            }
+            #activityTable tbody td[data-mobile="open"] .tbl-action {
+                display: block; width: 100%; box-sizing: border-box;
+                padding: 11px 12px; font-size: 13.5px;
+            }
+        }
     </style>
-    <script src="~/js/sales/prospecting.js?v=16"></script>
+    <script src="~/js/sales/prospecting.js?v=17"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             initActivityLog();
