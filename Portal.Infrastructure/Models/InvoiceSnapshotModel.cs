@@ -23,4 +23,10 @@ public class InvoiceSnapshotModel
     public BusinessProfile? Profile { get; set; }
 
     public List<BusinessPaymentDetail> PaymentDetails { get; set; } = new();
+
+    /// <summary>
+    /// Non-voided credit notes applied against this invoice. When any exist, the snapshot shows a
+    /// note referencing them and the net amount payable (Total − applied credits). Empty otherwise.
+    /// </summary>
+    public List<AppliedCreditNoteDto> AppliedCreditNotes { get; set; } = new();
 }

@@ -9,6 +9,7 @@ public static class PortalModules
     public const string Purchase = "purchase";
     public const string Vat = "vat";
     public const string Credit = "credit";
+    public const string CreditAccountLevel = "credit_account_level";
     public const string Audit = "audit";
     public const string Products = "products";
     public const string PaymentLinkManual = "payment_link_manual";
@@ -38,7 +39,7 @@ public static class PortalModules
 
     public static readonly string[] All =
     {
-        Customer, Quotation, Invoice, Revenue, Purchase, Vat, Credit, Audit, Products,
+        Customer, Quotation, Invoice, Revenue, Purchase, Vat, Credit, CreditAccountLevel, Audit, Products,
         PaymentLinkManual, PaymentReminderManual, PaymentLinkAuto, PaymentReminderAuto,
         Cashflow, Pnl, ExpenseInsights, Attachments, ClientPortal,
         ActivityTimeline, AuditLog, Api, Webhooks, MultiCurrency, SchedulePayments,

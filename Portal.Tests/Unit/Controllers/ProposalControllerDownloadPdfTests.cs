@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Portal.Infrastructure.Entities;
@@ -40,6 +41,7 @@ public class ProposalControllerDownloadPdfTests
             _environmentMock.Object,
             _logoServiceMock.Object,
             _viewRenderServiceMock.Object,
+            Mock.Of<IConfiguration>(),
             _loggerMock.Object);
 
         // Set up default HttpContext

@@ -379,6 +379,14 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[InvoiceFinancialStatusType].[Name] AS [FinancialStatusName],
                        [invoice].[Invoice].[InvoiceStatusTypeId],
                        [invoice].[Invoice].[InvoiceFinancialStatusTypeId],
+                       CAST(CASE WHEN EXISTS (
+                           SELECT 1
+                           FROM [credit].[CreditNoteApplication]
+                           INNER JOIN [credit].[CreditNote] ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
+                           WHERE [credit].[CreditNoteApplication].[InvoiceId] = [invoice].[Invoice].[Id]
+                             AND [credit].[CreditNoteApplication].[IsVoided] = 0
+                             AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                       ) THEN 1 ELSE 0 END AS BIT) AS [HasCreditNote],
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [invoice].[Invoice]
                 INNER JOIN [customer].[Customer] ON [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
@@ -438,7 +446,8 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                         StatusName = reader.GetString(reader.GetOrdinal("StatusName")),
                         FinancialStatusName = reader.GetString(reader.GetOrdinal("FinancialStatusName")),
                         InvoiceStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceStatusTypeId")),
-                        InvoiceFinancialStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceFinancialStatusTypeId"))
+                        InvoiceFinancialStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceFinancialStatusTypeId")),
+                        HasCreditNote = reader.GetBoolean(reader.GetOrdinal("HasCreditNote"))
                     });
                 }
             }

@@ -137,6 +137,10 @@
                         <tr data-href="@Url.Action("Detail", "Invoice", new { id = item.Id })">
                             <td>
                                 <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" style="color:inherit;text-decoration:none;"><strong>@item.InvoiceNumber</strong></a>
+                                @if (item.HasCreditNote)
+                                {
+                                    <span title="A credit note has been applied to this invoice" style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.03em;color:#129867;background:rgba(18,152,103,.1);border:1px solid rgba(18,152,103,.2);vertical-align:middle;">• CN</span>
+                                }
                                 @if (item.AcceptanceStatus == "accepted")
                                 {
                                     <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>

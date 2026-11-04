@@ -19,19 +19,41 @@
         loadCatalogProducts(null);
     };
 
-    window.editProduct = function (id, name, description, catalogProductId) {
+    // Reads row data from the button's data-* attributes (safer than hand-escaped inline args).
+    window.editProductFromData = function (btn) {
+        var id = btn.getAttribute('data-id');
+        var catalogProductId = btn.getAttribute('data-catalog-id') || '';
         document.getElementById('productModalTitle').textContent = 'Edit Product / Service';
         document.getElementById('productId').value = id;
-        document.getElementById('productName').value = name;
-        document.getElementById('productDescription').value = description || '';
-        document.getElementById('productCatalogLink').value = catalogProductId || '';
+        document.getElementById('productName').value = btn.getAttribute('data-name') || '';
+        document.getElementById('productDescription').value = btn.getAttribute('data-description') || '';
+        document.getElementById('productCatalogLink').value = catalogProductId;
         document.getElementById('productModal').style.display = 'flex';
         loadCatalogProducts(catalogProductId);
+    };
+
+    window.deactivateProductFromData = function (btn) {
+        deactivateProduct(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
+    };
+
+    window.activateProductFromData = function (btn) {
+        activateProduct(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
     };
 
     window.closeProductModal = function () {
         document.getElementById('productModal').style.display = 'none';
     };
+
+    // Consistent modal dismissal: click the backdrop or press Escape to close.
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('productModal');
+        if (modal) {
+            modal.addEventListener('click', function (e) { if (e.target === modal) closeProductModal(); });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal && modal.style.display !== 'none') closeProductModal();
+        });
+    });
 
     window.submitProduct = async function () {
         var id = document.getElementById('productId').value;

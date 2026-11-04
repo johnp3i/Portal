@@ -23,4 +23,14 @@ public class StatementLineDto
     public int? PaymentId { get; set; }
     /// <summary>Whether this payment is voided (for display styling).</summary>
     public bool IsVoided { get; set; }
+    /// <summary>
+    /// The payment's raw method id (Payment lines only; null otherwise). Carried so the Edit
+    /// Payment modal can pre-select the current method without parsing the composite Reference.
+    /// </summary>
+    public int? PaymentMethodTypeId { get; set; }
+    /// <summary>
+    /// The payment's raw reference text (Payment lines only; null otherwise). The display
+    /// <see cref="Reference"/> is a composite string unsuitable for pre-filling the edit input.
+    /// </summary>
+    public string? RawReference { get; set; }
 }

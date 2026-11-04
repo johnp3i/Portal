@@ -356,14 +356,108 @@
         line-height: 1.6;
     }
     .section-summary strong { font-weight: 700; }
-    @@media (max-width: 640px) {
-        .hero-card { flex-direction: column; gap: 12px; }
-        .hero-amount { font-size: 24px; }
-        .flow-boxes { flex-direction: column; }
-        .flow-arrow { transform: rotate(90deg); }
-        .settings-grid { grid-template-columns: 1fr; }
-        .kpi-strip { flex-direction: column; }
-        .period-selector { flex-wrap: wrap; }
+    @@media (max-width: 768px) {
+        /* ── Compact cards on mobile ──────────────────────────────────────────
+           Desktop uses generous 32px / 20px padding and large type. On phones
+           that makes every card tall and whitespace-heavy (especially the four
+           stacked KPI cards). Tighten padding, radius, type and gaps so the
+           forecast reads as a dense, scannable stack. */
+
+        /* Hero card */
+        .hero-card {
+            flex-direction: row;
+            gap: 12px;
+            padding: 18px 16px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+        .hero-icon { width: 36px; height: 36px; }
+        .hero-icon svg { width: 20px; height: 20px; }
+        .hero-headline { font-size: 16px; margin-bottom: 8px; }
+        .hero-body { font-size: 14px; line-height: 1.45; }
+        .hero-amount { font-size: 20px; }
+        .period-selector { margin-top: 12px; flex-wrap: wrap; gap: 6px; }
+        .period-btn { padding: 7px 14px; font-size: 12px; }
+
+        /* KPI strip — 2-up grid instead of one tall card per row */
+        .kpi-strip {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .kpi-card {
+            min-width: 0;
+            padding: 12px 12px;
+            border-radius: 12px;
+            border-left-width: 4px;
+        }
+        .kpi-card .kpi-label { font-size: 10px; margin-bottom: 4px; }
+        .kpi-card .kpi-amount { font-size: 17px; }
+        /* Shrink the "?" info button so it doesn't crowd the compact card */
+        .kpi-card button[onclick^="showKpiInfo"] {
+            width: 18px !important;
+            height: 18px !important;
+            font-size: 10px !important;
+            flex-shrink: 0;
+        }
+
+        /* Tip bar */
+        .tip-bar {
+            padding: 11px 14px;
+            font-size: 12px;
+            margin-bottom: 14px;
+            border-radius: 10px;
+        }
+
+        /* Flow card + boxes */
+        .flow-card {
+            padding: 18px 16px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+        .flow-title { font-size: 16px; margin-bottom: 16px; }
+        .flow-boxes { flex-direction: column; gap: 12px; }
+        .flow-box {
+            width: 100%;
+            max-width: none;
+            min-width: 0;
+            padding: 16px 18px;
+            border-radius: 12px;
+        }
+        .flow-box-label { font-size: 13px; margin-bottom: 4px; }
+        .flow-box-amount { font-size: 22px; margin-bottom: 4px; }
+        .flow-box-desc { font-size: 12px; }
+        .flow-arrow { transform: rotate(90deg); font-size: 22px; }
+        .flow-net { font-size: 14px; margin-top: 16px; padding-top: 14px; }
+
+        /* Chart card */
+        .chart-card {
+            padding: 18px 16px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+        .chart-header { margin-bottom: 14px; gap: 10px; }
+        .chart-header h3 { font-size: 16px; }
+
+        /* Section cards (tables + settings) */
+        .section-card {
+            padding: 18px 16px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+        .section-heading { font-size: 17px; }
+        .section-subheading { font-size: 13px; margin-bottom: 12px; }
+        .section-explainer {
+            padding: 11px 14px;
+            font-size: 12px;
+            margin-bottom: 14px;
+        }
+        .section-summary { font-size: 13px; margin-top: 14px; padding-top: 12px; }
+
+        /* Settings */
+        .settings-grid { grid-template-columns: 1fr; gap: 14px; }
+        .btn-save { width: 100%; margin-top: 16px; }
     }
 </style>
 

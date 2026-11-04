@@ -7,6 +7,8 @@
     var paymentMethods = ViewBag.PaymentMethods as List<Portal.Infrastructure.Entities.PaymentMethodType> ?? new List<Portal.Infrastructure.Entities.PaymentMethodType>();
     var customerName = (string)(ViewBag.CustomerName ?? "Unknown");
     var totalPaid = (decimal)(ViewBag.TotalPaid ?? 0m);
+    var totalCredited = (decimal)(ViewBag.TotalCredited ?? 0m);
+    var appliedCreditNotes = ViewBag.AppliedCreditNotes as List<Portal.Infrastructure.Models.AppliedCreditNoteDto> ?? new List<Portal.Infrastructure.Models.AppliedCreditNoteDto>();
     var outstandingBalance = (decimal)(ViewBag.OutstandingBalance ?? 0m);
     var progressPercentage = (decimal)(ViewBag.ProgressPercentage ?? 0m);
     var isOverdue = (bool)(ViewBag.IsOverdue ?? false);
@@ -50,6 +52,14 @@
         <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#129867;margin:0 0 4px 0;">@(currencySymbol)@totalPaid.ToString("N2")</h2>
         <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">@validPaymentCount payment@(validPaymentCount != 1 ? "s" : "") received</p>
     </div>
+    @if (totalCredited > 0)
+    {
+        <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid #129867;">
+            <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Credited</p>
+            <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#129867;margin:0 0 4px 0;">@(currencySymbol)@totalCredited.ToString("N2")</h2>
+            <p style="font-family:'Inter',sans-serif;font-size:12px;color:#8a9bab;margin:0;">@appliedCreditNotes.Count credit note@(appliedCreditNotes.Count != 1 ? "s" : "") applied</p>
+        </div>
+    }
     <div class="glass card-pad" style="flex:1;min-width:180px;border-left:4px solid @(outstandingBalance > 0 ? "#C24A4A" : "#129867");">
         <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;">Outstanding Balance</p>
         <h2 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:@(outstandingBalance > 0 ? "#C24A4A" : "#129867");margin:0 0 4px 0;">@(currencySymbol)@outstandingBalance.ToString("N2")</h2>
@@ -91,6 +101,35 @@
         <div style="height:100%;width:@(progressPercentage)%;background:linear-gradient(90deg, var(--green), #57E8A8);border-radius:8px;transition:width .3s ease;"></div>
     </div>
 </section>
+
+@* Applied Credit Notes — references the credit note(s) that reduced this invoice's balance. *@
+@if (appliedCreditNotes.Any())
+{
+    <section class="glass card-pad" style="margin-bottom:22px;">
+        <h3 style="font-size:16px;margin-bottom:16px;">Applied Credit Notes</h3>
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #e2e8f0;">Date</th>
+                    <th style="text-align:left;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #e2e8f0;">Credit Note</th>
+                    <th style="text-align:right;font-size:11px;font-weight:700;color:#5a6a7a;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid #e2e8f0;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var credit in appliedCreditNotes)
+                {
+                    <tr>
+                        <td style="padding:10px;font-size:13px;border-bottom:1px solid #e2e8f0;">@credit.AppliedAtUtc.ToString("dd MMM yyyy")</td>
+                        <td style="padding:10px;font-size:13px;border-bottom:1px solid #e2e8f0;">
+                            <a href="/CreditNote/Detail/@credit.CreditNoteId" style="color:#0D5EA6;font-weight:600;text-decoration:none;">@credit.CreditNoteNumber</a>
+                        </td>
+                        <td style="padding:10px;font-size:13px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;color:#129867;">-@(currencySymbol)@credit.AmountApplied.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
 
 <!-- Invoice Line Items -->
 <section class="glass card-pad invoice-lines-section" style="margin-bottom:22px;">

@@ -11,11 +11,16 @@
         return tokenInput ? tokenInput.value : '';
     }
 
-    // Load pipeline data on page load
-    document.addEventListener('DOMContentLoaded', async function () {
-        await loadLookups();
-        await loadPipelineData();
+    // Load pipeline data on page load.
+    // The board is what the user came to see, so fire it immediately and let its own
+    // skeletons communicate progress. Lookups (needed only for the New Lead modal + the
+    // Assigned-To filter) and recent activity load in PARALLEL — they must not block the
+    // board behind ~9 lookup queries, which was causing the slow, staggered "pop-in".
+    document.addEventListener('DOMContentLoaded', function () {
         initKpiToggle();
+        loadPipelineData({ silent: true });   // skeletons already on screen — no full-screen block
+        loadLookups();
+        loadRecentLeadActivity();
     });
 
     async function loadLookups() {
@@ -32,14 +37,12 @@
     function populateCreateLeadForm() {
         if (!lookups) return;
 
-        var contactSelect = document.getElementById('leadContactId');
         var productSelect = document.getElementById('leadProductId');
         var sourceSelect = document.getElementById('leadSourceTypeId');
         var sourceRefSelect = document.getElementById('leadSourceRefTypeId');
         var assignedFilter = document.getElementById('filterAssigned');
 
-        // Load contacts async
-        loadContactsForSelect(contactSelect);
+        // Contact is handled by the searchable combobox (see initContactCombo), not a <select>.
 
         productSelect.innerHTML = '<option value="">None</option>';
         lookups.products.forEach(function (p) {
@@ -65,29 +68,108 @@
         }
     }
 
-    async function loadContactsForSelect(selectEl) {
-        try {
-            var response = await fetch('/Sales/AxGetContactsSearch?page=1');
-            var result = await response.json();
-            if (result.success) {
-                selectEl.innerHTML = '<option value="">Select contact...</option>';
-                result.data.forEach(function (c) {
-                    selectEl.innerHTML += '<option value="' + c.id + '">' + c.fullName + (c.companyName ? ' (' + c.companyName + ')' : '') + '</option>';
-                });
-            }
-        } catch (e) { /* Request aborted — page navigating away */ }
+    // ── Searchable Contact combobox (New Lead modal) ─────────────────────────────
+    // Queries the server as the user types so ALL contacts are reachable, not just the
+    // first page. Debounced; results are rendered into #leadContactResults; selecting a row
+    // stores its id in the hidden #leadContactId and shows the label in the text input.
+    var _contactComboDebounce = null;
+    var _contactComboInit = false;
+
+    function escapeHtmlAttr(str) {
+        return escapeHtml(str).replace(/'/g, '&#39;');
     }
 
-    window.loadPipelineData = async function () {
+    function contactLabel(c) {
+        return c.fullName + (c.companyName ? ' (' + c.companyName + ')' : '');
+    }
+
+    async function fetchContactResults(term) {
+        var box = document.getElementById('leadContactResults');
+        try {
+            var response = await fetch('/Sales/AxGetContactsSearch?page=1&search=' + encodeURIComponent(term || ''));
+            var result = await response.json();
+            if (!result.success) { box.style.display = 'none'; return; }
+
+            if (!result.data.length) {
+                box.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#8a9bab;">No contacts found.</div>';
+                box.style.display = 'block';
+                return;
+            }
+
+            var html = '';
+            result.data.forEach(function (c) {
+                var label = contactLabel(c);
+                html += '<div class="lead-contact-option" role="option" tabindex="-1"'
+                    + ' data-id="' + c.id + '" data-label="' + escapeHtmlAttr(label) + '"'
+                    + ' style="padding:10px 16px;cursor:pointer;font-size:14px;border-bottom:1px solid rgba(13,94,166,.05);">'
+                    + escapeHtml(label) + '</div>';
+            });
+            // Hint when more than one page of matches exists — tells the user to narrow the search.
+            if (result.totalPages > 1) {
+                html += '<div style="padding:8px 16px;font-size:11px;color:#8a9bab;background:rgba(13,94,166,.03);">'
+                    + 'Showing first ' + result.data.length + ' of ' + result.totalCount + '. Keep typing to narrow results.</div>';
+            }
+            box.innerHTML = html;
+            box.style.display = 'block';
+
+            box.querySelectorAll('.lead-contact-option').forEach(function (opt) {
+                opt.addEventListener('mouseover', function () { opt.style.background = 'rgba(13,94,166,.06)'; });
+                opt.addEventListener('mouseout', function () { opt.style.background = ''; });
+                opt.addEventListener('mousedown', function (e) {
+                    e.preventDefault(); // keep focus; fire before blur hides the list
+                    selectContact(opt.getAttribute('data-id'), opt.getAttribute('data-label'));
+                });
+            });
+        } catch (e) { /* aborted / navigating away */ }
+    }
+
+    function selectContact(id, label) {
+        document.getElementById('leadContactId').value = id;
+        document.getElementById('leadContactSearch').value = label;
+        document.getElementById('leadContactResults').style.display = 'none';
+    }
+
+    function initContactCombo() {
+        if (_contactComboInit) return;
+        var input = document.getElementById('leadContactSearch');
+        var box = document.getElementById('leadContactResults');
+        if (!input || !box) return;
+        _contactComboInit = true;
+
+        input.addEventListener('input', function () {
+            // Typing invalidates any previous selection until a new row is chosen.
+            document.getElementById('leadContactId').value = '';
+            clearTimeout(_contactComboDebounce);
+            var term = input.value.trim();
+            _contactComboDebounce = setTimeout(function () { fetchContactResults(term); }, 250);
+        });
+
+        // Show results on focus (initial list when empty).
+        input.addEventListener('focus', function () {
+            clearTimeout(_contactComboDebounce);
+            fetchContactResults(input.value.trim());
+        });
+
+        // Hide when focus leaves the combo.
+        input.addEventListener('blur', function () {
+            setTimeout(function () { box.style.display = 'none'; }, 150);
+        });
+    }
+
+    // options.silent = true skips the full-screen BlockUI overlay. Used on first load so the
+    // on-screen skeletons carry the "loading" signal (no overlay flashing over them). Re-filters
+    // triggered by the user keep the overlay so the interaction feels acknowledged.
+    window.loadPipelineData = async function (options) {
+        var silent = options && options.silent;
         var assignedFilter = document.getElementById('filterAssigned').value;
         var productFilter = document.getElementById('filterProduct').value;
         var url = '/Sales/AxGetPipelineData?teamMemberId=' + encodeURIComponent(assignedFilter || '') + '&productId=' + encodeURIComponent(productFilter || '');
 
-        BlockUI.show('Loading pipeline...');
+        if (!silent) BlockUI.show('Loading pipeline...');
         try {
             var response = await fetch(url);
             var result = await response.json();
-            BlockUI.hide();
+            if (!silent) BlockUI.hide();
 
             if (result.success) {
                 window._lastPipelineStages = result.data;
@@ -100,7 +182,7 @@
                 Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#0D5EA6' });
             }
         } catch (e) {
-            BlockUI.hide();
+            if (!silent) BlockUI.hide();
             Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load pipeline data.', confirmButtonColor: '#0D5EA6' });
         }
     };
@@ -471,15 +553,33 @@
 
     window.initSwipeGesture = initSwipeGesture;
 
-    // Load recent lead activity on page init
-    loadRecentLeadActivity();
+    // (Recent lead activity is loaded in parallel from the DOMContentLoaded handler above.)
 
     window.openCreateLeadModal = function () {
+        // Reset the searchable contact combobox each time the modal opens.
+        var idEl = document.getElementById('leadContactId');
+        var searchEl = document.getElementById('leadContactSearch');
+        var resultsEl = document.getElementById('leadContactResults');
+        if (idEl) idEl.value = '';
+        if (searchEl) searchEl.value = '';
+        if (resultsEl) resultsEl.style.display = 'none';
+        initContactCombo();
         document.getElementById('createLeadModal').style.display = 'flex';
     };
     window.closeCreateLeadModal = function () {
         document.getElementById('createLeadModal').style.display = 'none';
     };
+
+    // Consistent modal dismissal: click the backdrop or press Escape to close.
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('createLeadModal');
+        if (modal) {
+            modal.addEventListener('click', function (e) { if (e.target === modal) closeCreateLeadModal(); });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal && modal.style.display !== 'none') closeCreateLeadModal();
+        });
+    });
 
 
 

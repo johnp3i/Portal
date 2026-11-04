@@ -9,27 +9,8 @@
         return tokenInput ? tokenInput.value : '';
     }
 
-    window.searchContacts = function () {
-        var search = document.getElementById('contactSearch').value;
-        window.location.href = '/Sales/Contacts?search=' + encodeURIComponent(search);
-    };
-
-    window.clearContactSearch = function () {
-        window.location.href = '/Sales/Contacts';
-    };
-
-    // Enter key triggers search
-    document.addEventListener('DOMContentLoaded', function () {
-        var searchInput = document.getElementById('contactSearch');
-        if (searchInput) {
-            searchInput.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    searchContacts();
-                }
-            });
-        }
-    });
+    // Search is handled by a native <form method="get"> in the view (Enter + Clear work
+    // without JS), matching the Products page pattern.
 
     window.openCreateContactModal = function () {
         document.getElementById('contactModalTitle').textContent = 'New Contact';
@@ -45,23 +26,44 @@
         document.getElementById('contactModal').style.display = 'flex';
     };
 
-    window.editContact = function (id, firstName, lastName, email, phone, company, jobTitle, country, notes) {
+    // Reads row data from the button's data-* attributes (safer than hand-escaped inline
+    // onclick args — no quote/newline/markup-injection risk).
+    window.editContactFromData = function (btn) {
         document.getElementById('contactModalTitle').textContent = 'Edit Contact';
-        document.getElementById('contactId').value = id;
-        document.getElementById('contactFirstName').value = firstName || '';
-        document.getElementById('contactLastName').value = lastName || '';
-        document.getElementById('contactEmail').value = email || '';
-        document.getElementById('contactPhone').value = phone || '';
-        document.getElementById('contactCompany').value = company || '';
-        document.getElementById('contactJobTitle').value = jobTitle || '';
-        document.getElementById('contactCountry').value = country || '';
-        document.getElementById('contactNotes').value = notes || '';
+        document.getElementById('contactId').value = btn.getAttribute('data-id') || '';
+        document.getElementById('contactFirstName').value = btn.getAttribute('data-first-name') || '';
+        document.getElementById('contactLastName').value = btn.getAttribute('data-last-name') || '';
+        document.getElementById('contactEmail').value = btn.getAttribute('data-email') || '';
+        document.getElementById('contactPhone').value = btn.getAttribute('data-phone') || '';
+        document.getElementById('contactCompany').value = btn.getAttribute('data-company') || '';
+        document.getElementById('contactJobTitle').value = btn.getAttribute('data-job-title') || '';
+        document.getElementById('contactCountry').value = btn.getAttribute('data-country') || '';
+        document.getElementById('contactNotes').value = btn.getAttribute('data-notes') || '';
         document.getElementById('contactModal').style.display = 'flex';
+    };
+
+    window.deactivateContactFromData = function (btn) {
+        deactivateContact(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
+    };
+
+    window.activateContactFromData = function (btn) {
+        activateContact(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
     };
 
     window.closeContactModal = function () {
         document.getElementById('contactModal').style.display = 'none';
     };
+
+    // Consistent modal dismissal: click the backdrop or press Escape to close.
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('contactModal');
+        if (modal) {
+            modal.addEventListener('click', function (e) { if (e.target === modal) closeContactModal(); });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal && modal.style.display !== 'none') closeContactModal();
+        });
+    });
 
     window.submitContact = async function () {
         var id = document.getElementById('contactId').value;

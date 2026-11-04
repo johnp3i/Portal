@@ -1,0 +1,127 @@
+@{
+    var editPaymentMethods = ViewBag.PaymentMethods as List<Portal.Infrastructure.Entities.PaymentMethodType>
+                             ?? new List<Portal.Infrastructure.Entities.PaymentMethodType>();
+}
+
+<!-- Edit Payment Modal — shared by the Revenue Dashboard and the Statement page. -->
+<div id="editPaymentModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.4);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,.15);">
+        <h3 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin:0 0 6px;">Edit Payment</h3>
+        <p style="font-size:14px;color:#5a6a7a;margin:0 0 20px;">Correct the payment method or reference. Amount and date cannot be changed.</p>
+
+        <!-- Read-only context (display only, not submitted) -->
+        <div style="background:#F7FAFC;border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#5a6a7a;line-height:1.7;">
+            <div>Customer: <strong id="editPaymentCustomer" style="color:#2a3a47;">—</strong></div>
+            <div>Invoice: <strong id="editPaymentInvoice" style="color:#2a3a47;">—</strong></div>
+            <div>Amount: <strong id="editPaymentAmount" style="color:#2a3a47;">—</strong></div>
+            <div>Date: <strong id="editPaymentDate" style="color:#2a3a47;">—</strong></div>
+        </div>
+
+        <form id="editPaymentForm" onsubmit="return false;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="editPaymentId" />
+
+            <div class="field" style="margin-bottom:16px;">
+                <label for="editPaymentMethod" style="font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:.04em;">Payment Method *</label>
+                <select id="editPaymentMethod" required style="width:100%;margin-top:6px;">
+                    @foreach (var method in editPaymentMethods)
+                    {
+                        <option value="@method.Id">@method.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="field" style="margin-bottom:20px;">
+                <label for="editPaymentReference" style="font-size:12px;font-weight:700;color:#5E7385;text-transform:uppercase;letter-spacing:.04em;">Reference</label>
+                <input type="text" id="editPaymentReference" maxlength="200" placeholder="e.g. TXN-12345" style="width:100%;margin-top:6px;" />
+            </div>
+
+            <div style="display:flex;gap:12px;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditPaymentModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditPayment()">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    /* Shared Edit Payment modal logic. Self-contained: relies only on globally available
+       BlockUI + Swal and the page's own antiforgery token input. Included once per page on
+       both the Revenue Dashboard and the Statement page. */
+
+    function openEditPaymentModal(paymentId, methodId, rawReference, customer, invoice, amount, date) {
+        document.getElementById('editPaymentId').value = paymentId;
+
+        var methodSelect = document.getElementById('editPaymentMethod');
+        if (methodId !== null && methodId !== undefined && methodId !== '') {
+            methodSelect.value = String(methodId);
+        }
+
+        document.getElementById('editPaymentReference').value = rawReference || '';
+        document.getElementById('editPaymentCustomer').textContent = customer || '—';
+        document.getElementById('editPaymentInvoice').textContent = invoice || '—';
+        document.getElementById('editPaymentAmount').textContent = amount || '—';
+        document.getElementById('editPaymentDate').textContent = date || '—';
+
+        document.getElementById('editPaymentModal').style.display = 'flex';
+    }
+
+    function closeEditPaymentModal() {
+        document.getElementById('editPaymentModal').style.display = 'none';
+    }
+
+    function editPaymentAntiForgeryToken() {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    async function submitEditPayment() {
+        var paymentId = document.getElementById('editPaymentId').value;
+        var methodId = document.getElementById('editPaymentMethod').value;
+        var reference = document.getElementById('editPaymentReference').value;
+
+        if (!methodId) {
+            Swal.fire({ icon: 'warning', title: 'Payment method required', text: 'Please choose a payment method.', confirmButtonColor: '#0D5EA6' });
+            return;
+        }
+
+        BlockUI.show('Saving payment...');
+        try {
+            var formData = new FormData();
+            formData.append('paymentId', paymentId);
+            formData.append('paymentMethodTypeId', methodId);
+            formData.append('reference', reference);
+
+            var response = await fetch('/Revenue/AxPostUpdatePaymentMethod', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': editPaymentAntiForgeryToken() },
+                body: formData
+            });
+            var data = await response.json();
+            BlockUI.hide();
+
+            if (data.success) {
+                closeEditPaymentModal();
+                Swal.fire({ icon: 'success', title: 'Payment updated', text: data.message, confirmButtonColor: '#0D5EA6' })
+                    .then(function () {
+                        // The host page may provide a lighter refresh (e.g. re-generate the
+                        // statement); otherwise fall back to a full reload.
+                        if (typeof window.onPaymentEdited === 'function') {
+                            window.onPaymentEdited();
+                        } else {
+                            location.reload();
+                        }
+                    });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+            }
+        } catch (e) {
+            BlockUI.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred. Please try again.', confirmButtonColor: '#0D5EA6' });
+        }
+    }
+
+    window.openEditPaymentModal = openEditPaymentModal;
+    window.closeEditPaymentModal = closeEditPaymentModal;
+    window.submitEditPayment = submitEditPayment;
+</script>

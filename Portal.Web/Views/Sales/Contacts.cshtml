@@ -8,7 +8,7 @@
 
 <div class="topbar">
     <div>
-        <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
+        <div class="eyebrow"><span class="dot"></span> Opportunities / Contacts</div>
         <h1 class="topbar-heading">Contacts</h1>
         <p class="topbar-subtitle">Manage your sales contacts directory.</p>
     </div>
@@ -19,16 +19,18 @@
 
 <!-- Search -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
-        <div class="field" style="min-width:280px;flex:1;">
-            <label>Search</label>
-            <input type="text" id="contactSearch" value="@searchTerm" placeholder="Name, email, phone, or company..." />
+    <form method="get" asp-action="Contacts">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="min-width:280px;flex:1;">
+                <label>Search</label>
+                <input type="text" name="search" value="@searchTerm" placeholder="Name, email, phone, or company..." />
+            </div>
+            <div style="padding-bottom:2px;">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="/Sales/Contacts" class="btn btn-secondary">Clear</a>
+            </div>
         </div>
-        <div style="padding-bottom:2px;">
-            <button class="btn btn-primary" onclick="searchContacts()">Search</button>
-            <button class="btn btn-secondary" onclick="clearContactSearch()">Clear</button>
-        </div>
-    </div>
+    </form>
 </section>
 
 <!-- Contacts Table -->
@@ -73,33 +75,40 @@
                         <td>@contact.CreatedAtUtc.ToString("dd MMM yyyy")</td>
                         <td style="white-space:nowrap;">
                             <a href="/Sales/ContactDetail/@contact.Id" class="tbl-action tbl-action--primary">Detail</a>
-                            <button class="tbl-action tbl-action--primary" onclick="editContact(@contact.Id, '@contact.FirstName.Replace("'", "\\'")','@(contact.LastName?.Replace("'", "\\'") ?? "")','@(contact.Email?.Replace("'", "\\'") ?? "")','@(contact.PhoneNumber?.Replace("'", "\\'") ?? "")','@(contact.CompanyName?.Replace("'", "\\'") ?? "")','@(contact.JobTitle?.Replace("'", "\\'") ?? "")','@(contact.Country?.Replace("'", "\\'") ?? "")','@(contact.Notes?.Replace("'", "\\'").Replace("\n", "\\n") ?? "")')">Edit</button>
+                            <button class="tbl-action tbl-action--primary"
+                                    data-id="@contact.Id"
+                                    data-first-name="@contact.FirstName"
+                                    data-last-name="@(contact.LastName ?? "")"
+                                    data-email="@(contact.Email ?? "")"
+                                    data-phone="@(contact.PhoneNumber ?? "")"
+                                    data-company="@(contact.CompanyName ?? "")"
+                                    data-job-title="@(contact.JobTitle ?? "")"
+                                    data-country="@(contact.Country ?? "")"
+                                    data-notes="@(contact.Notes ?? "")"
+                                    onclick="editContactFromData(this)">Edit</button>
                             @if (contact.IsActive)
                             {
-                                <button class="tbl-action tbl-action--danger" onclick="deactivateContact(@contact.Id, '@fullName')">Deactivate</button>
+                                <button class="tbl-action tbl-action--danger" data-id="@contact.Id" data-name="@fullName" onclick="deactivateContactFromData(this)">Deactivate</button>
                             }
                             else
                             {
-                                <button class="tbl-action tbl-action--secondary" onclick="activateContact(@contact.Id, '@fullName')">Activate</button>
+                                <button class="tbl-action tbl-action--secondary" data-id="@contact.Id" data-name="@fullName" onclick="activateContactFromData(this)">Activate</button>
                             }
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
-            <div style="font-size:14px;color:#5a6a7a;">Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)–@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount</div>
-            <div>
-                @if (Model.HasPreviousPage)
-                {
-                    <a href="/Sales/Contacts?search=@searchTerm&page=@(Model.CurrentPage - 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Previous</a>
-                }
-                @if (Model.HasNextPage)
-                {
-                    <a href="/Sales/Contacts?search=@searchTerm&page=@(Model.CurrentPage + 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Next</a>
-                }
-            </div>
-        </div>
+        @await Html.PartialAsync("_ListPager", new Portal.Web.Models.ListPagerModel
+        {
+            CurrentPage = Model.CurrentPage,
+            TotalPages = Model.TotalPages,
+            TotalCount = Model.TotalCount,
+            PageSize = Model.PageSize,
+            BasePath = "/Sales/Contacts",
+            SearchTerm = searchTerm,
+            ItemNoun = "contacts"
+        })
     }
 </section>
 
@@ -130,5 +139,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/contacts.js?v=3"></script>
+    <script src="~/js/sales/contacts.js?v=4"></script>
 }

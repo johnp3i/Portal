@@ -127,8 +127,8 @@
                     <td>@(p.SupplierDueDate.HasValue ? p.SupplierDueDate.Value.ToString("dd MMM yyyy") : "")</td>
                     <td>@(p.TargetPaymentDate.HasValue ? p.TargetPaymentDate.Value.ToString("dd MMM yyyy") : "")</td>
                     <td>@p.InvoiceNumber</td>
-                    <td><strong>@p.Supplier?.Name</strong></td>
-                    <td>@p.ExpenseCategory?.Name</td>
+                    <td><strong>@Model.SupplierName(p.SupplierId)</strong></td>
+                    <td>@Model.ExpenseCategoryName(p.ExpenseCategoryId)</td>
                     <td>@p.Description</td>
                     <td class="text-right">@Model.CurrencySymbol@p.AmountExcludingVat.ToString("N2")</td>
                     <td class="text-right">@Model.CurrencySymbol@p.VatAmount.ToString("N2")</td>

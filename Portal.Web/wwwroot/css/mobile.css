@@ -1855,7 +1855,10 @@
     }
 
     .filter-panel.expanded {
-        max-height: 600px;
+        /* Large cap so the fully-stacked panel is never clipped. Keeping a cap
+           (vs. none) preserves the collapse transition. 2000px comfortably fits
+           the tallest filter set (search + 6 selects + dates + sort + quick row). */
+        max-height: 2000px;
         padding-top: 12px !important;
         padding-bottom: 12px !important;
         margin-top: 12px !important;
@@ -1888,6 +1891,17 @@
         flex: 1 1 calc(50% - 4px) !important;
         min-width: calc(50% - 4px) !important;
         margin-bottom: 0 !important;
+    }
+
+    /* Panels whose direct children are wrapper rows (not bare .field) — e.g.
+       Purchase/Index groups fields inside intermediate flex divs. Force each
+       wrapper to a full-width block so its own flex-wrap lays the fields out
+       naturally. Without this the wrappers become undersized flex items and
+       leave a tall empty gap below the controls. */
+    .filter-panel.expanded > div {
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+        width: 100% !important;
     }
 
     /* Search field — always full width */

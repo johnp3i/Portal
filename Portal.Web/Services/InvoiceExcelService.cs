@@ -23,6 +23,7 @@ public class InvoiceExcelService : IInvoiceExcelService
     private readonly ICustomerService _customerService;
     private readonly IBusinessService _businessService;
     private readonly BusinessPaymentDetailRepository _paymentDetailRepository;
+    private readonly ICreditNoteService _creditNoteService;
     private readonly ILogger<InvoiceExcelService> _logger;
 
     public InvoiceExcelService(
@@ -32,6 +33,7 @@ public class InvoiceExcelService : IInvoiceExcelService
         ICustomerService customerService,
         IBusinessService businessService,
         BusinessPaymentDetailRepository paymentDetailRepository,
+        ICreditNoteService creditNoteService,
         ILogger<InvoiceExcelService> logger)
     {
         _invoiceService = invoiceService;
@@ -40,6 +42,7 @@ public class InvoiceExcelService : IInvoiceExcelService
         _customerService = customerService;
         _businessService = businessService;
         _paymentDetailRepository = paymentDetailRepository;
+        _creditNoteService = creditNoteService;
         _logger = logger;
     }
 
@@ -58,6 +61,7 @@ public class InvoiceExcelService : IInvoiceExcelService
             var business = await _businessService.GetBusinessByIdAsync(businessId);
             var profile = await _businessService.GetBusinessProfileAsync(businessId);
             var paymentDetails = await _paymentDetailRepository.GetByBusinessIdAsync(businessId);
+            var appliedCreditNotes = await _creditNoteService.GetAppliedCreditNotesForInvoiceAsync(invoiceId, businessId);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -149,7 +153,15 @@ public class InvoiceExcelService : IInvoiceExcelService
             }
 
             // ── Grand totals (mirror the PDF math) ──
-            if (invoice.IsGrandTotalShown)
+            // Count line-item groups (General + each non-empty named section). With a single group
+            // the grand-total block just repeats that group's Section Total, so render it only when
+            // there are multiple groups OR a document-level adjustment to surface — matching the
+            // PDF/Preview "don't show the second grand total for a single section" rule.
+            var groupCount = (unsectioned.Any() ? 1 : 0)
+                + orderedSections.Count(s => normalLines.Any(l => l.InvoiceSectionId == s.Id));
+            var hasMultipleGroups = groupCount > 1;
+
+            if (invoice.IsGrandTotalShown && (hasMultipleGroups || adjustmentLine != null))
             {
                 var grossSubtotal = normalLines.Sum(l => l.Quantity * l.UnitPrice);
                 var netSubtotal = normalLines.Sum(l => l.LineTotal);
@@ -168,6 +180,25 @@ public class InvoiceExcelService : IInvoiceExcelService
                     WriteTotalRow(sheet, ref row, totalsLabelCol, totalsValueCol, adjustmentLine.Description, -invoiceDiscount, money, bold: false, green: true);
                 WriteTotalRow(sheet, ref row, totalsLabelCol, totalsValueCol, "Tax", vat, money, bold: false);
                 WriteTotalRow(sheet, ref row, totalsLabelCol, totalsValueCol, "Total", invoice.TotalAmount, money, bold: true);
+            }
+
+            // ── Applied credit notes (reference only — does not change the invoice total) ──
+            if (appliedCreditNotes.Any())
+            {
+                var totalCredited = appliedCreditNotes.Sum(c => c.AmountApplied);
+                var netPayable = invoice.TotalAmount - totalCredited;
+
+                row++;
+                sheet.Cell(row, 1).Value = "Credit Note Applied";
+                sheet.Cell(row, 1).Style.Font.Bold = true;
+                sheet.Cell(row, 1).Style.Font.FontColor = XLColor.FromHtml("#129867");
+                row++;
+
+                foreach (var credit in appliedCreditNotes)
+                {
+                    WriteTotalRow(sheet, ref row, 4, 5, credit.CreditNoteNumber, -credit.AmountApplied, money, bold: false, green: true);
+                }
+                WriteTotalRow(sheet, ref row, 4, 5, "Net Amount Payable", netPayable, money, bold: true);
             }
 
             // ── Notes ──

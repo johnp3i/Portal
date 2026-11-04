@@ -17,6 +17,24 @@ public class PurchaseListViewModel
     // table render progressively over several seconds).
     public Dictionary<int, int> AttachmentCounts { get; set; } = new();
 
+    // Name lookups for the CURRENT page, resolved server-side including inactive suppliers/categories
+    // (the active-only service load left inactive ones blank). Keyed by the FK id.
+    public Dictionary<int, string> SupplierNames { get; set; } = new();
+    public Dictionary<int, string> ExpenseCategoryNames { get; set; } = new();
+
+    // Server-side pagination state.
+    public int CurrentPage { get; set; } = 1;
+    public int PageSize { get; set; } = 20;
+    public int TotalCount { get; set; }
+    public int TotalPages => PageSize > 0 ? (int)System.Math.Ceiling((double)TotalCount / PageSize) : 0;
+
+    // Aggregate KPIs over the FULL filtered set (not just the current page).
+    public Portal.Infrastructure.Models.PurchaseListAggregates Aggregates { get; set; } = new();
+
+    // Convenience display helpers for the current page rows.
+    public string SupplierName(int? id) => id.HasValue && SupplierNames.TryGetValue(id.Value, out var n) ? n : "";
+    public string ExpenseCategoryName(int? id) => id.HasValue && ExpenseCategoryNames.TryGetValue(id.Value, out var n) ? n : "";
+
     // Filter state
     public int? SupplierId { get; set; }
     public int? ExpenseCategoryId { get; set; }

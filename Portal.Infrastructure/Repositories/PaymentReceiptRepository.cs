@@ -274,6 +274,38 @@ public class PaymentReceiptRepository : GenericStoredProcedureRepository<Payment
     }
 
     /// <summary>
+    /// Cascades a payment's method/reference change onto its non-voided receipt snapshot (if any).
+    /// The receipt stores its own PaymentMethodTypeId/PaymentReference snapshot and the receipt
+    /// detail reads the method name from that snapshot, so this keeps a re-viewed receipt in sync.
+    /// Voided receipts are deliberately left untouched (cancelled data). Updating zero rows is a
+    /// valid no-op (no receipt, or only a voided receipt exists).
+    /// </summary>
+    public virtual async Task UpdateMethodAndReferenceByPaymentIdAsync(
+        int paymentId, int businessId, int paymentMethodTypeId, string? reference)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [revenue].[PaymentReceipt]
+                SET [PaymentMethodTypeId] = @PaymentMethodTypeId,
+                    [PaymentReference] = @PaymentReference
+                WHERE [revenue].[PaymentReceipt].[PaymentId] = @PaymentId
+                  AND [revenue].[PaymentReceipt].[BusinessId] = @BusinessId
+                  AND [revenue].[PaymentReceipt].[IsVoided] = 0";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@PaymentId", paymentId),
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@PaymentMethodTypeId", paymentMethodTypeId),
+                new SqlParameter("@PaymentReference", reference ?? (object)DBNull.Value));
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Voids a receipt (sets IsVoided = 1).
     /// </summary>
     public virtual async Task VoidAsync(int id, int businessId)

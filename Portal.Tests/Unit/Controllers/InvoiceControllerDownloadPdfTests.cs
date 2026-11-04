@@ -81,11 +81,14 @@ public class InvoiceControllerDownloadPdfTests
             vatPeriodRepository,
             _viewRenderServiceMock.Object,
             _invoicePdfServiceMock.Object,
+            Mock.Of<IInvoiceExcelService>(),
             Mock.Of<IPaymentInstructionsService>(),
             Mock.Of<IPlanCheckService>(),
             Mock.Of<IPermissionService>(),
             Mock.Of<IProductPriceTierService>(),
             new ProductRepository(portalDbContext),
+            Mock.Of<IProductAutocompleteService>(),
+            Mock.Of<ICreditNoteService>(),
             portalDbContext,
             _loggerMock.Object);
 

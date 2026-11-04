@@ -23,6 +23,7 @@ public class CreditNoteController : Controller
     private readonly VatSubmissionPeriodRepository _vatPeriodRepository;
     private readonly ICreditNoteRenderer _creditNoteRenderer;
     private readonly ILogoService _logoService;
+    private readonly IPlanCheckService _planCheckService;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<CreditNoteController> _logger;
 
@@ -34,6 +35,7 @@ public class CreditNoteController : Controller
         VatSubmissionPeriodRepository vatPeriodRepository,
         ICreditNoteRenderer creditNoteRenderer,
         ILogoService logoService,
+        IPlanCheckService planCheckService,
         IWebHostEnvironment environment,
         ILogger<CreditNoteController> logger)
     {
@@ -44,9 +46,16 @@ public class CreditNoteController : Controller
         _vatPeriodRepository = vatPeriodRepository;
         _creditNoteRenderer = creditNoteRenderer;
         _logoService = logoService;
+        _planCheckService = planCheckService;
         _environment = environment;
         _logger = logger;
     }
+
+    /// <summary>
+    /// Whether account-level (invoice-less) credit notes are enabled for the current business.
+    /// </summary>
+    private Task<bool> IsAccountCreditEnabledAsync()
+        => _planCheckService.IsModuleInPlanAsync(PortalModules.CreditAccountLevel);
 
     [HttpGet]
     public async Task<IActionResult> Index()
@@ -73,33 +82,42 @@ public class CreditNoteController : Controller
         var vatPeriods = await _vatPeriodRepository.GetUnsubmittedPeriodsFromAsync(
             businessId, DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-2)));
         var profile = await _businessService.GetBusinessProfileAsync(businessId);
+        var accountCreditEnabled = await IsAccountCreditEnabledAsync();
+        var customers = accountCreditEnabled
+            ? await _customerService.GetCustomersAsync(null, true)
+            : null;
 
         ViewBag.EligibleInvoices = eligibleInvoices;
         ViewBag.VatPeriods = vatPeriods;
         ViewBag.DefaultVatPeriodId = vatPeriods.LastOrDefault()?.Id;
         ViewBag.CurrencySymbol = profile?.CurrencySymbol ?? "€";
+        ViewBag.AccountCreditEnabled = accountCreditEnabled;
+        ViewBag.Customers = customers;
 
         return View();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(int invoiceId, DateOnly issueDate, string reason,
+    public async Task<IActionResult> Create(int? invoiceId, int? customerId, DateOnly issueDate, string reason,
         int vatSubmissionPeriodId, List<CreateCreditNoteLineDto> lines)
     {
         var businessId = _tenantService.CurrentBusinessId;
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var accountCreditEnabled = await IsAccountCreditEnabledAsync();
 
         var dto = new CreateCreditNoteDto
         {
-            InvoiceId = invoiceId,
+            // A missing/zero invoiceId means account mode (credit to customer account).
+            InvoiceId = invoiceId.HasValue && invoiceId.Value > 0 ? invoiceId : null,
+            CustomerId = customerId,
             IssueDate = issueDate,
             Reason = reason,
             VatSubmissionPeriodId = vatSubmissionPeriodId,
             Lines = lines ?? new List<CreateCreditNoteLineDto>()
         };
 
-        var result = await _creditNoteService.CreateCreditNoteAsync(dto, businessId, userId);
+        var result = await _creditNoteService.CreateCreditNoteAsync(dto, businessId, userId, accountCreditEnabled);
 
         if (result.Success)
         {
@@ -112,10 +130,15 @@ public class CreditNoteController : Controller
         var eligibleInvoices = await _creditNoteService.GetEligibleInvoicesAsync(businessId);
         var vatPeriods = await _vatPeriodRepository.GetUnsubmittedPeriodsFromAsync(
             businessId, DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-2)));
+        var customers = accountCreditEnabled
+            ? await _customerService.GetCustomersAsync(null, true)
+            : null;
 
         ViewBag.EligibleInvoices = eligibleInvoices;
         ViewBag.VatPeriods = vatPeriods;
         ViewBag.DefaultVatPeriodId = vatSubmissionPeriodId;
+        ViewBag.AccountCreditEnabled = accountCreditEnabled;
+        ViewBag.Customers = customers;
 
         return View();
     }
@@ -238,6 +261,46 @@ public class CreditNoteController : Controller
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _creditNoteService.VoidCreditNoteAsync(id, businessId, userId);
             return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    /// <summary>
+    /// Manually applies an account-level credit note's available balance across one or more of the
+    /// customer's outstanding invoices. Called from the Detail "Apply credit" modal.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostApplyAccountCredit([FromBody] ApplyAccountCreditDto dto)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _creditNoteService.ApplyAccountCreditAsync(dto, businessId, userId);
+            return Json(new { success = result.Success, message = result.Success ? "Credit applied successfully." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AxPostApplyAccountCredit failed for creditNoteId={CreditNoteId}", dto?.CreditNoteId);
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    /// <summary>
+    /// Returns a customer's outstanding invoices for the account-credit apply modal.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetCustomerOutstandingInvoices(int customerId)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var invoices = await _creditNoteService.GetOutstandingInvoicesForCustomerAsync(customerId, businessId);
+            return Json(new { success = true, data = invoices });
         }
         catch (Exception)
         {

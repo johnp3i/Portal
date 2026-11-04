@@ -112,7 +112,7 @@ public class PlanFeatureModuleNamePropertyTests
     [Fact]
     public void ValidModuleSet_ContainsAllModules()
     {
-        Assert.Equal(24, PortalModules.All.Length);
+        Assert.Equal(34, PortalModules.All.Length);
 
         // Original 9 modules
         Assert.Contains("customer", PortalModules.All);

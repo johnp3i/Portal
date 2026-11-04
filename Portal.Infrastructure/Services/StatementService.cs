@@ -141,7 +141,11 @@ public class StatementService : IStatementService
                 InvoiceId = payment.InvoiceId,
                 RunningBalance = 0m,
                 PaymentId = payment.Id,
-                IsVoided = false
+                IsVoided = false,
+                // Raw values for the Edit Payment modal pre-fill (the Reference above is a composite
+                // display string unsuitable for editing).
+                PaymentMethodTypeId = payment.PaymentMethodTypeId,
+                RawReference = payment.Reference
             });
         }
 

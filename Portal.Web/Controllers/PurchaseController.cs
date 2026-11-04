@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Constants;
 using Portal.Infrastructure.Data;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Models;
 using Portal.Infrastructure.Services;
 using Portal.Web.Models;
 using Portal.Web.Security;
@@ -26,6 +27,7 @@ public class PurchaseController : Controller
     private readonly IViewRenderService _viewRenderService;
     private readonly IPlanCheckService _planCheckService;
     private readonly IDocumentAttachmentService _attachmentService;
+    private readonly ILogger<PurchaseController> _logger;
 
     public PurchaseController(
         IPurchaseService purchaseService,
@@ -35,7 +37,8 @@ public class PurchaseController : Controller
         PortalDbContext dbContext,
         IViewRenderService viewRenderService,
         IPlanCheckService planCheckService,
-        IDocumentAttachmentService attachmentService)
+        IDocumentAttachmentService attachmentService,
+        ILogger<PurchaseController> logger)
     {
         _purchaseService = purchaseService;
         _supplierService = supplierService;
@@ -45,15 +48,70 @@ public class PurchaseController : Controller
         _viewRenderService = viewRenderService;
         _planCheckService = planCheckService;
         _attachmentService = attachmentService;
+        _logger = logger;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy)
-    {
-        var purchases = await GetFilteredPurchasesForExportAsync(supplierId, expenseCategoryId, purchaseOriginTypeId, purchaseTypeId, vatPeriodId, dateFrom, dateTo, searchTerm);
+    // Cookie that remembers the last-used purchase filter query string, so returning to a bare
+    // /Purchase restores the previous filters. Handled server-side (a single 302 before any HTML
+    // renders) instead of a client redirect — a client redirect painted the table, aborted the
+    // request (NS_BINDING_ABORTED), and reloaded, causing a slow triple-render on load.
+    private const string PurchaseFilterCookie = "purchase_filter_qs";
 
-        // Load VAT periods for discrepancy badge display
+    // Fixed page size for the purchases list (server-side paging).
+    private const int PurchasePageSize = 20;
+
+    [HttpGet]
+    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy, int page = 1)
+    {
+        // The filter query (everything except the page number) is what we persist/restore.
+        var hasAnyFilter = supplierId.HasValue || expenseCategoryId.HasValue || purchaseOriginTypeId.HasValue
+            || purchaseTypeId.HasValue || vatPeriodId.HasValue || dateFrom.HasValue || dateTo.HasValue
+            || !string.IsNullOrWhiteSpace(searchTerm) || !string.IsNullOrWhiteSpace(sortBy);
+
+        if (hasAnyFilter)
+        {
+            // Persist the current filter query so we can restore it next time the user lands on a
+            // bare /Purchase (e.g. via the sidebar link). HttpOnly: nothing reads it from JS now
+            // that restore is server-side.
+            Response.Cookies.Append(PurchaseFilterCookie, Request.QueryString.Value ?? string.Empty,
+                new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, MaxAge = TimeSpan.FromDays(7) });
+        }
+        else
+        {
+            // Bare request: if we have a saved filter, redirect once (server-side) to restore it.
+            // Validate the cookie is a pure, local query string before reflecting it into a redirect
+            // (defence against a tampered cookie forcing an off-site or path-changing redirect).
+            var saved = Request.Cookies[PurchaseFilterCookie];
+            if (IsSafeFilterQuery(saved))
+            {
+                return Redirect("/Purchase" + saved);
+            }
+        }
+
         var businessId = _currentTenantService.CurrentBusinessId;
+
+        var filter = new PurchaseListFilter
+        {
+            SupplierId = supplierId,
+            ExpenseCategoryId = expenseCategoryId,
+            PurchaseOriginTypeId = purchaseOriginTypeId,
+            PurchaseTypeId = purchaseTypeId,
+            VatPeriodId = vatPeriodId,
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            SearchTerm = searchTerm,
+            SortBy = sortBy
+        };
+
+        // One page of rows + the total count (filter/search/sort/page all run in SQL), plus the
+        // aggregate KPIs over the full filtered set (independent of the page).
+        if (page < 1) page = 1;
+        var paged = await _purchaseService.GetPagedListAsync(filter, page, PurchasePageSize);
+        var aggregates = await _purchaseService.GetListAggregatesAsync(filter);
+        var purchases = paged.Items;
+
+        // VAT periods: full list for the filter dropdown; also used to stamp the discrepancy badge
+        // on the page's rows.
         var vatPeriods = await _dbContext.VatSubmissionPeriods
             .Where(p => p.BusinessId == businessId)
             .ToListAsync();
@@ -67,14 +125,16 @@ public class PurchaseController : Controller
             }
         }
 
-        // Batch-load attachment counts for all purchases in a single query. Rendering the paperclip
-        // badge via a per-row view component previously issued one count query per row, so a list of
-        // ~1000 purchases triggered ~1000 sequential queries and the table streamed in over several
-        // seconds. One batched lookup keeps the list fast and the page paints in a single pass.
+        // Attachment counts for the page only (batch, single query).
         var purchaseIds = purchases.Select(p => p.Id).ToArray();
         var attachmentCounts = purchaseIds.Length > 0
             ? await _attachmentService.GetCountsForEntitiesAsync(businessId, "Purchase", purchaseIds)
             : new Dictionary<int, int>();
+
+        // Supplier / category names for the page (incl. inactive — the active-only lists below are
+        // for the filter dropdowns and would leave inactive FKs showing blank in the rows).
+        var supplierNames = await _purchaseService.GetSupplierNamesAsync(purchases.Select(p => p.SupplierId));
+        var categoryNames = await _purchaseService.GetExpenseCategoryNamesAsync(purchases.Select(p => p.ExpenseCategoryId));
 
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var categories = await _expenseCategoryService.GetActiveExpenseCategoriesAsync();
@@ -98,7 +158,8 @@ public class PurchaseController : Controller
         }
         catch (Exception ex)
         {
-            // If plan check fails, do not show teaser
+            // If plan check fails, do not show teaser.
+            _logger.LogWarning(ex, "Expense Insights teaser plan check failed; hiding teaser.");
             showExpenseInsightsTeaser = false;
         }
 
@@ -112,6 +173,12 @@ public class PurchaseController : Controller
             VatPeriods = vatPeriods,
             CurrencySymbol = currencySymbol,
             AttachmentCounts = attachmentCounts,
+            SupplierNames = supplierNames,
+            ExpenseCategoryNames = categoryNames,
+            CurrentPage = paged.CurrentPage,
+            PageSize = paged.PageSize,
+            TotalCount = paged.TotalCount,
+            Aggregates = aggregates,
             SupplierId = supplierId,
             ExpenseCategoryId = expenseCategoryId,
             PurchaseOriginTypeId = purchaseOriginTypeId,
@@ -128,12 +195,39 @@ public class PurchaseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ExportCsv(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    public async Task<IActionResult> ExportCsv(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy)
     {
-        var purchases = await GetFilteredPurchasesForExportAsync(supplierId, expenseCategoryId, purchaseOriginTypeId, purchaseTypeId, vatPeriodId, dateFrom, dateTo, searchTerm);
-        var businessId = _currentTenantService.CurrentBusinessId;
-        var profile = await _dbContext.BusinessProfiles.FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
-        var currencySymbol = profile?.CurrencySymbol ?? "€";
+        var filter = new PurchaseListFilter
+        {
+            SupplierId = supplierId,
+            ExpenseCategoryId = expenseCategoryId,
+            PurchaseOriginTypeId = purchaseOriginTypeId,
+            PurchaseTypeId = purchaseTypeId,
+            VatPeriodId = vatPeriodId,
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            SearchTerm = searchTerm,
+            SortBy = sortBy
+        };
+        var purchases = await _purchaseService.GetFilteredForExportAsync(filter);
+
+        // Resolve supplier/category names (incl. inactive) for the exported set — the raw query does
+        // not populate navigation properties, so reading p.Supplier?.Name here would be null.
+        var supplierNames = await _purchaseService.GetSupplierNamesAsync(purchases.Select(p => p.SupplierId));
+        var categoryNames = await _purchaseService.GetExpenseCategoryNamesAsync(purchases.Select(p => p.ExpenseCategoryId));
+
+        // CSV field escaping: wrap every field in quotes, double any embedded quote, and neutralise
+        // leading =, +, -, @ (and tab/CR) so spreadsheet apps don't execute a field as a formula
+        // (CSV injection).
+        static string CsvField(string? v)
+        {
+            var s = v ?? string.Empty;
+            if (s.Length > 0 && (s[0] == '=' || s[0] == '+' || s[0] == '-' || s[0] == '@' || s[0] == '\t' || s[0] == '\r'))
+            {
+                s = "'" + s;
+            }
+            return "\"" + s.Replace("\"", "\"\"") + "\"";
+        }
 
         var csv = new StringBuilder();
         csv.AppendLine("Invoice Number,Supplier,Date,Supplier Due Date,Target Payment Date,Description,Excl. VAT,VAT,Total,Origin,Category,Type,Status");
@@ -154,9 +248,24 @@ public class PurchaseController : Controller
                 3 => "Expense",
                 _ => ""
             };
+            var supplierName = supplierNames.TryGetValue(p.SupplierId, out var sn) ? sn : "";
+            var categoryName = categoryNames.TryGetValue(p.ExpenseCategoryId, out var cn) ? cn : "";
             var supplierDueStr = p.SupplierDueDate.HasValue ? p.SupplierDueDate.Value.ToString("yyyy-MM-dd") : "";
             var targetDateStr = p.TargetPaymentDate.HasValue ? p.TargetPaymentDate.Value.ToString("yyyy-MM-dd") : "";
-            csv.AppendLine($"\"{p.InvoiceNumber}\",\"{p.Supplier?.Name}\",{p.InvoiceDate:yyyy-MM-dd},{supplierDueStr},{targetDateStr},\"{p.Description}\",{p.AmountExcludingVat:F2},{p.VatAmount:F2},{p.TotalAmount:F2},\"{originName}\",\"{p.ExpenseCategory?.Name}\",\"{typeName}\",\"{(p.IsCancelled ? "Cancelled" : "Active")}\"");
+            csv.AppendLine(string.Join(",",
+                CsvField(p.InvoiceNumber),
+                CsvField(supplierName),
+                p.InvoiceDate.ToString("yyyy-MM-dd"),
+                supplierDueStr,
+                targetDateStr,
+                CsvField(p.Description),
+                p.AmountExcludingVat.ToString("F2"),
+                p.VatAmount.ToString("F2"),
+                p.TotalAmount.ToString("F2"),
+                CsvField(originName),
+                CsvField(categoryName),
+                CsvField(typeName),
+                CsvField(p.IsCancelled ? "Cancelled" : "Active")));
         }
 
         var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
@@ -164,18 +273,36 @@ public class PurchaseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ExportPdf(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    public async Task<IActionResult> ExportPdf(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy)
     {
-        var purchases = await GetFilteredPurchasesForExportAsync(supplierId, expenseCategoryId, purchaseOriginTypeId, purchaseTypeId, vatPeriodId, dateFrom, dateTo, searchTerm);
+        var filter = new PurchaseListFilter
+        {
+            SupplierId = supplierId,
+            ExpenseCategoryId = expenseCategoryId,
+            PurchaseOriginTypeId = purchaseOriginTypeId,
+            PurchaseTypeId = purchaseTypeId,
+            VatPeriodId = vatPeriodId,
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            SearchTerm = searchTerm,
+            SortBy = sortBy
+        };
+        var purchases = await _purchaseService.GetFilteredForExportAsync(filter);
         var businessId = _currentTenantService.CurrentBusinessId;
         var profile = await _dbContext.BusinessProfiles.FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
         var currencySymbol = profile?.CurrencySymbol ?? "€";
+
+        // Resolve names (incl. inactive) so the PDF shows supplier/category on every row.
+        var supplierNames = await _purchaseService.GetSupplierNamesAsync(purchases.Select(p => p.SupplierId));
+        var categoryNames = await _purchaseService.GetExpenseCategoryNamesAsync(purchases.Select(p => p.ExpenseCategoryId));
 
         var model = new PurchaseExportPdfModel
         {
             Purchases = purchases,
             CurrencySymbol = currencySymbol,
-            GeneratedAt = DateTime.Now
+            GeneratedAt = DateTime.Now,
+            SupplierNames = supplierNames,
+            ExpenseCategoryNames = categoryNames
         };
 
         var html = await _viewRenderService.RenderViewToStringAsync("~/Views/Purchase/_ExportPdf.cshtml", model);
@@ -353,6 +480,7 @@ public class PurchaseController : Controller
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to set paid state for purchase {PurchaseId} (isPaid={IsPaid})", id, isPaid);
             return Json(new { success = false, message = "Something went wrong. Please try again." });
         }
     }
@@ -392,6 +520,7 @@ public class PurchaseController : Controller
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load recent category for supplier {SupplierId}", supplierId);
             return Json(new { success = false, message = "Failed to load recent category." });
         }
     }
@@ -669,38 +798,16 @@ public class PurchaseController : Controller
 
     #region Private Helpers
 
-    private async Task<List<Purchase>> GetFilteredPurchasesForExportAsync(
-        int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId,
-        int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm)
+    // A saved filter cookie is only safe to reflect into a redirect if it is a pure, local query
+    // string: starts with '?', contains no scheme or path-changing sequences. Guards against a
+    // tampered cookie forcing an off-site or path-changing redirect.
+    private static bool IsSafeFilterQuery(string? saved)
     {
-        var purchases = await _purchaseService.GetFilteredPurchasesAsync(supplierId, expenseCategoryId, dateFrom, dateTo);
-
-        if (purchaseOriginTypeId.HasValue)
-        {
-            purchases = purchases.Where(p => p.PurchaseOriginTypeId == purchaseOriginTypeId.Value).ToList();
-        }
-
-        if (purchaseTypeId.HasValue)
-        {
-            purchases = purchases.Where(p => p.PurchaseTypeId == purchaseTypeId.Value).ToList();
-        }
-
-        if (vatPeriodId.HasValue)
-        {
-            purchases = purchases.Where(p => p.VatSubmissionPeriodId == vatPeriodId.Value).ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var term = searchTerm.Trim();
-            purchases = purchases.Where(p =>
-                (p.Description != null && p.Description.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                (p.InvoiceNumber != null && p.InvoiceNumber.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                (p.Supplier?.Name != null && p.Supplier.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
-            ).ToList();
-        }
-
-        return purchases;
+        if (string.IsNullOrWhiteSpace(saved) || saved.Length < 2) return false;
+        if (!saved.StartsWith("?")) return false;
+        if (saved.Contains("//") || saved.Contains('\\')) return false;
+        if (saved.Contains(':')) return false; // no scheme-like content
+        return true;
     }
 
     private async Task<PurchaseFormViewModel> BuildFormViewModelAsync()

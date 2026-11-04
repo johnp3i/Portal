@@ -915,33 +915,57 @@
         try {
             var response = await fetch('/Sales/AxGetContactsSearch?page=1');
             var result = await response.json();
-            if (result.success) {
-                var select = document.getElementById('meetingContactId');
-                select.innerHTML = '<option value="">Select contact...</option>';
-                result.data.forEach(function (c) {
-                    var label = c.fullName + (c.companyName ? ' \u2014 ' + c.companyName : '');
-                    select.innerHTML += '<option value="' + c.id + '">' + escapeHtml(label) + '</option>';
-                });
+            if (!result.success) return;
 
-                // Pre-select contact from query string if present
-                var params = new URLSearchParams(window.location.search);
-                var preselectedContact = params.get('contactId');
-                if (preselectedContact) {
-                    select.value = preselectedContact;
-                    select.disabled = true;
-                    select.style.opacity = '0.7';
-                    select.style.cursor = 'not-allowed';
-                }
+            var select = document.getElementById('meetingContactId');
+            select.innerHTML = '<option value="">Select contact...</option>';
+            result.data.forEach(function (c) {
+                var label = c.fullName + (c.companyName ? ' \u2014 ' + c.companyName : '');
+                select.innerHTML += '<option value="' + c.id + '" data-loaded="1">' + escapeHtml(label) + '</option>';
+            });
 
-                // Auto-open modal if coming from Lead Detail
-                var leadRequestId = params.get('leadRequestId');
-                if (leadRequestId) {
-                    openCreateMeetingModal();
-                }
+            // Pre-select contact from query string if present (e.g. arriving from Lead Detail).
+            var params = new URLSearchParams(window.location.search);
+            var preselectedContact = params.get('contactId');
+            if (preselectedContact) {
+                // The dropdown only holds the first page of contacts, so the lead's contact may
+                // not be in the list. If it's missing, fetch that specific contact and inject it
+                // as an option — otherwise `select.value = id` silently fails, leaving the
+                // (then disabled) dropdown blank and submission failing validation.
+                await ensureContactOption(select, preselectedContact);
+                select.value = preselectedContact;
+                select.disabled = true;
+                select.style.opacity = '0.7';
+                select.style.cursor = 'not-allowed';
+            }
+
+            // Auto-open modal if coming from Lead Detail
+            var leadRequestId = params.get('leadRequestId');
+            if (leadRequestId) {
+                openCreateMeetingModal();
             }
         } catch (e) {
             console.error('Failed to load contacts', e);
         }
+    }
+
+    // Guarantees the given contact id exists as an <option> in the select. If it's already
+    // present (from the first-page list) this is a no-op; otherwise it fetches the single
+    // contact and injects it so a query-string preselection always resolves.
+    async function ensureContactOption(select, contactId) {
+        if (select.querySelector('option[value="' + contactId + '"]')) return;
+        try {
+            var response = await fetch('/Sales/AxGetContactDetail?id=' + encodeURIComponent(contactId));
+            var result = await response.json();
+            if (result.success && result.data) {
+                var c = result.data;
+                var label = c.fullName + (c.companyName ? ' \u2014 ' + c.companyName : '');
+                var opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = label;
+                select.appendChild(opt);
+            }
+        } catch (e) { /* fall through — value simply won't resolve, same as before */ }
     }
 
     // ─── Initialization ─────────────────────────────────────────

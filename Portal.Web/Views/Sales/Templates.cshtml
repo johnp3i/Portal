@@ -10,7 +10,7 @@
 
 <div class="topbar">
     <div>
-        <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
+        <div class="eyebrow"><span class="dot"></span> Opportunities / Templates</div>
         <h1 class="topbar-heading">Response Templates</h1>
         <p class="topbar-subtitle">Manage reusable templates for responding to leads.</p>
     </div>
@@ -158,30 +158,26 @@ The @("{{BusinessName}}") Team</p>
                             <button class="tbl-action tbl-action--primary" onclick="editTemplate(@template.Id)">Edit</button>
                             @if (template.IsActive)
                             {
-                                <button class="tbl-action tbl-action--danger" onclick="deactivateTemplate(@template.Id, '@(template.Name.Replace("'", "\\'"))')">Deactivate</button>
+                                <button class="tbl-action tbl-action--danger" data-id="@template.Id" data-name="@template.Name" onclick="deactivateTemplateFromData(this)">Deactivate</button>
                             }
                             else
                             {
-                                <button class="tbl-action tbl-action--secondary" onclick="activateTemplate(@template.Id, '@(template.Name.Replace("'", "\\'"))')">Activate</button>
+                                <button class="tbl-action tbl-action--secondary" data-id="@template.Id" data-name="@template.Name" onclick="activateTemplateFromData(this)">Activate</button>
                             }
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
-            <div style="font-size:14px;color:#5a6a7a;">Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)–@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount</div>
-            <div>
-                @if (Model.HasPreviousPage)
-                {
-                    <a href="/Sales/Templates?page=@(Model.CurrentPage - 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Previous</a>
-                }
-                @if (Model.HasNextPage)
-                {
-                    <a href="/Sales/Templates?page=@(Model.CurrentPage + 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Next</a>
-                }
-            </div>
-        </div>
+        @await Html.PartialAsync("_ListPager", new Portal.Web.Models.ListPagerModel
+        {
+            CurrentPage = Model.CurrentPage,
+            TotalPages = Model.TotalPages,
+            TotalCount = Model.TotalCount,
+            PageSize = Model.PageSize,
+            BasePath = "/Sales/Templates",
+            ItemNoun = "templates"
+        })
     }
 </section>
 
@@ -358,6 +354,17 @@ The @("{{BusinessName}}") Team</p>
             document.getElementById('templateModal').style.display = 'none';
         };
 
+        // Consistent modal dismissal: click the backdrop or press Escape to close.
+        (function () {
+            var modal = document.getElementById('templateModal');
+            if (modal) {
+                modal.addEventListener('click', function (e) { if (e.target === modal) closeTemplateModal(); });
+            }
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal && modal.style.display !== 'none') closeTemplateModal();
+            });
+        })();
+
         window.submitTemplate = async function () {
             var id = document.getElementById('templateId').value;
             var bodyHtml = templateQuill ? templateQuill.root.innerHTML : '';
@@ -402,6 +409,14 @@ The @("{{BusinessName}}") Team</p>
                 BlockUI.hide();
                 Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonColor: '#0D5EA6' });
             }
+        };
+
+        // Read row data from the button's data-* attributes (safer than hand-escaped inline args).
+        window.deactivateTemplateFromData = function (btn) {
+            deactivateTemplate(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
+        };
+        window.activateTemplateFromData = function (btn) {
+            activateTemplate(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
         };
 
         window.deactivateTemplate = function (id, name) {

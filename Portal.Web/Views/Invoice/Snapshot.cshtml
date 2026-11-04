@@ -178,6 +178,18 @@
         var orderedSections = invoiceSections.OrderBy(s => s.SortOrder).ToList();
         var sectionedLineGroups = normalLines.Where(l => l.InvoiceSectionId != null).GroupBy(l => l.InvoiceSectionId).ToDictionary(g => g.Key!.Value, g => g.OrderBy(l => l.SortOrder).ToList());
         var unsectionedLines = normalLines.Where(l => l.InvoiceSectionId == null).OrderBy(l => l.SortOrder).ToList();
+        var lineItemSections = orderedSections.Where(s => s.SectionType != "Narrative").ToList();
+        var narrativeSections = orderedSections.Where(s => s.SectionType == "Narrative").ToList();
+
+        // Count line-item groups (General + each non-empty named section). When there is exactly
+        // one group, the applied credit note is merged into that single group's totals card (more
+        // compact) rather than rendered as a separate card below the grand total.
+        var lineItemGroupCount = (unsectionedLines.Any() ? 1 : 0)
+            + lineItemSections.Count(s => sectionedLineGroups.ContainsKey(s.Id) && sectionedLineGroups[s.Id].Any());
+        var isSingleGroup = lineItemGroupCount == 1;
+        var totalCredited = Model.AppliedCreditNotes.Sum(c => c.AmountApplied);
+        // Merge credit rows into the General card only when General is the sole group.
+        var mergeCreditIntoGeneral = Model.AppliedCreditNotes.Any() && isSingleGroup && unsectionedLines.Any();
     }
 
     @if (unsectionedLines.Any())
@@ -232,15 +244,28 @@
         <div class="totals-card">
             <div class="totals-row"><span class="label">Section Subtotal</span><span class="value">@currencySymbol@genSubtotal.ToString("N2")</span></div>
             <div class="totals-row"><span class="label">Section VAT</span><span class="value">@currencySymbol@genVat.ToString("N2")</span></div>
-            <div class="totals-row"><span class="label">Section Total</span><span class="value">@currencySymbol@genTotal.ToString("N2")</span></div>
+            @* The Section Total (invoice total) stays the headline figure. When a credit note is
+               merged below, the Net Amount Payable is a smaller green secondary line — "what's
+               left to pay after the credit" — without stealing emphasis from the total. *@
+            <div class="totals-row grand-total"><span class="label">Section Total</span><span class="value">@currencySymbol@genTotal.ToString("N2")</span></div>
+            @if (mergeCreditIntoGeneral)
+            {
+                @* Single-section invoice: fold the applied credit note into this one card (a
+                   stronger divider separates "what was invoiced" from "what's left to pay")
+                   instead of adding a second card below. *@
+                <div style="border-top:2px solid var(--border);margin-top:6px;padding-top:6px;">
+                    <div style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#129867;margin-bottom:4px;">Credit Note Applied</div>
+                    @foreach (var credit in Model.AppliedCreditNotes)
+                    {
+                        <div class="totals-row" style="border-top:none;padding-top:4px;"><span class="label">@credit.CreditNoteNumber</span><span class="value" style="color:#129867;">-@currencySymbol@credit.AmountApplied.ToString("N2")</span></div>
+                    }
+                    <div class="totals-row" style="border-top:none;padding-top:4px;"><span class="label" style="color:#129867;font-weight:700;">Net Amount Payable</span><span class="value" style="color:#129867;font-weight:800;font-size:16px;">@currencySymbol@((invoice.TotalAmount - totalCredited).ToString("N2"))</span></div>
+                </div>
+            }
         </div>
         </div>
     }
 
-    @{
-        var lineItemSections = orderedSections.Where(s => s.SectionType != "Narrative").ToList();
-        var narrativeSections = orderedSections.Where(s => s.SectionType == "Narrative").ToList();
-    }
 
     @foreach (var invSec in lineItemSections)
     {
@@ -375,9 +400,14 @@
         </table>
     }
 
-    <!-- Grand Totals -->
-    @if (invoice.IsGrandTotalShown)
-    {
+    @*
+        Grand Totals card. Only meaningful when there are multiple line-item groups to sum across —
+        with a single group its figures duplicate that group's own Section Total card, producing the
+        redundant "second grand total" box. So render it only when hasMultipleGroups AND the invoice
+        opted in via IsGrandTotalShown. (IsGrandTotalShown alone no longer forces it for single-section
+        invoices, so the user doesn't have to remember to disable the toggle.)
+    *@
+    @{
         var grossSubtotal = normalLines.Sum(l => l.Quantity * l.UnitPrice);
         var netSubtotal = normalLines.Sum(l => l.LineTotal);
         var lineDiscounts = grossSubtotal - netSubtotal;
@@ -385,7 +415,14 @@
         var netAmount = netSubtotal - invoiceDiscount;
         var vat = Math.Round(normalLines.Sum(l => l.LineTotal * l.VatRate / 100m), 2);
         var total = netAmount + vat;
-
+    }
+    @{
+        // Also keep the grand-total card for a single group when it carries information the
+        // per-section card does not show — a bulk/invoice-level discount (adjustmentLine).
+        var showGrandTotal = invoice.IsGrandTotalShown && (hasMultipleGroups || adjustmentLine != null);
+    }
+    @if (showGrandTotal)
+    {
     <div class="totals-card" style="margin-top:32px;">
         <div class="totals-row"><span class="label">Subtotal</span><span class="value">@currencySymbol@grossSubtotal.ToString("N2")</span></div>
         @if (lineDiscounts > 0)
@@ -399,6 +436,24 @@
         <div class="totals-row"><span class="label">Tax</span><span class="value">@currencySymbol@vat.ToString("N2")</span></div>
         <div class="totals-row grand-total"><span class="label">Total</span><span class="value">@currencySymbol@total.ToString("N2")</span></div>
     </div>
+    }
+
+    @*
+        Applied Credit Notes note — a credit note is a separate document that reduces what the
+        customer owes; it does NOT change the invoice total. For a single-section invoice this is
+        folded into the General totals card above (mergeCreditIntoGeneral); here we render the
+        standalone card only for the multi-section case so it reads as applying to the whole invoice.
+    *@
+    @if (Model.AppliedCreditNotes.Any() && !mergeCreditIntoGeneral)
+    {
+        <div class="totals-card" style="margin-top:16px;border:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#129867;margin-bottom:8px;">Credit Note Applied</div>
+            @foreach (var credit in Model.AppliedCreditNotes)
+            {
+                <div class="totals-row"><span class="label">@credit.CreditNoteNumber</span><span class="value" style="color:#129867;">-@currencySymbol@credit.AmountApplied.ToString("N2")</span></div>
+            }
+            <div class="totals-row"><span class="label" style="color:#129867;font-weight:700;">Net Amount Payable</span><span class="value" style="color:#129867;font-weight:800;font-size:16px;">@currencySymbol@((invoice.TotalAmount - totalCredited).ToString("N2"))</span></div>
+        </div>
     }
 
     <!-- Narrative Sections (after totals) -->

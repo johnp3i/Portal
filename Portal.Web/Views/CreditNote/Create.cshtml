@@ -5,13 +5,15 @@
     var eligibleInvoices = ViewBag.EligibleInvoices as List<EligibleInvoiceDto> ?? new List<EligibleInvoiceDto>();
     var vatPeriods = ViewBag.VatPeriods as List<VatSubmissionPeriod> ?? new List<VatSubmissionPeriod>();
     var defaultVatPeriodId = ViewBag.DefaultVatPeriodId as int?;
+    var accountCreditEnabled = ViewBag.AccountCreditEnabled as bool? ?? false;
+    var customers = ViewBag.Customers as List<Customer> ?? new List<Customer>();
 }
 
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Credit Notes</div>
         <h1 class="topbar-heading">Create Credit Note</h1>
-        <p class="topbar-subtitle">Issue a credit note against an existing invoice to formally reduce the amount owed.</p>
+        <p class="topbar-subtitle">Issue a credit note against an existing invoice, or directly to a customer's account.</p>
     </div>
 </div>
 
@@ -26,15 +28,30 @@
     }
 
     <form method="post" asp-action="Create" asp-controller="CreditNote" asp-antiforgery="true" id="creditNoteForm">
+        @if (accountCreditEnabled)
+        {
+            <!-- Mode switch: invoice-linked vs account-level credit note -->
+            <div id="modeSwitch" style="display:inline-flex;background:var(--bg2);border:1px solid rgba(13,94,166,.10);border-radius:14px;padding:4px;margin-bottom:22px;gap:4px;">
+                <button type="button" class="mode-opt active" id="modeInvoiceBtn" onclick="setCreditMode('invoice')"
+                        style="padding:9px 18px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;border:none;background:#fff;color:#0D5EA6;box-shadow:0 1px 4px rgba(13,94,166,.12);">
+                    Against an invoice
+                </button>
+                <button type="button" class="mode-opt" id="modeAccountBtn" onclick="setCreditMode('account')"
+                        style="padding:9px 18px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;border:none;background:transparent;color:#5E7385;">
+                    To customer account
+                </button>
+            </div>
+        }
+
         <!-- Credit Note Header -->
         <div class="form-grid">
-            <div class="field" style="position:relative;">
+            <div class="field" id="invoiceField" style="position:relative;">
                 <label for="invoiceSearch">Source Invoice *</label>
                 <input type="text" id="invoiceSearch" placeholder="Search by invoice number or customer..." autocomplete="off"
                        style="width:100%;" />
                 <div id="invoiceDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:100;max-height:280px;overflow-y:auto;background:#fff;border:1px solid rgba(13,94,166,.15);border-radius:12px;box-shadow:0 8px 24px rgba(13,94,166,.12);margin-top:4px;">
                 </div>
-                <select name="invoiceId" id="invoiceId" required style="display:none;">
+                <select name="invoiceId" id="invoiceId" style="display:none;">
                     <option value="">-- Select Invoice --</option>
                     @foreach (var invoice in eligibleInvoices)
                     {
@@ -48,6 +65,22 @@
                     }
                 </select>
             </div>
+
+            @if (accountCreditEnabled)
+            {
+                <!-- Account mode: direct customer picker (hidden until account mode selected) -->
+                <div class="field" id="customerPickField" style="display:none;">
+                    <label for="customerId">Customer *</label>
+                    <select name="customerId" id="customerId">
+                        <option value="">-- Select customer --</option>
+                        @foreach (var c in customers)
+                        {
+                            <option value="@c.Id">@c.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+
             <div class="field">
                 <label for="customerName">Customer</label>
                 <input type="text" id="customerName" readonly placeholder="Selected automatically" style="background:#f0f4f8;cursor:not-allowed;" />
@@ -80,12 +113,20 @@
             <div class="field" style="grid-column:1 / -1;">
                 <label for="reason">Reason *</label>
                 <textarea name="reason" id="reason" required maxlength="1000" placeholder="Explain why this credit note is being issued (max 1000 characters)" rows="3"></textarea>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center;">
+                    <span style="font-size:12px;color:#5a6a7a;">Quick fill:</span>
+                    <button type="button" class="reason-chip" onclick="fillReason('Overcharge on original invoice.')">Overcharge</button>
+                    <button type="button" class="reason-chip" onclick="fillReason('Goods returned by customer.')">Returned goods</button>
+                    <button type="button" class="reason-chip" onclick="fillReason('Post-invoice discount agreed with customer.')">Post-invoice discount</button>
+                    <button type="button" class="reason-chip" onclick="fillReason('Goodwill credit.')">Goodwill credit</button>
+                    <button type="button" class="reason-chip" onclick="fillReason('Deposit / retainer credit.')">Deposit / retainer</button>
+                </div>
                 <small id="reasonCharCount" style="color:#5a6a7a;font-size:12px;">0 / 1000 characters</small>
             </div>
         </div>
 
         <!-- Invoice Amount & Outstanding Balance Display -->
-        <div id="balanceDisplay" style="display:none;margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.15);display:none;">
+        <div id="balanceDisplay" style="display:none;margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(18,152,103,.06);border:1px solid rgba(18,152,103,.15);">
             <div style="display:flex;gap:24px;flex-wrap:wrap;">
                 <div>
                     <span style="font-weight:600;color:#0D5EA6;">Invoice Amount:</span>
@@ -96,6 +137,11 @@
                     <span id="balanceValue" style="font-weight:700;font-size:16px;margin-left:8px;">@(ViewBag.CurrencySymbol)<span id="balanceNumber"></span></span>
                 </div>
             </div>
+        </div>
+
+        <!-- Account-mode explanatory note -->
+        <div id="accountNote" style="display:none;margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(87,184,232,.1);border:1px solid rgba(87,184,232,.25);font-size:13px;color:#1f6f99;">
+            <strong>Account credit.</strong> No source invoice. On issue, this records a credit on the customer's account that you can apply to their outstanding invoices later. VAT is recognised now, on issue.
         </div>
 
         <!-- Line Items Section -->
@@ -142,8 +188,17 @@
 </section>
 
 @section Scripts {
+    <style>
+        .reason-chip {
+            padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(13,94,166,.10);
+            background: #fff; font-size: 12px; font-weight: 600; color: #0D5EA6; cursor: pointer;
+        }
+        .reason-chip:hover { background: rgba(13,94,166,.06); }
+    </style>
     <script>
         var lineIndex = 0;
+        // 'invoice' (default) or 'account'. Account mode is only available when the capability is on.
+        var creditMode = 'invoice';
 
         // Set today's date as default
         document.addEventListener('DOMContentLoaded', function () {
@@ -152,6 +207,65 @@
             addLineItem();
             initSearchableInvoiceDropdown();
         });
+
+        // Switch between invoice-linked and account-level modes.
+        function setCreditMode(mode) {
+            creditMode = mode;
+            var invoice = mode === 'invoice';
+
+            var invoiceBtn = document.getElementById('modeInvoiceBtn');
+            var accountBtn = document.getElementById('modeAccountBtn');
+            if (invoiceBtn && accountBtn) {
+                invoiceBtn.style.background = invoice ? '#fff' : 'transparent';
+                invoiceBtn.style.color = invoice ? '#0D5EA6' : '#5E7385';
+                invoiceBtn.style.boxShadow = invoice ? '0 1px 4px rgba(13,94,166,.12)' : 'none';
+                accountBtn.style.background = invoice ? 'transparent' : '#fff';
+                accountBtn.style.color = invoice ? '#5E7385' : '#0D5EA6';
+                accountBtn.style.boxShadow = invoice ? 'none' : '0 1px 4px rgba(13,94,166,.12)';
+            }
+
+            var invoiceField = document.getElementById('invoiceField');
+            var customerPickField = document.getElementById('customerPickField');
+            var balanceDisplay = document.getElementById('balanceDisplay');
+            var accountNote = document.getElementById('accountNote');
+            var customerReadout = document.getElementById('customerName');
+            var invoiceHidden = document.getElementById('invoiceId');
+            var customerSelect = document.getElementById('customerId');
+
+            if (invoiceField) invoiceField.style.display = invoice ? '' : 'none';
+            if (customerPickField) customerPickField.style.display = invoice ? 'none' : '';
+            if (accountNote) accountNote.style.display = invoice ? 'none' : 'block';
+            if (!invoice && balanceDisplay) balanceDisplay.style.display = 'none';
+
+            // Reset the opposite mode's inputs so stale values aren't posted.
+            if (invoice) {
+                if (customerSelect) customerSelect.value = '';
+            } else {
+                if (invoiceHidden) invoiceHidden.value = '';
+                var invoiceSearch = document.getElementById('invoiceSearch');
+                if (invoiceSearch) invoiceSearch.value = '';
+                if (customerReadout) customerReadout.value = '';
+                window.selectedInvoiceTotalAmount = 0;
+            }
+        }
+
+        // Account-mode customer picker → mirror into the read-only customer readout.
+        (function () {
+            var customerSelect = document.getElementById('customerId');
+            if (customerSelect) {
+                customerSelect.addEventListener('change', function () {
+                    var readout = document.getElementById('customerName');
+                    if (readout) readout.value = this.options[this.selectedIndex].text || '';
+                });
+            }
+        })();
+
+        // Reason quick-fill
+        function fillReason(text) {
+            var reason = document.getElementById('reason');
+            reason.value = text;
+            document.getElementById('reasonCharCount').textContent = text.length + ' / 1000 characters';
+        }
 
         // Searchable invoice dropdown
         function initSearchableInvoiceDropdown() {
@@ -386,17 +500,24 @@
                 errors.push('A reason is required.');
             }
 
-            // Validate invoice selection
-            var invoiceId = document.getElementById('invoiceId');
-            if (!invoiceId.value) {
-                errors.push('Please select a source invoice.');
-            }
+            if (creditMode === 'account') {
+                // Account mode: a customer is required; no invoice, no invoice-total cap.
+                var customerSelect = document.getElementById('customerId');
+                if (!customerSelect || !customerSelect.value) {
+                    errors.push('Please select a customer.');
+                }
+            } else {
+                // Invoice mode: a source invoice is required and the credit cannot exceed it.
+                var invoiceId = document.getElementById('invoiceId');
+                if (!invoiceId.value) {
+                    errors.push('Please select a source invoice.');
+                }
 
-            // Validate credit note total does not exceed invoice amount
-            var creditTotal = parseFloat(document.getElementById('runningTotal').textContent) || 0;
-            var invoiceAmount = window.selectedInvoiceTotalAmount || 0;
-            if (invoiceId.value && invoiceAmount > 0 && creditTotal > invoiceAmount) {
-                errors.push('Credit note total (' + creditTotal.toFixed(2) + ') cannot exceed the invoice amount (' + invoiceAmount.toFixed(2) + ').');
+                var creditTotal = parseFloat(document.getElementById('runningTotal').textContent) || 0;
+                var invoiceAmount = window.selectedInvoiceTotalAmount || 0;
+                if (invoiceId.value && invoiceAmount > 0 && creditTotal > invoiceAmount) {
+                    errors.push('Credit note total (' + creditTotal.toFixed(2) + ') cannot exceed the invoice amount (' + invoiceAmount.toFixed(2) + ').');
+                }
             }
 
             return errors;

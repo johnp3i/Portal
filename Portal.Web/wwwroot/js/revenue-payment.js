@@ -380,3 +380,23 @@ async function generateReceiptFromDashboard(paymentId) {
     }
 }
 window.generateReceiptFromDashboard = generateReceiptFromDashboard;
+
+/**
+ * Opens the shared Edit Payment modal for a dashboard payment row. The button carries its values
+ * in data-* attributes (Razor attribute-encodes them, so customer names with apostrophes are safe).
+ * Called directly from the button's onclick — same proven pattern as the Receipt/Void buttons —
+ * so it does not depend on a delegated listener firing. openEditPaymentModal is provided by the
+ * shared _EditPaymentModal partial.
+ */
+function editPaymentFromButton(btn) {
+    if (!btn || typeof window.openEditPaymentModal !== 'function') return;
+    window.openEditPaymentModal(
+        btn.dataset.paymentId,
+        btn.dataset.methodId,
+        btn.dataset.reference,
+        btn.dataset.customer,
+        btn.dataset.invoice,
+        btn.dataset.amount,
+        btn.dataset.date);
+}
+window.editPaymentFromButton = editPaymentFromButton;

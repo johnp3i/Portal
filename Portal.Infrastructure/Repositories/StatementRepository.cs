@@ -231,6 +231,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                        [revenue].[Payment].[Notes],
                        [revenue].[Payment].[ParentPaymentId],
                        [revenue].[Payment].[IsAutoAllocated],
+                       [revenue].[Payment].[PaymentMethodTypeId],
                        [revenue].[PaymentMethodType].[Name],
                        [invoice].[Invoice].[Id] AS [InvoiceId],
                        [invoice].[Invoice].[InvoiceNumber]
@@ -280,6 +281,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                         Reference = reader.IsDBNull(reader.GetOrdinal("Reference")) ? null : reader.GetString(reader.GetOrdinal("Reference")),
                         Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
                         PaymentMethodName = reader.GetString(reader.GetOrdinal("Name")),
+                        PaymentMethodTypeId = reader.GetInt32(reader.GetOrdinal("PaymentMethodTypeId")),
                         ParentPaymentId = reader.IsDBNull(reader.GetOrdinal("ParentPaymentId")) ? null : reader.GetInt32(reader.GetOrdinal("ParentPaymentId")),
                         InvoiceId = reader.IsDBNull(reader.GetOrdinal("InvoiceId")) ? null : reader.GetInt32(reader.GetOrdinal("InvoiceId")),
                         InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber")),

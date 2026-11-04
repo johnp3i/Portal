@@ -87,13 +87,13 @@ public class ProspectImportService : IProspectImportService
             List<string[]> rawRows;
             try
             {
-                rawRows = ExcelParser.Parse(fileStream, ProspectsSheetName);
+                rawRows = ExcelParser.ParseProspects(fileStream, ProspectsSheetName, out _);
             }
             catch (Exception ex)
             {
                 // Sheet not found (or unreadable) — surface a clear message rather than throwing.
                 return ServiceResult<ProspectImportPreview>.Fail(
-                    $"Could not read the '{ProspectsSheetName}' sheet. Ensure the workbook contains it. ({ex.Message})");
+                    $"Could not read the workbook. Ensure it is a valid .xlsx file containing a prospects sheet. ({ex.Message})");
             }
 
             if (rawRows.Count < 2)

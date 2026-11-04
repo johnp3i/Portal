@@ -54,6 +54,39 @@ public class PurchaseService : IPurchaseService
             dateTo);
     }
 
+    public async Task<PagedResult<Purchase>> GetPagedListAsync(PurchaseListFilter filter, int page, int pageSize)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var (items, total) = await _purchaseRepository.GetPagedAsync(businessId, filter, page, pageSize);
+        return new PagedResult<Purchase>
+        {
+            Items = items,
+            CurrentPage = page < 1 ? 1 : page,
+            PageSize = pageSize < 1 ? 20 : pageSize,
+            TotalCount = total
+        };
+    }
+
+    public async Task<PurchaseListAggregates> GetListAggregatesAsync(PurchaseListFilter filter)
+    {
+        return await _purchaseRepository.GetAggregatesAsync(_currentTenantService.CurrentBusinessId, filter);
+    }
+
+    public async Task<List<Purchase>> GetFilteredForExportAsync(PurchaseListFilter filter)
+    {
+        return await _purchaseRepository.GetAllFilteredAsync(_currentTenantService.CurrentBusinessId, filter);
+    }
+
+    public async Task<Dictionary<int, string>> GetSupplierNamesAsync(IEnumerable<int> supplierIds)
+    {
+        return await _purchaseRepository.GetSupplierNamesAsync(_currentTenantService.CurrentBusinessId, supplierIds);
+    }
+
+    public async Task<Dictionary<int, string>> GetExpenseCategoryNamesAsync(IEnumerable<int> categoryIds)
+    {
+        return await _purchaseRepository.GetExpenseCategoryNamesAsync(_currentTenantService.CurrentBusinessId, categoryIds);
+    }
+
     public async Task<Purchase?> GetPurchaseByIdAsync(int id)
     {
         return await _purchaseRepository.GetByIdAndBusinessIdAsync(id, _currentTenantService.CurrentBusinessId);

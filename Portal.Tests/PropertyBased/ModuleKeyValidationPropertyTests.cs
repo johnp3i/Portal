@@ -72,6 +72,6 @@ public class ModuleKeyValidationPropertyTests
     [Fact]
     public void All_Contains_23_Modules()
     {
-        Assert.Equal(24, PortalModules.All.Length);
+        Assert.Equal(34, PortalModules.All.Length);
     }
 }

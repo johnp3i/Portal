@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — Account-Level Credit Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7FAFC;--bg2:#EEF4F8;--text:#0B1B28;--muted:#5E7385;--muted2:#73889A;
+  --blue:#0D5EA6;--blue3:#0B4E89;--cyan:#57B8E8;--green:#129867;--red:#C24A4A;--gold:#C8912E;
+  --greenSoft:rgba(18,152,103,.12);--redSoft:rgba(194,74,74,.10);--goldSoft:rgba(200,145,46,.12);
+  --line:rgba(13,94,166,.10);--shadow:0 20px 50px rgba(13,94,166,.10);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 24px 80px;}
+
+/* mockup chrome */
+.mock-banner{background:#fff8e6;border:1px solid var(--goldSoft);color:#7a5b16;border-radius:12px;padding:10px 16px;font-size:13px;margin-bottom:22px;}
+.mock-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.mock-tab{padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);}
+.mock-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.mock-screen{display:none;}
+.mock-screen.active{display:block;}
+
+/* layout primitives mirrored from site.css */
+.topbar{margin-bottom:20px;}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);display:inline-block;}
+.topbar-heading{font-family:'Manrope',sans-serif;font-size:30px;font-weight:800;margin:8px 0 4px;letter-spacing:-.02em;}
+.topbar-subtitle{color:var(--muted);margin:0;font-size:14px;}
+.glass{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);}
+.card-pad{padding:26px 28px;}
+.surface{background:var(--bg2);border:1px solid var(--line);border-radius:16px;}
+.label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+h2.section-h{font-family:'Manrope',sans-serif;font-weight:800;font-size:22px;margin:8px 0 0;}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field.full{grid-column:1 / -1;}
+.field label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;}
+.field input[readonly]{background:#f0f4f8;cursor:not-allowed;}
+.field textarea{resize:vertical;}
+
+.btn{padding:10px 18px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;border:1px solid transparent;font-family:inherit;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-outline{background:#fff;border-color:var(--line);color:var(--blue);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:9px;}
+
+/* mode switch */
+.mode-switch{display:inline-flex;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:22px;gap:4px;}
+.mode-opt{padding:9px 18px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);border:none;background:transparent;display:flex;align-items:center;gap:7px;}
+.mode-opt.active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(13,94,166,.12);}
+.mode-opt .tag{font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:var(--goldSoft);color:#7a5b16;}
+
+/* reason quick-fill */
+.quickfill{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:600;color:var(--blue);cursor:pointer;}
+.chip:hover{background:rgba(13,94,166,.06);}
+
+/* balance strip */
+.balance-strip{margin-top:18px;padding:14px 18px;border-radius:12px;background:var(--greenSoft);border:1px solid rgba(18,152,103,.2);display:flex;gap:28px;flex-wrap:wrap;}
+.balance-strip .k{font-weight:600;color:var(--blue);}
+.balance-strip .v{font-weight:800;font-size:16px;margin-left:8px;}
+
+/* line item card */
+.line-card{position:relative;margin-bottom:16px;padding:20px 22px;}
+.line-card .remove{position:absolute;top:14px;right:14px;}
+
+/* totals */
+.totals{margin-top:24px;border-top:1px solid var(--line);padding-top:20px;display:flex;justify-content:flex-end;}
+.totals-inner{min-width:300px;}
+.totals-row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px;}
+.totals-row.grand{font-size:16px;border-top:2px solid rgba(13,94,166,.12);margin-top:4px;padding-top:10px;}
+.totals-row .amt-red{font-weight:800;color:var(--red);}
+
+.section-div{margin-top:30px;border-top:1px solid var(--line);padding-top:24px;}
+.row-head{display:flex;justify-content:space-between;align-items:center;}
+
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;}
+.pill-account{background:rgba(87,184,232,.16);color:#1f6f99;}
+.pill-issued{background:rgba(13,94,166,.1);color:var(--blue);}
+.pill-applied{background:var(--greenSoft);color:var(--green);}
+
+.hint{font-size:12px;color:var(--muted);}
+
+/* detail */
+.kv{display:grid;grid-template-columns:160px 1fr;gap:10px 18px;font-size:14px;}
+.kv .k{color:var(--muted);font-weight:600;}
+table.apps{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}
+table.apps th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:8px 10px;border-bottom:1.5px solid var(--line);}
+table.apps td{padding:9px 10px;border-bottom:1px solid rgba(13,94,166,.06);}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:20px;padding:30px;max-width:560px;width:92%;box-shadow:0 20px 50px rgba(0,0,0,.18);}
+.modal h3{font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin:0 0 4px;}
+.apply-row{display:grid;grid-template-columns:1fr 130px 120px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.06);}
+.apply-row .inv{font-weight:700;}
+.apply-row .out{font-size:12px;color:var(--muted);}
+.apply-row input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;}
+.remaining-box{margin-top:16px;padding:12px 16px;border-radius:12px;background:var(--bg2);display:flex;justify-content:space-between;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mock-banner">
+    <strong>Mockup — for design approval only.</strong> Account-level (invoice-less) credit notes. Toggle the views below. No backend; buttons are illustrative.
+  </div>
+
+  <div class="mock-tabs">
+    <button class="mock-tab active" data-screen="create">① Create — mode switch</button>
+    <button class="mock-tab" data-screen="detail">② Detail — account note + apply</button>
+  </div>
+
+  <!-- ============ SCREEN 1: CREATE ============ -->
+  <div class="mock-screen active" id="screen-create">
+    <div class="topbar">
+      <div class="eyebrow"><span class="dot"></span> Credit Notes</div>
+      <h1 class="topbar-heading">Create Credit Note</h1>
+      <p class="topbar-subtitle">Issue a credit note against an invoice, or directly to a customer's account.</p>
+    </div>
+
+    <section class="glass card-pad">
+      <!-- MODE SWITCH -->
+      <div class="mode-switch" role="tablist">
+        <button class="mode-opt active" id="modeInvoice" onclick="setMode('invoice')">
+          🧾 Against an invoice
+        </button>
+        <button class="mode-opt" id="modeAccount" onclick="setMode('account')">
+          👤 To customer account <span class="tag">needs capability</span>
+        </button>
+      </div>
+
+      <div class="form-grid">
+        <!-- INVOICE MODE field -->
+        <div class="field" id="invoiceField">
+          <label>Source Invoice *</label>
+          <input type="text" placeholder="Search by invoice number or customer..." value="INV-1002-00087 — C.I.A. Familia Esperanza Ltd" />
+        </div>
+        <!-- ACCOUNT MODE field (hidden by default) -->
+        <div class="field" id="customerPickField" style="display:none;">
+          <label>Customer *</label>
+          <select>
+            <option>— Select customer —</option>
+            <option selected>Coffee Magek Limited</option>
+            <option>C.I.A. Familia Esperanza Ltd</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Customer</label>
+          <input type="text" id="customerReadout" readonly value="C.I.A. Familia Esperanza Ltd" />
+        </div>
+
+        <div class="field">
+          <label>Issue Date *</label>
+          <input type="date" value="2026-11-04" />
+        </div>
+        <div class="field">
+          <label>VAT Period *</label>
+          <select>
+            <option selected>01 Oct 2026 – 31 Dec 2026 (01 Oct 2026 – 31 Dec 2026)</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label>Reason *</label>
+          <textarea rows="3" id="reasonBox" placeholder="Explain why this credit note is being issued (max 1000 characters)"></textarea>
+          <div class="quickfill">
+            <span class="hint" style="width:100%;margin-bottom:2px;">Quick fill:</span>
+            <button type="button" class="chip" onclick="fillReason('Overcharge on original invoice.')">Overcharge</button>
+            <button type="button" class="chip" onclick="fillReason('Goods returned by customer.')">Returned goods</button>
+            <button type="button" class="chip" onclick="fillReason('Post-invoice discount agreed with customer.')">Post-invoice discount</button>
+            <button type="button" class="chip" onclick="fillReason('Goodwill credit.')">Goodwill credit</button>
+            <button type="button" class="chip" onclick="fillReason('Deposit / retainer credit.')">Deposit / retainer</button>
+          </div>
+          <small class="hint">0 / 1000 characters</small>
+        </div>
+      </div>
+
+      <!-- Balance strip (invoice mode only) -->
+      <div class="balance-strip" id="balanceStrip">
+        <div><span class="k">Invoice Amount:</span><span class="v">€675.78</span></div>
+        <div><span class="k" style="color:var(--green);">Outstanding Balance:</span><span class="v">€675.78</span></div>
+      </div>
+
+      <!-- Account-mode note (account mode only) -->
+      <div class="balance-strip" id="accountNote" style="display:none;background:rgba(87,184,232,.1);border-color:rgba(87,184,232,.25);">
+        <div style="font-size:13px;color:#1f6f99;">
+          <strong>Account credit.</strong> No source invoice. On issue this records a credit on the customer's account
+          that you can apply to their outstanding invoices later (VAT is recognised now, on issue).
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <div class="section-div">
+        <div class="row-head">
+          <div>
+            <div class="label">Line Items</div>
+            <h2 class="section-h">Credit note lines</h2>
+          </div>
+          <button class="btn btn-primary">+ Add Line</button>
+        </div>
+
+        <div style="margin-top:18px;">
+          <div class="surface line-card">
+            <button class="btn btn-danger btn-sm remove">Remove</button>
+            <div class="form-grid">
+              <div class="field full">
+                <label>Description *</label>
+                <input type="text" value="Partial credit — overcharge correction" />
+              </div>
+              <div class="field"><label>Quantity *</label><input type="number" value="1" /></div>
+              <div class="field"><label>Unit Price *</label><input type="number" value="100.00" /></div>
+              <div class="field"><label>VAT Rate (%)</label><input type="number" value="23" /></div>
+              <div class="field"><label>Line Total</label><input type="text" readonly value="100.00" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="totals">
+        <div class="totals-inner">
+          <div class="totals-row"><span style="color:var(--muted);">Subtotal</span><span style="font-weight:600;">100.00</span></div>
+          <div class="totals-row"><span style="color:var(--muted);">VAT Amount</span><span style="font-weight:600;">23.00</span></div>
+          <div class="totals-row grand"><span style="font-weight:800;">Total</span><span class="amt-red">123.00</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:30px;display:flex;justify-content:space-between;align-items:center;">
+        <button class="btn btn-primary">Create Credit Note</button>
+        <button class="btn btn-outline">&larr; Back to Credit Notes</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ SCREEN 2: DETAIL (ACCOUNT NOTE) ============ -->
+  <div class="mock-screen" id="screen-detail">
+    <div class="topbar">
+      <div class="eyebrow"><span class="dot"></span> Credit Notes</div>
+      <h1 class="topbar-heading">CN-2026-0042</h1>
+      <p class="topbar-subtitle">Account-level credit note · Coffee Magek Limited</p>
+    </div>
+
+    <section class="glass card-pad">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:22px;">
+        <div class="kv">
+          <div class="k">Status</div><div><span class="pill pill-issued">Issued</span></div>
+          <div class="k">Source</div><div><span class="pill pill-account">Customer account (no invoice)</span></div>
+          <div class="k">Customer</div><div>Coffee Magek Limited</div>
+          <div class="k">Issue Date</div><div>04 Nov 2026</div>
+          <div class="k">VAT Period</div><div>01 Oct 2026 – 31 Dec 2026</div>
+          <div class="k">Reason</div><div>Goodwill credit.</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="label">Total</div>
+          <div style="font-family:'Manrope';font-weight:800;font-size:26px;color:var(--red);margin-top:4px;">€123.00</div>
+          <div class="hint" style="margin-top:6px;">Remaining to apply</div>
+          <div style="font-weight:800;font-size:18px;color:var(--green);">€73.00</div>
+        </div>
+      </div>
+
+      <!-- action bar -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="btn btn-primary" onclick="openApply()">Apply credit to invoice</button>
+        <button class="btn btn-outline">Download PDF</button>
+        <button class="btn btn-outline" style="color:var(--red);border-color:var(--redSoft);">Void</button>
+      </div>
+
+      <!-- applications history -->
+      <div class="section-div">
+        <div class="label">Application history</div>
+        <h2 class="section-h" style="font-size:18px;">Where this credit was applied</h2>
+        <table class="apps">
+          <thead><tr><th>Date</th><th>Invoice</th><th>Amount applied</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>04 Nov 2026</td><td>INV-1002-00075</td><td>€50.00</td><td><span class="pill pill-applied">Active</span></td></tr>
+          </tbody>
+        </table>
+        <p class="hint" style="margin-top:12px;">Applied €50.00 of €123.00 · <strong>€73.00 remaining</strong>. Credit stays <em>Issued</em> until fully applied.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ===== Apply modal ===== -->
+<div class="modal-overlay" id="applyModal">
+  <div class="modal">
+    <h3>Apply credit to invoices</h3>
+    <p class="hint" style="margin:0 0 16px;">CN-2026-0042 · Coffee Magek Limited · choose how much to apply to each outstanding invoice.</p>
+
+    <div class="apply-row" style="border-bottom:1.5px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">
+      <div>Invoice</div><div>Outstanding</div><div>Apply</div>
+    </div>
+    <div class="apply-row">
+      <div><div class="inv">INV-1002-00076</div><div class="out">Issued · 28 Oct 2026</div></div>
+      <div>€144.17</div>
+      <div><input type="number" value="73.00" /></div>
+    </div>
+    <div class="apply-row">
+      <div><div class="inv">INV-1002-00095</div><div class="out">Issued · 30 Oct 2026</div></div>
+      <div>€280.88</div>
+      <div><input type="number" value="0.00" /></div>
+    </div>
+
+    <div class="remaining-box">
+      <span>Credit remaining</span><span style="color:var(--green);">€73.00</span>
+    </div>
+    <div class="remaining-box" style="background:transparent;">
+      <span>Total being applied</span><span>€73.00</span>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeApply()">Cancel</button>
+      <button class="btn btn-primary" onclick="closeApply()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // tab switching
+  document.querySelectorAll('.mock-tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.mock-tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.mock-screen').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('screen-' + t.dataset.screen).classList.add('active');
+    });
+  });
+
+  // create mode switch
+  function setMode(mode){
+    var invoice = mode === 'invoice';
+    document.getElementById('modeInvoice').classList.toggle('active', invoice);
+    document.getElementById('modeAccount').classList.toggle('active', !invoice);
+    document.getElementById('invoiceField').style.display = invoice ? '' : 'none';
+    document.getElementById('customerPickField').style.display = invoice ? 'none' : '';
+    document.getElementById('balanceStrip').style.display = invoice ? 'flex' : 'none';
+    document.getElementById('accountNote').style.display = invoice ? 'none' : 'flex';
+    var readout = document.getElementById('customerReadout');
+    if (invoice) { readout.value = 'C.I.A. Familia Esperanza Ltd'; readout.setAttribute('readonly','readonly'); }
+    else { readout.value = 'Coffee Magek Limited'; readout.setAttribute('readonly','readonly'); }
+  }
+
+  function fillReason(text){ document.getElementById('reasonBox').value = text; }
+
+  function openApply(){ document.getElementById('applyModal').classList.add('open'); }
+  function closeApply(){ document.getElementById('applyModal').classList.remove('open'); }
+  document.getElementById('applyModal').addEventListener('click', function(e){ if(e.target===this) closeApply(); });
+</script>
+</body>
+</html>

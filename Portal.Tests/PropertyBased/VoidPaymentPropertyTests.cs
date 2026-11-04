@@ -51,6 +51,8 @@ public class VoidPaymentPropertyTests
             mockFinancialStatusEngine.Object,
             new Mock<IPaymentScheduleService>().Object,
             new Mock<IPaymentAllocationEngine>().Object,
+            null!,
+            null!,
             null!);
 
         return (service, mockPaymentRepo);
@@ -184,6 +186,8 @@ public class VoidPaymentPropertyTests
             mockFinancialStatusEngine.Object,
             new Mock<IPaymentScheduleService>().Object,
             new Mock<IPaymentAllocationEngine>().Object,
+            null!,
+            null!,
             null!);
 
         // Act

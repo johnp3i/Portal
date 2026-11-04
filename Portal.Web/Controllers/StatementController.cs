@@ -58,6 +58,11 @@ public class StatementController : Controller
 
         ViewBag.Customers = orderedCustomers;
         ViewBag.SelectedCustomerId = customerId;
+        // Load real PaymentMethodType rows so the Record Payment dropdown uses the actual DB ids
+        // and names — the modal previously hardcoded ids (1=Bank Transfer, 2=Cash, …) which did
+        // NOT match the seeded order (1=Cash, 2=BankTransfer, …), so a selection saved as the
+        // wrong method. Mirrors the Revenue payment modals.
+        ViewBag.PaymentMethods = await _paymentService.GetPaymentMethodTypesAsync();
 
         return View();
     }
@@ -120,7 +125,9 @@ public class StatementController : Controller
                 runningBalance = l.RunningBalance,
                 invoiceId = l.InvoiceId,
                 paymentId = l.PaymentId,
-                isVoided = l.IsVoided
+                isVoided = l.IsVoided,
+                paymentMethodTypeId = l.PaymentMethodTypeId,
+                rawReference = l.RawReference
             })
         });
     }

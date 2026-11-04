@@ -1,0 +1,22 @@
+feat: mobile responsiveness for Prospect Activity and My Development
+
+prospecting.js: added data-mobile attributes to the 9 activity-log <td>
+cells (when, prospect, hide=campaign, type, outcome, signal, next,
+hide=by, open) so CSS can restructure rows into stacked cards on phones.
+
+Activity.cshtml: added #activityTable @media(max-width:768px) block that
+turns table rows into white cards (1px rgba(13,94,166,.10) border, 16px
+radius, soft shadow, 16px padding, 12px gap), hides thead, cancels the
+generic .data-table max-content/nowrap rules, maps Prospect=title +
+When=top-right muted, Type+Signal pills row, Outcome row, Next action
+row, Open as full-width footer; made #activitySummary a 2-col grid.
+
+MyDevelopment.cshtml: added @media(max-width:768px) making .dev-summary a
+2-col grid and shrinking .bar-row label column (118px) so criterion bars
+never overflow.
+
+Cache bump: prospecting.js ?v=16 -> ?v=17 across all 5 Prospecting views
+(Activity, Campaigns, Import, ProspectDetail, Prospects) - verified all 5.
+
+Build: dotnet build Portal.Web.csproj -> Build succeeded with 1220
+warning(s), 0 Error(s). Desktop (>768px) layout unchanged.

@@ -1779,7 +1779,7 @@ public class PortalDbContext : DbContext
             entity.HasOne(e => e.Business).WithMany()
                 .HasForeignKey(e => e.BusinessId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne(e => e.Invoice).WithMany()
-                .HasForeignKey(e => e.InvoiceId).OnDelete(DeleteBehavior.ClientSetNull);
+                .HasForeignKey(e => e.InvoiceId).IsRequired(false).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne(e => e.Customer).WithMany()
                 .HasForeignKey(e => e.CustomerId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne(e => e.CreditNoteStatusType).WithMany(s => s.CreditNotes)
@@ -1789,6 +1789,8 @@ public class PortalDbContext : DbContext
 
             entity.HasIndex(e => e.BusinessId).HasDatabaseName("IX_CreditNote_BusinessId");
             entity.HasIndex(e => e.InvoiceId).HasDatabaseName("IX_CreditNote_InvoiceId");
+            entity.HasIndex(e => new { e.BusinessId, e.CustomerId })
+                .HasDatabaseName("IX_CreditNote_BusinessId_CustomerId");
             entity.HasIndex(e => new { e.BusinessId, e.CreditNoteNumber })
                 .IsUnique()
                 .HasDatabaseName("UX_CreditNote_BusinessId_CreditNoteNumber")

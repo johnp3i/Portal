@@ -4,6 +4,7 @@
 
     var customers = (List<Customer>)ViewBag.Customers;
     var selectedCustomerId = (int?)ViewBag.SelectedCustomerId;
+    var paymentMethods = ViewBag.PaymentMethods as List<Portal.Infrastructure.Entities.PaymentMethodType> ?? new List<Portal.Infrastructure.Entities.PaymentMethodType>();
 }
 
 @Html.AntiForgeryToken()
@@ -173,11 +174,10 @@
                 <div class="field">
                     <label>Payment Method *</label>
                     <select id="gpMethod" required>
-                        <option value="1">Bank Transfer</option>
-                        <option value="2">Cash</option>
-                        <option value="3">Credit Card</option>
-                        <option value="4">Cheque</option>
-                        <option value="5">Online</option>
+                        @foreach (var method in paymentMethods)
+                        {
+                            <option value="@method.Id">@method.Name</option>
+                        }
                     </select>
                 </div>
                 <div class="field">
@@ -310,6 +310,11 @@
         function getAntiForgeryToken() {
             return document.querySelector('input[name="__RequestVerificationToken"]').value;
         }
+
+        // After an Edit Payment save, re-generate the statement so the composite reference and
+        // method name rebuild in place (matches the void-payment success path). The shared edit
+        // modal calls window.onPaymentEdited when present, else falls back to a full reload.
+        window.onPaymentEdited = function () { generateStatement(); };
 
         var currencySymbol = '€';
 
@@ -513,9 +518,29 @@
                 tdActions.style.textAlign = 'center';
                 tdActions.style.whiteSpace = 'nowrap';
                 if (line.type === 'Payment' && line.paymentId && !line.isVoided) {
+                    // Capture per-row values so the closures below don't all see the loop's final line.
+                    var editPaymentId = line.paymentId;
+                    var editMethodId = line.paymentMethodTypeId;
+                    var editRawReference = line.rawReference;
+                    // line.credit is the payment amount on a Payment line. Invoice is left blank here
+                    // (the statement row has no clean invoice number separate from the composite ref);
+                    // the modal's invoice context line simply shows a dash, which is advisory only.
+                    var editAmount = currencySymbol + formatCurrency(line.credit);
+                    var editDate = line.date;
+                    var editCustomer = document.getElementById('customerName') ? document.getElementById('customerName').textContent : '';
+
+                    var editBtn = document.createElement('button');
+                    editBtn.textContent = 'Edit';
+                    editBtn.className = 'tbl-action tbl-action--primary';
+                    editBtn.onclick = function () {
+                        openEditPaymentModal(editPaymentId, editMethodId, editRawReference, editCustomer, '', editAmount, editDate);
+                    };
+                    tdActions.appendChild(editBtn);
+
                     var receiptBtn = document.createElement('button');
                     receiptBtn.textContent = 'Receipt';
                     receiptBtn.className = 'tbl-action tbl-action--primary';
+                    receiptBtn.style.marginLeft = '6px';
                     receiptBtn.onclick = function() { generateReceiptFromStatement(line.paymentId); };
                     tdActions.appendChild(receiptBtn);
 
@@ -1004,3 +1029,5 @@
 }
 
 @await Html.PartialAsync("_GenerateReceiptModal")
+
+@await Html.PartialAsync("_EditPaymentModal")

@@ -268,12 +268,12 @@
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
             html += '<tr>';
-            html += '<td><strong>' + escapeHtml(item.invoiceNumber) + '</strong></td>';
-            html += '<td>' + escapeHtml(item.customerName) + '</td>';
-            html += '<td>' + formatDate(item.dueDate) + '</td>';
-            html += '<td><span class="pill pill-red">' + item.daysOverdue + ' days</span></td>';
-            html += '<td style="text-align:right;font-weight:700;color:var(--red);">' + currencySymbol + formatAmount(item.outstandingBalance) + '</td>';
-            html += '<td><a href="/Revenue/InvoiceDetail/' + item.id + '" style="color:var(--blue);font-weight:700;font-size:13px;">View</a></td>';
+            html += '<td data-mobile="invoice"><strong>' + escapeHtml(item.invoiceNumber) + '</strong></td>';
+            html += '<td data-mobile="customer">' + escapeHtml(item.customerName) + '</td>';
+            html += '<td data-mobile="due">' + formatDate(item.dueDate) + '</td>';
+            html += '<td data-mobile="days"><span class="pill pill-red">' + item.daysOverdue + ' days</span></td>';
+            html += '<td data-mobile="amount" style="text-align:right;font-weight:700;color:var(--red);">' + currencySymbol + formatAmount(item.outstandingBalance) + '</td>';
+            html += '<td data-mobile="action"><a href="/Revenue/InvoiceDetail/' + item.id + '" class="tbl-action tbl-action--primary">View</a></td>';
             html += '</tr>';
         }
         tbody.innerHTML = html;
@@ -403,14 +403,23 @@
             }
 
             html += '<tr style="vertical-align:middle;' + rowStyle + '">';
-            html += '<td>' + formatDate(item.paymentDateUtc) + upcomingHtml + '</td>';
-            html += '<td><strong>' + escapeHtml(item.invoiceNumber) + '</strong></td>';
-            html += '<td>' + escapeHtml(item.customerName) + '</td>';
-            html += '<td>' + methodHtml + referenceHtml + '</td>';
-            html += '<td style="text-align:right;font-weight:700;color:' + amountColor + ';">' + currencySymbol + formatAmount(item.amount) + '</td>';
-            html += '<td>' + statusHtml + '</td>';
-            html += '<td style="white-space:nowrap;">';
+            html += '<td data-mobile="date">' + formatDate(item.paymentDateUtc) + upcomingHtml + '</td>';
+            html += '<td data-mobile="invoice"><strong>' + escapeHtml(item.invoiceNumber) + '</strong></td>';
+            html += '<td data-mobile="customer">' + escapeHtml(item.customerName) + '</td>';
+            html += '<td data-mobile="method">' + methodHtml + referenceHtml + '</td>';
+            html += '<td data-mobile="amount" style="text-align:right;font-weight:700;color:' + amountColor + ';">' + currencySymbol + formatAmount(item.amount) + '</td>';
+            html += '<td data-mobile="status">' + statusHtml + '</td>';
+            html += '<td data-mobile="action" style="white-space:nowrap;">';
             if (!item.isVoided) {
+                html += '<button type="button" class="tbl-action tbl-action--primary js-edit-payment"'
+                    + ' data-payment-id="' + item.id + '"'
+                    + ' data-method-id="' + item.paymentMethodTypeId + '"'
+                    + ' data-reference="' + escapeHtml(item.reference || '') + '"'
+                    + ' data-customer="' + escapeHtml(item.customerName || '') + '"'
+                    + ' data-invoice="' + escapeHtml(item.invoiceNumber || '') + '"'
+                    + ' data-amount="' + escapeHtml(currencySymbol + formatAmount(item.amount)) + '"'
+                    + ' data-date="' + escapeHtml(formatDate(item.paymentDateUtc)) + '"'
+                    + ' onclick="editPaymentFromButton(this)">Edit</button> ';
                 html += '<button type="button" class="tbl-action tbl-action--primary" onclick="generateReceiptFromDashboard(' + item.id + ')">Receipt</button> ';
                 html += '<button type="button" class="tbl-action tbl-action--danger" onclick="voidPayment(' + item.id + ')">Void</button>';
             } else {

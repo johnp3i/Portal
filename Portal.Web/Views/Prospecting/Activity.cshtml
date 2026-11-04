@@ -15,13 +15,23 @@
         <h1 class="topbar-heading">Prospect Activity</h1>
         <p class="topbar-subtitle">Every call, email, meeting and note logged against your prospects — review what was done in any period.</p>
     </div>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;" class="topbar-actions-desktop">
         <button class="btn btn-secondary" onclick="exportActivityCsv()">Export CSV</button>
     </div>
 </div>
 
+<!-- Mobile action bar (phone only — replaces the stacked topbar actions) -->
+<div class="mobile-action-bar">
+    <button type="button" class="mab-btn mab-primary" onclick="exportActivityCsv()">Export CSV</button>
+    <button type="button" class="mab-btn mab-ghost filter-toggle" aria-expanded="false" aria-controls="activityFilterPanel">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+        <span>Filters</span>
+    </button>
+</div>
+
 <!-- Filters -->
-<section class="glass card-pad" style="margin-bottom:22px;">
+<section class="glass card-pad mobile-filter-card" style="margin-bottom:22px;">
+    <div class="filter-panel" id="activityFilterPanel">
     <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="min-width:200px;">
             <label>Campaign</label>
@@ -98,6 +108,7 @@
         <button type="button" class="act-period chip" data-period="this_month" onclick="setActivityPeriod(this,'this_month')">This month</button>
         <button type="button" class="act-period chip" data-period="all" onclick="setActivityPeriod(this,'all')">All time</button>
     </div>
+    </div>
 </section>
 
 <!-- Period summary -->
@@ -152,6 +163,30 @@
                 gap: 12px;
             }
             #activitySummary .stat { flex: none !important; }
+
+            /* Quick period shortcuts: the generic mobile rule forces any
+               flex-wrap row into a centered vertical stack. Override so the
+               chips flow as a compact 3-column pill grid (matches the Purchase
+               page's quick row feel). The row is the .filter-panel's last
+               direct child. */
+            #activityFilterPanel > div:last-child {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px !important;
+                align-items: stretch !important;
+                margin-top: 12px !important;
+            }
+            /* The "Quick" caption spans the full row above the pills. */
+            #activityFilterPanel > div:last-child > span {
+                grid-column: 1 / -1;
+                margin: 0 0 2px !important;
+            }
+            #activityFilterPanel .act-period.chip {
+                width: 100%;
+                text-align: center;
+                padding: 9px 8px;
+                font-size: 12.5px;
+            }
 
             /* Cancel the generic .data-table rules (max-content width + nowrap from
                mobile.css) so cards shrink to the viewport and never scroll. */

@@ -29,4 +29,10 @@ public class RecentPaymentDto
     /// Payment reference code (e.g., cheque number, Stripe charge ID). Null if not provided.
     /// </summary>
     public string? Reference { get; set; }
+
+    /// <summary>
+    /// The raw payment-method id, carried through so the Edit Payment modal can pre-select the
+    /// current method without a second round-trip.
+    /// </summary>
+    public int PaymentMethodTypeId { get; set; }
 }

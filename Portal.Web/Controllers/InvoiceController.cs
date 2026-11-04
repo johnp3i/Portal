@@ -43,6 +43,7 @@ public class InvoiceController : Controller
     private readonly IProductPriceTierService _priceTierService;
     private readonly ProductRepository _productRepository;
     private readonly IProductAutocompleteService _autocompleteService;
+    private readonly ICreditNoteService _creditNoteService;
     private readonly PortalDbContext _dbContext;
     private readonly ILogger<InvoiceController> _logger;
 
@@ -68,6 +69,7 @@ public class InvoiceController : Controller
         IProductPriceTierService priceTierService,
         ProductRepository productRepository,
         IProductAutocompleteService autocompleteService,
+        ICreditNoteService creditNoteService,
         PortalDbContext dbContext,
         ILogger<InvoiceController> logger)
     {
@@ -92,6 +94,7 @@ public class InvoiceController : Controller
         _priceTierService = priceTierService;
         _productRepository = productRepository;
         _autocompleteService = autocompleteService;
+        _creditNoteService = creditNoteService;
         _dbContext = dbContext;
         _logger = logger;
     }
@@ -315,17 +318,45 @@ public class InvoiceController : Controller
         var hasSchedulePermission = isScheduleInPlan && await _permissionService.GetAccessLevelAsync(userId, PortalModules.SchedulePayments, _tenantService.CurrentBusinessId) != "none";
         ViewData["InvoiceId"] = id;
         ViewData["HasSchedulePermission"] = hasSchedulePermission;
-        // Compute actual outstanding balance (TotalAmount - sum of non-voided payments)
+        // Compute actual outstanding balance. A "still owed" figure must subtract EVERY
+        // settlement mechanism, not just payments: applied credit notes reduce the balance
+        // exactly as payments do (see financial-conventions steering). Omitting them over-states
+        // the balance for any invoice reduced by a credit note.
+        //   OutstandingBalance = TotalAmount − valid Payments − applied Credit Notes
         var totalPaid = await _dbContext.Payments
             .Where(p => p.InvoiceId == id && p.BusinessId == _tenantService.CurrentBusinessId && !p.IsVoided)
             .SumAsync(p => (decimal?)p.Amount) ?? 0m;
-        ViewData["OutstandingBalance"] = invoice.TotalAmount - totalPaid;
+
+        // Applied (non-voided) credit notes for this invoice, scoped to the tenant via the
+        // parent CreditNote.BusinessId — the authoritative join used across the app
+        // (CreditNoteRepository.GetTotalAppliedCreditAsync / DashboardService).
+        var appliedCredits = await (
+            from app in _dbContext.CreditNoteApplications
+            join cn in _dbContext.CreditNotes on app.CreditNoteId equals cn.Id
+            where app.InvoiceId == id
+                  && !app.IsVoided
+                  && cn.BusinessId == _tenantService.CurrentBusinessId
+            orderby app.AppliedAtUtc
+            select new Portal.Infrastructure.Models.AppliedCreditNoteDto
+            {
+                CreditNoteId = cn.Id,
+                CreditNoteNumber = cn.CreditNoteNumber,
+                AmountApplied = app.AmountApplied,
+                AppliedAtUtc = app.AppliedAtUtc
+            }).ToListAsync();
+
+        var totalCredited = appliedCredits.Sum(c => c.AmountApplied);
+        var outstandingBalance = invoice.TotalAmount - totalPaid - totalCredited;
+
+        ViewData["OutstandingBalance"] = outstandingBalance;
         ViewData["InvoiceNumber"] = invoice.InvoiceNumber;
         ViewData["ScheduleCurrencySymbol"] = profile?.CurrencySymbol ?? "€";
 
         // Payment Summary section data
         ViewBag.TotalPaid = totalPaid;
-        ViewBag.OutstandingBalance = invoice.TotalAmount - totalPaid;
+        ViewBag.TotalCredited = totalCredited;
+        ViewBag.AppliedCreditNotes = appliedCredits;
+        ViewBag.OutstandingBalance = outstandingBalance;
 
         // Load payment history for display
         var paymentHistory = await _dbContext.Payments
@@ -399,6 +430,7 @@ public class InvoiceController : Controller
         var business = await _businessService.GetBusinessByIdAsync(_tenantService.CurrentBusinessId);
         var profile = await _businessService.GetBusinessProfileAsync(_tenantService.CurrentBusinessId);
         var paymentDetails = await _paymentDetailRepository.GetByBusinessIdAsync(_tenantService.CurrentBusinessId);
+        var appliedCreditNotes = await _creditNoteService.GetAppliedCreditNotesForInvoiceAsync(id, _tenantService.CurrentBusinessId);
 
         ViewBag.Invoice = invoice;
         ViewBag.Lines = lines;
@@ -408,6 +440,7 @@ public class InvoiceController : Controller
         ViewBag.BusinessName = business?.Name ?? "";
         ViewBag.Profile = profile;
         ViewBag.PaymentDetails = paymentDetails;
+        ViewBag.AppliedCreditNotes = appliedCreditNotes;
         ViewBag.AutoPrint = print;
 
         return View(invoice);

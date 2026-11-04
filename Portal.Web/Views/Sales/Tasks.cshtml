@@ -48,15 +48,15 @@
     </div>
     <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5E7385;margin-right:4px;">Quick:</span>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('this_month')">This Month</button>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('next_month')">Next Month</button>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_month')">Last Month</button>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_3')">Last 3 Months</button>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_6')">Last 6 Months</button>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('this_year')">This Year</button>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('last_year')">Last Year</button>
-        <button type="button" class="period-shortcut" onclick="setQuickPeriod('all')">All Time</button>
-        <select class="mobile-period-select" onchange="if(this.value) setQuickPeriod(this.value)">
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'this_month')">This Month</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'next_month')">Next Month</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_month')">Last Month</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_3')">Last 3 Months</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_6')">Last 6 Months</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'this_year')">This Year</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'last_year')">Last Year</button>
+        <button type="button" class="period-shortcut" onclick="setQuickPeriod(event, 'all')">All Time</button>
+        <select class="mobile-period-select" onchange="if(this.value) setQuickPeriod(null, this.value)">
             <option value="">Quick date range...</option>
             <option value="this_month">This Month</option>
             <option value="next_month">Next Month</option>
@@ -97,6 +97,8 @@
 </section>
 
 @await Html.PartialAsync("_ContactInfoModal")
+
+@Html.AntiForgeryToken()
 
 @section Scripts {
     <script src="~/js/sales/contact-modal.js?v=2"></script>
@@ -159,15 +161,15 @@
                 html += '<td>' + (t.assignedToName ? escapeHtml(t.assignedToName) : '<span style="color:#8a9bab;">Me</span>') + '</td>';
                 html += '<td style="text-align:right;white-space:nowrap;">';
                 if (t.notes) {
-                    html += '<button class="btn btn-sm" style="background:rgba(13,94,166,.06);color:#0D5EA6;border:1.5px solid rgba(13,94,166,.12);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openViewNotesModal(' + t.id + ')" title="View notes">&#128221;</button> ';
+                    html += '<button class="btn btn-sm" style="background:rgba(13,94,166,.06);color:#0D5EA6;border:1.5px solid rgba(13,94,166,.12);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openViewNotesModal(' + t.id + ')" title="View notes" aria-label="View notes">&#128221;</button> ';
                 }
-                html += '<button class="btn btn-sm" style="background:rgba(138,155,171,.06);color:#5E7385;border:1.5px solid rgba(138,155,171,.15);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openEditTaskModalFromTable(' + t.id + ')" title="Edit task">&#9998;</button> ';
+                html += '<button class="btn btn-sm" style="background:rgba(138,155,171,.06);color:#5E7385;border:1.5px solid rgba(138,155,171,.15);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openEditTaskModalFromTable(' + t.id + ')" title="Edit task" aria-label="Edit task">&#9998;</button> ';
                 if (!t.isCompleted) {
-                    html += '<button class="btn btn-sm" style="background:rgba(200,145,46,.06);color:#C8912E;border:1.5px solid rgba(200,145,46,.18);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;" onclick="markTaskUnprocessedFromList(' + t.id + ')" title="Mark as unprocessed">Unprocessed</button> ';
-                    html += '<button class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="completeTaskFromList(' + t.id + ')" title="Mark as completed">&#10003;</button> ';
-                    html += '<button class="btn btn-sm" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="snoozeTaskFromList(' + t.id + ')" title="Snooze +1 day">+1d</button>';
+                    html += '<button class="btn btn-sm" style="background:rgba(200,145,46,.06);color:#C8912E;border:1.5px solid rgba(200,145,46,.18);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;" onclick="markTaskUnprocessedFromList(' + t.id + ')" title="Mark as unprocessed" aria-label="Mark task as unprocessed">Unprocessed</button> ';
+                    html += '<button class="btn btn-sm" style="background:rgba(18,152,103,.08);color:#129867;border:1.5px solid rgba(18,152,103,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="completeTaskFromList(' + t.id + ')" title="Mark as completed" aria-label="Mark task as completed">&#10003;</button> ';
+                    html += '<button class="btn btn-sm" style="background:rgba(87,184,232,.08);color:#1a8fc7;border:1.5px solid rgba(87,184,232,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="snoozeTaskFromList(' + t.id + ')" title="Snooze +1 day" aria-label="Snooze task one day">+1d</button>';
                 } else {
-                    html += '<button class="btn btn-sm" style="background:rgba(200,145,46,.08);color:#C8912E;border:1.5px solid rgba(200,145,46,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="reopenTaskFromList(' + t.id + ')" title="Reopen task">Reopen</button>';
+                    html += '<button class="btn btn-sm" style="background:rgba(200,145,46,.08);color:#C8912E;border:1.5px solid rgba(200,145,46,.2);padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;" onclick="reopenTaskFromList(' + t.id + ')" title="Reopen task" aria-label="Reopen task">Reopen</button>';
                 }
                 if (t.leadRequestId) {
                     html += ' <a href="/Sales/LeadDetail/' + t.leadRequestId + '" class="btn btn-sm" style="padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid rgba(13,94,166,.15);color:#0D5EA6;text-decoration:none;">View Lead</a>';
@@ -182,16 +184,10 @@
             var end = Math.min(currentPage * 15, totalCount);
             document.getElementById('tasksPaginationInfo').textContent = 'Showing ' + start + '\u2013' + end + ' of ' + totalCount + ' tasks';
 
-            // Pagination controls
-            var pHtml = '';
-            for (var i = 1; i <= totalPages; i++) {
-                if (i === currentPage) {
-                    pHtml += '<button class="btn btn-secondary" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:800;background:#0D5EA6;color:#fff;border-color:#0D5EA6;">' + i + '</button> ';
-                } else {
-                    pHtml += '<button class="btn btn-secondary" style="padding:6px 12px;border-radius:8px;font-size:13px;font-weight:700;" onclick="loadTasksPage(' + i + ')">' + i + '</button> ';
-                }
-            }
-            document.getElementById('tasksPaginationControls').innerHTML = pHtml;
+            // Pagination controls — windowed (Prev · 1 · … · window · … · last · Next)
+            // so the control stays compact even with many pages.
+            document.getElementById('tasksPaginationControls').innerHTML =
+                buildPager(currentPage, totalPages, 'loadTasksPage');
         }
 
         function getStatusBadgeHtml(t) {
@@ -207,6 +203,41 @@
             var colors = { 'Call': 'rgba(13,94,166,.08);color:#0D5EA6', 'Email': 'rgba(18,152,103,.08);color:#129867', 'Follow-up': 'rgba(200,145,46,.08);color:#C8912E', 'Meeting Prep': 'rgba(87,184,232,.08);color:#1a8fc7', 'Other': 'rgba(138,155,171,.08);color:#8a9bab' };
             var c = colors[type] || colors['Other'];
             return '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:' + c + ';">' + type + '</span>';
+        }
+
+        // Windowed pager (Prev · 1 · … · current±2 · … · last · Next), matching the
+        // Activity/Meetings pagers and the Contacts .pagination-btn visual language.
+        // `onClickFn` is the name of a global page-load function taking a page number.
+        function buildPager(currentPage, totalPages, onClickFn) {
+            if (!totalPages || totalPages <= 1) return '';
+            var html = '';
+            var btn = function (label, page, opts) {
+                opts = opts || {};
+                if (opts.disabled) {
+                    return '<span class="pagination-btn" aria-disabled="true" style="opacity:.4;cursor:not-allowed;">' + label + '</span>';
+                }
+                if (opts.active) {
+                    return '<span class="pagination-btn active" aria-current="page">' + label + '</span>';
+                }
+                return '<button type="button" class="pagination-btn" onclick="' + onClickFn + '(' + page + ')">' + label + '</button>';
+            };
+            html += btn('Previous', currentPage - 1, { disabled: currentPage <= 1 });
+
+            var windowStart = Math.max(1, currentPage - 2);
+            var windowEnd = Math.min(totalPages, currentPage + 2);
+            if (windowStart > 1) {
+                html += btn('1', 1, {});
+                if (windowStart > 2) html += '<span style="padding:0 4px;color:#8a9bab;">…</span>';
+            }
+            for (var p = windowStart; p <= windowEnd; p++) {
+                html += btn(String(p), p, { active: p === currentPage });
+            }
+            if (windowEnd < totalPages) {
+                if (windowEnd < totalPages - 1) html += '<span style="padding:0 4px;color:#8a9bab;">…</span>';
+                html += btn(String(totalPages), totalPages, {});
+            }
+            html += btn('Next', currentPage + 1, { disabled: currentPage >= totalPages });
+            return html;
         }
 
         async function markTaskUnprocessedFromList(taskId) {
@@ -324,7 +355,10 @@
             if (typeof openEditTaskModal === 'function') openEditTaskModal(taskId);
         }
 
-        function setQuickPeriod(preset) {
+        // `evt` is passed explicitly from the onclick handlers (the implicit global `event`
+        // is non-standard and unreliable outside Chrome). It is null when triggered from the
+        // mobile quick-period <select>, so guard before touching evt.target.
+        function setQuickPeriod(evt, preset) {
             var now = new Date();
             var from, to;
             switch (preset) {
@@ -340,7 +374,7 @@
             document.getElementById('filterDateFrom').value = from ? formatDateISO(from) : '';
             document.getElementById('filterDateTo').value = to ? formatDateISO(to) : '';
             document.querySelectorAll('.period-shortcut').forEach(function(b) { b.classList.remove('active'); });
-            event.target.classList.add('active');
+            if (evt && evt.target && evt.target.classList) evt.target.classList.add('active');
             loadTasksPage(1);
         }
 

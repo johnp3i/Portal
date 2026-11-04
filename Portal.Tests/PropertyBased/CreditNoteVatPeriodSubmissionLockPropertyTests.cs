@@ -507,7 +507,7 @@ public class CreditNoteVatPeriodSubmissionLockPropertyTests
                     ServiceResult<int> result;
                     try
                     {
-                        result = service.CreateCreditNoteAsync(dto, TestBusinessId, TestUserId)
+                        result = service.CreateCreditNoteAsync(dto, TestBusinessId, TestUserId, accountCreditEnabled: false)
                             .GetAwaiter().GetResult();
                     }
                     catch (Exception ex)

@@ -5,7 +5,7 @@
 
 <div class="topbar">
     <div>
-        <div class="eyebrow"><span class="dot"></span> Opportunities</div>
+        <div class="eyebrow"><span class="dot"></span> Opportunities / Team</div>
         <h1 class="topbar-heading">Team</h1>
         <p class="topbar-subtitle">Manage people who can be assigned to leads.</p>
     </div>
@@ -19,7 +19,7 @@
     {
         <div class="scroll-hint">Swipe to see more &rarr;</div>
         <div class="table-responsive">
-        <table>
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -62,14 +62,22 @@
                             }
                         </td>
                         <td style="white-space:nowrap;">
-                            <button class="tbl-action tbl-action--primary" onclick="editTeamMember(@member.Id, '@member.FirstName.Replace("'", "\\'")','@(member.LastName?.Replace("'", "\\'") ?? "")','@(member.Email?.Replace("'", "\\'") ?? "")','@(member.PhoneNumber?.Replace("'", "\\'") ?? "")','@(member.Role?.Replace("'", "\\'") ?? "")','@(member.UserId ?? "")')">Edit</button>
+                            <button class="tbl-action tbl-action--primary"
+                                    data-id="@member.Id"
+                                    data-first-name="@member.FirstName"
+                                    data-last-name="@(member.LastName ?? "")"
+                                    data-email="@(member.Email ?? "")"
+                                    data-phone="@(member.PhoneNumber ?? "")"
+                                    data-role="@(member.Role ?? "")"
+                                    data-user-id="@(member.UserId ?? "")"
+                                    onclick="editTeamMemberFromData(this)">Edit</button>
                             @if (member.IsActive)
                             {
-                                <button class="tbl-action tbl-action--danger" onclick="deactivateTeamMember(@member.Id, '@(member.DisplayName.Replace("'", "\\'"))')">Deactivate</button>
+                                <button class="tbl-action tbl-action--danger" data-id="@member.Id" data-name="@member.DisplayName" onclick="deactivateTeamMemberFromData(this)">Deactivate</button>
                             }
                             else
                             {
-                                <button class="tbl-action tbl-action--secondary" onclick="activateTeamMember(@member.Id, '@(member.DisplayName.Replace("'", "\\'"))')">Activate</button>
+                                <button class="tbl-action tbl-action--secondary" data-id="@member.Id" data-name="@member.DisplayName" onclick="activateTeamMemberFromData(this)">Activate</button>
                             }
                         </td>
                     </tr>
@@ -150,15 +158,24 @@
             document.getElementById('teamMemberModal').style.display = 'flex';
         };
 
-        window.editTeamMember = function(id, firstName, lastName, email, phone, role, userId) {
+        // Reads row data from the button's data-* attributes (safer than hand-escaped inline args).
+        window.editTeamMemberFromData = function(btn) {
             document.getElementById('teamModalTitle').textContent = 'Edit Team Member';
-            document.getElementById('teamMemberId').value = id;
-            document.getElementById('tmFirstName').value = firstName || '';
-            document.getElementById('tmLastName').value = lastName || '';
-            document.getElementById('tmEmail').value = email || '';
-            document.getElementById('tmPhone').value = phone || '';
-            document.getElementById('tmRole').value = role || '';
+            document.getElementById('teamMemberId').value = btn.getAttribute('data-id') || '';
+            document.getElementById('tmFirstName').value = btn.getAttribute('data-first-name') || '';
+            document.getElementById('tmLastName').value = btn.getAttribute('data-last-name') || '';
+            document.getElementById('tmEmail').value = btn.getAttribute('data-email') || '';
+            document.getElementById('tmPhone').value = btn.getAttribute('data-phone') || '';
+            document.getElementById('tmRole').value = btn.getAttribute('data-role') || '';
             document.getElementById('teamMemberModal').style.display = 'flex';
+        };
+
+        window.deactivateTeamMemberFromData = function(btn) {
+            deactivateTeamMember(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
+        };
+
+        window.activateTeamMemberFromData = function(btn) {
+            activateTeamMember(parseInt(btn.getAttribute('data-id')), btn.getAttribute('data-name') || '');
         };
 
         window.closeTeamMemberModal = function() {
@@ -167,6 +184,12 @@
 
         document.getElementById('teamMemberModal').addEventListener('click', function(e) {
             if (e.target === this) closeTeamMemberModal();
+        });
+
+        // Escape closes the modal too (overlay-click already handled above).
+        document.addEventListener('keydown', function(e) {
+            var modal = document.getElementById('teamMemberModal');
+            if (e.key === 'Escape' && modal && modal.style.display !== 'none') closeTeamMemberModal();
         });
 
         window.submitTeamMember = async function() {

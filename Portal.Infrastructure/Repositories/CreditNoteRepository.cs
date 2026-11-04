@@ -49,7 +49,7 @@ public class CreditNoteRepository : GenericStoredProcedureRepository<CreditNote>
                     command.Transaction = transaction.GetDbTransaction();
 
                 command.Parameters.Add(new SqlParameter("@BusinessId", entity.BusinessId));
-                command.Parameters.Add(new SqlParameter("@InvoiceId", entity.InvoiceId));
+                command.Parameters.Add(new SqlParameter("@InvoiceId", (object?)entity.InvoiceId ?? DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@CustomerId", entity.CustomerId));
                 command.Parameters.Add(new SqlParameter("@CreditNoteStatusTypeId", entity.CreditNoteStatusTypeId));
                 command.Parameters.Add(new SqlParameter("@VatSubmissionPeriodId", entity.VatSubmissionPeriodId));
@@ -213,7 +213,7 @@ public class CreditNoteRepository : GenericStoredProcedureRepository<CreditNote>
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [credit].[CreditNote]
                 INNER JOIN [customer].[Customer] ON [credit].[CreditNote].[CustomerId] = [customer].[Customer].[Id]
-                INNER JOIN [invoice].[Invoice] ON [credit].[CreditNote].[InvoiceId] = [invoice].[Invoice].[Id]
+                LEFT JOIN [invoice].[Invoice] ON [credit].[CreditNote].[InvoiceId] = [invoice].[Invoice].[Id]
                 INNER JOIN [credit].[CreditNoteStatusType] ON [credit].[CreditNote].[CreditNoteStatusTypeId] = [credit].[CreditNoteStatusType].[Id]
                 WHERE [credit].[CreditNote].[BusinessId] = @BusinessId
                   AND (@StatusFilter IS NULL OR [credit].[CreditNote].[CreditNoteStatusTypeId] = @StatusFilter)
@@ -266,7 +266,7 @@ public class CreditNoteRepository : GenericStoredProcedureRepository<CreditNote>
                         Id = reader.GetInt32(reader.GetOrdinal("Id")),
                         CreditNoteNumber = reader.GetString(reader.GetOrdinal("CreditNoteNumber")),
                         CustomerName = reader.GetString(reader.GetOrdinal("CustomerName")),
-                        InvoiceNumber = reader.GetString(reader.GetOrdinal("InvoiceNumber")),
+                        InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber")),
                         IssueDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("IssueDate"))),
                         TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
                         CreditNoteStatusTypeId = reader.GetInt32(reader.GetOrdinal("CreditNoteStatusTypeId")),

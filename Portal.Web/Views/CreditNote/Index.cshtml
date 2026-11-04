@@ -229,7 +229,7 @@
             html += '<tr>';
             html += '<td><a href="/CreditNote/Detail/' + item.id + '" style="color:#0D5EA6;font-weight:600;text-decoration:none;">' + escHtml(item.creditNoteNumber) + '</a></td>';
             html += '<td>' + escHtml(item.customerName) + '</td>';
-            html += '<td data-mobile="hide">' + escHtml(item.invoiceNumber) + '</td>';
+            html += '<td data-mobile="hide">' + (item.invoiceNumber ? escHtml(item.invoiceNumber) : '<span class="pill" style="background:rgba(87,184,232,.16);color:#1f6f99;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;">Account</span>') + '</td>';
             html += '<td data-mobile="hide">' + formatDate(item.issueDate) + '</td>';
             html += '<td data-mobile="amount" style="text-align:right;font-weight:600;">' + formatCurrency(item.totalAmount) + '</td>';
             html += '<td data-mobile="status">' + getStatusPill(item.creditNoteStatusTypeId) + '</td>';

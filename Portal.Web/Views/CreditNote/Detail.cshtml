@@ -22,7 +22,14 @@
         }
         else if (cn.CreditNoteStatusTypeId == 2)
         {
-            <button type="button" class="btn btn-primary" id="btnApplyCreditNote" data-id="@cn.Id">Apply to Invoice</button>
+            if (cn.IsAccountLevel)
+            {
+                <button type="button" class="btn btn-primary" id="btnApplyAccountCredit" data-id="@cn.Id">Apply credit to invoice</button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-primary" id="btnApplyCreditNote" data-id="@cn.Id">Apply to Invoice</button>
+            }
             <a class="btn btn-secondary" href="@Url.Action("PreviewPdf", "CreditNote", new { id = cn.Id })" target="_blank">Preview PDF</a>
             <button type="button" class="btn btn-danger" id="btnVoidCreditNote" data-id="@cn.Id">Void</button>
         }
@@ -51,9 +58,17 @@
                     };
                 }
                 <span class="pill @statusPillClass">@cn.StatusName</span>
+                @if (cn.IsAccountLevel)
+                {
+                    <span class="pill" style="background:rgba(87,184,232,.16);color:#1f6f99;">Account credit</span>
+                }
                 @if (cn.CreditNoteStatusTypeId == 3)
                 {
                     <span style="font-size:13px;font-weight:700;color:#129867;">Fully applied — no remaining balance</span>
+                }
+                else if (cn.IsAccountLevel && cn.CreditNoteStatusTypeId == 2 && cn.RemainingAmount < cn.TotalAmount)
+                {
+                    <span style="font-size:13px;font-weight:700;color:var(--gold);">Partially applied</span>
                 }
             </div>
         </div>
@@ -73,9 +88,23 @@
             <div>
                 <div class="label">Source Invoice</div>
                 <div style="margin-top:6px;font-size:15px;font-weight:700;">
-                    <a href="/Invoice/Detail/@cn.InvoiceId" style="color:var(--blue);text-decoration:none;">@cn.InvoiceNumber</a>
+                    @if (cn.IsAccountLevel)
+                    {
+                        <span style="color:var(--muted);">Customer account (no invoice)</span>
+                    }
+                    else
+                    {
+                        <a href="/Invoice/Detail/@cn.InvoiceId" style="color:var(--blue);text-decoration:none;">@cn.InvoiceNumber</a>
+                    }
                 </div>
             </div>
+            @if (cn.IsAccountLevel)
+            {
+                <div>
+                    <div class="label">Remaining to Apply</div>
+                    <div style="margin-top:6px;font-size:15px;font-weight:700;color:#129867;">@(currencySymbol)@cn.RemainingAmount.ToString("N2")</div>
+                </div>
+            }
             <div>
                 <div class="label">VAT Period</div>
                 <div style="margin-top:6px;font-size:15px;font-weight:700;">@cn.VatPeriodLabel</div>
@@ -192,9 +221,159 @@
     <a asp-action="Index" asp-controller="CreditNote" class="btn btn-outline">&larr; Back to Credit Notes</a>
 </div>
 
+@if (cn.IsAccountLevel)
+{
+    <!-- Apply Account Credit modal -->
+    <div id="applyAccountCreditModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.4);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:20px;padding:30px;max-width:620px;width:92%;box-shadow:0 20px 50px rgba(0,0,0,.18);max-height:88vh;overflow-y:auto;">
+            <h3 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin:0 0 4px;">Apply credit to invoices</h3>
+            <p style="font-size:13px;color:#5a6a7a;margin:0 0 18px;">@cn.CreditNoteNumber &middot; @cn.CustomerName &middot; choose how much to apply to each outstanding invoice.</p>
+
+            <div id="applyInvoiceList">
+                <p class="muted" style="font-size:14px;">Loading outstanding invoices…</p>
+            </div>
+
+            <div style="margin-top:16px;padding:12px 16px;border-radius:12px;background:var(--bg2);display:flex;justify-content:space-between;font-weight:700;">
+                <span>Credit remaining</span><span style="color:#129867;">@(currencySymbol)@cn.RemainingAmount.ToString("N2")</span>
+            </div>
+            <div style="margin-top:8px;padding:0 16px;display:flex;justify-content:space-between;font-weight:700;">
+                <span>Total being applied</span><span id="applyTotalBeingApplied">@(currencySymbol)0.00</span>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:22px;">
+                <button type="button" class="btn btn-outline" onclick="closeApplyAccountModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmApplyAccount" onclick="submitApplyAccountCredit()">Apply</button>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <script>
         var creditNoteId = @cn.Id;
+        var creditRemaining = @cn.RemainingAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var currencySymbol = @Html.Raw("'" + (currencySymbol.Replace("'", "\\'")) + "'");
+
+        // ===== Apply Account Credit (account-level notes) =====
+        var btnApplyAccount = document.getElementById('btnApplyAccountCredit');
+        if (btnApplyAccount) {
+            btnApplyAccount.addEventListener('click', openApplyAccountModal);
+        }
+
+        async function openApplyAccountModal() {
+            var modal = document.getElementById('applyAccountCreditModal');
+            var list = document.getElementById('applyInvoiceList');
+            list.innerHTML = '<p class="muted" style="font-size:14px;">Loading outstanding invoices…</p>';
+            modal.style.display = 'flex';
+
+            BlockUI.show('Loading invoices...');
+            try {
+                var response = await fetch('/CreditNote/GetCustomerOutstandingInvoices?customerId=@cn.CustomerId');
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (!data.success || !data.data || data.data.length === 0) {
+                    list.innerHTML = '<p class="muted" style="font-size:14px;">This customer has no outstanding invoices to apply credit to.</p>';
+                    document.getElementById('btnConfirmApplyAccount').disabled = true;
+                    return;
+                }
+
+                document.getElementById('btnConfirmApplyAccount').disabled = false;
+
+                var html = '<div style="display:grid;grid-template-columns:1fr 130px 130px;gap:10px;align-items:center;padding:8px 0;border-bottom:1.5px solid rgba(13,94,166,.10);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5a6a7a;font-weight:700;">'
+                    + '<div>Invoice</div><div style="text-align:right;">Outstanding</div><div style="text-align:right;">Apply</div></div>';
+
+                data.data.forEach(function (inv) {
+                    html += '<div style="display:grid;grid-template-columns:1fr 130px 130px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(13,94,166,.06);">'
+                        + '<div style="font-weight:700;">' + escapeHtmlLocal(inv.invoiceNumber) + '</div>'
+                        + '<div style="text-align:right;">' + currencySymbol + parseFloat(inv.outstandingBalance).toFixed(2) + '</div>'
+                        + '<div><input type="number" class="apply-amt" data-invoice-id="' + inv.id + '" data-outstanding="' + inv.outstandingBalance + '" min="0" step="0.01" value="0" style="width:100%;padding:8px 10px;border:1px solid rgba(13,94,166,.10);border-radius:10px;text-align:right;" oninput="recalcApplyTotal()" /></div>'
+                        + '</div>';
+                });
+                list.innerHTML = html;
+                recalcApplyTotal();
+            } catch (e) {
+                BlockUI.hide();
+                list.innerHTML = '<p class="muted" style="font-size:14px;color:#C24A4A;">Failed to load invoices. Please try again.</p>';
+            }
+        }
+
+        function escapeHtmlLocal(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function recalcApplyTotal() {
+            var total = 0;
+            document.querySelectorAll('.apply-amt').forEach(function (input) {
+                total += parseFloat(input.value) || 0;
+            });
+            document.getElementById('applyTotalBeingApplied').textContent = currencySymbol + total.toFixed(2);
+        }
+
+        function closeApplyAccountModal() {
+            document.getElementById('applyAccountCreditModal').style.display = 'none';
+        }
+
+        async function submitApplyAccountCredit() {
+            var allocations = [];
+            var total = 0;
+            document.querySelectorAll('.apply-amt').forEach(function (input) {
+                var amount = parseFloat(input.value) || 0;
+                var outstanding = parseFloat(input.getAttribute('data-outstanding')) || 0;
+                if (amount > 0) {
+                    allocations.push({ invoiceId: parseInt(input.getAttribute('data-invoice-id'), 10), amount: amount });
+                    total += amount;
+                }
+                if (amount > outstanding + 0.001) {
+                    input.dataset.over = '1';
+                } else {
+                    delete input.dataset.over;
+                }
+            });
+
+            if (allocations.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'Nothing to apply', text: 'Enter an amount against at least one invoice.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            var over = document.querySelector('.apply-amt[data-over="1"]');
+            if (over) {
+                Swal.fire({ icon: 'warning', title: 'Amount too high', text: 'An amount exceeds its invoice outstanding balance.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            if (total > parseFloat(creditRemaining) + 0.001) {
+                Swal.fire({ icon: 'warning', title: 'Exceeds remaining credit', text: 'Total applied (' + total.toFixed(2) + ') exceeds the remaining credit (' + parseFloat(creditRemaining).toFixed(2) + ').', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+
+            BlockUI.show('Applying credit...');
+            try {
+                var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var response = await fetch('/CreditNote/AxPostApplyAccountCredit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    body: JSON.stringify({ creditNoteId: creditNoteId, allocations: allocations })
+                });
+                var data = await response.json();
+                BlockUI.hide();
+
+                if (data.success) {
+                    closeApplyAccountModal();
+                    await Swal.fire({ icon: 'success', title: 'Applied!', text: data.message, confirmButtonColor: '#0D5EA6' });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred. Please try again.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
 
         // Issue Credit Note
         var btnIssue = document.getElementById('btnIssueCreditNote');

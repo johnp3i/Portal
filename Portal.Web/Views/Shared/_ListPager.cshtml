@@ -1,0 +1,81 @@
+@model Portal.Web.Models.ListPagerModel
+@*
+    Shared numbered list pager for server-rendered list pages.
+    Renders: "Showing X–Y of N {noun}" + Previous · 1 · … · window · … · last · Next.
+    Styling comes from the global .pagination-btn rule in site.css.
+    Usage:
+        @await Html.PartialAsync("_ListPager", new Portal.Web.Models.ListPagerModel {
+            CurrentPage = Model.CurrentPage, TotalPages = Model.TotalPages,
+            TotalCount = Model.TotalCount, PageSize = Model.PageSize,
+            BasePath = "/Sales/Contacts", SearchTerm = searchTerm, ItemNoun = "contacts" })
+*@
+@{
+    var current = Model.CurrentPage;
+    var totalPages = Model.TotalPages;
+    var from = Model.TotalCount == 0 ? 0 : (current - 1) * Model.PageSize + 1;
+    var to = Math.Min(current * Model.PageSize, Model.TotalCount);
+
+    // Build a page URL, preserving the search term when present.
+    var searchQs = string.IsNullOrWhiteSpace(Model.SearchTerm)
+        ? ""
+        : $"search={Uri.EscapeDataString(Model.SearchTerm)}&";
+    Func<int, string> pageUrl = p => $"{Model.BasePath}?{searchQs}page={p}";
+
+    var windowStart = Math.Max(1, current - Model.Window);
+    var windowEnd = Math.Min(totalPages, current + Model.Window);
+}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
+    <div style="font-size:14px;color:#5a6a7a;">Showing @from–@to of @Model.TotalCount @Model.ItemNoun</div>
+    @if (totalPages > 1)
+    {
+        <div style="display:flex;gap:4px;align-items:center;">
+            @if (Model.CurrentPage > 1)
+            {
+                <a href="@pageUrl(current - 1)" class="pagination-btn">Previous</a>
+            }
+            else
+            {
+                <span class="pagination-btn" aria-disabled="true" style="opacity:.4;cursor:not-allowed;">Previous</span>
+            }
+
+            @if (windowStart > 1)
+            {
+                <a href="@pageUrl(1)" class="pagination-btn">1</a>
+                @if (windowStart > 2)
+                {
+                    <span style="padding:0 4px;color:#8a9bab;">…</span>
+                }
+            }
+
+            @for (var p = windowStart; p <= windowEnd; p++)
+            {
+                if (p == current)
+                {
+                    <span class="pagination-btn active" aria-current="page">@p</span>
+                }
+                else
+                {
+                    <a href="@pageUrl(p)" class="pagination-btn">@p</a>
+                }
+            }
+
+            @if (windowEnd < totalPages)
+            {
+                @if (windowEnd < totalPages - 1)
+                {
+                    <span style="padding:0 4px;color:#8a9bab;">…</span>
+                }
+                <a href="@pageUrl(totalPages)" class="pagination-btn">@totalPages</a>
+            }
+
+            @if (Model.CurrentPage < totalPages)
+            {
+                <a href="@pageUrl(current + 1)" class="pagination-btn">Next</a>
+            }
+            else
+            {
+                <span class="pagination-btn" aria-disabled="true" style="opacity:.4;cursor:not-allowed;">Next</span>
+            }
+        </div>
+    }
+</div>

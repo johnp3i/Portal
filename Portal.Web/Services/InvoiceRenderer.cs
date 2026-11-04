@@ -18,6 +18,7 @@ public class InvoiceRenderer : IInvoiceRenderer
     private readonly ILogoService _logoService;
     private readonly IBusinessService _businessService;
     private readonly BusinessPaymentDetailRepository _paymentDetailRepository;
+    private readonly ICreditNoteService _creditNoteService;
 
     public InvoiceRenderer(
         IViewRenderService viewRenderService,
@@ -27,7 +28,8 @@ public class InvoiceRenderer : IInvoiceRenderer
         ICustomerService customerService,
         ILogoService logoService,
         IBusinessService businessService,
-        BusinessPaymentDetailRepository paymentDetailRepository)
+        BusinessPaymentDetailRepository paymentDetailRepository,
+        ICreditNoteService creditNoteService)
     {
         _viewRenderService = viewRenderService;
         _invoiceService = invoiceService;
@@ -37,6 +39,7 @@ public class InvoiceRenderer : IInvoiceRenderer
         _logoService = logoService;
         _businessService = businessService;
         _paymentDetailRepository = paymentDetailRepository;
+        _creditNoteService = creditNoteService;
     }
 
     public async Task<string> RenderAsync(int invoiceId)
@@ -57,6 +60,7 @@ public class InvoiceRenderer : IInvoiceRenderer
         var business = await _businessService.GetBusinessByIdAsync(businessId);
         var profile = await _businessService.GetBusinessProfileAsync(businessId);
         var paymentDetails = await _paymentDetailRepository.GetByBusinessIdAsync(businessId);
+        var appliedCreditNotes = await _creditNoteService.GetAppliedCreditNotesForInvoiceAsync(invoiceId, businessId);
 
         var model = new InvoiceSnapshotModel
         {
@@ -67,7 +71,8 @@ public class InvoiceRenderer : IInvoiceRenderer
             LogoUrl = primaryLogo?.PublicUrl,
             BusinessName = business?.Name ?? "",
             Profile = profile,
-            PaymentDetails = paymentDetails
+            PaymentDetails = paymentDetails,
+            AppliedCreditNotes = appliedCreditNotes
         };
 
         return await _viewRenderService.RenderViewToStringAsync("~/Views/Invoice/Snapshot.cshtml", model);

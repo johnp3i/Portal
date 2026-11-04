@@ -22,4 +22,10 @@ public class InvoiceListDto
     /// Null = no active share, "awaiting" = shared but not accepted, "accepted" = accepted by customer.
     /// </summary>
     public string? AcceptanceStatus { get; set; }
+
+    /// <summary>
+    /// True when at least one non-voided credit note has been applied to this invoice. Drives the
+    /// small "CN" badge in the list and the credit marker in the Excel export.
+    /// </summary>
+    public bool HasCreditNote { get; set; }
 }

@@ -278,7 +278,7 @@
         </div>
         <div class="doc-field">
             <div class="doc-label">Invoice Reference</div>
-            <div class="doc-value">@Model.InvoiceNumber</div>
+            <div class="doc-value">@(string.IsNullOrEmpty(Model.InvoiceNumber) ? "Customer account credit" : Model.InvoiceNumber)</div>
         </div>
     </div>
 

@@ -15,35 +15,10 @@
 }
 
 @section Head {
-    <script>
-        // ─── Filter State Persistence (runs in the page head, BEFORE first paint) ──
-        // Remembers the active purchase filters across navigation. Common flow:
-        // filter by supplier → open/create a purchase → come back → filters restored.
-        //
-        //  • When the page has a query string, save it as the current filter state.
-        //  • When the page has NO query string but a filter state was saved, restore it by
-        //    replacing to /Purchase{savedQuery}. Landing there has a query string, so it
-        //    saves (not re-restores) — no redirect loop.
-        //  • The "Clear" button removes the saved state, so clearing is sticky too.
-        //
-        // Running here (not at the end of the page) means the restore redirect fires before the
-        // page renders, so there is no visible "load bare list → flash → reload filtered" flicker.
-        (function () {
-            var STORAGE_KEY = 'purchase_filter_state';
-            var search = window.location.search;
-
-            if (search && search !== '?') {
-                sessionStorage.setItem(STORAGE_KEY, search);
-                return;
-            }
-
-            var saved = sessionStorage.getItem(STORAGE_KEY);
-            if (saved && saved !== '?' && saved.length > 1) {
-                window.location.replace('/Purchase' + saved);
-            }
-        })();
-    </script>
-
+    @* Filter-state persistence is handled server-side in PurchaseController.Index via the
+       purchase_filter_qs cookie (a single 302 on a bare /Purchase). The previous client-side
+       window.location.replace redirect painted the table, aborted the request, and reloaded —
+       causing the slow triple-render on load. *@
     <style>
         /* ══ Purchases list — native stacked card feed on phones ═══════════════════
            Loaded in the page head so it applies before first paint (prevents the flash
@@ -246,8 +221,8 @@
         <a asp-action="Create" class="btn btn-primary">Create Purchase</a>
         <a asp-action="BulkEntry" class="btn btn-secondary" style="background:rgba(13,94,166,.08);border:1.5px solid var(--blue);color:var(--blue);">Bulk Entry</a>
         <a asp-action="CsvImport" class="btn btn-secondary">CSV Import</a>
-        <a class="btn btn-secondary" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export CSV</a>
-        <a class="btn btn-secondary" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export PDF</a>
+        <a class="btn btn-secondary" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export CSV</a>
+        <a class="btn btn-secondary" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export PDF</a>
     </div>
 </div>
 
@@ -270,8 +245,8 @@
         <div class="mab-more-panel" id="purchaseMorePanel" role="menu">
             <a asp-action="BulkEntry" class="mab-more-item" role="menuitem">Bulk Entry</a>
             <a asp-action="CsvImport" class="mab-more-item" role="menuitem">CSV Import</a>
-            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export CSV</a>
-            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm">Export PDF</a>
+            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export CSV</a>
+            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export PDF</a>
         </div>
     </div>
 </div>
@@ -361,7 +336,7 @@
                 </div>
                 <div style="display:flex;gap:10px;padding-bottom:2px;margin-left:auto;">
                     <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
-                    <a href="/Purchase" class="btn btn-secondary" style="padding:14px 20px;" onclick="sessionStorage.removeItem('purchase_filter_state');">Clear</a>
+                    <a href="/Purchase" class="btn btn-secondary" style="padding:14px 20px;" onclick="document.cookie='purchase_filter_qs=; path=/; max-age=0';">Clear</a>
                 </div>
             </div>
             <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -426,20 +401,16 @@
         filterLabel = "Filtered: " + string.Join(" · ", parts);
     }
 }
-<!-- KPI Cards (computed from filtered results) -->
+<!-- KPI Cards (computed over the FULL filtered set in SQL, not just the current page) -->
 @{
-    var activePurchases = Model.Purchases?.Where(p => !p.IsCancelled).ToList() ?? new List<Portal.Infrastructure.Entities.Purchase>();
-    var totalPurchases = activePurchases.Count;
-    var totalSpend = activePurchases.Sum(p => p.TotalAmount);
-    var totalVat = activePurchases.Sum(p => p.VatAmount);
-    var outdatedCount = activePurchases.Count(p =>
-        p.VatSubmissionPeriod != null
-        && (p.InvoiceDate < p.VatSubmissionPeriod.PeriodStartDate
-            || p.InvoiceDate > p.VatSubmissionPeriod.PeriodEndDate));
-    var domesticCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 1);
-    var euRcCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 2);
-    var euPaidCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 4);
-    var nonEuCount = activePurchases.Count(p => p.PurchaseOriginTypeId == 3);
+    var totalPurchases = Model.Aggregates.TotalCount;
+    var totalSpend = Model.Aggregates.TotalSpend;
+    var totalVat = Model.Aggregates.TotalVat;
+    var outdatedCount = Model.Aggregates.OutdatedCount;
+    var domesticCount = Model.Aggregates.DomesticCount;
+    var euRcCount = Model.Aggregates.EuRcCount;
+    var euPaidCount = Model.Aggregates.EuPaidCount;
+    var nonEuCount = Model.Aggregates.NonEuCount;
 }
 <section class="glass card-pad" style="margin-bottom:22px;">
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:18px;">
@@ -485,13 +456,51 @@
     </div>
 </section>
 
+@{
+    // Base query string for server-side pagination links: current filters WITHOUT any page param.
+    var pageQuery = new List<string>();
+    if (Model.SupplierId.HasValue) pageQuery.Add($"supplierId={Model.SupplierId}");
+    if (Model.ExpenseCategoryId.HasValue) pageQuery.Add($"expenseCategoryId={Model.ExpenseCategoryId}");
+    if (Model.PurchaseOriginTypeId.HasValue) pageQuery.Add($"purchaseOriginTypeId={Model.PurchaseOriginTypeId}");
+    if (Model.PurchaseTypeId.HasValue) pageQuery.Add($"purchaseTypeId={Model.PurchaseTypeId}");
+    if (Model.VatPeriodId.HasValue) pageQuery.Add($"vatPeriodId={Model.VatPeriodId}");
+    if (Model.DateFrom.HasValue) pageQuery.Add($"dateFrom={Model.DateFrom.Value:yyyy-MM-dd}");
+    if (Model.DateTo.HasValue) pageQuery.Add($"dateTo={Model.DateTo.Value:yyyy-MM-dd}");
+    if (!string.IsNullOrWhiteSpace(Model.SearchTerm)) pageQuery.Add($"searchTerm={Uri.EscapeDataString(Model.SearchTerm)}");
+    if (!string.IsNullOrWhiteSpace(Model.SortBy)) pageQuery.Add($"sortBy={Model.SortBy}");
+    var baseQs = pageQuery.Count > 0 ? "?" + string.Join("&", pageQuery) + "&" : "?";
+
+    var fromRow = Model.TotalCount == 0 ? 0 : (Model.CurrentPage - 1) * Model.PageSize + 1;
+    var toRow = Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount);
+    var startPage = Math.Max(1, Model.CurrentPage - 2);
+    var endPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+}
+
 <!-- Purchase Table -->
 <section class="glass card-pad">
     @if (Model.Purchases != null && Model.Purchases.Count > 0)
     {
         <div class="table-responsive index-table">
         <div class="scroll-hint">← Scroll horizontally →</div>
-        <table id="purchaseTable">
+        <table id="purchaseTable" style="table-layout:fixed;width:100%;min-width:1320px;">
+            @* Fixed column widths so the layout is stable on first paint (no reflow as rows stream
+               in) and the three text columns wrap instead of stretching — leaving room for more
+               columns on screen. Widths sum to a sensible desktop total; the wrapper scrolls if the
+               viewport is narrower. *@
+            <colgroup>
+                <col style="width:210px;" />  @* Description *@
+                <col style="width:150px;" />  @* Supplier *@
+                <col style="width:95px;" />   @* Date *@
+                <col style="width:120px;" />  @* Due *@
+                <col style="width:150px;" />  @* Category *@
+                <col style="width:70px;" />   @* File *@
+                <col style="width:90px;" />   @* Excl. VAT *@
+                <col style="width:80px;" />   @* VAT *@
+                <col style="width:95px;" />   @* Total *@
+                <col style="width:110px;" />  @* Classification *@
+                <col style="width:100px;" />  @* Status *@
+                <col style="width:150px;" />  @* Actions *@
+            </colgroup>
             <thead>
                 <tr>
                     <th>Description</th>
@@ -509,17 +518,8 @@
                 </tr>
             </thead>
             <tbody id="purchaseTableBody">
-                @{
-                    var sortedPurchases = (Model.SortBy ?? "recent") switch
-                    {
-                        "date_desc" => Model.Purchases.OrderByDescending(p => p.InvoiceDate).ToList(),
-                        "date_asc" => Model.Purchases.OrderBy(p => p.InvoiceDate).ToList(),
-                        "amount_desc" => Model.Purchases.OrderByDescending(p => p.TotalAmount).ToList(),
-                        "amount_asc" => Model.Purchases.OrderBy(p => p.TotalAmount).ToList(),
-                        _ => Model.Purchases.OrderByDescending(p => p.CreatedAtUtc).ToList()
-                    };
-                }
-                @foreach (var purchase in sortedPurchases)
+                @* Rows are already filtered, sorted and paged server-side (one page only). *@
+                @foreach (var purchase in Model.Purchases)
                 {
                     <tr>
                         <td>
@@ -530,7 +530,7 @@
                             }
                             <div style="font-size:11px;color:#5a6a7a;margin-top:2px;">Added @purchase.CreatedAtUtc.ToString("dd MMM yyyy")</div>
                         </td>
-                        <td>@purchase.Supplier?.Name</td>
+                        <td>@Model.SupplierName(purchase.SupplierId)</td>
                         <td data-mobile="hide">@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
                         <td data-mobile="hide">
                             @{
@@ -547,13 +547,13 @@
                                 var days = effectiveDue.Value.DayNumber - today.DayNumber;
                                 if (!purchase.IsCancelled && purchase.IsPaid)
                                 {
-                                    <span style="color:#5a6a7a;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
-                                    <span class="pill pill-green" style="margin-left:4px;">Paid</span>
+                                    <span style="color:#5a6a7a;display:block;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
+                                    <span class="pill pill-green" style="display:inline-block;margin-top:4px;">Paid</span>
                                 }
                                 else if (!purchase.IsCancelled && days < 0)
                                 {
-                                    <span style="color:#C24A4A;font-weight:600;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
-                                    <span class="pill pill-red" style="margin-left:4px;">Overdue</span>
+                                    <span style="color:#C24A4A;font-weight:600;display:block;">@effectiveDue.Value.ToString("dd MMM yyyy")</span>
+                                    <span class="pill pill-red" style="display:inline-block;margin-top:4px;">Overdue</span>
                                 }
                                 else if (!purchase.IsCancelled && days == 0)
                                 {
@@ -573,7 +573,7 @@
                                 }
                             }
                         </td>
-                        <td data-mobile="hide">@purchase.ExpenseCategory?.Name</td>
+                        <td data-mobile="hide">@Model.ExpenseCategoryName(purchase.ExpenseCategoryId)</td>
                         <td id="attachCell-@purchase.Id" data-mobile="attach" style="cursor:pointer;text-decoration:none;" title="View or attach files" onclick="showAttachmentModal(@purchase.Id, '@((purchase.InvoiceNumber ?? purchase.Description ?? "Purchase").Replace("'", "\\'"))')">
                             @{
                                 // Inline attachment-count badge from the batch-loaded dictionary —
@@ -698,10 +698,44 @@
         </table>
         </div>
 
-        <!-- Pagination Controls -->
+        <!-- Pagination Controls (server-side) -->
         <div id="paginationContainer" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
-            <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;"></div>
-            <div id="paginationControls" style="display:flex;gap:4px;align-items:center;"></div>
+            <div id="paginationInfo" style="font-size:14px;color:#5a6a7a;">
+                Showing @fromRow-@toRow of @Model.TotalCount purchases
+            </div>
+            <div id="paginationControls" style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+                @if (Model.TotalPages > 1)
+                {
+                    <a class="pagination-btn @(Model.CurrentPage == 1 ? "disabled" : "")"
+                       href="@(Model.CurrentPage == 1 ? "#" : $"/Purchase{baseQs}page={Model.CurrentPage - 1}")">Previous</a>
+
+                    @if (startPage > 1)
+                    {
+                        <a class="pagination-btn" href="@($"/Purchase{baseQs}page=1")">1</a>
+                        @if (startPage > 2)
+                        {
+                            <span style="padding:0 6px;color:#5a6a7a;">...</span>
+                        }
+                    }
+
+                    @for (var i = startPage; i <= endPage; i++)
+                    {
+                        <a class="pagination-btn @(i == Model.CurrentPage ? "active" : "")" href="@($"/Purchase{baseQs}page={i}")">@i</a>
+                    }
+
+                    @if (endPage < Model.TotalPages)
+                    {
+                        @if (endPage < Model.TotalPages - 1)
+                        {
+                            <span style="padding:0 6px;color:#5a6a7a;">...</span>
+                        }
+                        <a class="pagination-btn" href="@($"/Purchase{baseQs}page={Model.TotalPages}")">@Model.TotalPages</a>
+                    }
+
+                    <a class="pagination-btn @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")"
+                       href="@(Model.CurrentPage == Model.TotalPages ? "#" : $"/Purchase{baseQs}page={Model.CurrentPage + 1}")">Next</a>
+                }
+            </div>
         </div>
     }
     else
@@ -747,6 +781,33 @@
 }
 
 <style>
+    /* ── Desktop table columns (table-layout:fixed via colgroup) ──────────────
+       The three text columns wrap within their fixed width so they never stretch
+       the layout; everything else stays on one line. Stable widths also mean no
+       reflow as rows render. */
+    #purchaseTable { border-collapse: separate; border-spacing: 0; }
+    #purchaseTable th,
+    #purchaseTable td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: top;
+    }
+    /* Description, Supplier, Category: wrap instead of truncate/stretch. */
+    #purchaseTable tbody td:nth-child(1),
+    #purchaseTable tbody td:nth-child(2),
+    #purchaseTable tbody td:nth-child(5) {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    /* Keep numeric / short columns on a single line. */
+    #purchaseTable tbody td:nth-child(3),
+    #purchaseTable tbody td:nth-child(7),
+    #purchaseTable tbody td:nth-child(8),
+    #purchaseTable tbody td:nth-child(9) {
+        white-space: nowrap;
+    }
+
     .pill-red {
         background: #C24A4A;
         color: #fff;
@@ -756,6 +817,7 @@
         font-weight: 600;
     }
     .pagination-btn {
+        display: inline-block;
         padding: 8px 14px;
         border: 1px solid #d0d9e2;
         border-radius: 8px;
@@ -764,15 +826,18 @@
         font-weight: 600;
         font-size: 13px;
         cursor: pointer;
+        text-decoration: none;
         transition: all 0.15s ease;
     }
-    .pagination-btn:hover:not(:disabled) {
+    .pagination-btn:hover:not(:disabled):not(.disabled) {
         background: #EEF4F8;
         border-color: #0D5EA6;
     }
-    .pagination-btn:disabled {
+    .pagination-btn:disabled,
+    .pagination-btn.disabled {
         opacity: 0.4;
         cursor: not-allowed;
+        pointer-events: none;
     }
     .pagination-btn.active {
         background: #0D5EA6;
@@ -1138,105 +1203,8 @@ function formatDateISO(d) {
 <script>
 (function() {
     // =========================================================================
-    // Client-side Pagination
-    // =========================================================================
-    var table = document.getElementById('purchaseTable');
-    if (!table) return;
-
-    var tbody = document.getElementById('purchaseTableBody');
-    var rows = Array.from(tbody.querySelectorAll('tr'));
-    var pageSize = 20;
-    var currentPage = 1;
-    var totalRows = rows.length;
-    var totalPages = Math.ceil(totalRows / pageSize);
-
-    function renderPage(page) {
-        currentPage = page;
-        var start = (page - 1) * pageSize;
-        var end = start + pageSize;
-
-        rows.forEach(function(row, index) {
-            row.style.display = (index >= start && index < end) ? '' : 'none';
-        });
-
-        renderPaginationInfo(start, end);
-        renderPaginationControls();
-    }
-
-    function renderPaginationInfo(start, end) {
-        var info = document.getElementById('paginationInfo');
-        if (!info) return;
-        var showing = Math.min(end, totalRows);
-        info.textContent = 'Showing ' + (start + 1) + '-' + showing + ' of ' + totalRows + ' purchases';
-    }
-
-    function renderPaginationControls() {
-        var container = document.getElementById('paginationControls');
-        if (!container) return;
-        container.innerHTML = '';
-
-        if (totalPages <= 1) return;
-
-        // Previous button
-        var prevBtn = document.createElement('button');
-        prevBtn.className = 'pagination-btn';
-        prevBtn.textContent = 'Previous';
-        prevBtn.disabled = currentPage === 1;
-        prevBtn.addEventListener('click', function() { renderPage(currentPage - 1); });
-        container.appendChild(prevBtn);
-
-        // Page number buttons
-        var startPage = Math.max(1, currentPage - 2);
-        var endPage = Math.min(totalPages, currentPage + 2);
-
-        if (startPage > 1) {
-            container.appendChild(createPageBtn(1));
-            if (startPage > 2) {
-                var ellipsis = document.createElement('span');
-                ellipsis.textContent = '...';
-                ellipsis.style.padding = '0 6px';
-                ellipsis.style.color = '#5a6a7a';
-                container.appendChild(ellipsis);
-            }
-        }
-
-        for (var i = startPage; i <= endPage; i++) {
-            container.appendChild(createPageBtn(i));
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                var ellipsis2 = document.createElement('span');
-                ellipsis2.textContent = '...';
-                ellipsis2.style.padding = '0 6px';
-                ellipsis2.style.color = '#5a6a7a';
-                container.appendChild(ellipsis2);
-            }
-            container.appendChild(createPageBtn(totalPages));
-        }
-
-        // Next button
-        var nextBtn = document.createElement('button');
-        nextBtn.className = 'pagination-btn';
-        nextBtn.textContent = 'Next';
-        nextBtn.disabled = currentPage === totalPages;
-        nextBtn.addEventListener('click', function() { renderPage(currentPage + 1); });
-        container.appendChild(nextBtn);
-    }
-
-    function createPageBtn(page) {
-        var btn = document.createElement('button');
-        btn.className = 'pagination-btn' + (page === currentPage ? ' active' : '');
-        btn.textContent = page;
-        btn.addEventListener('click', function() { renderPage(page); });
-        return btn;
-    }
-
-    // Initialize pagination
-    renderPage(1);
-
-    // =========================================================================
     // Cancel Purchase — Two-step SweetAlert2 confirmation
+    // (Pagination is now server-side — see the page links in the view.)
     // =========================================================================
     function getAntiForgeryToken() {
         var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');

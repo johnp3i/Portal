@@ -21,6 +21,8 @@ public class PaymentService : IPaymentService
     private readonly IPaymentReceiptService? _receiptService;
     private readonly Notifications.INotificationProducer? _notificationProducer;
     private readonly PortalDbContext _portalDbContext;
+    private readonly AuditLogRepository _auditLogRepository;
+    private readonly PaymentReceiptRepository _paymentReceiptRepository;
 
     private const int InvoiceStatusIssued = 2;
 
@@ -32,6 +34,8 @@ public class PaymentService : IPaymentService
         IPaymentScheduleService paymentScheduleService,
         IPaymentAllocationEngine allocationEngine,
         PortalDbContext portalDbContext,
+        AuditLogRepository auditLogRepository,
+        PaymentReceiptRepository paymentReceiptRepository,
         IPaymentReceiptService? receiptService = null,
         Notifications.INotificationProducer? notificationProducer = null)
     {
@@ -42,6 +46,8 @@ public class PaymentService : IPaymentService
         _paymentScheduleService = paymentScheduleService;
         _allocationEngine = allocationEngine;
         _portalDbContext = portalDbContext;
+        _auditLogRepository = auditLogRepository;
+        _paymentReceiptRepository = paymentReceiptRepository;
         _receiptService = receiptService;
         _notificationProducer = notificationProducer;
     }
@@ -113,6 +119,95 @@ public class PaymentService : IPaymentService
         await TryAutoGenerateReceiptAsync(paymentId, businessId, userId);
 
         return ServiceResult.Ok(paymentId);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceResult> UpdatePaymentMethodAndReferenceAsync(
+        int paymentId, int newPaymentMethodTypeId, string? newReference, int businessId, string userId)
+    {
+        try
+        {
+            // Normalise: blank/whitespace reference -> null (reference is optional and clearable).
+            var reference = string.IsNullOrWhiteSpace(newReference) ? null : newReference.Trim();
+
+            // 1. Load tenant-scoped. A payment of another business behaves as "not found".
+            var payment = await _paymentRepository.GetByIdAndBusinessIdAsync(paymentId, businessId);
+            if (payment == null)
+                return ServiceResult.Fail("Payment not found.");
+
+            // 2. Refuse voided payments — cancelled data is not editable.
+            if (payment.IsVoided)
+                return ServiceResult.Fail("A voided payment cannot be edited.");
+
+            // 3. Validate the new method against the SAME active set the dropdown renders
+            //    (GetPaymentMethodTypesAsync filters IsActive). The payment's own current method is
+            //    always accepted even if it has since been deactivated, so a legacy payment can be
+            //    re-saved without being forced onto a different method.
+            var methodIsActive = await _portalDbContext.PaymentMethodTypes
+                .AnyAsync(pmt => pmt.Id == newPaymentMethodTypeId && pmt.IsActive);
+            if (!methodIsActive && newPaymentMethodTypeId != payment.PaymentMethodTypeId)
+                return ServiceResult.Fail("The selected payment method is not valid.");
+
+            // 4. VAT-period lock decision: ALLOW. Method/reference are VAT-neutral (VAT-period
+            //    assignment is driven by PaymentDateUtc, which this feature never changes), so there
+            //    is no financial reason to block the edit in a submitted period. No VAT guard.
+
+            // Capture old values for the audit entry BEFORE mutating.
+            var oldMethodId = payment.PaymentMethodTypeId;
+            var oldReference = payment.Reference;
+
+            // 5-7. Payment update, receipt cascade, and audit insert run as one all-or-nothing
+            //       transaction. No short-circuit: every successful save cascades and audits, so a
+            //       receipt that was out of sync is re-synced even when the payment values are
+            //       unchanged, and exactly one audit row is always produced.
+            using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
+            try
+            {
+                // 5. Update the payment row.
+                await _paymentRepository.UpdateMethodAndReferenceAsync(paymentId, newPaymentMethodTypeId, reference);
+
+                // 6. Cascade to the non-voided receipt snapshot (no-op when none exists).
+                await _paymentReceiptRepository.UpdateMethodAndReferenceByPaymentIdAsync(
+                    paymentId, businessId, newPaymentMethodTypeId, reference);
+
+                // 7. Append-only audit entry (small-JSON old/new values, same shape as StatementService).
+                await _auditLogRepository.InsertAsync(new AuditLog
+                {
+                    BusinessId = businessId,
+                    UserId = userId,
+                    Action = "PaymentMethodUpdated",
+                    TableName = "Payment",
+                    RecordId = paymentId.ToString(),
+                    OldValues = $"{{\"PaymentMethodTypeId\":{oldMethodId},\"Reference\":{ToJsonValue(oldReference)}}}",
+                    NewValues = $"{{\"PaymentMethodTypeId\":{newPaymentMethodTypeId},\"Reference\":{ToJsonValue(reference)}}}",
+                    Timestamp = DateTime.UtcNow
+                });
+
+                await transaction.CommitAsync();
+                return ServiceResult.Ok();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Renders a nullable string as a JSON value: literal <c>null</c> when null, otherwise a
+    /// double-quoted, JSON-escaped string. Keeps the audit OldValues/NewValues valid JSON.
+    /// </summary>
+    private static string ToJsonValue(string? value)
+    {
+        if (value == null)
+            return "null";
+        var escaped = value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        return $"\"{escaped}\"";
     }
 
     /// <inheritdoc />

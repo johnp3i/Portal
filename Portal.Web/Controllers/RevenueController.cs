@@ -26,6 +26,7 @@ public class RevenueController : Controller
     private readonly IPlanCheckService _planCheckService;
     private readonly IPaymentScheduleService _paymentScheduleService;
     private readonly IPaymentScheduleOverviewService _paymentScheduleOverviewService;
+    private readonly ICreditNoteService _creditNoteService;
 
     public RevenueController(
         IPaymentService paymentService,
@@ -39,7 +40,8 @@ public class RevenueController : Controller
         IPermissionService permissionService,
         IPlanCheckService planCheckService,
         IPaymentScheduleService paymentScheduleService,
-        IPaymentScheduleOverviewService paymentScheduleOverviewService)
+        IPaymentScheduleOverviewService paymentScheduleOverviewService,
+        ICreditNoteService creditNoteService)
     {
         _paymentService = paymentService;
         _dashboardService = dashboardService;
@@ -53,6 +55,7 @@ public class RevenueController : Controller
         _planCheckService = planCheckService;
         _paymentScheduleService = paymentScheduleService;
         _paymentScheduleOverviewService = paymentScheduleOverviewService;
+        _creditNoteService = creditNoteService;
     }
 
     // === Page Actions (return Views) ===
@@ -162,9 +165,18 @@ public class RevenueController : Controller
         var profile = await _businessService.GetBusinessProfileAsync(businessId);
 
         var totalPaid = paymentHistory.Where(p => !p.IsVoided).Sum(p => p.Amount);
-        var outstandingBalance = invoice.TotalAmount - totalPaid;
-        var progressPercentage = RevenueCalculations.ComputeProgressPercentage(invoice.TotalAmount, totalPaid);
 
+        // Outstanding must subtract EVERY settlement mechanism, not just payments: applied
+        // credit notes reduce the balance exactly as payments do (financial-conventions steering).
+        //   OutstandingBalance = TotalAmount − valid Payments − applied Credit Notes
+        var appliedCreditNotes = await _creditNoteService.GetAppliedCreditNotesForInvoiceAsync(id, businessId);
+        var totalCredited = appliedCreditNotes.Sum(c => c.AmountApplied);
+        var outstandingBalance = invoice.TotalAmount - totalPaid - totalCredited;
+
+        // Progress reflects everything that settled the invoice (payments + credits).
+        var progressPercentage = RevenueCalculations.ComputeProgressPercentage(invoice.TotalAmount, totalPaid + totalCredited);
+
+        // Overdue is derived from the corrected balance (never from persisted status).
         var isOverdue = invoice.DueDate < DateOnly.FromDateTime(DateTime.UtcNow) && outstandingBalance > 0;
 
         ViewBag.Invoice = invoice;
@@ -173,6 +185,8 @@ public class RevenueController : Controller
         ViewBag.PaymentMethods = paymentMethods;
         ViewBag.CustomerName = customer?.Name ?? "Unknown";
         ViewBag.TotalPaid = totalPaid;
+        ViewBag.TotalCredited = totalCredited;
+        ViewBag.AppliedCreditNotes = appliedCreditNotes;
         ViewBag.OutstandingBalance = outstandingBalance;
         ViewBag.ProgressPercentage = progressPercentage;
         ViewBag.IsOverdue = isOverdue;
@@ -443,6 +457,32 @@ public class RevenueController : Controller
         }
         catch (Exception ex)
         {
+            return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    /// <summary>
+    /// Corrects an existing payment's method and reference. Shared by the Revenue Dashboard and the
+    /// Statement page. Amount, date, and allocation are never changed; voided payments are rejected
+    /// by the service. On success the originating page refreshes to show the new values.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AxPostUpdatePaymentMethod(int paymentId, int paymentMethodTypeId, string? reference)
+    {
+        try
+        {
+            var businessId = _tenantService.CurrentBusinessId;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name ?? string.Empty;
+
+            var result = await _paymentService.UpdatePaymentMethodAndReferenceAsync(
+                paymentId, paymentMethodTypeId, reference, businessId, userId);
+
+            return Json(new { success = result.Success, message = result.Success ? "Payment updated successfully." : result.Message });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "AxPostUpdatePaymentMethod failed for paymentId={PaymentId}", paymentId);
             return Json(new { success = false, message = "An unexpected error occurred." });
         }
     }

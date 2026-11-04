@@ -102,7 +102,9 @@ public class PaymentAmountBoundaryPropertyTests
             mockFinancialStatusEngine.Object,
             new Mock<IPaymentScheduleService>().Object,
             new Mock<IPaymentAllocationEngine>().Object,
-            dbContext);
+            dbContext,
+            new AuditLogRepository(dbContext),
+            new PaymentReceiptRepository(dbContext));
 
         return (service, mockPaymentRepo);
     }

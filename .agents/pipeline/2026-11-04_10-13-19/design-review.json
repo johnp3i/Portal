@@ -1,0 +1,77 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": 1,
+      "severity": "MEDIUM",
+      "title": "Method validation diverges from the dropdown's active-only source",
+      "where": "02-design.md — Service Algorithm, step 3 (PaymentMethodTypes.AnyAsync without IsActive filter)",
+      "problem": "Validation checks only that the method id exists (no IsActive filter), but the dropdown is populated by GetPaymentMethodTypesAsync() which filters .Where(pmt => pmt.IsActive). The design's own comment says 'active list, same source as the dropdown', which the code does not do. An inactive method passes validation but can never be chosen, and modal pre-select fails for a payment whose method was deactivated.",
+      "fix": "Lock one rule. Recommended: validate against active methods OR the payment's own current method id (so legacy payments on a deactivated method stay re-savable). Fix the self-contradicting comment either way."
+    },
+    {
+      "id": 2,
+      "severity": "MEDIUM",
+      "title": "reloadAfterPaymentEdit indirection is self-referential and load-order fragile",
+      "where": "02-design.md — JS entry point, reloadAfterPaymentEdit snippet",
+      "problem": "A top-level function declaration IS window.reloadAfterPaymentEdit, so the guard window.reloadAfterPaymentEdit !== reloadAfterPaymentEdit compares the same object and only works if the statement reassigns window.reloadAfterPaymentEdit to a different function AFTER the file loads. Ordering is unstated; if clobbered, the statement falls back to location.reload() which wipes the client-rendered statement.",
+      "fix": "Use two distinctly-named symbols (e.g. window.onPaymentEdited override + a runReloadAfterPaymentEdit dispatcher) so there is no self-comparison and no load-order dependency."
+    },
+    {
+      "id": 3,
+      "severity": "MEDIUM",
+      "title": "Dashboard server-row button wiring left as an unresolved either/or",
+      "where": "02-design.md — Button wiring (Dashboard server rows) and Edge cases (apostrophe)",
+      "problem": "Design shows an onclick inlining Html.Encode'd strings into a single-quoted JS literal, then says the implementer 'should prefer' data-* + addEventListener if names could contain apostrophes. Customer names can contain apostrophes; Html.Encode produces &#39; which does not neutralise a quote inside a JS string literal. Leaving it as a preference pushes a real correctness decision to the coder.",
+      "fix": "Lock the data-* attributes + delegated addEventListener approach for the dashboard server rows (Razor attribute-encodes data-* correctly) and specify the markup + listener."
+    },
+    {
+      "id": 4,
+      "severity": "HIGH",
+      "title": "No-op short-circuit contradicts AC-8 / NFR-3 when a receipt exists",
+      "where": "02-design.md — Service Algorithm no-op short-circuit; Invariant ownership (audit completeness)",
+      "problem": "The short-circuit returns Ok() before the transaction when the payment's values are unchanged, writing no audit row and performing no cascade. It compares only the payment's current values, not the receipt snapshot, so 'payment unchanged' does not imply 'receipt in sync'. A stale non-voided receipt would never be re-synced, and the save is unaudited.",
+      "fix": "Drop the short-circuit (always run the transaction, cascade, and write exactly one audit row), making AC-8/NFR-3 unconditionally true; or only short-circuit when the payment values AND the non-voided receipt already match. Remove the 'no row for no-op' note so design and ACs agree."
+    },
+    {
+      "id": 5,
+      "severity": "HIGH",
+      "title": "getAntiForgeryToken is redeclared and the design's justification is factually wrong",
+      "where": "02-design.md — JS entry point ('uses getAntiForgeryToken() which both pages provide')",
+      "problem": "revenue-payment.js declares its own top-level function getAntiForgeryToken(), and the statement page also declares one inline. Loading the file on the statement page creates two identical top-level function declarations in the same scope. Harmless today (later wins, identical bodies) but the stated reason is backwards (the file ships its own helper; it does not depend on the page), and it is a latent footgun if either drifts or the inline block becomes a module/strict context.",
+      "fix": "State the real reason (file is self-contained) and remove the statement page's duplicate inline getAntiForgeryToken when wiring in revenue-payment.js, leaving exactly one definition."
+    },
+    {
+      "id": 6,
+      "severity": "NIT",
+      "title": "Statement Edit button passes a mislabeled amount and empty invoice",
+      "where": "02-design.md — Button wiring (Statement JS rows)",
+      "problem": "Passes line.credit as amount and '' as invoice. line.credit equals the payment amount on a Payment line (correct) but the name reads like a credit note; empty invoice is acceptable per the design's edge case.",
+      "fix": "Add a one-line clarification that line.credit is the payment amount on a Payment line."
+    },
+    {
+      "id": 7,
+      "severity": "NIT",
+      "title": "Reference length cap (200) asserted but not verified against the column",
+      "where": "02-design.md — Input validation table ('the column enforces the ceiling server-side')",
+      "problem": "The 200-char cap and server-side enforcement claim were not checked against the actual [revenue].[Payment].[Reference] / [revenue].[PaymentReceipt].[PaymentReference] column length. maxlength is client-only; an over-length value sent directly to the endpoint could throw a truncation 500 if the column is shorter.",
+      "fix": "Confirm the column length and match the maxlength/server guard to it, or add an explicit length check in the service."
+    },
+    {
+      "id": 8,
+      "severity": "NIT",
+      "title": "Audit JSON described as mirroring CreditNoteService, but that precedent is key=value",
+      "where": "02-design.md — Service Algorithm (audit insert) and surrounding prose",
+      "problem": "The design hand-builds JSON via a JsonString helper (consistent with StatementService) but describes it as 'mirroring the CreditNoteService pattern'. CreditNoteService uses a non-JSON key=value NewValues format, not JSON.",
+      "fix": "Reference StatementService for the JSON value shape; keep CreditNoteService only as the transaction+audit-call precedent."
+    },
+    {
+      "id": 9,
+      "severity": "NIT",
+      "title": "_PaymentModal vs _GlobalPaymentModal reference-length precedent stated loosely",
+      "where": "02-design.md — Input validation (reference length justification)",
+      "problem": "Incidental, unverified assertion about which existing modal caps at 200; not load-bearing.",
+      "fix": "Fold into finding 7 when the column length is confirmed."
+    }
+  ]
+}

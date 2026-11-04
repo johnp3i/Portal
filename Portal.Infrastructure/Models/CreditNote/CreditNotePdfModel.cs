@@ -13,7 +13,8 @@ public class CreditNotePdfModel
     public string? CustomerAddress { get; set; }
     public string CreditNoteNumber { get; set; } = null!;
     public DateOnly IssueDate { get; set; }
-    public string InvoiceNumber { get; set; } = null!;
+    /// <summary>Source invoice number, or null for an account-level credit note.</summary>
+    public string? InvoiceNumber { get; set; }
     public string Reason { get; set; } = null!;
     public string CurrencySymbol { get; set; } = "€";
     public decimal Subtotal { get; set; }

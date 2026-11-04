@@ -77,7 +77,42 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
+
+    // When the session has expired, the default behaviour is a 302 to /Account/Login — which for an
+    // AJAX/fetch call returns the login HTML and makes JSON parsing fail with a generic error. For
+    // AJAX/JSON requests, return a clean 401 with a small JSON body so the client-side interceptor
+    // (see /js/session-expiry.js) can show a friendly prompt and redirect. Normal browser
+    // navigations keep the standard redirect to the login page.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (IsAjaxish(context.Request))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync("{\"sessionExpired\":true}");
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (IsAjaxish(context.Request))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync("{\"accessDenied\":true}");
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
+
+// Shared AJAX/JSON request detection (mirrors the isAjax checks used across the permission filters).
+static bool IsAjaxish(HttpRequest request)
+    => request.Headers["X-Requested-With"] == "XMLHttpRequest"
+       || request.ContentType?.Contains("application/json") == true
+       || request.Headers["Accept"].ToString().Contains("application/json");
 
 // --- Demo Session Cookie (isolated from primary authentication) ---
 builder.Services.AddAuthentication().AddCookie("DemoScheme", options =>

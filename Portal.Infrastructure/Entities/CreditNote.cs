@@ -10,7 +10,12 @@ public class CreditNote
 
     public int BusinessId { get; set; }
 
-    public int InvoiceId { get; set; }
+    /// <summary>
+    /// The source invoice this credit note corrects. NULL for account-level credit notes issued
+    /// directly to a customer with no originating invoice (the credit sits on the customer account
+    /// and is applied to invoices later via CreditNoteApplication rows).
+    /// </summary>
+    public int? InvoiceId { get; set; }
 
     public int CustomerId { get; set; }
 
@@ -41,7 +46,7 @@ public class CreditNote
     // Navigation properties
     public Business Business { get; set; } = null!;
 
-    public Invoice Invoice { get; set; } = null!;
+    public Invoice? Invoice { get; set; }
 
     public Customer Customer { get; set; } = null!;
 

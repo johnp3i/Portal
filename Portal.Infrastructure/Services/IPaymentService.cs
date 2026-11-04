@@ -11,6 +11,15 @@ public interface IPaymentService
 {
     Task<ServiceResult> RecordPaymentAsync(RecordPaymentDto dto, int businessId, string userId);
     Task<ServiceResult> VoidPaymentAsync(int paymentId, int businessId);
+
+    /// <summary>
+    /// Corrects an existing payment's method and reference only (amount, date, and allocation are
+    /// never touched). Refuses voided payments, validates the method against the active list (or the
+    /// payment's own current method), cascades the change to any non-voided receipt snapshot, and
+    /// writes an append-only audit entry — all within a single transaction.
+    /// </summary>
+    Task<ServiceResult> UpdatePaymentMethodAndReferenceAsync(
+        int paymentId, int newPaymentMethodTypeId, string? newReference, int businessId, string userId);
     Task<List<PaymentHistoryDto>> GetPaymentHistoryAsync(int invoiceId, int businessId);
     Task<List<PaymentMethodType>> GetPaymentMethodTypesAsync();
 

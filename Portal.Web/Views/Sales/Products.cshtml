@@ -8,7 +8,7 @@
 
 <div class="topbar">
     <div>
-        <div class="eyebrow"><span class="dot"></span> Sales Pipeline</div>
+        <div class="eyebrow"><span class="dot"></span> Opportunities / Products</div>
         <h1 class="topbar-heading">Products & Services</h1>
         <p class="topbar-subtitle">Manage your product and service offerings for the sales pipeline.</p>
     </div>
@@ -59,11 +59,22 @@
                         <td style="font-weight:600;">@product.Name</td>
                         <td>@(product.Description?.Length > 80 ? product.Description.Substring(0, 80) + "…" : product.Description ?? "—")</td>
                         <td>
-                            @if (product.ProductId.HasValue)
-                            {
+                            @{
                                 var catalogLookup = ViewBag.CatalogLookup as Dictionary<int, string> ?? new Dictionary<int, string>();
-                                var catalogName = catalogLookup.GetValueOrDefault(product.ProductId.Value, "Linked");
+                                // Only render a link when the linked catalogue row actually resolves.
+                                // If the ProductId no longer exists (deleted), show a muted note
+                                // instead of a dead link to a missing /Product/Detail page.
+                                var catalogName = product.ProductId.HasValue
+                                    ? catalogLookup.GetValueOrDefault(product.ProductId.Value)
+                                    : null;
+                            }
+                            @if (product.ProductId.HasValue && catalogName != null)
+                            {
                                 <a href="/Product/Detail/@product.ProductId.Value" style="font-size:12px;color:#0D5EA6;font-weight:600;text-decoration:none;" title="View in Product Catalogue">@catalogName</a>
+                            }
+                            else if (product.ProductId.HasValue)
+                            {
+                                <span style="color:var(--muted);font-size:12px;" title="Linked catalogue item no longer exists">Linked (unavailable)</span>
                             }
                             else
                             {
@@ -82,33 +93,35 @@
                         </td>
                         <td>@product.CreatedAtUtc.ToString("dd MMM yyyy")</td>
                         <td style="white-space:nowrap;">
-                            <button class="tbl-action tbl-action--primary" onclick="editProduct(@product.Id, '@product.Name.Replace("'", "\\'")' , '@(product.Description?.Replace("'", "\\'") ?? "")', '@(product.ProductId?.ToString() ?? "")')">Edit</button>
+                            <button class="tbl-action tbl-action--primary"
+                                    data-id="@product.Id"
+                                    data-name="@product.Name"
+                                    data-description="@(product.Description ?? "")"
+                                    data-catalog-id="@(product.ProductId?.ToString() ?? "")"
+                                    onclick="editProductFromData(this)">Edit</button>
                             @if (product.IsActive)
                             {
-                                <button class="tbl-action tbl-action--danger" onclick="deactivateProduct(@product.Id, '@(product.Name.Replace("'", "\\'"))')">Deactivate</button>
+                                <button class="tbl-action tbl-action--danger" data-id="@product.Id" data-name="@product.Name" onclick="deactivateProductFromData(this)">Deactivate</button>
                             }
                             else
                             {
-                                <button class="tbl-action tbl-action--secondary" onclick="activateProduct(@product.Id, '@(product.Name.Replace("'", "\\'"))')">Activate</button>
+                                <button class="tbl-action tbl-action--secondary" data-id="@product.Id" data-name="@product.Name" onclick="activateProductFromData(this)">Activate</button>
                             }
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:12px;">
-            <div style="font-size:14px;color:#5a6a7a;">Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)–@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount</div>
-            <div>
-                @if (Model.HasPreviousPage)
-                {
-                    <a href="/Sales/Products?search=@searchTerm&page=@(Model.CurrentPage - 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Previous</a>
-                }
-                @if (Model.HasNextPage)
-                {
-                    <a href="/Sales/Products?search=@searchTerm&page=@(Model.CurrentPage + 1)" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;">Next</a>
-                }
-            </div>
-        </div>
+        @await Html.PartialAsync("_ListPager", new Portal.Web.Models.ListPagerModel
+        {
+            CurrentPage = Model.CurrentPage,
+            TotalPages = Model.TotalPages,
+            TotalCount = Model.TotalCount,
+            PageSize = Model.PageSize,
+            BasePath = "/Sales/Products",
+            SearchTerm = searchTerm,
+            ItemNoun = "products"
+        })
     }
 </section>
 
@@ -136,5 +149,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/sales/products.js?v=2"></script>
+    <script src="~/js/sales/products.js?v=3"></script>
 }

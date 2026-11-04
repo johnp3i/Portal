@@ -397,7 +397,8 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                        CASE WHEN [revenue].[PaymentScheduleInstalment].[Id] IS NOT NULL
                             THEN CAST(1 AS BIT)
                             ELSE CAST(0 AS BIT)
-                       END AS [IsScheduled]
+                       END AS [IsScheduled],
+                       [revenue].[Payment].[PaymentMethodTypeId]
                 FROM [revenue].[Payment]
                 INNER JOIN [invoice].[Invoice]
                     ON [revenue].[Payment].[InvoiceId] = [invoice].[Invoice].[Id]
@@ -461,6 +462,7 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                             IsVoided = reader.GetBoolean(7),
                             Reference = reader.IsDBNull(8) ? null : reader.GetString(8),
                             IsScheduled = reader.GetBoolean(9),
+                            PaymentMethodTypeId = reader.GetInt32(10),
                             IsUpcoming = paymentDate > DateTime.UtcNow
                         });
                     }
@@ -609,6 +611,32 @@ public class PaymentRepository : GenericStoredProcedureRepository<Payment>
                 if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
                     await connection.CloseAsync();
             }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates the PaymentMethodTypeId and Reference on a payment. Keyed on the primary key only
+    /// (tenant scoping is enforced by the caller loading via GetByIdAndBusinessIdAsync first).
+    /// Enlists in the ambient transaction automatically via ExecuteSqlRawAsync.
+    /// </summary>
+    public virtual async Task UpdateMethodAndReferenceAsync(int paymentId, int paymentMethodTypeId, string? reference)
+    {
+        try
+        {
+            const string query = @"
+                UPDATE [revenue].[Payment]
+                SET [PaymentMethodTypeId] = @PaymentMethodTypeId,
+                    [Reference] = @Reference
+                WHERE [revenue].[Payment].[Id] = @PaymentId";
+
+            await _context.Database.ExecuteSqlRawAsync(query,
+                new SqlParameter("@PaymentId", paymentId),
+                new SqlParameter("@PaymentMethodTypeId", paymentMethodTypeId),
+                new SqlParameter("@Reference", reference ?? (object)DBNull.Value));
         }
         catch (Exception ex)
         {

@@ -71,6 +71,24 @@ public class CreditNoteVoidReversalPropertyTests
                 It.IsAny<DateTime?>()))
             .Returns(Task.CompletedTask);
 
+        // The reversal path now drives off the actual (non-voided) application rows and recalculates
+        // each distinct affected invoice. Return one application targeting the note's source invoice.
+        var reversalInvoiceId = creditNoteToReturn.InvoiceId ?? 1;
+        creditNoteAppRepoMock
+            .Setup(r => r.GetByCreditNoteIdAsync(creditNoteToReturn.Id))
+            .ReturnsAsync(new List<CreditNoteApplication>
+            {
+                new CreditNoteApplication
+                {
+                    Id = 1,
+                    CreditNoteId = creditNoteToReturn.Id,
+                    InvoiceId = reversalInvoiceId,
+                    AmountApplied = creditNoteToReturn.TotalAmount,
+                    AppliedAtUtc = DateTime.UtcNow,
+                    IsVoided = false
+                }
+            });
+
         // Setup: VoidByCreditNoteIdAsync completes successfully
         creditNoteAppRepoMock
             .Setup(r => r.VoidByCreditNoteIdAsync(creditNoteToReturn.Id))
@@ -78,7 +96,7 @@ public class CreditNoteVoidReversalPropertyTests
 
         // Setup: RecalculateStatusAsync completes successfully
         financialStatusEngineMock
-            .Setup(e => e.RecalculateStatusAsync(creditNoteToReturn.InvoiceId, TestBusinessId))
+            .Setup(e => e.RecalculateStatusAsync(reversalInvoiceId, TestBusinessId))
             .Returns(Task.CompletedTask);
 
         // Setup: AuditLog insert completes successfully

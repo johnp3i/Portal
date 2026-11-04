@@ -319,11 +319,37 @@
             flex-direction: column;
             align-items: stretch;
         }
+        /* Period shortcuts: an even 2-column grid of full-width pills instead of a ragged
+           centre-wrapped cluster — predictable, easy to tap. */
         .period-tabs {
-            justify-content: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
         }
+        .period-btn {
+            width: 100%;
+            padding: 10px 12px;
+            min-width: 0;
+        }
+        /* "Custom" sits alone on the last row — let it span the full width. */
+        #customBtn {
+            grid-column: 1 / -1;
+        }
+        /* Export drops to its own full-width row below the shortcuts. */
         .btn-export {
-            align-self: flex-end;
+            width: 100%;
+            justify-content: center;
+            align-self: stretch;
+        }
+        /* Custom date range stacks full-width so the inputs aren't cramped. */
+        .custom-range {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .custom-range input[type="date"],
+        .custom-range #btnApplyCustomRange {
+            width: 100%;
         }
         .insights-table {
             min-width: 700px;

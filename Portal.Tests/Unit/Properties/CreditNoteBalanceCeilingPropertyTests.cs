@@ -153,7 +153,7 @@ public class CreditNoteBalanceCeilingPropertyTests
                 };
 
                 // Act
-                var result = service.CreateCreditNoteAsync(dto, TestBusinessId, TestUserId)
+                var result = service.CreateCreditNoteAsync(dto, TestBusinessId, TestUserId, accountCreditEnabled: false)
                     .GetAwaiter().GetResult();
 
                 // Assert: creation must be rejected

@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
+using Portal.Infrastructure.Models;
 
 namespace Portal.Infrastructure.Repositories;
 
@@ -614,5 +615,260 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         {
             throw;
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Purchases list — server-side paging, filtering, search and aggregates
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    // Explicit Purchase column list (qualified) so FromSqlRaw can materialize the entity even when
+    // the query joins other tables for filtering/search.
+    private const string PurchaseColumns =
+        "[purchase].[Purchase].[Id], [purchase].[Purchase].[BusinessId], [purchase].[Purchase].[SupplierId], " +
+        "[purchase].[Purchase].[ExpenseCategoryId], [purchase].[Purchase].[PurchaseOriginTypeId], [purchase].[Purchase].[PurchaseTypeId], " +
+        "[purchase].[Purchase].[InvoiceNumber], [purchase].[Purchase].[InvoiceDate], [purchase].[Purchase].[SupplierDueDate], " +
+        "[purchase].[Purchase].[TargetPaymentDate], [purchase].[Purchase].[Description], [purchase].[Purchase].[AmountExcludingVat], " +
+        "[purchase].[Purchase].[VatAmount], [purchase].[Purchase].[TotalAmount], [purchase].[Purchase].[Country], " +
+        "[purchase].[Purchase].[Notes], [purchase].[Purchase].[IsCancelled], [purchase].[Purchase].[CancelledAtUtc], " +
+        "[purchase].[Purchase].[CancelledByUserId], [purchase].[Purchase].[PayslipPeriodId], [purchase].[Purchase].[VatSubmissionPeriodId], " +
+        "[purchase].[Purchase].[IsPaid], [purchase].[Purchase].[PaidAtUtc], [purchase].[Purchase].[CreatedAtUtc], [purchase].[Purchase].[UpdatedAtUtc]";
+
+    // Builds the shared FROM + WHERE for the list, its count, and its aggregates so all three apply
+    // identical filtering. A LEFT JOIN to Supplier lets the free-text search match the supplier name
+    // in SQL (the previous in-memory search silently missed suppliers in the export paths and for
+    // inactive suppliers). Search uses LIKE, which is case-insensitive under the default collation.
+    private static string BuildListFromWhere(int businessId, PurchaseListFilter f, List<SqlParameter> p, bool includeVatJoin = false)
+    {
+        p.Add(new SqlParameter("@BusinessId", businessId));
+        var where = "[purchase].[Purchase].[BusinessId] = @BusinessId";
+
+        if (f.SupplierId.HasValue)
+        {
+            where += " AND [purchase].[Purchase].[SupplierId] = @SupplierId";
+            p.Add(new SqlParameter("@SupplierId", f.SupplierId.Value));
+        }
+        if (f.ExpenseCategoryId.HasValue)
+        {
+            where += " AND [purchase].[Purchase].[ExpenseCategoryId] = @ExpenseCategoryId";
+            p.Add(new SqlParameter("@ExpenseCategoryId", f.ExpenseCategoryId.Value));
+        }
+        if (f.PurchaseOriginTypeId.HasValue)
+        {
+            where += " AND [purchase].[Purchase].[PurchaseOriginTypeId] = @PurchaseOriginTypeId";
+            p.Add(new SqlParameter("@PurchaseOriginTypeId", f.PurchaseOriginTypeId.Value));
+        }
+        if (f.PurchaseTypeId.HasValue)
+        {
+            where += " AND [purchase].[Purchase].[PurchaseTypeId] = @PurchaseTypeId";
+            p.Add(new SqlParameter("@PurchaseTypeId", f.PurchaseTypeId.Value));
+        }
+        if (f.VatPeriodId.HasValue)
+        {
+            where += " AND [purchase].[Purchase].[VatSubmissionPeriodId] = @VatPeriodId";
+            p.Add(new SqlParameter("@VatPeriodId", f.VatPeriodId.Value));
+        }
+        if (f.DateFrom.HasValue)
+        {
+            where += " AND [purchase].[Purchase].[InvoiceDate] >= @DateFrom";
+            p.Add(new SqlParameter("@DateFrom", f.DateFrom.Value));
+        }
+        if (f.DateTo.HasValue)
+        {
+            where += " AND [purchase].[Purchase].[InvoiceDate] <= @DateTo";
+            p.Add(new SqlParameter("@DateTo", f.DateTo.Value));
+        }
+        if (!string.IsNullOrWhiteSpace(f.SearchTerm))
+        {
+            where += @" AND (
+                [purchase].[Purchase].[Description] LIKE @Search
+                OR [purchase].[Purchase].[InvoiceNumber] LIKE @Search
+                OR [purchase].[Supplier].[Name] LIKE @Search)";
+            // Escape LIKE wildcards in user input so % and _ are treated literally.
+            var safe = f.SearchTerm.Trim().Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
+            p.Add(new SqlParameter("@Search", "%" + safe + "%"));
+        }
+
+        var vatJoin = includeVatJoin
+            ? "\n                 LEFT JOIN [vat].[VatSubmissionPeriod] ON [vat].[VatSubmissionPeriod].[Id] = [purchase].[Purchase].[VatSubmissionPeriodId]"
+            : string.Empty;
+
+        return @"FROM [purchase].[Purchase]
+                 LEFT JOIN [purchase].[Supplier] ON [purchase].[Supplier].[Id] = [purchase].[Purchase].[SupplierId]" + vatJoin + @"
+                 WHERE " + where;
+    }
+
+    private static string BuildOrderBy(string? sortBy) => (sortBy ?? "recent") switch
+    {
+        "date_desc" => "ORDER BY [purchase].[Purchase].[InvoiceDate] DESC, [purchase].[Purchase].[Id] DESC",
+        "date_asc" => "ORDER BY [purchase].[Purchase].[InvoiceDate] ASC, [purchase].[Purchase].[Id] ASC",
+        "amount_desc" => "ORDER BY [purchase].[Purchase].[TotalAmount] DESC, [purchase].[Purchase].[Id] DESC",
+        "amount_asc" => "ORDER BY [purchase].[Purchase].[TotalAmount] ASC, [purchase].[Purchase].[Id] ASC",
+        _ => "ORDER BY [purchase].[Purchase].[CreatedAtUtc] DESC, [purchase].[Purchase].[Id] DESC"
+    };
+
+    /// <summary>
+    /// One page of filtered/sorted purchases plus the total matching count. Filtering, search, sort
+    /// and paging all run in SQL, so only the requested page is materialized (the list no longer
+    /// loads the entire history into memory). Supplier/ExpenseCategory names for the page are
+    /// resolved separately by the service (including inactive ones).
+    /// </summary>
+    public async Task<(List<Purchase> Items, int TotalCount)> GetPagedAsync(
+        int businessId, PurchaseListFilter filter, int page, int pageSize)
+    {
+        try
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+
+            // Count (its own parameter list — SqlParameter instances can't be reused across queries).
+            var countParams = new List<SqlParameter>();
+            var countFromWhere = BuildListFromWhere(businessId, filter, countParams);
+            var countSql = "SELECT COUNT(*) AS [Value] " + countFromWhere;
+            var total = (await _context.Database.SqlQueryRaw<int>(countSql, countParams.ToArray()).ToListAsync()).FirstOrDefault();
+
+            // Page of entities.
+            var pageParams = new List<SqlParameter>();
+            var fromWhere = BuildListFromWhere(businessId, filter, pageParams);
+            pageParams.Add(new SqlParameter("@Offset", (page - 1) * pageSize));
+            pageParams.Add(new SqlParameter("@PageSize", pageSize));
+
+            var pageSql = $@"
+                SELECT {PurchaseColumns}
+                {fromWhere}
+                {BuildOrderBy(filter.SortBy)}
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            var items = await _context.Set<Purchase>().FromSqlRaw(pageSql, pageParams.ToArray()).ToListAsync();
+            return (items, total);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// All purchases matching the filter (no paging), sorted — used by CSV/PDF export so the export
+    /// applies the SAME filters and search as the on-screen list, in SQL.
+    /// </summary>
+    public async Task<List<Purchase>> GetAllFilteredAsync(int businessId, PurchaseListFilter filter)
+    {
+        try
+        {
+            var p = new List<SqlParameter>();
+            var fromWhere = BuildListFromWhere(businessId, filter, p);
+            var sql = $@"
+                SELECT {PurchaseColumns}
+                {fromWhere}
+                {BuildOrderBy(filter.SortBy)}";
+
+            return await _context.Set<Purchase>().FromSqlRaw(sql, p.ToArray()).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// KPIs + origin counts over the FULL filtered set (not just the current page). Cancelled
+    /// purchases are excluded from the money and origin figures. Outdated = invoice date falls
+    /// outside the VAT submission period it is assigned to.
+    /// </summary>
+    public async Task<PurchaseListAggregates> GetAggregatesAsync(int businessId, PurchaseListFilter filter)
+    {
+        try
+        {
+            var p = new List<SqlParameter>();
+            // "Outdated" compares the invoice date against the assigned VAT period's bounds. SQL
+            // Server forbids a subquery inside an aggregate's argument (SUM(CASE ... EXISTS(...)))
+            // — so the VAT period is LEFT JOINed and the comparison is a plain column expression.
+            var fromWhereWithVat = BuildListFromWhere(businessId, filter, p, includeVatJoin: true);
+
+            var sql = $@"
+                SELECT
+                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 THEN 1 ELSE 0 END) AS [TotalCount],
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 THEN [purchase].[Purchase].[TotalAmount] ELSE 0 END), 0) AS [TotalSpend],
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 THEN [purchase].[Purchase].[VatAmount] ELSE 0 END), 0) AS [TotalVat],
+                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 1 THEN 1 ELSE 0 END) AS [DomesticCount],
+                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 2 THEN 1 ELSE 0 END) AS [EuRcCount],
+                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 4 THEN 1 ELSE 0 END) AS [EuPaidCount],
+                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 3 THEN 1 ELSE 0 END) AS [NonEuCount],
+                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0
+                              AND [vat].[VatSubmissionPeriod].[Id] IS NOT NULL
+                              AND ([purchase].[Purchase].[InvoiceDate] < [vat].[VatSubmissionPeriod].[PeriodStartDate]
+                                   OR [purchase].[Purchase].[InvoiceDate] > [vat].[VatSubmissionPeriod].[PeriodEndDate])
+                         THEN 1 ELSE 0 END) AS [OutdatedCount]
+                {fromWhereWithVat}";
+
+            var row = (await _context.Database.SqlQueryRaw<PurchaseListAggregates>(sql, p.ToArray()).ToListAsync()).FirstOrDefault();
+            return row ?? new PurchaseListAggregates();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Name lookups for a set of supplier ids (including inactive suppliers), so the list can show
+    /// the supplier name on every row — the active-only service load left inactive ones blank.
+    /// </summary>
+    public async Task<Dictionary<int, string>> GetSupplierNamesAsync(int businessId, IEnumerable<int> supplierIds)
+    {
+        try
+        {
+            var ids = supplierIds.Where(i => i > 0).Distinct().ToList();
+            if (ids.Count == 0) return new Dictionary<int, string>();
+
+            var inList = string.Join(",", ids);
+            var sql = $@"
+                SELECT [purchase].[Supplier].[Id] AS [Key], [purchase].[Supplier].[Name] AS [Value]
+                FROM [purchase].[Supplier]
+                WHERE [purchase].[Supplier].[BusinessId] = @BusinessId
+                  AND [purchase].[Supplier].[Id] IN ({inList})";
+
+            var rows = await _context.Database
+                .SqlQueryRaw<IdNameRow>(sql, new SqlParameter("@BusinessId", businessId))
+                .ToListAsync();
+            return rows.ToDictionary(r => r.Key, r => r.Value);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>Name lookups for a set of expense-category ids (including inactive categories).</summary>
+    public async Task<Dictionary<int, string>> GetExpenseCategoryNamesAsync(int businessId, IEnumerable<int> categoryIds)
+    {
+        try
+        {
+            var ids = categoryIds.Where(i => i > 0).Distinct().ToList();
+            if (ids.Count == 0) return new Dictionary<int, string>();
+
+            var inList = string.Join(",", ids);
+            var sql = $@"
+                SELECT [purchase].[ExpenseCategory].[Id] AS [Key], [purchase].[ExpenseCategory].[Name] AS [Value]
+                FROM [purchase].[ExpenseCategory]
+                WHERE [purchase].[ExpenseCategory].[BusinessId] = @BusinessId
+                  AND [purchase].[ExpenseCategory].[Id] IN ({inList})";
+
+            var rows = await _context.Database
+                .SqlQueryRaw<IdNameRow>(sql, new SqlParameter("@BusinessId", businessId))
+                .ToListAsync();
+            return rows.ToDictionary(r => r.Key, r => r.Value);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    // Row shape for id→name keyless projections above.
+    private class IdNameRow
+    {
+        public int Key { get; set; }
+        public string Value { get; set; } = string.Empty;
     }
 }
