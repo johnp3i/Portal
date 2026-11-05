@@ -1,0 +1,856 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add Register data models (DTO + page view model)": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901855737
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901863335
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902859905
+      }
+    ],
+    "1.2 Add `GetEmployeesByIdsAsync(int[] employeeIds, int businessId)` to `PayrollRepository`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856455
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901864745
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902860893
+      }
+    ],
+    "2.1 Add method signatures to `IPayrollReportService`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856494
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901865681
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902862237
+      }
+    ],
+    "3.1 Implement `GetRegisterEligibleEmployeesAsync(periodId, businessId)`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856523
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902874216
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902985255
+      }
+    ],
+    "4.1 Implement `BuildEmployeePayslipMapAsync(periodId, businessId)`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856566
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902875385
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902986267
+      }
+    ],
+    "4.2 Implement `AssembleBreakdown(payslip, lookups)` from pre-loaded reference data": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856596
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903003405
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903144016
+      }
+    ],
+    "5.1 Implement the name helper used by the workbook builder": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856632
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901866715
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902863174
+      }
+    ],
+    "6.1 Build one detail sheet per eligible selected employee": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856655
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903147608
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903321873
+      }
+    ],
+    "7.1 Implement the workbook orchestration": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856680
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903324662
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903670228
+      }
+    ],
+    "8. Checkpoint - service layer complete": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856716
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903674888
+      }
+    ],
+    "9.1 Create the controller and `Index` GET action": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856740
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903678991
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903940893
+      }
+    ],
+    "9.2 Implement `AxGetEmployeesForPeriod(int periodId)` GET JSON": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856764
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903680387
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903942292
+      }
+    ],
+    "9.3 Implement `AxGetGenerateRegister(int periodId, int[] employeeIds)` GET download": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856787
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903681497
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903943163
+      }
+    ],
+    "10.1 Build the page markup (MyChair + layout-standards)": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856822
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903949188
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793904209573
+      }
+    ],
+    "10.2 Implement the client JS (vanilla fetch + BlockUI + SweetAlert2, no jQuery, no native dialogs)": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856861
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903948238
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793904211023
+      }
+    ],
+    "11. Add the navigation entry point": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856884
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903950048
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793904211687
+      }
+    ],
+    "12. Final checkpoint - build and run the new tests": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793901856907
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793904215873
+      },
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793905052141
+      }
+    ],
+    "1. Add Register data models and the additive employee-batch repository method": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902860926
+      }
+    ],
+    "2. Declare the two new additive service methods on `IPayrollReportService`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902862274
+      }
+    ],
+    "5. Implement worksheet-name sanitation/truncation/uniqueness helper": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902863207
+      }
+    ],
+    "3. Implement eligible-employees lookup in `PayrollReportService`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793902985280
+      }
+    ],
+    "4. Implement the in-memory breakdown assembly helpers (N+1 avoidance)": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903144058
+      }
+    ],
+    "6. Implement the per-employee detail-sheet builder (private, in `PayrollReportService`)": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903321926
+      }
+    ],
+    "7. Implement `GenerateRegisterWorkbookAsync` (Summary sheet + wiring)": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903670256
+      }
+    ],
+    "9. Implement `PayrollRegisterController`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793903943197
+      }
+    ],
+    "10. Create the view `Views/PayrollRegister/Index.cshtml`": [
+      {
+        "executionId": "6391265b-6eb3-4a94-80ca-69af8d0b6f4e",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793904211094
+      }
+    ],
+    "1.1 Add `RegisterLineRow` and `RegisterEmployeeAggregate` to `RegisterDtos.cs`": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163607
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909173713
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909241541
+      }
+    ],
+    "1.2 Reshape `RegisterPageViewModel` to range defaults": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163645
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909174467
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909242311
+      }
+    ],
+    "2.1 Update the signatures on `IPayrollReportService` and `PayrollReportService`": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163672
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909248310
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909707825
+      }
+    ],
+    "3.1 Add `ResolveRangePeriodsAsync` and reshape `LoadRegisterReferenceLookupsAsync`": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163702
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909259741
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909709202
+      }
+    ],
+    "3.2 Reshape `BuildEmployeePayslipMapAsync` to loop the range": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163730
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909261113
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909710207
+      }
+    ],
+    "3.3 Replace `AssembleBreakdownAsync` with the range pivot producing `RegisterEmployeeAggregate`": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163766
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909262503
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909711555
+      }
+    ],
+    "4.1 Reshape `GetRegisterEligibleEmployeesAsync` over the range": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163790
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909263919
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909712954
+      }
+    ],
+    "5.1 Rebuild the Summary builder inside `GenerateRegisterWorkbookAsync`": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163816
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909264857
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909714405
+      }
+    ],
+    "5.2 Update the Summary worksheet name for the range": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163853
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909266253
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909715355
+      }
+    ],
+    "6.1 Rebuild `BuildEmployeeDetailSheet` for the range ledger": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163877
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909267206
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909716759
+      }
+    ],
+    "7.1 Reshape `GenerateRegisterWorkbookAsync` orchestration for the range": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163901
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909268365
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909717493
+      }
+    ],
+    "8. Checkpoint - service layer reshape complete": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163926
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909722759
+      }
+    ],
+    "9.1 Reshape the `Index` GET action for the range-default view model": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163963
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909725166
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909944579
+      }
+    ],
+    "9.2 Reshape `AxGetEmployeesForPeriod` to the range params": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909163986
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909726198
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909946013
+      }
+    ],
+    "9.3 Reshape `AxGetGenerateRegister` to the range params with From ≤ To validation": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909164011
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909724155
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909946979
+      }
+    ],
+    "10.1 Replace the single Period select with From and To month-year selects": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909164035
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909949447
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793910095455
+      }
+    ],
+    "10.2 Reshape the client JS for range refresh, From ≤ To guard, and range generate": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909164064
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909948366
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793910094506
+      }
+    ],
+    "11. Final checkpoint - build and run the full payroll suite": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909164099
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793910096406
+      },
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793910539647
+      }
+    ],
+    "1. Reshape the data models to the range shape": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909242346
+      }
+    ],
+    "2. Reshape the two feature-owned service method signatures to the range shape": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909707856
+      }
+    ],
+    "3. Reshape the service helpers to enumerate and pivot over the range": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909711596
+      }
+    ],
+    "4. Reshape the eligible-employees lookup to the range": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909712996
+      }
+    ],
+    "5. Rebuild the Summary sheet for C1 (per-contribution columns + grand totals)": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909715378
+      }
+    ],
+    "6. Rebuild the per-employee detail sheet for B1 (month columns + Total + \"%\")": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909716785
+      }
+    ],
+    "7. Reshape the workbook orchestration and wire the sheets together": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909717529
+      }
+    ],
+    "9. Reshape `PayrollRegisterController` to the range": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793909947021
+      }
+    ],
+    "10. Reshape the view `Views/PayrollRegister/Index.cshtml` to From/To selects": [
+      {
+        "executionId": "192253dd-e7aa-42c3-9186-422744337128",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793910095492
+      }
+    ],
+    "1.1 Add the `RegisterData` result model and the `GetRegisterDataAsync` method": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913004718
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913009573
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913224904
+      }
+    ],
+    "1.2 Refactor `GenerateRegisterWorkbookAsync` to call `GetRegisterDataAsync`": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913004758
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913014544
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913231641
+      }
+    ],
+    "2.1 Add the `AxGetPreviewRegister` GET action": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913004782
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913245595
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913397889
+      }
+    ],
+    "3.1 Replace the single Generate button with Preview + Download buttons": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913004815
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913417994
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913605955
+      }
+    ],
+    "3.2 Add the preview-table CSS block to the existing view `<style>`": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913004838
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913609149
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913884444
+      }
+    ],
+    "3.3 Add the `onPreview()` fetch handler and `renderPreview(data)` renderer": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913004872
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913887403
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793914467298
+      }
+    ],
+    "4. Final checkpoint - build and confirm no regression": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913004893
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793914471113
+      },
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793914683687
+      }
+    ],
+    "1. Add the shared data computation and refactor workbook generation to use it": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913231678
+      }
+    ],
+    "2. Add the `AxGetPreviewRegister` JSON preview endpoint to the controller": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793913397922
+      }
+    ],
+    "3. Add the Preview/Download buttons, preview CSS, and preview JS to the view": [
+      {
+        "executionId": "c598d8f6-a98a-4805-a92f-c04cca3c38ed",
+        "chatSessionId": "sess_e919605c-4017-4844-8c25-49f51ce67d8e",
+        "timestamp": 1793914467337
+      }
+    ]
+  }
+}

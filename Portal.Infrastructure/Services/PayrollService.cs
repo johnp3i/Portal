@@ -803,6 +803,7 @@ public class PayrollService : IPayrollService
                     Status = statusNames.GetValueOrDefault(p.PayslipStatusTypeId, "Unknown"),
                     ProcessedAtUtc = p.ProcessedAtUtc,
                     PayslipCount = payslips.Count,
+                    TotalGrossSalary = payslips.Sum(s => s.TotalEarnings),
                     TotalNetSalary = payslips.Sum(s => s.NetSalary)
                 });
             }

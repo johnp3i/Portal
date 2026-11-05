@@ -599,6 +599,76 @@ public class PayrollRepository : GenericStoredProcedureRepository<PayslipPeriod>
         }
     }
 
+    /// <summary>
+    /// Gets exactly the supplied employees by Id, scoped to a business, in ONE batched query
+    /// REGARDLESS of IsActive / EndDate. Unlike <see cref="GetActiveEmployeesForPeriodAsync"/>,
+    /// this never drops a terminated or inactive employee, so a finalised-payslip employee is
+    /// always available for name resolution.
+    /// </summary>
+    public virtual async Task<List<Employee>> GetEmployeesByIdsAsync(int[] employeeIds, int businessId)
+    {
+        try
+        {
+            var results = new List<Employee>();
+
+            if (employeeIds == null || employeeIds.Length == 0)
+                return results;
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+
+                var idParameterNames = new string[employeeIds.Length];
+                for (int i = 0; i < employeeIds.Length; i++)
+                {
+                    idParameterNames[i] = "@id" + i;
+                }
+
+                command.CommandText = $@"
+                    SELECT [Id], [BusinessId], [DepartmentId], [Name], [Position],
+                           [SocialInsuranceNumber], [IdNumber], [Phone], [Email],
+                           [StartDate], [EndDate], [SalaryTypeId], [BaseSalary],
+                           [HourlyRate], [BankAccount], [IsActive], [IsPayeApplicable], [CreatedAtUtc]
+                    FROM [payroll].[Employee]
+                    WHERE [payroll].[Employee].[BusinessId] = @BusinessId
+                      AND [payroll].[Employee].[Id] IN ({string.Join(", ", idParameterNames)})
+                    ORDER BY [payroll].[Employee].[Name]";
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                for (int i = 0; i < employeeIds.Length; i++)
+                {
+                    command.Parameters.Add(new SqlParameter(idParameterNames[i], employeeIds[i]));
+                }
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapEmployee(reader));
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     #endregion
 
     #region EarningType Methods

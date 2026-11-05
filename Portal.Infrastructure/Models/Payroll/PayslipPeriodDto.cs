@@ -8,6 +8,7 @@ public class PayslipPeriodDto
     public string Status { get; set; } = string.Empty;
     public DateTime? ProcessedAtUtc { get; set; }
     public int PayslipCount { get; set; }
+    public decimal TotalGrossSalary { get; set; }
     public decimal TotalNetSalary { get; set; }
 }
 

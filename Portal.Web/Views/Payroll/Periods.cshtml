@@ -93,6 +93,7 @@
                     <th>Period</th>
                     <th>Status</th>
                     <th data-mobile="hide">Employees</th>
+                    <th class="text-right" data-mobile="hide">Total Gross</th>
                     <th class="text-right" data-mobile="hide">Total Net</th>
                     <th data-mobile="hide">Processed</th>
                     <th>Actions</th>
@@ -126,6 +127,7 @@
                             }
                         </td>
                         <td data-mobile="hide">@(period.PayslipCount > 0 ? period.PayslipCount.ToString() : "—")</td>
+                        <td class="text-right" data-mobile="hide">@(period.PayslipCount > 0 ? $"€{period.TotalGrossSalary:N2}" : "—")</td>
                         <td class="text-right" data-mobile="hide">@(period.PayslipCount > 0 ? $"€{period.TotalNetSalary:N2}" : "—")</td>
                         <td data-mobile="hide">@(period.ProcessedAtUtc.HasValue ? period.ProcessedAtUtc.Value.ToString("dd MMM yyyy") : "—")</td>
                         <td class="table-actions">

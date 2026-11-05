@@ -46,7 +46,7 @@
 
 <!-- Employee Deductions Section -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <h3 class="section-title">Employee Deductions</h3>
+    <h3 class="section-title" style="margin-bottom:18px;">Employee Deductions</h3>
     @if (employeeDeductions.Count > 0)
     {
         <table class="data-table">
@@ -64,7 +64,7 @@
                 {
                     <tr class="@(!deduction.IsActive ? "row-inactive" : "")">
                         <td><strong>@deduction.Name</strong></td>
-                        <td><code>@deduction.Code</code></td>
+                        <td><span style="display:inline-block;font-family:'Courier New',monospace;font-size:11px;font-weight:600;color:#5a6a7a;background:#eef1f4;border:1px solid #e0e5ea;border-radius:6px;padding:3px 8px;">@deduction.Code</span></td>
                         <td class="text-right">@(deduction.CurrentRate.HasValue ? $"{deduction.CurrentRate.Value:0.00}%" : "—")</td>
                         <td>
                             @if (deduction.IsActive)
@@ -95,7 +95,7 @@
 
 <!-- Employer Contributions Section -->
 <section class="glass card-pad" style="margin-bottom:22px;">
-    <h3 class="section-title">Employer Contributions</h3>
+    <h3 class="section-title" style="margin-bottom:18px;">Employer Contributions</h3>
     @if (employerContributions.Count > 0)
     {
         <table class="data-table">
@@ -113,7 +113,7 @@
                 {
                     <tr class="@(!contribution.IsActive ? "row-inactive" : "")">
                         <td><strong>@contribution.Name</strong></td>
-                        <td><code>@contribution.Code</code></td>
+                        <td><span style="display:inline-block;font-family:'Courier New',monospace;font-size:11px;font-weight:600;color:#5a6a7a;background:#eef1f4;border:1px solid #e0e5ea;border-radius:6px;padding:3px 8px;">@contribution.Code</span></td>
                         <td class="text-right">@(contribution.CurrentRate.HasValue ? $"{contribution.CurrentRate.Value:0.00}%" : "—")</td>
                         <td>
                             @if (contribution.IsActive)

@@ -1,9 +1,12 @@
-ï»¿using Moq;
+using Moq;
 using Xunit;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models.Payroll;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Services;
+using Portal.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Portal.Tests.Unit.Payroll.PhaseA;
 
@@ -22,7 +25,7 @@ public class PayrollServiceConfirmBatchTests
     private const int PeriodId = 100;
     private const int EmployeeId = 500;
 
-    // Business 1 deduction types â€” employee (cat 1) and employer (cat 2) SI/GESY share names.
+    // Business 1 deduction types — employee (cat 1) and employer (cat 2) SI/GESY share names.
     private const int SiDeductionId = 8;     // "Social Insurance" employee
     private const int GesyDeductionId = 9;   // "GESY" employee
     private const int SiContributionId = 10; // "Social Insurance" employer
@@ -112,6 +115,14 @@ public class PayrollServiceConfirmBatchTests
         var businessService = new Mock<IBusinessService>();
         var orchestrator = new PayslipCalculationOrchestrator(engine, payeService.Object, repo.Object, businessService.Object);
 
+        var tenantMock = new Mock<ICurrentTenantService>();
+        tenantMock.Setup(t => t.CurrentBusinessId).Returns(BusinessId);
+        var portalOptions = new DbContextOptionsBuilder<PortalDbContext>()
+            .UseInMemoryDatabase(databaseName: $"PayrollConfirmBatch_{Guid.NewGuid()}")
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+        var portalDbContext = new PortalDbContext(portalOptions, tenantMock.Object);
+
         var service = new PayrollService(
             repo.Object,
             engine,
@@ -123,12 +134,12 @@ public class PayrollServiceConfirmBatchTests
             Mock.Of<IPayslipPdfService>(),
             Mock.Of<IPayslipRenderer>(),
             businessService.Object,
-            null!);
+            portalDbContext);
 
         // Act
         var result = await service.ConfirmBatchGenerationAsync(PeriodId, BusinessId);
 
-        // Assert â€” operation succeeded
+        // Assert — operation succeeded
         Assert.True(result.Success);
 
         // All 7 types must be persisted exactly once each, with no employee twin reused for an employer line.

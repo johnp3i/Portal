@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Payroll Register - Range &amp; Options Mockup</title>
+<style>
+  :root{
+    --blue:#0D5EA6; --cyan:#57B8E8; --success:#129867; --warn:#C8912E; --danger:#C24A4A;
+    --bg:#F7FAFC; --bg2:#EEF4F8; --ink:#1b2733; --muted:#5a6a7a; --line:#e0e5ea;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.5}
+  h1,h2,h3{font-family:Manrope,Inter,sans-serif;font-weight:800;letter-spacing:-.02em;margin:0}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 24px 80px}
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);display:flex;align-items:center;gap:7px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan)}
+  .lead{color:var(--muted);margin:6px 0 0}
+  .card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:0 10px 30px rgba(13,94,166,.06);margin-top:24px}
+  .card h2{font-size:18px}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--bg2);color:var(--blue);border:1px solid var(--line)}
+  .pick{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--blue);color:#fff;margin-left:8px}
+  .rec{background:var(--success)}
+  .muted{color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+  .opt{border:1px solid var(--line);border-radius:16px;padding:16px;background:var(--bg)}
+  .opt.recommend{border-color:var(--success);box-shadow:0 0 0 1px var(--success) inset}
+  .opt h3{font-size:14px;margin-bottom:6px}
+  /* fake excel */
+  .xl{border:1px solid #c7ced6;border-radius:8px;overflow:auto;background:#fff;margin-top:12px}
+  table.sheet{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+  table.sheet th,table.sheet td{border:1px solid #d7dde3;padding:5px 9px;text-align:right}
+  table.sheet th:first-child,table.sheet td:first-child{text-align:left}
+  table.sheet thead th{background:var(--blue);color:#fff;font-weight:700;border-color:#0b4f8c}
+  .section-hd td{background:var(--blue);color:#fff;font-weight:700;text-align:left}
+  .totrow td{font-weight:800;background:#f2f6fa}
+  .tab{display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;border:1px solid #c7ced6;border-bottom:none;border-radius:8px 8px 0 0;background:#eef4f8;color:var(--blue);margin-right:4px}
+  .tab.active{background:#fff}
+  /* filter preview */
+  .field label{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .ctrl{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;color:var(--ink);min-width:150px}
+  .frow{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .btn{height:40px;padding:0 20px;border-radius:10px;background:var(--blue);color:#fff;font-weight:700;border:none;display:inline-flex;align-items:center}
+  .note{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .pct{color:var(--blue);font-weight:600}
+  .callout{background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:13px}
+  ul{margin:8px 0 0;padding-left:18px}
+  li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow"><span class="dot"></span> Payroll &bull; Mockup (reference only)</div>
+  <h1 style="margin-top:8px;">Payroll Register - Range &amp; Options</h1>
+  <p class="lead">Preview of the three requested changes: (1) a from/to month range instead of a single period, (2) per-contribution-type totals on the Summary sheet, and (3) percentage values on both sheets. Pick one option where marked; nothing is built yet.</p>
+
+  <!-- ============ DECISION A: filter ============ -->
+  <div class="card">
+    <h2>A. Filter - from/to month range <span class="pick rec">Recommended shown</span></h2>
+    <p class="muted" style="margin-top:4px;">Replace the single Period dropdown with a From and To month-year range. Employee list = anyone with a finalised payslip anywhere in the range.</p>
+    <div class="frow" style="margin-top:16px;">
+      <div class="field"><label>From</label><div class="ctrl">January 2026 &#9662;</div></div>
+      <div class="field"><label>To</label><div class="ctrl">December 2026 &#9662;</div></div>
+      <div class="field"><label>Employees</label><div class="ctrl" style="min-width:220px;">Giannis Papamichael &#9662;</div></div>
+      <div class="field"><label>&nbsp;</label><label style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted);display:flex;align-items:center;gap:6px;height:40px;"><input type="checkbox"/> Select all</label></div>
+      <div class="field"><label>&nbsp;</label><button class="btn">Generate</button></div>
+    </div>
+    <div class="callout"><strong>Validation:</strong> From must be &le; To; both default to the latest finalised year (Jan..latest finalised month). A range with no finalised payslips is blocked with a SweetAlert2 message, same as today.</div>
+  </div>
+
+  <!-- ============ DECISION B: detail sheet over a range ============ -->
+  <div class="card">
+    <h2>B. Per-employee detail sheet over a range <span class="badge">choose B1 or B2</span></h2>
+    <p class="muted" style="margin-top:4px;">Across e.g. 12 months each employee has up to 12 payslips. Two ways to lay out one employee's sheet.</p>
+    <div class="grid2" style="margin-top:14px;">
+      <div class="opt recommend">
+        <h3>B1 - Month columns + Total column <span class="pick rec">Recommended</span></h3>
+        <p class="muted" style="font-size:12.5px;">Each earning/deduction/contribution is a row; months are columns; a Total column sums the range. Compact, reads like a ledger, one sheet per employee regardless of range length.</p>
+        <div class="xl">
+          <table class="sheet">
+            <tr class="section-hd"><td>Giannis Papamichael - Director</td><td>Jan</td><td>Feb</td><td>...</td><td>Dec</td><td>Total</td><td>%</td></tr>
+            <tr class="section-hd"><td colspan="7">Earnings</td></tr>
+            <tr><td>Basic Salary</td><td>1,200.00</td><td>1,200.00</td><td>...</td><td>1,200.00</td><td>14,400.00</td><td class="pct">-</td></tr>
+            <tr class="totrow"><td>Total Earnings</td><td>1,200.00</td><td>1,200.00</td><td>...</td><td>1,200.00</td><td>14,400.00</td><td></td></tr>
+            <tr class="section-hd"><td colspan="7">Employee Deductions</td></tr>
+            <tr><td>Social Insurance</td><td>105.60</td><td>105.60</td><td>...</td><td>105.60</td><td>1,267.20</td><td class="pct">8.80%</td></tr>
+            <tr><td>GESY</td><td>31.80</td><td>31.80</td><td>...</td><td>31.80</td><td>381.60</td><td class="pct">2.65%</td></tr>
+            <tr class="totrow"><td>Total Employee Deductions</td><td>137.40</td><td>137.40</td><td>...</td><td>137.40</td><td>1,648.80</td><td></td></tr>
+            <tr class="section-hd"><td colspan="7">Employer Contributions</td></tr>
+            <tr><td>Social Insurance</td><td>105.60</td><td>105.60</td><td>...</td><td>105.60</td><td>1,267.20</td><td class="pct">8.80%</td></tr>
+            <tr><td>GESY</td><td>34.80</td><td>34.80</td><td>...</td><td>34.80</td><td>417.60</td><td class="pct">2.90%</td></tr>
+            <tr><td>Redundancy Fund</td><td>14.40</td><td>14.40</td><td>...</td><td>14.40</td><td>172.80</td><td class="pct">1.20%</td></tr>
+            <tr class="totrow"><td>Total Employer Contributions</td><td>184.80</td><td>184.80</td><td>...</td><td>184.80</td><td>2,217.60</td><td></td></tr>
+          </table>
+        </div>
+        <p class="note">Percentage column on the right shows each line's rate. Month cells can get wide for a full year - frozen first column + Total.</p>
+      </div>
+      <div class="opt">
+        <h3>B2 - Summed block (range totals only)</h3>
+        <p class="muted" style="font-size:12.5px;">Same single-period layout you have now, but every figure is the SUM across the range. No per-month columns. Simplest, but you lose the month-by-month view.</p>
+        <div class="xl">
+          <table class="sheet">
+            <tr class="section-hd"><td>Giannis Papamichael - Jan-Dec 2026</td><td>Amount</td><td>%</td></tr>
+            <tr class="section-hd"><td colspan="3">Earnings</td></tr>
+            <tr><td>Basic Salary</td><td>14,400.00</td><td class="pct">-</td></tr>
+            <tr class="totrow"><td>Total Earnings</td><td>14,400.00</td><td></td></tr>
+            <tr class="section-hd"><td colspan="3">Employee Deductions</td></tr>
+            <tr><td>Social Insurance</td><td>1,267.20</td><td class="pct">8.80%</td></tr>
+            <tr><td>GESY</td><td>381.60</td><td class="pct">2.65%</td></tr>
+            <tr class="totrow"><td>Total Employee Deductions</td><td>1,648.80</td><td></td></tr>
+            <tr class="section-hd"><td colspan="3">Employer Contributions</td></tr>
+            <tr><td>Social Insurance</td><td>1,267.20</td><td class="pct">8.80%</td></tr>
+            <tr><td>GESY</td><td>417.60</td><td class="pct">2.90%</td></tr>
+            <tr><td>Redundancy Fund</td><td>172.80</td><td class="pct">1.20%</td></tr>
+            <tr class="totrow"><td>Total Employer Contributions</td><td>2,217.60</td><td></td></tr>
+          </table>
+        </div>
+        <p class="note">Cleanest for a quick annual snapshot. If you later want per-month detail you would regenerate per period.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DECISION C: summary with contribution totals ============ -->
+  <div class="card">
+    <h2>C. Summary sheet - per-contribution totals <span class="badge">choose C1 or C2</span></h2>
+    <p class="muted" style="margin-top:4px;">You asked for "the totals for all contributions on the first page". The Summary currently has 5 columns (earnings / employee deductions / net / employer contributions / total cost). Two ways to add the per-type contribution totals.</p>
+
+    <div class="opt recommend" style="margin-top:14px;">
+      <h3>C1 - One column per contribution type, TOTALS row at the bottom <span class="pick rec">Recommended</span></h3>
+      <p class="muted" style="font-size:12.5px;">Each employer contribution type becomes its own column; the bottom TOTALS row gives the grand total per contribution across all employees - that is your "totals for all contributions on the first page".</p>
+      <div class="xl">
+        <table class="sheet">
+          <thead><tr><th>Employee Name</th><th>Total Earnings</th><th>Emp. Deductions</th><th>Net Salary</th><th>SI (Employer)</th><th>GESY (Employer)</th><th>Redundancy</th><th>Ind. Training</th><th>Soc. Cohesion</th><th>Total Contrib.</th><th>Total Cost</th></tr></thead>
+          <tr><td>Giannis Papamichael</td><td>14,400.00</td><td>1,648.80</td><td>12,751.20</td><td>1,267.20</td><td>417.60</td><td>172.80</td><td>72.00</td><td>288.00</td><td>2,217.60</td><td>16,617.60</td></tr>
+          <tr><td>Anna Georgiou</td><td>19,200.00</td><td>2,198.40</td><td>17,001.60</td><td>1,689.60</td><td>556.80</td><td>230.40</td><td>96.00</td><td>384.00</td><td>2,956.80</td><td>22,156.80</td></tr>
+          <tr class="totrow"><td>TOTALS</td><td>33,600.00</td><td>3,847.20</td><td>29,752.80</td><td>2,956.80</td><td>974.40</td><td>403.20</td><td>168.00</td><td>672.00</td><td>5,174.40</td><td>38,774.40</td></tr>
+        </table>
+      </div>
+      <p class="note">Wide but every contribution total is visible at a glance on page one. Column count grows with the number of contribution types the business has configured.</p>
+    </div>
+
+    <div class="opt" style="margin-top:14px;">
+      <h3>C2 - Keep employee rows lean; add a "Contribution Totals" block below</h3>
+      <p class="muted" style="font-size:12.5px;">Summary keeps its current 6 columns; a second small table underneath lists each contribution type with its range total + % . Narrower, but totals are a separate block rather than per-employee columns.</p>
+      <div class="xl">
+        <table class="sheet">
+          <thead><tr><th>Employee Name</th><th>Total Earnings</th><th>Emp. Deductions</th><th>Net Salary</th><th>Employer Contrib.</th><th>Total Cost</th></tr></thead>
+          <tr><td>Giannis Papamichael</td><td>14,400.00</td><td>1,648.80</td><td>12,751.20</td><td>2,217.60</td><td>16,617.60</td></tr>
+          <tr><td>Anna Georgiou</td><td>19,200.00</td><td>2,198.40</td><td>17,001.60</td><td>2,956.80</td><td>22,156.80</td></tr>
+          <tr class="totrow"><td>TOTALS</td><td>33,600.00</td><td>3,847.20</td><td>29,752.80</td><td>5,174.40</td><td>38,774.40</td></tr>
+        </table>
+      </div>
+      <div class="xl" style="margin-top:10px;max-width:420px;">
+        <table class="sheet">
+          <thead><tr><th>Contribution Type</th><th>Range Total</th><th>%</th></tr></thead>
+          <tr><td>Social Insurance (Employer)</td><td>2,956.80</td><td class="pct">8.80%</td></tr>
+          <tr><td>GESY (Employer)</td><td>974.40</td><td class="pct">2.90%</td></tr>
+          <tr><td>Redundancy Fund</td><td>403.20</td><td class="pct">1.20%</td></tr>
+          <tr><td>Industrial Training Fund</td><td>168.00</td><td class="pct">0.50%</td></tr>
+          <tr><td>Social Cohesion Fund</td><td>672.00</td><td class="pct">2.00%</td></tr>
+          <tr class="totrow"><td>Total Contributions</td><td>5,174.40</td><td></td></tr>
+        </table>
+      </div>
+      <p class="note">Keeps page one readable even with many contribution types; the % column lives on the totals block.</p>
+    </div>
+  </div>
+
+  <!-- ============ DECISION D: percentage ============ -->
+  <div class="card">
+    <h2>D. Percentage values - where they appear</h2>
+    <p class="muted" style="margin-top:4px;">The raw payslip deduction line already carries its rate (e.g. SI 8.80%), so this is a display-only add.</p>
+    <ul>
+      <li><strong>Detail sheet:</strong> a "%" column on every Employee Deduction and Employer Contribution line (shown in B1/B2 above). Earnings have no rate, so their % cell is blank/"-".</li>
+      <li><strong>Summary sheet:</strong> percentages are per-line rates, not per-employee, so they fit most naturally on the contribution-totals block (C2) or as a small "% of gross" helper. If you pick C1 (per-type columns), the % would show once in the header note rather than per cell. <span class="muted">Tell me which you prefer.</span></li>
+    </ul>
+    <div class="callout" style="border-left-color:var(--blue);">A rate can change mid-range (rate history). If an employee's SI rate changed in, say, July, the detail "%" for that line would show the most recent rate in the range, with the amounts still summed correctly. Flagging this so we agree on how to show a changed rate.</div>
+  </div>
+
+  <div class="card" style="background:var(--bg2);">
+    <h2>What I need from you</h2>
+    <ul>
+      <li><strong>B:</strong> month-columns + Total (B1) or summed block only (B2)?</li>
+      <li><strong>C:</strong> per-contribution columns on each employee row (C1) or a separate contribution-totals block (C2)?</li>
+      <li><strong>D:</strong> confirm % on detail lines; and for the Summary, where the % belongs given your C choice.</li>
+      <li><strong>Rate-change-in-range:</strong> show latest rate (simplest) or flag it?</li>
+    </ul>
+    <p class="note">Once you choose, I will update the spec (requirements + design + tasks) and then implement - no code changes until you confirm.</p>
+  </div>
+
+  <p class="muted" style="margin-top:28px;font-size:12px;">Reference-only mockup. Not deployed, not part of the build. Sample figures based on Giannis Papamichael (EUR 1,200/mo) extrapolated across a year.</p>
+</div>
+</body>
+</html>

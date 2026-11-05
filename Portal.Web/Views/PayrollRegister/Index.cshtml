@@ -1,0 +1,637 @@
+﻿@using Portal.Infrastructure.Models.Payroll
+@model Portal.Web.Models.Payroll.RegisterPageViewModel
+@{
+    ViewData["Title"] = "Payroll Register";
+    var hasEligible = Model.EligibleEmployees != null && Model.EligibleEmployees.Count > 0;
+    var generateDisabled = !Model.HasFinalisedPeriod || !hasEligible;
+
+    // Periods ordered newest-first by (Year, Month) for both From and To selects.
+    var orderedPeriods = (Model.Periods ?? new List<PayslipPeriodDto>())
+        .OrderByDescending(p => p.Year)
+        .ThenByDescending(p => p.Month)
+        .ToList();
+
+    // Pre-selected range values ("Y-M") when a finalised period exists.
+    var fromSelectedValue = Model.HasFinalisedPeriod && Model.DefaultFromYear.HasValue
+        ? $"{Model.DefaultFromYear.Value}-{Model.DefaultFromMonth}"
+        : null;
+    var toSelectedValue = Model.HasFinalisedPeriod && Model.DefaultToYear.HasValue && Model.DefaultToMonth.HasValue
+        ? $"{Model.DefaultToYear.Value}-{Model.DefaultToMonth.Value}"
+        : null;
+}
+
+<div class="topbar">
+    <div>
+        <div class="eyebrow"><span class="dot"></span> Payroll</div>
+        <h1 class="topbar-heading">Payroll Register</h1>
+        <p class="topbar-description">Generate a consolidated Excel register for a month range across one or more employees.</p>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .emp-multi { position: relative; }
+    /* Match the global .field select: width 100%, padding 14px, radius 16px, rgba border, blue focus. */
+    .emp-control { width: 100%; min-height: 52px; box-sizing: border-box; border: 1px solid rgba(13,94,166,.12); border-radius: 16px; background: #fff;
+        display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 9px 40px 9px 14px; cursor: pointer; position: relative; color: var(--text); font: inherit; }
+    .emp-control:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(13,94,166,.08); }
+    .emp-multi.open .emp-control { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(13,94,166,.08); }
+    .emp-caret { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #5E7385; pointer-events: none; }
+    .emp-multi.open .emp-caret { transform: translateY(-50%) rotate(180deg); }
+    .emp-placeholder { color: #8a96a4; font-size: 14px; }
+    .emp-chips { display: contents; }
+    .emp-chip { display: inline-flex; align-items: center; gap: 5px; background: #EEF4F8; border: 1px solid #d7e3ec;
+        color: #0D5EA6; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 6px 2px 9px; max-width: 180px; }
+    .emp-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .emp-chip button { border: none; background: transparent; color: #0D5EA6; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+    .emp-chip button:hover { color: #C24A4A; }
+    .emp-panel { position: absolute; z-index: 50; top: calc(100% + 4px); left: 0; right: 0; min-width: 240px;
+        background: #fff; border: 1px solid rgba(13,94,166,.12); border-radius: 16px; box-shadow: 0 12px 32px rgba(13,94,166,.14);
+        padding: 8px; max-height: 280px; display: flex; flex-direction: column; }
+    .emp-search-wrap { padding: 2px 2px 8px; }
+    .emp-search { width: 100%; height: 36px; border: 1px solid rgba(13,94,166,.12); border-radius: 10px; padding: 0 10px; font-size: 13px; box-sizing: border-box; }
+    .emp-search:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(13,94,166,.08); }
+    .emp-options { overflow-y: auto; }
+    .emp-opt { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; font-size: 13px; cursor: pointer; color: #1b2733; }
+    .emp-opt:hover { background: #F7FAFC; }
+    .emp-selectall { font-weight: 700; color: #5a6a7a; border-bottom: 1px solid #eef1f4; border-radius: 0; margin-bottom: 4px; }
+    .emp-nomatch { padding: 10px 8px; font-size: 13px; color: #8a96a4; }
+
+    /* ===== Per-employee preview ledger tables (R14.7, R15.6) ===== */
+    /* Horizontally scrollable wrapper so a full 12-month range (12 month cols + Total + "%")
+       stays usable without breaking page layout. Separates stacked per-employee tables. */
+    .preview-table-wrap { overflow-x: auto; margin-bottom: 32px; padding-bottom: 4px; }
+    .preview-table-wrap:last-child { margin-bottom: 0; }
+
+    /* Employee heading — report sub-heading, Manrope/heading feel. */
+    .preview-emp-name { font-family: 'Manrope', var(--font-heading, inherit); font-weight: 700;
+        font-size: 19px; color: #0D5EA6; margin: 10px 0 12px; }
+
+    /* Ledger table — min-width keeps columns readable and forces horizontal scroll on narrow screens. */
+    .preview-table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 13px; color: var(--text); }
+    .preview-table th { background: #0D5EA6; color: #fff; font-weight: 700; padding: 8px 10px;
+        text-align: right; white-space: nowrap; }
+    /* First (label) column header is left-aligned. */
+    .preview-table th:first-child { text-align: left; }
+    .preview-table td { padding: 7px 10px; border-bottom: 1px solid #eef1f4; }
+    /* Money/numeric cells — right-aligned with tabular figures; label (first) column stays left. */
+    .preview-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* Section-header band ("Earnings" / "Employee Deductions" / "Employer Contributions"). */
+    .preview-section-row td { background: #EEF4F8; font-weight: 700; color: #0D5EA6; border-bottom: 1px solid rgba(13,94,166,.08); }
+
+    /* Section-total row — bold, light top border, slightly stronger background than body rows. */
+    .preview-total-row td { background: #F7FAFC; font-weight: 700; border-top: 1px solid rgba(13,94,166,.18);
+        border-bottom: 1px solid rgba(13,94,166,.08); }
+
+    /* Per-employee Employee_Totals summary block. */
+    .preview-emp-totals { margin-top: 14px; border: 1px solid rgba(13,94,166,.12); border-radius: 12px;
+        overflow: hidden; width: 100%; max-width: 420px; border-collapse: collapse; }
+    .preview-emp-totals td { padding: 8px 12px; border-bottom: 1px solid #eef1f4; font-size: 13px; }
+    .preview-emp-totals tr:last-child td { border-bottom: none; }
+    .preview-emp-totals .preview-totals-label { font-weight: 600; color: var(--text); }
+    .preview-emp-totals .preview-totals-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+    /* Emphasise Net Salary / Total Cost with the app accent. */
+    .preview-emp-totals .preview-totals-emphasis .preview-totals-label,
+    .preview-emp-totals .preview-totals-emphasis .preview-totals-value { color: #0D5EA6; }
+    .preview-emp-totals .preview-totals-emphasis td { background: #EEF4F8; }
+</style>
+
+<!-- Filter Panel -->
+<section class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+            <label>From</label>
+            <select id="fromSelect">
+                @if (orderedPeriods.Count == 0)
+                {
+                    <option value="">No periods available</option>
+                }
+                else
+                {
+                    foreach (var period in orderedPeriods)
+                    {
+                        var monthName = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(period.Month);
+                        // Generatable when payslips are Finalised (3) or Re-finalised (5), matching
+                        // GetFinalisedPayslipsForPeriodAsync's IN (3,5). Raw status is shown so non-
+                        // generatable periods (Draft/Preview/Unlocked) remain visibly distinct.
+                        var isGeneratable = !string.IsNullOrEmpty(period.Status) &&
+                            (period.Status.Equals("Finalised", StringComparison.OrdinalIgnoreCase) ||
+                             period.Status.Equals("Re-finalised", StringComparison.OrdinalIgnoreCase));
+                        var stateLabel = string.IsNullOrEmpty(period.Status) ? "Draft" : period.Status;
+                        var optionText = isGeneratable
+                            ? $"{monthName} {period.Year} ({stateLabel})"
+                            : $"{monthName} {period.Year} ({stateLabel} - no finalised payslips)";
+                        var optionValue = $"{period.Year}-{period.Month}";
+                        if (fromSelectedValue != null && fromSelectedValue == optionValue)
+                        {
+                            <option value="@optionValue" selected>@optionText</option>
+                        }
+                        else
+                        {
+                            <option value="@optionValue">@optionText</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>To</label>
+            <select id="toSelect">
+                @if (orderedPeriods.Count == 0)
+                {
+                    <option value="">No periods available</option>
+                }
+                else
+                {
+                    foreach (var period in orderedPeriods)
+                    {
+                        var monthName = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(period.Month);
+                        var isGeneratable = !string.IsNullOrEmpty(period.Status) &&
+                            (period.Status.Equals("Finalised", StringComparison.OrdinalIgnoreCase) ||
+                             period.Status.Equals("Re-finalised", StringComparison.OrdinalIgnoreCase));
+                        var stateLabel = string.IsNullOrEmpty(period.Status) ? "Draft" : period.Status;
+                        var optionText = isGeneratable
+                            ? $"{monthName} {period.Year} ({stateLabel})"
+                            : $"{monthName} {period.Year} ({stateLabel} - no finalised payslips)";
+                        var optionValue = $"{period.Year}-{period.Month}";
+                        if (toSelectedValue != null && toSelectedValue == optionValue)
+                        {
+                            <option value="@optionValue" selected>@optionText</option>
+                        }
+                        else
+                        {
+                            <option value="@optionValue">@optionText</option>
+                        }
+                    }
+                }
+            </select>
+            <div id="rangeError" style="display:none;color:#C24A4A;font-size:12px;margin-top:6px;">The From month must not be later than the To month.</div>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Employees</label>
+            <div id="empMulti" class="emp-multi">
+                <div id="empControl" class="emp-control" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+                    <div id="empChips" class="emp-chips"></div>
+                    <span id="empPlaceholder" class="emp-placeholder">Select employees...</span>
+                    <svg class="emp-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <div id="empPanel" class="emp-panel" role="listbox" aria-multiselectable="true" style="display:none;">
+                    <div class="emp-search-wrap">
+                        <input type="text" id="empSearch" class="emp-search" placeholder="Search employees..." autocomplete="off" />
+                    </div>
+                    <label class="emp-opt emp-selectall"><input type="checkbox" id="empSelectAll" /> <span>Select all</span></label>
+                    <div id="empOptions" class="emp-options"></div>
+                    <div id="empNoMatch" class="emp-nomatch" style="display:none;">No employees match.</div>
+                </div>
+            </div>
+        </div>
+        <div style="padding-top:22px;display:flex;gap:10px;">
+            <button class="btn btn-secondary" id="previewBtn" @(generateDisabled ? "disabled" : "")>Preview</button>
+            <button class="btn btn-primary" id="generateBtn" @(generateDisabled ? "disabled" : "")>Download</button>
+        </div>
+    </div>
+</section>
+
+<!-- Status / Help Card -->
+<section class="glass card-pad" id="statusSection">
+    <div class="empty-state" id="statusMessage">
+        @if (!Model.HasFinalisedPeriod)
+        {
+            <p>No finalised period is available. Finalise a payslip period to generate a register.</p>
+        }
+        else if (!hasEligible)
+        {
+            <p>No eligible employees exist for the selected range.</p>
+        }
+        else
+        {
+            <p>Select a From/To month range and one or more employees, then click "Generate" to download the register.</p>
+        }
+    </div>
+</section>
+
+<!-- Per-employee Preview (populated by renderPreview) -->
+<section class="glass card-pad" id="previewSection" style="margin-top:24px;display:none;">
+    <div id="previewContainer"></div>
+</section>
+
+<script>
+    (function () {
+        var SPREADSHEET_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+        var fromSelect = document.getElementById('fromSelect');
+        var toSelect = document.getElementById('toSelect');
+        var rangeError = document.getElementById('rangeError');
+        var generateBtn = document.getElementById('generateBtn');
+        var previewBtn = document.getElementById('previewBtn');
+        var previewSection = document.getElementById('previewSection');
+        var previewContainer = document.getElementById('previewContainer');
+        var statusMessage = document.getElementById('statusMessage');
+
+        // --- Searchable multi-select widget elements ---
+        var empMulti = document.getElementById('empMulti');
+        var empControl = document.getElementById('empControl');
+        var empChips = document.getElementById('empChips');
+        var empPlaceholder = document.getElementById('empPlaceholder');
+        var empPanel = document.getElementById('empPanel');
+        var empSearch = document.getElementById('empSearch');
+        var empSelectAll = document.getElementById('empSelectAll');
+        var empOptions = document.getElementById('empOptions');
+        var empNoMatch = document.getElementById('empNoMatch');
+
+        // employees: [{ id, name }]; selectedIds: Set of chosen ids (as strings).
+        // Server-rendered eligible employees (house pattern: System.Text.Json). Ids are strings.
+        var employees = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            (Model.EligibleEmployees ?? new List<RegisterEmployeeOption>())
+                .Select(e => new { id = e.EmployeeId.ToString(), name = e.EmployeeName }),
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+        var selectedIds = {};  // id -> true
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (fromSelect) fromSelect.addEventListener('change', onRangeChange);
+            if (toSelect) toSelect.addEventListener('change', onRangeChange);
+            if (generateBtn) generateBtn.addEventListener('click', onGenerate);
+            if (previewBtn) previewBtn.addEventListener('click', onPreview);
+            if (empControl) {
+                empControl.addEventListener('click', function (e) { if (e.target.closest('.emp-chip button')) return; togglePanel(); });
+                empControl.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePanel(); } });
+            }
+            if (empSearch) empSearch.addEventListener('input', renderOptions);
+            if (empSelectAll) empSelectAll.addEventListener('change', onSelectAllToggle);
+            document.addEventListener('click', function (e) { if (empMulti && !empMulti.contains(e.target)) closePanel(); });
+            renderChips();
+            renderOptions();
+            updateGenerateState();
+        });
+
+        function setStatus(html) { if (statusMessage) statusMessage.innerHTML = html; }
+
+        // ---- range (unchanged) ----
+        function parsePeriodValue(value) {
+            if (!value) return null;
+            var parts = value.split('-');
+            if (parts.length !== 2) return null;
+            var year = parseInt(parts[0], 10); var month = parseInt(parts[1], 10);
+            if (isNaN(year) || isNaN(month)) return null;
+            return { year: year, month: month };
+        }
+        function ordinal(p) { return (p.year * 12) + p.month; }
+        function getFrom() { return parsePeriodValue(fromSelect ? fromSelect.value : ''); }
+        function getTo() { return parsePeriodValue(toSelect ? toSelect.value : ''); }
+        function rangeIsValid() { var f = getFrom(); var t = getTo(); if (!f || !t) return false; return ordinal(f) <= ordinal(t); }
+        function showRangeError() { if (rangeError) rangeError.style.display = 'block'; }
+        function hideRangeError() { if (rangeError) rangeError.style.display = 'none'; }
+
+        // ---- widget model ----
+        function setEmployees(list) {
+            clearPreview();  // R15 - a prior preview is invalidated when the employee set changes
+            employees = (list || []).map(function (e) { return { id: String(e.employeeId != null ? e.employeeId : e.id), name: e.employeeName != null ? e.employeeName : e.name }; });
+            selectedIds = {};
+            if (empSearch) empSearch.value = '';
+            renderChips(); renderOptions(); updateGenerateState();
+        }
+        function selectedCount() { return Object.keys(selectedIds).length; }
+        function hasEmployees() { return employees.length > 0; }
+        function updateGenerateState() { if (generateBtn) generateBtn.disabled = !hasEmployees(); }
+        function getSelectedEmployeeIds() { return Object.keys(selectedIds); }
+        function clearSelection() { selectedIds = {}; renderChips(); syncSelectAllState(); }
+
+        function togglePanel() { if (empMulti.classList.contains('open')) closePanel(); else openPanel(); }
+        function openPanel() {
+            if (!hasEmployees()) return;
+            empMulti.classList.add('open'); empPanel.style.display = 'flex'; empControl.setAttribute('aria-expanded', 'true');
+            if (empSearch) { empSearch.value = ''; renderOptions(); empSearch.focus(); }
+        }
+        function closePanel() {
+            if (!empMulti) return;
+            empMulti.classList.remove('open'); empPanel.style.display = 'none'; empControl.setAttribute('aria-expanded', 'false');
+        }
+
+        function renderChips() {
+            if (!empChips) return;
+            empChips.innerHTML = '';
+            var ids = getSelectedEmployeeIds();
+            if (empPlaceholder) empPlaceholder.style.display = ids.length === 0 ? '' : 'none';
+            ids.forEach(function (id) {
+                var emp = employees.find(function (e) { return e.id === id; });
+                if (!emp) return;
+                var chip = document.createElement('span'); chip.className = 'emp-chip';
+                var label = document.createElement('span'); label.textContent = emp.name; chip.appendChild(label);
+                var x = document.createElement('button'); x.type = 'button'; x.setAttribute('aria-label', 'Remove'); x.textContent = '\u00d7';
+                x.addEventListener('click', function (e) { e.stopPropagation(); delete selectedIds[id]; renderChips(); renderOptions(); syncSelectAllState(); });
+                chip.appendChild(x); empChips.appendChild(chip);
+            });
+        }
+
+        function renderOptions() {
+            if (!empOptions) return;
+            var q = (empSearch ? empSearch.value : '').trim().toLowerCase();
+            empOptions.innerHTML = '';
+            var shown = 0;
+            employees.forEach(function (emp) {
+                if (q && emp.name.toLowerCase().indexOf(q) === -1) return;
+                shown++;
+                var lab = document.createElement('label'); lab.className = 'emp-opt';
+                var cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = emp.id; cb.checked = !!selectedIds[emp.id];
+                cb.addEventListener('change', function () { if (cb.checked) selectedIds[emp.id] = true; else delete selectedIds[emp.id]; renderChips(); syncSelectAllState(); });
+                var span = document.createElement('span'); span.textContent = emp.name;
+                lab.appendChild(cb); lab.appendChild(span); empOptions.appendChild(lab);
+            });
+            if (empNoMatch) empNoMatch.style.display = shown === 0 ? 'block' : 'none';
+            syncSelectAllState();
+        }
+
+        // Select all toggles only the CURRENTLY VISIBLE (filtered) options.
+        function onSelectAllToggle() {
+            var q = (empSearch ? empSearch.value : '').trim().toLowerCase();
+            var visible = employees.filter(function (e) { return !q || e.name.toLowerCase().indexOf(q) !== -1; });
+            if (empSelectAll.checked) visible.forEach(function (e) { selectedIds[e.id] = true; });
+            else visible.forEach(function (e) { delete selectedIds[e.id]; });
+            renderChips(); renderOptions();
+        }
+
+        function syncSelectAllState() {
+            if (!empSelectAll) return;
+            var q = (empSearch ? empSearch.value : '').trim().toLowerCase();
+            var visible = employees.filter(function (e) { return !q || e.name.toLowerCase().indexOf(q) !== -1; });
+            if (visible.length === 0) { empSelectAll.checked = false; return; }
+            empSelectAll.checked = visible.every(function (e) { return !!selectedIds[e.id]; });
+        }
+
+        async function onRangeChange() {
+            clearPreview();  // R15 - a prior preview is invalidated when the range changes
+            if (!rangeIsValid()) {
+                showRangeError(); setEmployees([]); closePanel();
+                setStatus('<p>Correct the From/To range to load eligible employees.</p>'); return;
+            }
+            hideRangeError();
+            var from = getFrom(); var to = getTo();
+            BlockUI.show('Loading employees...');
+            try {
+                var url = '/PayrollRegister/AxGetEmployeesForPeriod?fromYear=' + encodeURIComponent(from.year) +
+                    '&fromMonth=' + encodeURIComponent(from.month) + '&toYear=' + encodeURIComponent(to.year) +
+                    '&toMonth=' + encodeURIComponent(to.month);
+                var response = await fetch(url);
+                var data = await response.json();
+                BlockUI.hide();
+                if (data && data.success) {
+                    setEmployees(data.data || []);  // R3.4 - also clears prior selection
+                    if ((data.data || []).length === 0) setStatus('<p>No eligible employees exist for the selected range.</p>');
+                    else setStatus('<p>Select one or more employees, then click "Generate" to download the register.</p>');
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: (data && data.message) ? data.message : 'Failed to load employees.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred while loading employees.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        async function onGenerate() {
+            if (!rangeIsValid()) {
+                showRangeError();
+                Swal.fire({ icon: 'warning', title: 'Invalid Range', text: 'The From month must not be later than the To month.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            var employeeIds = getSelectedEmployeeIds();
+            if (employeeIds.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'Select Employees', text: 'Select at least one employee.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            var from = getFrom(); var to = getTo();
+            var url = '/PayrollRegister/AxGetGenerateRegister?fromYear=' + encodeURIComponent(from.year) +
+                '&fromMonth=' + encodeURIComponent(from.month) + '&toYear=' + encodeURIComponent(to.year) +
+                '&toMonth=' + encodeURIComponent(to.month);
+            employeeIds.forEach(function (id) { url += '&employeeIds=' + encodeURIComponent(id); });
+            BlockUI.show('Generating register...');
+            try {
+                var response = await fetch(url);
+                var contentType = response.headers.get('content-type') || '';
+                if (response.ok && contentType.indexOf(SPREADSHEET_MIME) !== -1) {
+                    var blob = await response.blob();
+                    var fileName = extractFileName(response) || 'PayrollRegister.xlsx';
+                    var objectUrl = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a'); a.href = objectUrl; a.download = fileName;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    window.URL.revokeObjectURL(objectUrl); BlockUI.hide();
+                } else {
+                    var data = await response.json(); BlockUI.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: (data && data.message) ? data.message : 'Register generation failed.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred while generating the register.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        // ---- preview (R15) ----
+        function clearPreview() {
+            if (previewContainer) previewContainer.innerHTML = '';
+            if (previewSection) previewSection.style.display = 'none';
+        }
+
+        function fmtMoney(v) {
+            var n = Number(v);
+            if (!isFinite(n)) n = 0;
+            return n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function fmtPct(p) {
+            if (p === null || p === undefined || p === '') return '';
+            var n = Number(p);
+            if (!isFinite(n)) return '';
+            return n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+        }
+
+        async function onPreview() {
+            if (!rangeIsValid()) {
+                showRangeError();
+                Swal.fire({ icon: 'warning', title: 'Invalid Range', text: 'The From month must not be later than the To month.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            var employeeIds = getSelectedEmployeeIds();
+            if (employeeIds.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'Select Employees', text: 'Select at least one employee.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            var from = getFrom(); var to = getTo();
+            var url = '/PayrollRegister/AxGetPreviewRegister?fromYear=' + encodeURIComponent(from.year) +
+                '&fromMonth=' + encodeURIComponent(from.month) + '&toYear=' + encodeURIComponent(to.year) +
+                '&toMonth=' + encodeURIComponent(to.month);
+            employeeIds.forEach(function (id) { url += '&employeeIds=' + encodeURIComponent(id); });
+            BlockUI.show('Loading preview...');
+            try {
+                var response = await fetch(url);
+                var data = await response.json();
+                BlockUI.hide();
+                if (data && data.success) {
+                    renderPreview(data.data || []);
+                } else {
+                    clearPreview();
+                    Swal.fire({ icon: 'error', title: 'Error', text: (data && data.message) ? data.message : 'Failed to load preview.', confirmButtonColor: '#0D5EA6' });
+                }
+            } catch (e) {
+                BlockUI.hide();
+                clearPreview();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred while loading the preview.', confirmButtonColor: '#0D5EA6' });
+            }
+        }
+
+        // Build one per-employee ledger table (R15.5-R15.8, R14.7). Server values go through
+        // textContent only (no innerHTML interpolation) to avoid XSS.
+        function renderPreview(data) {
+            if (!data || data.length === 0) {
+                clearPreview();
+                Swal.fire({ icon: 'info', title: 'No Data', text: 'No preview data for the selected range and employees.', confirmButtonColor: '#0D5EA6' });
+                return;
+            }
+            if (!previewContainer) return;
+            previewContainer.innerHTML = '';
+            if (previewSection) previewSection.style.display = '';
+
+            data.forEach(function (emp) {
+                var periods = emp.rangePeriods || [];
+                // columns = label + one per period + Total + %
+                var colCount = 1 + periods.length + 2;
+
+                var wrap = document.createElement('div');
+                wrap.className = 'preview-table-wrap';
+
+                var heading = document.createElement('div');
+                heading.className = 'preview-emp-name';
+                heading.textContent = emp.employeeName != null ? emp.employeeName : '';
+                wrap.appendChild(heading);
+
+                // ---- ledger table ----
+                var table = document.createElement('table');
+                table.className = 'preview-table';
+
+                // header row
+                var thead = document.createElement('thead');
+                var headRow = document.createElement('tr');
+                headRow.appendChild(makeTh('Item'));
+                periods.forEach(function (p) {
+                    var label = new Date(p.year, p.month - 1).toLocaleString('en', { month: 'short' }) + ' ' + p.year;
+                    headRow.appendChild(makeTh(label));
+                });
+                headRow.appendChild(makeTh('Total'));
+                headRow.appendChild(makeTh('%'));
+                thead.appendChild(headRow);
+                table.appendChild(thead);
+
+                var tbody = document.createElement('tbody');
+                appendSection(tbody, 'Earnings', emp.earnings || [], periods, colCount, false);
+                appendTotalRow(tbody, 'Total Earnings', emp.totalEarnings, colCount);
+                appendSection(tbody, 'Employee Deductions', emp.employeeDeductions || [], periods, colCount, true);
+                appendTotalRow(tbody, 'Total Employee Deductions', emp.totalEmployeeDeductions, colCount);
+                appendSection(tbody, 'Employer Contributions', emp.employerContributions || [], periods, colCount, true);
+                appendTotalRow(tbody, 'Total Employer Contributions', emp.totalEmployerContributions, colCount);
+                table.appendChild(tbody);
+                wrap.appendChild(table);
+
+                // ---- Employee_Totals summary ----
+                var totals = document.createElement('table');
+                totals.className = 'preview-emp-totals';
+                var tbTotals = document.createElement('tbody');
+                appendTotalsLine(tbTotals, 'Total Earnings', emp.totalEarnings, false);
+                appendTotalsLine(tbTotals, 'Total Employee Deductions', emp.totalEmployeeDeductions, false);
+                appendTotalsLine(tbTotals, 'Net Salary', emp.netSalary, true);
+                appendTotalsLine(tbTotals, 'Total Employer Contributions', emp.totalEmployerContributions, false);
+                appendTotalsLine(tbTotals, 'Total Cost', emp.totalCost, true);
+                totals.appendChild(tbTotals);
+                wrap.appendChild(totals);
+
+                previewContainer.appendChild(wrap);
+            });
+        }
+
+        function makeTh(text) {
+            var th = document.createElement('th');
+            th.textContent = text;
+            return th;
+        }
+
+        // Section band + one row per line. showPct=false for earnings (blank % column).
+        function appendSection(tbody, title, lines, periods, colCount, showPct) {
+            var bandRow = document.createElement('tr');
+            bandRow.className = 'preview-section-row';
+            var bandCell = document.createElement('td');
+            bandCell.setAttribute('colspan', String(colCount));
+            bandCell.textContent = title;
+            bandRow.appendChild(bandCell);
+            tbody.appendChild(bandRow);
+
+            lines.forEach(function (line) {
+                var tr = document.createElement('tr');
+                // line name (left, no .preview-num)
+                var nameCell = document.createElement('td');
+                nameCell.textContent = line.name != null ? line.name : '';
+                tr.appendChild(nameCell);
+                // one amount cell per period - 0.00 when absent/null (R15.8)
+                var map = line.amountByPeriodId || {};
+                periods.forEach(function (p) {
+                    tr.appendChild(makeNumCell(fmtMoney(map[String(p.periodId)])));
+                });
+                // Total
+                tr.appendChild(makeNumCell(fmtMoney(line.total)));
+                // % - blank for earnings (R15.6)
+                tr.appendChild(makeNumCell(showPct ? fmtPct(line.percentage) : ''));
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Section total row - put the section total under the Total column; month + % columns blank.
+        function appendTotalRow(tbody, label, total, colCount) {
+            var tr = document.createElement('tr');
+            tr.className = 'preview-total-row';
+            var labelCell = document.createElement('td');
+            labelCell.textContent = label;
+            tr.appendChild(labelCell);
+            // blank month columns + Total column + % column = colCount - 1 trailing cells.
+            // The second-to-last cell (Total column) carries the section total.
+            var trailing = colCount - 1;
+            for (var i = 0; i < trailing; i++) {
+                if (i === trailing - 2) {
+                    tr.appendChild(makeNumCell(fmtMoney(total)));  // Total column
+                } else {
+                    tr.appendChild(makeNumCell(''));
+                }
+            }
+            tbody.appendChild(tr);
+        }
+
+        function appendTotalsLine(tbody, label, value, emphasis) {
+            var tr = document.createElement('tr');
+            if (emphasis) tr.className = 'preview-totals-emphasis';
+            var labelCell = document.createElement('td');
+            labelCell.className = 'preview-totals-label';
+            labelCell.textContent = label;
+            var valueCell = document.createElement('td');
+            valueCell.className = 'preview-totals-value';
+            valueCell.textContent = fmtMoney(value);
+            tr.appendChild(labelCell);
+            tr.appendChild(valueCell);
+            tbody.appendChild(tr);
+        }
+
+        function makeNumCell(text) {
+            var td = document.createElement('td');
+            td.className = 'preview-num';
+            td.textContent = text;
+            return td;
+        }
+
+        function extractFileName(response) {
+            var disposition = response.headers.get('content-disposition');
+            if (!disposition) return null;
+            var match = /filename\*?=(?:UTF-8''''|")?([^";]+)/i.exec(disposition);
+            if (match && match[1]) {
+                try { return decodeURIComponent(match[1].replace(/"/g, '')); }
+                catch (e) { return match[1].replace(/"/g, ''); }
+            }
+            return null;
+        }
+    })();
+</script>
