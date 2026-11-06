@@ -227,7 +227,7 @@ a{text-decoration:none;color:inherit}
 .big-total{font-size:1.8rem;font-weight:800;letter-spacing:-.04em}
 
 /* ===== TABLE ===== */
-table{width:100%;border-collapse:separate;border-spacing:0;border-radius:18px;overflow:hidden}
+table{width:100%;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden}
 thead th{background:#F4FAFE;color:#395367;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(13,94,166,.08);padding:14px;text-align:left}
 tbody td{padding:14px;border-bottom:1px solid rgba(13,94,166,.06);font-size:14px;color:#2B3F51;vertical-align:middle}
 tbody tr:last-child td{border-bottom:0}

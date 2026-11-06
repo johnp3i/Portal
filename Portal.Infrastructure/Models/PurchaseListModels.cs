@@ -1,4 +1,4 @@
-namespace Portal.Infrastructure.Models;
+﻿namespace Portal.Infrastructure.Models;
 
 /// <summary>
 /// All filter + sort + paging inputs for the purchases list, passed as one object so the
@@ -16,6 +16,10 @@ public class PurchaseListFilter
     public string? SearchTerm { get; set; }
     /// <summary>recent (default) | date_desc | date_asc | amount_desc | amount_asc.</summary>
     public string? SortBy { get; set; }
+
+    /// <summary>When false (default), payroll-generated purchases (PayslipPeriodId != null) are
+    /// excluded from the list, counts, aggregates and exports. When true they are included.</summary>
+    public bool IncludePayroll { get; set; }
 }
 
 /// <summary>

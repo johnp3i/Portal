@@ -1460,22 +1460,24 @@ public class PayrollReportService : IPayrollReportService
             const string moneyFormat = "#,##0.00";
 
             var periodCount = rangePeriods.Count;
-            var totalCol = 2 + periodCount;     // column index of the Total column
-            var percentCol = 3 + periodCount;   // column index of the "%" column
-            var lastUsedCol = percentCol;
+            // Column layout (matches the on-screen preview): Line Item | % | months… | Total.
+            var percentCol = 2;                     // "%" column sits right after the line item name
+            var firstMonthCol = 3;                  // months start after the "%" column
+            var totalCol = firstMonthCol + periodCount; // Total column is last
+            var lastUsedCol = totalCol;
 
-            // 2. Column header row (R6.3): name | one abbreviated month+year per period | Total | %.
+            // 2. Column header row (R6.3): name | % | one abbreviated month+year per period | Total.
             var headerRow = 1;
             worksheet.Cell(headerRow, 1).Value = "Line Item";
+            worksheet.Cell(headerRow, percentCol).Value = "%";
             for (var i = 0; i < periodCount; i++)
             {
                 var period = rangePeriods[i];
                 var monthAbbrev = CultureInfo.InvariantCulture.DateTimeFormat.GetAbbreviatedMonthName(
                     period.Month >= 1 && period.Month <= 12 ? period.Month : 1);
-                worksheet.Cell(headerRow, 2 + i).Value = $"{monthAbbrev} {period.Year}";
+                worksheet.Cell(headerRow, firstMonthCol + i).Value = $"{monthAbbrev} {period.Year}";
             }
             worksheet.Cell(headerRow, totalCol).Value = "Total";
-            worksheet.Cell(headerRow, percentCol).Value = "%";
 
             var columnHeaderRange = worksheet.Range(headerRow, 1, headerRow, lastUsedCol);
             columnHeaderRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#0D5EA6");
@@ -1504,8 +1506,8 @@ public class PayrollReportService : IPayrollReportService
                     worksheet.Cell(row, 1).Value = emptyLabel;
                     for (var i = 0; i < periodCount; i++)
                     {
-                        worksheet.Cell(row, 2 + i).Value = 0m;
-                        worksheet.Cell(row, 2 + i).Style.NumberFormat.Format = moneyFormat;
+                        worksheet.Cell(row, firstMonthCol + i).Value = 0m;
+                        worksheet.Cell(row, firstMonthCol + i).Style.NumberFormat.Format = moneyFormat;
                     }
                     worksheet.Cell(row, totalCol).Value = 0m;
                     worksheet.Cell(row, totalCol).Style.NumberFormat.Format = moneyFormat;
@@ -1516,26 +1518,27 @@ public class PayrollReportService : IPayrollReportService
                     foreach (var line in lines)
                     {
                         worksheet.Cell(row, 1).Value = line.Name;
+
+                        // "%" column (right after the line item name): the latest in-range rate for
+                        // deductions/contributions; blank for earnings (R6.5/R6.6/R13.4).
+                        if (showPercentage && line.Percentage.HasValue)
+                        {
+                            worksheet.Cell(row, percentCol).Value = line.Percentage.Value;
+                            worksheet.Cell(row, percentCol).Style.NumberFormat.Format = moneyFormat;
+                        }
+
                         for (var i = 0; i < periodCount; i++)
                         {
                             var period = rangePeriods[i];
                             line.AmountByPeriodId.TryGetValue(period.Id, out var monthAmount); // absent -> 0.00
-                            worksheet.Cell(row, 2 + i).Value = monthAmount;
-                            worksheet.Cell(row, 2 + i).Style.NumberFormat.Format = moneyFormat;
+                            worksheet.Cell(row, firstMonthCol + i).Value = monthAmount;
+                            worksheet.Cell(row, firstMonthCol + i).Style.NumberFormat.Format = moneyFormat;
                             monthTotals[i] += monthAmount;
                         }
 
                         worksheet.Cell(row, totalCol).Value = line.Total;
                         worksheet.Cell(row, totalCol).Style.NumberFormat.Format = moneyFormat;
                         sectionTotal += line.Total;
-
-                        // "%" column: the latest in-range rate for deductions/contributions; blank for
-                        // earnings (R6.5/R6.6/R13.4).
-                        if (showPercentage && line.Percentage.HasValue)
-                        {
-                            worksheet.Cell(row, percentCol).Value = line.Percentage.Value;
-                            worksheet.Cell(row, percentCol).Style.NumberFormat.Format = moneyFormat;
-                        }
 
                         row++;
                     }
@@ -1546,9 +1549,9 @@ public class PayrollReportService : IPayrollReportService
                 worksheet.Cell(row, 1).Style.Font.Bold = true;
                 for (var i = 0; i < periodCount; i++)
                 {
-                    worksheet.Cell(row, 2 + i).Value = monthTotals[i];
-                    worksheet.Cell(row, 2 + i).Style.NumberFormat.Format = moneyFormat;
-                    worksheet.Cell(row, 2 + i).Style.Font.Bold = true;
+                    worksheet.Cell(row, firstMonthCol + i).Value = monthTotals[i];
+                    worksheet.Cell(row, firstMonthCol + i).Style.NumberFormat.Format = moneyFormat;
+                    worksheet.Cell(row, firstMonthCol + i).Style.Font.Bold = true;
                 }
                 worksheet.Cell(row, totalCol).Value = sectionTotal;
                 worksheet.Cell(row, totalCol).Style.NumberFormat.Format = moneyFormat;

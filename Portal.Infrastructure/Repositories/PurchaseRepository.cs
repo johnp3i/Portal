@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Models;
@@ -617,9 +617,9 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Purchases list — server-side paging, filtering, search and aggregates
-    // ─────────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Purchases list â€” server-side paging, filtering, search and aggregates
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     // Explicit Purchase column list (qualified) so FromSqlRaw can materialize the entity even when
     // the query joins other tables for filtering/search.
@@ -666,6 +666,13 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         {
             where += " AND [purchase].[Purchase].[VatSubmissionPeriodId] = @VatPeriodId";
             p.Add(new SqlParameter("@VatPeriodId", f.VatPeriodId.Value));
+        }
+
+        // Hide payroll-generated purchases (PayslipPeriodId != null) unless the caller opts in.
+        // One predicate, shared by the page, count, export and aggregate queries.
+        if (!f.IncludePayroll)
+        {
+            where += " AND [purchase].[Purchase].[PayslipPeriodId] IS NULL";
         }
         if (f.DateFrom.HasValue)
         {
@@ -720,7 +727,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 20;
 
-            // Count (its own parameter list — SqlParameter instances can't be reused across queries).
+            // Count (its own parameter list â€” SqlParameter instances can't be reused across queries).
             var countParams = new List<SqlParameter>();
             var countFromWhere = BuildListFromWhere(businessId, filter, countParams);
             var countSql = "SELECT COUNT(*) AS [Value] " + countFromWhere;
@@ -748,7 +755,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
     }
 
     /// <summary>
-    /// All purchases matching the filter (no paging), sorted — used by CSV/PDF export so the export
+    /// All purchases matching the filter (no paging), sorted â€” used by CSV/PDF export so the export
     /// applies the SAME filters and search as the on-screen list, in SQL.
     /// </summary>
     public async Task<List<Purchase>> GetAllFilteredAsync(int businessId, PurchaseListFilter filter)
@@ -782,7 +789,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
             var p = new List<SqlParameter>();
             // "Outdated" compares the invoice date against the assigned VAT period's bounds. SQL
             // Server forbids a subquery inside an aggregate's argument (SUM(CASE ... EXISTS(...)))
-            // — so the VAT period is LEFT JOINed and the comparison is a plain column expression.
+            // â€” so the VAT period is LEFT JOINed and the comparison is a plain column expression.
             var fromWhereWithVat = BuildListFromWhere(businessId, filter, p, includeVatJoin: true);
 
             var sql = $@"
@@ -812,7 +819,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
 
     /// <summary>
     /// Name lookups for a set of supplier ids (including inactive suppliers), so the list can show
-    /// the supplier name on every row — the active-only service load left inactive ones blank.
+    /// the supplier name on every row â€” the active-only service load left inactive ones blank.
     /// </summary>
     public async Task<Dictionary<int, string>> GetSupplierNamesAsync(int businessId, IEnumerable<int> supplierIds)
     {
@@ -865,7 +872,7 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
         }
     }
 
-    // Row shape for id→name keyless projections above.
+    // Row shape for idâ†’name keyless projections above.
     private class IdNameRow
     {
         public int Key { get; set; }

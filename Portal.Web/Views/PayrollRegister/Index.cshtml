@@ -11,13 +11,18 @@
         .ThenByDescending(p => p.Month)
         .ToList();
 
-    // Pre-selected range values ("Y-M") when a finalised period exists.
-    var fromSelectedValue = Model.HasFinalisedPeriod && Model.DefaultFromYear.HasValue
-        ? $"{Model.DefaultFromYear.Value}-{Model.DefaultFromMonth}"
-        : null;
-    var toSelectedValue = Model.HasFinalisedPeriod && Model.DefaultToYear.HasValue && Model.DefaultToMonth.HasValue
-        ? $"{Model.DefaultToYear.Value}-{Model.DefaultToMonth.Value}"
-        : null;
+    // Distinct years that actually have periods, newest first — drive the Year dropdown.
+    var availableYears = orderedPeriods
+        .Select(p => p.Year)
+        .Distinct()
+        .OrderByDescending(y => y)
+        .ToList();
+
+    // Default year = the latest finalised period's year when available, else the newest
+    // year that has any period, else the current UTC year as a last resort. The From/To
+    // defaults within the year are resolved client-side (favouring finalised months).
+    var defaultYear = Model.DefaultToYear
+        ?? availableYears.FirstOrDefault(DateTime.UtcNow.Year);
 }
 
 <div class="topbar">
@@ -78,6 +83,9 @@
     /* Money/numeric cells — right-aligned with tabular figures; label (first) column stays left. */
     .preview-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+    /* Deduction/contribution percentage values — distinct steelblue, bold. */
+    .preview-pct { color: steelblue; font-weight: bold; }
+
     /* Section-header band ("Earnings" / "Employee Deductions" / "Employer Contributions"). */
     .preview-section-row td { background: #EEF4F8; font-weight: 700; color: #0D5EA6; border-bottom: 1px solid rgba(13,94,166,.08); }
 
@@ -96,77 +104,141 @@
     .preview-emp-totals .preview-totals-emphasis .preview-totals-label,
     .preview-emp-totals .preview-totals-emphasis .preview-totals-value { color: #0D5EA6; }
     .preview-emp-totals .preview-totals-emphasis td { background: #EEF4F8; }
+
+    /* Status/help card: trim the oversized default empty-state padding (48px) so a
+       single line of guidance doesn't render as a tall, mostly-empty card. */
+    #statusSection .empty-state { padding: 10px 16px; }
+        #statusSection { padding: 0px }
+
+    /* Footer shortcut actions under the preview — right-aligned, separated by a hairline. */
+    .preview-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(13,94,166,.10);
+    }
+    @@media (max-width: 768px) {
+        .preview-actions { flex-direction: column-reverse; }
+        .preview-actions .btn { width: 100%; }
+    }
+
+    /* ===== Print: show only the preview, cleanly ===== */
+    @@media print {
+        /* A small page margin so the content never sits flush against the sheet edge
+           (which was clipping the first table's dark header row). */
+        @@page { margin: 14mm 10mm; }
+
+        /* Hide app chrome, the mobile top bar + bottom tab bar, the global search /
+           What's New / account header clusters, and the filter/status cards so only
+           the register prints. */
+        .sidebar, .mobile-backdrop, .topbar, .mobile-action-bar,
+        .mobile-topbar, .mobile-account-dropdown, .mobile-topbar-actions, .bottom-tab-bar,
+        .topbar-search-area, #accountMenu, #whats-new-panel, #mobileSearchExpanded,
+        #filterSection, #statusSection, .preview-actions { display: none !important; }
+
+        /* Collapse the app shell + content padding so the register uses the full page. */
+        body { background: #fff !important; }
+        .app, #appShell { display: block !important; }
+        .content { margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+        #previewSection {
+            display: block !important;
+            box-shadow: none !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Let wide ledgers break across pages rather than clip in the scroll wrap. */
+        .preview-table-wrap { overflow: visible !important; }
+        /* First block: a little top breathing room so the header isn't clipped. */
+        .preview-table-wrap:first-child { padding-top: 4px; }
+
+        /* Fit the ledger to the printable width so the last ("Total") column isn't
+           clipped at the right edge. Drop the on-screen min-width, pin table layout
+           to fixed so columns share the page evenly, and tighten cells a touch so a
+           full 12-month year fits in A4 landscape. */
+        .preview-table {
+            min-width: 0 !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+            font-size: 9px !important;
+        }
+        .preview-table th, .preview-table td {
+            padding: 3px 4px !important;
+            /* Critical: the on-screen rules set white-space:nowrap on the header and
+               numeric cells, which keeps the table's intrinsic width wide and clips
+               the last column in print. Allow wrapping so columns can compress to the
+               page. */
+            white-space: normal !important;
+            word-break: break-word;
+            overflow: visible !important;
+        }
+        /* Inset the edge columns so the first label and the last (Total) value aren't
+           pressed against the table border. */
+        .preview-table th:first-child, .preview-table td:first-child { width: 16%; padding-left: 12px !important; }
+        .preview-table th:last-child, .preview-table td:last-child { padding-right: 12px !important; }
+
+        /* Repeat the table header on every printed page and never clip/float it. */
+        .preview-table thead { display: table-header-group; }
+        .preview-table thead tr, .preview-table th { position: static !important; }
+
+        /* Per-employee totals block: span the full table width so its right edge lines
+           up with the ledger's right edge. Fixed layout + an explicit wide label
+           column forces the value column (and the block's right border) to the table's
+           right edge, instead of both columns bunching up on the left. */
+        .preview-emp-totals {
+            max-width: 100% !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+        }
+        .preview-emp-totals .preview-totals-label { width: 84%; padding-left: 12px !important; }
+        .preview-emp-totals .preview-totals-value { width: 16%; text-align: right; padding-right: 12px !important; }
+
+        .preview-emp-name { color: #0D5EA6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .preview-table th, .preview-section-row td, .preview-emp-totals .preview-totals-emphasis td {
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        /* Keep each employee block together where possible. */
+        .preview-table-wrap { break-inside: avoid; page-break-inside: avoid; }
+    }
 </style>
 
 <!-- Filter Panel -->
-<section class="glass card-pad" style="margin-bottom:22px;">
-    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
-        <div class="field" style="min-width:180px;">
-            <label>From</label>
-            <select id="fromSelect">
-                @if (orderedPeriods.Count == 0)
+<section class="glass card-pad" id="filterSection" style="margin-bottom:22px;">
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:140px;">
+            <label>Year</label>
+            <select id="yearSelect">
+                @if (availableYears.Count == 0)
                 {
-                    <option value="">No periods available</option>
+                    <option value="">No periods</option>
                 }
                 else
                 {
-                    foreach (var period in orderedPeriods)
+                    foreach (var year in availableYears)
                     {
-                        var monthName = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(period.Month);
-                        // Generatable when payslips are Finalised (3) or Re-finalised (5), matching
-                        // GetFinalisedPayslipsForPeriodAsync's IN (3,5). Raw status is shown so non-
-                        // generatable periods (Draft/Preview/Unlocked) remain visibly distinct.
-                        var isGeneratable = !string.IsNullOrEmpty(period.Status) &&
-                            (period.Status.Equals("Finalised", StringComparison.OrdinalIgnoreCase) ||
-                             period.Status.Equals("Re-finalised", StringComparison.OrdinalIgnoreCase));
-                        var stateLabel = string.IsNullOrEmpty(period.Status) ? "Draft" : period.Status;
-                        var optionText = isGeneratable
-                            ? $"{monthName} {period.Year} ({stateLabel})"
-                            : $"{monthName} {period.Year} ({stateLabel} - no finalised payslips)";
-                        var optionValue = $"{period.Year}-{period.Month}";
-                        if (fromSelectedValue != null && fromSelectedValue == optionValue)
+                        if (year == defaultYear)
                         {
-                            <option value="@optionValue" selected>@optionText</option>
+                            <option value="@year" selected>@year</option>
                         }
                         else
                         {
-                            <option value="@optionValue">@optionText</option>
+                            <option value="@year">@year</option>
                         }
                     }
                 }
             </select>
         </div>
         <div class="field" style="min-width:180px;">
+            <label>From</label>
+            <!-- Populated by JS from the selected Year's periods (Option A: single-year range). -->
+            <select id="fromSelect"></select>
+        </div>
+        <div class="field" style="min-width:180px;">
             <label>To</label>
-            <select id="toSelect">
-                @if (orderedPeriods.Count == 0)
-                {
-                    <option value="">No periods available</option>
-                }
-                else
-                {
-                    foreach (var period in orderedPeriods)
-                    {
-                        var monthName = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(period.Month);
-                        var isGeneratable = !string.IsNullOrEmpty(period.Status) &&
-                            (period.Status.Equals("Finalised", StringComparison.OrdinalIgnoreCase) ||
-                             period.Status.Equals("Re-finalised", StringComparison.OrdinalIgnoreCase));
-                        var stateLabel = string.IsNullOrEmpty(period.Status) ? "Draft" : period.Status;
-                        var optionText = isGeneratable
-                            ? $"{monthName} {period.Year} ({stateLabel})"
-                            : $"{monthName} {period.Year} ({stateLabel} - no finalised payslips)";
-                        var optionValue = $"{period.Year}-{period.Month}";
-                        if (toSelectedValue != null && toSelectedValue == optionValue)
-                        {
-                            <option value="@optionValue" selected>@optionText</option>
-                        }
-                        else
-                        {
-                            <option value="@optionValue">@optionText</option>
-                        }
-                    }
-                }
-            </select>
+            <select id="toSelect"></select>
             <div id="rangeError" style="display:none;color:#C24A4A;font-size:12px;margin-top:6px;">The From month must not be later than the To month.</div>
         </div>
         <div class="field" style="min-width:180px;">
@@ -187,7 +259,7 @@
                 </div>
             </div>
         </div>
-        <div style="padding-top:22px;display:flex;gap:10px;">
+        <div style="padding-bottom:2px;display:flex;gap:10px;">
             <button class="btn btn-secondary" id="previewBtn" @(generateDisabled ? "disabled" : "")>Preview</button>
             <button class="btn btn-primary" id="generateBtn" @(generateDisabled ? "disabled" : "")>Download</button>
         </div>
@@ -195,7 +267,7 @@
 </section>
 
 <!-- Status / Help Card -->
-<section class="glass card-pad" id="statusSection">
+<section class="glass card-pad" id="statusSection" >
     <div class="empty-state" id="statusMessage">
         @if (!Model.HasFinalisedPeriod)
         {
@@ -215,12 +287,24 @@
 <!-- Per-employee Preview (populated by renderPreview) -->
 <section class="glass card-pad" id="previewSection" style="margin-top:24px;display:none;">
     <div id="previewContainer"></div>
+    <!-- Footer shortcut actions — mirror the top Download button and offer a quick Print. -->
+    <div id="previewActions" class="preview-actions">
+        <button type="button" class="btn btn-secondary" id="printPreviewBtn">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:6px;"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+            Print
+        </button>
+        <button type="button" class="btn btn-primary" id="downloadPreviewBtn">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download
+        </button>
+    </div>
 </section>
 
 <script>
     (function () {
         var SPREADSHEET_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+        var yearSelect = document.getElementById('yearSelect');
         var fromSelect = document.getElementById('fromSelect');
         var toSelect = document.getElementById('toSelect');
         var rangeError = document.getElementById('rangeError');
@@ -249,11 +333,36 @@
             new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
         var selectedIds = {};  // id -> true
 
+        // All periods (newest-first), used to repopulate From/To for the selected year.
+        // value = "Y-M"; label mirrors the previous server-rendered option text.
+        var allPeriods = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            orderedPeriods.Select(p =>
+            {
+                var monthName = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(p.Month);
+                var isGeneratable = !string.IsNullOrEmpty(p.Status) &&
+                    (p.Status.Equals("Finalised", StringComparison.OrdinalIgnoreCase) ||
+                     p.Status.Equals("Re-finalised", StringComparison.OrdinalIgnoreCase));
+                var stateLabel = string.IsNullOrEmpty(p.Status) ? "Draft" : p.Status;
+                var label = isGeneratable
+                    ? $"{monthName} {p.Year} ({stateLabel})"
+                    : $"{monthName} {p.Year} ({stateLabel} - no finalised payslips)";
+                return new { year = p.Year, month = p.Month, value = $"{p.Year}-{p.Month}", label = label, generatable = isGeneratable };
+            }),
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
         document.addEventListener('DOMContentLoaded', function () {
+            if (yearSelect) yearSelect.addEventListener('change', onYearChange);
+            // Build the From/To lists for the initially-selected year.
+            populateRangeForSelectedYear();
             if (fromSelect) fromSelect.addEventListener('change', onRangeChange);
             if (toSelect) toSelect.addEventListener('change', onRangeChange);
             if (generateBtn) generateBtn.addEventListener('click', onGenerate);
             if (previewBtn) previewBtn.addEventListener('click', onPreview);
+            // Footer shortcut actions under the preview.
+            var downloadPreviewBtn = document.getElementById('downloadPreviewBtn');
+            var printPreviewBtn = document.getElementById('printPreviewBtn');
+            if (downloadPreviewBtn) downloadPreviewBtn.addEventListener('click', onGenerate);
+            if (printPreviewBtn) printPreviewBtn.addEventListener('click', function () { window.print(); });
             if (empControl) {
                 empControl.addEventListener('click', function (e) { if (e.target.closest('.emp-chip button')) return; togglePanel(); });
                 empControl.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePanel(); } });
@@ -281,6 +390,59 @@
         function getFrom() { return parsePeriodValue(fromSelect ? fromSelect.value : ''); }
         function getTo() { return parsePeriodValue(toSelect ? toSelect.value : ''); }
         function rangeIsValid() { var f = getFrom(); var t = getTo(); if (!f || !t) return false; return ordinal(f) <= ordinal(t); }
+
+        // ---- Year → From/To population (Option A: a register range stays within one year) ----
+        function addOption(select, value, label, selected) {
+            var opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = label;
+            if (selected) opt.selected = true;
+            select.appendChild(opt);
+        }
+
+        // Rebuild From/To with the periods belonging to the selected year. From/To are listed
+        // newest-first (matching the previous behaviour); defaults are From = earliest month of
+        // the year, To = latest month. A changed range invalidates any on-screen preview.
+        function populateRangeForSelectedYear() {
+            if (!fromSelect || !toSelect) return;
+            var year = yearSelect ? parseInt(yearSelect.value, 10) : NaN;
+
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+
+            var yearPeriods = allPeriods.filter(function (p) { return p.year === year; });
+            if (yearPeriods.length === 0) {
+                addOption(fromSelect, '', 'No periods available', true);
+                addOption(toSelect, '', 'No periods available', true);
+                hideRangeError();
+                clearPreview();
+                return;
+            }
+
+            // Newest-first for display.
+            var newestFirst = yearPeriods.slice().sort(function (a, b) { return b.month - a.month; });
+
+            // Default range favours the generatable (finalised) months so the initial
+            // selection can actually produce a register: From = earliest finalised month,
+            // To = latest finalised month. If the year has no finalised months, fall back
+            // to the earliest/latest months overall.
+            var generatable = newestFirst.filter(function (p) { return p.generatable; });
+            var pool = generatable.length > 0 ? generatable : newestFirst;
+            var defaultFromValue = pool[pool.length - 1].value;  // smallest month in pool
+            var defaultToValue = pool[0].value;                  // largest month in pool
+
+            newestFirst.forEach(function (p) {
+                addOption(fromSelect, p.value, p.label, p.value === defaultFromValue);
+                addOption(toSelect, p.value, p.label, p.value === defaultToValue);
+            });
+
+            hideRangeError();
+            clearPreview();  // a new year/range invalidates any shown preview
+        }
+
+        function onYearChange() {
+            populateRangeForSelectedYear();
+        }
         function showRangeError() { if (rangeError) rangeError.style.display = 'block'; }
         function hideRangeError() { if (rangeError) rangeError.style.display = 'none'; }
 
@@ -427,9 +589,13 @@
         }
 
         // ---- preview (R15) ----
+        var statusSection = document.getElementById('statusSection');
+
         function clearPreview() {
             if (previewContainer) previewContainer.innerHTML = '';
             if (previewSection) previewSection.style.display = 'none';
+            // Bring the help card back when there's no preview on screen.
+            if (statusSection) statusSection.style.display = '';
         }
 
         function fmtMoney(v) {
@@ -490,6 +656,8 @@
             if (!previewContainer) return;
             previewContainer.innerHTML = '';
             if (previewSection) previewSection.style.display = '';
+            // The help card is redundant once the register is on screen — hide it.
+            if (statusSection) statusSection.style.display = 'none';
 
             data.forEach(function (emp) {
                 var periods = emp.rangePeriods || [];
@@ -512,12 +680,12 @@
                 var thead = document.createElement('thead');
                 var headRow = document.createElement('tr');
                 headRow.appendChild(makeTh('Item'));
+                headRow.appendChild(makeTh('%'));
                 periods.forEach(function (p) {
                     var label = new Date(p.year, p.month - 1).toLocaleString('en', { month: 'short' }) + ' ' + p.year;
                     headRow.appendChild(makeTh(label));
                 });
                 headRow.appendChild(makeTh('Total'));
-                headRow.appendChild(makeTh('%'));
                 thead.appendChild(headRow);
                 table.appendChild(thead);
 
@@ -569,15 +737,17 @@
                 var nameCell = document.createElement('td');
                 nameCell.textContent = line.name != null ? line.name : '';
                 tr.appendChild(nameCell);
+                // % immediately after the item name - blank for earnings (R15.6)
+                var pctCell = makeNumCell(showPct ? fmtPct(line.percentage) : '');
+                if (showPct) pctCell.classList.add('preview-pct');
+                tr.appendChild(pctCell);
                 // one amount cell per period - 0.00 when absent/null (R15.8)
                 var map = line.amountByPeriodId || {};
                 periods.forEach(function (p) {
                     tr.appendChild(makeNumCell(fmtMoney(map[String(p.periodId)])));
                 });
-                // Total
+                // Total (last column)
                 tr.appendChild(makeNumCell(fmtMoney(line.total)));
-                // % - blank for earnings (R15.6)
-                tr.appendChild(makeNumCell(showPct ? fmtPct(line.percentage) : ''));
                 tbody.appendChild(tr);
             });
         }
@@ -589,14 +759,15 @@
             var labelCell = document.createElement('td');
             labelCell.textContent = label;
             tr.appendChild(labelCell);
-            // blank month columns + Total column + % column = colCount - 1 trailing cells.
-            // The second-to-last cell (Total column) carries the section total.
+            // Trailing cells after the label: % column + month columns + Total column
+            // = colCount - 1 cells. With % moved next to the item name, the Total
+            // column is now the LAST cell, which carries the section total.
             var trailing = colCount - 1;
             for (var i = 0; i < trailing; i++) {
-                if (i === trailing - 2) {
-                    tr.appendChild(makeNumCell(fmtMoney(total)));  // Total column
+                if (i === trailing - 1) {
+                    tr.appendChild(makeNumCell(fmtMoney(total)));  // Total column (last)
                 } else {
-                    tr.appendChild(makeNumCell(''));
+                    tr.appendChild(makeNumCell(''));  // % and month columns blank
                 }
             }
             tbody.appendChild(tr);

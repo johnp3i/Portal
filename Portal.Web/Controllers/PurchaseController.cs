@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -53,7 +53,7 @@ public class PurchaseController : Controller
 
     // Cookie that remembers the last-used purchase filter query string, so returning to a bare
     // /Purchase restores the previous filters. Handled server-side (a single 302 before any HTML
-    // renders) instead of a client redirect — a client redirect painted the table, aborted the
+    // renders) instead of a client redirect â€” a client redirect painted the table, aborted the
     // request (NS_BINDING_ABORTED), and reloaded, causing a slow triple-render on load.
     private const string PurchaseFilterCookie = "purchase_filter_qs";
 
@@ -61,12 +61,12 @@ public class PurchaseController : Controller
     private const int PurchasePageSize = 20;
 
     [HttpGet]
-    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy, int page = 1)
+    public async Task<IActionResult> Index(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy, bool includePayroll = false, int page = 1)
     {
         // The filter query (everything except the page number) is what we persist/restore.
         var hasAnyFilter = supplierId.HasValue || expenseCategoryId.HasValue || purchaseOriginTypeId.HasValue
             || purchaseTypeId.HasValue || vatPeriodId.HasValue || dateFrom.HasValue || dateTo.HasValue
-            || !string.IsNullOrWhiteSpace(searchTerm) || !string.IsNullOrWhiteSpace(sortBy);
+            || !string.IsNullOrWhiteSpace(searchTerm) || !string.IsNullOrWhiteSpace(sortBy) || includePayroll;
 
         if (hasAnyFilter)
         {
@@ -100,7 +100,8 @@ public class PurchaseController : Controller
             DateFrom = dateFrom,
             DateTo = dateTo,
             SearchTerm = searchTerm,
-            SortBy = sortBy
+            SortBy = sortBy,
+            IncludePayroll = includePayroll
         };
 
         // One page of rows + the total count (filter/search/sort/page all run in SQL), plus the
@@ -131,7 +132,7 @@ public class PurchaseController : Controller
             ? await _attachmentService.GetCountsForEntitiesAsync(businessId, "Purchase", purchaseIds)
             : new Dictionary<int, int>();
 
-        // Supplier / category names for the page (incl. inactive — the active-only lists below are
+        // Supplier / category names for the page (incl. inactive â€” the active-only lists below are
         // for the filter dropdowns and would leave inactive FKs showing blank in the rows).
         var supplierNames = await _purchaseService.GetSupplierNamesAsync(purchases.Select(p => p.SupplierId));
         var categoryNames = await _purchaseService.GetExpenseCategoryNamesAsync(purchases.Select(p => p.ExpenseCategoryId));
@@ -143,7 +144,7 @@ public class PurchaseController : Controller
 
         var profile = await _dbContext.BusinessProfiles
             .FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
-        var currencySymbol = profile?.CurrencySymbol ?? "€";
+        var currencySymbol = profile?.CurrencySymbol ?? "â‚¬";
 
         // Determine if Expense Insights teaser should be shown (Starter plan users only)
         var showExpenseInsightsTeaser = false;
@@ -188,6 +189,7 @@ public class PurchaseController : Controller
             DateTo = dateTo,
             SearchTerm = searchTerm,
             SortBy = sortBy,
+            IncludePayroll = includePayroll,
             ShowExpenseInsightsTeaser = showExpenseInsightsTeaser
         };
 
@@ -195,7 +197,7 @@ public class PurchaseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ExportCsv(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy)
+    public async Task<IActionResult> ExportCsv(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy, bool includePayroll = false)
     {
         var filter = new PurchaseListFilter
         {
@@ -207,11 +209,12 @@ public class PurchaseController : Controller
             DateFrom = dateFrom,
             DateTo = dateTo,
             SearchTerm = searchTerm,
-            SortBy = sortBy
+            SortBy = sortBy,
+            IncludePayroll = includePayroll
         };
         var purchases = await _purchaseService.GetFilteredForExportAsync(filter);
 
-        // Resolve supplier/category names (incl. inactive) for the exported set — the raw query does
+        // Resolve supplier/category names (incl. inactive) for the exported set â€” the raw query does
         // not populate navigation properties, so reading p.Supplier?.Name here would be null.
         var supplierNames = await _purchaseService.GetSupplierNamesAsync(purchases.Select(p => p.SupplierId));
         var categoryNames = await _purchaseService.GetExpenseCategoryNamesAsync(purchases.Select(p => p.ExpenseCategoryId));
@@ -273,7 +276,7 @@ public class PurchaseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ExportPdf(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy)
+    public async Task<IActionResult> ExportPdf(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy, bool includePayroll = false)
     {
         var filter = new PurchaseListFilter
         {
@@ -285,12 +288,13 @@ public class PurchaseController : Controller
             DateFrom = dateFrom,
             DateTo = dateTo,
             SearchTerm = searchTerm,
-            SortBy = sortBy
+            SortBy = sortBy,
+            IncludePayroll = includePayroll
         };
         var purchases = await _purchaseService.GetFilteredForExportAsync(filter);
         var businessId = _currentTenantService.CurrentBusinessId;
         var profile = await _dbContext.BusinessProfiles.FirstOrDefaultAsync(bp => bp.BusinessId == businessId);
-        var currencySymbol = profile?.CurrencySymbol ?? "€";
+        var currencySymbol = profile?.CurrencySymbol ?? "â‚¬";
 
         // Resolve names (incl. inactive) so the PDF shows supplier/category on every row.
         var supplierNames = await _purchaseService.GetSupplierNamesAsync(purchases.Select(p => p.SupplierId));
@@ -347,7 +351,7 @@ public class PurchaseController : Controller
         // user only has to review and adjust (e.g. the new invoice number / date). Nothing is
         // persisted until they submit through the normal Create POST, so validation and the
         // computed total still apply. Identity, paid/cancelled state, audit fields, and the VAT
-        // period are intentionally NOT copied — they belong to the original record or are
+        // period are intentionally NOT copied â€” they belong to the original record or are
         // re-derived for the new one.
         if (duplicateFrom.HasValue)
         {
@@ -1075,7 +1079,7 @@ public class PurchaseController : Controller
             "asset" => 1,
             "stock" => 2,
             "expense" => 3,
-            _ => null // Unrecognised value — mark row invalid
+            _ => null // Unrecognised value â€” mark row invalid
         };
     }
 

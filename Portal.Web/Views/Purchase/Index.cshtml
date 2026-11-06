@@ -1,4 +1,4 @@
-@model PurchaseListViewModel
+﻿@model PurchaseListViewModel
 @{
     ViewData["Title"] = "Purchases";
 
@@ -11,7 +11,8 @@
         + (Model.VatPeriodId.HasValue ? 1 : 0)
         + (Model.DateFrom.HasValue ? 1 : 0)
         + (Model.DateTo.HasValue ? 1 : 0)
-        + (!string.IsNullOrWhiteSpace(Model.SearchTerm) ? 1 : 0);
+        + (!string.IsNullOrWhiteSpace(Model.SearchTerm) ? 1 : 0)
+        + (Model.IncludePayroll ? 1 : 0);
 }
 
 @section Head {
@@ -20,20 +21,20 @@
        window.location.replace redirect painted the table, aborted the request, and reloaded —
        causing the slow triple-render on load. *@
     <style>
-        /* ══ Purchases list — native stacked card feed on phones ═══════════════════
+        /* â•â• Purchases list — native stacked card feed on phones â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
            Loaded in the page head so it applies before first paint (prevents the flash
            of the desktop table / origin-breakdown layout). One purchase = one card:
 
              Row 1:  description (left)        total (right, bold)
-             Row 2:  invoice# · added (left)   status pill(s) (right)
+             Row 2:  invoice# Â· added (left)   status pill(s) (right)
              Row 3:  supplier (left)
              Row 4:  origin + type pills + attachment chip ......... due (right)
-             Footer: primary action  +  ⋯ More (opens the bottom action sheet)
+             Footer: primary action  +  â‹¯ More (opens the bottom action sheet)
 
            Scoped to #purchaseTable so it overrides the generic .index-table card
            grid without affecting other index tables. */
         @@media (max-width: 768px) {
-            /* Cancel the desktop/≤1100px table rules (max-content width + nowrap) so
+            /* Cancel the desktop/â‰¤1100px table rules (max-content width + nowrap) so
                cards shrink to the viewport and never scroll/clip horizontally. */
             #purchaseTable,
             #purchaseTable tbody {
@@ -75,7 +76,7 @@
                 grid-row: 1; grid-column: 1;
                 font-weight: 700; font-size: 15px; line-height: 1.25;
             }
-            /* Sub-lines (invoice #, "Added …") tucked under the title */
+            /* Sub-lines (invoice #, "Added â€¦") tucked under the title */
             #purchaseTable tbody td:nth-child(1) div { font-size: 11px !important; margin-top: 2px; }
 
             /* Row 1 — Total (right, bold) */
@@ -137,8 +138,11 @@
             #purchaseTable tbody td:nth-child(7),
             #purchaseTable tbody td:nth-child(8) { display: none !important; }
 
-            /* Footer — primary action + ⋯ More. The secondary actions (Duplicate,
+            /* Footer — primary action + â‹¯ More. The secondary actions (Duplicate,
                Mark unpaid, Cancel) are hidden here and surfaced via the sheet. */
+            /* On phones the wrapper is transparent so the action buttons remain direct
+               flex children of the footer cell (preserves the Edit + More layout). */
+            #purchaseTable tbody td:nth-child(12) .tbl-action-wrap { display: contents !important; }
             #purchaseTable tbody td:nth-child(12) {
                 display: flex !important;
                 grid-row: 4; grid-column: 1 / -1;
@@ -162,7 +166,7 @@
                 color: #5a6a7a; border-radius: 10px;
             }
 
-            /* Origin breakdown in the summary card: compact 2×2 grid (unchanged) */
+            /* Origin breakdown in the summary card: compact 2Ã—2 grid (unchanged) */
             .origin-breakdown {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
@@ -178,7 +182,7 @@
                 justify-content: center; background: rgba(13, 94, 166, 0.04) !important;
             }
 
-            /* ── Bottom action sheet ── */
+            /* â”€â”€ Bottom action sheet â”€â”€ */
             .purchase-sheet-backdrop {
                 position: fixed; inset: 0; background: rgba(11,27,40,.4);
                 display: none; z-index: 10050;
@@ -221,13 +225,13 @@
         <a asp-action="Create" class="btn btn-primary">Create Purchase</a>
         <a asp-action="BulkEntry" class="btn btn-secondary" style="background:rgba(13,94,166,.08);border:1.5px solid var(--blue);color:var(--blue);">Bulk Entry</a>
         <a asp-action="CsvImport" class="btn btn-secondary">CSV Import</a>
-        <a class="btn btn-secondary" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export CSV</a>
-        <a class="btn btn-secondary" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export PDF</a>
+        <a class="btn btn-secondary" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&includePayroll=@(Model.IncludePayroll ? "true" : "false")">Export CSV</a>
+        <a class="btn btn-secondary" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&includePayroll=@(Model.IncludePayroll ? "true" : "false")">Export PDF</a>
     </div>
 </div>
 
-<!-- ── Mobile-only action bar (Variant A): own row below the topbar. Hidden on desktop. ──
-     [ + Create (flex) | Filters (count) | More ⋯ ]  — does not touch the desktop topbar above. -->
+<!-- â”€â”€ Mobile-only action bar (Variant A): own row below the topbar. Hidden on desktop. â”€â”€
+     [ + Create (flex) | Filters (count) | More â‹¯ ]  — does not touch the desktop topbar above. -->
 <div class="mobile-action-bar">
     <a asp-action="Create" class="mab-btn mab-primary">+ Create</a>
     <button type="button" class="mab-btn mab-ghost filter-toggle" aria-expanded="false" aria-controls="purchaseFilterPanel">
@@ -245,8 +249,8 @@
         <div class="mab-more-panel" id="purchaseMorePanel" role="menu">
             <a asp-action="BulkEntry" class="mab-more-item" role="menuitem">Bulk Entry</a>
             <a asp-action="CsvImport" class="mab-more-item" role="menuitem">CSV Import</a>
-            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export CSV</a>
-            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy">Export PDF</a>
+            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportCsv?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&includePayroll=@(Model.IncludePayroll ? "true" : "false")">Export CSV</a>
+            <a class="mab-more-item" role="menuitem" href="/Purchase/ExportPdf?supplierId=@Model.SupplierId&expenseCategoryId=@Model.ExpenseCategoryId&purchaseOriginTypeId=@Model.PurchaseOriginTypeId&purchaseTypeId=@Model.PurchaseTypeId&vatPeriodId=@Model.VatPeriodId&dateFrom=@(Model.DateFrom?.ToString("yyyy-MM-dd"))&dateTo=@(Model.DateTo?.ToString("yyyy-MM-dd"))&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&includePayroll=@(Model.IncludePayroll ? "true" : "false")">Export PDF</a>
         </div>
     </div>
 </div>
@@ -334,6 +338,12 @@
                         <option value="amount_asc" selected="@(Model.SortBy == "amount_asc" ? "selected" : null)">Amount (Lowest)</option>
                     </select>
                 </div>
+                <div class="field" style="min-width:180px;display:flex;align-items:center;padding-bottom: 5px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:600;color:#5a6a7a;">
+                        <input type="checkbox" id="includePayroll" name="includePayroll" value="true" @(Model.IncludePayroll ? "checked" : "") style="width:auto;margin:0;" />
+                        <span>Show payroll entries</span>
+                    </label>
+                </div>
                 <div style="display:flex;gap:10px;padding-bottom:2px;margin-left:auto;">
                     <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
                     <a href="/Purchase" class="btn btn-secondary" style="padding:14px 20px;" onclick="document.cookie='purchase_filter_qs=; path=/; max-age=0';">Clear</a>
@@ -398,7 +408,7 @@
         {
             parts.Add($"Search: \"{Model.SearchTerm}\"");
         }
-        filterLabel = "Filtered: " + string.Join(" · ", parts);
+        filterLabel = "Filtered: " + string.Join(" Â· ", parts);
     }
 }
 <!-- KPI Cards (computed over the FULL filtered set in SQL, not just the current page) -->
@@ -468,6 +478,7 @@
     if (Model.DateTo.HasValue) pageQuery.Add($"dateTo={Model.DateTo.Value:yyyy-MM-dd}");
     if (!string.IsNullOrWhiteSpace(Model.SearchTerm)) pageQuery.Add($"searchTerm={Uri.EscapeDataString(Model.SearchTerm)}");
     if (!string.IsNullOrWhiteSpace(Model.SortBy)) pageQuery.Add($"sortBy={Model.SortBy}");
+    if (Model.IncludePayroll) pageQuery.Add("includePayroll=true");
     var baseQs = pageQuery.Count > 0 ? "?" + string.Join("&", pageQuery) + "&" : "?";
 
     var fromRow = Model.TotalCount == 0 ? 0 : (Model.CurrentPage - 1) * Model.PageSize + 1;
@@ -481,16 +492,16 @@
     @if (Model.Purchases != null && Model.Purchases.Count > 0)
     {
         <div class="table-responsive index-table">
-        <div class="scroll-hint">← Scroll horizontally →</div>
-        <table id="purchaseTable" style="table-layout:fixed;width:100%;min-width:1320px;">
+        <div class="scroll-hint">â† Scroll horizontally â†’</div>
+        <table id="purchaseTable" style="table-layout:fixed;width:100%;min-width:1410px;">
             @* Fixed column widths so the layout is stable on first paint (no reflow as rows stream
                in) and the three text columns wrap instead of stretching — leaving room for more
                columns on screen. Widths sum to a sensible desktop total; the wrapper scrolls if the
                viewport is narrower. *@
             <colgroup>
                 <col style="width:210px;" />  @* Description *@
-                <col style="width:150px;" />  @* Supplier *@
-                <col style="width:95px;" />   @* Date *@
+                <col style="width:120px;" />  @* Supplier *@
+                <col style="width:125px;" />  @* Date *@
                 <col style="width:120px;" />  @* Due *@
                 <col style="width:150px;" />  @* Category *@
                 <col style="width:70px;" />   @* File *@
@@ -499,7 +510,7 @@
                 <col style="width:95px;" />   @* Total *@
                 <col style="width:110px;" />  @* Classification *@
                 <col style="width:100px;" />  @* Status *@
-                <col style="width:150px;" />  @* Actions *@
+                <col style="width:240px;" />  @* Actions *@
             </colgroup>
             <thead>
                 <tr>
@@ -531,7 +542,7 @@
                             <div style="font-size:11px;color:#5a6a7a;margin-top:2px;">Added @purchase.CreatedAtUtc.ToString("dd MMM yyyy")</div>
                         </td>
                         <td>@Model.SupplierName(purchase.SupplierId)</td>
-                        <td data-mobile="hide">@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
+                        <td data-mobile="hide" style="white-space:nowrap;">@purchase.InvoiceDate.ToString("dd MMM yyyy")</td>
                         <td data-mobile="hide">
                             @{
                                 var effectiveDue = purchase.TargetPaymentDate ?? purchase.SupplierDueDate;
@@ -662,7 +673,7 @@
                                 }
                             </div>
                         </td>
-                        <td data-mobile="actions" style="white-space:nowrap;">
+                        <td data-mobile="actions" style="white-space:normal;"><div class="tbl-action-wrap" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
                             @* Primary mobile action: Mark paid (or Edit when already paid/cancelled). The
                                secondary actions stay in this cell for desktop but are hidden on phone and
                                surfaced through the "More" bottom sheet instead. *@
@@ -691,7 +702,7 @@
                                     aria-label="More actions">
                                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
                             </button>
-                        </td>
+                        </div></td>
                     </tr>
                 }
             </tbody>
@@ -746,7 +757,7 @@
     }
 </section>
 
-<!-- ── Mobile action sheet (opened by a card's ⋯ More button) ───────────────────
+<!-- â”€â”€ Mobile action sheet (opened by a card's â‹¯ More button) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      A single shared bottom sheet, populated per row from the trigger's data-* attrs.
      Its action buttons reuse the same classes/data as the inline buttons so the
      existing delegated click handlers (btn-set-paid / btn-cancel-purchase) apply. -->
@@ -781,7 +792,7 @@
 }
 
 <style>
-    /* ── Desktop table columns (table-layout:fixed via colgroup) ──────────────
+    /* â”€â”€ Desktop table columns (table-layout:fixed via colgroup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        The three text columns wrap within their fixed width so they never stretch
        the layout; everything else stays on one line. Stable widths also mean no
        reflow as rows render. */
@@ -885,7 +896,7 @@
     }
     .attachment-count-number { font-size: 11px; }
 
-    /* ─── Native-app card layout for the Purchases list on phones ─────────────
+    /* â”€â”€â”€ Native-app card layout for the Purchases list on phones â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        Scoped to #purchaseTable so it overrides the generic .index-table grid
        without affecting other index tables. Each row becomes a self-contained
        card: title + total on top, supplier + status next, due + classification,
@@ -895,7 +906,7 @@
 </style>
 
 <script>
-    // ─── Mobile action-bar "More" menu ──────────────────────────────────────
+    // â”€â”€â”€ Mobile action-bar "More" menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function togglePurchaseMoreMenu(event) {
         event.stopPropagation();
         var panel = document.getElementById('purchaseMorePanel');
@@ -913,8 +924,8 @@
         if (toggle) toggle.setAttribute('aria-expanded', 'false');
     });
 
-    // ─── Per-card "More" bottom action sheet (mobile) ───────────────────────
-    // Built once; populated from the tapped card's ⋯ trigger data-* attributes.
+    // â”€â”€â”€ Per-card "More" bottom action sheet (mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Built once; populated from the tapped card's â‹¯ trigger data-* attributes.
     // The Mark paid/unpaid and Cancel items reuse the SAME classes + data-id as the
     // inline buttons, so the existing delegated handlers act on them unchanged.
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
