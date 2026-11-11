@@ -90,6 +90,9 @@ public class InvoiceControllerDownloadPdfTests
             Mock.Of<IProductAutocompleteService>(),
             Mock.Of<ICreditNoteService>(),
             portalDbContext,
+            new MembershipDbContext(new DbContextOptionsBuilder<MembershipDbContext>()
+                .UseInMemoryDatabase(databaseName: $"Membership_InvCtrlPdf_{Guid.NewGuid()}").Options),
+            Mock.Of<IBusinessTimeZoneService>(),
             _loggerMock.Object);
 
         _controller.TempData = new TempDataDictionary(

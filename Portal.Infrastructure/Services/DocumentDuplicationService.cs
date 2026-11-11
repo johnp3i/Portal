@@ -53,6 +53,12 @@ public class DocumentDuplicationService : IDocumentDuplicationService
             throw new InvalidOperationException("Invoice not found");
         }
 
+        // A deleted (retired) invoice is read-only — it cannot be used as a duplication source.
+        if (source.IsDeleted)
+        {
+            throw new InvalidOperationException("A deleted invoice cannot be duplicated.");
+        }
+
         // 2. Begin transaction
         using var transaction = await _portalDbContext.Database.BeginTransactionAsync();
 

@@ -102,6 +102,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
                        [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc],
+                       [invoice].[Invoice].[DeletedByUserId],
                        [invoice].[Invoice].[LeadRequestId]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[Id] = @Id AND [invoice].[Invoice].[BusinessId] = @BusinessId";
@@ -134,6 +135,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
                        [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc],
+                       [invoice].[Invoice].[DeletedByUserId],
                        [invoice].[Invoice].[LeadRequestId]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[Id] = @Id AND [invoice].[Invoice].[BusinessId] = @BusinessId";
@@ -297,6 +299,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                        [invoice].[Invoice].[PaymentInstructionsOverride],
                        [invoice].[Invoice].[CreatedAtUtc], [invoice].[Invoice].[UpdatedAtUtc],
                        [invoice].[Invoice].[IsDeleted], [invoice].[Invoice].[DeletedAtUtc],
+                       [invoice].[Invoice].[DeletedByUserId],
                        [invoice].[Invoice].[LeadRequestId]
                 FROM [invoice].[Invoice]
                 WHERE [invoice].[Invoice].[QuotationId] = @QuotationId";
@@ -332,7 +335,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
         }
     }
 
-    public async Task SoftDeleteAsync(int id, int businessId)
+    public async Task SoftDeleteAsync(int id, int businessId, string? userId)
     {
         try
         {
@@ -340,6 +343,7 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                 UPDATE [invoice].[Invoice]
                 SET [invoice].[Invoice].[IsDeleted] = 1,
                     [invoice].[Invoice].[DeletedAtUtc] = GETUTCDATE(),
+                    [invoice].[Invoice].[DeletedByUserId] = @DeletedByUserId,
                     [invoice].[Invoice].[UpdatedAtUtc] = GETUTCDATE()
                 WHERE [invoice].[Invoice].[Id] = @Id
                   AND [invoice].[Invoice].[BusinessId] = @BusinessId
@@ -347,7 +351,8 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
 
             await _context.Database.ExecuteSqlRawAsync(query,
                 new SqlParameter("@Id", id),
-                new SqlParameter("@BusinessId", businessId));
+                new SqlParameter("@BusinessId", businessId),
+                new SqlParameter("@DeletedByUserId", (object?)userId ?? DBNull.Value));
         }
         catch (Exception)
         {
@@ -387,13 +392,18 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                              AND [credit].[CreditNoteApplication].[IsVoided] = 0
                              AND [credit].[CreditNote].[BusinessId] = @BusinessId
                        ) THEN 1 ELSE 0 END AS BIT) AS [HasCreditNote],
+                       [invoice].[Invoice].[IsDeleted],
+                       [invoice].[Invoice].[DeletedAtUtc],
+                       [invoice].[Invoice].[DeletedByUserId],
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [invoice].[Invoice]
                 INNER JOIN [customer].[Customer] ON [invoice].[Invoice].[CustomerId] = [customer].[Customer].[Id]
                 INNER JOIN [invoice].[InvoiceStatusType] ON [invoice].[Invoice].[InvoiceStatusTypeId] = [invoice].[InvoiceStatusType].[Id]
                 INNER JOIN [invoice].[InvoiceFinancialStatusType] ON [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = [invoice].[InvoiceFinancialStatusType].[Id]
                 WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
-                  AND [invoice].[Invoice].[IsDeleted] = 0
+                  -- Deleted (soft-deleted) invoices ARE included here so the invoice-number register
+                  -- stays visibly gap-free. They are rendered struck-through in the UI and are
+                  -- excluded from every financial/export query (see GetAllFilteredByBusinessIdAsync).
                   AND (@StatusFilter IS NULL OR [invoice].[Invoice].[InvoiceStatusTypeId] = @StatusFilter)
                   AND (@FinancialStatusFilter IS NULL OR [invoice].[Invoice].[InvoiceFinancialStatusTypeId] = @FinancialStatusFilter)
                   AND (@CustomerFilter IS NULL OR [invoice].[Invoice].[CustomerId] = @CustomerFilter)
@@ -447,7 +457,10 @@ public class InvoiceRepository : GenericStoredProcedureRepository<Invoice>
                         FinancialStatusName = reader.GetString(reader.GetOrdinal("FinancialStatusName")),
                         InvoiceStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceStatusTypeId")),
                         InvoiceFinancialStatusTypeId = reader.GetInt32(reader.GetOrdinal("InvoiceFinancialStatusTypeId")),
-                        HasCreditNote = reader.GetBoolean(reader.GetOrdinal("HasCreditNote"))
+                        HasCreditNote = reader.GetBoolean(reader.GetOrdinal("HasCreditNote")),
+                        IsDeleted = reader.GetBoolean(reader.GetOrdinal("IsDeleted")),
+                        DeletedAtUtc = reader.IsDBNull(reader.GetOrdinal("DeletedAtUtc")) ? null : reader.GetDateTime(reader.GetOrdinal("DeletedAtUtc")),
+                        DeletedByUserId = reader.IsDBNull(reader.GetOrdinal("DeletedByUserId")) ? null : reader.GetString(reader.GetOrdinal("DeletedByUserId"))
                     });
                 }
             }

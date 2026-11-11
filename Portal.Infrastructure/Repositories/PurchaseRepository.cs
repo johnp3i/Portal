@@ -818,6 +818,81 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
     }
 
     /// <summary>
+    /// Expense trend: spend grouped by time bucket and by the chosen dimension (expense category or
+    /// supplier), over the same filtered set the Purchases list/KPIs use. Reuses the shared
+    /// <see cref="BuildListFromWhere"/> predicate and adds the cancelled-exclusion so the summed
+    /// result reconciles with the "Total Spend" KPI. Payroll purchases follow the filter's
+    /// IncludePayroll rule (already handled by the shared WHERE).
+    ///
+    /// <paramref name="dimension"/> ("category" | "supplier") and <paramref name="bucket"/>
+    /// ("day" | "month" | "year") are server-side whitelisted enums that select fixed SQL
+    /// fragments — never interpolated from untrusted input. All filter values flow through
+    /// SqlParameter via BuildListFromWhere.
+    /// </summary>
+    public virtual async Task<List<ExpenseTrendPoint>> GetExpenseTrendAsync(
+        int businessId, PurchaseListFilter filter, string dimension, string bucket)
+    {
+        try
+        {
+            var p = new List<SqlParameter>();
+            var fromWhere = BuildListFromWhere(businessId, filter, p, includeVatJoin: false);
+
+            // Only real spend contributes to the trend (matches the KPI's cancelled-exclusion).
+            fromWhere += " AND [purchase].[Purchase].[IsCancelled] = 0";
+
+            // Whitelisted bucket expression on InvoiceDate.
+            var bucketExpr = bucket switch
+            {
+                "day" => "CONVERT(date, [purchase].[Purchase].[InvoiceDate])",
+                "year" => "DATEFROMPARTS(YEAR([purchase].[Purchase].[InvoiceDate]), 1, 1)",
+                _ => "DATEFROMPARTS(YEAR([purchase].[Purchase].[InvoiceDate]), MONTH([purchase].[Purchase].[InvoiceDate]), 1)", // month (default)
+            };
+
+            // Whitelisted dimension: series id + name, and the name-table join to splice in.
+            string seriesIdExpr;
+            string seriesNameExpr;
+            string dimensionJoin;
+            if (dimension == "supplier")
+            {
+                seriesIdExpr = "[purchase].[Purchase].[SupplierId]";
+                seriesNameExpr = "[purchase].[Supplier].[Name]";
+                dimensionJoin = string.Empty; // Supplier is already LEFT JOINed by BuildListFromWhere.
+            }
+            else // category (default)
+            {
+                seriesIdExpr = "[purchase].[Purchase].[ExpenseCategoryId]";
+                seriesNameExpr = "[purchase].[ExpenseCategory].[Name]";
+                dimensionJoin =
+                    "\n                 LEFT JOIN [purchase].[ExpenseCategory] ON [purchase].[ExpenseCategory].[Id] = [purchase].[Purchase].[ExpenseCategoryId]";
+            }
+
+            // Splice the dimension join in right before the WHERE of the shared FROM/WHERE.
+            // Whitespace-independent: insert before the first "WHERE " token.
+            var whereIdx = fromWhere.IndexOf("WHERE ", StringComparison.Ordinal);
+            var fromWhereWithJoin = whereIdx < 0
+                ? fromWhere + dimensionJoin
+                : fromWhere.Insert(whereIdx, dimensionJoin + "\n                 ");
+
+            var sql = $@"
+                SELECT {bucketExpr} AS [Bucket],
+                       {seriesIdExpr} AS [SeriesId],
+                       {seriesNameExpr} AS [SeriesName],
+                       ISNULL(SUM([purchase].[Purchase].[TotalAmount]), 0) AS [Amount]
+                {fromWhereWithJoin}
+                GROUP BY {bucketExpr}, {seriesIdExpr}, {seriesNameExpr}
+                ORDER BY [Bucket]";
+
+            return await _context.Database
+                .SqlQueryRaw<ExpenseTrendPoint>(sql, p.ToArray())
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Name lookups for a set of supplier ids (including inactive suppliers), so the list can show
     /// the supplier name on every row â€” the active-only service load left inactive ones blank.
     /// </summary>

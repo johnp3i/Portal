@@ -5,6 +5,8 @@
     var lines = ViewBag.Lines as List<Portal.Infrastructure.Entities.InvoiceLine> ?? new List<Portal.Infrastructure.Entities.InvoiceLine>();
     var sections = ViewBag.Sections as List<Portal.Infrastructure.Entities.InvoiceSection> ?? new List<Portal.Infrastructure.Entities.InvoiceSection>();
     var vatPeriodLabel = invoice.VatSubmissionPeriod?.PeriodLabel;
+    // A soft-deleted (retired) draft is read-only: no Edit / Issue / Delete / Duplicate / Share.
+    var isDeletedInvoice = invoice.IsDeleted;
 }
 
 @Html.AntiForgeryToken()
@@ -22,22 +24,34 @@
 
 <!-- Action Bar -->
 <section class="glass card-pad" style="margin-bottom:22px;padding:14px 20px;">
+    @if (isDeletedInvoice)
+    {
+        <div style="margin-bottom:14px;padding:10px 16px;border-radius:10px;background:rgba(194,74,74,.08);border:1px solid rgba(194,74,74,.2);color:#C24A4A;font-size:13px;font-weight:600;">
+            This invoice has been deleted. Its number is retired and shown in the register for audit; it cannot be edited, issued, or restored.
+        </div>
+    }
     <!-- Primary actions (always visible) -->
     <div class="detail-actions-primary" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        @if ((bool?)ViewBag.CanEdit == true)
+        @if ((bool?)ViewBag.CanEdit == true && !isDeletedInvoice)
         {
             <a class="btn btn-secondary" asp-action="Edit" asp-controller="Invoice" asp-route-id="@invoice.Id">Edit</a>
         }
-        <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
-        <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
+        @if (!isDeletedInvoice)
+        {
+            <button type="button" class="btn btn-primary" onclick="openShareDialog(@invoice.Id)">Share</button>
+            <button type="button" class="btn btn-secondary" onclick="duplicateInvoice(@invoice.Id)">Duplicate</button>
+        }
     </div>
     <!-- Secondary actions (collapsed on mobile) -->
     <div class="detail-actions-secondary" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid rgba(13,94,166,.08);">
         <a href="@Url.Action("Preview", "Invoice", new { id = invoice.Id })" target="_blank" class="btn btn-secondary">Preview</a>
         <button type="button" class="btn btn-secondary" onclick="downloadInvoicePdf(@invoice.Id)">Download PDF</button>
-        <button type="button" class="btn btn-secondary" onclick="downloadInvoiceExcel(@invoice.Id)">Download Excel</button>
         <button type="button" class="btn btn-secondary" onclick="printInvoice(@invoice.Id)">Print</button>
-        @if (invoice.InvoiceStatusTypeId == 1)
+        @if (!isDeletedInvoice)
+        {
+            <button type="button" class="btn btn-secondary" onclick="downloadInvoiceExcel(@invoice.Id)">Download Excel</button>
+        }
+        @if (invoice.InvoiceStatusTypeId == 1 && !isDeletedInvoice)
         {
             <button type="button" class="btn btn-danger" onclick="deleteInvoice(@invoice.Id)">Delete</button>
         }
@@ -64,8 +78,15 @@
                         _ => "pill-gold"
                     };
                 }
-                <span class="pill @statusPillClass">@ViewBag.StatusName</span>
-                @if (invoice.InvoiceStatusTypeId == 1)
+                @if (isDeletedInvoice)
+                {
+                    <span class="pill pill-red">Deleted</span>
+                }
+                else
+                {
+                    <span class="pill @statusPillClass">@ViewBag.StatusName</span>
+                }
+                @if (invoice.InvoiceStatusTypeId == 1 && !isDeletedInvoice)
                 {
                     <button type="button" class="btn btn-primary" style="font-size:13px;padding:6px 16px;" onclick="issueInvoice(@invoice.Id)">Issue Invoice</button>
                 }
@@ -779,18 +800,26 @@
 
             if (!firstResult.isConfirmed) return;
 
-            // Step 2: Second confirmation
+            // Step 2: Type-DELETE confirmation (irreversible, retires the invoice number)
             const secondResult = await Swal.fire({
-                title: 'Final Warning',
-                text: 'This action cannot be easily undone. Are you sure you want to proceed?',
+                title: 'This cannot be undone',
+                html: 'Deleting an invoice is <strong>permanent</strong> — it cannot be restored, and its invoice number is retired forever (shown struck-through in the register).<br><br>Type <strong>DELETE</strong> to confirm.',
                 icon: 'warning',
+                input: 'text',
+                inputPlaceholder: 'Type DELETE',
+                inputAttributes: { autocapitalize: 'off', autocorrect: 'off', autocomplete: 'off' },
                 showCancelButton: true,
                 confirmButtonColor: '#C24A4A',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, delete permanently'
+                confirmButtonText: 'Delete permanently',
+                inputValidator: function (value) {
+                    if (value !== 'DELETE') {
+                        return 'You must type DELETE (in capitals) to confirm.';
+                    }
+                }
             });
 
-            if (!secondResult.isConfirmed) return;
+            if (!secondResult.isConfirmed || secondResult.value !== 'DELETE') return;
 
             // Step 3: Execute deletion
             BlockUI.show('Deleting...');

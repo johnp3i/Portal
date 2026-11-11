@@ -111,13 +111,22 @@ public class InvoiceExcelService : IInvoiceExcelService
             sheet.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
             row += 2;
 
-            var statusText = invoice.InvoiceStatusTypeId == 1 ? "Draft"
+            var baseStatusText = invoice.InvoiceStatusTypeId == 1 ? "Draft"
                 : invoice.InvoiceStatusTypeId == 2 ? "Issued" : "Cancelled";
+            // Show both the underlying status and the deletion, with the deletion made prominent.
+            var statusText = invoice.IsDeleted ? $"{baseStatusText} — DELETED" : baseStatusText;
 
             WriteMetaPair(sheet, ref row, "Bill To", customer?.Name ?? "Unknown");
             WriteMetaPair(sheet, ref row, "Invoice Date", invoice.InvoiceDate.ToString("dd MMM yyyy"));
             WriteMetaPair(sheet, ref row, "Due Date", invoice.DueDate.ToString("dd MMM yyyy"));
             WriteMetaPair(sheet, ref row, "Status", statusText);
+            if (invoice.IsDeleted)
+            {
+                // Emphasise the deleted status in red bold (the value cell is column 2).
+                var statusValueCell = sheet.Cell(row - 1, 2);
+                statusValueCell.Style.Font.Bold = true;
+                statusValueCell.Style.Font.FontColor = XLColor.FromHtml("#C24A4A");
+            }
             WriteMetaPair(sheet, ref row, "Currency", invoice.CurrencyCode);
             if (invoice.QuotationId.HasValue && invoice.IsQuotationReferenceShown)
                 WriteMetaPair(sheet, ref row, "Quotation Ref", $"QUO-{invoice.BusinessId}-{invoice.QuotationId.Value:D5}");

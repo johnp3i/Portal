@@ -644,11 +644,21 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/js/expense-insights.js"></script>
     <script>
-        // Pass server-rendered data to JavaScript for initial chart rendering
+        // Pass server-rendered data to JavaScript for initial chart rendering.
+        // Serialize with camelCase so the initial-load data matches the field names the JS reads
+        // (categoryName, totalSpend, percentageOfTotal) and the AJAX endpoint (Json(...), camelCase).
+        // Without this the embedded data keeps C# PascalCase names and the charts render
+        // "undefined (0.0%)" until the first period switch.
+        @{
+            var expenseInsightsJsonOpts = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            };
+        }
         window.ExpenseInsightsData = {
-            categories: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.InsightsData.Categories)),
-            trendData: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendData)),
-            currencySymbol: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CurrencySymbol)),
+            categories: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.InsightsData.Categories, expenseInsightsJsonOpts)),
+            trendData: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendData, expenseInsightsJsonOpts)),
+            currencySymbol: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CurrencySymbol, expenseInsightsJsonOpts)),
             selectedPeriod: '@Model.SelectedPeriod',
             hasData: @Model.InsightsData.HasData.ToString().ToLower()
         };

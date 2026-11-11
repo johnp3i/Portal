@@ -50,6 +50,16 @@ public class AccountController : Controller
     [HttpGet]
     public IActionResult Login(string? returnUrl = null)
     {
+        // If the user is already authenticated, never render the login form again. Re-rendering it
+        // mints a fresh antiforgery token against the now-authenticated identity; submitting a stale
+        // login form (back button, bfcache, double-submit, or a second tab) then fails antiforgery
+        // validation with a 400 that persists on every refresh — even though the user is signed in.
+        // Redirecting away eliminates that stuck-400 loop.
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            return LocalRedirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
+        }
+
         ViewData["ReturnUrl"] = returnUrl;
         return View();
     }

@@ -6,10 +6,11 @@
 
     var pagedResult = (PagedResult<Product>)ViewBag.PagedResult;
     var kpis = (ProductKpiDto)ViewBag.Kpis;
-    var topProducts = (List<ProductUsageDto>)ViewBag.TopProducts;
     var suppliers = (List<Supplier>)ViewBag.Suppliers;
     var tierCounts = ViewBag.TierCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
     var searchTerm = (string?)ViewBag.SearchTerm;
+    var filter = (ProductListFilter)ViewBag.Filter;
+    var productTypes = (List<ProductType>)ViewBag.ProductTypes;
 }
 
 <style>
@@ -53,6 +54,12 @@
         flex-shrink: 0;
         opacity: .85;
     }
+    /* Product Performance collapsible section */
+    #productPerformanceSection.is-open .perf-chevron { transform: rotate(90deg); }
+    #perfHelpBtn:hover { background: rgba(13,94,166,.10); }
+    @@media (max-width: 860px) {
+        #perfCharts { grid-template-columns: 1fr !important; }
+    }
 </style>
 
 <div class="topbar">
@@ -92,14 +99,53 @@
     </div>
 </section>
 
-<!-- Bar Chart: Top 10 Products by Usage -->
-@if (topProducts != null && topProducts.Count > 0)
-{
-    <section class="glass card-pad" style="margin-bottom:22px;">
-        <h3 style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;">Top 10 Products by Usage</h3>
-        <canvas id="topProductsChart" style="width:100%;max-height:300px;"></canvas>
-    </section>
-}
+<!-- Collapsible: Product Performance (Revenue + Units Sold) -->
+<section id="productPerformanceSection" class="glass card-pad" style="margin-bottom:22px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <button type="button" id="productPerformanceToggle"
+                style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;cursor:pointer;font-family:inherit;">
+            <svg class="perf-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s;"><polyline points="9 18 15 12 9 6"/></svg>
+            <span style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#0B1B28;">Product Performance</span>
+        </button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="perfPeriodLabel" style="font-size:12px;color:#5E7385;font-weight:600;"></span>
+            <select id="perfPeriodSelect" style="padding:7px 12px;border-radius:9px;border:1px solid rgba(13,94,166,.18);font-size:13px;font-weight:600;color:#0B1B28;background:#fff;cursor:pointer;">
+                <option value="year">This Year</option>
+                <option value="last12">Last 12 Months</option>
+                <option value="quarter">Last Quarter</option>
+                <option value="all">All Time</option>
+            </select>
+            <button type="button" id="perfHelpBtn"
+                    style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1px solid rgba(13,94,166,.18);background:rgba(13,94,166,.04);color:#0D5EA6;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                What these charts show
+            </button>
+        </div>
+    </div>
+
+    <div id="productPerformanceBody" style="display:none;margin-top:20px;">
+        <div id="perfSpinner" style="display:none;align-items:center;justify-content:center;height:300px;color:#5E7385;font-size:13px;">Loading…</div>
+        <div id="perfError" style="display:none;padding:40px 0;text-align:center;color:#C24A4A;font-size:14px;"></div>
+        <div id="perfCharts" style="display:none;grid-template-columns:1fr 1fr;gap:24px;">
+            <div>
+                <h4 style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;margin:0 0 4px;color:#0B1B28;">Top Products by Revenue</h4>
+                <p style="font-size:12px;color:#5E7385;margin:0 0 14px;">Total sales value from issued invoices</p>
+                <div style="position:relative;height:360px;">
+                    <canvas id="perfRevenueChart"></canvas>
+                </div>
+                <div id="perfRevenueEmpty" style="display:none;padding:30px 0;text-align:center;color:#5E7385;font-size:13px;">No revenue in this period.</div>
+            </div>
+            <div>
+                <h4 style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;margin:0 0 4px;color:#0B1B28;">Top Products by Units Sold</h4>
+                <p style="font-size:12px;color:#5E7385;margin:0 0 14px;">Total quantity sold from issued invoices</p>
+                <div style="position:relative;height:360px;">
+                    <canvas id="perfUnitsChart"></canvas>
+                </div>
+                <div id="perfUnitsEmpty" style="display:none;padding:30px 0;text-align:center;color:#5E7385;font-size:13px;">No units sold in this period.</div>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- Search / Filter -->
 <section class="glass card-pad" style="margin-bottom:22px;">
@@ -107,6 +153,53 @@
         <div class="field" style="flex:1;min-width:280px;">
             <label>Search</label>
             <input type="text" name="search" placeholder="Search by product code or description..." value="@searchTerm" maxlength="200" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Status</label>
+            <select name="status">
+                <option value="active" selected="@(filter.Status == "active")">Active</option>
+                <option value="inactive" selected="@(filter.Status == "inactive")">Deactivated</option>
+                <option value="all" selected="@(filter.Status == "all")">All</option>
+            </select>
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Supplier</label>
+            <select name="supplierId">
+                <option value="">All Suppliers</option>
+                @foreach (var supplier in suppliers)
+                {
+                    <option value="@supplier.Id" selected="@(filter.SupplierId == supplier.Id)">@supplier.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>Type</label>
+            <select name="productTypeId">
+                <option value="">All Types</option>
+                @foreach (var type in productTypes)
+                {
+                    <option value="@type.Id" selected="@(filter.ProductTypeId == type.Id)">@type.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>Created From</label>
+            <input type="date" name="createdFrom" value="@(filter.CreatedFrom?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="field" style="min-width:160px;">
+            <label>Created To</label>
+            <input type="date" name="createdTo" value="@(filter.CreatedTo?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="field" style="min-width:180px;">
+            <label>Sort By</label>
+            <select name="sort">
+                <option value="code" selected="@(filter.Sort == "code")">Product Code</option>
+                <option value="created_desc" selected="@(filter.Sort == "created_desc")">Newest First</option>
+                <option value="created_asc" selected="@(filter.Sort == "created_asc")">Oldest First</option>
+                <option value="price_desc" selected="@(filter.Sort == "price_desc")">Price (High–Low)</option>
+                <option value="price_asc" selected="@(filter.Sort == "price_asc")">Price (Low–High)</option>
+                <option value="lastused_desc" selected="@(filter.Sort == "lastused_desc")">Recently Used</option>
+            </select>
         </div>
         <div style="display:flex;gap:10px;padding-bottom:2px;">
             <button type="submit" class="btn btn-primary" style="padding:14px 20px;">Filter</button>
@@ -130,6 +223,7 @@
                     <th>Supplier</th>
                     <th>Type</th>
                     <th>Status</th>
+                    <th>Created</th>
                     <th>Last Used</th>
                     <th>Actions</th>
                 </tr>
@@ -185,6 +279,7 @@
                                 <span class="pill pill-red">Inactive</span>
                             }
                         </td>
+                        <td>@product.CreatedAtUtc.ToString("dd MMM yyyy")</td>
                         <td>@(product.LastUsedDate?.ToString("dd MMM yyyy") ?? "—")</td>
                         <td style="white-space:nowrap;">
                             <a href="/Product/Detail/@product.Id" class="tbl-action tbl-action--primary">Detail</a>
@@ -305,7 +400,8 @@
 @Html.AntiForgeryToken()
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/vendor/chart.umd.min.js"></script>
+    <script src="~/js/product-performance.js"></script>
     <script>
     (function () {
         // =========================================================================
@@ -400,55 +496,6 @@
                 }
             });
         })();
-
-        // =========================================================================
-        // Chart.js — Top 10 Products by Usage
-        // =========================================================================
-        var chartCanvas = document.getElementById('topProductsChart');
-        if (chartCanvas) {
-            var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(topProducts.Select(p => p.Description).ToList()));
-            var dataValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(topProducts.Select(p => p.UsageCount).ToList()));
-
-            var isHorizontal = labels.length < 8;
-
-            new Chart(chartCanvas, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Usage Count',
-                        data: dataValues,
-                        backgroundColor: 'rgba(13, 94, 166, 0.7)',
-                        borderColor: '#0D5EA6',
-                        borderWidth: 1,
-                        borderRadius: 6,
-                        maxBarThickness: isHorizontal ? 28 : 60,
-                        barPercentage: 0.6,
-                        categoryPercentage: 0.7
-                    }]
-                },
-                options: {
-                    indexAxis: isHorizontal ? 'y' : 'x',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: isHorizontal
-                            ? { beginAtZero: true, ticks: { precision: 0 } }
-                            : { ticks: { maxRotation: 45, minRotation: 0, font: { size: 11 } } },
-                        y: isHorizontal
-                            ? { ticks: { font: { size: 12 } } }
-                            : { beginAtZero: true, ticks: { precision: 0 } }
-                    }
-                }
-            });
-
-            // Adjust canvas height for horizontal chart based on item count
-            if (isHorizontal) {
-                chartCanvas.parentElement.style.maxHeight = 'none';
-                chartCanvas.style.maxHeight = Math.max(labels.length * 40, 120) + 'px';
-            }
-        }
 
         // =========================================================================
         // Modal Management

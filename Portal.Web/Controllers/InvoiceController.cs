@@ -45,6 +45,8 @@ public class InvoiceController : Controller
     private readonly IProductAutocompleteService _autocompleteService;
     private readonly ICreditNoteService _creditNoteService;
     private readonly PortalDbContext _dbContext;
+    private readonly MembershipDbContext _membershipDbContext;
+    private readonly IBusinessTimeZoneService _businessTimeZoneService;
     private readonly ILogger<InvoiceController> _logger;
 
     public InvoiceController(
@@ -71,6 +73,8 @@ public class InvoiceController : Controller
         IProductAutocompleteService autocompleteService,
         ICreditNoteService creditNoteService,
         PortalDbContext dbContext,
+        MembershipDbContext membershipDbContext,
+        IBusinessTimeZoneService businessTimeZoneService,
         ILogger<InvoiceController> logger)
     {
         _invoiceService = invoiceService;
@@ -96,6 +100,8 @@ public class InvoiceController : Controller
         _autocompleteService = autocompleteService;
         _creditNoteService = creditNoteService;
         _dbContext = dbContext;
+        _membershipDbContext = membershipDbContext;
+        _businessTimeZoneService = businessTimeZoneService;
         _logger = logger;
     }
 
@@ -148,6 +154,10 @@ public class InvoiceController : Controller
                 }
             }
         }
+
+        // Enrich deleted rows with the deleter's display name (resolved from the Membership DB) and
+        // the deletion time in the business's local timezone. Batched — no per-row DB calls.
+        await EnrichDeletedInvoiceDisplayAsync(pagedResult.Items);
 
         ViewBag.PagedResult = pagedResult;
         ViewBag.SearchTerm = search;
@@ -741,7 +751,8 @@ public class InvoiceController : Controller
     {
         try
         {
-            var result = await _softDeleteService.SoftDeleteInvoiceAsync(id);
+            var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var result = await _softDeleteService.SoftDeleteInvoiceAsync(id, userId);
 
             if (result.Success)
                 return Json(new { success = true, message = "Invoice deleted successfully." });
@@ -975,6 +986,61 @@ public class InvoiceController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = "An unexpected error occurred." });
+        }
+    }
+
+    /// <summary>
+    /// Populates DeletedByName (from the Membership DB) and DeletedAtLocalDisplay (business-local
+    /// time) on soft-deleted invoice rows. Resolves names in a single batched query (no N+1) and
+    /// the timezone once. Never throws — display enrichment must not break the list.
+    /// </summary>
+    private async Task EnrichDeletedInvoiceDisplayAsync(IEnumerable<InvoiceListDto> items)
+    {
+        var deletedRows = items.Where(i => i.IsDeleted).ToList();
+        if (deletedRows.Count == 0)
+            return;
+
+        try
+        {
+            // Resolve the deleter display names in one batch (Membership DB — separate from Portal DB).
+            var userIds = deletedRows
+                .Where(r => !string.IsNullOrEmpty(r.DeletedByUserId))
+                .Select(r => r.DeletedByUserId!)
+                .Distinct()
+                .ToList();
+
+            var namesById = new Dictionary<string, string>();
+            if (userIds.Count > 0)
+            {
+                namesById = await _membershipDbContext.Users
+                    .Where(u => userIds.Contains(u.Id))
+                    .Select(u => new { u.Id, u.FirstName, u.LastName })
+                    .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
+            }
+
+            // Resolve the business timezone once.
+            var tz = await _businessTimeZoneService.GetTimeZoneAsync(_tenantService.CurrentBusinessId);
+
+            foreach (var row in deletedRows)
+            {
+                row.DeletedByName = !string.IsNullOrEmpty(row.DeletedByUserId)
+                    && namesById.TryGetValue(row.DeletedByUserId, out var name)
+                    && !string.IsNullOrWhiteSpace(name)
+                        ? name
+                        : "Unknown";
+
+                if (row.DeletedAtUtc.HasValue)
+                {
+                    var local = TimeZoneInfo.ConvertTimeFromUtc(
+                        DateTime.SpecifyKind(row.DeletedAtUtc.Value, DateTimeKind.Utc), tz);
+                    row.DeletedAtLocalDisplay = local.ToString("dd MMM yyyy HH:mm");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Display-only enrichment; on any failure leave names/times unset rather than break the list.
+            _logger.LogWarning(ex, "Failed to enrich deleted-invoice display metadata.");
         }
     }
 

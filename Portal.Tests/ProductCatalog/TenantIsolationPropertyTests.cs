@@ -104,7 +104,7 @@ public class TenantIsolationPropertyTests
         var getReturnsNull = getResult == null;
 
         // GetProductsPagedAsync should return empty
-        var pagedResult = service.GetProductsPagedAsync("anything", 1).Result;
+        var pagedResult = service.GetProductsPagedAsync(new ProductListFilter { Search = "anything" }, 1).Result;
         var pagedReturnsEmpty = pagedResult.Items.Count == 0 && pagedResult.TotalCount == 0;
 
         // GetKpisAsync should return zeroed KPIs
@@ -403,12 +403,12 @@ public class TenantIsolationPropertyTests
         int capturedBusinessId = 0;
 
         productRepo.Setup(r => r.GetPagedByBusinessIdAsync(
-                It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<int>()))
-            .Callback<int, string?, int, int>((bizId, _, _, _) => capturedBusinessId = bizId)
+                It.IsAny<int>(), It.IsAny<ProductListFilter>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Callback<int, ProductListFilter, int, int>((bizId, _, _, _) => capturedBusinessId = bizId)
             .ReturnsAsync((new List<Product>(), 0));
 
         var page = (Math.Abs(pageSeed.Get) % 10) + 1;
-        _ = service.GetProductsPagedAsync(searchTerm.Get, page).Result;
+        _ = service.GetProductsPagedAsync(new ProductListFilter { Search = searchTerm.Get }, page).Result;
 
         // Property: the repository was called with the authenticated BusinessId
         var queriedWithCorrectBusinessId = capturedBusinessId == AuthenticatedBusinessId;

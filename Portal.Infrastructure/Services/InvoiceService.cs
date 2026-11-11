@@ -581,6 +581,14 @@ public class InvoiceService : IInvoiceService
             throw new InvalidOperationException("Invoice not found");
         }
 
+        // A deleted invoice is retired permanently — it can never be issued or transitioned. This
+        // closes the back-door of resurrecting a deleted draft (e.g. Draft→Issued) via a direct
+        // status-change request, which would reintroduce a retired number as a live fiscal document.
+        if (invoice.IsDeleted)
+        {
+            throw new InvalidOperationException("This invoice has been deleted and its status cannot be changed.");
+        }
+
         var currentStatusId = invoice.InvoiceStatusTypeId;
 
         // Validate transition
@@ -662,6 +670,13 @@ public class InvoiceService : IInvoiceService
     /// </summary>
     private async Task<InvoiceEditEligibility> EvaluateEligibilityAsync(Invoice invoice)
     {
+        // A soft-deleted (retired) invoice is read-only, regardless of its status. Deletion is
+        // permanent and never restored; allowing edits would let a retired invoice number be
+        // changed or its content altered, defeating register integrity. This is the authoritative
+        // guard for Edit and every line/adjustment mutation (all route through EnsureEditableAsync).
+        if (invoice.IsDeleted)
+            return new InvoiceEditEligibility(false, "This invoice has been deleted and cannot be edited.", false);
+
         if (invoice.InvoiceStatusTypeId == InvoiceStatusCancelled)
             return new InvoiceEditEligibility(false, "Cancelled invoices cannot be edited.", false);
 

@@ -824,9 +824,18 @@ public class PortalDbContext : DbContext
                 .HasDatabaseName("UX_Invoice_QuotationId")
                 .HasFilter("[QuotationId] IS NOT NULL");
 
+            // Invoice numbers are unique within a business and are NEVER reused — a soft-deleted
+            // invoice keeps its number (rows are never hard-deleted), so this spans all rows.
+            entity.HasIndex(e => new { e.BusinessId, e.InvoiceNumber })
+                .IsUnique()
+                .HasDatabaseName("UX_Invoice_BusinessId_InvoiceNumber");
+
             entity.Property(e => e.InvoiceNumber)
                 .IsRequired()
                 .HasMaxLength(50);
+
+            entity.Property(e => e.DeletedByUserId)
+                .HasMaxLength(450);
 
             entity.Property(e => e.Subtotal)
                 .HasPrecision(18, 2);

@@ -161,7 +161,7 @@ public class ProductService : IProductService
         return await _productRepository.GetByIdAndBusinessIdAsync(productId, businessId);
     }
 
-    public async Task<PagedResult<Product>> GetProductsPagedAsync(string? searchTerm, int page, int pageSize = 15)
+    public async Task<PagedResult<Product>> GetProductsPagedAsync(ProductListFilter filter, int page, int pageSize = 15)
     {
         var businessId = _currentTenantService.CurrentBusinessId;
         if (businessId == 0)
@@ -175,6 +175,8 @@ public class ProductService : IProductService
             };
         }
 
+        filter ??= new ProductListFilter();
+
         // Clamp page to minimum 1
         if (page < 1) page = 1;
 
@@ -185,7 +187,7 @@ public class ProductService : IProductService
 
         var (items, totalCount) = await _productRepository.GetPagedByBusinessIdAsync(
             businessId,
-            searchTerm,
+            filter,
             offset,
             pageSize);
 
@@ -202,7 +204,7 @@ public class ProductService : IProductService
         {
             var (clampedItems, _) = await _productRepository.GetPagedByBusinessIdAsync(
                 businessId,
-                searchTerm,
+                filter,
                 0,
                 pageSize);
 
@@ -238,6 +240,56 @@ public class ProductService : IProductService
             return new List<ProductUsageDto>();
 
         return await _productRepository.GetTopByUsageAsync(businessId, top);
+    }
+
+    public async Task<ProductPerformanceResult> GetProductPerformanceAsync(string period, int top = 10)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        if (businessId == 0)
+            return new ProductPerformanceResult();
+
+        var (dateFrom, dateTo, label) = ResolvePeriod(period);
+
+        var revenue = await _productRepository.GetTopPerformanceAsync(businessId, "revenue", dateFrom, dateTo, top);
+        var units = await _productRepository.GetTopPerformanceAsync(businessId, "units", dateFrom, dateTo, top);
+
+        return new ProductPerformanceResult
+        {
+            TopByRevenue = revenue,
+            TopByUnits = units,
+            PeriodLabel = label
+        };
+    }
+
+    /// <summary>
+    /// Resolves a whitelisted period key into an inclusive-from / exclusive-to date range on the
+    /// invoice date, plus a human-readable label. "today" is UTC. A null bound is unbounded.
+    /// </summary>
+    private static (DateOnly? From, DateOnly? To, string Label) ResolvePeriod(string? period)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Exclusive upper bound = tomorrow, so today's invoices are always included.
+        var tomorrow = today.AddDays(1);
+
+        switch ((period ?? "year").ToLowerInvariant())
+        {
+            case "all":
+                return (null, null, "All Time");
+
+            case "last12":
+                // Trailing 12 months, inclusive of today.
+                return (today.AddMonths(-12).AddDays(1), tomorrow, "Last 12 Months");
+
+            case "quarter":
+                // Trailing 3 months, inclusive of today.
+                return (today.AddMonths(-3).AddDays(1), tomorrow, "Last Quarter");
+
+            case "year":
+            default:
+                // Current calendar year: Jan 1 (this year) through today.
+                var jan1 = new DateOnly(today.Year, 1, 1);
+                return (jan1, tomorrow, $"This Year ({today.Year})");
+        }
     }
 
     public async Task AutoPopulateFromLineItemAsync(string? productCode, string description, decimal unitPrice, decimal vatRate, string userId)

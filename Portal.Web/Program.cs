@@ -688,6 +688,29 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<LoggingEnrichmentMiddleware>();
 
+// Friendly handling for a stale antiforgery token on the login POST. A login form rendered for the
+// anonymous user and then submitted after the user is already authenticated (back button, bfcache,
+// double-submit, or a second tab) fails antiforgery validation with a 400 that persists on refresh.
+// Instead of the raw 400, bounce to the dashboard (if now authenticated) or a clean login GET.
+// Scoped ONLY to /Account/Login so genuine CSRF rejections elsewhere still surface as 400.
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException)
+    {
+        var path = context.Request.Path;
+        if (path.StartsWithSegments("/Account/Login", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.Redirect(context.User?.Identity?.IsAuthenticated == true ? "/" : "/Account/Login");
+            return;
+        }
+        throw; // Any other antiforgery failure keeps the default 400 behaviour.
+    }
+});
+
 app.MapHub<Portal.Web.Hubs.PayrollHub>("/hubs/payroll");
 
 app.MapControllerRoute(

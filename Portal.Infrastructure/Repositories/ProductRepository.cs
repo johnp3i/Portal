@@ -16,13 +16,32 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
 
     public virtual async Task<(List<Product> Items, int TotalCount)> GetPagedByBusinessIdAsync(
         int businessId,
-        string? search,
+        ProductListFilter filter,
         int offset,
         int pageSize)
     {
         try
         {
-            const string query = @"
+            // ─── Whitelist the status filter → WHERE fragment (no user text reaches SQL) ───
+            string statusClause = (filter.Status ?? "active").ToLowerInvariant() switch
+            {
+                "inactive" => " AND [product].[Product].[IsActive] = 0",
+                "all"      => string.Empty,
+                _          => " AND [product].[Product].[IsActive] = 1"   // "active" (default)
+            };
+
+            // ─── Whitelist the sort key → ORDER BY fragment ───
+            string orderClause = (filter.Sort ?? "code").ToLowerInvariant() switch
+            {
+                "created_desc" => "[product].[Product].[CreatedAtUtc] DESC, [product].[Product].[ProductCode] ASC",
+                "created_asc"  => "[product].[Product].[CreatedAtUtc] ASC, [product].[Product].[ProductCode] ASC",
+                "price_desc"   => "[product].[Product].[DefaultSellingPrice] DESC, [product].[Product].[ProductCode] ASC",
+                "price_asc"    => "[product].[Product].[DefaultSellingPrice] ASC, [product].[Product].[ProductCode] ASC",
+                "lastused_desc"=> "[product].[Product].[LastUsedDate] DESC, [product].[Product].[ProductCode] ASC",
+                _              => "[product].[Product].[ProductCode] ASC"   // "code" (default)
+            };
+
+            string query = $@"
                 SELECT [product].[Product].[Id],
                        [product].[Product].[BusinessId],
                        [product].[Product].[ProductCode],
@@ -35,21 +54,36 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                        [product].[Product].[LastUsedDate],
                        [product].[Product].[CreatedAtUtc],
                        [product].[Product].[ProductTypeId],
+                       [purchase].[Supplier].[Name] AS [SupplierName],
                        COUNT(*) OVER() AS [TotalCount]
                 FROM [product].[Product]
+                LEFT JOIN [purchase].[Supplier]
+                    ON [product].[Product].[SupplierId] = [purchase].[Supplier].[Id]
                 WHERE [product].[Product].[BusinessId] = @BusinessId
                   AND (@Search IS NULL
                        OR [product].[Product].[ProductCode] LIKE '%' + @Search + '%'
                        OR [product].[Product].[Description] LIKE '%' + @Search + '%')
-                ORDER BY [product].[Product].[ProductCode] ASC
+                  AND (@SupplierId IS NULL OR [product].[Product].[SupplierId] = @SupplierId)
+                  AND (@ProductTypeId IS NULL OR [product].[Product].[ProductTypeId] = @ProductTypeId)
+                  AND (@CreatedFrom IS NULL OR [product].[Product].[CreatedAtUtc] >= @CreatedFrom)
+                  AND (@CreatedTo IS NULL OR [product].[Product].[CreatedAtUtc] < @CreatedTo){statusClause}
+                ORDER BY {orderClause}
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             var results = new List<Product>();
             int totalCount = 0;
             var connection = _context.Database.GetDbConnection();
 
-            string? escapedSearch = search != null
-                ? search.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")
+            string? escapedSearch = filter.Search != null
+                ? filter.Search.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")
+                : null;
+
+            // CreatedTo is treated as inclusive of the whole day → compare against the next day (exclusive upper bound).
+            DateTime? createdFrom = filter.CreatedFrom.HasValue
+                ? filter.CreatedFrom.Value.ToDateTime(TimeOnly.MinValue)
+                : null;
+            DateTime? createdTo = filter.CreatedTo.HasValue
+                ? filter.CreatedTo.Value.AddDays(1).ToDateTime(TimeOnly.MinValue)
                 : null;
 
             try
@@ -61,6 +95,10 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 command.CommandText = query;
                 command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
                 command.Parameters.Add(new SqlParameter("@Search", (object?)escapedSearch ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@SupplierId", (object?)filter.SupplierId ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@ProductTypeId", (object?)filter.ProductTypeId ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CreatedFrom", (object?)createdFrom ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@CreatedTo", (object?)createdTo ?? DBNull.Value));
                 command.Parameters.Add(new SqlParameter("@Offset", offset));
                 command.Parameters.Add(new SqlParameter("@PageSize", pageSize));
 
@@ -68,7 +106,7 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 while (await reader.ReadAsync())
                 {
                     totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
-                    results.Add(new Product
+                    var product = new Product
                     {
                         Id = reader.GetInt32(reader.GetOrdinal("Id")),
                         BusinessId = reader.GetInt32(reader.GetOrdinal("BusinessId")),
@@ -88,7 +126,19 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                         ProductTypeId = reader.IsDBNull(reader.GetOrdinal("ProductTypeId"))
                             ? null
                             : reader.GetInt32(reader.GetOrdinal("ProductTypeId"))
-                    });
+                    };
+
+                    // Hydrate the Supplier navigation name so the view can render it without an N+1.
+                    if (product.SupplierId.HasValue && !reader.IsDBNull(reader.GetOrdinal("SupplierName")))
+                    {
+                        product.Supplier = new Supplier
+                        {
+                            Id = product.SupplierId.Value,
+                            Name = reader.GetString(reader.GetOrdinal("SupplierName"))
+                        };
+                    }
+
+                    results.Add(product);
                 }
             }
             finally
@@ -493,6 +543,82 @@ public class ProductRepository : GenericStoredProcedureRepository<Product>
                 new SqlParameter("@MaxResults", maxResults));
         }
         catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Top products by a performance measure over a date range, from issued, non-deleted invoices.
+    /// The <paramref name="measure"/> is whitelisted to "revenue" (SUM of line totals) or
+    /// "units" (SUM of quantity). The date range is [dateFrom, dateTo) on the invoice date;
+    /// a null bound means unbounded on that side (used for "All Time").
+    /// </summary>
+    public virtual async Task<List<ProductPerformancePoint>> GetTopPerformanceAsync(
+        int businessId,
+        string measure,
+        DateOnly? dateFrom,
+        DateOnly? dateTo,
+        int top)
+    {
+        try
+        {
+            // Whitelist the measured expression — no user input reaches the SQL text.
+            string valueExpr = measure == "units"
+                ? "SUM([invoice].[InvoiceLine].[Quantity])"
+                : "SUM([invoice].[InvoiceLine].[LineTotal])";   // "revenue" (default)
+
+            string query = $@"
+                SELECT TOP (@Top)
+                    [invoice].[InvoiceLine].[Description] AS [Description],
+                    {valueExpr} AS [Value]
+                FROM [invoice].[InvoiceLine]
+                INNER JOIN [invoice].[Invoice]
+                    ON [invoice].[InvoiceLine].[InvoiceId] = [invoice].[Invoice].[Id]
+                WHERE [invoice].[Invoice].[BusinessId] = @BusinessId
+                  AND [invoice].[Invoice].[InvoiceStatusTypeId] = 2
+                  AND [invoice].[Invoice].[IsDeleted] = 0
+                  AND [invoice].[InvoiceLine].[IsAdjustmentLine] = 0
+                  AND (@DateFrom IS NULL OR [invoice].[Invoice].[InvoiceDate] >= @DateFrom)
+                  AND (@DateTo IS NULL OR [invoice].[Invoice].[InvoiceDate] < @DateTo)
+                GROUP BY [invoice].[InvoiceLine].[Description]
+                HAVING {valueExpr} > 0
+                ORDER BY {valueExpr} DESC";
+
+            var results = new List<ProductPerformancePoint>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@Top", top));
+                command.Parameters.Add(new SqlParameter("@DateFrom", (object?)dateFrom ?? DBNull.Value) { SqlDbType = SqlDbType.Date });
+                command.Parameters.Add(new SqlParameter("@DateTo", (object?)dateTo ?? DBNull.Value) { SqlDbType = SqlDbType.Date });
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new ProductPerformancePoint
+                    {
+                        Description = reader.GetString(reader.GetOrdinal("Description")),
+                        Value = reader.GetDecimal(reader.GetOrdinal("Value"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception)
         {
             throw;
         }

@@ -9,10 +9,11 @@ namespace Portal.Infrastructure.Services;
 public interface IDocumentSoftDeleteService
 {
     /// <summary>
-    /// Soft-deletes a Draft invoice by setting IsDeleted = 1.
-    /// Returns a result indicating success or failure with an error message.
+    /// Soft-deletes a Draft invoice by setting IsDeleted = 1, recording the acting user as the
+    /// deleter. The deletion is permanent — there is no restore. Returns a result indicating success
+    /// or failure with an error message.
     /// </summary>
-    Task<ServiceResult> SoftDeleteInvoiceAsync(int invoiceId);
+    Task<ServiceResult> SoftDeleteInvoiceAsync(int invoiceId, string? userId);
 
     /// <summary>
     /// Soft-deletes a Draft quotation by setting IsDeleted = 1.

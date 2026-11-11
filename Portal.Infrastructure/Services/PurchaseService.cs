@@ -72,6 +72,111 @@ public class PurchaseService : IPurchaseService
         return await _purchaseRepository.GetAggregatesAsync(_currentTenantService.CurrentBusinessId, filter);
     }
 
+    private const int TrendTopSeries = 8;
+
+    public async Task<ExpenseTrendResult> GetExpenseTrendAsync(PurchaseListFilter filter, string dimension)
+    {
+        var businessId = _currentTenantService.CurrentBusinessId;
+        var dim = dimension == "supplier" ? "supplier" : "category"; // whitelist
+
+        // Pick bucket granularity. When no explicit range is set we bucket monthly and let the
+        // actual data define the span (the points' min/max bucket); the step loop below covers it.
+        var fromDate = filter.DateFrom;
+        var toDate = filter.DateTo;
+        var bucket = ChooseBucket(fromDate, toDate);
+
+        var points = await _purchaseRepository.GetExpenseTrendAsync(businessId, filter, dim, bucket);
+
+        var result = new ExpenseTrendResult();
+        if (points.Count == 0)
+            return result; // empty-state; no labels/series
+
+        // Effective range: explicit filter dates, else the data's own min/max bucket.
+        var minBucket = points.Min(pt => pt.Bucket);
+        var maxBucket = points.Max(pt => pt.Bucket);
+        var rangeStart = fromDate.HasValue ? NormalizeToBucket(fromDate.Value, bucket) : minBucket;
+        var rangeEnd = toDate.HasValue ? NormalizeToBucket(toDate.Value, bucket) : maxBucket;
+        if (rangeEnd < rangeStart) rangeEnd = rangeStart;
+
+        // Ordered, gap-free bucket axis.
+        var buckets = new List<DateOnly>();
+        for (var d = rangeStart; d <= rangeEnd; d = StepBucket(d, bucket))
+            buckets.Add(d);
+        var bucketIndex = buckets.Select((b, i) => (b, i)).ToDictionary(x => x.b, x => x.i);
+        result.Labels = buckets.Select(b => FormatBucketLabel(b, bucket)).ToList();
+
+        // Group raw points into series keyed by SeriesId; keep a display name per series.
+        var bySeries = points
+            .GroupBy(pt => pt.SeriesId)
+            .Select(g => new
+            {
+                Name = g.First().SeriesName ?? "—",
+                Total = g.Sum(x => x.Amount),
+                Points = g.ToList()
+            })
+            .OrderByDescending(s => s.Total)
+            .ToList();
+
+        // Top-N get their own line; the rest fold into "Other".
+        var topSeries = bySeries.Take(TrendTopSeries).ToList();
+        var otherSeries = bySeries.Skip(TrendTopSeries).ToList();
+
+        foreach (var s in topSeries)
+        {
+            var data = new decimal[buckets.Count];
+            foreach (var pt in s.Points)
+                if (bucketIndex.TryGetValue(pt.Bucket, out var idx))
+                    data[idx] += pt.Amount;
+            result.Series.Add(new ExpenseTrendSeries { Name = s.Name, Data = data.ToList() });
+        }
+
+        if (otherSeries.Count > 0)
+        {
+            var data = new decimal[buckets.Count];
+            foreach (var s in otherSeries)
+                foreach (var pt in s.Points)
+                    if (bucketIndex.TryGetValue(pt.Bucket, out var idx))
+                        data[idx] += pt.Amount;
+            result.Series.Add(new ExpenseTrendSeries { Name = "Other", Data = data.ToList() });
+        }
+
+        return result;
+    }
+
+    // ── Expense-trend bucketing helpers ──────────────────────────────────────────────────────────
+
+    /// <summary>Daily for ≤31 days, monthly for ≤~24 months, else yearly. No explicit range → monthly.</summary>
+    private static string ChooseBucket(DateOnly? from, DateOnly? to)
+    {
+        if (!from.HasValue || !to.HasValue)
+            return "month";
+        var days = to.Value.DayNumber - from.Value.DayNumber;
+        if (days <= 31) return "day";
+        if (days <= 366 * 2) return "month";
+        return "year";
+    }
+
+    private static DateOnly NormalizeToBucket(DateOnly d, string bucket) => bucket switch
+    {
+        "day" => d,
+        "year" => new DateOnly(d.Year, 1, 1),
+        _ => new DateOnly(d.Year, d.Month, 1), // month
+    };
+
+    private static DateOnly StepBucket(DateOnly d, string bucket) => bucket switch
+    {
+        "day" => d.AddDays(1),
+        "year" => d.AddYears(1),
+        _ => d.AddMonths(1), // month
+    };
+
+    private static string FormatBucketLabel(DateOnly d, string bucket) => bucket switch
+    {
+        "day" => d.ToString("dd MMM yyyy"),
+        "year" => d.ToString("yyyy"),
+        _ => d.ToString("MMM yyyy"), // month
+    };
+
     public async Task<List<Purchase>> GetFilteredForExportAsync(PurchaseListFilter filter)
     {
         return await _purchaseRepository.GetAllFilteredAsync(_currentTenantService.CurrentBusinessId, filter);

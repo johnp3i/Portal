@@ -1,0 +1,1 @@
+Passed!  - Failed:     0, Passed:    34, Skipped:     0, Total:    34, Duration: 2 s - Portal.Tests.dll (net8.0)

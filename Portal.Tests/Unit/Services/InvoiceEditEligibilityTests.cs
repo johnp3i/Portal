@@ -231,4 +231,20 @@ public class InvoiceEditEligibilityTests
         Assert.False(result.CanEdit);
         Assert.Contains("not found", result.Reason!, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task Deleted_Draft_Invoice_Is_Not_Editable()
+    {
+        // A soft-deleted (retired) invoice is read-only even though its status is still Draft.
+        // This guards every edit/line/adjustment mutation (all route through EvaluateEligibility),
+        // closing the back-door of editing a deleted invoice via a direct request.
+        var invoice = MakeInvoice(18, DraftStatus);
+        invoice.IsDeleted = true;
+        SetupInvoice(invoice);
+
+        var result = await CreateService().GetEditEligibilityAsync(18);
+
+        Assert.False(result.CanEdit);
+        Assert.Contains("deleted", result.Reason!, StringComparison.OrdinalIgnoreCase);
+    }
 }

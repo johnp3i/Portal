@@ -21,6 +21,15 @@ public interface IPurchaseService
     /// <summary>Aggregate KPIs over the FULL filtered set (independent of the current page).</summary>
     Task<PurchaseListAggregates> GetListAggregatesAsync(PurchaseListFilter filter);
 
+    /// <summary>
+    /// Expense-trend time series over the same filtered set as the list/KPIs, grouped by the chosen
+    /// dimension ("category" | "supplier"). Buckets (daily/monthly/yearly) are derived from the
+    /// effective date range; empty buckets are zero-filled; only the top series by spend get their
+    /// own line and the rest are folded into "Other". The summed result reconciles with
+    /// <see cref="GetListAggregatesAsync"/>.TotalSpend for the same filter.
+    /// </summary>
+    Task<ExpenseTrendResult> GetExpenseTrendAsync(PurchaseListFilter filter, string dimension);
+
     /// <summary>All purchases matching the filter (no paging) — used by CSV/PDF export.</summary>
     Task<List<Purchase>> GetFilteredForExportAsync(PurchaseListFilter filter);
 

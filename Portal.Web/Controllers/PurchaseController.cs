@@ -196,6 +196,42 @@ public class PurchaseController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// AJAX JSON: expense-trend line-chart data over the SAME filtered set as the list/KPIs, grouped
+    /// by category or supplier. Feeds the collapsible "Expense Trend" section on the Purchases page.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> AxGetExpenseTrend(
+        int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId,
+        int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm,
+        bool includePayroll = false, string dimension = "category")
+    {
+        try
+        {
+            var filter = new PurchaseListFilter
+            {
+                SupplierId = supplierId,
+                ExpenseCategoryId = expenseCategoryId,
+                PurchaseOriginTypeId = purchaseOriginTypeId,
+                PurchaseTypeId = purchaseTypeId,
+                VatPeriodId = vatPeriodId,
+                DateFrom = dateFrom,
+                DateTo = dateTo,
+                SearchTerm = searchTerm,
+                IncludePayroll = includePayroll
+                // SortBy is irrelevant to an aggregation.
+            };
+
+            var dim = dimension == "supplier" ? "supplier" : "category"; // whitelist
+            var result = await _purchaseService.GetExpenseTrendAsync(filter, dim);
+            return Json(new { success = true, data = result });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Failed to load the expense trend." });
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> ExportCsv(int? supplierId, int? expenseCategoryId, int? purchaseOriginTypeId, int? purchaseTypeId, int? vatPeriodId, DateOnly? dateFrom, DateOnly? dateTo, string? searchTerm, string? sortBy, bool includePayroll = false)
     {

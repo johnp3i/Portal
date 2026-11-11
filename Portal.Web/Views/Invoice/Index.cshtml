@@ -4,6 +4,25 @@
     ViewData["Title"] = "Invoices";
 }
 
+<style>
+    /* Soft-deleted (retired draft) invoice rows: struck-through + dimmed so the number stays
+       visible in the register but is clearly inactive. Action links remain usable (Detail/PDF). */
+    tr.invoice-row-deleted td {
+        text-decoration: line-through;
+        color: #8a9aaa;
+        opacity: 0.75;
+    }
+    tr.invoice-row-deleted .pill,
+    tr.invoice-row-deleted .tbl-action,
+    tr.invoice-row-deleted .invoice-deleted-meta {
+        text-decoration: none;
+    }
+    tr.invoice-row-deleted .tbl-action {
+        opacity: 1;
+        color: inherit;
+    }
+</style>
+
 <div class="topbar">
     <div>
         <div class="eyebrow"><span class="dot"></span> Invoices</div>
@@ -134,14 +153,22 @@
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        <tr data-href="@Url.Action("Detail", "Invoice", new { id = item.Id })">
+                        <tr data-href="@Url.Action("Detail", "Invoice", new { id = item.Id })"
+                            class="@(item.IsDeleted ? "invoice-row-deleted" : "")">
                             <td>
                                 <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" style="color:inherit;text-decoration:none;"><strong>@item.InvoiceNumber</strong></a>
                                 @if (item.HasCreditNote)
                                 {
                                     <span title="A credit note has been applied to this invoice" style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.03em;color:#129867;background:rgba(18,152,103,.1);border:1px solid rgba(18,152,103,.2);vertical-align:middle;">• CN</span>
                                 }
-                                @if (item.AcceptanceStatus == "accepted")
+                                @if (item.IsDeleted)
+                                {
+                                    <div class="invoice-deleted-meta" style="font-size:11px;color:#8a9aaa;font-weight:600;margin-top:3px;"
+                                         title="Deleted by @(item.DeletedByName ?? "Unknown")@(item.DeletedAtLocalDisplay != null ? " · " + item.DeletedAtLocalDisplay : "")">
+                                        Deleted by @(item.DeletedByName ?? "Unknown")@(item.DeletedAtLocalDisplay != null ? " · " + item.DeletedAtLocalDisplay : "")
+                                    </div>
+                                }
+                                else if (item.AcceptanceStatus == "accepted")
                                 {
                                     <div style="font-size:11px;color:#129867;font-weight:600;margin-top:3px;">✓ Accepted</div>
                                 }
@@ -155,7 +182,12 @@
                             <td data-mobile="hide">@item.DueDate.ToString("yyyy-MM-dd")</td>
                             <td data-mobile="amount">@(ViewBag.CurrencySymbol)@item.TotalAmount.ToString("N2")</td>
                             <td data-mobile="status">
-                                @{
+                                @if (item.IsDeleted)
+                                {
+                                    <span class="pill pill-red">Deleted</span>
+                                }
+                                else
+                                {
                                     var statusPillClass = item.InvoiceStatusTypeId switch
                                     {
                                         1 => "pill-gold",
@@ -163,11 +195,16 @@
                                         3 => "pill-red",
                                         _ => "pill-gold"
                                     };
+                                    <span class="pill @statusPillClass">@item.StatusName</span>
                                 }
-                                <span class="pill @statusPillClass">@item.StatusName</span>
                             </td>
                             <td data-mobile="hide">
-                                @{
+                                @if (item.IsDeleted)
+                                {
+                                    <span style="color:#8a9aaa;">—</span>
+                                }
+                                else
+                                {
                                     var financialPillClass = item.InvoiceFinancialStatusTypeId switch
                                     {
                                         1 => "pill-gold",
@@ -178,22 +215,30 @@
                                         6 => "pill-amber",
                                         _ => "pill-gold"
                                     };
+                                    <span class="pill @financialPillClass">@FormatStatusName(item.FinancialStatusName)</span>
                                 }
-                                <span class="pill @financialPillClass">@FormatStatusName(item.FinancialStatusName)</span>
                             </td>
                             <td data-mobile="hide" style="white-space:nowrap;">
-                                @await Component.InvokeAsync("AttachmentCount", new { entityType = "Invoice", entityId = item.Id })
-                                <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Detail</a>
-                                @if (item.InvoiceStatusTypeId == 1)
+                                @if (item.IsDeleted)
                                 {
-                                    <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                    <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Detail</a>
+                                    <a href="javascript:void(0)" onclick="downloadInvoicePdf(@item.Id)" class="tbl-action tbl-action--secondary">PDF</a>
                                 }
-                                <a asp-action="Preview" asp-controller="Invoice" asp-route-id="@item.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>
-                                <a href="javascript:void(0)" onclick="downloadInvoicePdf(@item.Id)" class="tbl-action tbl-action--secondary">PDF</a>
-                                <a href="javascript:void(0)" onclick="downloadInvoiceExcel(@item.Id)" class="tbl-action tbl-action--secondary">Excel</a>
-                                @if (item.InvoiceStatusTypeId == 1)
+                                @if (!item.IsDeleted)
                                 {
-                                    <a href="javascript:void(0)" onclick="deleteInvoice(@item.Id)" class="tbl-action tbl-action--danger">Delete</a>
+                                    @await Component.InvokeAsync("AttachmentCount", new { entityType = "Invoice", entityId = item.Id })
+                                    <a asp-action="Detail" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Detail</a>
+                                    @if (item.InvoiceStatusTypeId == 1)
+                                    {
+                                        <a asp-action="Edit" asp-controller="Invoice" asp-route-id="@item.Id" class="tbl-action tbl-action--primary">Edit</a>
+                                    }
+                                    <a asp-action="Preview" asp-controller="Invoice" asp-route-id="@item.Id" target="_blank" class="tbl-action tbl-action--secondary">Preview</a>
+                                    <a href="javascript:void(0)" onclick="downloadInvoicePdf(@item.Id)" class="tbl-action tbl-action--secondary">PDF</a>
+                                    <a href="javascript:void(0)" onclick="downloadInvoiceExcel(@item.Id)" class="tbl-action tbl-action--secondary">Excel</a>
+                                    @if (item.InvoiceStatusTypeId == 1)
+                                    {
+                                        <a href="javascript:void(0)" onclick="deleteInvoice(@item.Id)" class="tbl-action tbl-action--danger">Delete</a>
+                                    }
                                 }
                             </td>
                         </tr>
@@ -334,16 +379,24 @@
             if (!firstResult.isConfirmed) return;
 
             const secondResult = await Swal.fire({
-                title: 'Final Warning',
-                text: 'This action cannot be easily undone. Are you sure you want to proceed?',
+                title: 'This cannot be undone',
+                html: 'Deleting an invoice is <strong>permanent</strong> — it cannot be restored, and its invoice number is retired forever (shown struck-through in the register).<br><br>Type <strong>DELETE</strong> to confirm.',
                 icon: 'warning',
+                input: 'text',
+                inputPlaceholder: 'Type DELETE',
+                inputAttributes: { autocapitalize: 'off', autocorrect: 'off', autocomplete: 'off' },
                 showCancelButton: true,
                 confirmButtonColor: '#C24A4A',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, delete permanently'
+                confirmButtonText: 'Delete permanently',
+                inputValidator: function (value) {
+                    if (value !== 'DELETE') {
+                        return 'You must type DELETE (in capitals) to confirm.';
+                    }
+                }
             });
 
-            if (!secondResult.isConfirmed) return;
+            if (!secondResult.isConfirmed || secondResult.value !== 'DELETE') return;
 
             BlockUI.show('Deleting...');
             try {

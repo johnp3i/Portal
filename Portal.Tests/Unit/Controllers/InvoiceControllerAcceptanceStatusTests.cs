@@ -97,6 +97,9 @@ public class InvoiceControllerAcceptanceStatusTests
             Mock.Of<IProductAutocompleteService>(),
             Mock.Of<ICreditNoteService>(),
             portalDbContext,
+            new MembershipDbContext(new DbContextOptionsBuilder<MembershipDbContext>()
+                .UseInMemoryDatabase(databaseName: $"Membership_InvCtrlAccept_{Guid.NewGuid()}").Options),
+            Mock.Of<IBusinessTimeZoneService>(),
             _loggerMock.Object);
 
         // Set up TempData to avoid null reference exceptions

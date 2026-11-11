@@ -27,7 +27,7 @@ public class DocumentSoftDeleteService : IDocumentSoftDeleteService
         _quotationRepository = quotationRepository;
     }
 
-    public async Task<ServiceResult> SoftDeleteInvoiceAsync(int invoiceId)
+    public async Task<ServiceResult> SoftDeleteInvoiceAsync(int invoiceId, string? userId)
     {
         try
         {
@@ -46,7 +46,10 @@ public class DocumentSoftDeleteService : IDocumentSoftDeleteService
             if (invoice.InvoiceStatusTypeId != DraftInvoiceStatusTypeId)
                 return ServiceResult.Fail("Only draft invoices can be deleted.");
 
-            await _invoiceRepository.SoftDeleteAsync(invoiceId, businessId);
+            // Permanent soft-delete, attributed to the acting user. There is intentionally NO
+            // restore path: restoring a draft could reintroduce an invoice into an already-filed
+            // VAT period, and a retired invoice number must stay retired.
+            await _invoiceRepository.SoftDeleteAsync(invoiceId, businessId, userId);
             return ServiceResult.Ok();
         }
         catch (Exception)

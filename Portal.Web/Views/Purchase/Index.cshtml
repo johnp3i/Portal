@@ -487,6 +487,39 @@
     var endPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
 }
 
+<!-- Expense Trend (collapsible, collapsed by default) -->
+<section class="glass card-pad" id="expenseTrendSection" style="margin-bottom:22px;"
+         data-currency="@Model.CurrencySymbol"
+         data-supplier-id="@Model.SupplierId"
+         data-expense-category-id="@Model.ExpenseCategoryId"
+         data-origin-type-id="@Model.PurchaseOriginTypeId"
+         data-purchase-type-id="@Model.PurchaseTypeId"
+         data-vat-period-id="@Model.VatPeriodId"
+         data-date-from="@(Model.DateFrom?.ToString("yyyy-MM-dd"))"
+         data-date-to="@(Model.DateTo?.ToString("yyyy-MM-dd"))"
+         data-search-term="@Model.SearchTerm"
+         data-include-payroll="@(Model.IncludePayroll ? "true" : "false")">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <button type="button" id="expenseTrendToggle"
+                style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;cursor:pointer;font-family:inherit;">
+            <svg class="trend-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D5EA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s;"><polyline points="9 18 15 12 9 6"/></svg>
+            <span style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;color:#0B1B28;">Expense Trend</span>
+        </button>
+        <div style="display:inline-flex;background:var(--bg2, #EEF4F8);border:1px solid rgba(13,94,166,.10);border-radius:12px;padding:3px;gap:3px;">
+            <button type="button" class="trend-dim-btn active" data-trend-dimension="category">By Category</button>
+            <button type="button" class="trend-dim-btn" data-trend-dimension="supplier">By Supplier</button>
+        </div>
+    </div>
+
+    <div id="expenseTrendBody" style="display:none;margin-top:18px;">
+        <div id="expenseTrendSpinner" style="display:none;align-items:center;justify-content:center;height:320px;color:#5E7385;font-size:13px;">Loading…</div>
+        <div id="expenseTrendEmpty" style="display:none;padding:40px 0;text-align:center;color:#5E7385;font-size:14px;"></div>
+        <div style="position:relative;height:340px;">
+            <canvas id="expenseTrendChart"></canvas>
+        </div>
+    </div>
+</section>
+
 <!-- Purchase Table -->
 <section class="glass card-pad">
     @if (Model.Purchases != null && Model.Purchases.Count > 0)
@@ -903,6 +936,25 @@
        then a full-width actions row (Edit / Mark paid / Cancel). */
     /* The phone card-list layout for #purchaseTable is defined in the page-head
        section so it applies before first paint — no flash of the desktop table. */
+
+    /* Expense Trend collapsible section */
+    #expenseTrendSection.is-open .trend-chevron { transform: rotate(90deg); }
+    #expenseTrendSection .trend-dim-btn {
+        padding: 7px 14px;
+        border: none;
+        border-radius: 9px;
+        font-weight: 700;
+        font-size: 12.5px;
+        cursor: pointer;
+        background: transparent;
+        color: #5E7385;
+        transition: background .15s, color .15s, box-shadow .15s;
+    }
+    #expenseTrendSection .trend-dim-btn.active {
+        background: #fff;
+        color: #0D5EA6;
+        box-shadow: 0 1px 4px rgba(13, 94, 166, .12);
+    }
 </style>
 
 <script>
@@ -1372,3 +1424,7 @@ function formatDateISO(d) {
     });
 })();
 </script>
+
+<!-- Expense Trend chart. Chart.js is self-hosted (not a third-party CDN) to avoid supply-chain risk. -->
+<script src="~/js/vendor/chart.umd.min.js"></script>
+<script src="~/js/purchase-expense-trend.js"></script>

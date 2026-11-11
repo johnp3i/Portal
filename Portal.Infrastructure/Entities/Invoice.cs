@@ -56,6 +56,12 @@ public class Invoice
 
     public DateTime? DeletedAtUtc { get; set; }
 
+    /// <summary>
+    /// The user who soft-deleted this (draft) invoice. NULL for invoices never deleted, or deleted
+    /// before this column existed. Resolved to a display name from the Membership database for the UI.
+    /// </summary>
+    public string? DeletedByUserId { get; set; }
+
     public int? LeadRequestId { get; set; }
 
     // Navigation properties

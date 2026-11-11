@@ -177,12 +177,12 @@ public class SearchPaginationPropertyTests
             productRepoMock
                 .Setup(r => r.GetPagedByBusinessIdAsync(
                     TestBusinessId,
-                    searchTerm,
+                    It.Is<ProductListFilter>(f => f.Search == searchTerm),
                     0,
                     DefaultPageSize))
                 .ReturnsAsync((pageItems, totalCount));
 
-            var result = await service.GetProductsPagedAsync(searchTerm, 1, DefaultPageSize);
+            var result = await service.GetProductsPagedAsync(new ProductListFilter { Search = searchTerm }, 1, DefaultPageSize);
 
             // Assert: all returned items match the search term
             foreach (var item in result.Items)
@@ -224,12 +224,12 @@ public class SearchPaginationPropertyTests
             productRepoMock
                 .Setup(r => r.GetPagedByBusinessIdAsync(
                     TestBusinessId,
-                    (string?)null,
+                    It.Is<ProductListFilter>(f => f.Search == null),
                     0,
                     DefaultPageSize))
                 .ReturnsAsync((pageItems, totalCount));
 
-            var result = await service.GetProductsPagedAsync(null, 1, DefaultPageSize);
+            var result = await service.GetProductsPagedAsync(new ProductListFilter { Search = null }, 1, DefaultPageSize);
 
             // Assert: returned items count matches expected page items
             Assert.Equal(pageItems.Count, result.Items.Count);
@@ -257,13 +257,13 @@ public class SearchPaginationPropertyTests
             productRepoMock
                 .Setup(r => r.GetPagedByBusinessIdAsync(
                     TestBusinessId,
-                    It.IsAny<string?>(),
+                    It.IsAny<ProductListFilter>(),
                     It.IsAny<int>(),
                     DefaultPageSize))
-                .Callback<int, string?, int, int>((bId, search, offset, ps) => capturedSearch = search)
+                .Callback<int, ProductListFilter, int, int>((bId, f, offset, ps) => capturedSearch = f.Search)
                 .ReturnsAsync((new List<Product>(), 0));
 
-            await service.GetProductsPagedAsync(searchTerm, 1, DefaultPageSize);
+            await service.GetProductsPagedAsync(new ProductListFilter { Search = searchTerm }, 1, DefaultPageSize);
 
             // Assert: the search term is passed correctly to the repository
             Assert.Equal(searchTerm, capturedSearch);
@@ -327,7 +327,7 @@ public class SearchPaginationPropertyTests
             productRepoMock
                 .Setup(r => r.GetPagedByBusinessIdAsync(
                     TestBusinessId,
-                    (string?)null,
+                    It.IsAny<ProductListFilter>(),
                     (page - 1) * DefaultPageSize,
                     DefaultPageSize))
                 .ReturnsAsync((page > totalPages && totalCount > 0 ? new List<Product>() : pageItems, totalCount));
@@ -353,13 +353,13 @@ public class SearchPaginationPropertyTests
                 productRepoMock
                     .Setup(r => r.GetPagedByBusinessIdAsync(
                         TestBusinessId,
-                        (string?)null,
+                        It.IsAny<ProductListFilter>(),
                         0,
                         DefaultPageSize))
                     .ReturnsAsync((firstPageItems, totalCount));
             }
 
-            var result = await service.GetProductsPagedAsync(null, page, DefaultPageSize);
+            var result = await service.GetProductsPagedAsync(new ProductListFilter(), page, DefaultPageSize);
 
             // Assert: result contains at most 15 items
             Assert.True(result.Items.Count <= DefaultPageSize,
@@ -439,7 +439,7 @@ public class SearchPaginationPropertyTests
             productRepoMock
                 .Setup(r => r.GetPagedByBusinessIdAsync(
                     TestBusinessId,
-                    (string?)null,
+                    It.IsAny<ProductListFilter>(),
                     (page - 1) * DefaultPageSize,
                     DefaultPageSize))
                 .ReturnsAsync((page > totalPages && totalCount > 0 ? new List<Product>() : pageItems, totalCount));
@@ -450,13 +450,13 @@ public class SearchPaginationPropertyTests
                 productRepoMock
                     .Setup(r => r.GetPagedByBusinessIdAsync(
                         TestBusinessId,
-                        (string?)null,
+                        It.IsAny<ProductListFilter>(),
                         0,
                         DefaultPageSize))
                     .ReturnsAsync((pageItems, totalCount));
             }
 
-            var result = await service.GetProductsPagedAsync(null, page, DefaultPageSize);
+            var result = await service.GetProductsPagedAsync(new ProductListFilter(), page, DefaultPageSize);
 
             // Assert: never exceeds page size
             Assert.True(result.Items.Count <= DefaultPageSize,
@@ -484,12 +484,12 @@ public class SearchPaginationPropertyTests
             productRepoMock
                 .Setup(r => r.GetPagedByBusinessIdAsync(
                     TestBusinessId,
-                    It.IsAny<string?>(),
+                    It.IsAny<ProductListFilter>(),
                     It.IsAny<int>(),
                     DefaultPageSize))
                 .ReturnsAsync((new List<Product>(), 0));
 
-            var result = await service.GetProductsPagedAsync(null, page, DefaultPageSize);
+            var result = await service.GetProductsPagedAsync(new ProductListFilter(), page, DefaultPageSize);
 
             // Assert: empty items
             Assert.Empty(result.Items);

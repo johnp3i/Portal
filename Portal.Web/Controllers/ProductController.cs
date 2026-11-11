@@ -39,14 +39,41 @@ public class ProductController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(string? search, int page = 1)
+    public async Task<IActionResult> Index(
+        string? search,
+        string? status,
+        int? supplierId,
+        int? productTypeId,
+        DateOnly? createdFrom,
+        DateOnly? createdTo,
+        string? sort,
+        int page = 1)
     {
         if (search != null && search.Length > 200)
             search = search[..200];
 
-        var pagedResult = await _productService.GetProductsPagedAsync(search, page);
+        // Whitelist the status + sort keys here too, so ViewBag reflects exactly what the query used.
+        var normalizedStatus = (status ?? "active").ToLowerInvariant();
+        if (normalizedStatus is not ("active" or "inactive" or "all"))
+            normalizedStatus = "active";
+
+        var normalizedSort = (sort ?? "code").ToLowerInvariant();
+        if (normalizedSort is not ("code" or "created_desc" or "created_asc" or "price_desc" or "price_asc" or "lastused_desc"))
+            normalizedSort = "code";
+
+        var filter = new ProductListFilter
+        {
+            Search = search,
+            Status = normalizedStatus,
+            SupplierId = supplierId,
+            ProductTypeId = productTypeId,
+            CreatedFrom = createdFrom,
+            CreatedTo = createdTo,
+            Sort = normalizedSort
+        };
+
+        var pagedResult = await _productService.GetProductsPagedAsync(filter, page);
         var kpis = await _productService.GetKpisAsync();
-        var topProducts = await _productService.GetTopProductsByUsageAsync(10);
         var suppliers = await _supplierService.GetActiveSuppliersAsync();
         var productTypes = await _productTypeRepository.GetAllAsync();
 
@@ -56,8 +83,8 @@ public class ProductController : Controller
 
         ViewBag.PagedResult = pagedResult;
         ViewBag.SearchTerm = search;
+        ViewBag.Filter = filter;
         ViewBag.Kpis = kpis;
-        ViewBag.TopProducts = topProducts;
         ViewBag.Suppliers = suppliers;
         ViewBag.ProductTypes = productTypes;
         ViewBag.TierCounts = tierCounts;
@@ -130,6 +157,45 @@ public class ProductController : Controller
         };
 
         return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AxGetProductPerformance(string period = "year")
+    {
+        try
+        {
+            // Whitelist the period key; anything unexpected falls back to the default.
+            var normalizedPeriod = (period ?? "year").ToLowerInvariant();
+            if (normalizedPeriod is not ("year" or "last12" or "quarter" or "all"))
+                normalizedPeriod = "year";
+
+            var result = await _productService.GetProductPerformanceAsync(normalizedPeriod, 10);
+
+            // Resolve the business currency symbol for the revenue chart formatting.
+            var businessId = _tenantService.CurrentBusinessId;
+            var dbContext = HttpContext.RequestServices.GetRequiredService<Portal.Infrastructure.Data.PortalDbContext>();
+            var currencySymbol = await dbContext.BusinessProfiles.IgnoreQueryFilters()
+                .Where(bp => bp.BusinessId == businessId)
+                .Select(bp => bp.CurrencySymbol)
+                .FirstOrDefaultAsync();
+            result.CurrencySymbol = string.IsNullOrEmpty(currencySymbol) ? "€" : currencySymbol;
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    periodLabel = result.PeriodLabel,
+                    currencySymbol = result.CurrencySymbol,
+                    revenue = result.TopByRevenue.Select(p => new { description = p.Description, value = p.Value }),
+                    units = result.TopByUnits.Select(p => new { description = p.Description, value = p.Value })
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An unexpected error occurred while loading product performance." });
+        }
     }
 
     [HttpGet]
