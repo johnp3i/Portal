@@ -172,14 +172,20 @@
         .prepared-by .pb-name { font-weight: 600; }
         .prepared-by .pb-detail { color: var(--muted); }
 
-        /* Tables */
+        /* Tables
+           NOTE: do NOT set break-inside:avoid on the table itself. A line-item table can be taller
+           than a page; forbidding an internal break makes the PDF engine push the WHOLE table to a
+           fresh page, leaving the previous page mostly blank. Instead we let the table flow, keep
+           each ROW intact, and repeat the column header on every page the table spans. */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 16px;
-            break-inside: avoid;
-            page-break-inside: avoid;
         }
+        /* Repeat the header row at the top of each page a table continues onto. */
+        thead { display: table-header-group; }
+        /* Never split a single row across a page boundary. */
+        tr { break-inside: avoid; page-break-inside: avoid; }
         th {
             font-size: 11px;
             font-weight: 700;
@@ -238,10 +244,12 @@
             margin-top: 6px;
         }
 
-        /* Section block — each section starts on a fresh page if it won't fit */
+        /* Section block.
+           A section's item table can exceed one page, so the block must be allowed to break
+           internally (its rows stay intact via the tr rule above). We only force a fresh page
+           BETWEEN sections, so each additional section starts cleanly — without stranding a tall
+           first section on its own near-empty page. */
         .section-block {
-            page-break-inside: avoid;
-            break-inside: avoid;
             margin-top: 28px;
         }
         .section-block + .section-block {
@@ -703,8 +711,12 @@
         </div>
     }
 
-    <!-- Document Summary (grand totals + validity + notes + signature) -->
-    <div style="page-break-before:always;break-before:always;">
+    <!-- Document Summary (grand totals + validity + notes + signature).
+         No forced page break: let it flow directly after the last items so it fills the space left
+         on the page instead of always jumping to a fresh one. The per-section summary table and the
+         grand-total/signature blocks each carry their own break-inside:avoid, so nothing splits
+         awkwardly; if the whole summary can't fit, it moves to the next page as a unit. -->
+    <div>
 
     <!-- Summary Table (per-section breakdown) -->
     @if (Model.IsGrandTotalShown)

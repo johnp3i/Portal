@@ -792,20 +792,24 @@ public class PurchaseRepository : GenericStoredProcedureRepository<Purchase>
             // â€” so the VAT period is LEFT JOINed and the comparison is a plain column expression.
             var fromWhereWithVat = BuildListFromWhere(businessId, filter, p, includeVatJoin: true);
 
+            // NOTE: SUM over an empty result set returns NULL (not 0), so every count/amount
+            // aggregate is wrapped in ISNULL(..., 0). Without this, a filter that matches no rows
+            // makes SQL return a single all-NULL row, and EF throws SqlNullValueException mapping a
+            // NULL into the non-nullable int columns on PurchaseListAggregates.
             var sql = $@"
                 SELECT
-                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 THEN 1 ELSE 0 END) AS [TotalCount],
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 THEN 1 ELSE 0 END), 0) AS [TotalCount],
                     ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 THEN [purchase].[Purchase].[TotalAmount] ELSE 0 END), 0) AS [TotalSpend],
                     ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 THEN [purchase].[Purchase].[VatAmount] ELSE 0 END), 0) AS [TotalVat],
-                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 1 THEN 1 ELSE 0 END) AS [DomesticCount],
-                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 2 THEN 1 ELSE 0 END) AS [EuRcCount],
-                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 4 THEN 1 ELSE 0 END) AS [EuPaidCount],
-                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 3 THEN 1 ELSE 0 END) AS [NonEuCount],
-                    SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 1 THEN 1 ELSE 0 END), 0) AS [DomesticCount],
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 2 THEN 1 ELSE 0 END), 0) AS [EuRcCount],
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 4 THEN 1 ELSE 0 END), 0) AS [EuPaidCount],
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0 AND [purchase].[Purchase].[PurchaseOriginTypeId] = 3 THEN 1 ELSE 0 END), 0) AS [NonEuCount],
+                    ISNULL(SUM(CASE WHEN [purchase].[Purchase].[IsCancelled] = 0
                               AND [vat].[VatSubmissionPeriod].[Id] IS NOT NULL
                               AND ([purchase].[Purchase].[InvoiceDate] < [vat].[VatSubmissionPeriod].[PeriodStartDate]
                                    OR [purchase].[Purchase].[InvoiceDate] > [vat].[VatSubmissionPeriod].[PeriodEndDate])
-                         THEN 1 ELSE 0 END) AS [OutdatedCount]
+                         THEN 1 ELSE 0 END), 0) AS [OutdatedCount]
                 {fromWhereWithVat}";
 
             var row = (await _context.Database.SqlQueryRaw<PurchaseListAggregates>(sql, p.ToArray()).ToListAsync()).FirstOrDefault();
