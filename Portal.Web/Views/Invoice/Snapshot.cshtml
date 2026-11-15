@@ -441,7 +441,16 @@
     @{
         // Also keep the grand-total card for a single group when it carries information the
         // per-section card does not show — a bulk/invoice-level discount (adjustmentLine).
-        var showGrandTotal = invoice.IsGrandTotalShown && (hasMultipleGroups || adjustmentLine != null);
+        // With a single group, the grand total would duplicate that group's own totals card — but only
+        // if that card is actually visible. The General (unsectioned) group always shows its card; a
+        // named section shows it only when IsTotalsTableShown is on. If the lone group's card is
+        // hidden, the grand total is the only place the totals appear, so it must be shown.
+        var singleGroupCardVisible = !hasMultipleGroups
+            && (unsectionedLines.Any()
+                || lineItemSections.Any(s => s.IsTotalsTableShown
+                    && sectionedLineGroups.ContainsKey(s.Id) && sectionedLineGroups[s.Id].Any()));
+        var showGrandTotal = invoice.IsGrandTotalShown
+            && (hasMultipleGroups || adjustmentLine != null || !singleGroupCardVisible);
     }
     @if (showGrandTotal)
     {
