@@ -1,4 +1,4 @@
-﻿@using Portal.Infrastructure.Models.Payroll
+@using Portal.Infrastructure.Models.Payroll
 @model Portal.Web.Models.Payroll.RegisterPageViewModel
 @{
     ViewData["Title"] = "Payroll Register";
@@ -62,6 +62,14 @@
     .emp-opt:hover { background: #F7FAFC; }
     .emp-selectall { font-weight: 700; color: #5a6a7a; border-bottom: 1px solid #eef1f4; border-radius: 0; margin-bottom: 4px; }
     .emp-nomatch { padding: 10px 8px; font-size: 13px; color: #8a96a4; }
+    /* mobile.css hides every ".field label" inside filter cards on phones (field captions are
+       replaced by placeholders there). The dropdown rows are labels too, so they were hidden and
+       only the search box showed. The ID selector below outranks that rule for the option rows only. */
+    @@media (max-width: 768px) {
+        #filterSection .field label.emp-opt { display: flex !important; }
+        #filterSection .emp-panel { min-width: 0; }
+        #filterSection .emp-opt { padding: 10px 8px; font-size: 14px; }
+    }
 
     /* ===== Per-employee preview ledger tables (R14.7, R15.6) ===== */
     /* Horizontally scrollable wrapper so a full 12-month range (12 month cols + Total + "%")

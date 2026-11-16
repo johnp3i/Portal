@@ -548,7 +548,9 @@ public class PayrollController : Controller
             if (pdfBytes == null || pdfBytes.Length == 0)
                 return NotFound();
 
-            return File(pdfBytes, "application/pdf", $"payslip_{payslipId}.pdf");
+            var payslipDetail = await _payrollService.GetPayslipDetailAsync(payslipId, businessId);
+            var fileName = PayslipFileNameBuilder.Build(payslipDetail?.EmployeeName, payslipDetail?.Year ?? 0, payslipDetail?.Month ?? 0);
+            return File(pdfBytes, "application/pdf", fileName);
         }
         catch (Exception ex)
         {

@@ -1904,6 +1904,25 @@
         width: 100% !important;
     }
 
+    /* Wrapper rows that carry inline "display:flex;flex-wrap:wrap" are otherwise caught by the
+       generic mobile rule that forces flex-direction:column on every inline flex-wrap element.
+       A WRAPPING column container with 100%-basis children breaks into extra columns that spill
+       to the right and are clipped by the panel's overflow:hidden — the fields vanish while their
+       height is still reserved, leaving a tall blank gap. Force these rows back to a normal
+       wrapping ROW and make each field a full-width item (width-based, so no column overflow).
+       The extra attribute selector raises specificity above the generic column rule. */
+    .filter-panel.expanded > div[style*="display:flex"] {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+
+    .filter-panel.expanded > div[style*="display:flex"] > .field {
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+
     /* Search field — always full width */
     .filter-panel.expanded > .field:has(input[type="text"]),
     .filter-panel.expanded > .field:has(input[type="search"]),

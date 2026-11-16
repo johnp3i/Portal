@@ -66,7 +66,7 @@ public class PayslipEmailService : IPayslipEmailService
 
             // 5. Build filename
             var monthName = CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(payslip.Month);
-            var filename = $"{payslip.EmployeeName}_Payslip_{monthName}_{payslip.Year}.pdf";
+            var filename = PayslipFileNameBuilder.Build(payslip.EmployeeName, payslip.Year, payslip.Month);
 
             // 6. Send email with attachment
             await _emailService.SendPayslipEmailAsync(

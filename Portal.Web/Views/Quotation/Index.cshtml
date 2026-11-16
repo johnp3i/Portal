@@ -1,6 +1,14 @@
 @model Portal.Web.Models.QuotationListViewModel
 @{
     ViewData["Title"] = "Quotations";
+
+    // Active-filter count for the mobile Filters button badge.
+    var activeFilterCount =
+        (Model.StatusFilter.HasValue ? 1 : 0)
+        + (Model.CustomerFilter.HasValue ? 1 : 0)
+        + (Model.DateFrom.HasValue ? 1 : 0)
+        + (Model.DateTo.HasValue ? 1 : 0)
+        + (!string.IsNullOrWhiteSpace(Model.SearchTerm) ? 1 : 0);
 }
 
 <div class="topbar">
@@ -9,18 +17,31 @@
         <h1 class="topbar-heading">Quotation List</h1>
         <p class="topbar-subtitle">Filter, review, and manage quotations with full commercial traceability.</p>
     </div>
-    <div class="topbar-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+    <div class="topbar-actions topbar-actions-desktop" style="display:flex;gap:12px;flex-wrap:wrap;">
         <a class="btn btn-primary" asp-action="Create" asp-controller="Quotation">Create Quotation</a>
     </div>
 </div>
 
-<section class="glass card-pad">
+<!-- Mobile-only action bar. Hidden on desktop; does not touch the topbar above.
+     [ + Create (flex) | Filters (count) ] — see .kiro/docs/mobile-action-bar-pattern.md -->
+<div class="mobile-action-bar">
+    <a asp-action="Create" asp-controller="Quotation" class="mab-btn mab-primary">+ Create</a>
+
+    <button type="button" class="mab-btn mab-ghost filter-toggle" aria-expanded="false" aria-controls="quotationFilterPanel">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
+        <span>Filters</span>
+        @if (activeFilterCount > 0)
+        {
+            <span class="mab-count">@activeFilterCount</span>
+        }
+    </button>
+</div>
+
+<!-- Filter Panel (own card, separate from the table card) -->
+<section class="glass card-pad mobile-filter-card" style="margin-bottom:22px;">
     <form id="quotationFilterForm" method="get" asp-action="Index" asp-controller="Quotation">
-        <button type="button" class="filter-toggle" aria-expanded="false" aria-controls="quotationFilterPanel">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h18M7 9h10M10 14h4"/></svg>
-            Filters
-        </button>
-        <div class="filter-panel" id="quotationFilterPanel" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="filter-panel" id="quotationFilterPanel">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
             <div class="field" style="min-width:180px;">
                 <label>Search</label>
                 <input type="text" name="search" value="@Model.SearchTerm" placeholder="Search by reference or customer..." />
@@ -66,10 +87,24 @@
             <button type="button" class="period-shortcut" onclick="setQuotationPeriod('this_year')">This Year</button>
             <button type="button" class="period-shortcut" onclick="setQuotationPeriod('last_year')">Last Year</button>
             <button type="button" class="period-shortcut" onclick="setQuotationPeriod('all')">All Time</button>
+            <select class="mobile-period-select" onchange="if(this.value) setQuotationPeriod(this.value)">
+                <option value="">Quick date range...</option>
+                <option value="this_month">This Month</option>
+                <option value="last_month">Last Month</option>
+                <option value="last_3">Last 3 Months</option>
+                <option value="last_6">Last 6 Months</option>
+                <option value="this_year">This Year</option>
+                <option value="last_year">Last Year</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
         </div>
     </form>
+</section>
 
-    <div style="margin-top:18px;">
+<!-- Quotation table (own card) -->
+<section class="glass card-pad">
+    <div>
         @if (Model.PagedQuotations.Items != null && Model.PagedQuotations.Items.Count > 0)
         {
             <div class="table-responsive index-table">
