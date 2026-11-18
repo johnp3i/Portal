@@ -7,6 +7,7 @@ using Portal.Infrastructure.Entities.Identity;
 using Portal.Infrastructure.Interceptors;
 using Portal.Infrastructure.Repositories;
 using Portal.Infrastructure.Repositories.Import;
+using Portal.Infrastructure.Repositories.Insight;
 using Portal.Infrastructure.Repositories.Sales;
 using Portal.Infrastructure.Services;
 using Portal.Infrastructure.Services.Import;
@@ -491,6 +492,19 @@ builder.Services.AddScoped<CreditNoteApplicationRepository>(sp =>
 builder.Services.AddScoped<ICreditNoteService, CreditNoteService>();
 builder.Services.AddScoped<ICreditNoteRenderer, CreditNoteRenderer>();
 
+// --- Customer Purchases Dashboard ---
+builder.Services.AddScoped<CustomerPurchasesRepository>(sp =>
+    new CustomerPurchasesRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<FeatureInterestRepository>(sp =>
+    new FeatureInterestRepository(sp.GetRequiredService<PortalDbContext>()));
+builder.Services.AddScoped<ICustomerPurchasesService>(sp => new CustomerPurchasesService(
+    sp.GetRequiredService<CustomerPurchasesRepository>(),
+    sp.GetRequiredService<FeatureInterestRepository>(),
+    sp.GetRequiredService<CustomerRepository>(),
+    sp.GetRequiredService<ICurrentTenantService>(),
+    TimeProvider.System,
+    sp.GetRequiredService<ILogger<CustomerPurchasesService>>()));
+builder.Services.AddScoped<ICustomerPurchasesExcelService, CustomerPurchasesExcelService>();
 // --- Customer Statement ---
 builder.Services.AddScoped<StatementRepository>(sp =>
     new StatementRepository(sp.GetRequiredService<PortalDbContext>()));

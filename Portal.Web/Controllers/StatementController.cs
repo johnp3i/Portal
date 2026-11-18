@@ -54,7 +54,11 @@ public class StatementController : Controller
     public async Task<IActionResult> Index(int? customerId)
     {
         var customers = await _customerService.GetCustomersAsync(null, true);
-        var orderedCustomers = customers.OrderBy(c => c.Name).ToList();
+        // A-Z on the trimmed name, case-insensitive. A stray leading space in a stored name would
+        // otherwise sort that customer to the very top of the list.
+        var orderedCustomers = customers
+            .OrderBy(c => (c.Name ?? string.Empty).Trim(), StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
 
         ViewBag.Customers = orderedCustomers;
         ViewBag.SelectedCustomerId = customerId;

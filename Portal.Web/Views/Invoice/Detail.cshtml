@@ -285,6 +285,7 @@
                         <th>Subtotal</th>
                         <th>VAT %</th>
                         <th>Discount</th>
+                        <th>VAT Amount</th>
                         <th>Total</th>
                     </tr>
                 </thead>
@@ -298,6 +299,9 @@
                             : line.Discount;
                         var subtotal = line.Quantity * line.UnitPrice;
                         var lineTotal = subtotal - discountAmount;
+                        // VAT on the line after discount (net line total x VAT rate), shown so the
+                        // user can work out a credit note amount for a specific item (net + VAT).
+                        var lineVatAmount = Math.Round(lineTotal * line.VatRate / 100m, 2, MidpointRounding.AwayFromZero);
                         var productTypeName = line.ProductTypeId switch
                         {
                             1 => "Services",
@@ -335,6 +339,7 @@
                                     <span>—</span>
                                 }
                             </td>
+                            <td>@(ViewBag.CurrencySymbol)@lineVatAmount.ToString("N2")</td>
                             <td><strong>@(ViewBag.CurrencySymbol)@lineTotal.ToString("N2")</strong></td>
                         </tr>
                     }

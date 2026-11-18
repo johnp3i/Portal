@@ -368,6 +368,12 @@ public class FollowUpTaskService : IFollowUpTaskService
 
             var typeNames = await GetTaskTypeNamesAsync();
 
+            // Batch-fetch the subjects of the meetings that spawned these tasks (one query).
+            var meetingIds = tasks.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct().ToList();
+            var meetingSubjectsLookup = meetingIds.Count > 0
+                ? await _meetingRepository.GetSubjectsByIdsAsync(meetingIds, businessId)
+                : new Dictionary<int, string>();
+
             return tasks.Select(t =>
             {
                 string? contactName = null;
@@ -377,6 +383,10 @@ public class FollowUpTaskService : IFollowUpTaskService
                         ? contact.FirstName
                         : $"{contact.FirstName} {contact.LastName}";
                 }
+
+                string? meetingSubject = null;
+                if (t.MeetingId.HasValue)
+                    meetingSubjectsLookup.TryGetValue(t.MeetingId.Value, out meetingSubject);
 
                 // today / tomorrow / upcoming (anything within the look-ahead window beyond tomorrow).
                 var dueDate = t.DueAtUtc.Date;
@@ -391,7 +401,9 @@ public class FollowUpTaskService : IFollowUpTaskService
                     ScheduledTimeUtc = t.ScheduledTimeUtc,
                     ContactName = contactName,
                     Urgency = urgency,
-                    IsProspect = false
+                    IsProspect = false,
+                    MeetingSubject = meetingSubject,
+                    Notes = t.Notes
                 };
             }).ToList();
         }

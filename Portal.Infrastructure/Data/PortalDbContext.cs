@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Portal.Infrastructure.Entities;
 using Portal.Infrastructure.Entities.Billing;
+using Portal.Infrastructure.Entities.Insight;
 using Portal.Infrastructure.Entities.Sales;
 using Portal.Infrastructure.Entities.Stripe;
 using Portal.Infrastructure.Models;
@@ -187,6 +188,9 @@ public class PortalDbContext : DbContext
     public DbSet<ActivitySelfEvaluation> ActivitySelfEvaluations { get; set; } = null!;
     public DbSet<UserPracticeFocus> UserPracticeFocuses { get; set; } = null!;
 
+    // Insight schema
+    public DbSet<FeatureInterest> FeatureInterests { get; set; } = null!;
+
     // Compliance schema
     public DbSet<ApplicationCategory> ApplicationCategories { get; set; } = null!;
     public DbSet<ApplicationType> ApplicationTypes { get; set; } = null!;
@@ -334,6 +338,9 @@ public class PortalDbContext : DbContext
         ConfigureProspectActivity(modelBuilder);
         ConfigureActivitySelfEvaluation(modelBuilder);
         ConfigureUserPracticeFocus(modelBuilder);
+
+        // Insight
+        ConfigureFeatureInterest(modelBuilder);
 
         // Compliance
         ConfigureApplicationCategory(modelBuilder);
@@ -4031,6 +4038,28 @@ public class PortalDbContext : DbContext
         });
     }
 
+    private static void ConfigureFeatureInterest(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FeatureInterest>(entity =>
+        {
+            entity.ToTable("FeatureInterest", "insight");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.FeatureKey).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.CreatedAtUtc).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Business)
+                .WithMany()
+                .HasForeignKey(e => e.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            // One interest row per user per feature per business.
+            entity.HasIndex(e => new { e.BusinessId, e.UserId, e.FeatureKey })
+                .IsUnique()
+                .HasDatabaseName("UX_FeatureInterest_Business_User_Feature");
+        });
+    }
     private static void ConfigureLeadResponseTemplate(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<LeadResponseTemplate>(entity =>
@@ -4979,6 +5008,10 @@ public class PortalDbContext : DbContext
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         modelBuilder.Entity<UserPracticeFocus>()
+            .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
+
+        // Insight entities
+        modelBuilder.Entity<FeatureInterest>()
             .HasQueryFilter(e => e.BusinessId == _currentTenantService.CurrentBusinessId);
 
         // Compliance entities

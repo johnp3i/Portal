@@ -1,0 +1,181 @@
+@using System.Text.Json
+@using Portal.Infrastructure.Models
+@model CustomerPurchasesPageViewModel
+@{
+    var dash = Model.Dashboard;
+    var kpiText = PurchasesKpiText.Build(dash.Kpis, dash.SelectedCurrency);
+    ViewData["Title"] = "Purchases - " + dash.CustomerName;
+
+    var kpis = new (string Id, string Label, bool Warn)[]
+    {
+        ("rev12", "Net revenue, last 12 months", false),
+        ("lifetime", "Lifetime net revenue", false),
+        ("avginv", "Average invoice", false),
+        ("last", "Last purchase", false),
+        ("pending", "Pending invoices", true),
+        ("overdue", "Overdue", true)
+    };
+
+    var periodKey = dash.Period.Key;
+    var periodOptions = new (string Value, string Text)[]
+    {
+        ("last12m", "Last 12 months"),
+        ("thisYear", "This year"),
+        ("lastYear", "Last year"),
+        ("all", "All time"),
+        ("custom", "Custom range")
+    };
+    var isCustom = periodKey == "custom";
+    var teasers = new (string Key, string Title, string Text)[]
+    {
+        ("discounts", "Discounts", "Shows whether this customer gets better terms than usual."),
+        ("price-drift", "Price drift", "Products where the price paid has moved away from the current list price.")
+    };
+}
+
+@section Head {
+    <link rel="stylesheet" href="/css/customer-purchases.css?v=3" />
+}
+
+<div class="cp-page" id="cpRoot" data-customer-id="@dash.CustomerId" data-period-fallback="@(Model.ShowPeriodFallbackWarning ? "true" : "false")">
+
+    <div class="cp-breadcrumb">Sales / <a href="/Customer">Customers</a> / @dash.CustomerName / <b>Purchases</b></div>
+
+    <div class="topbar">
+        <div>
+            <div class="eyebrow"><span class="dot"></span> Customer &middot; Purchases</div>
+            <h1 class="topbar-heading cp-heading">Purchases - @dash.CustomerName</h1>
+            <p class="topbar-subtitle">What this customer buys, how it changes over time and what is still unpaid. Quotations are not included.</p>
+        </div>
+        <div class="cp-actions">
+            <a class="btn btn-secondary" href="/Customer">&larr; Back to Customers</a>
+            <a class="btn btn-secondary" href="/Statement?customerId=@dash.CustomerId">Statement</a>
+            @if (dash.HasAnyInvoices)
+            {
+                <a class="btn btn-primary" id="exportBtn" href="/Customer/Purchases/@dash.CustomerId/AxGetExportPurchases">Export Excel</a>
+            }
+        </div>
+    </div>
+
+    @if (!dash.HasAnyInvoices)
+    {
+        <section class="glass card-pad">
+            <div class="empty-state">
+                <p><b>No invoices yet for this customer</b></p>
+                <p class="cp-muted">This customer has no issued invoices, so there are no purchases to show. Draft and cancelled invoices and quotations are not counted.</p>
+            </div>
+        </section>
+    }
+    else
+    {
+        @Html.AntiForgeryToken()
+
+        <section class="glass card-pad" style="margin-bottom:22px;">
+            <div class="cp-filters">
+                <div class="field" style="min-width:180px;">
+                    <label for="cpPeriod">Period</label>
+                    <select id="cpPeriod">
+                        @foreach (var option in periodOptions)
+                        {
+                            <option value="@option.Value" selected="@(option.Value == periodKey ? "selected" : null)">@option.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" id="cpCustomFields" style="min-width:180px;@(isCustom ? "" : "display:none;")">
+                    <label for="cpFrom">From</label>
+                    <input type="date" id="cpFrom" value="@(dash.Period.From?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="field" id="cpCustomFieldsTo" style="min-width:180px;@(isCustom ? "" : "display:none;")">
+                    <label for="cpTo">To</label>
+                    <input type="date" id="cpTo" value="@(dash.Period.To?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="field" id="cpCurrencyField" style="min-width:0;" @(dash.ShowCurrencySwitch ? null : "hidden")>
+                    <label id="cpCurrencyLabel">Currency</label>
+                    <div class="seg" id="cpCurrencySeg" role="group" aria-labelledby="cpCurrencyLabel"></div>
+                </div>
+                <div class="cp-muted cp-small cp-filter-hint" id="cpCurrencyHint" @(dash.ShowCurrencySwitch ? null : "hidden")>Totals are never added across currencies.</div>
+            </div>
+        </section>
+
+        <div class="kpibar">
+            <span>Use the arrow on a card to collapse it. Your choice is remembered in a cookie.</span>
+            <span><button type="button" class="cp-link" id="kpiCollapseAll">Collapse all</button><button type="button" class="cp-link" id="kpiExpandAll">Expand all</button></span>
+        </div>
+        <div class="kpis" id="kpiGrid">
+            @foreach (var kpi in kpis)
+            {
+                var collapsed = Model.CollapsedKpiIds.Contains(kpi.Id);
+                var card = kpiText[kpi.Id];
+                <div class="kpi@(kpi.Warn ? " warn" : "")@(collapsed ? " collapsed" : "")" data-kpi="@kpi.Id">
+                    <button class="tg" type="button" aria-expanded="@(collapsed ? "false" : "true")" aria-label="@(collapsed ? "Expand card" : "Collapse card")"></button>
+                    <div class="l">@kpi.Label</div>
+                    <div class="v" data-role="v">@card.Value</div>
+                    <div class="d" data-role="d">@foreach (var part in card.Detail) { if (part.CssClass is null) { @part.Text } else { <span class="@part.CssClass">@part.Text</span> } }</div>
+                </div>
+            }
+        </div>
+
+        <div class="cp-trend-row" style="margin-top:24px;">
+            <section class="glass card-pad">
+                <div class="cp-card-head">
+                    <div>
+                        <h3>Monthly trend</h3>
+                        <div class="cp-small cp-muted">Invoiced revenue per month (net of credit notes), always the last 12 months. Current month is to date.</div>
+                    </div>
+                    <label class="cp-small cp-check"><input type="checkbox" id="cpCompare" checked /> Compare with same month last year</label>
+                </div>
+                <div class="scroll"><div id="cpChart" class="cp-chart"></div></div>
+            </section>
+            <section class="glass card-pad">
+                <h3>Share of spend</h3>
+                <div class="cp-small cp-muted" style="margin-bottom:12px;">Top 5 products in the selected period, plus the rest.</div>
+                <div id="cpDonut"></div>
+            </section>
+        </div>
+
+        <section class="glass card-pad" style="margin-top:24px;">
+            <div class="cp-card-head">
+                <div>
+                    <h3>Product mix</h3>
+                    <div class="cp-small cp-muted">Selected period. Use the arrow on a row for the purchase history of that product.</div>
+                </div>
+                <div class="field cp-mix-search">
+                    <label for="cpMixSearch" class="sr-only">Search products</label>
+                    <input type="search" id="cpMixSearch" placeholder="Search product or code" autocomplete="off" />
+                </div>
+            </div>
+            <div id="cpMix" style="margin-top:12px;"></div>
+        </section>
+        <section class="glass card-pad" style="margin-top:24px;">
+            <h3>Buying behaviour</h3>
+            <div class="cp-small cp-muted" style="margin-bottom:14px;">Patterns worth acting on.</div>
+            <div class="two3" id="cpBehaviour"></div>
+            <div class="two3" style="margin-top:22px;">
+                @foreach (var teaser in teasers)
+                {
+                    var registered = Model.RegisteredFeatureKeys.Contains(teaser.Key);
+                    <div class="ins">
+                        <h4>@teaser.Title <span class="pill p-v2">LATER</span></h4>
+                        <div class="cp-small cp-muted">@teaser.Text</div>
+                        <button type="button" class="btn btn-secondary btn-sm notify" data-feature="@teaser.Key" disabled="@(registered ? "disabled" : null)">@(registered ? "You will be notified" : "Notify me when available")</button>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="glass card-pad" style="margin-top:24px;">
+            <h3>Pending invoices</h3>
+            <div class="cp-small cp-muted" style="margin-bottom:12px;">Issued and not fully settled. Drafts and cancelled invoices are not counted.</div>
+            <div id="cpPending"></div>
+        </section>
+
+        <script id="purchasesData" type="application/json">@Html.Raw(JsonSerializer.Serialize(dash, PurchasesJson.Options))</script>
+    }
+</div>
+
+@section Scripts {
+    @if (dash.HasAnyInvoices)
+    {
+        <script src="/js/customer-purchases.js?v=4"></script>
+    }
+}

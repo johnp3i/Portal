@@ -54,12 +54,17 @@ public class StatementService : IStatementService
         var invoicedBefore = await _statementRepository.GetInvoicedTotalBeforeDateAsync(customerId, businessId, fromDate);
         var paidBefore = await _statementRepository.GetPaidTotalBeforeDateAsync(customerId, businessId, fromDate);
         var creditedBefore = await _statementRepository.GetAppliedCreditTotalBeforeDateAsync(customerId, businessId, fromDate);
-        var openingBalance = invoicedBefore - paidBefore - creditedBefore;
+        // Account-level credit notes (no source invoice) reduce what the customer owes from their
+        // ISSUE date, even before being applied to an invoice. (Their later applications are excluded
+        // from creditedBefore above, so the credit is counted exactly once.)
+        var accountCreditBefore = await _statementRepository.GetAccountCreditTotalBeforeDateAsync(customerId, businessId, fromDate);
+        var openingBalance = invoicedBefore - paidBefore - creditedBefore - accountCreditBefore;
 
         // 2. Fetch in-period invoices, payments, and applied credit notes
         var invoices = await _statementRepository.GetInvoicesInPeriodAsync(customerId, businessId, fromDate, toDate);
         var payments = await _statementRepository.GetPaymentsInPeriodAsync(customerId, businessId, fromDate, toDate);
         var appliedCredits = await _statementRepository.GetAppliedCreditsInPeriodAsync(customerId, businessId, fromDate, toDate);
+        var accountCredits = await _statementRepository.GetAccountCreditNotesInPeriodAsync(customerId, businessId, fromDate, toDate);
 
         // Opening line is dated when the customer account was created (reads more naturally than
         // repeating the filter's from-date). Display-only — does not affect any balance. If the
@@ -171,6 +176,24 @@ public class StatementService : IStatementService
                 Debit = 0m,
                 Credit = credit.AmountApplied,
                 InvoiceId = credit.InvoiceId,
+                RunningBalance = 0m
+            });
+        }
+
+        // 4c. Account-level credit notes (issued to the customer account, not to an invoice).
+        //     One credit line at the issue date for the full amount. This is what changes the
+        //     customer's balance; applying the credit to invoices later only allocates it.
+        foreach (var credit in accountCredits)
+        {
+            transactionLines.Add(new StatementLineDto
+            {
+                Date = credit.AppliedDate,
+                Type = StatementLineType.CreditNote,
+                Reference = credit.CreditNoteNumber,
+                Description = "Account credit note",
+                Debit = 0m,
+                Credit = credit.AmountApplied,
+                InvoiceId = null,
                 RunningBalance = 0m
             });
         }

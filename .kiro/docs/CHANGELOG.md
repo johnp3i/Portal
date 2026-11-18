@@ -4,6 +4,11 @@ All notable feature updates to the Portal platform are documented here. Organize
 
 ---
 
+## [2026-11-18] - Customer Purchases Dashboard
+
+### Added
+- Customer Purchases Dashboard (`/Customer/Purchases/{id}`) with a Purchases button on the Customers list: KPIs, 12-month trend, product mix and drill-down, buying behaviour, pending invoices, Excel export and "Notify me" interest capture
+
 ## [2026-11-05] - Payroll Register: on-page per-employee Preview
 
 **Added a Preview action alongside Download: render the register on the page as per-employee ledger tables (no file), from the same data source the Excel download uses so the two can never drift.**

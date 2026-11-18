@@ -323,6 +323,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                     ON [credit].[CreditNoteApplication].[CreditNoteId] = [credit].[CreditNote].[Id]
                 WHERE [credit].[CreditNote].[CustomerId] = @CustomerId
                   AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                  AND [credit].[CreditNote].[InvoiceId] IS NOT NULL
                   AND [credit].[CreditNoteApplication].[IsVoided] = 0
                   AND [credit].[CreditNoteApplication].[AppliedAtUtc] < @BeforeDate";
 
@@ -383,6 +384,7 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                     ON [credit].[CreditNoteApplication].[InvoiceId] = [invoice].[Invoice].[Id]
                 WHERE [credit].[CreditNote].[CustomerId] = @CustomerId
                   AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                  AND [credit].[CreditNote].[InvoiceId] IS NOT NULL
                   AND [credit].[CreditNoteApplication].[IsVoided] = 0
                   AND [credit].[CreditNoteApplication].[AppliedAtUtc] >= @FromDate
                   AND [credit].[CreditNoteApplication].[AppliedAtUtc] < @ToDateExclusive
@@ -421,6 +423,131 @@ public class StatementRepository : GenericStoredProcedureRepository<Invoice>
                         CreditNoteNumber = reader.GetString(reader.GetOrdinal("CreditNoteNumber")),
                         InvoiceId = reader.IsDBNull(reader.GetOrdinal("InvoiceId")) ? null : reader.GetInt32(reader.GetOrdinal("InvoiceId")),
                         InvoiceNumber = reader.IsDBNull(reader.GetOrdinal("InvoiceNumber")) ? null : reader.GetString(reader.GetOrdinal("InvoiceNumber"))
+                    });
+                }
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+
+            return results;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Total of account-level credit notes (no source invoice) issued to the customer BEFORE the
+    /// period start. An account credit reduces what the customer owes from its issue date, whether
+    /// or not it has been applied to an invoice yet, so it feeds the opening balance. Only Issued (2)
+    /// and Applied (3) notes count; Draft and Voided do not. Applications of these notes are excluded
+    /// from <see cref="GetAppliedCreditTotalBeforeDateAsync"/> so the credit is never counted twice.
+    /// </summary>
+    public virtual async Task<decimal> GetAccountCreditTotalBeforeDateAsync(int customerId, int businessId, DateOnly beforeDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT ISNULL(SUM([credit].[CreditNote].[TotalAmount]), 0)
+                FROM [credit].[CreditNote]
+                WHERE [credit].[CreditNote].[CustomerId] = @CustomerId
+                  AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                  AND [credit].[CreditNote].[InvoiceId] IS NULL
+                  AND [credit].[CreditNote].[CreditNoteStatusTypeId] IN (2, 3)
+                  AND [credit].[CreditNote].[IssueDate] < @BeforeDate";
+
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CustomerId", customerId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@BeforeDate", System.Data.SqlDbType.Date) { Value = beforeDate.ToDateTime(TimeOnly.MinValue) });
+
+                var result = await command.ExecuteScalarAsync();
+                return result != null && result != DBNull.Value ? (decimal)result : 0m;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open && _context.Database.CurrentTransaction == null)
+                    await connection.CloseAsync();
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Account-level credit notes (no source invoice) issued to the customer WITHIN the date range,
+    /// one row per note, dated by IssueDate for the full TotalAmount. Reuses
+    /// <see cref="StatementCreditNoteDto"/>: Id = the credit note Id, AppliedDate = IssueDate,
+    /// AmountApplied = TotalAmount, InvoiceId/InvoiceNumber = null. Only Issued (2) and Applied (3).
+    /// </summary>
+    public virtual async Task<List<StatementCreditNoteDto>> GetAccountCreditNotesInPeriodAsync(int customerId, int businessId, DateOnly fromDate, DateOnly toDate)
+    {
+        try
+        {
+            const string query = @"
+                SELECT [credit].[CreditNote].[Id],
+                       [credit].[CreditNote].[IssueDate],
+                       [credit].[CreditNote].[TotalAmount],
+                       [credit].[CreditNote].[CreditNoteNumber]
+                FROM [credit].[CreditNote]
+                WHERE [credit].[CreditNote].[CustomerId] = @CustomerId
+                  AND [credit].[CreditNote].[BusinessId] = @BusinessId
+                  AND [credit].[CreditNote].[InvoiceId] IS NULL
+                  AND [credit].[CreditNote].[CreditNoteStatusTypeId] IN (2, 3)
+                  AND [credit].[CreditNote].[IssueDate] >= @FromDate
+                  AND [credit].[CreditNote].[IssueDate] <= @ToDate
+                ORDER BY [credit].[CreditNote].[IssueDate], [credit].[CreditNote].[Id]";
+
+            var results = new List<StatementCreditNoteDto>();
+            var connection = _context.Database.GetDbConnection();
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                var transaction = _context.Database.CurrentTransaction;
+                if (transaction != null)
+                    command.Transaction = transaction.GetDbTransaction();
+
+                command.Parameters.Add(new SqlParameter("@CustomerId", customerId));
+                command.Parameters.Add(new SqlParameter("@BusinessId", businessId));
+                command.Parameters.Add(new SqlParameter("@FromDate", System.Data.SqlDbType.Date) { Value = fromDate.ToDateTime(TimeOnly.MinValue) });
+                command.Parameters.Add(new SqlParameter("@ToDate", System.Data.SqlDbType.Date) { Value = toDate.ToDateTime(TimeOnly.MinValue) });
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new StatementCreditNoteDto
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        AppliedDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("IssueDate"))),
+                        AmountApplied = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                        CreditNoteNumber = reader.GetString(reader.GetOrdinal("CreditNoteNumber")),
+                        InvoiceId = null,
+                        InvoiceNumber = null
                     });
                 }
             }

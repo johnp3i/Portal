@@ -117,6 +117,7 @@
                                 @await Component.InvokeAsync("AttachmentCount", new { entityType = "Customer", entityId = customer.Id })
                                 <a asp-action="Edit" asp-controller="Customer" asp-route-id="@customer.Id" class="tbl-action tbl-action--primary">Edit</a>
                                 <a href="/Statement?customerId=@customer.Id" class="tbl-action tbl-action--primary">Statement</a>
+                                <a href="/Customer/Purchases/@customer.Id" class="tbl-action tbl-action--primary">Purchases</a>
                                 @if (customer.IsActive)
                                 {
                                     <form method="post" asp-action="Deactivate" asp-controller="Customer" asp-route-id="@customer.Id" style="display:inline;">

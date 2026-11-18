@@ -141,6 +141,23 @@ if (systemBriefing != null)
                 {
                     builder.AppendHtml(@"<span style=""font-size:11px;font-style:italic;color:#C8912E;margin-left:8px;"">· Prospect</span>");
                 }
+
+                // Context line so a generic title ("Send email") says WHO it is for and WHERE it came
+                // from: the contact, the meeting that spawned it, and a short note.
+                var ctxParts = new List<string>();
+                if (!string.IsNullOrWhiteSpace(t.ContactName)) ctxParts.Add(t.ContactName!);
+                if (!string.IsNullOrWhiteSpace(t.MeetingSubject)) ctxParts.Add("from: " + t.MeetingSubject);
+                if (!string.IsNullOrWhiteSpace(t.Notes))
+                {
+                    var note = string.Join(" ", t.Notes!.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+                    ctxParts.Add(note.Length > 90 ? note[..90].TrimEnd() + "…" : note);
+                }
+                if (ctxParts.Count > 0)
+                {
+                    builder.AppendHtml(@"<span style=""display:block;font-size:11px;font-weight:500;color:#8a9bab;margin-top:2px;"">");
+                    builder.Append(string.Join(" · ", ctxParts));
+                    builder.AppendHtml("</span>");
+                }
                 builder.AppendHtml("</span>");
                 if (!string.IsNullOrEmpty(time))
                 {

@@ -1,0 +1,512 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Unblock the Portal.Tests project so tests can run": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010634445
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010642630
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016321517
+      }
+    ],
+    "2.1 Create migration `233_CreateInsightSchemaAndFeatureInterest.sql`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635161
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010642825
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016321598
+      }
+    ],
+    "2.2 Create migration `234_AddCustomerPurchasesIndexes.sql`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635200
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010643626
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016321757
+      }
+    ],
+    "3.1 Add the `FeatureInterest` entity and EF mapping": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635242
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010644421
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016322497
+      }
+    ],
+    "3.2 Create query, row and DTO models": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635268
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010644928
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016322970
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017376687
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017512706
+      }
+    ],
+    "3.3 Create `KpiCollapseCookie` and the page view models": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635290
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017518129
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022028720
+      }
+    ],
+    "4.1 Implement the core of `CustomerPurchasesCalculator`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635326
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017518174
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022028913
+      }
+    ],
+    "4.2 Implement revenue, last-purchase, pending, overdue and trend calculations": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635346
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022036327
+      },
+      {
+        "executionId": "961fbdcc-d952-471a-800f-48cc69733719",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795025756437
+      },
+      {
+        "executionId": "961fbdcc-d952-471a-800f-48cc69733719",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795025839108
+      }
+    ],
+    "4.10 Write property test for derived overdue (required)": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635366
+      }
+    ],
+    "5.1 Implement product grouping, mix, donut, price, margin and drill-down logic": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635387
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022036379
+      },
+      {
+        "executionId": "961fbdcc-d952-471a-800f-48cc69733719",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795025757075
+      },
+      {
+        "executionId": "961fbdcc-d952-471a-800f-48cc69733719",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795025839590
+      }
+    ],
+    "6.1 Implement rhythm and payment behaviour": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635408
+      }
+    ],
+    "6.4 Implement `BuildDashboard` assembly": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635434
+      }
+    ],
+    "6.5 Write property test that the pending KPI equals the pending table (required)": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635463
+      }
+    ],
+    "6.6 Write property test for no cross-currency sums (required)": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635484
+      }
+    ],
+    "7. Checkpoint - Calculator complete": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635507
+      }
+    ],
+    "8.1 Implement `CustomerPurchasesRepository`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635535
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017518625
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022029699
+      }
+    ],
+    "8.2 Implement `FeatureInterestRepository`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635556
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017519224
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022030127
+      }
+    ],
+    "8.3 Write property test that quotations never affect results (required)": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635577
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022036408
+      }
+    ],
+    "9.1 Implement `ICustomerPurchasesService` and `CustomerPurchasesService`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635598
+      },
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029418947
+      },
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029490677
+      }
+    ],
+    "10.1 Implement the Excel export service and file-name helper": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635618
+      }
+    ],
+    "10.2 Implement `CustomerPurchasesController`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635639
+      }
+    ],
+    "10.3 Write property test for tenant isolation and uniform not-found (required)": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635676
+      }
+    ],
+    "11.1 Register the new components in `Program.cs`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635695
+      }
+    ],
+    "12.1 Create `Views/CustomerPurchases/Index.cshtml`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635715
+      }
+    ],
+    "12.2 Create `wwwroot/css/customer-purchases.css`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635735
+      }
+    ],
+    "12.3 Create `wwwroot/js/customer-purchases.js` core, filters and KPI cards": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635759
+      }
+    ],
+    "12.4 Add the SVG trend chart and donut to `customer-purchases.js`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635779
+      }
+    ],
+    "12.5 Add mix, drill-down, behaviour, pending table, teasers and export to `customer-purchases.js`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635800
+      }
+    ],
+    "13.1 Add the Purchases button to `Views/Customer/Index.cshtml`": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635818
+      },
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010645580
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016862129
+      },
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017359521
+      }
+    ],
+    "15. Final checkpoint - Build the solution and run the new tests": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795010635840
+      }
+    ],
+    "1. Unblock the test project": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016321555
+      }
+    ],
+    "2. Database migrations": [
+      {
+        "executionId": "a1bf9718-c449-46b6-b28a-faeabaff8b6e",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795016321784
+      }
+    ],
+    "13. Customers list entry point": [
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795017359561
+      }
+    ],
+    "3. Entities, models and DTOs": [
+      {
+        "executionId": "ed496023-7a59-4fb4-b4d1-a8b1357e8ebe",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795022028767
+      }
+    ],
+    "4. Core calculator and invoice-derived figures": [
+      {
+        "executionId": "961fbdcc-d952-471a-800f-48cc69733719",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795025839151
+      }
+    ],
+    "5. Product mix calculations": [
+      {
+        "executionId": "961fbdcc-d952-471a-800f-48cc69733719",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795025839624
+      }
+    ],
+    "6.1 Implement rhythm, payment behaviour and `BuildDashboard` assembly": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795026650568
+      },
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029408025
+      }
+    ],
+    "6. Behaviour calculations and dashboard assembly": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029408066
+      }
+    ],
+    "9. Service": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029490714
+      }
+    ],
+    "10.1 Implement the Excel export service, `CustomerPurchasesController` and DI registration in `Program.cs`": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029495211
+      },
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029665375
+      }
+    ],
+    "10. Controller and export": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029665420
+      }
+    ],
+    "12.1 Create the view, CSS and `customer-purchases.js` (filters, KPI cards, chart, donut, mix, drill-down, behaviour, pending table, teasers, export)": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795029669927
+      },
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795030190412
+      }
+    ],
+    "12. Client UI": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795030190453
+      }
+    ],
+    "7. Checkpoint - Calculator builds": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795030197076
+      },
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795030638718
+      }
+    ],
+    "15. Final checkpoint - Build the solution": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795030642248
+      },
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795032104560
+      }
+    ],
+    "8. Repositories": [
+      {
+        "executionId": "2b07809b-3222-409e-87ce-b7e5e3041ad6",
+        "chatSessionId": "sess_49dfd379-9462-4151-af1c-a1a72f197d11",
+        "timestamp": 1795032122630
+      }
+    ]
+  }
+}

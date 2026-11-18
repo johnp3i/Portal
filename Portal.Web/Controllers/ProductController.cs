@@ -85,7 +85,10 @@ public class ProductController : Controller
         ViewBag.SearchTerm = search;
         ViewBag.Filter = filter;
         ViewBag.Kpis = kpis;
-        ViewBag.Suppliers = suppliers;
+        // A-Z, case-insensitive. Feeds both the Supplier filter and the Create/Edit modal dropdown.
+        ViewBag.Suppliers = suppliers
+            .OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
         ViewBag.ProductTypes = productTypes;
         ViewBag.TierCounts = tierCounts;
 

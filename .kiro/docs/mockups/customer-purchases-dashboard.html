@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Customer Purchases Dashboard - mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--blue:#0D5EA6;--blue-dark:#0B4E89;--cyan:#57B8E8;--green:#129867;--warning:#C8912E;--danger:#C24A4A;--text:#0B1B28;--muted:#5E7385;--muted2:#73889A;--bg:#F7FAFC;--bg2:#EEF4F8;--line:rgba(13,94,166,.11)}
+  body{font-family:Inter,system-ui,sans-serif;color:var(--text);line-height:1.5;background:var(--bg2);padding:28px 24px 80px}
+  h1,h2,h3,h4{font-family:Manrope,Inter,sans-serif;letter-spacing:-.03em}
+  a{color:inherit;text-decoration:none}
+  .stage{max-width:1180px;margin:0 auto}
+  .legend{font-size:12px;color:var(--muted);background:rgba(200,145,46,.08);border:1px solid rgba(200,145,46,.22);border-radius:12px;padding:10px 14px;margin-bottom:18px}
+  .breadcrumb{font-size:12px;color:var(--muted2);margin-bottom:2px}
+  .breadcrumb a{color:var(--blue)}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(13,94,166,.10);background:rgba(255,255,255,.9);color:var(--blue-dark);border-radius:999px;padding:7px 13px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .dot{width:8px;height:8px;border-radius:999px;background:var(--cyan);box-shadow:0 0 0 5px rgba(87,184,232,.12)}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:14px 0 22px;flex-wrap:wrap}
+  .topbar h1{font-size:34px;margin:10px 0 4px}
+  .topbar .sub{color:var(--muted);font-size:14px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 6px 24px rgba(13,94,166,.05);padding:24px}
+  .gap{margin-bottom:22px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 16px;font-weight:800;font-size:13px;border:1.5px solid transparent;cursor:pointer;font-family:inherit}
+  .btn-primary{background:linear-gradient(180deg,#1A6BB8,#0D5EA6);color:#fff;box-shadow:0 12px 24px rgba(13,94,166,.2)}
+  .btn-secondary{background:rgba(13,94,166,.06);color:var(--blue-dark);border-color:rgba(13,94,166,.14)}
+  .section-label{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);margin-bottom:12px}
+  .card h3{font-size:18px;margin-bottom:4px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  /* entry point preview */
+  .tbl-action{display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:800;background:rgba(13,94,166,.08);color:var(--blue-dark);margin-right:6px}
+  .tbl-action.danger{background:rgba(194,74,74,.08);color:#A23A3A}
+  .tbl-action.hl{background:var(--blue);color:#fff;box-shadow:0 0 0 4px rgba(87,184,232,.25)}
+  /* filters */
+  .filters{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+  .field{min-width:180px}
+  .field label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px}
+  .field select{width:100%;padding:10px 12px;border:1.5px solid rgba(13,94,166,.15);border-radius:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--text)}
+  .seg{display:inline-flex;border:1.5px solid rgba(13,94,166,.15);border-radius:10px;overflow:hidden}
+  .seg button{border:0;background:#fff;padding:10px 16px;font-weight:800;font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit}
+  .seg button.on{background:var(--blue);color:#fff}
+  /* KPIs */
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px 20px;box-shadow:0 6px 24px rgba(13,94,166,.05)}
+  .kpi .l{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)}
+  .kpi .v{font-family:Manrope,Inter,sans-serif;font-size:30px;font-weight:800;letter-spacing:-.03em;margin:6px 0 2px}
+  .kpi .d{font-size:12px;color:var(--muted)}
+  .up{color:var(--green);font-weight:800}
+  .down{color:var(--danger);font-weight:800}
+  .kpi.warn{border-color:rgba(194,74,74,.25);background:linear-gradient(180deg,#fff,rgba(194,74,74,.03))}
+  /* collapsible KPI cards */
+  .kpi{position:relative}
+  .kpi .l{padding-right:34px}
+  .kpi .tg{position:absolute;top:12px;right:12px;border:0;background:rgba(13,94,166,.07);color:var(--blue-dark);width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:12px;line-height:1;font-weight:800}
+  .kpi .tg:hover{background:rgba(13,94,166,.14)}
+  .kpi .tg::before{content:"\25B4"}
+  .kpi.collapsed .tg::before{content:"\25BE"}
+  .kpi.collapsed{padding:12px 46px 12px 20px}
+  .kpi.collapsed .v{font-size:20px;margin:2px 0 0}
+  .kpi.collapsed .d{display:none}
+  .kpibar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--muted)}
+  .kpibar a{color:var(--blue);font-weight:800;cursor:pointer;margin-left:14px}
+  .btn-sm{padding:7px 13px;font-size:12px}
+  .btn[disabled]{opacity:.6;cursor:default}
+  .notify{margin-top:10px}
+  /* layout */
+  .two{display:grid;grid-template-columns:2.2fr 1fr;gap:22px}
+  .two3{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);padding:8px 10px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+  td{padding:10px;font-size:13px;border-bottom:1px solid rgba(13,94,166,.05);vertical-align:middle;white-space:nowrap}
+  td.num,th.num{text-align:right}
+  tr.drill{cursor:pointer}
+  tr.drill:hover td{background:rgba(13,94,166,.025)}
+  tr.detail td{background:rgba(13,94,166,.025);white-space:normal}
+  .code{font-size:11px;color:var(--muted2);font-weight:700}
+  .bar{display:inline-block;height:6px;border-radius:99px;background:var(--cyan);vertical-align:middle;margin-right:8px}
+  .pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.04em}
+  .p-red{background:rgba(194,74,74,.08);color:#A23A3A;border:1px solid rgba(194,74,74,.18)}
+  .p-amb{background:rgba(200,145,46,.1);color:#8D5D07;border:1px solid rgba(200,145,46,.25)}
+  .p-grn{background:rgba(18,152,103,.09);color:#0B7550;border:1px solid rgba(18,152,103,.22)}
+  .p-gry{background:#F0F2F5;color:#5A6A7A;border:1px solid rgba(90,106,122,.14)}
+  .p-v2{background:rgba(87,184,232,.12);color:#0B4E89;border:1px solid rgba(87,184,232,.35)}
+  .note{font-size:12px;color:var(--muted);background:rgba(13,94,166,.04);border:1px solid rgba(13,94,166,.08);border-radius:12px;padding:12px 14px;margin-top:14px}
+  /* donut */
+  .donut{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .leg{width:100%;font-size:12px}
+  .leg div{display:flex;align-items:center;justify-content:space-between;padding:3px 0}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px}
+  /* insights */
+  .ins{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:#fff}
+  .ins h4{font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rhythm div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(13,94,166,.06);font-size:13px;align-items:center}
+  .rhythm div:last-child{border-bottom:0}
+  .stat{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+  .stat b{font-weight:800}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.two,.two3{grid-template-columns:1fr}.topbar h1{font-size:28px}}
+  @media(max-width:560px){.kpis{grid-template-columns:1fr}body{padding:18px 12px 60px}.card{padding:18px}.actions .btn{flex:1}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+<div class="stage">
+
+  <div class="legend"><b>Mockup only.</b> Sample data, nothing is connected. Open this file directly in a browser. Items tagged <span class="pill p-v2">LATER</span> are proposed for a second release. Click a product row to see the drill-down. Teaser cards have a Notify me button. KPI cards can be collapsed.</div>
+
+  <!-- ENTRY POINT -->
+  <div class="card gap">
+    <div class="section-label">Entry point: Customers list, Actions column</div>
+    <div class="small muted" style="margin-bottom:10px;">Hatto Trading Ltd &middot; Nicosia &middot; 23 inv &middot; Active</div>
+    <span class="tbl-action">Edit</span><span class="tbl-action">Statement</span><span class="tbl-action hl">Purchases</span><span class="tbl-action danger">Deactivate</span>
+  </div>
+
+  <!-- PAGE -->
+  <div class="breadcrumb">Sales / <a href="#">Customers</a> / Hatto Trading Ltd / <b>Purchases</b></div>
+  <div class="topbar">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Customer &middot; Purchases</div>
+      <h1>Purchases &mdash; Hatto Trading Ltd</h1>
+      <p class="sub">What this customer buys, how it changes over time and what is still unpaid. Quotations are not included.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-secondary" href="#">&larr; Back to Customers</a>
+      <a class="btn btn-secondary" href="#">Statement</a>
+      <a class="btn btn-primary" href="#">Export Excel</a>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <section class="card gap">
+    <div class="filters">
+      <div class="field">
+        <label>Period</label>
+        <select><option>Last 12 months</option><option>This year</option><option>Last year</option><option>All time</option><option>Custom range</option></select>
+      </div>
+      <div class="field" style="min-width:0;">
+        <label>Currency</label>
+        <div class="seg" id="cur"><button class="on">EUR</button><button>USD</button></div>
+      </div>
+      <div class="small muted" style="padding-bottom:10px;max-width:340px;">The currency switch only appears when the customer was billed in more than one currency. Totals are never added across currencies.</div>
+    </div>
+  </section>
+
+  <!-- KPI STRIP -->
+  <div class="kpibar"><span>Use the arrow on a card to collapse it. Your choice is remembered in a cookie.</span><span><a id="kpiAll">Collapse all</a><a id="kpiNone">Expand all</a></span></div>
+  <div class="kpis gap">
+    <div class="kpi" data-kpi="rev12"><button class="tg" type="button" aria-expanded="true" aria-label="Collapse card"></button><div class="l">Net revenue, last 12 months</div><div class="v">&euro;29,000</div><div class="d"><span class="up">&uarr; 19.8%</span> vs previous 12 months (&euro;24,200)</div></div>
+    <div class="kpi" data-kpi="lifetime"><button class="tg" type="button" aria-expanded="true" aria-label="Collapse card"></button><div class="l">Lifetime net revenue</div><div class="v">&euro;61,300</div><div class="d">41 invoices since Mar 2024, after credit notes</div></div>
+    <div class="kpi" data-kpi="avginv"><button class="tg" type="button" aria-expanded="true" aria-label="Collapse card"></button><div class="l">Average invoice</div><div class="v">&euro;1,261</div><div class="d">23 invoices in the period</div></div>
+    <div class="kpi" data-kpi="last"><button class="tg" type="button" aria-expanded="true" aria-label="Collapse card"></button><div class="l">Last purchase</div><div class="v">14 days ago</div><div class="d">04 Nov 2026 &middot; buys about every 16 days</div></div>
+    <div class="kpi warn" data-kpi="pending"><button class="tg" type="button" aria-expanded="true" aria-label="Collapse card"></button><div class="l">Pending invoices</div><div class="v">3 &middot; &euro;2,840</div><div class="d">Outstanding after payments and credit notes</div></div>
+    <div class="kpi warn" data-kpi="overdue"><button class="tg" type="button" aria-expanded="true" aria-label="Collapse card"></button><div class="l">Overdue</div><div class="v">&euro;1,120</div><div class="d"><span class="down">1 invoice, 7 days late</span></div></div>
+  </div>
+
+  <!-- TREND -->
+  <section class="card gap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div><h3>Monthly trend</h3><div class="small muted">Invoiced revenue per month (net of credit notes). Current month is to date.</div></div>
+      <label class="small" style="display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer;"><input type="checkbox" id="prevToggle" checked /> Compare with same month last year</label>
+    </div>
+    <div class="scroll"><div id="chart" style="min-width:720px;margin-top:10px;"></div></div>
+  </section>
+
+  <!-- PRODUCT MIX -->
+  <div class="two gap">
+    <section class="card">
+      <h3>Product mix</h3>
+      <div class="small muted" style="margin-bottom:12px;">Last 12 months. Click a row for the purchase history of that product.</div>
+      <div class="scroll">
+      <table>
+        <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Revenue</th><th>Share</th><th class="num">Avg price vs list</th><th>Last bought</th><th class="num">Margin</th></tr></thead>
+        <tbody id="mix"></tbody>
+      </table>
+      </div>
+      <div class="note"><b>Reading this table.</b> Products are grouped by product code. Lines without a code are grouped by description and shown as custom items. Margin uses cost price where it was recorded (62% of line value here). Adjustment lines are left out of this table. <b>Unpaid amounts are shown per invoice below</b>, because payments are recorded against invoices, not products.</div>
+    </section>
+    <section class="card">
+      <h3>Share of spend</h3>
+      <div class="small muted" style="margin-bottom:12px;">Top 5 products plus the rest.</div>
+      <div class="donut">
+        <svg width="190" height="190" viewBox="0 0 140 140" role="img" aria-label="Share of spend by product">
+          <g transform="rotate(-90 70 70)" fill="none" stroke-width="22">
+            <circle cx="70" cy="70" r="54" stroke="#0D5EA6" stroke-dasharray="112.31 339.29" stroke-dashoffset="0"/>
+            <circle cx="70" cy="70" r="54" stroke="#57B8E8" stroke-dasharray="84.14 339.29" stroke-dashoffset="-112.31"/>
+            <circle cx="70" cy="70" r="54" stroke="#129867" stroke-dasharray="50.55 339.29" stroke-dashoffset="-196.45"/>
+            <circle cx="70" cy="70" r="54" stroke="#C8912E" stroke-dasharray="33.59 339.29" stroke-dashoffset="-247.00"/>
+            <circle cx="70" cy="70" r="54" stroke="#8a9bab" stroke-dasharray="23.41 339.29" stroke-dashoffset="-280.59"/>
+            <circle cx="70" cy="70" r="54" stroke="#D5DEE6" stroke-dasharray="34.95 339.29" stroke-dashoffset="-304.00"/>
+          </g>
+          <text x="70" y="66" text-anchor="middle" font-family="Manrope,Inter,sans-serif" font-weight="800" font-size="15" fill="#0B1B28">&euro;29,000</text>
+          <text x="70" y="82" text-anchor="middle" font-size="8" fill="#73889A">12 months</text>
+        </svg>
+        <div class="leg">
+          <div><span><span class="sw" style="background:#0D5EA6"></span>POS Licence</span><b>33.1%</b></div>
+          <div><span><span class="sw" style="background:#57B8E8"></span>Touch Terminal 15"</span><b>24.8%</b></div>
+          <div><span><span class="sw" style="background:#129867"></span>Support Plan</span><b>14.9%</b></div>
+          <div><span><span class="sw" style="background:#C8912E"></span>Receipt Printer</span><b>9.9%</b></div>
+          <div><span><span class="sw" style="background:#8a9bab"></span>Installation</span><b>6.9%</b></div>
+          <div><span><span class="sw" style="background:#D5DEE6"></span>Other</span><b>10.3%</b></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- BEHAVIOUR -->
+  <section class="card gap">
+    <h3>Buying behaviour</h3>
+    <div class="small muted" style="margin-bottom:14px;">Patterns worth acting on.</div>
+    <div class="two3">
+      <div class="ins">
+        <h4>Buying rhythm <span class="small muted" style="font-weight:600;">typical gap between purchases</span></h4>
+        <div class="rhythm">
+          <div><span>POS Licence (annual)<br><span class="small muted">renews every ~12 months, last 04 Nov</span></span><span class="pill p-grn">On track</span></div>
+          <div><span>Support Plan (monthly)<br><span class="small muted">every ~30 days, last 14 days ago</span></span><span class="pill p-grn">On track</span></div>
+          <div><span>Touch Terminal 15"<br><span class="small muted">every ~60 days, last 37 days ago</span></span><span class="pill p-amb">Reorder around 11 Dec</span></div>
+          <div><span>Receipt Printer 80mm<br><span class="small muted">every ~45 days, last 25 days ago</span></span><span class="pill p-amb">Reorder soon</span></div>
+        </div>
+      </div>
+      <div class="ins">
+        <h4>Payment behaviour</h4>
+        <div class="stat"><span>Average days to pay</span><b>24 days (terms 30)</b></div>
+        <div class="stat"><span>Settled on time</span><b>17 of 20 invoices (85%)</b></div>
+        <div class="stat"><span>Currently overdue</span><b class="down">&euro;1,120</b></div>
+        <div class="stat"><span>Credit notes in the period</span><b>1 &middot; &euro;50</b></div>
+        <div class="note" style="margin-top:10px;">Overdue means a balance above zero after payments and credit notes, with a due date in the past.</div>
+      </div>
+      <div class="ins">
+        <h4>Discounts <span class="pill p-v2">LATER</span></h4>
+        <div class="stat"><span>Average discount for this customer</span><b>4.2%</b></div>
+        <div class="stat"><span>Business-wide average</span><b>2.9%</b></div>
+        <div class="small muted" style="margin-top:6px;">Shows whether this customer gets better terms than usual.</div><button type="button" class="btn btn-secondary btn-sm notify" data-feature="discounts">Notify me when available</button>
+      </div>
+      <div class="ins">
+        <h4>Price drift <span class="pill p-v2">LATER</span></h4>
+        <div class="stat"><span>Receipt Printer 80mm</span><b class="down">&euro;320 vs list &euro;340 (-5.9%)</b></div>
+        <div class="stat"><span>POS Licence</span><b class="down">&euro;2,400 vs list &euro;2,500 (-4.0%)</b></div>
+        <div class="small muted" style="margin-top:6px;">Products where the price paid has moved away from the current list price.</div><button type="button" class="btn btn-secondary btn-sm notify" data-feature="price-drift">Notify me when available</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PENDING INVOICES -->
+  <section class="card gap">
+    <h3>Pending invoices</h3>
+    <div class="small muted" style="margin-bottom:12px;">Issued and not fully settled. Drafts and cancelled invoices are not counted.</div>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Invoice</th><th>Issued</th><th>Due</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Credit notes</th><th class="num">Outstanding</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><b>INV-2026-0171</b></td><td>12 Oct 2026</td><td>11 Nov 2026</td><td class="num">1,720.00</td><td class="num">600.00</td><td class="num">0.00</td><td class="num"><b>1,120.00</b></td><td><span class="pill p-red">Overdue 7 days</span></td></tr>
+        <tr><td><b>INV-2026-0179</b></td><td>24 Oct 2026</td><td>23 Nov 2026</td><td class="num">570.00</td><td class="num">350.00</td><td class="num">50.00</td><td class="num"><b>170.00</b></td><td><span class="pill p-amb">Partially paid &middot; due in 5 days</span></td></tr>
+        <tr><td><b>INV-2026-0187</b></td><td>04 Nov 2026</td><td>04 Dec 2026</td><td class="num">1,550.00</td><td class="num">0.00</td><td class="num">0.00</td><td class="num"><b>1,550.00</b></td><td><span class="pill p-gry">Unpaid &middot; due in 16 days</span></td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="6" class="num"><b>Total outstanding</b></td><td class="num"><b>2,840.00</b></td><td></td></tr></tfoot>
+    </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // ---- Monthly trend ----
+  var months=['Dec 25','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov*'];
+  var cur=[1850,2400,1200,3100,2650,1900,3800,2200,900,3350,4100,1550];
+  var prev=[1600,1900,1500,2200,2400,2100,2900,2000,1100,2500,3000,1000];
+  var cnt=[2,1,1,3,2,2,2,2,1,3,3,1];
+  function fmt(n){return n.toLocaleString('en-US');}
+  function drawChart(showPrev){
+    var W=900,H=270,L=50,B=222,S=0.036,slot=830/12,bw=34,s='';
+    s+='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Monthly revenue trend">';
+    for(var g=0;g<=5;g++){var y=B-g*1000*S;s+='<line x1="'+L+'" x2="880" y1="'+y+'" y2="'+y+'" stroke="rgba(13,94,166,.08)"/><text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#73889A">'+g+'k</text>';}
+    for(var i=0;i<12;i++){
+      var x=L+i*slot+(slot-bw)/2,h=cur[i]*S,last=(i===11);
+      s+='<rect x="'+x+'" y="'+(B-h)+'" width="'+bw+'" height="'+h+'" rx="6" fill="'+(last?'#57B8E8':'#0D5EA6')+'"><title>'+months[i]+': EUR '+fmt(cur[i])+' ('+cnt[i]+' invoices)</title></rect>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(B-h-6)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#0B1B28">'+fmt(cur[i])+'</text>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(B+16)+'" text-anchor="middle" font-size="11" fill="#5E7385">'+months[i]+'</text>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(B+30)+'" text-anchor="middle" font-size="9" fill="#73889A">'+cnt[i]+' inv</text>';
+    }
+    if(showPrev){
+      var pts=[];
+      for(var j=0;j<12;j++){pts.push((L+j*slot+slot/2)+','+(B-prev[j]*S));}
+      s+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="#C8912E" stroke-width="2.5" stroke-dasharray="6 4"/>';
+      for(var k=0;k<12;k++){var p=pts[k].split(',');s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="#fff" stroke="#C8912E" stroke-width="2"><title>Same month last year: EUR '+fmt(prev[k])+'</title></circle>';}
+      s+='<g transform="translate(560,6)"><rect width="12" height="12" rx="3" fill="#0D5EA6"/><text x="18" y="10" font-size="11" fill="#5E7385">This period</text><line x1="110" x2="132" y1="6" y2="6" stroke="#C8912E" stroke-width="2.5" stroke-dasharray="6 4"/><text x="138" y="10" font-size="11" fill="#5E7385">Same month last year</text></g>';
+    } else {
+      s+='<g transform="translate(700,6)"><rect width="12" height="12" rx="3" fill="#0D5EA6"/><text x="18" y="10" font-size="11" fill="#5E7385">This period</text></g>';
+    }
+    s+='</svg>';
+    document.getElementById('chart').innerHTML=s;
+  }
+  document.getElementById('prevToggle').addEventListener('change',function(e){drawChart(e.target.checked);});
+  drawChart(true);
+
+  // ---- Product mix ----
+  var rows=[
+    {n:'POS Licence - Annual',c:'SRV-POS-LIC',q:4,r:9600,s:33.1,avg:'2,400 vs 2,500',d:'-4.0%',dc:'down',last:'04 Nov 2026',u:1200,m:'71%'},
+    {n:'Touch Terminal 15"',c:'HW-TERM-15',q:6,r:7200,s:24.8,avg:'1,200 vs 1,200',d:'0.0%',dc:'',last:'12 Oct 2026',u:620,m:'38%'},
+    {n:'Support Plan - Monthly',c:'SRV-SUP-M',q:12,r:4320,s:14.9,avg:'360 vs 360',d:'0.0%',dc:'',last:'04 Nov 2026',u:360,m:'82%'},
+    {n:'Receipt Printer 80mm',c:'HW-PRN-80',q:9,r:2880,s:9.9,avg:'320 vs 340',d:'-5.9%',dc:'down',last:'24 Oct 2026',u:170,m:'29%'},
+    {n:'Installation & Setup',c:'SRV-INST',q:5,r:2000,s:6.9,avg:'400 vs 400',d:'0.0%',dc:'',last:'12 Oct 2026',u:0,m:'64%'},
+    {n:'Cash Drawer',c:'HW-DRW',q:4,r:1100,s:3.8,avg:'275 vs 280',d:'-1.8%',dc:'down',last:'29 Sep 2026',u:0,m:'33%'},
+    {n:'Custom items',c:'no product code, grouped by description',q:7,r:1900,s:6.6,avg:'-',d:'',dc:'',last:'21 Oct 2026',u:490,m:'-'}
+  ];
+  var details={
+    0:[['04 Nov 2026','INV-2026-0187','1','2,400.00','Unpaid'],['04 Nov 2025','INV-2025-0192','1','2,400.00','Paid'],['06 Jun 2026','INV-2026-0098','2','4,800.00','Paid']],
+    1:[['12 Oct 2026','INV-2026-0171','3','3,600.00','Partially paid'],['09 Jun 2026','INV-2026-0101','3','3,600.00','Paid']]
+  };
+  var mix=document.getElementById('mix'),h='';
+  rows.forEach(function(p,i){
+    h+='<tr class="drill" data-i="'+i+'"><td><b>'+p.n.replace('&','&amp;')+'</b><br><span class="code">'+p.c+'</span></td><td class="num">'+p.q+'</td><td class="num"><b>'+fmt(p.r)+'</b></td>'
+     +'<td><span class="bar" style="width:'+(p.s*2)+'px"></span>'+p.s.toFixed(1)+'%</td>'
+     +'<td class="num">'+p.avg+(p.d?' <span class="'+p.dc+'">('+p.d+')</span>':'')+'</td><td>'+p.last+'</td>'
+     +'<td class="num">'+p.m+'</td></tr>';
+    h+='<tr class="detail" id="d'+i+'" style="display:none"><td colspan="7">';
+    if(details[i]){
+      h+='<table><thead><tr><th>Date</th><th>Invoice</th><th class="num">Qty</th><th class="num">Line total</th><th>Status</th></tr></thead><tbody>';
+      details[i].forEach(function(d){h+='<tr><td>'+d[0]+'</td><td><a href="#" style="color:#0D5EA6;font-weight:700;">'+d[1]+'</a></td><td class="num">'+d[2]+'</td><td class="num">'+d[3]+'</td><td>'+d[4]+'</td></tr>';});
+      h+='</tbody></table>';
+    } else { h+='<span class="small muted">Purchase history for this product would list each invoice line with date, quantity, unit price and status.</span>'; }
+    h+='</td></tr>';
+  });
+  mix.innerHTML=h;
+  mix.addEventListener('click',function(e){
+    var tr=e.target.closest('tr.drill'); if(!tr) return;
+    var d=document.getElementById('d'+tr.getAttribute('data-i'));
+    d.style.display=(d.style.display==='none')?'table-row':'none';
+  });
+
+  // ---- Collapsible KPI cards (preference kept in a cookie) ----
+  var KPI_COOKIE='cp_kpi_collapsed';
+  function readCollapsed(){
+    var m=document.cookie.match(new RegExp('(?:^|; )'+KPI_COOKIE+'=([^;]*)'));
+    return (m&&m[1])?decodeURIComponent(m[1]).split(','):[];
+  }
+  var kpiState=readCollapsed();
+  function saveCollapsed(){
+    document.cookie=KPI_COOKIE+'='+encodeURIComponent(kpiState.join(','))+'; max-age=31536000; path=/; SameSite=Lax';
+  }
+  function applyKpi(){
+    document.querySelectorAll('.kpi').forEach(function(k){
+      var on=kpiState.indexOf(k.getAttribute('data-kpi'))>-1, b=k.querySelector('.tg');
+      k.classList.toggle('collapsed',on);
+      b.setAttribute('aria-expanded',on?'false':'true');
+      b.setAttribute('aria-label',on?'Expand card':'Collapse card');
+    });
+  }
+  document.querySelectorAll('.kpi .tg').forEach(function(b){
+    b.addEventListener('click',function(){
+      var id=b.parentNode.getAttribute('data-kpi'), i=kpiState.indexOf(id);
+      if(i>-1){kpiState.splice(i,1);}else{kpiState.push(id);}
+      saveCollapsed(); applyKpi();
+    });
+  });
+  document.getElementById('kpiAll').addEventListener('click',function(){
+    kpiState=[]; document.querySelectorAll('.kpi').forEach(function(k){kpiState.push(k.getAttribute('data-kpi'));});
+    saveCollapsed(); applyKpi();
+  });
+  document.getElementById('kpiNone').addEventListener('click',function(){kpiState=[];saveCollapsed();applyKpi();});
+  applyKpi();
+
+  // ---- Teaser "Notify me" buttons ----
+  document.querySelectorAll('.notify').forEach(function(b){
+    b.addEventListener('click',function(){
+      b.textContent='You will be notified'; b.disabled=true;
+      if(window.Swal){Swal.fire({title:'We will let you know',text:'You will be notified when this insight becomes available.',icon:'success',confirmButtonColor:'#0D5EA6'});}
+    });
+  });
+
+  // ---- currency switch (visual only) ----
+  document.querySelectorAll('#cur button').forEach(function(b){
+    b.addEventListener('click',function(){document.querySelectorAll('#cur button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');});
+  });
+</script>
+</body>
+</html>

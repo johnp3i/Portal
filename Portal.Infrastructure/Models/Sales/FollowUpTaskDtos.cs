@@ -154,4 +154,10 @@ public class DashboardTaskBriefDto
 
     /// <summary>When IsProspect is true, the prospect this action belongs to (for linking).</summary>
     public int? ProspectId { get; set; }
+
+    /// <summary>Subject of the meeting that spawned this task (shown as "from: …"), when linked.</summary>
+    public string? MeetingSubject { get; set; }
+
+    /// <summary>The task's notes, so a generic title like "Send email" has context on the brief.</summary>
+    public string? Notes { get; set; }
 }

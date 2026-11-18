@@ -93,8 +93,27 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
                             && !t.IsCompleted
                             && ((t.DueAtUtc >= overdueFloor.ToDateTime(TimeOnly.MinValue) && t.DueAtUtc < today.ToDateTime(TimeOnly.MinValue))
                                 || (t.DueAtUtc >= today.ToDateTime(TimeOnly.MinValue) && t.DueAtUtc < windowEnd.AddDays(1).ToDateTime(TimeOnly.MinValue))))
-                .Select(t => new { t.Id, t.Title, t.DueAtUtc, t.ScheduledTimeUtc, t.TeamMemberId })
+                .Select(t => new { t.Id, t.Title, t.DueAtUtc, t.ScheduledTimeUtc, t.TeamMemberId, t.ContactId, t.MeetingId, t.Notes })
                 .ToListAsync(ct);
+
+            // Context for each task (who it is for, which meeting spawned it, a short note) so a
+            // generic title like "Send email" is actionable in the email. Two batched lookups,
+            // explicitly scoped to this business.
+            var taskContactIds = tasks.Where(t => t.ContactId.HasValue).Select(t => t.ContactId!.Value).Distinct().ToList();
+            var contactNames = taskContactIds.Count == 0
+                ? new Dictionary<int, string>()
+                : (await DbContext.SalesContacts.IgnoreQueryFilters().AsNoTracking()
+                        .Where(c => c.BusinessId == businessId && taskContactIds.Contains(c.Id))
+                        .Select(c => new { c.Id, c.FirstName, c.LastName })
+                        .ToListAsync(ct))
+                    .ToDictionary(c => c.Id, c => string.IsNullOrWhiteSpace(c.LastName) ? c.FirstName : $"{c.FirstName} {c.LastName}");
+
+            var taskMeetingIds = tasks.Where(t => t.MeetingId.HasValue).Select(t => t.MeetingId!.Value).Distinct().ToList();
+            var taskMeetingSubjects = taskMeetingIds.Count == 0
+                ? new Dictionary<int, string>()
+                : await DbContext.Meetings.IgnoreQueryFilters().AsNoTracking()
+                    .Where(m => m.BusinessId == businessId && taskMeetingIds.Contains(m.Id))
+                    .ToDictionaryAsync(m => m.Id, m => m.Subject, ct);
 
             // Candidate meetings: not cancelled, active, overdue-no-outcome (bounded) OR within window.
             // ScheduledAtUtc is true UTC, so compare against the UTC-converted window boundaries.
@@ -160,7 +179,10 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
                     IsMeeting = false,
                     Title = t.Title,
                     WhenText = FormatWhen(t.DueAtUtc, t.ScheduledTimeUtc, today, todayUtcStart),
-                    ContextText = null
+                    ContextText = BuildTaskContext(
+                        t.ContactId.HasValue && contactNames.TryGetValue(t.ContactId.Value, out var cn) ? cn : null,
+                        t.MeetingId.HasValue && taskMeetingSubjects.TryGetValue(t.MeetingId.Value, out var ms) ? ms : null,
+                        t.Notes)
                 };
                 item.Key = $"task-{t.Id}";
 
@@ -275,6 +297,23 @@ public class TaskMeetingReminderComposer : DigestComposerBase, IFanOutDigestComp
             _logger.LogError(ex, "Task & Meeting Reminder compose failed for BusinessId={BusinessId}.", businessId);
             return Array.Empty<OutboxMessage>(); // fail safe per business (runner also guards)
         }
+    }
+
+    /// <summary>
+    /// Builds the one-line context shown after a task in the reminder: contact, the meeting it came
+    /// from, and a short single-line note. Returns null when there is nothing to add.
+    /// </summary>
+    private static string? BuildTaskContext(string? contactName, string? meetingSubject, string? notes)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(contactName)) parts.Add(contactName!);
+        if (!string.IsNullOrWhiteSpace(meetingSubject)) parts.Add($"from: {meetingSubject}");
+        if (!string.IsNullOrWhiteSpace(notes))
+        {
+            var note = string.Join(" ", notes!.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            parts.Add(note.Length > 90 ? note[..90].TrimEnd() + "…" : note);
+        }
+        return parts.Count == 0 ? null : string.Join(" · ", parts);
     }
 
     private static AgendaItem MakeMeetingItem(int id, string subject, DateTime scheduledAtUtc, string? context, DateOnly today, DateTime todayUtcStart)

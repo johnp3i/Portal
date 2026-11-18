@@ -450,8 +450,7 @@ public class SalesImportService : ISalesImportService
             }
 
             var separator = headerLine.Contains(';') ? ';' : ',';
-            var headers = headerLine
-                .Split(separator)
+            var headers = SplitCsvLine(headerLine, separator)
                 .Select(h => h.Trim().Replace(" ", "").ToLowerInvariant())
                 .ToHashSet();
 
@@ -488,9 +487,13 @@ public class SalesImportService : ISalesImportService
         if (headerLine == null) return (rows, "File is empty.");
 
         var separator = headerLine.Contains(';') ? ';' : ',';
-        var headers = headerLine.Split(separator).Select(h => h.Trim().ToLowerInvariant()).ToArray();
+        var headers = SplitCsvLine(headerLine, separator).Select(h => h.Trim().ToLowerInvariant()).ToArray();
 
-        var dateIdx = FindCol(headers, "date", "transaction date", "transactiondate", "transaction_date");
+        // The canonical contract names the date column "InvoiceDate" (ValidateCanonicalHeaders accepts
+        // it), so the parser must accept it too — otherwise a file that passes header validation is
+        // rejected here with "Required column 'Date' not found".
+        var dateIdx = FindCol(headers, "invoice date", "invoicedate", "invoice_date",
+            "date", "transaction date", "transactiondate", "transaction_date");
         var invIdx = FindCol(headers, "invoice no", "invoice number", "invoicenumber", "invoice_number", "invoice");
         var netIdx = FindCol(headers, "net", "net amount", "netamount", "amount");
         var vatIdx = FindCol(headers, "vat", "vat amount", "vatamount", "tax");
@@ -509,7 +512,7 @@ public class SalesImportService : ISalesImportService
             var line = reader.ReadLine();
             if (string.IsNullOrWhiteSpace(line)) continue;
 
-            var cols = line.Split(separator);
+            var cols = SplitCsvLine(line, separator);
             var row = new SalesImportRow();
 
             if (!TryParseDate(GetCol(cols, dateIdx), out var date))
@@ -546,6 +549,39 @@ public class SalesImportService : ISalesImportService
         }
 
         return (rows, null);
+    }
+
+    /// <summary>
+    /// Splits one CSV line on <paramref name="separator"/>, honouring RFC 4180 double-quoted fields
+    /// (a separator inside quotes is data, and "" is an escaped quote). A plain Split would break
+    /// a value such as "Smith, Jones Ltd" into two columns and silently shift every later column.
+    /// Quoted values spanning multiple lines are not supported (the file is read line by line).
+    /// </summary>
+    private static string[] SplitCsvLine(string line, char separator)
+    {
+        var fields = new List<string>();
+        var current = new System.Text.StringBuilder();
+        var inQuotes = false;
+
+        for (int i = 0; i < line.Length; i++)
+        {
+            var c = line[i];
+            if (inQuotes)
+            {
+                if (c == '"')
+                {
+                    if (i + 1 < line.Length && line[i + 1] == '"') { current.Append('"'); i++; }
+                    else inQuotes = false;
+                }
+                else current.Append(c);
+            }
+            else if (c == '"') inQuotes = true;
+            else if (c == separator) { fields.Add(current.ToString()); current.Clear(); }
+            else current.Append(c);
+        }
+
+        fields.Add(current.ToString());
+        return fields.ToArray();
     }
 
     private static int FindCol(string[] headers, params string[] candidates)

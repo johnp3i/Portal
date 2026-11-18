@@ -449,12 +449,25 @@ public class MeetingService : IMeetingService
     {
         try
         {
-            var todayStart = DateTime.UtcNow.Date.AddDays(-1);
-            var endDate = DateTime.UtcNow.Date.AddDays(5);
-
-            var meetings = await _meetingRepository.GetUpcomingBriefAsync(businessId, todayStart, endDate);
-
             var tz = await _timeZoneService.GetTimeZoneAsync(businessId);
+            var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), tz).Date;
+
+            // Query a generous UTC window (a business-local day can span two UTC days, so the window
+            // starts a day early), then trim to business-local dates below. Without that trim the
+            // extra leading day leaked YESTERDAY's meetings into "Upcoming Meetings".
+            var todayStart = DateTime.UtcNow.Date.AddDays(-1);
+            var endDate = DateTime.UtcNow.Date.AddDays(6);
+
+            var allMeetings = await _meetingRepository.GetUpcomingBriefAsync(businessId, todayStart, endDate);
+            var lastLocalDay = todayLocal.AddDays(5);
+            var meetings = allMeetings
+                .Where(m =>
+                {
+                    var localDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(m.ScheduledAtUtc, DateTimeKind.Utc), tz).Date;
+                    return localDate >= todayLocal && localDate <= lastLocalDay;
+                })
+                .ToList();
+
             var meetingTypes = await _meetingTypeRepository.GetAllAsync();
             var contactIds = meetings.Select(m => m.ContactId).Distinct();
             var contactsLookup = await _contactRepository.GetByIdsAsync(contactIds, businessId);
